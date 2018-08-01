@@ -99,3 +99,19 @@ TEST_CASE ("SIMD<Complex>", "[simd]") {
         }
     }
 }
+
+TEST_CASE ("Vec", "[double]") {
+    Vec<1,double> v2{42};
+    CHECK(v2[0] == 42);
+
+    constexpr int N = 5;
+
+    Vec<N, double> v0{42.42};
+    for (int i : Range(N))
+      CHECK(v0[i] == 42.42);
+
+    double vals [5] = {1.2,3.4,5.6,7.8,9.1};
+    Vec<N, double> v1{vals[0], vals[1], vals[2], vals[3], vals[4]};
+    for (int i : Range(N))
+      CHECK(v1[i] == vals[i]);
+}

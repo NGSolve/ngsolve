@@ -99,6 +99,7 @@ namespace ngcomp
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
     }
+    hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
 
     // Update();
   }
@@ -335,7 +336,7 @@ namespace ngcomp
       for(int el=0; el<ma->GetNE(); el++)	      
 	{
 	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
-	    ctofdof[k] = HIDDEN_DOF;
+	    ctofdof[k] = hide_highest_order_dc ? HIDDEN_DOF : LOCAL_DOF;
 	}	  
     *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }

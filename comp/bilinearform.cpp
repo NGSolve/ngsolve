@@ -84,6 +84,7 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
     SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal"));
+    SetEliminateHidden (flags.GetDefineFlag ("eliminate_hidden"));
     SetKeepInternal (eliminate_internal &&
                      !flags.GetDefineFlagX ("keep_internal").IsFalse() &&
                      !flags.GetDefineFlag ("nokeep_internal"));
@@ -118,6 +119,7 @@ namespace ngcomp
     printelmat = false;
     elmat_ev = false;
     eliminate_internal = false;
+    eliminate_hidden = false;
     // keep_internal = false;
 
 
@@ -136,6 +138,7 @@ namespace ngcomp
 
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
+    if (flags.GetDefineFlag ("eliminate_hidden")) SetEliminateHidden (1);
     SetKeepInternal (eliminate_internal && 
                      !flags.GetDefineFlag ("nokeep_internal"));
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
@@ -366,8 +369,11 @@ namespace ngcomp
                      
                      if (vb == VOL && eliminate_internal)
                        fespace->GetDofNrs (eid, dnums, EXTERNAL_DOF);
+                     else if (vb == VOL && eliminate_hidden)
+                       fespace->GetDofNrs (eid, dnums, VISIBLE_DOF);
                      else
                        fespace->GetDofNrs (eid, dnums);
+                         
                      
                      for (DofId d : dnums)
                        if (d != -1) creator.Add (shift+i, d);
@@ -454,6 +460,8 @@ namespace ngcomp
 		    
 		    if (vb == VOL && eliminate_internal)
 		      fespace2->GetDofNrs (eid, dnums, EXTERNAL_DOF);
+		    else if (vb == VOL && eliminate_hidden)
+		      fespace2->GetDofNrs (eid, dnums, VISIBLE_DOF);
 		    else
 		      fespace2->GetDofNrs (eid, dnums);
 		    
@@ -706,6 +714,7 @@ namespace ngcomp
         << "printelmat = " << printelmat << endl
         << "elmatev    = " << elmat_ev << endl
         << "eliminate_internal = " << eliminate_internal << endl
+        << "eliminate_hidden = " << eliminate_hidden << endl
         << "keep_internal = " << keep_internal << endl
         << "store_inner = " << store_inner << endl
         << "integrators: " << endl;
@@ -1065,21 +1074,23 @@ namespace ngcomp
                              LapackEigenSystem(sum_elmat, lh);
                            }
                          
-                         if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal)
+                         Array<int> lhdofs(dnums.Size(), lh);
+                         fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
+                         bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && (lhdofs.Size() > 0);
+                         if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                            {
                              static Timer statcondtimer("static condensation", 2);
                              ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
-                             fespace->GetDofNrs (el, idofs1, CONDENSABLE_DOF);
-                             for (int j = 0; j < idofs1.Size(); j++)
-                               idofs1[j] = dnums.Pos(idofs1[j]);
-                             
+                             fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
                              if (printelmat) 
                                {
                                  lock_guard<mutex> guard(printelmat_mutex);
-                                 *testout << "eliminate internal" << endl;
+                                 *testout << "eliminate internal";
+                                 if (elim_only_hidden)
+                                  *testout << " (only hidden)" << endl;
                                  *testout << "idofs1 = " << idofs1 << endl;
                                }
                              
@@ -1126,7 +1137,7 @@ namespace ngcomp
 				 
                                  // A := A - B D^{-1} C^T
                                  // new Versions, July 07
-                                 if (!keep_internal) 
+                                 if (elim_only_hidden || !keep_internal) 
                                    {
                                      LapackAInvBt (d, b);    // b <--- b d^-1
                                      LapackMultAddABt (b, c, -1, a);                                 
@@ -1136,16 +1147,15 @@ namespace ngcomp
                                      Array<int> idnums1(dnums.Size(), lh), 
                                        ednums1(dnums.Size(), lh),
                                        hdnums1(dnums.Size(), lh);
-                                     fespace->GetDofNrs(el,idnums1,CONDENSABLE_DOF);
-                                     fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
-                                     fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
-                                     int count = 0;
-                                     for (auto dof : hdnums1)
-                                     {
-                                       while (idnums1[count] != dof)
-                                         count++;
-                                       idnums1[count] = -1;
-                                     }
+                                     fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
+                                     fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
+                                     fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
+                                     for (auto d : Range(idnums1.Size()))
+                                       idnums1[d] = dnums[idnums1[d]];
+                                     for (auto d : Range(ednums1.Size()))
+                                       ednums1[d] = dnums[ednums1[d]];
+                                     for (auto ldof : hdnums1)
+                                       idnums1[ldof] = -1;
                                      
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
@@ -1157,6 +1167,7 @@ namespace ngcomp
                                        else
                                          for (size_t k = 0; k < dim; k++)
                                            idnums += -1;
+
                                      for (size_t j = 0; j < ednums1.Size(); j++)
                                        ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
                                      
@@ -1620,7 +1631,8 @@ namespace ngcomp
                                      // if (bfi.VB()!=VOL) continue;
                                      // if (!bfi.SkeletonForm()) continue;
                                      // if (!bfi.GetDGFormulation().element_boundary) continue;
-
+                                     if (!bfi->DefinedOnElement (el1)) continue;
+                                     
                                      if (check_unused)
                                        for (auto d : dnums)
                                          if (d != -1) useddof[d] = true;
@@ -2058,7 +2070,7 @@ namespace ngcomp
                        << ", total = " << useddof.Size() << endl;
               }
             
-            int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
+            int MASK = eliminate_internal ? EXTERNAL_DOF : (eliminate_hidden ? VISIBLE_DOF : ANY_DOF);
             bool first_time = true;
 
             if (MyMPI_GetNTasks() == 1 && check_unused)
@@ -2528,7 +2540,11 @@ namespace ngcomp
                    *testout << "summat = " << sum_elmat << endl;
                  
 
-                 if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal)
+                 Array<int> lhdofs(dnums.Size(), lh);
+                 fespace->GetElementDofsOfType (el, lhdofs, HIDDEN_DOF);
+                 bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && (lhdofs.Size() > 0);
+
+                 if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                    {
                      static Timer statcondtimer("static condensation", 2);
                      RegionTimer regstat (statcondtimer);
@@ -2536,9 +2552,7 @@ namespace ngcomp
                      ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetDofNrs (el, idofs1, CONDENSABLE_DOF);
-                     for (int j = 0; j < idofs1.Size(); j++)
-                       idofs1[j] = dnums.Pos(idofs1[j]);
+                     fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
                           
                      if (printelmat) 
                        {
@@ -2586,7 +2600,7 @@ namespace ngcomp
                               
                          // A := A - B D^{-1} C^T
                          // new Versions, July 07
-                         if (!keep_internal)
+                         if (elim_only_hidden || !keep_internal)
                            {
                              LapackAInvBt (d, b);
                              LapackMultAddABt (b, c, -1, a);
@@ -2597,18 +2611,15 @@ namespace ngcomp
                              ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetDofNrs(el,idnums1,CONDENSABLE_DOF);
-                             fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
-                             fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
-
-                             
-                             int count = 0;
-                             for (auto dof : hdnums1)
-                             {
-                               while (idnums1[count] != dof)
-                                 count++;
-                               idnums1[count] = -1;
-                             }
+                             fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
+                             fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
+                             fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
+                             for (auto d : Range(idnums1.Size()))
+                               idnums1[d] = dnums[idnums1[d]];
+                             for (auto d : Range(ednums1.Size()))
+                               ednums1[d] = dnums[ednums1[d]];
+                             for (auto ldof : hdnums1)
+                               idnums1[ldof] = -1;
                              
                              for (int j = 0; j < idnums1.Size(); j++)
                                idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
@@ -3359,6 +3370,7 @@ namespace ngcomp
                    for (auto & bfi : VB_parts[vb])
                      {
                        if (!bfi->DefinedOn (el.GetIndex())) continue;
+                       if (!bfi->DefinedOnElement (el.Nr())) continue;
                        bfi->ApplyElementMatrix (fel, trafo, elvecx, elvecy, 0, lh);
                        
                        this->fespace->TransformVec (el, elvecy, TRANSFORM_RHS);
@@ -3513,6 +3525,7 @@ namespace ngcomp
                            for (auto & bfi : facetwise_skeleton_parts[BND])
                              {
                                if (!bfi->DefinedOn (seltrans.GetElementIndex())) continue;
+                               if (!bfi->DefinedOnElement (facet)) continue;
                                          
                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
@@ -3563,6 +3576,7 @@ namespace ngcomp
                          {
                            if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; 
                            if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; 
+                           if (!bfi->DefinedOnElement (facet) ) continue;
                            
                            bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                   fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
@@ -3638,6 +3652,7 @@ namespace ngcomp
                            
                            for (auto & bfi : elementwise_skeleton_parts)
                              {
+                               if (!bfi->DefinedOnElement (el1) ) continue;
                                FlatVector<SCAL> elx(dnums.Size()*fespace->GetDimension(), lh),
                                  ely(dnums.Size()*fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
@@ -3702,7 +3717,7 @@ namespace ngcomp
                          {
                            if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; //TODO: treat as surface element
                            if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; //TODO    
-                           
+                           if (!bfi->DefinedOnElement (el1) ) continue;
                            // FacetBilinearFormIntegrator * fbfi = 
                            // dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
                            

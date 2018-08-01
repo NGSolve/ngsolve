@@ -39,7 +39,8 @@ namespace ngcomp
     bool print;
 
     bool highest_order_dc;
-
+    bool hide_highest_order_dc;
+    
   public:
     ///
     VectorFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 

@@ -218,7 +218,7 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
-    if(low_order_space) prol->Update();
+    if(low_order_space) prol->Update(*this);
 
     UpdateCouplingDofArray();
   } 
@@ -288,7 +288,7 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
-    prol->Update();
+    prol->Update(*this);
   }
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
