@@ -825,11 +825,9 @@ namespace ngcomp
 	    auto fvec = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
 	    (this->vec)[i] = make_shared<ParallelVFlatVector<SCAL>> (fvec.Size(), (SCAL*)fvec.Memory(), pds, CUMULATED);
 	  }
-#else
-	throw Exception("MyMPI_GetNTasks()>1, but PARALLEL not defined!!");
-#endif
       }
     else
+#endif
       {
 	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
 	  (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
