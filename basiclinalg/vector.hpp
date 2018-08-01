@@ -764,9 +764,9 @@ namespace ngbla
     }
 
     INLINE FlatSysVector<T> Range(size_t first, size_t last)
-    { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
+    { return FlatSysVector<T> (last-first, blocksize, data+(first*blocksize)); }
     INLINE /* const */ FlatSysVector<T> Range(size_t first, size_t last) const
-    { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
+    { return FlatSysVector<T> (last-first, blocksize, data+(first*blocksize)); }
 
     INLINE size_t Size () const { return s; }
     INLINE size_t Height () const { return s; }
