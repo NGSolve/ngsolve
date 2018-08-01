@@ -4,11 +4,13 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
+#include <multigrid.hpp> 
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
+#include "compressedfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -249,6 +251,9 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
      * without static condensation a HIDDEN_DOF is treated as any other
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+     * When static condensation is applied (eliminate_hidden/
+       eliminate_internal) the block corresponding to HIDDEN_DOFs
+       has to be invertible.
 
 CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
@@ -266,6 +271,8 @@ WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
 
 EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
 
+VISIBLE_DOF: not UNUSED_DOF or HIDDEN_DOF
+
 ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
@@ -277,6 +284,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("VISIBLE_DOF", VISIBLE_DOF)
     .value("ANY_DOF", ANY_DOF)
     // .export_values()
     ;
@@ -749,6 +757,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->FinalizeUpdate(glh);
          },
          "finalize update")
+     .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
+         {
+           shared_ptr<FESpace> space = self;
+           if (! py::extract<DummyArgument> (acomp).check())
+           {
+             auto comp = py::extract<int>(acomp)();
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
+             if (!compspace)
+               throw py::type_error("'components' is available only for product spaces");
+             space = (*compspace)[comp];
+             IntRange range = compspace->GetRange(comp);
+             for (auto d : range)
+             {
+               auto doftype = compspace->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 compspace->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           }
+           for (DofId d : Range(space->GetNDof()))
+             {
+               auto doftype = space->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 space->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           self->FinalizeUpdate(glh); //Update FreeDofs
+         }, py::arg("component")=DummyArgument(), 
+         "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
@@ -876,9 +911,14 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          )
 
     .def("ParallelDofs",
-         [] (const shared_ptr<FESpace>self)
+         [] (const shared_ptr<FESpace> self)
          { return self->GetParallelDofs(); },
          "Return dof-identification for MPI-distributed meshes")
+
+    .def("Prolongation",
+         [] (const shared_ptr<FESpace> self)
+         { return self->GetProlongation(); },
+         "Return prolongation operator for use in multi-grid")
 
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
@@ -1051,9 +1091,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
+  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+                flags_doc["hide_highest_order_dc"] = "bool = False\n"
+                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+                return flags_doc;
+              })
+    ;
 
-  ExportFESpace<FacetFESpace> (m, "FacetFESpace");
+  ExportFESpace<FacetFESpace> (m, "FacetFESpace")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+                flags_doc["hide_highest_order_dc"] = "bool = False\n"
+                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+                return flags_doc;
+              })
+    ;
 
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
 
@@ -1177,6 +1241,45 @@ used_idnrs : list of int = None
                       return fes;
                     }))
     ;
+
+
+  py::class_<CompressedFESpace, shared_ptr<CompressedFESpace>, FESpace>(m, "Compress",
+	docu_string(R"delimiter(Wrapper Finite Element Spaces.
+The compressed fespace is a wrapper around a standard fespace which removes
+certain dofs (e.g. UNUSED_DOFs).
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+
+active_dofs : BitArray or None
+    don't use the COUPLING_TYPEs of dofs to compress the FESpace, 
+    but use a BitArray directly to compress the FESpace
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes,
+                      py::object active_dofs)
+                  {
+                    auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    if (compspace)
+                       throw py::type_error("cannot apply compression on CompoundFESpace");
+
+                    auto ret = make_shared<CompressedFESpace> (fes);
+                    shared_ptr<BitArray> actdofs = nullptr;
+                    if (! py::extract<DummyArgument> (active_dofs).check())
+                      ret->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
+                    ret->Update(glh);
+                    return ret;                    
+                  }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
+    .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
+         {
+           self.SetActiveDofs(active_dofs);
+         },
+         py::arg("dofs"))
+    ;
+
+
+
 
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
@@ -1594,6 +1697,9 @@ space : ngsolve.FESpace
                      "  this enables only the use of the members harmonic_extension,\n"
                      "  harmonic_extension_trans and inner_solve. Have a look at the\n"
                      "  documentation for further information.",
+                     py::arg("eliminate_hidden") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of hidden\n"
+                     "  dofs. May be overruled by eliminate_internal.",
                      py::arg("print") = "bool = False\n"
                      "  Write additional information to testout file. \n"
                      "  This file must be set by ngsolve.SetTestoutFile. Use \n"
@@ -1811,6 +1917,13 @@ flags : dict
 
     ;
 
+  ////////////////////////////// Prolongation ///////////////////////////////
+
+  py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
+    .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
+    .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
+    ;
+  
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
   auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");

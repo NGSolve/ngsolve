@@ -235,7 +235,7 @@ namespace ngcomp
         ;
       }
 
-    prol = make_shared<LinearProlongation> (*this);
+    prol = make_shared<LinearProlongation> (GetMeshAccess());
   }
 
 
@@ -599,7 +599,7 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
     */
-    prol->Update();
+    prol->Update(*this);
   }
 
 

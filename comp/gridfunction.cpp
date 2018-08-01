@@ -942,7 +942,7 @@ namespace ngcomp
 	      {
 		*vec[i]->Range (0, ovec->Size()) += *ovec;
 
-		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update();
+		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update(*this->GetFESpace());
 		
 		this->GetFESpace()->GetProlongation()->ProlongateInline
 		  (this->GetMeshAccess()->GetNLevels()-1, *vec[i]);
