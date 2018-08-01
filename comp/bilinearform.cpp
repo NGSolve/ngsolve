@@ -3758,8 +3758,7 @@ namespace ngcomp
 	if( (MyMPI_GetNTasks()>1) &&
 	    (mpi_facet_parts.Size()) )
 	  {
-	    // cout << endl << endl << "-------- MPI FACETS --------------" << endl << endl;
-	    
+
 	    RegionTimer rt(timerDGparallelfacets);
 	    
 	    //cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << ", " << mpi_facet_parts.Size() << " total parts " << endl;
@@ -3784,7 +3783,6 @@ namespace ngcomp
 	    Array<MPI_Request> reqr;
 	    LocalHeap &lh(clh);
 	    Array<int> elnums(2, lh), fnums(6, lh), vnums(8, lh);
-	    Array<int> elnums2(2, lh), vnums2(8, lh);
 
 	    size_t ne = ma->GetNE(VOL);
 	    BitArray fine_facet(ma->GetNFacets());
@@ -3812,14 +3810,9 @@ namespace ngcomp
 		
 		ma->GetFacetElements(facet, elnums);
 
-		auto facet2 = ma->GetPeriodicFacet(facet);
-		// bool periodic_facet = (facet!=facet2);
-
 		ma->GetFacetSurfaceElements (facet, elnums2);
 		bool periodic_facet = elnums2.Size()!=0;
-		
-		
-		
+
 		ElementId eiv(VOL, elnums[0]);
 
 		fnums = ma->GetElFacets(eiv);
@@ -3830,30 +3823,6 @@ namespace ngcomp
 		
 		Array<int> dnums(fel.GetNDof(), lh);
 		vnums = ma->GetElVertices(eiv);
-
-		// if(loop!=0) {
-		//   cout << "facet " << facet << " is MPI, shared with " << d
-		//        << ", vnums: " << endl;
-		//   ma->GetFacetPNums(facet, vnums2);
-		//   cout << vnums2 << endl;
-		//   ma->GetFacetSurfaceElements (facet, elnums2);
-		//   if(elnums2.Size()) {
-		//     cout << "surfel:  " << endl
-		// 	 << elnums2;
-		//   }
-		//   if(facet2!=facet) {
-		//     cout << "Periodic facet: " << facet << "  "
-		// 	 << facet2 << ", vnums: " << endl;
-		//     ma->GetFacetPNums(facet2, vnums2);
-		//     cout << vnums2 << endl;
-		//     ma->GetFacetSurfaceElements (facet2, elnums2);
-		//     if(elnums2.Size()) {
-		//       cout << "surfel:  " << endl
-		// 	   << elnums2;
-		//     }
-		//   }
-		// }
-		
 		ElementTransformation & eltrans = ma->GetTrafo (eiv, lh);
 		fespace->GetDofNrs (eiv, dnums);
 
