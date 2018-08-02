@@ -32,6 +32,8 @@ namespace ngcomp
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
+    // set all used dofs to hidden_dofs
+    bool hide_all_dofs;
     COUPLING_TYPE lowest_order_ct;
   public:
 
