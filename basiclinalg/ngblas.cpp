@@ -1532,7 +1532,10 @@ namespace ngbla
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
           "111.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW, B aligned\n"
           "150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n"
-          "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned"
+          "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned\n"
+          "200.. CalcInverse        A = nxn\n"
+          "205.. LDL                A = nxn\n"
+          "210.. CalcInverseLapack  A = nxn\n"
              << endl;
         return list<tuple<string,double>>();
       }
@@ -1846,6 +1849,83 @@ namespace ngbla
     
 
 
+    if (what == 0 || what == 200)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            CalcInverse(a, INVERSE_LIB::INV_NGBLA);
+          t.Stop();
+          cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+
+    if (what == 0 || what == 205)
+      {
+        // CalcInverse
+        Matrix<double,ColMajor> a(n,n);
+        a = 1;
+        Trans(a).Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            CalcLDL (SliceMatrix<double,ColMajor> (a));
+          t.Stop();
+          cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    
+     if (what == 0 || what == 210)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            LapackInverse(a);
+          t.Stop();
+          cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("LapackInv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+     if (what == 0 || what == 211)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            LapackInverseSPD(a);
+          t.Stop();
+          cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("LapackInv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
 
     
     return timings;
