@@ -713,7 +713,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 if (f2 != f) // color both, left and right facet
                   {
                     ma->GetFacetElements (f2, elnums_per);
-                    elnums.Append(elnums_per[0]);
+		    // if the facet is identified across subdomain
+		    // boundary, we only have the surface element
+		    // and not the other volume element!
+		    // that case does not impact coloring
+		    if (elnums_per.Size())
+		      elnums.Append(elnums_per[0]);
                   }
               }
             for (auto el : elnums)
