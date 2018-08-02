@@ -1046,6 +1046,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   "  Remove high order element bubbles with non zero divergence";
                 flags_doc["highest_order_dc"] = "bool = False\n"
                   "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+                flags_doc["hide_all_dofs"] = "bool = False\n"
+                  "  Set all used dofs to HIDDEN_DOFs";
                 return flags_doc;
               })
     .def("Average", &HDivHighOrderFESpace::Average,
@@ -1056,13 +1058,27 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
   auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
  
-  auto l2 = ExportFESpace<L2HighOrderFESpace> (m, "L2");
-
   auto vectorl2 = ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
 
   auto l2surface = ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
 
   auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
+
+  ExportFESpace<L2HighOrderFESpace> (m, "L2")
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+		              flags_doc["all_dofs_together"] = "bool = False\n"
+                    "  Don't use lowest-order high-order ordering but block all dofs of one element ";
+                  flags_doc["hide_all_dofs"] = "bool = False\n"
+                    "  Set all used dofs to HIDDEN_DOFs";
+                return flags_doc;
+                })
+    ;
+
+
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
     .def_static("__flags_doc__", [] ()
@@ -1260,15 +1276,15 @@ active_dofs : BitArray or None
     .def(py::init([] (shared_ptr<FESpace> & fes,
                       py::object active_dofs)
                   {
-                    auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
                     if (compspace)
-                       throw py::type_error("cannot apply compression on CompoundFESpace");
-
+                        throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
                     auto ret = make_shared<CompressedFESpace> (fes);
                     shared_ptr<BitArray> actdofs = nullptr;
                     if (! py::extract<DummyArgument> (active_dofs).check())
-                      ret->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
+                      dynamic_pointer_cast<CompressedFESpace>(ret)->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
                     ret->Update(glh);
+                    ret->FinalizeUpdate(glh);
                     return ret;                    
                   }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
     .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
@@ -1277,6 +1293,26 @@ active_dofs : BitArray or None
          },
          py::arg("dofs"))
     ;
+
+
+   m.def("CompressCompound", [](shared_ptr<FESpace> & fes, py::object active_dofs) -> shared_ptr<FESpace>
+            {
+              shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+              if (!compspace)
+                throw py::type_error("Not a CompoundFESpace!");
+              else
+              {
+                if (! py::extract<DummyArgument> (active_dofs).check())
+                  throw py::type_error("cannot apply compression on CompoundFESpace with active_dofs");
+                Array<shared_ptr<FESpace>> spaces(compspace->GetNSpaces());
+                for (int i = 0; i < compspace->GetNSpaces(); i++)
+                  spaces[i] = make_shared<CompressedFESpace> ((*compspace)[i]);
+                auto ret = make_shared<CompoundFESpace>(compspace->GetMeshAccess(),spaces, compspace->GetFlags());
+                ret->Update(glh);
+                ret->FinalizeUpdate(glh);
+                return ret;
+              }
+             }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
 
 
 
