@@ -3758,7 +3758,6 @@ namespace ngcomp
 	if( (MyMPI_GetNTasks()>1) &&
 	    (mpi_facet_parts.Size()) )
 	  {
-
 	    RegionTimer rt(timerDGparallelfacets);
 	    
 	    //cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << ", " << mpi_facet_parts.Size() << " total parts " << endl;
@@ -3823,6 +3822,7 @@ namespace ngcomp
 		
 		Array<int> dnums(fel.GetNDof(), lh);
 		vnums = ma->GetElVertices(eiv);
+
 		ElementTransformation & eltrans = ma->GetTrafo (eiv, lh);
 		fespace->GetDofNrs (eiv, dnums);
 
@@ -3841,9 +3841,6 @@ namespace ngcomp
 		  else if (loop == 1) {
 		    auto offset = periodic_facet ? (os_per[d] + cnt_per[d]) : cnt_in[d];
 		    FlatVector<SCAL> tmp(trace_values.Size(), &( send_table[d][offset] ));
-		    //cout << "computed trace values for facet " << facet << endl << trace_values << endl;
-		    // if(MyMPI_GetId()!=2)
-		    //   trace_values = 0.0;
 		    tmp = trace_values;
 		    if(periodic_facet) cnt_per[d] += trace_values.Size();
 		    else cnt_in[d] += trace_values.Size();
@@ -3853,7 +3850,6 @@ namespace ngcomp
 		    FlatVector<SCAL> trace_other(trace_values.Size(), &( recv_table[d][offset] ));
 		    if(periodic_facet) cnt_per[d] += trace_values.Size();
 		    else cnt_in[d] += trace_values.Size();
-		    //cout << "got trace values for facet " << facet << endl << trace_other << endl;
 
 		    FlatVector<SCAL> ely(dnums.Size()*this->fespace->GetDimension(), lh);
 		    dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
