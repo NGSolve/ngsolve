@@ -816,9 +816,9 @@ namespace ngcomp
     this -> vec.SetSize (gf_parent.GetMultiDim());
     GridFunction::multidim = gf_parent.GetMultiDim();
 
+#ifdef PARALLEL
     if (MyMPI_GetNTasks()>1)
       {
-#ifdef PARALLEL
 	auto pds = cfes[comp]->GetParallelDofs();
 	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
 	  {
