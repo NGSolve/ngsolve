@@ -415,6 +415,7 @@ namespace ngcomp
 #ifdef PARALLEL
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;
+    mutable Array<int> os_per;
     mutable Table<SCAL> send_table;
     mutable Table<SCAL> recv_table;
 #endif
