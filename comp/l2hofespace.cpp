@@ -324,10 +324,10 @@ namespace ngcomp
                             { return *new(alloc) ScalarDummyFE<et.ElementType()>(); });
           }
 
-	if (eltype == ET_TRIG) 
+	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
-        if (eltype == ET_TET)         
+        if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
 
         /*
@@ -569,6 +569,8 @@ namespace ngcomp
         if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
       }
+    else
+      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType 'ELEMENT'");
   }
   
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
