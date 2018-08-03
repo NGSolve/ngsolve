@@ -422,15 +422,15 @@ namespace ngla
     
     static Timer timer_newdof2el("MatrixGraph - new build dof2el table");
     // atomic-free dof2element via COO format
-    cout << "rows = " << rowelements.Size() << " use bits = " << UsedBits(rowelements.Size()) << endl;
-    cout << "ndof = " << ndof << endl;
+    // cout << "rows = " << rowelements.Size() << " use bits = " << UsedBits(rowelements.Size()) << endl;
+    // cout << "ndof = " << ndof << endl;
     timer_newdof2el.Start();
     int rowbits = UsedBits (rowelements.Size());
     int rowbits_hi = rowbits / 2;
     int rowbits_lo = rowbits - rowbits_hi;
     int rows_hi = 1 << rowbits_hi;
     int rows_lo = 1 << rowbits_lo;
-    cout << "rowbits_hi = " << rowbits_hi << ", rowbits_lo = " << rowbits_lo << " rows_hi = " << rows_hi << endl;
+    // cout << "rowbits_hi = " << rowbits_hi << ", rowbits_lo = " << rowbits_lo << " rows_hi = " << rows_hi << endl;
     
     int dofbits = UsedBits (ndof);
     int dofbits_hi = dofbits/2;
@@ -438,11 +438,14 @@ namespace ngla
     int dofs_hi = 1 << dofbits_hi;
     int dofs_lo = 1 << dofbits_lo;    
 
-    cout << "dofbits_hi = " << dofbits_hi << ", dofbits_lo = " << dofbits_lo
-         << " dofs_hi = " << dofs_hi << " dofslo = " << dofs_lo << endl;
+    // cout << "dofbits_hi = " << dofbits_hi << ", dofbits_lo = " << dofbits_lo
+    // << " dofs_hi = " << dofs_hi << " dofslo = " << dofs_lo << endl;
     
     Array<int> cnt_entries(rows_hi*dofs_hi);
-    cnt_entries = 0;
+    ParallelForRange (cnt_entries.Size(), [&] (IntRange r)
+                      { cnt_entries.Range(r) = 0; });
+
+    // cnt_entries = 0;
     ParallelFor (rows_hi, [&] (int row_hi)
                  {
                    for (int row_lo = 0; row_lo < rows_lo; row_lo++)
@@ -458,10 +461,12 @@ namespace ngla
                              }
                          }
                      }
-                 });
+                 }, TasksPerThread(4));
     
     Table<int> entries(cnt_entries);
-    cnt_entries = 0;
+    ParallelForRange (cnt_entries.Size(), [&] (IntRange r)
+                      { cnt_entries.Range(r) = 0; });
+    // cnt_entries = 0;
     /*
     for (int i = 0; i < rowelements.Size(); i++)
       {
@@ -517,7 +522,8 @@ namespace ngla
                 }, TasksPerThread(4));
     
     Table<int> newdof2element(newcnt);
-    newcnt = 0;
+    ParallelForRange (ndof, [&] (IntRange r)
+                      { newcnt.Range(r) = 0; });
     // for (int dof_hi = 0; dof_hi < dofs_hi; dof_hi++)
     ParallelFor (dofs_hi, [&] (int dof_hi)
                  {
