@@ -515,7 +515,7 @@ namespace ngla
                          }
                      }
 
-                   entries[row_hi] = Table<int> (cnt_entries);
+                   Table<int> loctable(cnt_entries);
                    cnt_entries = 0;
 
                    for (int row_lo = 0; row_lo < rows_lo; row_lo++)
@@ -527,18 +527,15 @@ namespace ngla
                              {
                                int dof_hi, dof_lo;
                                tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
-                               entries[row_hi][dof_hi][cnt_entries[dof_hi]++] = row_lo*dofs_lo+dof_lo;
+                               loctable[dof_hi][cnt_entries[dof_hi]++] = row_lo*dofs_lo+dof_lo;
                              }
                          }
                      }
+                   entries[row_hi] = move(loctable);
                  }, TasksPerThread(4));
     
                            
     Array<int> newcnt(ndof);
-    /*
-    ParallelForRange (ndof, [&] (IntRange r)
-                      { newcnt.Range(r) = 0; });
-    */
     ParallelFor(dofs_hi, [&] (int dof_hi)
                 {
                   auto first = dof_hi << dofbits_lo;
