@@ -496,8 +496,13 @@ namespace ngla
 
     Array<Table<int>> entries(rows_hi);
 
-    ParallelFor (rows_hi, [&] (int row_hi)
-                 {
+    // ParallelFor (rows_hi, [&] (int row_hi)
+    SharedLoop2 loop(rows_hi);
+    ParallelJob 
+      ( [&] (const TaskInfo & ti) 
+        {
+          for (int row_hi : loop)
+            {
                    Array<int> cnt_entries(dofs_hi);
                    cnt_entries = 0;
                    
@@ -532,9 +537,11 @@ namespace ngla
                          }
                      }
                    entries[row_hi] = move(loctable);
-                 }, TasksPerThread(4));
+            }
+        });
+    // , TasksPerThread(4));
     
-                           
+    
     Array<int> newcnt(ndof);
     ParallelFor(dofs_hi, [&] (int dof_hi)
                 {
