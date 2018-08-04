@@ -574,13 +574,13 @@ namespace ngla
                        }
                  }, TasksPerThread(4));
     timer_newdof2el.Stop();    
-#endif
 
     if (dof2element.Size() < 100)
       {
         cout << "dof2el = " << dof2element << endl;
         cout << "newdof2el = " << newdof2element << endl;
       }
+#endif
     
     Array<int> cnt(ndof);
     // cnt = 0;
