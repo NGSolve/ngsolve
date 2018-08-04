@@ -430,6 +430,7 @@ namespace ngla
     int rowbits_lo = rowbits - rowbits_hi;
     int rows_hi = 1 << rowbits_hi;
     int rows_lo = 1 << rowbits_lo;
+    int nrows_hi = (rowelements.Size()+rows_lo-1) / rows_lo;
     // cout << "rowbits_hi = " << rowbits_hi << ", rowbits_lo = " << rowbits_lo << " rows_hi = " << rows_hi << endl;
     
     int dofbits = UsedBits (ndof);
@@ -437,6 +438,7 @@ namespace ngla
     int dofbits_lo = dofbits - dofbits_hi;
     int dofs_hi = 1 << dofbits_hi;
     int dofs_lo = 1 << dofbits_lo;    
+    int ndofs_hi = (ndof+dofs_lo-1)/dofs_lo;
 
     // cout << "dofbits_hi = " << dofbits_hi << ", dofbits_lo = " << dofbits_lo
     // << " dofs_hi = " << dofs_hi << " dofslo = " << dofs_lo << endl;
@@ -494,16 +496,10 @@ namespace ngla
                  }, TasksPerThread(4));
     */
 
-    Array<Table<int>> entries(rows_hi);
-
-    // ParallelFor (rows_hi, [&] (int row_hi)
-    SharedLoop2 loop(rows_hi);
-    ParallelJob 
-      ( [&] (const TaskInfo & ti) 
-        {
-          for (int row_hi : loop)
-            {
-                   Array<int> cnt_entries(dofs_hi);
+    Array<Table<int>> entries(nrows_hi);
+    ParallelFor (nrows_hi, [&] (int row_hi)
+                 {
+                   Array<int> cnt_entries(ndofs_hi);
                    cnt_entries = 0;
                    
                    for (int row_lo = 0; row_lo < rows_lo; row_lo++)
@@ -537,20 +533,20 @@ namespace ngla
                          }
                      }
                    entries[row_hi] = move(loctable);
-            }
-        });
-    // , TasksPerThread(4));
+                 },
+                 TasksPerThread(4));
     
     
     Array<int> newcnt(ndof);
-    ParallelFor(dofs_hi, [&] (int dof_hi)
+    ParallelFor(ndofs_hi, [&] (int dof_hi)
                 {
                   auto first = dof_hi << dofbits_lo;
                   if (first >= ndof) return;
                   auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
                   newcnt.Range(first, next) = 0;
                   
-                  for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                  // for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                  for (int row_hi : Range(entries))
                     for (auto p : entries[row_hi][dof_hi])
                       {
                         int dof_lo, row_lo;
@@ -561,14 +557,15 @@ namespace ngla
                 }, TasksPerThread(4));
     
     Table<int> newdof2element(newcnt);
-    ParallelFor (dofs_hi, [&] (int dof_hi)
+    ParallelFor (ndofs_hi, [&] (int dof_hi)
                  {
                    auto first = dof_hi << dofbits_lo;
                    if (first >= ndof) return;
                    auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
                    newcnt.Range(first, next) = 0;
                    
-                   for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                   // for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                   for (int row_hi : Range(entries))                     
                      for (auto p : entries[row_hi][dof_hi])                         
                        {
                          int dof_lo, row_lo;
