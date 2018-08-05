@@ -421,6 +421,10 @@ namespace ngla
 #ifdef NEWDOF2EL
     {
     static Timer timer_newdof2el("MatrixGraph - new build dof2el table");
+    static Timer timer_newdof2el_1("MatrixGraph - new build dof2el table 1");
+    static Timer timer_newdof2el_2("MatrixGraph - new build dof2el table 2");
+
+            
     // atomic-free dof2element via COO format
     timer_newdof2el.Start();
     int rowbits = UsedBits (rowelements.Size());
@@ -441,6 +445,8 @@ namespace ngla
     ParallelFor (nrows_hi, [&] (int row_hi)
                  {
                    Array<int> cnt_entries(ndofs_hi);
+                   {
+                   RegionTracer reg(TaskManager::GetThreadId(), timer_newdof2el_1);
                    cnt_entries = 0;
                    
                    for (int row_lo = 0; row_lo < rows_lo; row_lo++)
@@ -456,10 +462,12 @@ namespace ngla
                              }
                          }
                      }
-
+                   }
                    Table<int> loctable(cnt_entries);
                    cnt_entries = 0;
 
+                   {
+                   RegionTracer reg(TaskManager::GetThreadId(), timer_newdof2el_2);
                    for (int row_lo = 0; row_lo < rows_lo; row_lo++)
                      {
                        int row = (row_hi << rowbits_lo)+row_lo;
@@ -473,6 +481,7 @@ namespace ngla
                              }
                          }
                      }
+                   }
                    entries[row_hi] = move(loctable);
                  },
                  TasksPerThread(4));
@@ -523,9 +532,14 @@ namespace ngla
         cout << "newdof2el = " << newdof2element << endl;
       }
 
+    // delete table-memory on same thread as it was created
+    ParallelFor (nrows_hi, [&] (int row_hi)
+                 { 
+                   entries[row_hi] = Table<int>();
+                 });
+    
 
-    // test2, with numa local array:
-
+    // just for testing: with numa local array:
     ParallelFor (nrows_hi, [&] (int row_hi)
                  {
                    Array<int> cnt_entries(ndofs_hi);
