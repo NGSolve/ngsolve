@@ -967,6 +967,12 @@ public:
     numa_free (numa_ptr, numa_size*sizeof(T));
   }
 
+  NumaLocalArray & operator= (T val)
+  {
+    Array<T>::operator= (val);      
+    return *this;
+  }
+  
   NumaLocalArray & operator= (NumaLocalArray && a2)
   {
     Array<T>::operator= ((Array<T>&&)a2);  
