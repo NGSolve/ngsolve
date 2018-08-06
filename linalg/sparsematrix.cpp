@@ -441,6 +441,29 @@ namespace ngla
     int dofs_lo = 1 << dofbits_lo;    
     int ndofs_hi = (ndof+dofs_lo-1)/dofs_lo;
 
+    { // build a global table
+      Array<int> cnt_coo(nrows_hi*ndofs_hi);
+      ParallelFor (nrows_hi, [&] (int row_hi)
+                   {
+                     auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+                     mycnt = 0;
+                     for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                       {
+                         int row = (row_hi << rowbits_lo)+row_lo;
+                         if (row < rowelements.Size())
+                           {
+                             for (auto d : rowelements[row])
+                               {
+                                 int dof_hi, dof_lo;
+                                 tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                                 cnt_entries[dof_hi]++;
+                               }
+                           }
+                       }
+                   });
+    }
+
+    
     Array<Table<int>> entries(nrows_hi);
     ParallelFor (nrows_hi, [&] (int row_hi)
                  {
