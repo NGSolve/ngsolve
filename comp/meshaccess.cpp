@@ -928,6 +928,24 @@ namespace ngcomp
         nbboundaries++;
         nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
       }
+
+    int & nbbboundaries = nregions[BBBND];
+    if(mesh.GetDimension() == 1 || mesh.GetDimension() == 2)
+      {
+        nbbboundaries = 0;
+      }
+    else
+      {
+        nbbboundaries = -1;
+        for (auto el : Elements(BBBND))          
+          {
+            int elindex = el.GetIndex();
+            if (elindex >=0)
+              nbbboundaries = max2(nbbboundaries, elindex);
+          }
+        nbbboundaries++;
+        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX);
+      }
     
     // update periodic mappings
     auto nid = mesh.GetNIdentifications();
