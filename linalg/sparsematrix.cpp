@@ -456,7 +456,27 @@ namespace ngla
                                {
                                  int dof_hi, dof_lo;
                                  tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
-                                 cnt_entries[dof_hi]++;
+                                 mycnt[dof_hi]++;
+                               }
+                           }
+                       }
+                   });
+      Table<int> dof2element_coo(cnt_coo);
+      ParallelFor (nrows_hi, [&] (int row_hi)
+                   {
+                     auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+                     size_t base = row_hi*ndofs_hi;
+                     mycnt = 0;
+                     for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                       {
+                         int row = (row_hi << rowbits_lo)+row_lo;
+                         if (row < rowelements.Size())
+                           {
+                             for (auto d : rowelements[row])
+                               {
+                                 int dof_hi, dof_lo;
+                                 tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                                 dof2element_coo[base+dof_hi][mycont[dof_hi]++] = row_lo*dofs_lo+dof_lo;
                                }
                            }
                        }
