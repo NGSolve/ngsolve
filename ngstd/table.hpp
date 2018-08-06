@@ -50,6 +50,18 @@ public:
   {
     return FlatArray<size_t> (size+1, index);
   }
+  
+  /// takes range starting from position start of end-start elements
+  INLINE FlatTable<T> Range (size_t start, size_t end) const
+  {
+    return FlatTable<T> (end-start, index+start, data);
+  }
+
+  /// takes range starting from position start of end-start elements
+  INLINE FlatTable<T> Range (T_Range<size_t> range) const
+  {
+    return FlatTable<T> (range.Size(), index+range.First(), data);
+  }
 
   
   class Iterator
