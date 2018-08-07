@@ -53,6 +53,8 @@ namespace ngcomp
 
     // highest-order facet dofs discontinuous ?
     bool highest_order_dc;
+    // hide all used dofs
+    bool hide_all_dofs;
     // discontinuous facet pairs:
     Array<INT<2>> dc_pairs;
   public:

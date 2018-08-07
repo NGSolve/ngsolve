@@ -5,9 +5,9 @@ from ngsolve import *
 def test_hidden():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
 
-    elim_options = [False,True]
-    hidden_options = [False,True]
-    compress_options = [False,True]
+    elim_options = [False, True]
+    hidden_options = [False, True]
+    compress_options = [False, True]
 
     solutions = {}
     ndof = {}
@@ -15,24 +15,19 @@ def test_hidden():
     nze_total = {}
 
     i=0
-    
+
     for elim_internal in elim_options:
         for use_hidden in hidden_options:
             for compress in compress_options:
-                i +=1 
+                i +=1
                 order = 4
-                fes1 = HDiv(mesh, order=order, discontinuous=True)
-                if compress and use_hidden:
-                    fes1.HideAllDofs()
-                    fes1 = Compress(fes1)
-                    
+                fes1 = HDiv(mesh, order=order, discontinuous=True, hide_all_dofs=use_hidden)
                 fes2 = L2(mesh, order=order-1)
                 fes3 = FacetFESpace(mesh, order=order, dirichlet=[1,2,3])
                 fes = FESpace([fes1,fes2,fes3])
-                if not compress and use_hidden:
-                    fes.HideAllDofs(component=0)
+                if compress:
+                    fes = CompressCompound(fes)
 
-                    
                 sigma,u,uhat = fes.TrialFunction()
                 tau,v,vhat = fes.TestFunction()
 
@@ -79,7 +74,7 @@ def test_hidden():
         for use_hidden in hidden_options:
             for compress in compress_options:
                 print("({:1},{:1},{:1}),         ndof {:7}".format(elim_internal,use_hidden,compress,ndof[(elim_internal,use_hidden,compress)]))
-                
+
     for elim_internal in elim_options:
         for use_hidden in hidden_options:
             for compress in compress_options:
@@ -92,3 +87,6 @@ def test_hidden():
                             error = Norm(diff)
                             print("comparing ({:1},{:1},{:1}) with ({:1},{:1},{:1}), difference is {}".format(elim_internal,use_hidden,compress,elim_internal2,use_hidden2,compress2,error))
                             assert error < 1e-13
+
+if __name__ == "__main__":
+    test_hidden()
