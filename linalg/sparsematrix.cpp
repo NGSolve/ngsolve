@@ -444,8 +444,10 @@ namespace ngla
 
     { // build a global table
       Array<int> cnt_coo(nrows_hi*ndofs_hi);
-      ParallelFor (nrows_hi, [&] (int row_hi)
+      // ParallelFor (nrows_hi, [&] (int row_hi)
+      ParallelJob ([&] (TaskInfo &ti)
                    {
+		     int row_hi = ti.task_nr;
                      auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
                      mycnt = 0;
                      for (int row_lo = 0; row_lo < rows_lo; row_lo++)
@@ -461,10 +463,30 @@ namespace ngla
                                }
                            }
                        }
-                   }, TasksPerThread(4));
+		     // }, TasksPerThread(4));
+		   }, nrows_hi);
       Table<int> dof2element_coo(cnt_coo);
-      ParallelFor (nrows_hi, [&] (int row_hi)
+
+      /*
+      ParallelJob ([&] (TaskInfo &ti)
                    {
+		     int row_hi = ti.task_nr;
+		     auto mytable = dof2element_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+		     mytable.AsArray() = 0;
+		     // for (auto i = row_hi*ndofs_hi; i < (row_hi+1)*ndofs_hi; i++)
+		     // dof2element_coo[i] = 0;
+		   }, nrows_hi);
+      */
+      /*
+      ParallelForRange (dof2element_coo.Size(), [&] (IntRange r)
+			{
+			  dof2element_coo.Range(r).AsArray() = 0;
+			}, 1+0.3*TaskManager::GetNumThreads());
+      */
+      // ParallelFor (nrows_hi, [&] (int row_hi)
+      ParallelJob ([&] (TaskInfo &ti)
+                   {
+		     int row_hi = ti.task_nr;
                      auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
                      auto mytable = dof2element_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
                      mycnt = 0;
@@ -481,12 +503,15 @@ namespace ngla
                                }
                            }
                        }
-                   }, TasksPerThread(4));
+		   }, nrows_hi);
+      // }, TasksPerThread(4));
 
 
     Array<int> newcnt(ndof);
-    ParallelFor(ndofs_hi, [&] (int dof_hi)
-                {
+    // ParallelFor(ndofs_hi, [&] (int dof_hi)
+    ParallelJob ([&] (TaskInfo &ti)
+		 {
+		   int dof_hi = ti.task_nr;
                   auto first = dof_hi << dofbits_lo;
                   if (first >= ndof) return;
                   auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
@@ -501,11 +526,14 @@ namespace ngla
                         int dof = (dof_hi << dofbits_lo) + dof_lo;
                         newcnt[dof]++;
                       }
-                }, TasksPerThread(4));
+		 }, ndofs_hi);
+		  // }, TasksPerThread(4));
     
     Table<int> newdof2element(newcnt);
-    ParallelFor (ndofs_hi, [&] (int dof_hi)
+    // ParallelFor (ndofs_hi, [&] (int dof_hi)
+    ParallelJob ([&] (TaskInfo &ti)
                  {
+		   int dof_hi = ti.task_nr;
                    auto first = dof_hi << dofbits_lo;
                    if (first >= ndof) return;
                    auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
@@ -520,7 +548,8 @@ namespace ngla
                          int dof = (dof_hi << dofbits_lo) + dof_lo;
                          newdof2element[dof][newcnt[dof]++] = row_hi*rows_lo+row_lo;
                        }
-                 }, TasksPerThread(4));
+		 }, ndofs_hi);
+    // }, TasksPerThread(4));
     timer_newdof2elb.Stop();
 
     if (dof2element.Size() < 100)
