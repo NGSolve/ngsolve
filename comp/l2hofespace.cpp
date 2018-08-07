@@ -65,6 +65,7 @@ namespace ngcomp
     DefineNumFlag("relorder");
     DefineDefineFlag("l2ho");
     DefineDefineFlag("all_dofs_together");
+    DefineDefineFlag("hide_all_dofs");
 
     if (parseflags) CheckFlags(flags);
 
@@ -139,6 +140,7 @@ namespace ngcomp
 
 
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
+    hide_all_dofs = flags.GetDefineFlag ("hide_all_dofs");
 
     Flags loflags;
     loflags.SetFlag ("order", 0.0);
@@ -225,18 +227,20 @@ namespace ngcomp
   
   void L2HighOrderFESpace :: UpdateCouplingDofArray()
   {
+    auto ct_local = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
+    auto ct_lowest_order = hide_all_dofs ? HIDDEN_DOF : lowest_order_ct;
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNE()))
       {
         bool definedon = DefinedOn(ElementId(VOL,i));
         auto r = GetElementDofs(i);
-        ctofdof[r] = definedon ? LOCAL_DOF : UNUSED_DOF;
+        ctofdof[r] = definedon ? ct_local : UNUSED_DOF;
         
         if (!all_dofs_together)
-	  ctofdof[i] = definedon ? lowest_order_ct : UNUSED_DOF;
+	  ctofdof[i] = definedon ? ct_lowest_order : UNUSED_DOF;
         else
           if (r.Size() != 0)
-            ctofdof[r.First()] = definedon ? lowest_order_ct : UNUSED_DOF;            
+            ctofdof[r.First()] = definedon ? ct_lowest_order : UNUSED_DOF;            
       }
   }
 
