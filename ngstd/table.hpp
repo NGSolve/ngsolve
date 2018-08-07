@@ -43,7 +43,7 @@ public:
 
   INLINE FlatArray<T> AsArray() const
   {
-    return FlatArray<T> (index[size], data);
+    return FlatArray<T> (index[size]-index[0], data+index[0]);
   }
 
   INLINE FlatArray<size_t> IndexArray() const
