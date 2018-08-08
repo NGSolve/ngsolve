@@ -456,7 +456,7 @@ namespace ngcomp
         case BND:   return mesh.GetMaterialCD<1> (region_nr);
         case BBND:  return mesh.GetMaterialCD<2> (region_nr);
         case BBBND: return mesh.GetMaterialCD<3> (region_nr);
-        default:    throw Exception("GetMaterial not implemented for " + vb);
+        default:    throw Exception("GetMaterial not implemented for " + ToString(vb));
         }
     }
 
