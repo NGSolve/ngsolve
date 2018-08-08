@@ -1,9 +1,12 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
 from ngsolve import Projector, Norm, Matrix
-import scipy.linalg
-from scipy import random
 
+try:
+    import scipy.linalg
+    from scipy import random
+except:
+    pass
 
 
 def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True):
