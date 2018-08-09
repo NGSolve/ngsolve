@@ -17,14 +17,14 @@ void ExportSparseMatrix(py::module m)
            size_t row = t[0].cast<size_t>();
            size_t col = t[1].cast<size_t>();
            return self(row,col);
-         })
+         }, py::arg("pos"), "Return value at given position")
     .def("__setitem__",
          [](SparseMatrix<T> & self, py::tuple t, T value)
          {
            size_t row = t[0].cast<size_t>();
            size_t col = t[1].cast<size_t>();
            self(row,col) = value;
-         })
+         }, py::arg("pos"), py::arg("value"), "Set value at given position")
 
     .def("COO", [] (SparseMatrix<T> * sp) -> py::object
          {
@@ -71,15 +71,15 @@ void ExportSparseMatrix(py::module m)
                   auto cindj = makeCArray<int>(indj);
                   auto cvalues = makeCArray<double>(values);
                   return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
-                })
+                }, py::arg("indi"), py::arg("indj"), py::arg("values"), py::arg("h"), py::arg("w"))
     
     .def("CreateTranspose", [] (const SparseMatrix<double> & sp)
-         { return TransposeMatrix (sp); })
+         { return TransposeMatrix (sp); }, "Return transposed matrix")
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
-         { return MatMult(a,b); })
+         { return MatMult(a,b); }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<SparseMatrix<double>> a, shared_ptr<BaseMatrix> mb)
-         ->shared_ptr<BaseMatrix> { return make_shared<ProductMatrix> (a, mb); })
+         ->shared_ptr<BaseMatrix> { return make_shared<ProductMatrix> (a, mb); }, py::arg("mat"))
     ;
 
   py::class_<SparseMatrixSymmetric<T>, shared_ptr<SparseMatrixSymmetric<T>>, SparseMatrix<T>>
@@ -98,7 +98,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
 #ifdef PARALLEL
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
-        return self.SubSet(take_dofs); })
+        return self.SubSet(take_dofs); }, py::arg("dofs"))
     .def(py::init([](py::object procs, PyMPI_Comm comm) {
 	  size_t n = py::len(procs);
 	  TableCreator<int> ct(n);
@@ -125,9 +125,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("ExchangeProcs", [] (const ParallelDofs & self)
          { return self.GetDistantProcs(); } )
     .def("Dof2Proc", [] (const ParallelDofs & self, int dof)
-         { return self.GetDistantProcs(dof); })
+         { return self.GetDistantProcs(dof); }, py::arg("dof"))
     .def("Proc2Dof", [] (const ParallelDofs & self, int proc)
-         { return self.GetExchangeDofs(proc); })
+         { return self.GetExchangeDofs(proc); }, py::arg("proc"))
     ;
 
     m.def("CreateVVector",
@@ -154,7 +154,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       )
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
-                  "size"_a, "complex"_a=false, "entrysize"_a=1)
+         "size"_a, "complex"_a=false, "entrysize"_a=1)
 #ifdef PARALLEL
     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
 	auto * pv = dynamic_cast_ParallelBaseVector (&self);
@@ -220,7 +220,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                          return;
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
-                                   })
+                                   }, py::arg("vec"), py::arg("value"))
     .def("Add",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
                                      if ( py::extract<double>(s).check() )
@@ -234,7 +234,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                          return;
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
-                                   })
+                                   }, py::arg("vec"), py::arg("value"))
 
 
     // TODO
@@ -265,7 +265,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                  else
                    return py::cast(self.SV<double>()(ind));
              }
-           } )
+           }, py::arg("ind"), "Return value at given position" )
     .def("__getitem__", [](BaseVector & self,  py::slice inds )
       {
           size_t start, step, n;
@@ -273,15 +273,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
           return shared_ptr<BaseVector>(self.Range(start, start+n));
-      } )
+      }, py::arg("inds"), "Return values at given position" )
     .def("__setitem__", [](BaseVector & self,  int ind, double d )
       {
           self.Range(ind,ind+1) = d;
-      } )
+      }, py::arg("ind"), py::arg("value"), "Set value at given position" )
     .def("__setitem__", [](BaseVector & self,  int ind, Complex z )
       {
         self.Range(ind,ind+1) = z;
-      } )
+      }, py::arg("ind"), py::arg("value"), "Set value at given position" )
     .def("__setitem__", [](BaseVector & self,  py::slice inds, double d )
       {
           size_t start, step, n;
@@ -293,7 +293,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	    return;
 	  }
           self.Range(start,start+n) = d;
-      } )
+      }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
     .def("__setitem__", [](BaseVector & self,  py::slice inds, Complex z )
       {
           size_t start, step, n;
@@ -301,7 +301,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
-      } )
+      }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
     .def("__setitem__", [](BaseVector & self, py::slice inds, shared_ptr<BaseVector> v )
       {
         size_t start, step, n;
@@ -309,27 +309,27 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         if (step != 1)
           throw Exception ("slices with non-unit distance not allowed");        
         self.Range(start, start+n) = *v;
-      } )
+      }, py::arg("inds"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<double> & v )
       {
           if( self.IsComplex() )
             self.SV<Complex>()(ind) = v;
           else
             self.SV<double>()(ind) = v;
-      } )
+      }, py::arg("ind"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<Complex> & v )
       {
           if( self.IsComplex() )
             self.SV<Complex>()(ind) = v;
           else
             throw py::index_error("cannot assign complex values to real vector");
-      } )
-    .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;})
-    .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;})
-    .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
-    .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
-    .def("__itruediv__", [](BaseVector & self,  double scal) -> BaseVector& { self /= scal; return self;})
-    .def("__itruediv__", [](BaseVector & self,  Complex scal) -> BaseVector& { self /= scal; return self;})
+      }, py::arg("ind"), py::arg("vec") )
+    .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;}, py::arg("vec"))
+    .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;}, py::arg("vec"))
+    .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))
+    .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))
+    .def("__itruediv__", [](BaseVector & self,  double scal) -> BaseVector& { self /= scal; return self;}, py::arg("value"))
+    .def("__itruediv__", [](BaseVector & self,  Complex scal) -> BaseVector& { self /= scal; return self;}, py::arg("value"))
     .def("InnerProduct", [](BaseVector & self, BaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
@@ -341,14 +341,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               }
                                             else
                                               return py::cast (InnerProduct (self, other));
-                                          },
-         "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
+                                          }, py::arg("other"), py::arg("conjugate")=py::cast(true), "Computes (complex) InnerProduct"         
          )
-    .def("Norm",  [](BaseVector & self) { return self.L2Norm(); })
+    .def("Norm",  [](BaseVector & self) { return self.L2Norm(); }, "Calculate Norm")
     .def("Range", [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
-                                   })
+                                   }, py::arg("from"), py::arg("to"), "Return values from given range")
     .def("FV", [] (BaseVector & self)
                                 {
                                   if (!self.IsComplex())
@@ -359,12 +358,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
-    .def("SetParallelStatus", [] (BaseVector & self, PARALLEL_STATUS stat) { self.SetParallelStatus(stat); });
+    .def("SetParallelStatus", [] (BaseVector & self, PARALLEL_STATUS stat) { self.SetParallelStatus(stat); }, py::arg("stat"));
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
   m.def ("InnerProduct",
            [] (py::object x, py::object y) -> py::object
-                            { return py::handle(x.attr("InnerProduct")) (y); });
+         { return py::handle(x.attr("InnerProduct")) (y); }, py::arg("x"), py::arg("y"), "Computes InnerProduct of given objects");
   ;
   
 
@@ -374,9 +373,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                        Array<shared_ptr<BaseVector>> v2;
                        for (auto v : vecs) v2 += v;
                        return make_shared<BlockVector> (v2);
-                     }))
+                     }), py::arg("vecs"), "Makes BlockVector by given array of vectors")
     
-    .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
+    .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; }, py::arg("ind"), "Return block at given position")
     .def_property_readonly ("nblocks", [](const BlockVector & self) 
 			    { return self.NBlocks(); },
                             "number of blocks in BlockVector")
@@ -538,14 +537,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init<> ([]() { return new BaseMatrixTrampoline(); }))
     .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )
     .def_property_readonly("height", [] ( BaseMatrix & self)
-        { return self.Height(); } )
+                           { return self.Height(); }, "Height of the matrix" )
     .def_property_readonly("width", [] ( BaseMatrix & self)
-        { return self.Width(); } )
+                           { return self.Width(); }, "Width of the matrix" )
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
     .def("CreateMatrix", [] ( BaseMatrix & self)
-        { return self.CreateMatrix(); } )
+         { return self.CreateMatrix(); }, "Create matrix of same dimension and same sparsestructure" )
 
     
     .def("CreateRowVector", [] ( BaseMatrix & self)
@@ -556,31 +555,31 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("AsVector", [] (BM & m)
                                       {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
-                                      })
+                                      }, "Interprets the matrix values as a vector")
 
-    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>())
-    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
-    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::call_guard<py::gil_scoped_release>())
-    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), py::arg("y"))
+    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          } , py::call_guard<py::gil_scoped_release>())
-    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
-    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::call_guard<py::gil_scoped_release>())
-    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
+          }, py::arg("value"), py::arg("x"), py::arg("y") , py::call_guard<py::gil_scoped_release>())
+    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          }, py::call_guard<py::gil_scoped_release>() )
+          }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>() )
 
     .def("__iadd__", [] (BM &m, BM &m2) { 
         m.AsVector()+=m2.AsVector();
-    }, py::call_guard<py::gil_scoped_release>())
+      }, py::arg("mat"), py::call_guard<py::gil_scoped_release>())
 
     .def("GetInverseType", [](BM & m)
                                             {
@@ -594,7 +593,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      }
          ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
          docu_string(R"raw_string(Calculate inverse of sparse matrix
-Parameters
+Parameters:
 
 freedofs : BitArray
   If set, invert only the rows/columns the matrix defined by the bit array, otherwise invert the whole matrix
@@ -609,18 +608,18 @@ inverse : string
 )raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
 
-    .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); })
+    .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); }, "Return transpose of matrix")
     .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<ProductMatrix> (ma, mb); })
+         { return make_shared<ProductMatrix> (ma, mb); }, py::arg("mat"))
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<SumMatrix> (ma, mb, 1, 1); })
+         { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
     .def("__sub__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<SumMatrix> (ma, mb, 1, -1); })
+         { return make_shared<SumMatrix> (ma, mb, 1, -1); }, py::arg("mat"))
     .def("__rmul__", [](shared_ptr<BM> ma, double a)->shared_ptr<BaseMatrix>
-         { return make_shared<VScaleMatrix<double>> (ma, a); })
+         { return make_shared<VScaleMatrix<double>> (ma, a); }, py::arg("value"))
     .def("__rmul__", [](shared_ptr<BM> ma, Complex a)->shared_ptr<BaseMatrix>
-         { return make_shared<VScaleMatrix<Complex>> (ma, a); })
-    .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
+         { return make_shared<VScaleMatrix<Complex>> (ma, a); }, py::arg("value"))
+    .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
@@ -651,7 +650,7 @@ inverse : string
 
            auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
            return pre;
-         })
+         }, py::arg("blocks"))
      ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
@@ -671,7 +670,7 @@ inverse : string
                            m2 += mrow2;
                          }
                        return make_shared<BlockMatrix> (m2);
-                     }))
+                     }), py::arg("mats"), "Make BlockMatrix with given array of matrices")
     .def("__getitem__", [](BlockMatrix & self, py::tuple inds) { 
         if (py::len(inds) != 2)
           throw Exception ("BlockMatrix needs two indices to access block");
@@ -679,7 +678,7 @@ inverse : string
         int row = inds[0].cast<int>();
         int col = inds[1].cast<int>();
         return self(row,col); 
-        })
+      }, py::arg("inds"), "Return value at given position")
     .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
     .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
@@ -786,9 +785,31 @@ inverse : string
                                          solver->SetPrintRates (printrates);
                                          return shared_ptr<KrylovSpaceSolver>(solver);
                                        },
-          "CG Solver", py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200
-          )
+           py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
+        py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+A CG Solver.
+
+Parameters:
+
+mat : ngsolve.la.BaseMatrix
+  input matrix 
+
+pre : ngsolve.la.BaseMatrix
+  input preconditioner matrix
+
+complex : bool
+  input complex, if not set it is deduced from matrix type
+
+printrates : bool
+  input printrates
+
+precision : float
+  input requested precision. CGSolver stops if precision is reached.
+
+maxsteps : int
+  input maximal steps. CGSolver stops after this steps.
+
+)raw_string"))
     ;
 
   m.def("GMRESSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
@@ -805,9 +826,28 @@ inverse : string
                                           solver->SetPrintRates (printrates);
                                           return shared_ptr<KrylovSpaceSolver>(solver);
                                         },
-          "GMRES Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200
-          )
+           py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+A General Minimal Residuum (GMRES) Solver.
+
+Parameters:
+
+mat : ngsolve.la.BaseMatrix
+  input matrix 
+
+pre : ngsolve.la.BaseMatrix
+  input preconditioner matrix
+
+printrates : bool
+  input printrates
+
+precision : float
+  input requested precision. GMRESSolver stops if precision is reached.
+
+maxsteps : int
+  input maximal steps. GMRESSolver stops after this steps.
+
+)raw_string"))
     ;
 
   m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre) {
@@ -843,9 +883,28 @@ inverse : string
                                           solver->SetPrintRates (printrates);
                                           return shared_ptr<KrylovSpaceSolver>(solver);
                                         },
-          "QMR Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200
-          )
+           py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+A Quasi Minimal Residuum (QMR) Solver.
+
+Parameters:
+
+mat : ngsolve.la.BaseMatrix
+  input matrix 
+
+pre : ngsolve.la.BaseMatrix
+  input preconditioner matrix
+
+printrates : bool
+  input printrates
+
+precision : float
+  input requested precision. QMRSolver stops if precision is reached.
+
+maxsteps : int
+  input maximal steps. QMRSolver stops after this steps.
+
+)raw_string"))
     ;
   
   m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
@@ -901,9 +960,30 @@ inverse : string
               return vlam;
             }
         },
-        "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
-        )
-    ;
+          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
+Shift-and-invert Arnoldi eigenvalue solver
+
+Solves the generalized linear EVP A*u = M*lam*u using an Arnoldi iteration for the 
+shifted EVP (A-shift*M)^(-1)*M*u = lam*u with a Krylow space of dimension 2*len(vecs)+1.
+len(vecs) eigenpairs with the closest eigenvalues to the shift are returned.
+
+Parameters:
+
+mata : ngsolve.la.BaseMatrix
+  matrix A
+
+matm : ngsolve.la.BaseMatrix
+  matrix M
+
+freedofs : nsolve.ngstd.BitArray
+  correct degrees of freedom
+
+vecs : list
+  list of BaseVectors for writing eigenvectors
+
+shift : object
+  complex or real shift
+)raw_string"));
   
   
 

@@ -232,8 +232,8 @@ void PyDefROBracketOperator( py::module &m, TCLASS &c )
       throw py::index_error();
       return TELEM();
     }; 
-    c.def("__getitem__", Get);
-    c.def("Get", Get);
+    c.def("__getitem__", Get,py::arg("pos"), "Return value at given position");
+    c.def("Get", Get, py::arg("pos"), "Return value at given position");
 }
 
 // read-write bracket operator
@@ -247,8 +247,8 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
       else
         throw py::index_error();
     };
-    c.def("__setitem__", Set);
-    c.def("Set", Set);
+    c.def("__setitem__", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
+    c.def("Set", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
 }
 
 
@@ -257,7 +257,7 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
 template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
 void PyDefVector( py::module &m, TCLASS &c )
 {
-    c.def("__len__",  []( T& v) { return v.Size();}  );
+  c.def("__len__",  []( T& v) { return v.Size();}, "Return length of the array"  );
     c.def("__iter__", [] (T &v)
       { return py::make_iterator(v.begin(), v.end()); },
       py::keep_alive<0,1>()
@@ -385,12 +385,12 @@ void PyExportSymbolTable (py::module &m)
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return self[name]; 
-                                        })
+                                        }, py::arg("name"))
     .def("__getitem__", [](ST & self, int i) -> PY_T
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return self[i];  
-                                         })
+                                         }, py::arg("pos"))
     ;
 }  
 
@@ -405,17 +405,17 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
     .def("__str__", &ToString<ST>)
     .def("__len__", &ST::Size)
     .def("__contains__", &ST::Used)
-    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
+    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); }, py::arg("pos"))
     .def("__getitem__", [](ST & self, string name)
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return *self[name]; 
-                                        })
+                                        }, py::arg("name"))
     .def("__getitem__", [](ST & self, int i)
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return *self[i];  
-                                         })
+                                         }, py::arg("pos"))
     ;
 }
 

@@ -770,24 +770,6 @@ namespace ngsolve
 using namespace ngsolve;
 void ExportBVP(py::module &m)
 {
-  // cout << "exporting bvp numproc" << endl;
-
-  m.def ("BVP", [](shared_ptr<PDE> pde,
-               shared_ptr<BilinearForm> bfa,
-               shared_ptr<LinearForm> lff,
-               shared_ptr<GridFunction> gfu,
-               shared_ptr<Preconditioner> pre,
-               int maxsteps,
-               double prec) -> shared_ptr<NumProc>
-            
-            {
-              return make_shared<NumProcBVP> (bfa, lff, gfu, pre, maxsteps, prec);
-            },
-            py::arg("pde"),
-            py::arg("bf"), py::arg("lf"), py::arg("gf"), 
-            py::arg("pre")=DummyArgument(), py::arg("maxsteps")=100, py::arg("prec")=1e-8
-	   );
-
   m.def ("BVP", [](shared_ptr<BilinearForm> bfa,
                shared_ptr<LinearForm> lff,
                shared_ptr<GridFunction> gfu,
@@ -800,7 +782,32 @@ void ExportBVP(py::module &m)
             },
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre"), py::arg("maxsteps")=100, py::arg("prec")=1e-8
-	   );
+	   , docu_string(R"raw_string(
+Solves the given boundary value problem: bf * gf = lf, non homogeneous boundary conditions
+on gf are respected (they must be set in advance). If eliminate_internal is set for the
+bf, then static condensation of inner bubbles is used.
+
+Parameters:
+
+bf : ngsolve.comp.BilinearForm
+  input bilinear form as the right hand side of the equation
+
+lf : ngsolve.comp.LinearForm
+  input linear form as the left hand side of the equation
+
+gf : ngsolve.comp.GridFunction
+  input GridFunction where the solution is saved
+
+pre : ngsolve.comp.Preconditioner
+  input Preconditioner for the problem
+
+maxsteps : int
+  input maximal steps. After the maximal step is reached, the computations stop.
+
+prec : float
+  input precision of the residuum. if it is reached the computations stop.
+
+)raw_string"));
 
 
 
