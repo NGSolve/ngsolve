@@ -1053,6 +1053,8 @@ namespace ngcomp
                                      
                                      try
                                        {
+                                         // should we give an optional derformation to the integrators ? 
+                                         // auto & mapped_trans = eltrans.AddDeformation(bfi.GetDeformation(), lh);
                                          bfi.CalcElementMatrixAdd (fel, eltrans, sum_elmat, lh);
                                        }
                                      catch (ExceptionNOSIMD & e)
