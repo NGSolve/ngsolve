@@ -4,11 +4,13 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
+#include <multigrid.hpp> 
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
+#include "compressedfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -249,8 +251,11 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
      * without static condensation a HIDDEN_DOF is treated as any other
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+     * When static condensation is applied (eliminate_hidden/
+       eliminate_internal) the block corresponding to HIDDEN_DOFs
+       has to be invertible.
 
-CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
+CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
 
 INTERFACE_DOF: Degree of freedom between two elements, these will not be
@@ -266,17 +271,20 @@ WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
 
 EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
 
+VISIBLE_DOF: not UNUSED_DOF or HIDDEN_DOF
+
 ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
     .value("UNUSED_DOF", UNUSED_DOF)
     .value("HIDDEN_DOF", HIDDEN_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
-    .value("CONDENSATABLE_DOF", CONDENSATABLE_DOF)
+    .value("CONDENSABLE_DOF", CONDENSABLE_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("VISIBLE_DOF", VISIBLE_DOF)
     .value("ANY_DOF", ANY_DOF)
     // .export_values()
     ;
@@ -764,6 +772,33 @@ kwargs : kwargs
            self->FinalizeUpdate(glh);
          },
          "finalize update")
+     .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
+         {
+           shared_ptr<FESpace> space = self;
+           if (! py::extract<DummyArgument> (acomp).check())
+           {
+             auto comp = py::extract<int>(acomp)();
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
+             if (!compspace)
+               throw py::type_error("'components' is available only for product spaces");
+             space = (*compspace)[comp];
+             IntRange range = compspace->GetRange(comp);
+             for (auto d : range)
+             {
+               auto doftype = compspace->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 compspace->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           }
+           for (DofId d : Range(space->GetNDof()))
+             {
+               auto doftype = space->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 space->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           self->FinalizeUpdate(glh); //Update FreeDofs
+         }, py::arg("component")=DummyArgument(), 
+         "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
@@ -986,9 +1021,14 @@ coupling : bool
          )
 
     .def("ParallelDofs",
-         [] (const shared_ptr<FESpace>self)
+         [] (const shared_ptr<FESpace> self)
          { return self->GetParallelDofs(); },
          "Return dof-identification for MPI-distributed meshes")
+
+    .def("Prolongation",
+         [] (const shared_ptr<FESpace> self)
+         { return self->GetProlongation(); },
+         "Return prolongation operator for use in multi-grid")
 
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
@@ -1133,6 +1173,8 @@ rho : ngsolve.fem.CoefficientFunction
                   "  Remove high order element bubbles with non zero divergence";
                 flags_doc["highest_order_dc"] = "bool = False\n"
                   "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+                flags_doc["hide_all_dofs"] = "bool = False\n"
+                  "  Set all used dofs to HIDDEN_DOFs";
                 return flags_doc;
               })
     .def("Average", &HDivHighOrderFESpace::Average,
@@ -1143,13 +1185,27 @@ rho : ngsolve.fem.CoefficientFunction
 
   auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
  
-  auto l2 = ExportFESpace<L2HighOrderFESpace> (m, "L2");
-
   auto vectorl2 = ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
 
   auto l2surface = ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
 
   auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
+
+  ExportFESpace<L2HighOrderFESpace> (m, "L2")
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+		              flags_doc["all_dofs_together"] = "bool = False\n"
+                    "  Don't use lowest-order high-order ordering but block all dofs of one element ";
+                  flags_doc["hide_all_dofs"] = "bool = False\n"
+                    "  Set all used dofs to HIDDEN_DOFs";
+                return flags_doc;
+                })
+    ;
+
+
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
     .def_static("__flags_doc__", [] ()
@@ -1178,9 +1234,33 @@ rho : ngsolve.fem.CoefficientFunction
                 })
     ;
 
-  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
+  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+                flags_doc["hide_highest_order_dc"] = "bool = False\n"
+                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+                return flags_doc;
+              })
+    ;
 
-  ExportFESpace<FacetFESpace> (m, "FacetFESpace");
+  ExportFESpace<FacetFESpace> (m, "FacetFESpace")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+                flags_doc["hide_highest_order_dc"] = "bool = False\n"
+                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+                return flags_doc;
+              })
+    ;
 
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
 
@@ -1304,6 +1384,65 @@ used_idnrs : list of int = None
                       return fes;
                     }))
     ;
+
+
+  py::class_<CompressedFESpace, shared_ptr<CompressedFESpace>, FESpace>(m, "Compress",
+	docu_string(R"delimiter(Wrapper Finite Element Spaces.
+The compressed fespace is a wrapper around a standard fespace which removes
+certain dofs (e.g. UNUSED_DOFs).
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+
+active_dofs : BitArray or None
+    don't use the COUPLING_TYPEs of dofs to compress the FESpace, 
+    but use a BitArray directly to compress the FESpace
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes,
+                      py::object active_dofs)
+                  {
+                    shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    if (compspace)
+                        throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
+                    auto ret = make_shared<CompressedFESpace> (fes);
+                    shared_ptr<BitArray> actdofs = nullptr;
+                    if (! py::extract<DummyArgument> (active_dofs).check())
+                      dynamic_pointer_cast<CompressedFESpace>(ret)->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
+                    ret->Update(glh);
+                    ret->FinalizeUpdate(glh);
+                    return ret;                    
+                  }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
+    .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
+         {
+           self.SetActiveDofs(active_dofs);
+         },
+         py::arg("dofs"))
+    ;
+
+
+   m.def("CompressCompound", [](shared_ptr<FESpace> & fes, py::object active_dofs) -> shared_ptr<FESpace>
+            {
+              shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+              if (!compspace)
+                throw py::type_error("Not a CompoundFESpace!");
+              else
+              {
+                if (! py::extract<DummyArgument> (active_dofs).check())
+                  throw py::type_error("cannot apply compression on CompoundFESpace with active_dofs");
+                Array<shared_ptr<FESpace>> spaces(compspace->GetNSpaces());
+                for (int i = 0; i < compspace->GetNSpaces(); i++)
+                  spaces[i] = make_shared<CompressedFESpace> ((*compspace)[i]);
+                auto ret = make_shared<CompoundFESpace>(compspace->GetMeshAccess(),spaces, compspace->GetFlags());
+                ret->Update(glh);
+                ret->FinalizeUpdate(glh);
+                return ret;
+              }
+             }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
+
+
+
 
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
@@ -1740,9 +1879,6 @@ space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
   can be a compound FESpace for a mixed formulation.
 
-check_unused : bool
-  If set prints warnings if not UNUSED_DOFS are not used
-
 )raw_string"));
   bf_class
     .def(py::init([bf_class] (shared_ptr<FESpace> fespace, /* bool check_unused, */
@@ -1777,6 +1913,9 @@ check_unused : bool
                      "  this enables only the use of the members harmonic_extension,\n"
                      "  harmonic_extension_trans and inner_solve. Have a look at the\n"
                      "  documentation for further information.",
+                     py::arg("eliminate_hidden") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of hidden\n"
+                     "  dofs. May be overruled by eliminate_internal.",
                      py::arg("print") = "bool = False\n"
                      "  Write additional information to testout file. \n"
                      "  This file must be set by ngsolve.SetTestoutFile. Use \n"
@@ -1795,7 +1934,9 @@ check_unused : bool
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
                      "  preconditioner with a changing bilinearform.",
 		     py::arg("nonsym_storage") = "bool = False\n"
-		     " The full matrix is stored, even if the symmetric flag is set."
+		     " The full matrix is stored, even if the symmetric flag is set.",
+                     py::arg("check_unused") = "bool = True\n"
+		     " If set prints warnings if not UNUSED_DOFS are not used."
                      );
                 })
 
@@ -2048,6 +2189,13 @@ integrator : ngsolve.fem.LFI
 
     ;
 
+  ////////////////////////////// Prolongation ///////////////////////////////
+
+  py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
+    .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
+    .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
+    ;
+  
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
   auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");
@@ -2523,32 +2671,38 @@ integrator : ngsolve.fem.LFI
 	py::arg("definedon")=DummyArgument(),
         py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
-        py::call_guard<py::gil_scoped_release>(), docu_string(R"raw_string(
-Integrates a CoefficientFunction over a specific domain.
+        R"raw(
+Parameters
+----------
 
-Parameters:
+cf: ngsolve.CoefficientFunction
+  Function to be integrated. Can be vector valued, then the result is an array. If you want to integrate
+  a lot of functions on the same domain, it will be faster to put them into a vector valued function,
+  NGSolve will then be able to use parallelization and SIMD vectorization more efficiently.
 
-cf : ngsolve.fem.CoefficientFunction
-  input CoefficientFunction to integrate
+mesh: ngsolve.Mesh
+  The mesh to be integrated on.
 
-mesh : ngsolve.comp.Mesh
-  input mesh
+VOL_or_BND: ngsolve.VorB = VOL
+  Co-dimension to be integrated on. Historically this could be volume (VOL) or boundary (BND). If your mesh
+  contains co-dim 2 elements this can now be BBND (edges in 3d) as well.
 
-VOL_or_BND : ngsolve.comp.VorB
-  input VOL, BND, BBND, ...
-order : int
-  input integration order
+order: int = 5
+  Integration order, polynomials up to this order will be integrated exactly.
 
-definedon : object
-  input definedon region
+definedon: ngsolve.Region
+  Region to be integrated on. Such region can be created with mesh.Boundaries('bcname') or mesh.Materials('matname')
+  it will overwrite the VOL_or_BND argument if given.
 
-region_wise : bool
-  input region_wise. True -> Integration over each region seperately
+region_wise: bool = False
+  Integrates region wise on the co-dimension given by VOL_or_BND. Returns results as an array, matching the array
+  returned by mesh.GetMaterials() or mesh.GetBoundaries(). Does not support vector valued CoefficientFunctions.
 
-element_wise : bool
-  input element_wise. True -> Integration over each element seperately
-
-)raw_string"))
+element_wise: bool = False
+  Integrates element wise and returns result in a list. This is typically used for local error estimators.
+  Does not support vector valued CoefficientFunctions
+)raw",
+        py::call_guard<py::gil_scoped_release>())
     ;
   
   m.def("SymbolicLFI",

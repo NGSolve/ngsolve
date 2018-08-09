@@ -32,6 +32,8 @@ namespace ngcomp
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
+    // set all used dofs to hidden_dofs
+    bool hide_all_dofs;
     COUPLING_TYPE lowest_order_ct;
   public:
 
@@ -211,6 +213,11 @@ namespace ngcomp
     template <int DIM>
     void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const;
+
+    virtual string GetClassName () const override
+    {
+      return "VectorL2FESpace";
+    }
 
   };
 

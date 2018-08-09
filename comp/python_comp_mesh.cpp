@@ -593,6 +593,20 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 (py::arg("self"), py::arg("pattern")),
 	 "Return co dim 2 boundary mesh-region matching the given regex pattern")
 
+    .def("GetBBBoundaries",
+	 [](const MeshAccess & ma)
+	  {
+            return MakePyTuple(ma.GetMaterials(BBBND));
+	  },
+	 "Return list of boundary conditions for co dimension 3")
+
+    .def("BBBoundaries", [](const shared_ptr<MeshAccess> & ma, string pattern)
+	  {
+	    return Region (ma, BBBND, pattern);
+	  },
+	 (py::arg("self"), py::arg("pattern")),
+	 "Return co dim 3 boundary mesh-region matching the given regex pattern")
+
     // TODO: explain how to mark elements
     .def("Refine",
          [](MeshAccess & ma)

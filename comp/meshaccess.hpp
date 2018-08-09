@@ -215,7 +215,7 @@ namespace ngcomp
     /// number of multigrid levels 
     int nlevels;
 
-    int nregions[3];
+    int nregions[4];
     
     /// max domain index
     // int & ndomains = nregions[0];
@@ -386,8 +386,9 @@ namespace ngcomp
             {
               HeapReset hr(clh);
               ElementId ei(vb, i);
-              Ngs_Element el(GetElement(ei), ei);
-              func (move(el), clh);
+              // Ngs_Element el(GetElement(ei), ei);
+	      func (GetElement(ei), clh);
+              // func (move(el), clh);
             }
         }
     }
@@ -451,10 +452,11 @@ namespace ngcomp
     {
       switch (vb)
         {
-        case VOL: return mesh.GetMaterialCD<0> (region_nr);
-        case BND: return mesh.GetMaterialCD<1> (region_nr);
-        case BBND: return mesh.GetMaterialCD<2> (region_nr);
-        case BBBND: default: return mesh.GetMaterialCD<3> (region_nr);
+        case VOL:   return mesh.GetMaterialCD<0> (region_nr);
+        case BND:   return mesh.GetMaterialCD<1> (region_nr);
+        case BBND:  return mesh.GetMaterialCD<2> (region_nr);
+        case BBBND: return mesh.GetMaterialCD<3> (region_nr);
+        default:    throw Exception("GetMaterial not implemented for " + ToString(vb));
         }
     }
 

@@ -228,7 +228,7 @@ namespace ngcomp {
 
   void QuasiPeriodicFESpace :: DofMapped(size_t from, size_t to, size_t idnr)
   {
-    dof_factors[from] *= (*factors)[idnr-1];
+    dof_factors[from] *= (*factors)[idnr];
   }
 
 }

@@ -99,6 +99,7 @@ namespace ngcomp
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
     }
+    hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
 
     // Update();
   }
@@ -127,8 +128,15 @@ namespace ngcomp
     order_facet = p;
     fine_facet = 0; 
     
-    //     Array<int> fanums;
-        
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn(el))
+	fine_facet[el.Facets()] = true;
+#ifdef PARALLEL
+    if(var_order)
+      throw Exception("MPI + variable order for VectorFacetFESpace is not implemented.");
+#endif
+
+
     for (size_t i = 0; i < nel; i++)
       {
         ElementId ei(VOL,i);
@@ -328,7 +336,7 @@ namespace ngcomp
       for(int el=0; el<ma->GetNE(); el++)	      
 	{
 	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
-	    ctofdof[k] = HIDDEN_DOF;
+	    ctofdof[k] = hide_highest_order_dc ? HIDDEN_DOF : LOCAL_DOF;
 	}	  
     *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }

@@ -21,7 +21,26 @@
 namespace ngla
 {
 
-
+  int UsedBits (size_t nr)
+  {
+    int cnt = 0;
+    size_t bit = 1;
+    while (bit < nr)
+      {
+        cnt++;
+        bit *= 2;
+      }
+    return cnt;
+  }
+  
+  
+  auto Split (size_t i, int bits)
+  {
+    auto hi = i >> bits;
+    auto lo = i & ((1 << bits) -1);
+    return make_pair(hi,lo);
+  }  
+  
 
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow, int awidth)
   {
@@ -398,6 +417,294 @@ namespace ngla
 
     Table<int> dof2element = creator.MoveTable();
 
+    // #define NEWDOF2EL
+#ifdef NEWDOF2EL
+    {
+    static Timer timer_newdof2el("MatrixGraph - new build dof2el table");
+    static Timer timer_newdof2elb("MatrixGraph - new build dof2el table b");
+    static Timer timer_newdof2el_1("MatrixGraph - new build dof2el table 1");
+    static Timer timer_newdof2el_2("MatrixGraph - new build dof2el table 2");
+
+            
+    // atomic-free dof2element via COO format
+    timer_newdof2elb.Start();
+    int rowbits = UsedBits (rowelements.Size());
+    int rowbits_hi = rowbits / 2;
+    int rowbits_lo = rowbits - rowbits_hi;
+    int rows_hi = 1 << rowbits_hi;
+    int rows_lo = 1 << rowbits_lo;
+    int nrows_hi = (rowelements.Size()+rows_lo-1) / rows_lo;
+    
+    int dofbits = UsedBits (ndof);
+    int dofbits_hi = dofbits/2;
+    int dofbits_lo = dofbits - dofbits_hi;
+    int dofs_hi = 1 << dofbits_hi;
+    int dofs_lo = 1 << dofbits_lo;    
+    int ndofs_hi = (ndof+dofs_lo-1)/dofs_lo;
+
+    { // build a global table
+      Array<int> cnt_coo(nrows_hi*ndofs_hi);
+      // ParallelFor (nrows_hi, [&] (int row_hi)
+      ParallelJob ([&] (TaskInfo &ti)
+                   {
+		     int row_hi = ti.task_nr;
+                     auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+                     mycnt = 0;
+                     for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                       {
+                         int row = (row_hi << rowbits_lo)+row_lo;
+                         if (row < rowelements.Size())
+                           {
+                             for (auto d : rowelements[row])
+                               {
+                                 int dof_hi, dof_lo;
+                                 tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                                 mycnt[dof_hi]++;
+                               }
+                           }
+                       }
+		     // }, TasksPerThread(4));
+		   }, nrows_hi);
+      Table<int> dof2element_coo(cnt_coo);
+
+      /*
+      ParallelJob ([&] (TaskInfo &ti)
+                   {
+		     int row_hi = ti.task_nr;
+		     auto mytable = dof2element_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+		     mytable.AsArray() = 0;
+		     // for (auto i = row_hi*ndofs_hi; i < (row_hi+1)*ndofs_hi; i++)
+		     // dof2element_coo[i] = 0;
+		   }, nrows_hi);
+      */
+      /*
+      ParallelForRange (dof2element_coo.Size(), [&] (IntRange r)
+			{
+			  dof2element_coo.Range(r).AsArray() = 0;
+			}, 1+0.3*TaskManager::GetNumThreads());
+      */
+      // ParallelFor (nrows_hi, [&] (int row_hi)
+      ParallelJob ([&] (TaskInfo &ti)
+                   {
+		     int row_hi = ti.task_nr;
+                     auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+                     auto mytable = dof2element_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+                     mycnt = 0;
+                     for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                       {
+                         int row = (row_hi << rowbits_lo)+row_lo;
+                         if (row < rowelements.Size())
+                           {
+                             for (auto d : rowelements[row])
+                               {
+                                 int dof_hi, dof_lo;
+                                 tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                                 mytable[dof_hi][mycnt[dof_hi]++] = row_lo*dofs_lo+dof_lo;
+                               }
+                           }
+                       }
+		   }, nrows_hi);
+      // }, TasksPerThread(4));
+
+
+    Array<int> newcnt(ndof);
+    // ParallelFor(ndofs_hi, [&] (int dof_hi)
+    ParallelJob ([&] (TaskInfo &ti)
+		 {
+		   int dof_hi = ti.task_nr;
+                  auto first = dof_hi << dofbits_lo;
+                  if (first >= ndof) return;
+                  auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
+                  newcnt.Range(first, next) = 0;
+                  
+                  // for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                  for (int row_hi : Range(nrows_hi))
+                    for (auto p : dof2element_coo[dof_hi+row_hi*ndofs_hi])
+                      {
+                        int dof_lo, row_lo;
+                        tie(row_lo, dof_lo) = Split (p, dofbits_lo);
+                        int dof = (dof_hi << dofbits_lo) + dof_lo;
+                        newcnt[dof]++;
+                      }
+		 }, ndofs_hi);
+		  // }, TasksPerThread(4));
+    
+    Table<int> newdof2element(newcnt);
+    // ParallelFor (ndofs_hi, [&] (int dof_hi)
+    ParallelJob ([&] (TaskInfo &ti)
+                 {
+		   int dof_hi = ti.task_nr;
+                   auto first = dof_hi << dofbits_lo;
+                   if (first >= ndof) return;
+                   auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
+                   newcnt.Range(first, next) = 0;
+                   
+                   // for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                   for (int row_hi : Range(nrows_hi))
+                     for (auto p : dof2element_coo[dof_hi+row_hi*ndofs_hi])                     
+                       {
+                         int dof_lo, row_lo;
+                         tie(row_lo, dof_lo) = Split (p, dofbits_lo);
+                         int dof = (dof_hi << dofbits_lo) + dof_lo;
+                         newdof2element[dof][newcnt[dof]++] = row_hi*rows_lo+row_lo;
+                       }
+		 }, ndofs_hi);
+    // }, TasksPerThread(4));
+    timer_newdof2elb.Stop();
+
+    if (dof2element.Size() < 100)
+      {
+        cout << "dof2el = " << dof2element << endl;
+        cout << "newdof2el = " << newdof2element << endl;
+      }
+    }
+    
+    timer_newdof2el.Start();
+    
+    Array<Table<int>> entries(nrows_hi);
+    ParallelFor (nrows_hi, [&] (int row_hi)
+                 {
+                   Array<int> cnt_entries(ndofs_hi);
+                   {
+                   RegionTracer reg(TaskManager::GetThreadId(), timer_newdof2el_1);
+                   cnt_entries = 0;
+                   
+                   for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                     {
+                       int row = (row_hi << rowbits_lo)+row_lo;
+                       if (row < rowelements.Size())
+                         {
+                           for (auto d : rowelements[row])
+                             {
+                               int dof_hi, dof_lo;
+                               tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                               cnt_entries[dof_hi]++;
+                             }
+                         }
+                     }
+                   }
+                   Table<int> loctable(cnt_entries);
+                   cnt_entries = 0;
+
+                   {
+                   RegionTracer reg(TaskManager::GetThreadId(), timer_newdof2el_2);
+                   for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                     {
+                       int row = (row_hi << rowbits_lo)+row_lo;
+                       if (row < rowelements.Size())
+                         {
+                           for (auto d : rowelements[row])
+                             {
+                               int dof_hi, dof_lo;
+                               tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                               loctable[dof_hi][cnt_entries[dof_hi]++] = row_lo*dofs_lo+dof_lo;
+                             }
+                         }
+                     }
+                   }
+                   entries[row_hi] = move(loctable);
+                 },
+                 TasksPerThread(4));
+    
+    
+    Array<int> newcnt(ndof);
+    ParallelFor(ndofs_hi, [&] (int dof_hi)
+                {
+                  auto first = dof_hi << dofbits_lo;
+                  if (first >= ndof) return;
+                  auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
+                  newcnt.Range(first, next) = 0;
+                  
+                  // for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                  for (int row_hi : Range(entries))
+                    for (auto p : entries[row_hi][dof_hi])
+                      {
+                        int dof_lo, row_lo;
+                        tie(row_lo, dof_lo) = Split (p, dofbits_lo);
+                        int dof = (dof_hi << dofbits_lo) + dof_lo;
+                        newcnt[dof]++;
+                      }
+                }, TasksPerThread(4));
+    
+    Table<int> newdof2element(newcnt);
+    ParallelFor (ndofs_hi, [&] (int dof_hi)
+                 {
+                   auto first = dof_hi << dofbits_lo;
+                   if (first >= ndof) return;
+                   auto next = min ( (dof_hi+1) << dofbits_lo, ndof);
+                   newcnt.Range(first, next) = 0;
+                   
+                   // for (int row_hi = 0; row_hi < rows_hi; row_hi++)
+                   for (int row_hi : Range(entries))                     
+                     for (auto p : entries[row_hi][dof_hi])                         
+                       {
+                         int dof_lo, row_lo;
+                         tie(row_lo, dof_lo) = Split (p, dofbits_lo);
+                         int dof = (dof_hi << dofbits_lo) + dof_lo;
+                         newdof2element[dof][newcnt[dof]++] = row_hi*rows_lo+row_lo;
+                       }
+                 }, TasksPerThread(4));
+    timer_newdof2el.Stop();    
+
+    if (dof2element.Size() < 100)
+      {
+        cout << "dof2el = " << dof2element << endl;
+        cout << "newdof2el = " << newdof2element << endl;
+      }
+
+    // delete table-memory on same thread as it was created
+    ParallelFor (nrows_hi, [&] (int row_hi)
+                 { 
+                   entries[row_hi] = Table<int>();
+                 });
+    
+
+    // just for testing: with numa local array:
+    ParallelFor (nrows_hi, [&] (int row_hi)
+                 {
+                   Array<int> cnt_entries(ndofs_hi);
+                   cnt_entries = 0;
+                   
+                   for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                     {
+                       int row = (row_hi << rowbits_lo)+row_lo;
+                       if (row < rowelements.Size())
+                         {
+                           for (auto d : rowelements[row])
+                             {
+                               int dof_hi, dof_lo;
+                               tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                               cnt_entries[dof_hi]++;
+                             }
+                         }
+                     }
+                 });
+
+    ParallelFor (nrows_hi, [&] (int row_hi)
+                 {
+                   NumaLocalArray<int> cnt_entries(ndofs_hi);
+                   cnt_entries = 0;
+                   
+                   for (int row_lo = 0; row_lo < rows_lo; row_lo++)
+                     {
+                       int row = (row_hi << rowbits_lo)+row_lo;
+                       if (row < rowelements.Size())
+                         {
+                           for (auto d : rowelements[row])
+                             {
+                               int dof_hi, dof_lo;
+                               tie(dof_hi, dof_lo) = Split (d, dofbits_lo);
+                               cnt_entries[dof_hi]++;
+                             }
+                         }
+                     }
+                 });
+                 
+    }
+
+    
+#endif
+    
     Array<int> cnt(ndof);
     // cnt = 0;
     ParallelJob ([&] (TaskInfo ti)
@@ -1081,11 +1388,11 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
+    t.AddFlops (this->NZE());
+
     if (task_manager)
       {
-        static Timer t("SparseMatrix::MultAdd (taskhandler)"); RegionTimer reg(t);
-	t.AddFlops (this->NZE());
-
 	FlatVector<TVX> fx = x.FV<TVX>(); 
 	FlatVector<TVY> fy = y.FV<TVY>(); 
 

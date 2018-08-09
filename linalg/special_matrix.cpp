@@ -34,6 +34,24 @@ namespace ngla
   }
 
 
+  void Projector :: Project (BaseVector & x) const
+  {
+    FlatSysVector<> sx = x.SV<double>();
+
+    if (keep_values)
+      {
+        for (size_t i : Range(*bits))
+          if (!(*bits)[i])
+            sx(i) = 0.0;
+      }
+    else
+      {
+        for (size_t i : Range(*bits))
+          if ((*bits)[i])
+            sx(i) = 0.0;
+      }
+  }
+
 
   template <class TVR, class TVC>
   Real2ComplexMatrix<TVR,TVC> :: 

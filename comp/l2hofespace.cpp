@@ -65,6 +65,7 @@ namespace ngcomp
     DefineNumFlag("relorder");
     DefineDefineFlag("l2ho");
     DefineDefineFlag("all_dofs_together");
+    DefineDefineFlag("hide_all_dofs");
 
     if (parseflags) CheckFlags(flags);
 
@@ -139,6 +140,7 @@ namespace ngcomp
 
 
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
+    hide_all_dofs = flags.GetDefineFlag ("hide_all_dofs");
 
     Flags loflags;
     loflags.SetFlag ("order", 0.0);
@@ -218,25 +220,27 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
-    if(low_order_space) prol->Update();
+    if(low_order_space) prol->Update(*this);
 
     UpdateCouplingDofArray();
   } 
   
   void L2HighOrderFESpace :: UpdateCouplingDofArray()
   {
+    auto ct_local = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
+    auto ct_lowest_order = hide_all_dofs ? HIDDEN_DOF : lowest_order_ct;
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNE()))
       {
         bool definedon = DefinedOn(ElementId(VOL,i));
         auto r = GetElementDofs(i);
-        ctofdof[r] = definedon ? LOCAL_DOF : UNUSED_DOF;
+        ctofdof[r] = definedon ? ct_local : UNUSED_DOF;
         
         if (!all_dofs_together)
-	  ctofdof[i] = definedon ? lowest_order_ct : UNUSED_DOF;
+	  ctofdof[i] = definedon ? ct_lowest_order : UNUSED_DOF;
         else
           if (r.Size() != 0)
-            ctofdof[r.First()] = definedon ? lowest_order_ct : UNUSED_DOF;            
+            ctofdof[r.First()] = definedon ? ct_lowest_order : UNUSED_DOF;            
       }
   }
 
@@ -288,7 +292,7 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
-    prol->Update();
+    prol->Update(*this);
   }
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
@@ -320,10 +324,10 @@ namespace ngcomp
                             { return *new(alloc) ScalarDummyFE<et.ElementType()>(); });
           }
 
-	if (eltype == ET_TRIG) 
+	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
-        if (eltype == ET_TET)         
+        if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
 
         /*
@@ -565,6 +569,8 @@ namespace ngcomp
         if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
       }
+    else
+      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType 'ELEMENT'");
   }
   
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
@@ -716,6 +722,22 @@ namespace ngcomp
     {
       static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
     }
+
+    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      static_cast<const FEL&>(fel).EvaluateGrad (mir, x, y);
+    }
+
+    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      static_cast<const FEL&>(fel).AddGradTrans (mir, y, x);
+    }
+
+    static string Name() { return "grad"; }
   };
 
 

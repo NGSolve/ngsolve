@@ -356,8 +356,8 @@ namespace ngstd
     size_t size;
     /// the data
     T * __restrict data;
-    using BaseArrayObject<FlatArray<T> >::ILLEGAL_POSITION;
   public:
+    using BaseArrayObject<FlatArray<T> >::ILLEGAL_POSITION;
 
     /// initialize array 
     INLINE FlatArray () = default;

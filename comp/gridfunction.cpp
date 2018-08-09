@@ -815,9 +815,24 @@ namespace ngcomp
 
     this -> vec.SetSize (gf_parent.GetMultiDim());
     GridFunction::multidim = gf_parent.GetMultiDim();
-    for (int i = 0; i < gf_parent.GetMultiDim(); i++)
-      (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
-  
+
+#ifdef PARALLEL
+    if (MyMPI_GetNTasks()>1)
+      {
+	auto pds = cfes[comp]->GetParallelDofs();
+	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
+	  {
+	    auto fvec = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
+	    (this->vec)[i] = make_shared<ParallelVFlatVector<SCAL>> (fvec.Size(), (SCAL*)fvec.Memory(), pds, CUMULATED);
+	  }
+      }
+    else
+#endif
+      {
+	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
+	  (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
+      }
+
     this -> level_updated = this -> ma->GetNLevels();
 
     for (int i = 0; i < this->compgfs.Size(); i++)
@@ -925,7 +940,7 @@ namespace ngcomp
 	      {
 		*vec[i]->Range (0, ovec->Size()) += *ovec;
 
-		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update();
+		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update(*this->GetFESpace());
 		
 		this->GetFESpace()->GetProlongation()->ProlongateInline
 		  (this->GetMeshAccess()->GetNLevels()-1, *vec[i]);

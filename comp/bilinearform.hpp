@@ -90,6 +90,8 @@ namespace ngcomp
     bool elmat_ev;
     /// does static condensation of internal dofs
     bool eliminate_internal;
+    /// does static condensation of hidden dofs
+    bool eliminate_hidden;
     /// keeps matrices for reconstruction of internal dofs
     bool keep_internal;
     /// should A_ii itself be stored?!
@@ -271,6 +273,9 @@ namespace ngcomp
     /// use static condensation ?
     bool UsesEliminateInternal () const { return eliminate_internal; }
 
+    /// use static condensation for hidden?
+    bool UsesEliminateHidden () const { return eliminate_hidden; }
+
     /// stores the matrices for reconstructing internal dofs ?
     bool UsesKeepInternal () const { return keep_internal; }
 
@@ -328,6 +333,9 @@ namespace ngcomp
 
     void SetEliminateInternal (bool eliminate) 
     { eliminate_internal = eliminate; }
+
+    void SetEliminateHidden (bool eliminate) 
+    { eliminate_hidden = eliminate; }
 
     void SetKeepInternal (bool keep)
     { keep_internal = keep; }
@@ -407,6 +415,7 @@ namespace ngcomp
 #ifdef PARALLEL
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;
+    mutable Array<int> os_per;
     mutable Table<SCAL> send_table;
     mutable Table<SCAL> recv_table;
 #endif

@@ -671,7 +671,14 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }), py::arg("mats"), "Make BlockMatrix with given array of matrices")
-    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); }, py::arg("row") , py::arg("col"), "Return value at given position")
+    .def("__getitem__", [](BlockMatrix & self, py::tuple inds) { 
+        if (py::len(inds) != 2)
+          throw Exception ("BlockMatrix needs two indices to access block");
+
+        int row = inds[0].cast<int>();
+        int col = inds[1].cast<int>();
+        return self(row,col); 
+      }, py::arg("inds"), "Return value at given position")
     .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
     .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
@@ -748,7 +755,8 @@ inverse : string
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>(),
          py::arg("mask"), py::arg("range"),
-         "Linear operator projecting to true/false bits of BitArray mask, depending on argument range");
+         "Linear operator projecting to true/false bits of BitArray mask, depending on argument range")
+    .def("Project", &Projector::Project, "project vector inline")
     ;
 
     py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
