@@ -2,6 +2,8 @@ from ngsolve.la import InnerProduct
 from math import sqrt
 from ngsolve import Projector, Norm
 
+from ngsolve.eigenvalues import PINVIT
+
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method
 

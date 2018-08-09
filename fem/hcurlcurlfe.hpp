@@ -1315,7 +1315,7 @@ namespace ngfem
       order_inner = aorder;
     }
     
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HCurlCurlSurfaceFE<ET> * Cast() const { return static_cast<const HCurlCurlSurfaceFE<ET>*> (this); } 
     
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
@@ -1326,7 +1326,7 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
@@ -1343,7 +1343,7 @@ namespace ngfem
 
 
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
