@@ -308,7 +308,7 @@ void PyMatAccess( TCLASS &c )
         c.def_property_readonly("h", py::cpp_function(&TMAT::Height ), "Height of the matrix");
         c.def_property_readonly("w", py::cpp_function(&TMAT::Width ), "Width of the matrix");
         c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ), "return transpose of matrix" );
-        c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ), "return dimension of matrix (height*width)" );
+        c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ), "Returns matrix as vector" );
         c.def("__len__", []( TMAT& self) { return self.Height();}, "Return height of matrix"  );
 }
 
@@ -470,7 +470,7 @@ vals : tuple
         .def("__len__", []( FMC& self) { return self.Height();}  )
           .def_property_readonly("h", py::cpp_function(&FMC::Height ), "Height of the matrix")
           .def_property_readonly("w", py::cpp_function(&FMC::Width ), "Width of the matrix")
-          .def_property_readonly("A", py::cpp_function([](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }  ))
+          .def_property_readonly("A", py::cpp_function([](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }  ), "Returns matrix as vector")
           .def_property_readonly("T", py::cpp_function([](FMC &self) { return Matrix<Complex>(Trans(self)); } ), "Return transpose of matrix" )
         .def_property_readonly("C", py::cpp_function([](FMC &self) { 
             Matrix<Complex> result( self.Height(), self.Width() );

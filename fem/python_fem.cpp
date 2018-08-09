@@ -1323,7 +1323,7 @@ mip : ngsolve.BaseMappedIntegrationPoint
 Parameters:
 
 et : ngsolve.fem.ET
-  input element topology
+  input element type
 
 order : int
   input polynomial order
@@ -1348,7 +1348,7 @@ order : int
 Parameters:
 
 et : ngsolve.fem.ET
-  input element topology
+  input element type
 
 order : int
   input polynomial order
@@ -1596,7 +1596,7 @@ dim : int
   dimension of the bilinear form integrator
 
 imag : bool
-  True -> Complex bilinear form integrator
+  Multiplies BFI with 1J
 
 filename : string
   filename 
@@ -1826,7 +1826,7 @@ definedon : object
   input region where the linear form is defined on
 
 imag : bool
-  True -> Complex bilinear form integrator
+  Multiplies LFI with 1J
 
 flags : ngsolve.ngstd.Flags
   input flags
@@ -1892,7 +1892,7 @@ ba : ngsolve.ngstd.BitArray
            self->SetIntegrationRule(et,ir);
            return self;
          }, py::arg("et"), py::arg("ir"), docu_string(R"raw_string(
-Set the integration rule for the linear form
+Set a different integration rule for elements of type et
 
 Parameters:
 

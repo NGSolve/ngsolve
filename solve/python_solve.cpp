@@ -189,10 +189,10 @@ autoscale : bool
   input autscale
 
 min : float
-  input minimum value. Need autscale = false
+  input minimum value. Need autoscale = false
 
 max : float
-  input maximum value. Need autscale = false
+  input maximum value. Need autoscale = false
 
 )raw_string")
              );
@@ -271,10 +271,10 @@ autoscale : bool
   input autscale
 
 min : float
-  input minimum value. Need autscale = false
+  input minimum value. Need autoscale = false
 
 max : float
-  input maximum value. Need autscale = false
+  input maximum value. Need autoscale = false
 
 draw_vol : bool
   input draw volume
