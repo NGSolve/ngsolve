@@ -735,7 +735,9 @@ namespace ngcomp
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       static_cast<const FEL&>(fel).AddGradTrans (mir, y, x);
-    }    
+    }
+
+    static string Name() { return "grad"; }
   };
 
 
