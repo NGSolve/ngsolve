@@ -450,11 +450,13 @@ namespace ngcomp
     order = int (flags.GetNumFlag ("order",1));
 
     hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
+    curlbubbles = flags.GetDefineFlag("curlbubbles");
     
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
     uniform_order_trace = int(flags.GetNumFlag("ordertrace",-1));
+    
 
     auto one = make_shared<ConstantCoefficientFunction>(1);
     if(ma->GetDimension() == 2)
@@ -525,6 +527,9 @@ namespace ngcomp
         ndof += 3*(oi * (oi +1))/2;
 	if (ot>-1)
 	  ndof += (ot + 1) * (ot + 2) / 2;
+
+	if (curlbubbles)
+	  ndof += oi;
 	
         if(discontinuous)
         {
@@ -674,7 +679,7 @@ namespace ngcomp
     {
     case ET_TRIG:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order);
+      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order, curlbubbles);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())

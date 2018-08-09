@@ -16,7 +16,7 @@ namespace ngfem
   public:
     using FiniteElement::FiniteElement;
     using FiniteElement::ndof;
-    using FiniteElement::order;
+    using FiniteElement::order;    
 
     // old style
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -72,16 +72,18 @@ namespace ngfem
     int order_facet[ET_trait<ET>::N_FACET];
     int order_inner;
     int order_trace;
-
+    bool curlbubbles;
+    
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
-    T_HCurlDivFE (int aorder)
+    T_HCurlDivFE (int aorder, bool acurlbubbles = false)
     {
       order = aorder;
       for (auto & of : order_facet) of = aorder;
       order_inner = aorder;
       order_trace = -1;
+      curlbubbles = acurlbubbles;
     }
     
     virtual ELEMENT_TYPE ElementType() const { return ET; }
@@ -662,7 +664,7 @@ namespace ngfem
       		      vxx*(lam1y*l2.Value() - lam2y*l1.Value()) - vxy * (lam1x*l2.Value() - lam2x*l1.Value()) + 3* vx*(-lam1x*lam2y+lam2x*lam1y)
       				);
     }    
-  };
+  }; 
 
   template <int D, typename T>
   auto type4 (AutoDiffDiff<D,T> al1, AutoDiffDiff<D,T> al2, AutoDiffDiff<D,T> av) { return T_type4<D,T>(al1, al2, av); }
@@ -707,6 +709,37 @@ namespace ngfem
   template <int D, typename T>
   auto curldivfreebubbles (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_curldivfreebubbles<D, T>(au, av); }
 
+
+  /* ############### Special functions for curld-bubbles ############### */
+  /* this produces a nt-bubble, but div(sigma) = 0 is equal to zero */
+  /* given by the curl(phi) and phi is a Nedelec-bubble (in 3d) */
+  template <int D, typename T> class T_curlbubble;
+  template <typename T> class T_curlbubble<2,T>
+  {
+    AutoDiffDiff<2,T> u;
+  public:
+    T_curlbubble  (AutoDiffDiff<2,T> au) : u(au){ ; }
+
+    Vec<4,T> Shape() {
+      return Vec<4,T> (-u.DValue(1), u.DValue(0), -u.DValue(1), u.DValue(0));
+    }
+
+    Vec<2,T> DivShape()
+    {
+      return Vec<2,T> (0.0,0.0);
+    }
+
+    Vec<2,T> CurlShape()
+    {     
+      throw Exception("not implemented for curlbubbles");
+    }
+    
+  };
+
+  template <int D, typename T>
+  auto CurlBubble (AutoDiffDiff<D,T> au) { return T_curlbubble<D, T>(au); }
+
+  
   /* Edge basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (rot-grad l2) ] * scaledlegendre */
   /* DivShape assumes that phi_12 = [(grad l1) o-times (rot-grad l2) ] is constant!!! */
@@ -872,6 +905,12 @@ namespace ngfem
 	  ndof += (order_trace +1) * (order_trace+2)/2.0;
 	  order = max2(order, order_trace);
 	}
+
+      if(curlbubbles)
+	{
+	  ndof += order_inner;
+	  order +=1;
+	}
     }
     
    template <typename Tx, typename TFA> 
@@ -941,6 +980,18 @@ namespace ngfem
 	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]); 	 
         }	
       }
+
+      
+      if(curlbubbles)
+	{
+	  IntLegNoBubble::EvalMult (oi, le-ls, 0.25*le*ls, u);
+	  LegendrePolynomial::EvalMult(oi, 2*lt-1, lt, v);
+      
+	  for(int i = 0; i <= oi-1; i++)
+	    {
+	      shape[ii++] = CurlBubble(u[i]*v[oi-1-i]);
+	    }
+	}
             
     };
   };

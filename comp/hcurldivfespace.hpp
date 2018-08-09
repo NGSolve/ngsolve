@@ -22,9 +22,11 @@ namespace ngcomp
 
     bool hiddeneldofs;
     
-    // add curldiv-free inner bubbles
+    
     bool discontinuous;
-    //bool withtrace;
+
+    // add curl of Nedelec bubbles
+    bool curlbubbles;    
     
     int uniform_order_facet;
     int uniform_order_inner;
