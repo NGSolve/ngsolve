@@ -24,28 +24,16 @@ u  = fes.TrialFunction()
 
 force = CoefficientFunction( (0,1) )
 
-# some utils ...
-def IdentityCF(dim):
-    return CoefficientFunction( tuple( [1 if i==j else 0 for i in range(dim) for j in range(dim)]), dims=(dim,dim) )
-
-def Trace(mat):
-    return sum( [mat[i,i] for i in range(mat.dims[0]) ])
-
-def Det(mat):
-    if mat.dims[0] == 2:
-        return mat[0,0]*mat[1,1]-mat[0,1]*mat[1,0]
-
-I = IdentityCF(mesh.dim)
+I = Id(mesh.dim)
 F = I + u.Deriv()   # attention: row .. component, col .. derivative
 C = F * F.trans  
 E = 0.5 * (C-I)
 
 def Pow(a, b):
-    return exp (log(a)*b)
+    return a**b  # exp (log(a)*b)
   
 def NeoHook (C):
     return 0.5 * mu * (Trace(C-I) + 2*mu/lam * Pow(Det(C), -lam/2/mu) - 1)
-
 
 
 
