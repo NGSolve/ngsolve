@@ -91,6 +91,8 @@ namespace ngfem
   public:
     T_REGGE_Shape  (Vec<3,AutoDiff<2,T>> au) : u(au) { ; }
     Vec<3,T> Shape() { return Vec<3,T> (u(0).Value(), u(1).Value(), u(2).Value()); }
+    /*0 2
+      2 1*/
     Vec<2,T> CurlShape() { return Vec<2,T> (u(2).DValue(0)-u(0).DValue(1), u(1).DValue(0)-u(2).DValue(1)); }
   };
   template <typename T> class T_REGGE_Shape<3,T>
@@ -99,12 +101,12 @@ namespace ngfem
   public:
     T_REGGE_Shape  (Vec<6,AutoDiff<3,T>> au) : u(au) { ; }
     Vec<6,T> Shape() { return Vec<6,T> (u(0).Value(), u(1).Value(), u(2).Value(), u(3).Value(), u(4).Value(), u(5).Value()); }
-    /*0 3 4
-      3 1 5
-      4 5 2*/
-    Vec<9,T> CurlShape() { return Vec<9,T> (u(4).DValue(1)-u(3).DValue(2), -u(4).DValue(0)+u(0).DValue(2), u(3).DValue(0)-u(0).DValue(1),
-					    u(5).DValue(1)-u(1).DValue(2), -u(5).DValue(0)+u(3).DValue(2), u(1).DValue(0)-u(3).DValue(1),
-					    u(2).DValue(1)-u(5).DValue(2), -u(2).DValue(0)+u(4).DValue(2), u(5).DValue(0)-u(2).DValue(1)); }
+    /*0 5 4
+      5 1 3
+      4 3 2*/
+    Vec<9,T> CurlShape() { return Vec<9,T> (u(4).DValue(1)-u(5).DValue(2), -u(4).DValue(0)+u(0).DValue(2), u(5).DValue(0)-u(0).DValue(1),
+					    u(3).DValue(1)-u(1).DValue(2), -u(3).DValue(0)+u(5).DValue(2), u(1).DValue(0)-u(5).DValue(1),
+					    u(2).DValue(1)-u(3).DValue(2), -u(2).DValue(0)+u(4).DValue(2), u(3).DValue(0)-u(4).DValue(1)); }
   };
   //---------------------------------------------------
 
