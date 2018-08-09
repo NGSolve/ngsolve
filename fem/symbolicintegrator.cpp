@@ -2077,12 +2077,12 @@ namespace ngfem
             {
               HeapReset hr(lh);
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-              NgProfiler::StartThreadTimer(tir, tid);
+              // NgProfiler::StartThreadTimer(tir, tid);
               const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
               SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
               SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure(eltype, k);
-              NgProfiler::StopThreadTimer(tir, tid);
+              // NgProfiler::StopThreadTimer(tir, tid);
               /*
               const IntegrationRule& std_ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
               IntegrationRule & std_ir_facet_vol = transform(k, std_ir_facet, lh);
@@ -2124,7 +2124,7 @@ namespace ngfem
                       for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
                         for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
                           {
-                            ThreadRegionTimer reg(td, tid);                            
+                            // ThreadRegionTimer reg(td, tid);                            
                             ud.trialfunction = proxy1;
                             ud.trial_comp = k;
                             ud.testfunction = proxy2;
