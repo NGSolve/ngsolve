@@ -790,7 +790,7 @@ pre : ngsolve.la.BaseMatrix
   input preconditioner matrix
 
 complex : bool
-  input complex
+  input complex, if not set it is deduced from matrix type
 
 printrates : bool
   input printrates
