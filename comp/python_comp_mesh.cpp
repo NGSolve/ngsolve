@@ -28,10 +28,41 @@ void ExportNgcompMesh (py::module &m)
     ;
   
   py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,size_t>())
-    .def(py::init<size_t>())
-    .def(py::init<Ngs_Element>())
+                         docu_string(R"raw_string(
+An element identifier containing element number and Volume/Boundary flag
+
+3 __init__ overloads:
+
+1)
+
+Parameters:
+
+vb : ngsolve.comp.VorB
+  input Volume or Boundary (VOL, BND, BBND, BBBND)
+
+nr : int
+  input element number
+
+
+2)
+
+Parameters:
+
+nr : int
+  input element number
+
+
+3)
+
+Parameters:
+
+el : ngcomp::Ngs_Element
+  input Ngs element
+
+)raw_string"))
+    .def(py::init<VorB,size_t>(), py::arg("vb"), py::arg("nr"))
+    .def(py::init<size_t>(), py::arg("nr"))
+    .def(py::init<Ngs_Element>(), py::arg("el"))
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
     .def("VB", &ElementId::VB, "VorB of element")
@@ -41,15 +72,22 @@ void ExportNgcompMesh (py::module &m)
     ;
   
   m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
+          py::arg("nr"), docu_string(R"raw_string(
+Creates an element-id for a boundary element
+
+Parameters:
+
+nr : int
+  input Bnd element number
+
+)raw_string"))
     ;
 
 
   
   py::class_<NodeId> (m, "NodeId",
                       "an node identifier containing node type and node nr")
-    .def(py::init<NODE_TYPE,size_t>())
+    .def(py::init<NODE_TYPE,size_t>(), py::arg("type"), py::arg("nr"))
     .def("__str__", &ToString<NodeId>)
     .def("__repr__", &ToString<NodeId>)
     .def(py::self!=py::self)
@@ -238,10 +276,10 @@ void ExportNgcompMesh (py::module &m)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
-    .def(py::init<shared_ptr<MeshAccess>,VorB,string>())
-    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>())
-    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); })
-    .def("VB", [](Region & reg) { return VorB(reg); })
+    .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
+    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
+    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); }, "BitArray mask of the region")
+    .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
     .def(py::self + py::self)
     .def(py::self + string())
     .def(py::self - py::self)
@@ -261,7 +299,7 @@ void ExportNgcompMesh (py::module &m)
 NGSolve interface to the Netgen mesh. Provides access and functionality
 to use the mesh for finite element calculations.
 
-Parameters
+Parameters:
 
 mesh (netgen.Mesh): a mesh generated from Netgen
 
@@ -284,7 +322,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
-         { return self == other; })
+         { return self == other; }, py::arg("mesh"))
     
     .def(py::pickle([](const MeshAccess& ma)
                     {
@@ -410,15 +448,15 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
-          { return &ma.GetTrafo(id, global_alloc); },
-          py::return_value_policy::take_ownership)
+          { return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
+          py::return_value_policy::take_ownership, "returns element transformation of given element id")
 
     .def("SetDeformation", 
 	 [](MeshAccess & ma, shared_ptr<GridFunction> gf)
-         { ma.SetDeformation(gf); },
+         { ma.SetDeformation(gf); }, py::arg("gf"),
          docu_string("Deform the mesh with the given GridFunction"))
 
-    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
+    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);}, "Unset the deformation")
 
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
@@ -452,7 +490,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
-          })
+          }, py::arg("definedon"), "Unset PML transformation on domain")
     
     .def("GetPMLTrafos", [](MeshAccess & ma) 
       {
@@ -607,7 +645,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          [](MeshAccess & ma, ElementId id, int order)
          {
            ma.SetElOrder(id.Nr(), order);
-         }, "For backward compatibility, not recommended to use")
+         }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
     
     .def("Curve", &MeshAccess::Curve,
          py::arg("order"),
@@ -722,7 +760,7 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
             return make_shared<SumPML<3>> (pml1,pml2);
           }
         throw Exception("No valid dimension");
-      })
+         }, py::arg("pml"))
     ;
 
   m.def("Radial", [](py::object _origin, double rad, Complex alpha) -> shared_ptr<PML>{

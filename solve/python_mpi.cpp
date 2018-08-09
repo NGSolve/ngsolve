@@ -7,7 +7,7 @@ using namespace ngstd;
 void ExportNgmpi(py::module &m) {
     m.def("SendCommand", [] (string cmd) -> void {
             MyMPI_SendCmd(cmd.c_str());
-        });
+      }, py::arg("cmd"));
 
     m.def("Rank", [] () {
         return  MyMPI_GetId();
