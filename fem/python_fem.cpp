@@ -17,6 +17,12 @@ namespace ngfem
 }
 
 
+shared_ptr<CoefficientFunction>
+MakeCoefficientFunction (CF_Type type,
+                         const Array<shared_ptr<CoefficientFunction>> & childs,
+                         py::list data);
+
+
 struct PythonCoefficientFunction : public CoefficientFunction {
   PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
@@ -467,7 +473,6 @@ struct GenericPow {
 
 
 
-
 void ExportCoefficientFunction(py::module &m)
 {
   m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
@@ -662,7 +667,36 @@ else_obj : object
   
   m.attr("specialcf") = py::cast(&specialcf);
 
+  py::enum_<CF_Type>(m, "CFtype")
+    .value("undefined", CF_Type_undefined)
+    .value("constant", CF_Type_constant)
+    .value("vectorial", CF_Type_vectorial)
+    .value("coordinate", CF_Type_coordinate)
+    .value("norm", CF_Type_norm)
+    .value("trans", CF_Type_trans)
+    .value("component", CF_Type_component)
+    .value("real", CF_Type_real)
+    .value("imag", CF_Type_imag)
+    .value("ifpos", CF_Type_ifpos)
+    .value("normal_vector", CF_Type_normal_vector)
+    .value("tangential_vector", CF_Type_tangential_vector)
+    .value("mesh_size", CF_Type_mesh_size)
+    .value("scale", CF_Type_scale)
+    .value("scale_complex", CF_Type_scale_complex)
+    .value("add", CF_Type_add)
+    .value("sub", CF_Type_sub)
+    .value("mult", CF_Type_mult)
+    .value("div", CF_Type_div)
+    .value("domainconst", CF_Type_domainconst)
+    .value("domainwise", CF_Type_domainwise)
+    .value("unary_op", CF_Type_unary_op)
+    .value("binary_op", CF_Type_binary_op)
+    .value("usertype", CF_Type_usertype)
+    .value("eig", CF_Type_eig)
+    ;
 
+  
+  
   py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
 R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
@@ -708,6 +742,15 @@ val : can be one of the following:
          "     use dims=(h,w) to define matrix-valued CF\n"
          "  a list of scalars and or CFs to define a domain-wise CF"
         )
+
+    .def(py::init([] (CF_Type type, py::list childs, py::list data)
+                  {
+                    auto cchilds = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (childs);
+                    return MakeCoefficientFunction (type, cchilds, data);
+                  }),
+         py::arg("type"), py::arg("childs"), py::arg("data")
+         )
+    
     .def("__str__",  [](CF& self) { return ToString<>(self);})
 
     .def("__call__", [] (CF& self, BaseMappedIntegrationPoint & mip) -> py::object
@@ -910,6 +953,29 @@ val : can be one of the following:
           "compile list of individual steps, experimental improvement for deep trees")
 
 
+    .def_property_readonly ("type", [](shared_ptr<CF> cf) { return cf->GetType(); })
+    
+    .def_property("data",
+                  [] (shared_ptr<CF> cf)
+                  {
+                    PyOutArchive ar;
+                    cf->DoArchive(ar);
+                    return ar.GetList();
+                  },
+                  [] (shared_ptr<CF> cf, py::list data)
+                  {
+                    PyInArchive ar(data);
+                    cf->DoArchive(ar);
+                  })
+    .def_property_readonly("childs", [](shared_ptr<CF> cf)
+                  {
+                    py::list pychilds;
+                    for (auto child : cf->InputCoefficientFunctions())
+                      pychilds.append (child);
+                    return pychilds;
+                  })
+                  
+    
     .def (py::pickle([] (CoefficientFunction & cf)
                      {
                        PyOutArchive ar;
@@ -1084,6 +1150,111 @@ vals : list of float
     ;
 }
 
+
+  shared_ptr<CoefficientFunction>
+    MakeCoefficientFunction (CF_Type type,
+                             const Array<shared_ptr<CoefficientFunction>> & childs,
+                             py::list data)
+  {
+    PyInArchive ar(data);
+    shared_ptr<CoefficientFunction> cf;
+    switch (type)
+      {
+      case CF_Type_undefined:
+        cout << "undefined CF" << endl;
+        break;
+      case CF_Type_constant:
+        cf = make_shared<ConstantCoefficientFunction>(1);
+        break;
+      case CF_Type_vectorial:
+        cf = MakeVectorialCoefficientFunction(Array<shared_ptr<CoefficientFunction>>(childs));
+        break;
+      case CF_Type_coordinate:
+        cf = MakeCoordinateCoefficientFunction(-1);
+        break;
+      case CF_Type_norm:
+        cf = NormCF(childs[0]);
+        break;
+      case CF_Type_trans:
+        cf = TransposeCF(childs[0]);
+        break;
+      case CF_Type_component:
+        cf = MakeComponentCoefficientFunction (childs[0], 0);
+        break;
+      case CF_Type_real:
+        cf = Real(childs[0]);
+        break;
+      case CF_Type_imag:
+        cf = Imag(childs[0]);
+        break;
+      case CF_Type_ifpos:
+        cf = IfPos(childs[0], childs[1], childs[2]);
+        break;
+        /*
+      case CF_Type_normal_vector:
+        {
+          int dim = py::cast<int>(data[0]);
+          cf = specialcf.GetNormalVectorCF(dim);
+          break;
+        }
+      case CF_Type_tangential_vector:
+        {
+          int dim = py::cast<int>(data[0]);
+          cf = specialcf.GetTangentialVectorCF(dim);
+          break;
+        }
+      case CF_Type_mesh_size:
+        cf = specialcf.GetMeshSizeCF();
+        break;
+        */
+      case CF_Type_scale:
+        cf = 1.0 * childs[0];
+        break;
+      case CF_Type_scale_complex:
+        cf = Complex(1.0) * childs[0];
+        break;
+      case CF_Type_add:
+        cf = childs[0] + childs[1];
+        break;
+      case CF_Type_sub:
+        cf = childs[0] - childs[1];
+        break;
+      case CF_Type_mult:
+        cf = childs[0] * childs[1];
+        break;
+      case CF_Type_div:
+        cf = childs[0] / childs[1];
+        break;
+      case CF_Type_domainconst:
+        DomainConstantCoefficientFunction(Array<double>{});
+        break;
+      case CF_Type_domainwise:
+        MakeDomainWiseCoefficientFunction(Array<shared_ptr<CoefficientFunction>>(childs));
+        break;
+      case CF_Type_unary_op:
+        {
+          string name = py::cast<string>(data[0]);
+          cf = unary_math_functions[name](childs[0]);
+          break;
+        }
+      case CF_Type_binary_op:
+        {
+          string name = py::cast<string>(data[0]);
+          cf = binary_math_functions[name](childs[0], childs[1]);
+          break;
+        }
+        /*
+          case CF_Type_usertype:
+          break;
+        */
+      default:
+        cout << "undefined cftype" << endl;
+      }
+    if (cf)
+      cf->DoArchive(ar);
+    return cf;
+    
+  }
 
 
 
