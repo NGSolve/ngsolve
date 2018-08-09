@@ -928,12 +928,35 @@ namespace ngcomp
         nbboundaries++;
         nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
       }
+
+    int & nbbboundaries = nregions[BBBND];
+    if(mesh.GetDimension() == 1 || mesh.GetDimension() == 2)
+      {
+        nbbboundaries = 0;
+      }
+    else
+      {
+        nbbboundaries = -1;
+        for (auto el : Elements(BBBND))          
+          {
+            int elindex = el.GetIndex();
+            if (elindex >=0)
+              nbbboundaries = max2(nbbboundaries, elindex);
+          }
+        nbbboundaries++;
+        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX);
+      }
     
     // update periodic mappings
     auto nid = mesh.GetNIdentifications();
     periodic_node_pairs[NT_VERTEX]->SetSize(0);
     periodic_node_pairs[NT_EDGE]->SetSize(0);
     periodic_node_pairs[NT_FACE]->SetSize(0);
+#ifdef PARALLEL
+    if(MyMPI_GetNTasks()>1 && MyMPI_GetId()==0)
+      nid = 0; //hopefully this is enough...
+      //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
+#endif
     for (auto idnr : Range(nid))
       {
         // only if it is periodic

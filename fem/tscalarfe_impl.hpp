@@ -529,7 +529,7 @@ namespace ngfem
     */
   }
 
-#ifdef __AVX__
+
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddTrans (const SIMD_IntegrationRule & ir,
@@ -554,7 +554,8 @@ namespace ngfem
                                     {
                                       auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val4);
                                       val += SIMD<double,4> (pcoefs);
-                                      _mm256_storeu_pd (pcoefs, val.Data());
+                                      // _mm256_storeu_pd (pcoefs, val.Data());
+                                      val.Store(pcoefs);
                                       pcoefs += dist;
                                     } ));
           }
@@ -565,6 +566,7 @@ namespace ngfem
       case 1: AddTrans (ir, values.Row(j), coefs.Col(j)); break;
       case 2:
         {
+          /*
           for (size_t i = 0; i < hir.Size(); i++)
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
@@ -582,25 +584,61 @@ namespace ngfem
                                         pcoefs += dist;
                                       } ));
             }
+          */
+          /*
+          SIMD<mask64,4> mask(2);
+          for (size_t i = 0; i < hir.Size(); i++)
+            {
+              TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
+              SIMD<double> val1 = values(j,i);
+              SIMD<double> val2 = values(j+1,i);
+              double * pcoefs = &coefs(j);
+              size_t dist = coefs.Dist();
+              T_CalcShape (pt, 
+                           SBLambda ( [val1,val2,mask,&pcoefs,dist](int j, SIMD<double> shape)
+                                      {
+                                        auto val = HSum(shape*val1, shape*val2, shape*val2, shape*val2);
+                                        val += SIMD<double,4> (pcoefs, mask);
+                                        val.Store(pcoefs, mask);
+                                        pcoefs += dist;
+                                      } ));
+            }
+          */
+          for (size_t i = 0; i < hir.Size(); i++)
+            {
+              TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
+              SIMD<double> val1 = values(j,i);
+              SIMD<double> val2 = values(j+1,i);
+              double * pcoefs = &coefs(j);
+              size_t dist = coefs.Dist();
+              T_CalcShape (pt, 
+                           SBLambda ( [val1,val2,&pcoefs,dist](int j, SIMD<double> shape)
+                                      {
+                                        auto val = HSum(shape*val1, shape*val2);
+                                        val += SIMD<double,2> (pcoefs);
+                                        val.Store(pcoefs);
+                                        pcoefs += dist;
+                                      } ));
+            }
           break;
         }
       case 3:
         {
+          SIMD<mask64,4> mask(3);
           for (size_t i = 0; i < hir.Size(); i++)
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
               SIMD<double> val1 = values(j,i);
               SIMD<double> val2 = values(j+1,i);
               SIMD<double> val3 = values(j+2,i);
-              __m256i mask = _mm256_set_epi64x(0, -1, -1, -1);
               double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
               T_CalcShape (pt, 
-                           SBLambda ( [&](int j, SIMD<double> shape)
+                           SBLambda ( [val1,val2,val3,mask,dist,&pcoefs](int j, SIMD<double> shape)
                                       {
                                         auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val3);
-                                        val += SIMD<double,4> (_mm256_maskload_pd (pcoefs, mask));
-                                        _mm256_maskstore_pd (pcoefs, mask, val.Data());
+                                        val += SIMD<double,4> (pcoefs, mask); 
+                                        val.Store(pcoefs, mask);
                                         pcoefs += dist;
                                       } ));
             }
@@ -612,7 +650,6 @@ namespace ngfem
       Evaluate (ir, coefs.Col(j), values.Row(j));
         */
   }
-#endif
   
 
   
@@ -777,33 +814,6 @@ namespace ngfem
                 BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
-    /*
-    if ((DIM == 3) || (bmir.DimSpace() == DIM))
-      {
-        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        for (size_t i = 0; i < mir.Size(); i++)
-          {
-            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp;
-            GetTIP(mir[i], adp);
-            double * pcoef = &coefs(0);
-            size_t dist = coefs.Dist();            
-            T_CalcShape (adp,
-                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
-                                   {
-                                     SIMD<double> sum = 0.0;
-                                     for (size_t k = 0; k < DIM; k++)
-                                       sum += shape.DValue(k) * values(k,i);
-                                     // coefs(j) += HSum(sum);
-                                     *pcoef += HSum(sum);
-                                     pcoef += dist;
-                                   }));
-          }
-      }
-    else
-      {
-        cout << "AddGradTrans called for boudnary (not implemented)" << endl;
-      }
-    */
     Iterate<4-DIM>
       ([&](auto CODIM)
        {
@@ -812,19 +822,18 @@ namespace ngfem
            {
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
-               
                {
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
                  GetTIP(mir[i], adp);
                  double * pcoef = &coefs(0);
-                 size_t dist = coefs.Dist();            
+                 size_t dist = coefs.Dist();
+                 Vec<DIMSPACE,SIMD<double>> vals = values.Col(i);
                  this->T_CalcShape (adp,
-                              SBLambda ([&] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                    SBLambda ([=,&pcoef] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
                                         {
                                           SIMD<double> sum = 0.0;
                                           for (size_t k = 0; k < DIMSPACE; k++)
-                                            sum += shape.DValue(k) * values(k,i);
-                                          // coefs(j) += HSum(sum);
+                                            sum += shape.DValue(k) * vals(k); 
                                           *pcoef += HSum(sum);
                                           pcoef += dist;
                                         }));
@@ -832,6 +841,79 @@ namespace ngfem
            }
        });
   }
+
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & bmir,
+                BareSliceMatrix<SIMD<double>> values,
+                SliceMatrix<> coefs) const
+  {
+    Iterate<4-DIM>
+      ([&](auto CODIM)
+       {
+         constexpr auto DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+
+             size_t j = 0;
+             for ( ; j+4 <= coefs.Width(); j+=4)
+               {
+                 for (size_t i = 0; i < mir.Size(); i++)
+                   {
+                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
+                     GetTIP(mir[i], adp);
+                     double * pcoef = &coefs(0,j);
+                     size_t dist = coefs.Dist();
+                     Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
+                     this->T_CalcShape (adp,
+                                        SBLambda ([=,&pcoef] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                                  {
+                                                    SIMD<double> sum1 = 0.0;
+                                                    SIMD<double> sum2 = 0.0;
+                                                    SIMD<double> sum3 = 0.0;
+                                                    SIMD<double> sum4 = 0.0;
+                                                    for (size_t k = 0; k < DIMSPACE; k++)
+                                                      {
+                                                        sum1 += shape.DValue(k) * vals(k); 
+                                                        sum2 += shape.DValue(k) * vals(k+DIMSPACE); 
+                                                        sum3 += shape.DValue(k) * vals(k+2*DIMSPACE); 
+                                                        sum4 += shape.DValue(k) * vals(k+3*DIMSPACE);
+                                                      }
+                                                    SIMD<double,4> allsum = HSum(sum1, sum2, sum3, sum4);
+                                                    allsum += SIMD<double,4> (pcoef);
+                                                    allsum.Store(pcoef);
+                                                    pcoef += dist;
+                                                  }));
+                   }
+               }
+
+             for ( ; j+1 <= coefs.Width(); j++)
+               {
+                 for (size_t i = 0; i < mir.Size(); i++)
+                   {
+                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
+                     GetTIP(mir[i], adp);
+                     double * pcoef = &coefs(0,j);
+                     size_t dist = coefs.Dist();
+                     Vec<DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);
+                     this->T_CalcShape (adp,
+                                        SBLambda ([=,&pcoef] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                                  {
+                                                    SIMD<double> sum = 0.0;
+                                                    for (size_t k = 0; k < DIMSPACE; k++)
+                                                      sum += shape.DValue(k) * vals(k); 
+                                                    *pcoef += HSum(sum);
+                                                    pcoef += dist;
+                                                  }));
+                   }
+               }
+           }
+       });
+  }
+
+
   
   /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>

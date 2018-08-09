@@ -945,6 +945,57 @@ public:
     Array<T>::SetSize(size);
   }
 };
+
+
+
+template <typename T>
+class NumaLocalArray : public Array<T>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaLocalArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaLocalArray (size_t s)
+    : Array<T> (s, (T*)numa_alloc_local(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
+  }
+
+  ~NumaLocalArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaLocalArray & operator= (T val)
+  {
+    Array<T>::operator= (val);      
+    return *this;
+  }
+  
+  NumaLocalArray & operator= (NumaLocalArray && a2)
+  {
+    Array<T>::operator= ((Array<T>&&)a2);  
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaLocalArray & b)
+  {
+    Array<T>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T>::SetSize(size);
+  }
+};
+
+
 #else
 
   template <typename T>
@@ -953,6 +1004,8 @@ public:
   template <typename T> 
   using NumaInterleavedArray = Array<T>;
   
+  template <typename T>
+  using NumaLocalArray = Array<T>;
   
 #endif
 

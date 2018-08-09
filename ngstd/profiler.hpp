@@ -334,24 +334,28 @@ namespace ngstd
       RegionTracer (int athread_id, int region_id, int id_type = ID_NONE, int additional_value = -1 )
         : thread_id(athread_id)
         {
+	  if (trace)
           nr = trace->StartTask (athread_id, region_id, id_type, additional_value);
         }
       /// start trace with timer
       RegionTracer (int athread_id, Timer & timer, int additional_value = -1 )
         : thread_id(athread_id)
         {
+	  if (trace)
           nr = trace->StartTask (athread_id, (int)timer, ID_TIMER, additional_value);
         }
 
       /// set user defined value
       void SetValue( int additional_value )
       {
+	  if (trace)
         trace->SetTask( thread_id, nr, additional_value );
       }
 
       /// stop trace
       ~RegionTracer ()
         {
+	  if (trace)
           trace->StopTask (thread_id, nr);
         }
     };

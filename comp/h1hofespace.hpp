@@ -129,6 +129,11 @@ namespace ngcomp
                      bool checkflags = false);
 
     virtual void SetOrder (ELEMENT_TYPE et, TORDER order) override;
+
+    virtual string GetClassName () const override
+    {
+      return "VectorH1FESpace";
+    }
   };
 
 }

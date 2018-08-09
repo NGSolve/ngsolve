@@ -208,6 +208,7 @@ namespace ngcomp
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
     }
+    hide_all_dofs = flags.GetDefineFlag("hide_all_dofs");
   }
   
   HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 
@@ -643,23 +644,26 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: UpdateCouplingDofArray()
   {
+    auto wirebasket_ct = hide_all_dofs ? HIDDEN_DOF : WIREBASKET_DOF;
+    auto interface_ct = hide_all_dofs ? HIDDEN_DOF : INTERFACE_DOF;
+    auto local_ct = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
     ctofdof.SetSize(ndof);
     if(discont) 
       {
-        ctofdof = LOCAL_DOF;
+        ctofdof = local_ct;
         return;
       } 
     
-    ctofdof = WIREBASKET_DOF;
+    ctofdof = wirebasket_ct;
     
     for (auto facet : Range(ma->GetNFacets()))
       {
-        ctofdof[facet] = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
-        ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
+        ctofdof[facet] = fine_facet[facet] ? wirebasket_ct : UNUSED_DOF;
+        ctofdof[GetFacetDofs(facet)] = interface_ct;
       }
     
     for (auto el : Range (ma->GetNE()))
-      ctofdof[GetElementDofs(el)] = LOCAL_DOF;
+      ctofdof[GetElementDofs(el)] = local_ct;
   }
 
 

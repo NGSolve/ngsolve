@@ -809,7 +809,10 @@ namespace ngfem
       faces = ElementTopology::GetFaces (eltype);
     }
   
-    Facet2ElementTrafo(ELEMENT_TYPE aeltype, const FlatArray<int> & vnums) 
+    // Facet2ElementTrafo(ELEMENT_TYPE aeltype, const FlatArray<int> & vnums)
+
+    template <typename T>
+    Facet2ElementTrafo(ELEMENT_TYPE aeltype, const BaseArrayObject<T> & vnums) 
       : eltype(aeltype),
 	points(99,(double*)ElementTopology::GetVertices (aeltype))
     {

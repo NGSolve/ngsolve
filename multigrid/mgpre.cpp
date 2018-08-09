@@ -84,7 +84,7 @@ namespace ngmg
     if ( smoother )
       smoother->Update(update_always);
     if (prolongation)
-      prolongation->Update();
+      prolongation->Update(fespace);
 
 
     //  coarsegridpre = biform.GetMatrix(1).CreateJacobiPrecond();

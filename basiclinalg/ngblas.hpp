@@ -6,6 +6,10 @@
 namespace ngbla
 {
 
+  extern void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  extern void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+
+    
   template <typename TA, typename TB, typename TC>
   void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
   {

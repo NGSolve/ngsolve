@@ -26,6 +26,7 @@ namespace ngcomp
 			TRANSFORM_SOL = 8 };
   /**
     coupling types: Each degree of freedom is either
+     - an unused or hidden dof (invisible)
      - a local degree of freedom 
      - an interface degree of freedom 
      or
@@ -34,11 +35,12 @@ namespace ngcomp
   enum COUPLING_TYPE {  UNUSED_DOF = 0,
 			HIDDEN_DOF = 1,
 			LOCAL_DOF = 2,
-			CONDENSATABLE_DOF = 3,
+			CONDENSABLE_DOF = 3,
 			INTERFACE_DOF = 4,
 			NONWIREBASKET_DOF = 6,
 			WIREBASKET_DOF = 8,
 			EXTERNAL_DOF = 12,
+			VISIBLE_DOF = 14,
 			ANY_DOF = 15
 		      };
 /*
@@ -46,11 +48,12 @@ Bit encoding:
 UNUSED                     0 |  0
 HIDDEN                     1 |  1
 LOCAL                    1 0 |  2
-CONDENSATABLE            1 1 |  3
+CONDENSABLE              1 1 |  3
 INTERFACE              1 0 0 |  4
 NONWIREBASKET          1 1 0 |  6
 WIREBASKET           1 0 0 0 |  8
 EXTERNAL             1 1 0 0 | 12
+VISIBLE              1 1 1 0 | 14
 ANY                  1 1 1 1 | 15
 */
 
@@ -289,8 +292,8 @@ ANY                  1 1 1 1 | 15
       et_order_right[et] = order;
     }
     */
-    virtual void SetOrder (NodeId ni, int order) { ; }
-    virtual int GetOrder (NodeId ni) const { return 0; }
+    virtual void SetOrder (NodeId ni, int order); //  { ; }
+    virtual int GetOrder (NodeId ni) const; //  { return 0; }
     /*
     {
       switch (ni.GetType())
@@ -507,6 +510,8 @@ ANY                  1 1 1 1 | 15
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
+    /// get dofs (local numbering) of a certain type
+    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
 
     /// get dofs on nr'th node of type nt.
@@ -1184,6 +1189,7 @@ ANY                  1 1 1 1 | 15
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
+    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
     ///
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
