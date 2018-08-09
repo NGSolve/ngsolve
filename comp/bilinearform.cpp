@@ -83,7 +83,7 @@ namespace ngcomp
     SetPrintElmat (flags.GetDefineFlag ("printelmat"));
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
-    SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal"));
+    SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal") || flags.GetDefineFlag("condense"));
     SetEliminateHidden (flags.GetDefineFlag ("eliminate_hidden"));
     SetKeepInternal (eliminate_internal &&
                      !flags.GetDefineFlagX ("keep_internal").IsFalse() &&
@@ -137,7 +137,7 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev"));
 
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
-    if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
+    if (flags.GetDefineFlag ("eliminate_internal") || flags.GetDefineFlag("condense")) SetEliminateInternal (1);
     if (flags.GetDefineFlag ("eliminate_hidden")) SetEliminateHidden (1);
     SetKeepInternal (eliminate_internal && 
                      !flags.GetDefineFlag ("nokeep_internal"));
