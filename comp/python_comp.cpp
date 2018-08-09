@@ -1907,12 +1907,15 @@ space : ngsolve.FESpace
                 {
                   return py::dict
                     (
-                     py::arg("eliminate_internal") = "bool = False\n"
+                     py::arg("condense") = "bool = False\n"
+                     "  (formerly known as 'eliminate_internal')\n"
                      "  Set up BilinearForm for static condensation of internal\n"
                      "  bubbles. Static condensation has to be done by user,\n"
                      "  this enables only the use of the members harmonic_extension,\n"
                      "  harmonic_extension_trans and inner_solve. Have a look at the\n"
                      "  documentation for further information.",
+                     py::arg("eliminate_internal") = "bool = False\n"
+                     "  deprecated for static condensation, replaced by 'condense'\n",
                      py::arg("eliminate_hidden") = "bool = False\n"
                      "  Set up BilinearForm for static condensation of hidden\n"
                      "  dofs. May be overruled by eliminate_internal.",
@@ -1995,7 +1998,12 @@ reallocate : bool
                      return bfs;
                    },
                   "list of components for bilinearforms on compound-space")
-
+    
+    .def_property_readonly("condense", [](shared_ptr<BilinearForm> self)
+                           { return self->UsesEliminateInternal(); },
+                           "use static condensation ?"
+                           )
+                           
     .def("__call__", [](BF & self, const GridFunction & u, const GridFunction & v)
           {
             auto au = self.GetMatrix().CreateVector();

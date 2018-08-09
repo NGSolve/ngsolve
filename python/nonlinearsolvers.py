@@ -1,3 +1,7 @@
+from ngsolve.la import InnerProduct
+from math import sqrt
+from ngsolve import Projector, Norm
+
 
 def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_int=False, dampfactor=1, printing=True):
     """
