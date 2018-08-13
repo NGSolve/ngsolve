@@ -526,6 +526,21 @@ namespace ngbla
       TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
   }
+
+  void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    // c = a * Trans(b);
+
+    constexpr size_t bs = 256;
+    size_t wa = a.Width();
+
+    TAddABt2 (min2(bs, wa), a.Height(), b.Height(),
+              &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist(),
+              [] (auto c, auto ab) { return ab; });
+
+    if (wa > bs)
+      TAddABt1 (a.Cols(bs, wa), b.Cols(bs, wa), c, [] (auto c, auto ab) { return c+ab; });        
+  }
   
   void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
