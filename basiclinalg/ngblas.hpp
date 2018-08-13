@@ -35,7 +35,7 @@ namespace ngbla
 
 
   
-
+  extern void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
   extern void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
 
