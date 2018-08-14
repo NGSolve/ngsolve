@@ -460,6 +460,15 @@ when building the system matrices.
               return py::cast(op);
             return py::none();
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
+    .def("Operators",
+         [] (const spProxy self)
+         {
+           py::list l;
+           auto ops = self->GetAdditionalEvaluators();
+           for (size_t i = 0; i < ops.Size(); i++)
+             l.append (ops.GetName(i));
+           return l;
+         },"returns list of available differential operators")
     ;
 
 
