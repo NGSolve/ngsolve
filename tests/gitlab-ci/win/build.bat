@@ -17,3 +17,4 @@ cmake %CI_PROJECT_DIR% ^
 
 IF %errorlevel% NEQ 0 exit /b %errorlevel%
 cmake --build . --target install --config Release
+IF %errorlevel% NEQ 0 exit /b %errorlevel%
