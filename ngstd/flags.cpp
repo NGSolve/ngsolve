@@ -317,9 +317,11 @@ namespace ngstd
       {
         str << numlistflags.GetName(i) << " = [";
         int j = 0;
-        for (j = 0; j < numlistflags[i]->Size() - 1; ++j)
+        for (j = 0; j + 1 < numlistflags[i]->Size(); ++j)
           str << (*numlistflags[i])[j] << ", ";
-        str << (*numlistflags[i])[j] << "]" << endl;
+	if (numlistflags[i]->Size())
+	  str << (*numlistflags[i])[j];
+	str << "]" << endl;
       }
   }
 
