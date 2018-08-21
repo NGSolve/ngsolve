@@ -52,6 +52,27 @@ namespace ngcomp
         for(int j = 0; j <DIM_DMAT; j++)
           mat(j,i) = shape(i,j);
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
+    }
+
+    using DiffOp<DiffOpIdHCurlCurl<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHCurlCurl<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+    }
   };
 
   template<int D>
