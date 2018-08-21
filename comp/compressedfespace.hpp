@@ -38,10 +38,11 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
+    { return space->GetAdditionalEvaluators (); }
+
     /// get dof-nrs of the element of certain coupling type
     virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const override;
-
-
 
     virtual void SetActiveDofs(shared_ptr<BitArray> actdof) 
     {
