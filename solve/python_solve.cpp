@@ -612,8 +612,55 @@ void ExportVisFunctions(py::module &m) {
                     if(hexes[i].data.Size()) element_data[VOL].append(toDict(hexes[i]));
                 }
             }
+
+            py::list facet_data;
+            if (dim > 1)
+              {
+                // facet data
+                ElementInformation segms[2] = {{ET_SEGM}, {ET_SEGM, true}};
+                ElementInformation trigs[2] = {{ET_TRIG}, {ET_TRIG, true}};
+                ElementInformation quads[2] = {{ET_QUAD}, {ET_QUAD, true}};
+
+                auto nf = ma->GetNFacets();
+                BitArray fine_facet(nf);
+                fine_facet.Clear();
+                for(auto el : ma->Elements(VOL))
+                  for(auto fnr : ma->GetElFacets(el))
+                    fine_facet.Set(fnr);
+
+                Array<int> pnrs;
+                for(auto fnr : Range(ma->GetNFacets()))
+                  {
+                    if(!fine_facet[fnr]) continue;
+                    ma->GetFacetPNums(fnr, pnrs);
+                    // trigs
+                    ElementInformation* type;
+                    if(ma->GetDimension()==2)
+                      type = segms;
+                    else
+                      {
+                        if(pnrs.Size() == 3)
+                          type = trigs;
+                        else
+                            type = quads;
+                      }
+                    // TODO: curved facets
+                    auto& ei = type[false];
+                    ei.nelements++;
+                    ei.data.Append(fnr);
+                    ei.data.Append(fnr);
+                    for(auto p : pnrs)
+                      ei.data.Append(p);
+                  }
+                for(auto i : Range(2)){
+                  if (segms[i].data.Size()) facet_data.append(toDict(segms[i]));
+                  if (trigs[i].data.Size()) facet_data.append(toDict(trigs[i]));
+                  if (quads[i].data.Size()) facet_data.append(toDict(quads[i]));
+                }
+              }
             py::dict py_eldata;
 
+            py_eldata["facets"] = facet_data;
             py::list py_edges;
             py_edges.append(toDict(edges));
             py_eldata["edges"] = py_edges;
@@ -634,6 +681,74 @@ void ExportVisFunctions(py::module &m) {
             return py_eldata;
          });
 
+    m.def("_GetFacetValues", [](shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma,
+                                map<ngfem::ELEMENT_TYPE, IntegrationRule> irs)
+          {
+            auto tm = task_manager;
+            task_manager = nullptr;
+            LocalHeap lh(10000000, "GetFacetValues");
+            int dim = ma->GetDimension();
+            typedef std::pair<ngfem::ELEMENT_TYPE,bool> T_ET;
+            map<T_ET, Array<float>> values_real;
+            map<T_ET, Array<float>> values_imag;
+            auto nf = ma->GetNFacets();
+            // position of facet in result array
+            vector<pair<ELEMENT_TYPE, int>> position(nf);
+            map<ELEMENT_TYPE, int> count;
+            for(auto i : Range(nf))
+              position[i] = make_pair(ET_TRIG, -1);
+            for (auto el : ma->Elements(VOL))
+                for(auto fnr : ma->GetElFacets(el))
+                    if (position[fnr].second == -1)
+                      position[fnr] = make_pair(ma->GetFacetType(fnr), count[ma->GetFacetType(fnr)]++);
+
+            for(auto et : irs)
+              {
+                values_real[T_ET{et.first,false}].SetSize(count[et.first] * irs[et.first].GetNIP());
+                if(cf->IsComplex())
+                  values_imag[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP());
+              }
+
+            for(auto el : ma->Elements(VOL))
+              {
+                auto fnrs = ma->GetElFacets(el);
+                HeapReset hr(lh);
+                auto& trafo = ma->GetTrafo(el, lh);
+                for(auto i : Range(ElementTopology::GetNFacets(el.GetType())))
+                  {
+                    auto eltype = ma->GetFacetType(fnrs[i]);
+                    Facet2ElementTrafo transform(el.GetType(), el.Vertices());
+                    auto& ir_facet = transform(i, irs[eltype], lh);
+                    auto nip = ir_facet.GetNIP();
+                    for (auto j : Range(ir_facet.Size()))
+                      ir_facet[j].SetFacetNr(i);
+                    auto& mir = trafo(ir_facet, lh);
+                    FlatMatrix<> res(nip, 1,lh);
+                    cf->Evaluate(mir, res);
+                    for(auto j : Range(nip))
+                      values_real[T_ET{eltype, false}].Range(fnrs[i] * nip, (fnrs[i]+1)*nip) = res;
+                  }
+              }
+            py::dict res_real, res_imag;
+            for(auto &p : irs)
+              {
+                auto et = p.first;
+                for(auto curved : {true, false})
+                  {
+                    if(values_real[T_ET{et, curved}].Size() > 0)
+                      {
+                        res_real[py::make_tuple(et, curved)] = MoveToNumpyArray(values_real[T_ET{et,curved}]);
+                      }
+                  }
+              }
+            py::dict result;
+            result["min"] = py::make_tuple(0,0,0);
+            result["max"] = py::make_tuple(0,0,0);
+            result["real"] = res_real;
+            result["imag"] = res_imag;
+            task_manager=tm;
+            return result;
+          });
     m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
               auto tm = task_manager;
               task_manager = nullptr;
