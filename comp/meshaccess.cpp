@@ -14,6 +14,11 @@
 
 namespace ngcomp
 {
+
+
+  template <int DIMS, int DIMR, typename BASE> class ALE_ElementTransformation;
+  
+  
   string Ngs_Element::defaultstring = "default";
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
@@ -177,6 +182,12 @@ namespace ngcomp
         mir[i].Compute();
     }
 
+    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const
+    {
+      return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ElementTransformation<DIMS,DIMR>>
+        (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
+    }
+    
   };
   
 
@@ -692,6 +703,12 @@ namespace ngcomp
           hmir[i].Compute();
         }
     }
+    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const
+    {
+      return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ConstElementTransformation<DIMS,DIMR>>
+        (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
+    }
+
   };
   
 

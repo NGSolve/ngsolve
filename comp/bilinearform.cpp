@@ -1054,8 +1054,8 @@ namespace ngcomp
                                      try
                                        {
                                          // should we give an optional derformation to the integrators ? 
-                                         // auto & mapped_trans = eltrans.AddDeformation(bfi.GetDeformation(), lh);
-                                         bfi.CalcElementMatrixAdd (fel, eltrans, sum_elmat, lh);
+                                         auto & mapped_trafo = eltrans.AddDeformation(bfi.GetDeformation().get(), lh);
+                                         bfi.CalcElementMatrixAdd (fel, mapped_trafo, sum_elmat, lh);
                                        }
                                      catch (ExceptionNOSIMD & e)
                                        {
@@ -2499,7 +2499,8 @@ namespace ngcomp
                      
                      try
                        {
-                         bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+                         auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                         bfi->CalcLinearizedElementMatrix (fel, mapped_trafo, elveclin, elmat, lh);
                          
                          if (printelmat) 
                            {
@@ -3373,7 +3374,9 @@ namespace ngcomp
                      {
                        if (!bfi->DefinedOn (el.GetIndex())) continue;
                        if (!bfi->DefinedOnElement (el.Nr())) continue;
-                       bfi->ApplyElementMatrix (fel, trafo, elvecx, elvecy, 0, lh);
+
+                       auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);                       
+                       bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
                        
                        this->fespace->TransformVec (el, elvecy, TRANSFORM_RHS);
                        
