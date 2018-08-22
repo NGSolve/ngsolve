@@ -687,68 +687,98 @@ void ExportVisFunctions(py::module &m) {
             auto tm = task_manager;
             task_manager = nullptr;
             LocalHeap lh(10000000, "GetFacetValues");
-            int dim = ma->GetDimension();
+            int ncomps = cf->Dimension();
             typedef std::pair<ngfem::ELEMENT_TYPE,bool> T_ET;
             map<T_ET, Array<float>> values_real;
             map<T_ET, Array<float>> values_imag;
+            Array<float> min(ncomps);
+            Array<float> max(ncomps);
+            min = std::numeric_limits<float>::max();
+            max = std::numeric_limits<float>::lowest();
             auto nf = ma->GetNFacets();
             // position of facet in result array
-            vector<pair<ELEMENT_TYPE, int>> position(nf);
+            vector<int> position;
+            position.reserve(nf);
             map<ELEMENT_TYPE, int> count;
             for(auto i : Range(nf))
-              position[i] = make_pair(ET_TRIG, -1);
-            for (auto el : ma->Elements(VOL))
-                for(auto fnr : ma->GetElFacets(el))
-                    if (position[fnr].second == -1)
-                      position[fnr] = make_pair(ma->GetFacetType(fnr), count[ma->GetFacetType(fnr)]++);
+              position.push_back(-1);
+            for(auto fnr : Range(ma->GetNFacets()))
+              position[fnr] = count[ma->GetFacetType(fnr)]++;
 
             for(auto et : irs)
               {
-                values_real[T_ET{et.first,false}].SetSize(count[et.first] * irs[et.first].GetNIP());
+                values_real[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP() * ncomps);
                 if(cf->IsComplex())
-                  values_imag[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP());
+                  values_imag[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP() * ncomps);
               }
 
-            for(auto el : ma->Elements(VOL))
-              {
-                auto fnrs = ma->GetElFacets(el);
-                HeapReset hr(lh);
-                auto& trafo = ma->GetTrafo(el, lh);
-                for(auto i : Range(ElementTopology::GetNFacets(el.GetType())))
-                  {
-                    auto eltype = ma->GetFacetType(fnrs[i]);
-                    Facet2ElementTrafo transform(el.GetType(), el.Vertices());
-                    auto& ir_facet = transform(i, irs[eltype], lh);
-                    auto nip = ir_facet.GetNIP();
-                    for (auto j : Range(ir_facet.Size()))
-                      ir_facet[j].SetFacetNr(i);
-                    auto& mir = trafo(ir_facet, lh);
-                    FlatMatrix<> res(nip, 1,lh);
-                    cf->Evaluate(mir, res);
-                    for(auto j : Range(nip))
-                      values_real[T_ET{eltype, false}].Range(fnrs[i] * nip, (fnrs[i]+1)*nip) = res;
-                  }
-              }
+            bool use_simd = false;
+            ma->IterateElements(VOL, lh, [&](auto el, LocalHeap& mlh)
+                                {
+                                  FlatArray<float> min_local(ncomps,  mlh);
+                                  FlatArray<float> max_local(ncomps,  mlh);
+                                  min_local = std::numeric_limits<float>::max();
+                                  max_local = std::numeric_limits<float>::lowest();
+                                  auto curved = el.is_curved;
+                                  auto fnrs = ma->GetElFacets(el);
+                                  Facet2ElementTrafo transform(el.GetType(), el.Vertices());
+                                  auto& trafo = ma->GetTrafo(el,mlh);
+                                  for(auto i : Range(ElementTopology::GetNFacets(el.GetType())))
+                                    {
+                                      auto eltype = ma->GetFacetType(fnrs[i]);
+                                      auto& vals_real = values_real[T_ET{eltype, curved}];
+                                      auto& vals_imag = values_imag[T_ET{eltype, curved}];
+                                      auto& ir_facet = transform(i, irs[eltype], mlh);
+                                      auto nip = ir_facet.GetNIP();
+                                      for(auto j : Range(nip))
+                                        ir_facet[j].SetFacetNr(i);
+                                      int values_per_element = nip * ncomps;
+                                      size_t first = fnrs[i] * values_per_element;
+                                      size_t next = first + values_per_element;
+                                      auto& mir = trafo(ir_facet, mlh);
+                                      if(cf->IsComplex())
+                                        GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next),
+                                                            vals_imag.Range(first,next), min_local, max_local);
+                                      else
+                                        GetValues<double>( *cf, mlh, mir, vals_real.Range(first,next),
+                                                           vals_imag, min_local, max_local);
+                                      for(auto i : Range(ncomps))
+                                        {
+                                          float expected = min[i];
+                                          while (min_local[i] < expected)
+                                            AsAtomic(min[i]).compare_exchange_weak(expected,
+                                                                                   min_local[i],
+                                                                                   std::memory_order_relaxed,
+                                                                                   std::memory_order_relaxed);
+                                          expected = max[i];
+                                          while (max_local[i] > expected)
+                                            AsAtomic(max[i]).compare_exchange_weak(expected, max_local[i],
+                                                                                   std::memory_order_relaxed,
+                                                                                   std::memory_order_relaxed);
+                                        }
+                                    }
+                                });
+            py::gil_scoped_acquire ac;
             py::dict res_real, res_imag;
             for(auto &p : irs)
               {
                 auto et = p.first;
                 for(auto curved : {true, false})
                   {
-                    if(values_real[T_ET{et, curved}].Size() > 0)
-                      {
-                        res_real[py::make_tuple(et, curved)] = MoveToNumpyArray(values_real[T_ET{et,curved}]);
-                      }
+                    if(values_real[T_ET{et, curved}].Size())
+                      res_real[py::make_tuple(et, curved)] = MoveToNumpyArray(values_real[T_ET{et,curved}]);
+                    if(values_imag[T_ET{et, curved}].Size())
+                      res_imag[py::make_tuple(et, curved)] = MoveToNumpyArray(values_imag[T_ET{et, curved}]);
                   }
               }
             py::dict result;
-            result["min"] = py::make_tuple(0,0,0);
-            result["max"] = py::make_tuple(0,0,0);
+            result["min"] = MoveToNumpyArray(min);
+            result["max"] = MoveToNumpyArray(max);
             result["real"] = res_real;
             result["imag"] = res_imag;
             task_manager=tm;
             return result;
-          });
+          }, py::call_guard<py::gil_scoped_release>());
     m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
               auto tm = task_manager;
               task_manager = nullptr;
@@ -787,6 +817,8 @@ void ExportVisFunctions(py::module &m) {
               ma->IterateElements(vb, lh,[&](auto el, LocalHeap& mlh) {
                   FlatArray<float> min_local(ncomps, mlh);
                   FlatArray<float> max_local(ncomps, mlh);
+                  min_local = std::numeric_limits<float>::max();
+                  max_local = std::numeric_limits<float>::lowest();
                   auto curved = el.is_curved;
 
                   auto et = el.GetType();
@@ -804,7 +836,7 @@ void ExportVisFunctions(py::module &m) {
                     {
                       try
                         {
-                          auto & mir = GetMappedIR(ma, el, simd_ir, lh);
+                          auto & mir = GetMappedIR(ma, el, simd_ir, mlh);
                           if(cf->IsComplex())
                             GetValues<SIMD<Complex>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
                           else
@@ -817,7 +849,7 @@ void ExportVisFunctions(py::module &m) {
                     }
                   if(!use_simd)
                     {
-                      auto & mir = GetMappedIR(ma, el, ir, lh);
+                      auto & mir = GetMappedIR(ma, el, ir, mlh);
                       if(cf->IsComplex())
                         GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
                       else
