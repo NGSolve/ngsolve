@@ -465,7 +465,10 @@ void ExportVisFunctions(py::module &m) {
 
             std::map<VorB, py::list> element_data;
             ElementInformation points(ET_POINT);
-            points.nelements = ma->GetNV();
+            points.nelements = ma->GetNE(getVB(dim));
+            points.data.SetAllocSize(points.nelements);
+            for(auto el : ma->Elements(getVB(dim)))
+              points.data.Append(el.vertices[0]);
             element_data[getVB(dim)].append(toDict(points));
 
             ElementInformation edges(ET_SEGM);
