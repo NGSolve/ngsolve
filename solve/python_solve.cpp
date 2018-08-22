@@ -702,7 +702,7 @@ void ExportVisFunctions(py::module &m) {
             // position of facet in result array
             vector<int> position;
             position.reserve(nf);
-            map<ELEMENT_TYPE, int> count;
+            map<ngfem::ELEMENT_TYPE, int> count;
             for(auto i : Range(nf))
               position.push_back(-1);
             for(auto fnr : Range(ma->GetNFacets()))
