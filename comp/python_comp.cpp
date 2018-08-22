@@ -1428,6 +1428,19 @@ active_dofs : BitArray or None
            self.SetActiveDofs(active_dofs);
          },
          py::arg("dofs"))
+    .def(py::pickle([](const CompressedFESpace* compr_fes)
+                    {
+                      return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());
+                    },
+                    [] (py::tuple state) -> shared_ptr<CompressedFESpace>
+                    {
+                      auto fes = make_shared<CompressedFESpace>(state[0].cast<shared_ptr<FESpace>>());
+                      if (state[1].cast<shared_ptr<BitArray>>())
+                        fes->SetActiveDofs(state[1].cast<shared_ptr<BitArray>>());
+                      fes->Update(glh);
+                      fes->FinalizeUpdate(glh);
+                      return fes;
+                    }))
     ;
 
 
