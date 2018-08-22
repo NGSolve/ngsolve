@@ -2830,7 +2830,8 @@ element_vb : ngsolve.fem.VorB
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate, VorB element_vb)
+             bool simd_evaluate, VorB element_vb,
+             shared_ptr<GridFunction> deformation)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2874,7 +2875,7 @@ element_vb : ngsolve.fem.VorB
                }
 
              bfi->SetSimdEvaluate (simd_evaluate);
-             
+             bfi->SetDeformation (deformation);
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return shared_ptr<BilinearFormIntegrator>(bfi);
@@ -2888,6 +2889,7 @@ element_vb : ngsolve.fem.VorB
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
+        py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic bilinear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
