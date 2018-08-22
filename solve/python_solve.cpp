@@ -465,7 +465,10 @@ void ExportVisFunctions(py::module &m) {
 
             std::map<VorB, py::list> element_data;
             ElementInformation points(ET_POINT);
-            points.nelements = ma->GetNV();
+            points.nelements = ma->GetNE(getVB(dim));
+            points.data.SetAllocSize(points.nelements);
+            for(auto el : ma->Elements(getVB(dim)))
+              points.data.Append(el.vertices[0]);
             element_data[getVB(dim)].append(toDict(points));
 
             ElementInformation edges(ET_SEGM);
@@ -612,8 +615,55 @@ void ExportVisFunctions(py::module &m) {
                     if(hexes[i].data.Size()) element_data[VOL].append(toDict(hexes[i]));
                 }
             }
+
+            py::list facet_data;
+            if (dim > 1)
+              {
+                // facet data
+                ElementInformation segms[2] = {{ET_SEGM}, {ET_SEGM, true}};
+                ElementInformation trigs[2] = {{ET_TRIG}, {ET_TRIG, true}};
+                ElementInformation quads[2] = {{ET_QUAD}, {ET_QUAD, true}};
+
+                auto nf = ma->GetNFacets();
+                BitArray fine_facet(nf);
+                fine_facet.Clear();
+                for(auto el : ma->Elements(VOL))
+                  for(auto fnr : ma->GetElFacets(el))
+                    fine_facet.Set(fnr);
+
+                Array<int> pnrs;
+                for(auto fnr : Range(ma->GetNFacets()))
+                  {
+                    if(!fine_facet[fnr]) continue;
+                    ma->GetFacetPNums(fnr, pnrs);
+                    // trigs
+                    ElementInformation* type;
+                    if(ma->GetDimension()==2)
+                      type = segms;
+                    else
+                      {
+                        if(pnrs.Size() == 3)
+                          type = trigs;
+                        else
+                            type = quads;
+                      }
+                    // TODO: curved facets
+                    auto& ei = type[false];
+                    ei.nelements++;
+                    ei.data.Append(fnr);
+                    ei.data.Append(fnr);
+                    for(auto p : pnrs)
+                      ei.data.Append(p);
+                  }
+                for(auto i : Range(2)){
+                  if (segms[i].data.Size()) facet_data.append(toDict(segms[i]));
+                  if (trigs[i].data.Size()) facet_data.append(toDict(trigs[i]));
+                  if (quads[i].data.Size()) facet_data.append(toDict(quads[i]));
+                }
+              }
             py::dict py_eldata;
 
+            py_eldata["facets"] = facet_data;
             py::list py_edges;
             py_edges.append(toDict(edges));
             py_eldata["edges"] = py_edges;
@@ -634,6 +684,104 @@ void ExportVisFunctions(py::module &m) {
             return py_eldata;
          });
 
+    m.def("_GetFacetValues", [](shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma,
+                                map<ngfem::ELEMENT_TYPE, IntegrationRule> irs)
+          {
+            auto tm = task_manager;
+            task_manager = nullptr;
+            LocalHeap lh(10000000, "GetFacetValues");
+            int ncomps = cf->Dimension();
+            typedef std::pair<ngfem::ELEMENT_TYPE,bool> T_ET;
+            map<T_ET, Array<float>> values_real;
+            map<T_ET, Array<float>> values_imag;
+            Array<float> min(ncomps);
+            Array<float> max(ncomps);
+            min = std::numeric_limits<float>::max();
+            max = std::numeric_limits<float>::lowest();
+            auto nf = ma->GetNFacets();
+            // position of facet in result array
+            vector<int> position;
+            position.reserve(nf);
+            map<ngfem::ELEMENT_TYPE, int> count;
+            for(auto i : Range(nf))
+              position.push_back(-1);
+            for(auto fnr : Range(ma->GetNFacets()))
+              position[fnr] = count[ma->GetFacetType(fnr)]++;
+
+            for(auto et : irs)
+              {
+                values_real[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP() * ncomps);
+                if(cf->IsComplex())
+                  values_imag[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP() * ncomps);
+              }
+
+            bool use_simd = false;
+            ma->IterateElements(VOL, lh, [&](auto el, LocalHeap& mlh)
+                                {
+                                  FlatArray<float> min_local(ncomps,  mlh);
+                                  FlatArray<float> max_local(ncomps,  mlh);
+                                  min_local = std::numeric_limits<float>::max();
+                                  max_local = std::numeric_limits<float>::lowest();
+                                  auto curved = el.is_curved;
+                                  auto fnrs = ma->GetElFacets(el);
+                                  Facet2ElementTrafo transform(el.GetType(), el.Vertices());
+                                  auto& trafo = ma->GetTrafo(el,mlh);
+                                  for(auto i : Range(ElementTopology::GetNFacets(el.GetType())))
+                                    {
+                                      auto eltype = ma->GetFacetType(fnrs[i]);
+                                      auto& vals_real = values_real[T_ET{eltype, curved}];
+                                      auto& vals_imag = values_imag[T_ET{eltype, curved}];
+                                      auto& ir_facet = transform(i, irs[eltype], mlh);
+                                      auto nip = ir_facet.GetNIP();
+                                      for(auto j : Range(nip))
+                                        ir_facet[j].SetFacetNr(i);
+                                      int values_per_element = nip * ncomps;
+                                      size_t first = fnrs[i] * values_per_element;
+                                      size_t next = first + values_per_element;
+                                      auto& mir = trafo(ir_facet, mlh);
+                                      if(cf->IsComplex())
+                                        GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next),
+                                                            vals_imag.Range(first,next), min_local, max_local);
+                                      else
+                                        GetValues<double>( *cf, mlh, mir, vals_real.Range(first,next),
+                                                           vals_imag, min_local, max_local);
+                                      for(auto i : Range(ncomps))
+                                        {
+                                          float expected = min[i];
+                                          while (min_local[i] < expected)
+                                            AsAtomic(min[i]).compare_exchange_weak(expected,
+                                                                                   min_local[i],
+                                                                                   std::memory_order_relaxed,
+                                                                                   std::memory_order_relaxed);
+                                          expected = max[i];
+                                          while (max_local[i] > expected)
+                                            AsAtomic(max[i]).compare_exchange_weak(expected, max_local[i],
+                                                                                   std::memory_order_relaxed,
+                                                                                   std::memory_order_relaxed);
+                                        }
+                                    }
+                                });
+            py::gil_scoped_acquire ac;
+            py::dict res_real, res_imag;
+            for(auto &p : irs)
+              {
+                auto et = p.first;
+                for(auto curved : {true, false})
+                  {
+                    if(values_real[T_ET{et, curved}].Size())
+                      res_real[py::make_tuple(et, curved)] = MoveToNumpyArray(values_real[T_ET{et,curved}]);
+                    if(values_imag[T_ET{et, curved}].Size())
+                      res_imag[py::make_tuple(et, curved)] = MoveToNumpyArray(values_imag[T_ET{et, curved}]);
+                  }
+              }
+            py::dict result;
+            result["min"] = MoveToNumpyArray(min);
+            result["max"] = MoveToNumpyArray(max);
+            result["real"] = res_real;
+            result["imag"] = res_imag;
+            task_manager=tm;
+            return result;
+          }, py::call_guard<py::gil_scoped_release>());
     m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
               auto tm = task_manager;
               task_manager = nullptr;
@@ -672,6 +820,8 @@ void ExportVisFunctions(py::module &m) {
               ma->IterateElements(vb, lh,[&](auto el, LocalHeap& mlh) {
                   FlatArray<float> min_local(ncomps, mlh);
                   FlatArray<float> max_local(ncomps, mlh);
+                  min_local = std::numeric_limits<float>::max();
+                  max_local = std::numeric_limits<float>::lowest();
                   auto curved = el.is_curved;
 
                   auto et = el.GetType();
@@ -689,7 +839,7 @@ void ExportVisFunctions(py::module &m) {
                     {
                       try
                         {
-                          auto & mir = GetMappedIR(ma, el, simd_ir, lh);
+                          auto & mir = GetMappedIR(ma, el, simd_ir, mlh);
                           if(cf->IsComplex())
                             GetValues<SIMD<Complex>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
                           else
@@ -702,7 +852,7 @@ void ExportVisFunctions(py::module &m) {
                     }
                   if(!use_simd)
                     {
-                      auto & mir = GetMappedIR(ma, el, ir, lh);
+                      auto & mir = GetMappedIR(ma, el, ir, mlh);
                       if(cf->IsComplex())
                         GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
                       else
