@@ -49,6 +49,8 @@ namespace ngcomp
       active_dofs = actdof;
     }
 
+    shared_ptr<BitArray> GetActiveDofs() const { return active_dofs; }
+
     // a name for our new fe-space
     virtual string GetClassName () const override
     {
