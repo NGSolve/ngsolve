@@ -27,7 +27,7 @@ To work through the i-tutorials, you first have to install
 
 - Netgen/NGSolve, see http://www.ngsolve.org/downloads 
 - Jupyter from http://www.jupyter.org. You can use the pip package manager: "pip3 install jupyter" 
-- download and unpack the i-tutorials from `here <i-tutorials.zip>`__.
+- download and unpack the i-tutorials from `here <../i-tutorials.zip>`__.
 
 Some of the tutorials require packages from scipy and matplotlib, so it
 is a good idea to install them as well:
