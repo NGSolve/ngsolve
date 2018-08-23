@@ -1384,12 +1384,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
   void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
+
     definedon[vb].SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
       definedon[vb][i] = defon.Test(i);
 
     if (low_order_space)
       low_order_space -> SetDefinedOn (vb, defon);
+
+    timestamp = 0;
   }
 
   void FESpace :: SetDirichletBoundaries (const BitArray & dirbnds)
