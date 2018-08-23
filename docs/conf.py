@@ -33,8 +33,39 @@ import sphinx_rtd_theme
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # extensions = ["sphinx.ext.autodoc","numpydoc","sphinx.ext.autosummary","sphinx.ext.napoleon","sphinx.ext.intersphinx"]
-extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax","sphinx.ext.todo"]
+extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax","sphinx.ext.todo",
+              "IPython.sphinxext.ipython_console_highlighting", "IPython.sphinxext.ipython_directive",
+              "nbsphinx"]
 
+
+# START nbsphinx stuff
+
+# Don't add .txt suffix to source files (available for Sphinx >= 1.5):
+html_sourcelink_suffix = ''
+
+# Execute notebooks before conversion: 'always', 'never', 'auto' (default)
+# nbsphinx_execute = 'never'
+
+# If True, the build process is continued even if an exception occurs:
+nbsphinx_allow_errors = True
+
+# This is processed by Jinja2 and inserted before each notebook
+nbsphinx_prolog = r"""
+{% set docname = env.doc2path(env.docname, base='') %}
+
+.. only:: html
+
+    .. role:: raw-html(raw)
+        :format: html
+
+    .. nbinfo::
+
+        This page was generated from `{{ docname }}`__.
+
+    __ https://ngsolve.org/docu/{{docname}}
+"""
+
+# END nbsphinx stuff
 
 # autosummary_generate = True
 
@@ -76,7 +107,7 @@ language = "python"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = []
+exclude_patterns = ["_build", "**.ipynb_checkpoints"]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
