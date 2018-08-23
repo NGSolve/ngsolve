@@ -49,3 +49,8 @@ table.rows tr:nth-child(even) {
 table.rows tr:nth-child(odd) {
     background-color: grey;
 }
+
+div.nboutput div.output_area {
+    max-height: 400px;
+}
+
