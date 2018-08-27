@@ -182,7 +182,7 @@ namespace ngcomp
         mir[i].Compute();
     }
 
-    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const
+    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const override
     {
       return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ElementTransformation<DIMS,DIMR>>
         (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
@@ -703,7 +703,7 @@ namespace ngcomp
           hmir[i].Compute();
         }
     }
-    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const
+    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const override
     {
       return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ConstElementTransformation<DIMS,DIMR>>
         (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);

@@ -148,7 +148,7 @@ namespace ngcomp
       if (!bfa->SymmetricStorage()) 
 	{
 	  harmonicexttrans = sparse_harmonicexttrans =
-	    make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2wbdofs, el2ifdofs, false);
+	    make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2wbdofs, el2ifdofs, false);
 	  harmonicexttrans -> AsVector() = 0.0;
 	}
       else
@@ -157,16 +157,16 @@ namespace ngcomp
 
       innersolve = sparse_innersolve = bfa->SymmetricStorage() 
 	? make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2ifdofs)
-	: make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
+	: make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
       innersolve->AsVector() = 0.0;
 
       harmonicext = sparse_harmonicext =
-	make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2ifdofs, el2wbdofs, false);
+	make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
       if (bfa->SymmetricStorage() && !hypre)
         pwbmat = make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2wbdofs);
       else
-        pwbmat = make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
+        pwbmat = make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
       dynamic_pointer_cast<BaseSparseMatrix>(pwbmat) -> SetSPD ( bfa->IsSPD() );

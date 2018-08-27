@@ -377,7 +377,7 @@ namespace ngla
   }
 
 
-  MatrixGraph :: MatrixGraph (int asize, const Table<int> & rowelements, 
+  MatrixGraph :: MatrixGraph (int asize, int awidth, const Table<int> & rowelements, 
                               const Table<int> & colelements, 
                               bool symmetric)
   {
@@ -824,7 +824,7 @@ namespace ngla
         if (loop == 1)
           {
             size = ndof;
-            width = ndof;
+            width = awidth;
             owner = true;
             
             firsti.SetSize (size+1);
@@ -2026,7 +2026,6 @@ namespace ngla
   {
     static Timer t1("TransposeMatrix 1");
     static Timer t2("TransposeMatrix 2");
-
     t1.Start();
     Array<int> cnt(mat.Width());
     cnt = 0;
