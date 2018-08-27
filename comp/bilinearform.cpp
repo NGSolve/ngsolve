@@ -443,7 +443,7 @@ namespace ngcomp
         delete creator.GetTable();
         */
         auto table = creator.MoveTable();
-        graph = new MatrixGraph (ndof, table, table, symmetric);        
+        graph = new MatrixGraph (ndof, ndof, table, table, symmetric);        
       }
     else
       {
@@ -510,7 +510,8 @@ namespace ngcomp
         */
         auto table = creator.MoveTable();
         auto table2 = creator2.MoveTable();
-        graph = new MatrixGraph (fespace2->GetNDof(), table2, table, symmetric);
+        graph = new MatrixGraph (fespace2->GetNDof(), fespace->GetNDof(),
+                                 table2, table, symmetric);
       }
     
     graph -> FindSameNZE();
