@@ -1005,6 +1005,7 @@ namespace ngcomp
   void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+    if (!DefinedOn (ei)) return;
 
     /*
     if (order_policy == NODE_TYPE_ORDER)
@@ -1089,9 +1090,6 @@ namespace ngcomp
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
 	  }
-	
-	if (!DefinedOn (ei))
-          dnums.SetSize0();
       }
     else if (ei.VB()==BND)
       {
@@ -1102,9 +1100,6 @@ namespace ngcomp
 	// high order
         dnums += GetFacetDofs (fanum);
         
-	if (!DefinedOn (ei))
-          dnums.SetSize0();
-        // dnums = -1;
       }
   }
 
