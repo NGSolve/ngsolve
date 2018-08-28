@@ -75,6 +75,7 @@ if (NETGEN_USE_GUI)
     target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
     target_compile_options(ngsolve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
     target_include_directories(ngsolve PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+    target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
 
     if(NOT WIN32)
         target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
