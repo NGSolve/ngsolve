@@ -561,7 +561,7 @@ namespace ngmg
     
     for (int i = 0; i <ne; i++)
       {
-        int parent = ma->GetParentElement (i);
+        int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
         if(parent!=-1)
           fv(ndel*i) = fv(ndel*parent);
         for(int j = 1; j<ndel; j++)
