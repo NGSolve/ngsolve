@@ -3,7 +3,7 @@ from math import sqrt
 from ngsolve import Projector, Norm
 
 
-def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_int=False, dampfactor=1, printing=True):
+def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, printing=True):
     """
     Newton's method for solving non-linear problems of the form A(u)=0.
 
@@ -26,9 +26,6 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
 
     inverse : string
       A string of the sparse direct solver which should be solved for inverting the assembled Newton matrix.
-
-    el_int : bool
-      Flag if eliminate internal flag is used. If this is set to True then Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
       Set the damping factor for Newton's method. If dampfactor is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*numit)' for the correction, where 'numit' denotes the Newton iteration.
@@ -53,13 +50,12 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
         numit += 1
         if printing:
             print("Newton iteration ", it)
-            print ("energy = ", a.Energy(u.vec))
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(el_int), inverse=inverse)
+        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
 
-        if el_int:
+        if a.condense:
             r.data += a.harmonic_extension_trans * r
             w.data = inv * r
             w.data += a.harmonic_extension * w
@@ -71,7 +67,6 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
         if printing:
             print("err = ", err)
 
-        energy = a.Energy(u.vec)
         u.vec.data -= min(1, numit*dampfactor)*w
         
         if abs(err) < maxerr: break
@@ -83,7 +78,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
 
 
 
-def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_int=False, dampfactor=1, linesearch=False, printing=True):
+def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True):
     """
     Newton's method for solving non-linear problems of the form A(u)=0 involving energy integrators.
 
@@ -107,9 +102,6 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
 
     inverse : string
       A string of the sparse direct solver which should be solved for inverting the assembled Newton matrix.
-
-    el_int : bool
-      Flag if eliminate internal flag is used. If this is set to True then Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
       Set the damping factor for Newton's method. If dampfactor is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*numit)' for the correction, where 'numit' denotes the Newton iteration.
@@ -142,9 +134,9 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(el_int), inverse=inverse)
+        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
 
-        if el_int:
+        if a.condense:
             r.data += a.harmonic_extension_trans * r
             w.data = inv * r
             w.data += a.harmonic_extension * w

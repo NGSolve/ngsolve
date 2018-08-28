@@ -416,7 +416,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
 
 
 
-def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-8, el_int=False, dampfactor=1.0, printing=True):
+def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-8, dampfactor=1.0, printing=True):
     """ Preconditioned Richardson Iteration
 
     Parameters
@@ -439,9 +439,6 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
     tol : double
       Tolerance of the residuum. Richardson iteration stops if residuum < tolerance*initial_residuum is reached.
 
-    el_int : bool
-      Flag if eliminate internal flag is used. If this is set to True then Richardson iteration acts only on the non-local dofs. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
-
     dampfactor : float
       Set the damping factor for the Richardson iteration. If it is 1 then no damping is done. Values greater than 1 are allowed.
 
@@ -459,7 +456,7 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
     r = rhs.CreateVector()
     u[:] = 0
 
-    projector = Projector(freedofs if freedofs else a.space.FreeDofs(coupling=el_int), False)
+    projector = Projector(freedofs if freedofs else a.space.FreeDofs(coupling=a.condense), False)
     
     r.data = rhs # r.data = rhs - a.mat*u
     r.data -= projector*r

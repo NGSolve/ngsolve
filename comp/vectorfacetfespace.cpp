@@ -7,6 +7,8 @@
 #include <comp.hpp>
 #include <fem.hpp>
 
+#include "../fem/hcurllofe.hpp"
+
 //#undef NDEBUG
 #include <cassert>
 
@@ -343,6 +345,15 @@ namespace ngcomp
 
   FiniteElement & VectorFacetFESpace :: GetFE ( ElementId ei, Allocator & lh ) const
   {
+    if (!DefinedOn (ei))
+      {
+        return
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (lh) HCurlDummyFE<et.ElementType()> ();
+                      });
+      }
+    
     switch(ei.VB())
       {
       case VOL:
@@ -404,6 +415,9 @@ namespace ngcomp
 
   void VectorFacetFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
   {
+    dnums.SetSize0();
+    if (!DefinedOn (ei)) return;
+    
     if(ei.VB()==VOL)
       {
     if (!highest_order_dc)
@@ -412,7 +426,6 @@ namespace ngcomp
 	int first,next;
 	
 	fanums.SetSize(0);
-	dnums.SetSize(0);
 	
 	
 	if(ma->GetDimension() == 3)
@@ -443,7 +456,6 @@ namespace ngcomp
 	    // Array<int> fanums; // facet numbers
 	    
 	    // fanums.SetSize(0);
-	    dnums.SetSize(0);
             
 	    auto fanums = ma->GetElEdges (ei);
 	    
@@ -473,7 +485,6 @@ namespace ngcomp
 	    // Array<int> fanums; // facet numbers
 	    
 	    // fanums.SetSize(0);
-	    dnums.SetSize(0);
 	    
 	    ELEMENT_TYPE et = ma->GetElType (ei);
 	    auto fanums = ma->GetElFaces (ei);
@@ -533,13 +544,10 @@ namespace ngcomp
 	  }
       }
       
-    if (!DefinedOn (VOL, ma->GetElIndex (ei)))
-      dnums = -1;
     // *testout << "dnums = " << endl << dnums << endl;
       }
     if(ei.VB()==BND)
       {
-    dnums.SetSize(0);
     ArrayMem<int, 1> fanums(1);
     int first, next;
 
@@ -568,8 +576,8 @@ namespace ngcomp
       }
 
       }
-    if(ei.VB()==BBND)
-      dnums.SetSize(0);
+    //if(ei.VB()==BBND)
+    //  dnums.SetSize(0);
   }
 
   shared_ptr<Table<int>> VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
@@ -584,7 +592,7 @@ namespace ngcomp
   
   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
-    dnums.SetSize(0);
+    dnums.SetSize0();
     if ( ma->GetDimension() == 3 )
       {
 	dnums.Append( 2*felnr );
@@ -602,7 +610,7 @@ namespace ngcomp
 
   void VectorFacetFESpace :: GetInnerDofNrs ( int felnr, Array<int> & dnums ) const
   {
-    dnums.SetSize(0);
+    dnums.SetSize0();
   }
 
   int VectorFacetFESpace :: GetNFacetDofs ( int felnr ) const
@@ -626,12 +634,12 @@ namespace ngcomp
 
   void VectorFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
   {
-    dnums.SetSize(0);
+    dnums.SetSize0();
   }
 
   void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
   {
-    dnums.SetSize(0);
+    dnums.SetSize0();
     if ( ma->GetDimension() == 3 )
       return;
 
@@ -642,7 +650,7 @@ namespace ngcomp
 
   void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
   {
-    dnums.SetSize(0);
+    dnums.SetSize0();
     if ( ma->GetDimension() == 2 ) return;
 
     dnums.Append( 2*felnr);
