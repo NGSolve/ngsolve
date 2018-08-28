@@ -66,6 +66,7 @@ el : ngcomp::Ngs_Element
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
     .def("VB", &ElementId::VB, "VorB of element")
+    .def_property_readonly("valid", [] (ElementId ei) { return ei.Nr() != -1; }, "is element valid")
     .def(py::self!=py::self)
     .def(py::self==py::self)
     .def("__hash__" , &ElementId::Nr)
@@ -229,7 +230,8 @@ nr : int
 
   py::class_<Ngs_Element>(m, "Ngs_Element")
     .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
-    .def("VB", &Ngs_Element::VB, "VorB of element")   
+    .def("VB", &Ngs_Element::VB, "VorB of element")
+    .def_property_readonly("valid", [] (ElementId ei) { return ei.Nr() != -1; }, "is element valid")    
     .def_property_readonly("vertices", [](Ngs_Element &el)
                            {
                              return MakePyTuple(Substitute(el.Vertices(), Nr2Vert));
@@ -629,9 +631,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("ei"), py::arg("refine"),
 	 "Set refinementflag for mesh-refinement")
 
-    .def("GetParentElement", &MeshAccess::GetParentElement,
-         py::arg("elnum"),
-         "Return parent element numbers on refined mesh")
+    .def("GetParentElement", static_cast<ElementId(MeshAccess::*)(ElementId)const> (&MeshAccess::GetParentElement),
+         py::arg("ei"),
+         "Return parent element id on refined mesh")
 
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
           {

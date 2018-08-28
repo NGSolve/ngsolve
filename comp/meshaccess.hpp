@@ -944,12 +944,25 @@ namespace ngcomp
       return parents;
     }
     /// number of parent element on next coarser mesh
+    [[deprecated("Use GetParentElement(ElementId) instead!")]]                
     int GetParentElement (int ei) const
     { return mesh.GetParentElement (ei); }
     /// number of parent boundary element on next coarser mesh
+    [[deprecated("Use GetParentElement(ElementId) instead!")]]                    
     int GetParentSElement (int ei) const
     { return mesh.GetParentSElement (ei); }
-  
+
+    ElementId GetParentElement (ElementId ei) const
+    {
+      if (ei.VB() == VOL)
+        return ElementId(VOL, mesh.GetParentElement(ei.Nr()));
+      else if (ei.VB() == BND)
+        return ElementId(BND, mesh.GetParentSElement(ei.Nr()));
+      else
+        throw Exception ("GetParentElement only supported for VOL and BND");
+    }
+
+    
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
     { return Ng_GetClusterRepVertex (pi+1)-1; }

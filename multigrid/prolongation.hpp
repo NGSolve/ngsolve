@@ -120,7 +120,7 @@ namespace ngmg
 
       for (int i = nc; i < nf; i++)
 	{
-	  int parent = ma->GetParentElement (i);
+	  int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
 	  fv(i) = fv(parent);
 	}
     
@@ -140,7 +140,7 @@ namespace ngmg
 
       for (int i = nf-1; i >= nc; i--)
 	{
-	  int parent = ma->GetParentElement (i);
+	  int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
 	  fv(parent) += fv(i);
 	  fv(i) = 0;
 	}
