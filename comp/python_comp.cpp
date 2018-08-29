@@ -1767,39 +1767,11 @@ VOL_or_BND : ngsolve.comp.VorB
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
 
-
-   .def("__call__", 
-        [](shared_ptr<GF> self, const BaseMappedIntegrationPoint & mip)
-          {
-            HeapReset hr(glh);
-            auto space = self->GetFESpace();
-
-            ElementId ei = mip.GetTransformation().GetElementId();
-            auto evaluator = space->GetEvaluator(VorB(ei));
-            const FiniteElement & fel = space->GetFE(ei, glh);
-
-            Array<int> dnums(fel.GetNDof());
-            space->GetDofNrs(ei, dnums);
-
-            if (space->IsComplex())
-              {
-                Vector<Complex> elvec(fel.GetNDof()*space->GetDimension());
-                Vector<Complex> values(evaluator->Dim());
-                self->GetElementVector(dnums, elvec);
-
-                evaluator->Apply(fel, mip, elvec, values, glh);
-                return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
-              }
-            else
-              {
-                Vector<> elvec(fel.GetNDof()*space->GetDimension());
-                Vector<> values(evaluator->Dim());
-                self->GetElementVector(dnums, elvec);
-                evaluator->Apply(fel, mip, elvec, values, glh);
-                return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
-              }
-          }, 
-        py::arg("mip"))
+    // expose CF __call__ to GF, because pybind11 doesn't do that if a function gets overloaded
+    .def("__call__", [](shared_ptr<GF> self, py::args args, py::kwargs kwargs)
+         {
+           return py::module::import("ngsolve").attr("CoefficientFunction").attr("__call__")(self, *args, **kwargs);
+         })
     
     /*
     .def("D", 
