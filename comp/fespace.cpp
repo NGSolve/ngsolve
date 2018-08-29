@@ -884,6 +884,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return creator.MoveTable();
   }
 
+  /*
+  void FESpace :: CheckCouplingTypeArray() const
+  {
+    if (ctofdof.Size() < GetNDof())
+      throw Exception ("don't have a proper coupling type array, needed for static condensation");
+  }
+  */
+  
+  /*
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (DofId dof) const 
   {
@@ -892,7 +901,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (dof >= ctofdof.Size()) throw Exception("FESpace::GetDofCouplingType out of range. Did you set up ctofdof?");
     return ctofdof[dof];
   }
-
+  */
+  
   void FESpace :: SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const
   {
     if (dof >= ctofdof.Size()) throw Exception("FESpace::SetDofCouplingType out of range");
@@ -2538,9 +2548,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ctofdof.SetSize(this->GetNDof());
 
     for (int i = 0; i < spaces.Size(); i++)
-      for (int j=0; j< spaces[i]->GetNDof();j++)
-	ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);	
-
+      {
+        if (spaces[i] -> CouplingTypeArrayAvailable())
+          for (int j=0; j< spaces[i]->GetNDof();j++)
+            ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);
+        else
+          ctofdof.Range(cummulative_nd[i], cummulative_nd[i+1]) = WIREBASKET_DOF;
+      }
     // *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 

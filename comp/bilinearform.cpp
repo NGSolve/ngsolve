@@ -1076,18 +1076,33 @@ namespace ngcomp
                              (*testout) << "sum matrix:" << endl;
                              LapackEigenSystem(sum_elmat, lh);
                            }
-                         
-                         Array<int> lhdofs(dnums.Size(), lh);
-                         fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
-                         bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && (lhdofs.Size() > 0);
+
+                         // Array<int> lhdofs(dnums.Size(), lh);
+                         // fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
+                         bool has_hidden = false;
+                         if (eliminate_hidden)
+                           {
+                             for (auto d : dnums)
+                               if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
+                                 has_hidden = true;
+                           }
+                         bool elim_only_hidden =
+                           (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0)*/ has_hidden;
                          if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                            {
+                             // if (!fespace->CouplingTypeArrayAvailable())
+                             // throw Exception ("need coupling types for static condensation");
                              static Timer statcondtimer("static condensation", 2);
                              ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
+                             static Timer statcondtimer2("static condensation 2", 2);
                              
                              Array<int> idofs1(dnums.Size(), lh);
+                             // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
+                             idofs1.SetSize0();
+                             auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
+                             for (auto i : Range(dnums))
+                               if (fespace->GetDofCouplingType(dnums[i]) & ctype) idofs1.Append(i);
                              
-                             fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
                              if (printelmat) 
                                {
                                  lock_guard<mutex> guard(printelmat_mutex);
@@ -1160,6 +1175,8 @@ namespace ngcomp
                                      for (auto ldof : hdnums1)
                                        idnums1[ldof] = -1;
                                      
+                                     ThreadRegionTimer regstat2 (statcondtimer2, TaskManager::GetThreadId());
+
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
                                      idnums.SetSize0(); 
@@ -2076,7 +2093,7 @@ namespace ngcomp
             int MASK = eliminate_internal ? EXTERNAL_DOF : (eliminate_hidden ? VISIBLE_DOF : ANY_DOF);
             bool first_time = true;
 
-            if (MyMPI_GetNTasks() == 1 && check_unused)
+            if (MyMPI_GetNTasks() == 1 && check_unused) 
               for (int i = 0; i < useddof.Size(); i++)
                 if (useddof[i] != 
                     ((fespace->GetDofCouplingType(i) & MASK) != 0) )
