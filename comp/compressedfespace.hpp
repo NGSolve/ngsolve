@@ -26,11 +26,17 @@ namespace ngcomp
 
     void WrapDofs(Array<DofId> & dnums) const
     {
+      /*
+      // (JS): this is buggy: dnums[i] may be -1
       for (int i : Range(dnums.Size()))
         if (all2comp[dnums[i]] != -1)
           dnums[i] = all2comp[dnums[i]];
         else 
           dnums[i] = -1;
+      */
+      for (DofId & d : dnums)
+        if (IsRegularDof (d))
+          d = all2comp[d];
     }
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
