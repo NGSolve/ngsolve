@@ -1220,7 +1220,7 @@ namespace ngfem
 	}
       };
 
-    ip.precomputed_geometry = 1;
+    ip.SetPrecomputedGeometry(true);
     return ip;
   }
 

@@ -67,9 +67,25 @@ def test_domainwise_cf():
     error_true = Integrate((c-c_true)*(c-c_true), mesh)
     assert abs(error_true) < 1e-14
 
+def test_evaluate():
+    from netgen.geom2d import unit_square
+    import ngsolve as ngs
+    import numpy as np
+    mesh = ngs.Mesh(unit_square.GenerateMesh(maxh=0.2))
+    pnts = np.linspace(0.1,0.9,9)
+    cf = ngs.CoefficientFunction((ngs.x,ngs.y))
+    cf2 = ngs.CoefficientFunction((ngs.y, ngs.x * 1J))
+    mips = mesh(pnts,0.5)
+    vals = cf(mips)
+    vals2 = cf2(mips)
+    assert np.linalg.norm(vals-np.array(list(zip(pnts,[0.5]*10)))) < 1e-10
+    assert np.linalg.norm(vals2-np.array(list(zip([0.5 + 0J] * 10, pnts*1J)))) < 1e-10
+    assert ngs.x(mesh(0.5,0.5)) - 0.5 < 1e-10
+
 if __name__ == "__main__":
     test_pow()
     test_ParameterCF()
     test_mesh_size_cf()
     test_real()
     test_domainwise_cf()
+    test_evaluate()
