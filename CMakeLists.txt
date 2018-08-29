@@ -201,7 +201,6 @@ endif(APPLE)
 #######################################################################
 if (NETGEN_USE_GUI)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS TCL)
-    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_TCL_INCLUDE_PATH})
 endif (NETGEN_USE_GUI)
 
 #######################################################################
