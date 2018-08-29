@@ -1077,8 +1077,12 @@ namespace ngcomp
                              LapackEigenSystem(sum_elmat, lh);
                            }
 
-                         // Array<int> lhdofs(dnums.Size(), lh);
-                         // fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
+                         /*
+                         Array<int> lhdofs(dnums.Size(), lh);
+                         fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
+                         bool has_hidden = lhdofs.Size() > 0;
+                         */
+
                          bool has_hidden = false;
                          if (eliminate_hidden)
                            {
@@ -1086,6 +1090,7 @@ namespace ngcomp
                                if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
                                  has_hidden = true;
                            }
+
                          bool elim_only_hidden =
                            (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0)*/ has_hidden;
                          if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
@@ -1097,11 +1102,13 @@ namespace ngcomp
                              static Timer statcondtimer2("static condensation 2", 2);
                              
                              Array<int> idofs1(dnums.Size(), lh);
-                             // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
+                             fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
+                             /*
                              idofs1.SetSize0();
                              auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
                              for (auto i : Range(dnums))
                                if (fespace->GetDofCouplingType(dnums[i]) & ctype) idofs1.Append(i);
+                             */
                              
                              if (printelmat) 
                                {

@@ -335,7 +335,7 @@ namespace ngla
       // { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
     { return FlatVector<TM> (firsti[i+1]-firsti[i], data+firsti[i]); }
 
-
+    static bool IsRegularIndex (int index) { return index >= 0; }
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
                                   FlatArray<int> dnums2, 
                                   BareSliceMatrix<TSCAL> elmat,

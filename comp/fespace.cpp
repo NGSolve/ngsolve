@@ -2569,9 +2569,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
+  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2582,8 +2582,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto j : Range(hdnums))
           {
-            int val = hdnums[j];
-            if (val != -1)
+            DofId val = hdnums[j];
+            if (IsRegularDof(val))
               val += base_cum;
             dnums[base+j] = val;
           }
@@ -2592,7 +2592,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2603,8 +2603,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto j : Range(hdnums))
           {
-            int val = hdnums[j];
-            if (val != -1)
+            DofId val = hdnums[j];
+            if (IsRegularDof(val))
               val += base_cum;
             dnums[base+j] = val;
           }
@@ -2614,16 +2614,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize(0);
     for (int i = 0; i < spaces.Size(); i++)
       {
 	spaces[i]->GetVertexDofNrs (vnr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2635,10 +2635,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetEdgeDofNrs (ednr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2650,10 +2650,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetFaceDofNrs (fanr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2666,10 +2666,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetInnerDofNrs (elnr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
   
