@@ -39,7 +39,11 @@ namespace ngcomp
       }
       else
       {
-        all2comp[i] = -1;
+        // all2comp[i] = -1;
+        if (space->GetDofCouplingType(i) == HIDDEN_DOF)
+          all2comp[i] = NO_DOF_NR_CONDENSE;
+        else
+          all2comp[i] = NO_DOF_NR;
       }
     }
     comp2all.SetSize(ndof);
