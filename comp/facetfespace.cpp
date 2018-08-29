@@ -117,7 +117,6 @@ namespace ngcomp
 
     low_order_space = 0; // never used?
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
-		cout << "setting all_dofs_together " << all_dofs_together << endl;
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
