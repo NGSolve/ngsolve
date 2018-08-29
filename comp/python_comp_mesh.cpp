@@ -654,23 +654,16 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          "Curve the mesh elements for geometry approximation of given order")
 
     .def("__call__",
-         [](MeshAccess & ma, double x, double y, double z, VorB vb) 
+         py::vectorize([](MeshAccess* ma, double x, double y, double z, VorB vb)
           {
             IntegrationPoint ip;
             int elnr;
             if (vb == VOL)
-              elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+              elnr = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             else
-              elnr = ma.FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
-              
-            if (elnr < 0) throw Exception ("point out of domain");
-
-            ElementTransformation & trafo = ma.GetTrafo(ElementId(vb, elnr), global_alloc);
-            BaseMappedIntegrationPoint & mip = trafo(ip, global_alloc);
-            mip.SetOwnsTrafo(true);
-            return &mip;
-          } 
-          , 
+              elnr = ma->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
+            return MeshPoint { ip(0), ip(1), ip(2), ma, vb, elnr };
+          }),
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
          py::arg("VOL_or_BND") = VOL,
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))

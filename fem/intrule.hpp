@@ -7,6 +7,10 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+namespace ngcomp
+{
+  class MeshAccess;
+}
 namespace ngfem
 {
 
@@ -123,7 +127,6 @@ namespace ngfem
     int facetnr = -1;
     /// co-dimension of point (0..vol, 1..bnd, 2..bbnd, 3..bbbnd=vertex)
     VorB vb = VOL;
-  public:
     ///
     bool precomputed_geometry;
   public:
@@ -193,6 +196,8 @@ namespace ngfem
     INLINE IntegrationPoint (const IntegrationPoint & aip)
     { *this = aip; }
 
+    void SetPrecomputedGeometry(bool value) { precomputed_geometry = value; }
+    bool GetPrecomputedGeometry() const { return precomputed_geometry; }
     ///
     INLINE void SetNr (int anr) { nr = anr; }
     ///
@@ -250,6 +255,14 @@ namespace ngfem
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };
 
+
+  struct MeshPoint
+  {
+    double x,y,z;
+    ngcomp::MeshAccess* mesh;
+    VorB vb;
+    int nr;
+  };
 
 
   class NGS_DLL_HEADER ElementTransformation;

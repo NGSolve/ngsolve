@@ -147,7 +147,7 @@ inline void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t 
 }
 
 template<typename T>
-py::object MoveToNumpyArray( Array<T> &a )
+py::array_t<T> MoveToNumpyArray( Array<T> &a )
 {
   if(a.Size()) {
       py::capsule free_when_done(&a[0], [](void *f) {
