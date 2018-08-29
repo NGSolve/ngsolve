@@ -872,13 +872,13 @@ namespace ngfem
             if (nodecf.StoreUserData())
               gridfunction_cfs.Append (&nodecf);
         });
-    cout << IM(5) << "num test_proxies " << test_proxies.Size() << endl;
-    cout << IM(5) << "num trial_proxies " << trial_proxies.Size() << endl;
-    cout << IM(5) << "cumulated test_proxy dims  " << test_cum << endl;
-    cout << IM(5) << "cumulated trial_proxy dims " << trial_cum << endl;
+    cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
+    cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
+    cout << IM(6) << "cumulated test_proxy dims  " << test_cum << endl;
+    cout << IM(6) << "cumulated trial_proxy dims " << trial_cum << endl;
 
     elementwise_constant = cf -> ElementwiseConstant();
-    cout << IM(5) << "element-wise constant = " << elementwise_constant << endl;
+    cout << IM(6) << "element-wise constant = " << elementwise_constant << endl;
 
     // find non-zeros
     int cnttest = 0, cnttrial = 0;
@@ -963,10 +963,10 @@ namespace ngfem
           if (nonzeros_proxies(l1,k1) && (!diagonal_proxies(l1,k1) || !same_diffops(l1,k1))) is_symmetric = false;
         }
     
-    cout << IM(5) << "nonzeros: " << endl << nonzeros << endl;
-    cout << IM(5) << "nonzeros_deriv: " << endl << nonzeros_deriv << endl;
-    cout << IM(5) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
-    cout << IM(5) << "symmetric: " << endl << is_symmetric << endl;
+    cout << IM(6) << "nonzeros: " << endl << nonzeros << endl;
+    cout << IM(6) << "nonzeros_deriv: " << endl << nonzeros_deriv << endl;
+    cout << IM(6) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
+    cout << IM(6) << "symmetric: " << endl << is_symmetric << endl;
     
     trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
