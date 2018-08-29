@@ -73,7 +73,14 @@ ANY                  1 1 1 1 | 15
 
   // will be size_t some day 
   typedef int DofId;
+  enum IRREGULAR_DOF_NR
+    {
+      NO_DOF_NR = -1,            // don't assemble this dof (it has no regular number)
+      NO_DOF_NR_CONDENSE = -2    // condense out this dof, don't assemble to global system
+    };
+  INLINE bool IsRegularDof (DofId dof) { return dof >= 0; } // ATTENTION for size_t 
 
+  
   using ngmg::Prolongation;
 
   /**
@@ -488,7 +495,10 @@ ANY                  1 1 1 1 | 15
       { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
+    
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
+    void SetIrregularDofNrs (Array<DofId> & dnums) const;
+    
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (Region reg) const;
     Table<int> CreateDofTable (VorB vorb) const;

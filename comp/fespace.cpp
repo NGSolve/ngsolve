@@ -954,7 +954,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	}
   }
 
-
+  void FESpace :: SetIrregularDofNrs (Array<DofId> & dnums) const
+  {
+    for (DofId & d : dnums)
+      if (IsRegularDof(d))
+        {
+          auto ct = GetDofCouplingType(d);
+          if (ct == UNUSED_DOF) d = NO_DOF_NR;
+          if (ct == HIDDEN_DOF) d = NO_DOF_NR_CONDENSE;
+        }
+  }
+  
+  
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
     GetDofNrs(ElementId(VOL,elnr),dnums,ctype);
