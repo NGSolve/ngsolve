@@ -395,7 +395,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
           for (int d : el.GetDofs())
-            if (d != -1) dirichlet_dofs.Set (d);
+            if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 
     /*
     Array<DofId> dnums;
@@ -419,7 +419,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_VERTEX,i), dnums);
                for (DofId d : dnums)
-                 if (d != -1) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
     timer2.Stop();
@@ -442,7 +442,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_EDGE,i), dnums);
                for (DofId d : dnums)
-                 if (d != -1) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
 
@@ -452,7 +452,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetFaceDofNrs (i, dnums);
 	  for (DofId d : dnums)
-	    if (d != -1) dirichlet_dofs.Set (d);
+	    if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 	}
     
     tcolbits.Start();
@@ -611,11 +611,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      if (HasAtomicDofs())
                        {
                          for (int i = dofs.Size()-1; i >= 0; i--)
-                           if (dofs[i] == -1 || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
+                           if (!IsRegularDof(dofs[i]) || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
                        }
                      else
                        for (int i = dofs.Size()-1; i >= 0; i--)
-                         if (dofs[i] == -1) dofs.DeleteElement(i);
+                         if (!IsRegularDof(dofs[i])) dofs.DeleteElement(i);
                      QuickSort (dofs);   // sort to avoid dead-locks
                      
                      for (auto d : dofs) 
