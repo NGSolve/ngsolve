@@ -376,7 +376,7 @@ namespace ngcomp
                          
                      
                      for (DofId d : dnums)
-                       if (d != -1) creator.Add (shift+i, d);
+                       if (IsRegularDof(d)) creator.Add (shift+i, d);
                    }
                });
 	  }
@@ -386,7 +386,7 @@ namespace ngcomp
           {
             specialelements[i]->GetDofNrs (dnums);
             for (int d : dnums)
-              if (d != -1) creator.Add (neV+neB+neBB+i, d);
+              if (IsRegularDof(d)) creator.Add (neV+neB+neBB+i, d);
           }
 
         if (fespace->UsesDGCoupling())
@@ -427,7 +427,7 @@ namespace ngcomp
               }
               QuickSort (dnums_dg);
               for (int j = 0; j < dnums_dg.Size(); j++)
-                if (dnums_dg[j] != -1 && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
+                if (IsRegularDof(dnums_dg[j]) && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
                   creator.Add (neV+neB+neBB+nspe+i, dnums_dg[j]);
             }
         }
@@ -467,7 +467,7 @@ namespace ngcomp
 		    
 		    int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV + neB);
 		    for (int d : dnums)
-		      if (d != -1) creator2.Add (shift+i, d);
+		      if (IsRegularDof(d)) creator2.Add (shift+i, d);
 		  }
 		
 		/*
@@ -914,7 +914,7 @@ namespace ngcomp
 
                         if (check_unused)
                           for (int j = 0; j < dnums.Size(); j++)
-                            if (dnums[j] != -1)
+                            if (IsRegularDof(dnums[j]))
                               useddof[dnums[j]] = true;
                       }
                     cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
@@ -996,7 +996,7 @@ namespace ngcomp
                                          *testout << "dnums = " << endl << dnums << endl;
                                          *testout << "ct = ";
                                          for (auto d : dnums)
-                                           if (d == -1) *testout << "0 ";
+                                           if (!IsRegularDof(d)) *testout << "0 ";
                                            else *testout << fespace->GetDofCouplingType (d) << " ";
                                          *testout << endl;
                                          *testout << "element-index = " << eltrans.GetElementIndex() << endl;
