@@ -1373,6 +1373,7 @@ namespace ngstd
     /// returns MPI-type 
     static MPI_Datatype MPIType () 
     { 
+      if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) return MPI_CHAR;
       if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_INT;
       cout << "please provide MPI_Datatype for COUPLING_TYPE" << endl;
       exit(1);
