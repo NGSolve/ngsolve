@@ -1687,19 +1687,29 @@ weights : list
 
 
   py::class_<MeshPoint>(m, "MeshPoint");
-  py::detail::npy_format_descriptor<MeshPoint>::register_dtype({
-      py::detail::field_descriptor { "x", offsetof(MeshPoint, x), sizeof(double),
-          py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
-        py::detail::field_descriptor { "y", offsetof(MeshPoint, y), sizeof(double),
+  bool have_numpy = false;
+  try {
+      auto numpy = py::module::import("numpy");
+      have_numpy = !numpy.is_none();
+  }
+  catch(...) {}
+
+  if (have_numpy)
+  {
+    py::detail::npy_format_descriptor<MeshPoint>::register_dtype({
+        py::detail::field_descriptor { "x", offsetof(MeshPoint, x), sizeof(double),
             py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
-          py::detail::field_descriptor { "z", offsetof(MeshPoint, z), sizeof(double),
+          py::detail::field_descriptor { "y", offsetof(MeshPoint, y), sizeof(double),
               py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
-          py::detail::field_descriptor { "meshptr", offsetof(MeshPoint, mesh), sizeof(double),
-              py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
-          py::detail::field_descriptor { "VorB", offsetof(MeshPoint, vb), sizeof(int),
-              py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype() },
-            py::detail::field_descriptor {"nr", offsetof(MeshPoint, nr), sizeof(int),
-                py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype()}});
+            py::detail::field_descriptor { "z", offsetof(MeshPoint, z), sizeof(double),
+                py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
+            py::detail::field_descriptor { "meshptr", offsetof(MeshPoint, mesh), sizeof(double),
+                py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
+            py::detail::field_descriptor { "VorB", offsetof(MeshPoint, vb), sizeof(int),
+                py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype() },
+              py::detail::field_descriptor {"nr", offsetof(MeshPoint, nr), sizeof(int),
+                  py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype()}});
+  }
 
   py::class_<BaseMappedIntegrationPoint>(m, "BaseMappedIntegrationPoint")
     .def(py::init([](MeshPoint pnt)
