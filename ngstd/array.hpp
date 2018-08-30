@@ -730,6 +730,15 @@ namespace ngstd
       return size;
     }
 
+    /// Add element at end of array. reallocation not necessary.
+    INLINE size_t AppendHaveMem (const T & el)
+    {
+      data[size] = el;
+      size++;
+      return size;
+    }
+
+    
     /// Add element at end of array. reallocation if necessary.
     INLINE size_t Append (T && el)
     {
