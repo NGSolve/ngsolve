@@ -395,7 +395,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
           for (int d : el.GetDofs())
-            if (d != -1) dirichlet_dofs.Set (d);
+            if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 
     /*
     Array<DofId> dnums;
@@ -419,7 +419,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_VERTEX,i), dnums);
                for (DofId d : dnums)
-                 if (d != -1) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
     timer2.Stop();
@@ -442,7 +442,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_EDGE,i), dnums);
                for (DofId d : dnums)
-                 if (d != -1) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
 
@@ -452,7 +452,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetFaceDofNrs (i, dnums);
 	  for (DofId d : dnums)
-	    if (d != -1) dirichlet_dofs.Set (d);
+	    if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 	}
     
     tcolbits.Start();
@@ -611,11 +611,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      if (HasAtomicDofs())
                        {
                          for (int i = dofs.Size()-1; i >= 0; i--)
-                           if (dofs[i] == -1 || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
+                           if (!IsRegularDof(dofs[i]) || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
                        }
                      else
                        for (int i = dofs.Size()-1; i >= 0; i--)
-                         if (dofs[i] == -1) dofs.DeleteElement(i);
+                         if (!IsRegularDof(dofs[i])) dofs.DeleteElement(i);
                      QuickSort (dofs);   // sort to avoid dead-locks
                      
                      for (auto d : dofs) 
@@ -729,7 +729,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             
             unsigned check = 0;
             for (auto d : dofs)
-              if (d != -1) check |= mask[d];
+              if (IsRegularDof(d)) check |= mask[d];
             
             if (check != UINT_MAX) // 0xFFFFFFFF)
               {
@@ -746,7 +746,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 if (color > maxcolor) maxcolor = color;
 		
                 for (auto d : dofs)
-                  if (d != -1) mask[d] |= checkbit;
+                  if (IsRegularDof(d)) mask[d] |= checkbit;
               }
           }
         
@@ -884,6 +884,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return creator.MoveTable();
   }
 
+  /*
+  void FESpace :: CheckCouplingTypeArray() const
+  {
+    if (ctofdof.Size() < GetNDof())
+      throw Exception ("don't have a proper coupling type array, needed for static condensation");
+  }
+  */
+  
+  /*
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (DofId dof) const 
   {
@@ -892,7 +901,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (dof >= ctofdof.Size()) throw Exception("FESpace::GetDofCouplingType out of range. Did you set up ctofdof?");
     return ctofdof[dof];
   }
-
+  */
+  
   void FESpace :: SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const
   {
     if (dof >= ctofdof.Size()) throw Exception("FESpace::SetDofCouplingType out of range");
@@ -912,10 +922,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       {
         for (int i = 0; i < dnums.Size(); i++)
-          if (dnums[i] != -1)
+          if (IsRegularDof(dnums[i]))
             ctypes[i] = ctofdof[dnums[i]];
           else
-            ctypes[i] = UNUSED_DOF;
+            {
+              if (dnums[i] == NO_DOF_NR)
+                ctypes[i] = UNUSED_DOF;
+              else
+                ctypes[i] = HIDDEN_DOF;
+            }
       }
   }
 
@@ -934,7 +949,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (ElementId id : ma->Elements<VOL>())
       {
         GetDofNrs(id, dnums);
-        for (auto d : dnums) cnt[d]++;
+        for (auto d : dnums)
+          if (IsRegularDof(d)) cnt[d]++;
       }
     for (int i : IntRange(0,ndof))
       {
@@ -942,14 +958,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
           cout << "dof " << i << " not used, but coupling-type = " << ctofdof[i] << endl;
       }
 
-
-    cout << "check dofs" << endl;
+    
+    // cout << "check dofs" << endl;
     for(auto vb : {VOL,BND,BBND})
       for (ElementId id : ma->Elements(vb))
 	{
 	  GetDofNrs (id, dnums);
 	  for (auto d : dnums)
-	    if (d < 0 || d >= ndof)
+	    if (IsRegularDof(d) && d >= ndof)
 	      cout << "dof out of range: " << d << endl;
 	}
   }
@@ -1653,7 +1669,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (auto el : Elements(reg.VB()))
       if (reg.Mask().Test(el.GetIndex()))
         for (auto d : el.GetDofs())
-          if (d != -1)
+          if (IsRegularDof(d))
             ba.Set(d);
     return move(ba);
   }
@@ -1832,8 +1848,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_dofs.Clear();
 	for (auto el : Elements(BND))
           if (dirichlet_boundaries[el.GetIndex()])
-            for (int d : el.GetDofs())
-              if (d != -1) dirichlet_dofs.Set (d);
+            for (DofId d : el.GetDofs())
+              if (IsRegularDof(d)) dirichlet_dofs.Set (d);
       }
   }
 
@@ -2538,9 +2554,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ctofdof.SetSize(this->GetNDof());
 
     for (int i = 0; i < spaces.Size(); i++)
-      for (int j=0; j< spaces[i]->GetNDof();j++)
-	ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);	
-
+      {
+        if (spaces[i] -> CouplingTypeArrayAvailable())
+          for (int j=0; j< spaces[i]->GetNDof();j++)
+            ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);
+        else
+          ctofdof.Range(cummulative_nd[i], cummulative_nd[i+1]) = WIREBASKET_DOF;
+      }
     // *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 
@@ -2555,9 +2575,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
+  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2568,8 +2588,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto j : Range(hdnums))
           {
-            int val = hdnums[j];
-            if (val != -1)
+            DofId val = hdnums[j];
+            if (IsRegularDof(val))
               val += base_cum;
             dnums[base+j] = val;
           }
@@ -2578,7 +2598,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2589,8 +2609,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto j : Range(hdnums))
           {
-            int val = hdnums[j];
-            if (val != -1)
+            DofId val = hdnums[j];
+            if (IsRegularDof(val))
               val += base_cum;
             dnums[base+j] = val;
           }
@@ -2600,16 +2620,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize(0);
     for (int i = 0; i < spaces.Size(); i++)
       {
 	spaces[i]->GetVertexDofNrs (vnr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2621,10 +2641,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetEdgeDofNrs (ednr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2636,10 +2656,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetFaceDofNrs (fanr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2652,10 +2672,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetInnerDofNrs (elnr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
   

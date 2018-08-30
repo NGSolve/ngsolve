@@ -1335,7 +1335,7 @@ namespace ngla
       // mat_traits<TM>::WIDTH*dnums2.Size()));
 
     for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
+      if (IsRegularIndex(dnums1[i]))
 	{
 	  FlatArray<int> rowind = this->GetRowIndices(dnums1[i]);
 	  FlatVector<TM> rowvals = this->GetRowValues(dnums1[i]);
@@ -1344,7 +1344,7 @@ namespace ngla
 	  for (int j1 = 0; j1 < dnums2.Size(); j1++)
 	    {
 	      int j = map[j1];
-	      if (dnums2[j] != -1)
+	      if (IsRegularIndex(dnums2[j]))
 		{
 		  while (rowind[k] != dnums2[j])
 		    {
@@ -1845,7 +1845,7 @@ namespace ngla
       // mat_traits<TM>::WIDTH*dnums.Size()));
 
     int first_used = 0;
-    while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
+    while (first_used < dnums.Size() && !IsRegularIndex(dnums[map[first_used]]) ) first_used++;
     
     if (use_atomic)
       for (int i1 = first_used; i1 < dnums.Size(); i1++)
