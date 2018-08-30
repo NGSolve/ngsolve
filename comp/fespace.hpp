@@ -32,7 +32,7 @@ namespace ngcomp
      or
      - a wirebasket degree of freedom
   */
-  enum COUPLING_TYPE {  UNUSED_DOF = 0,
+  enum COUPLING_TYPE : char {  UNUSED_DOF = 0,
 			HIDDEN_DOF = 1,
 			LOCAL_DOF = 2,
 			CONDENSABLE_DOF = 3,
@@ -509,7 +509,14 @@ ANY                  1 1 1 1 | 15
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
     /// get coupling types of dof
-    virtual COUPLING_TYPE GetDofCouplingType (DofId dof) const;
+    // virtual COUPLING_TYPE GetDofCouplingType (DofId dof) const;
+    // make sure we have it, otherwise throw exception
+    bool CouplingTypeArrayAvailable() const { return ctofdof.Size() == GetNDof(); }
+    COUPLING_TYPE GetDofCouplingType (DofId dof) const
+    { return IsRegularDof(dof)
+        ? ( (ctofdof.Size()==0) ? WIREBASKET_DOF : ctofdof[dof])  // would like to rely on the ctarray
+        : ( (dof == NO_DOF_NR) ? UNUSED_DOF : HIDDEN_DOF ); }
+    
     virtual void SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const;
     
     void CheckCouplingTypes() const;

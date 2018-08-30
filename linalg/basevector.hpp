@@ -251,6 +251,7 @@ namespace ngla
     virtual AutoVector Range (size_t begin, size_t end) const;
     virtual AutoVector Range (T_Range<size_t> range) const;
 
+    static bool IsRegularIndex (int index) { return index >= 0; }
     virtual void GetIndirect (FlatArray<int> ind, 
                               FlatVector<double> v) const = 0;
     virtual void GetIndirect (FlatArray<int> ind, 

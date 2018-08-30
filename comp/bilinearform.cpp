@@ -376,7 +376,7 @@ namespace ngcomp
                          
                      
                      for (DofId d : dnums)
-                       if (d != -1) creator.Add (shift+i, d);
+                       if (IsRegularDof(d)) creator.Add (shift+i, d);
                    }
                });
 	  }
@@ -386,7 +386,7 @@ namespace ngcomp
           {
             specialelements[i]->GetDofNrs (dnums);
             for (int d : dnums)
-              if (d != -1) creator.Add (neV+neB+neBB+i, d);
+              if (IsRegularDof(d)) creator.Add (neV+neB+neBB+i, d);
           }
 
         if (fespace->UsesDGCoupling())
@@ -427,7 +427,7 @@ namespace ngcomp
               }
               QuickSort (dnums_dg);
               for (int j = 0; j < dnums_dg.Size(); j++)
-                if (dnums_dg[j] != -1 && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
+                if (IsRegularDof(dnums_dg[j]) && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
                   creator.Add (neV+neB+neBB+nspe+i, dnums_dg[j]);
             }
         }
@@ -467,7 +467,7 @@ namespace ngcomp
 		    
 		    int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV + neB);
 		    for (int d : dnums)
-		      if (d != -1) creator2.Add (shift+i, d);
+		      if (IsRegularDof(d)) creator2.Add (shift+i, d);
 		  }
 		
 		/*
@@ -914,7 +914,7 @@ namespace ngcomp
 
                         if (check_unused)
                           for (int j = 0; j < dnums.Size(); j++)
-                            if (dnums[j] != -1)
+                            if (IsRegularDof(dnums[j]))
                               useddof[dnums[j]] = true;
                       }
                     cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
@@ -996,7 +996,7 @@ namespace ngcomp
                                          *testout << "dnums = " << endl << dnums << endl;
                                          *testout << "ct = ";
                                          for (auto d : dnums)
-                                           if (d == -1) *testout << "0 ";
+                                           if (!IsRegularDof(d)) *testout << "0 ";
                                            else *testout << fespace->GetDofCouplingType (d) << " ";
                                          *testout << endl;
                                          *testout << "element-index = " << eltrans.GetElementIndex() << endl;
@@ -1076,18 +1076,48 @@ namespace ngcomp
                              (*testout) << "sum matrix:" << endl;
                              LapackEigenSystem(sum_elmat, lh);
                            }
-                         
+
+                         /*
                          Array<int> lhdofs(dnums.Size(), lh);
                          fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
-                         bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && (lhdofs.Size() > 0);
+                         bool has_hidden = lhdofs.Size() > 0;
+                         */
+
+                         bool has_hidden = false;
+                         if (eliminate_hidden)
+                           {
+                             for (auto d : dnums)
+                               if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
+                                 has_hidden = true;
+                           }
+
+                         bool elim_only_hidden =
+                           (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0)*/ has_hidden;
                          if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                            {
+                             // if (!fespace->CouplingTypeArrayAvailable())
+                             // throw Exception ("need coupling types for static condensation");
                              static Timer statcondtimer("static condensation", 2);
                              ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
+                             static Timer statcondtimer2("static condensation 2", 2);
                              
-                             Array<int> idofs1(dnums.Size(), lh);
+                             // Array<int> idofs1(dnums.Size(), lh);
+                             // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
                              
-                             fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
+                             Array<int> idofs1(dnums.Size(), lh), odofs1(dnums.Size(), lh);
+                             idofs1.SetSize0(); odofs1.SetSize0();
+                             
+                             auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
+                             for (auto i : Range(dnums))
+                               {
+                                 auto ct = fespace->GetDofCouplingType(dnums[i]);
+                                 if (ct & ctype)
+                                   idofs1.AppendHaveMem(i);
+                                 else
+                                   if (ct != UNUSED_DOF)
+                                     odofs1.AppendHaveMem(i);
+                               }
+                             
                              if (printelmat) 
                                {
                                  lock_guard<mutex> guard(printelmat_mutex);
@@ -1102,22 +1132,23 @@ namespace ngcomp
                                  HeapReset hr (lh);
 				 
                                  int size = sum_elmat.Height();
-                                 int dim = size / dnums.Size();
+                                 // int dim = size / dnums.Size();
+                                 int dim = fespace->GetDimension();
 				 
                                  int sizei = dim * idofs1.Size();
-                                 int sizeo = size - sizei;
+                                 int sizeo = dim * odofs1.Size();
 				 
                                  FlatArray<int> idofs (sizei, lh);
                                  FlatArray<int> odofs (sizeo, lh);
-				     
+
                                  for (int j = 0, k = 0; j < idofs1.Size(); j++)
                                    for (int jj = 0; jj < dim; jj++)
                                      idofs[k++] = dim*idofs1[j]+jj;
                                  
-                                 for (int j = 0, k = 0; j < size; j++)
-                                   if (!idofs.Contains(j))
-                                     odofs[k++] = j;
-                                 
+                                 for (int j = 0, k = 0; j < odofs1.Size(); j++)
+                                   for (int jj = 0; jj < dim; jj++)
+                                     odofs[k++] = dim*odofs1[j]+jj;
+
                                  if (printelmat)
                                    {
                                      lock_guard<mutex> guard(printelmat_mutex);
@@ -1147,32 +1178,59 @@ namespace ngcomp
                                    }
                                  else
                                    {
+                                     /*
                                      Array<int> idnums1(dnums.Size(), lh), 
                                        ednums1(dnums.Size(), lh),
                                        hdnums1(dnums.Size(), lh);
                                      fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
                                      fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
                                      fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
+
+                                     if (! (ednums1 == odofs1) )
+                                       cout << "they are different:" << endl
+                                            << "ednums1 = " << endl << ednums1 << endl
+                                            << "odofs1 = " << endl << odofs1 << endl;
+                                     if (! (idnums1 == idofs1) )
+                                       cout << "they are different:" << endl
+                                            << "idnums1 = " << endl << ednums1 << endl
+                                            << "idofs1 = " << endl << idofs1 << endl;
+                                     
                                      for (auto d : Range(idnums1.Size()))
                                        idnums1[d] = dnums[idnums1[d]];
                                      for (auto d : Range(ednums1.Size()))
                                        ednums1[d] = dnums[ednums1[d]];
                                      for (auto ldof : hdnums1)
-                                       idnums1[ldof] = -1;
+                                       idnums1[ldof] = NO_DOF_NR;
+                                     */
+
+                                     Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size());
+                                     for (int i : Range(idofs1))
+                                       {
+                                         DofId d = dnums[idofs1[i]];
+                                         if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
+                                           d = NO_DOF_NR; // or _CONDENSE; ???
+                                         idnums1[i] = d;
+                                       }
+                                     for (int i : Range(odofs1))
+                                       ednums1[i] = dnums[odofs1[i]];
                                      
+                                     
+                                     ThreadRegionTimer regstat2 (statcondtimer2, TaskManager::GetThreadId());
+
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
                                      idnums.SetSize0(); 
                                      ednums.SetSize0();
-                                     for (size_t j = 0; j < idnums1.Size(); j++)
-                                       if (idnums1[j] != -1)
-                                         idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+
+                                     for (DofId idnum1 : idnums1)
+                                       if (IsRegularDof(idnum1))
+                                         idnums += dim*IntRange(idnum1, idnum1+1);
                                        else
                                          for (size_t k = 0; k < dim; k++)
-                                           idnums += -1;
+                                           idnums.AppendHaveMem(idnum1);
 
-                                     for (size_t j = 0; j < ednums1.Size(); j++)
-                                       ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
+                                     for (DofId ednum1 : ednums1)
+                                       ednums += dim * IntRange(ednum1, ednum1+1);
                                      
                                      if (store_inner)
                                        innermatrix ->AddElementMatrix(el.Nr(),idnums,idnums,d);
@@ -1250,7 +1308,7 @@ namespace ngcomp
                                    }
                                  
                                  for (int k = 0; k < idofs1.Size(); k++)
-                                   dnums[idofs1[k]] = -1;
+                                   dnums[idofs1[k]] = NO_DOF_NR;
                                }
                            }
                          if (printelmat)
@@ -1269,7 +1327,7 @@ namespace ngcomp
                              if (printelmat)
                                *testout << "set these as useddof: " << dnums << endl;
                              for (auto d : dnums)
-                               if (d != -1) useddof[d] = true;
+                               if (IsRegularDof(d)) useddof[d] = true;
                            }
                          // timer3_VB[vb].Stop();
                        });
@@ -1427,7 +1485,7 @@ namespace ngcomp
                               */
                               if (check_unused)
                                 for (auto d : dnums)
-                                  if (d != -1) useddof[d] = true;
+                                  if (IsRegularDof(d)) useddof[d] = true;
                               
                               int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                               FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1638,7 +1696,7 @@ namespace ngcomp
                                      
                                      if (check_unused)
                                        for (auto d : dnums)
-                                         if (d != -1) useddof[d] = true;
+                                         if (IsRegularDof(d)) useddof[d] = true;
                                      
                                      int elmat_size = dnums.Size()*fespace->GetDimension();
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1720,7 +1778,7 @@ namespace ngcomp
 
                                  if (check_unused)
                                    for (auto d : dnums)
-                                     if (d != -1) useddof[d] = true;
+                                     if (IsRegularDof(d)) useddof[d] = true;
                                  
                                  int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                                  FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1911,7 +1969,7 @@ namespace ngcomp
 
                               if (check_unused)
                                 for (int k = 0; k < dnums.Size(); k++)
-                                  if (dnums[k] != -1)
+                                  if (IsRegularDof(dnums[k]))
                                     useddof[dnums[k]] = true;
                                   
                               int elmat_size = dnums.Size()*fespace->GetDimension();
@@ -2011,7 +2069,7 @@ namespace ngcomp
                     lock_guard<mutex> guard(printmatspecel2_mutex);
                     if (check_unused)
                       for (int j = 0; j < dnums.Size(); j++)
-                        if (dnums[j] != -1)
+                        if (IsRegularDof(dnums[j]))
                           useddof[dnums[j]] = true;
                     
                     AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
@@ -2076,7 +2134,7 @@ namespace ngcomp
             int MASK = eliminate_internal ? EXTERNAL_DOF : (eliminate_hidden ? VISIBLE_DOF : ANY_DOF);
             bool first_time = true;
 
-            if (MyMPI_GetNTasks() == 1 && check_unused)
+            if (MyMPI_GetNTasks() == 1 && check_unused) 
               for (int i = 0; i < useddof.Size(); i++)
                 if (useddof[i] != 
                     ((fespace->GetDofCouplingType(i) & MASK) != 0) )

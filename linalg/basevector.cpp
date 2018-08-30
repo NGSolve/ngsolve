@@ -357,7 +357,7 @@ namespace ngla
         for (auto i : ind.Range())
           {
             int index = ind[i];
-            v(i) = (index != -1) ? lsv(index) : 0;
+            v(i) = IsRegularIndex(index) ? lsv(index) : 0;
           }
         /*
         int i = 0;
@@ -385,7 +385,7 @@ namespace ngla
         FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
         
         for (int i = 0; i < ind.Size(); i++)
-          if (ind[i] != -1)
+          if (IsRegularIndex(ind[i]))
             sv(i) = lsv(ind[i]);
           else
             sv(i) = -1.0;
@@ -400,7 +400,7 @@ namespace ngla
     FlatSysVector<Complex> sv(ind.Size(), EntrySize(), &v(0));
 
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
+      if (IsRegularIndex(ind[i]))
 	sv(i) = lsv(ind[i]);
       else
 	sv(i) = -1.0;
@@ -439,7 +439,7 @@ namespace ngla
     int es = EntrySize() / 2;
     int ii = 0;
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
+      if (IsRegularIndex(ind[i]))
 	{
 	  int base = es * ind[i];
 	  for (int j = 0; j < es; j++)
