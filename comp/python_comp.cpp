@@ -2842,8 +2842,11 @@ element_vb : ngsolve.fem.VorB
              if (ir.Size())
                {
                  cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
+                 /*
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
+                 */
+                 bfi->SetIntegrationRule(ir);
                }
 
              bfi->SetSimdEvaluate (simd_evaluate);
