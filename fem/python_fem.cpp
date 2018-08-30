@@ -1687,12 +1687,6 @@ weights : list
 
 
   py::class_<MeshPoint>(m, "MeshPoint");
-  bool have_numpy = false;
-  try {
-      auto numpy = py::module::import("numpy");
-      have_numpy = !numpy.is_none();
-  }
-  catch(...) {}
 
   if (have_numpy)
   {

@@ -10,6 +10,9 @@ PythonEnvironment pyenv;
 
 
 using std::ostringstream;
+namespace ngstd {
+  bool have_numpy = false;
+}
 
 void SetFlag(Flags &flags, string s, py::object value) 
 {
@@ -163,6 +166,11 @@ void PyDefVecBuffer( TCLASS & c )
 
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
+  try {
+      auto numpy = py::module::import("numpy");
+      have_numpy = !numpy.is_none();
+  }
+  catch(...) {}
 
   
   std::string nested_name = "ngstd";

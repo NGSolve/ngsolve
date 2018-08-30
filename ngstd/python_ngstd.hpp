@@ -55,6 +55,20 @@ using std::string;
 using std::cout;
 using std::endl;
 
+namespace ngstd {
+  extern bool have_numpy;
+
+  template<typename TClass, typename TFunc, typename... T>
+  TClass &  PyDefVectorized(TClass & cls, const char * name, TFunc && f, T && ... args )
+  {
+      if(have_numpy)
+          cls.def(name, py::vectorize(std::forward<TFunc>(f)), std::forward<T>(args)...);
+      else
+          cls.def(name, std::forward<TFunc>(f), std::forward<T>(args)...);
+      return cls;
+  }
+}
+
 using namespace ngstd;
 
 namespace pybind11 {
