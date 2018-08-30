@@ -2602,19 +2602,43 @@ namespace ngcomp
                    *testout << "summat = " << sum_elmat << endl;
                  
 
-                 Array<int> lhdofs(dnums.Size(), lh);
-                 fespace->GetElementDofsOfType (el, lhdofs, HIDDEN_DOF);
-                 bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && (lhdofs.Size() > 0);
+                 // Array<int> lhdofs(dnums.Size(), lh);
+                 // fespace->GetElementDofsOfType (el, lhdofs, HIDDEN_DOF);
+
+                 bool has_hidden = false;
+                 if (eliminate_hidden)
+                   {
+                     for (auto d : dnums)
+                       if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
+                         has_hidden = true;
+                   }
+                 
+                 bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0) */ has_hidden;
 
                  if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                    {
                      static Timer statcondtimer("static condensation", 2);
                      RegionTimer regstat (statcondtimer);
                      
-                     ArrayMem<int,100> idofs, idofs1, odofs;
+                     // ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
+                     // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
+                     Array<int> idofs1(dnums.Size(), lh), odofs1(dnums.Size(), lh);
+                     idofs1.SetSize0(); odofs1.SetSize0();
+                     
+                     auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
+                     for (auto i : Range(dnums))
+                       {
+                         auto ct = fespace->GetDofCouplingType(dnums[i]);
+                         if (ct & ctype)
+                           idofs1.AppendHaveMem(i);
+                         else
+                           if (ct != UNUSED_DOF)
+                             odofs1.AppendHaveMem(i);
+                       }
+                     
+                     
                           
                      if (printelmat) 
                        {
@@ -2628,20 +2652,35 @@ namespace ngcomp
                          HeapReset hr (lh);
                          
                          int size = sum_elmat.Height();
-                         int dim = size / dnums.Size();
-                         
+                         int dim = fespace->GetDimension();                         
+                         // int dim = size / dnums.Size();
+
+                         /*
                          idofs.SetSize (0);
                          for (int j = 0; j < idofs1.Size(); j++)
                            for (int jj = 0; jj < dim; jj++)
                              idofs.Append (dim*idofs1[j]+jj);
+                         */
+                         int sizei = dim * idofs1.Size();
+                         int sizeo = dim * odofs1.Size();
                          
-                         int sizei = idofs.Size();
-                         int sizeo = size - sizei;
-                              
+                         FlatArray<int> idofs (sizei, lh);
+                         FlatArray<int> odofs (sizeo, lh);
+                         
+                         for (int j = 0, k = 0; j < idofs1.Size(); j++)
+                           for (int jj = 0; jj < dim; jj++)
+                             idofs[k++] = dim*idofs1[j]+jj;
+                         
+                         for (int j = 0, k = 0; j < odofs1.Size(); j++)
+                           for (int jj = 0; jj < dim; jj++)
+                             odofs[k++] = dim*odofs1[j]+jj;
+                         
+                         /*
                          odofs.SetSize (0);
                          for (int j = 0; j < size; j++)
                            if (!idofs.Contains(j))
                              odofs.Append(j);
+                         */
                          
                          if (printelmat)
                            {
@@ -2669,6 +2708,7 @@ namespace ngcomp
                            }
                          else
                            {
+                             /*
                              ArrayMem<int,50> idnums1, idnums;
                              ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
@@ -2687,7 +2727,36 @@ namespace ngcomp
                                idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
                              for (int j = 0; j < ednums1.Size(); j++)
                                ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
+                             */
 
+                             Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size());
+                             for (int i : Range(idofs1))
+                               {
+                                 DofId d = dnums[idofs1[i]];
+                                 if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
+                                   d = NO_DOF_NR; // or _CONDENSE; ???
+                                 idnums1[i] = d;
+                               }
+                             
+                             for (int i : Range(odofs1))
+                               ednums1[i] = dnums[odofs1[i]];
+
+                             Array<int> idnums(dim*idnums1.Size(), lh);
+                             Array<int> ednums(dim*ednums1.Size(), lh);
+                             idnums.SetSize0(); 
+                             ednums.SetSize0();
+                             
+                             for (DofId idnum1 : idnums1)
+                               if (IsRegularDof(idnum1))
+                                 idnums += dim*IntRange(idnum1, idnum1+1);
+                               else
+                                 for (size_t k = 0; k < dim; k++)
+                                   idnums.AppendHaveMem(idnum1);
+                             
+                             for (DofId ednum1 : ednums1)
+                               ednums += dim * IntRange(ednum1, ednum1+1);
+                             
+                             
                              if (store_inner)
                                static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
                                       ->AddElementMatrix(i,idnums,idnums,d);
