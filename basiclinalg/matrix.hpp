@@ -1667,7 +1667,7 @@ namespace ngbla
     
     /// 
     INLINE size_t Dist () const throw() { return dist; }
-
+    void IncPtr (size_t inc) { data += inc; } 
     SliceMatrix<T> AddSize (size_t h, size_t w) const
     {
 #ifdef DEBUG
