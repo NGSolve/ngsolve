@@ -5,6 +5,7 @@
 
 namespace ngbla
 {
+
   
   template <typename T> struct FooAVectorType
   {
@@ -881,8 +882,6 @@ namespace ngbla
 
 
 
-
-
   template <>
   class ABareVector<double>
   {
@@ -906,7 +905,7 @@ namespace ngbla
     AFlatVector<> AddVSize(size_t s) const { return AFlatVector<> (s*SIMD<double>::Size(), data); }
   };
 
-
+  
 #ifdef NONE
   template <>
   class ABareVector<Complex>
@@ -922,7 +921,6 @@ namespace ngbla
   };
 #endif
 
-  
   template <>
   class ABareMatrix<double> : public DummySize
   {
@@ -951,7 +949,7 @@ namespace ngbla
     ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); }
     operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (dist, data, *this); }
   };
-
+  
 
   template <>
   class ASliceMatrix<double> : public SIMDExpr<ASliceMatrix<double>>
@@ -1034,7 +1032,6 @@ namespace ngbla
     ASliceMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
     // ASliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
   };
-
 
 #ifdef NONE
   template <>
@@ -1134,7 +1131,6 @@ namespace ngbla
 
 
   
-  
   template <>
   class ABareSliceMatrix<double> : public DummySize, public SIMDExpr<ABareSliceMatrix<double>>
   {
@@ -1226,11 +1222,6 @@ namespace ngbla
 
 
 
-
-
-
-
-
   template <typename TA, typename TB>
   void TransposeMatrix(SliceMatrix<TA> a, SliceMatrix<TB> b)
   {
@@ -1248,10 +1239,9 @@ namespace ngbla
       c.Col(i) = diag(i) * a.Col(i);
   }
 
+  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
 #if defined(__AVX__) && not defined(__AVX512F__)
-
-  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
@@ -1272,7 +1262,6 @@ namespace ngbla
 
 #else // __AVX__
 
-  
   // INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   // { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   

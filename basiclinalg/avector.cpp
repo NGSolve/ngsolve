@@ -584,6 +584,8 @@ namespace ngbla
     SIMD<double> s3 = HAdd (sum31.Data(), sum32.Data(), sum33.Data(), sum34.Data());
     return make_tuple(s1,s2,s3);
   }
+
+
 #endif
   
 
@@ -2519,7 +2521,16 @@ namespace ngbla
     // cout << "err = " << L2Norm(hc-c) << endl;
     }
   */
-#endif
+
+
+#else // AVX
+  
+  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b)
+  {
+    b = Trans(a);    
+  }
+  
+#endif // AVX
 
 
   // ////////////////////////// begin SubAtB  Version 4x12 ///////////////  

@@ -1391,6 +1391,12 @@ namespace ngstd
     // const T * Ptr () const { return (const T*)(const void*)&head; }
     const T * Ptr () const { return (const T*)(const void*)this; }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>        
+    T & Elem()
+    {
+      throw Exception("illegal HTArray<0>::Elem<0>");
+    }
+
   };
 
   template<size_t S, typename T>
