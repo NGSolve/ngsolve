@@ -174,7 +174,7 @@ namespace ngcomp
          elfluxi += elflux;
          flux.SetElementVector (dnumsflux, elfluxi);
 
-         for (auto d : dnumsflux) if (d != -1) cnti[d]++;
+         for (auto d : dnumsflux) if (IsRegularDof(d)) cnti[d]++;
        });
 
     // }
@@ -517,7 +517,7 @@ namespace ngcomp
                   u.SetElementVector (ei.GetDofs(), elfluxi);
                   
                   for (auto d : ei.GetDofs())
-                    if (d != -1) cnti[d]++;
+                    if (IsRegularDof(d)) cnti[d]++;
                   
                   return;
                 }

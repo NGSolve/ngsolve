@@ -90,7 +90,7 @@ namespace ngcomp
              int base = (vb == VOL) ? 0 : ((vb == BND) ? ma->GetNE() : ma->GetNE() + ma->GetNSE());
              for (auto d : el.GetDofs())
                {
-                 if (d == -1) continue;
+                 if (!IsRegularDof(d)) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
                  if ( ((ct & CONDENSABLE_DOF) != 0) && bfa->UsesEliminateInternal()) continue;
@@ -117,7 +117,7 @@ namespace ngcomp
 
              for (auto d : el.GetDofs())
                {
-                 if (d == -1) continue;
+                 if (!IsRegularDof(d)) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
                  if ( ((ct & CONDENSABLE_DOF) != 0) && bfa->UsesEliminateInternal()) continue;
@@ -659,12 +659,12 @@ namespace ngcomp
 
     int used = 0;
     for (int i : Range(dnums))
-      if (dnums[i] != -1 && freedofs->Test(dnums[i])) used++;
+      if (IsRegularDof(dnums[i]) && freedofs->Test(dnums[i])) used++;
     
     FlatArray<int> compress(used, lh);
     int cnt = 0;
     for (int i : Range(dnums))
-      if (dnums[i] != -1 && freedofs->Test(dnums[i]))
+      if (IsRegularDof(dnums[i]) && freedofs->Test(dnums[i]))
         compress[cnt++] = i;
 
     FlatArray<int> hdnums(used, lh);
