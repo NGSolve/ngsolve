@@ -565,6 +565,9 @@ namespace ngstd
   INLINE SIMD<double,N> operator- (SIMD<double,N> a, double b) { return a-SIMD<double,N>(b); }
   template <int N>  
   INLINE SIMD<double,N> operator- (SIMD<double,N> a) { return -a.Data(); }
+#ifndef __AVX__
+  INLINE SIMD<double,4> operator- (SIMD<double,4> a) { return { -a.Lo(), -a.Hi() }; }
+#endif
   
   template <int N>  
   INLINE SIMD<double,N> operator* (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()*b.Data(); }

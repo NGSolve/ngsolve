@@ -2,6 +2,19 @@
 #include <bla.hpp>
 using namespace ngbla;
 
+void SetRandom (SliceMatrix<> mat)
+{
+  for (int i = 0; i < mat.Height(); i++)
+    for (int j = 0; j < mat.Width(); j++)
+      mat(i,j) = sin(3*i+5*j);
+}
+
+void SetRandom (SliceVector<> vec)
+{
+  for (int i = 0; i < vec.Size(); i++)
+    vec(i) = sin(3*i);
+}
+
 void SetRandom (SliceMatrix<Complex> mat)
 {
   for (int i = 0; i < mat.Height(); i++)
@@ -14,6 +27,101 @@ void SetRandom (SliceVector<Complex> vec)
   for (int i = 0; i < vec.Size(); i++)
     vec(i) = Complex( sin(3*i), cos(2*i) );
 }
+
+
+TEST_CASE ("MultMatMat", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                    for (int k = 1; k < 20; k++) {
+                        SECTION ("k = "+to_string(k)) {
+                            Matrix<> a(n,m), b(m,k), c(n,k);
+                            SetRandom(a);
+                            SetRandom(b);
+                            MultMatMat (a, b, c);
+                            double err = L2Norm (a*b-c);
+                            CHECK(err < 1e-13);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+TEST_CASE ("MinusMultAB", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                    for (int k = 1; k < 20; k++) {
+                        SECTION ("k = "+to_string(k)) {
+                            Matrix<> a(n,m), b(m,k), c(n,k);
+                            SetRandom(a);
+                            SetRandom(b);
+                            MinusMultAB (a, b, c);
+                            double err = L2Norm (a*b+c);
+                            CHECK(err < 1e-13);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+TEST_CASE ("AddAB", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                    for (int k = 1; k < 20; k++) {
+                        SECTION ("k = "+to_string(k)) {
+                          Matrix<> a(n,m), b(m,k), c(n,k), c2(n,k);
+                            SetRandom(a);
+                            SetRandom(b);
+                            SetRandom(c);
+                            c2 = c;
+                            AddAB (a, b, c);
+                            double err = L2Norm (c2+a*b-c);
+                            CHECK(err < 1e-13);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+TEST_CASE ("SubAB", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                    for (int k = 1; k < 20; k++) {
+                        SECTION ("k = "+to_string(k)) {
+                          Matrix<> a(n,m), b(m,k), c(n,k), c2(n,k);
+                            SetRandom(a);
+                            SetRandom(b);
+                            SetRandom(c);
+                            c2 = c;
+                            SubAB (a, b, c);
+                            double err = L2Norm (c2-a*b-c);
+                            CHECK(err < 1e-13);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
 
 TEST_CASE ("SubAtDB", "[ngblas]") {
     for (int n = 1; n < 20; n++) {

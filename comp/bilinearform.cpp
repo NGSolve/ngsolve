@@ -11,6 +11,18 @@ namespace ngcomp
                         FlatMatrix<Complex> & evecs)
   { ; }
 
+  void MinusMultAB (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  {
+    c = -a * b | Lapack;
+  }
+  void MinusMultABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  {
+    c = -a * Trans(b) | Lapack;
+  }
+  void AddAB (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  {
+    c += a*b | Lapack;
+  }
 
   template <typename SCAL>
   void CalcSchur (FlatMatrix<SCAL> a, 
@@ -1100,6 +1112,9 @@ namespace ngcomp
                              static Timer statcondtimer("static condensation", 2);
                              ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                              static Timer statcondtimer2("static condensation 2", 2);
+
+                             static Timer statcondtimer_mult("static condensation mult", 2);
+                             static Timer statcondtimer_inv("static condensation inv", 2);
                              
                              // Array<int> idofs1(dnums.Size(), lh);
                              // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
@@ -1250,25 +1265,46 @@ namespace ngcomp
                                        CalcEigenSystem (hd, lam, evecs);
                                        cout << "lam = " << lam << endl;
                                      */
-                                     
-                                     
-                                     LapackInverse (d);
+
+                                     {
+                                       ThreadRegionTimer reg (statcondtimer_inv, TaskManager::GetThreadId());
+                                       // LapackInverse (d);
+                                       CalcInverse (d);
+                                     }
                                      FlatMatrix<SCAL> he (sizei, sizeo, lh);
-                                     he = 0.0;
-                                     he -= d * Trans(c) | Lapack;
+
+                                     {
+                                       ThreadRegionTimer reg (statcondtimer_mult, TaskManager::GetThreadId());
+                                       NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
+                                                                   d.Height()*d.Width()*c.Width());
+                                       
+                                       // V1:
+                                       // he = 0.0;
+                                       // he -= d * Trans(c) | Lapack;
+                                       // V2:
+                                       // he = -d * Trans(c) | Lapack;
+                                       // V3:
+                                       MinusMultABt (d, c, he);
+                                     }
+                                     
                                      harmonicext ->AddElementMatrix(el.Nr(),idnums,ednums,he);
                                      if (!symmetric)
                                        {
                                          FlatMatrix<SCAL> het (sizeo, sizei, lh);
-                                         het = 0.0;
-                                         LapackMultAddAB (b, d, -1, het);
-                                         //  het = -1.0 * b * d;
+                                         // het = -b*d | Lapack;
+                                         MinusMultAB (b, d, het);
                                          static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans.get())
                                            ->AddElementMatrix(el.Nr(),ednums,idnums,het);
                                        }
                                      
                                      innersolve ->AddElementMatrix(el.Nr(),idnums,idnums,d);
-                                     a += b * he | Lapack;
+                                     {
+                                       ThreadRegionTimer reg (statcondtimer_mult, TaskManager::GetThreadId());
+                                       NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
+                                                                   b.Height()*b.Width()*he.Width());
+                                       // a += b * he | Lapack;
+                                       AddAB (b, he, a);
+                                     }
                                      
                                      if (spd)
                                        { // more stable ? 

@@ -35,6 +35,7 @@ namespace ngcomp
     // set all used dofs to hidden_dofs
     bool hide_all_dofs;
     COUPLING_TYPE lowest_order_ct;
+    bool tensorproduct;
   public:
 
     L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);

@@ -2834,9 +2834,15 @@ namespace ngfem
 		IntegrationRule * tetrule = new IntegrationRule; // (xx.Size()*xy.Size()*xz.Size());
 	      
 		int ii = 0;
+                /*
 		for (int i = 0; i < xx.Size(); i++)
 		  for (int j = 0; j < xy.Size(); j++)
 		    for (int k = 0; k < xz.Size(); k++)
+                */
+                // change loop order ... x-pnts are innermost
+                for (int k = 0; k < xz.Size(); k++)
+		  for (int j = 0; j < xy.Size(); j++)
+                    for (int i = 0; i < xx.Size(); i++)
 		      {
 			IntegrationPoint ip = 
 			  IntegrationPoint (xx[i], 

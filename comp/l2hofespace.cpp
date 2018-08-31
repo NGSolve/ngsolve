@@ -15,6 +15,7 @@ To do: *Internal External Dofs (eliminate internal)
 
 #include <comp.hpp>
 #include <multigrid.hpp>
+#include "../fem/l2hofetp.hpp"
 
 using namespace ngmg;
 
@@ -138,7 +139,7 @@ namespace ngcomp
 
 
 
-
+    tensorproduct = flags.GetDefineFlag ("tp");
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
     hide_all_dofs = flags.GetDefineFlag ("hide_all_dofs");
 
@@ -327,6 +328,10 @@ namespace ngcomp
 	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
+        if (tensorproduct)
+          if (eltype == ET_TET)
+            return * new (alloc) L2HighOrderFETP<ET_TET> (order, ngel.Vertices(), alloc);
+        
         if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
 
