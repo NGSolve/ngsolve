@@ -350,8 +350,9 @@ public:
   virtual ~CompoundDifferentialOperator () = default;
   shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
   int Component () const { return comp; }
-
-  virtual bool operator== (const DifferentialOperator & diffop2) const
+  virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+  
+  virtual bool operator== (const DifferentialOperator & diffop2) const override
   {
     const CompoundDifferentialOperator * do2 =
       dynamic_cast<const CompoundDifferentialOperator*> (&diffop2);
@@ -361,9 +362,9 @@ public:
   }
 
   
-  virtual string Name() const { return diffop->Name(); }
+  virtual string Name() const override { return diffop->Name(); }
 
-  virtual IntRange UsedDofs(const FiniteElement & bfel) const
+  virtual IntRange UsedDofs(const FiniteElement & bfel) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     size_t base = BlockDim() * fel.GetRange(comp).First();
@@ -375,7 +376,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               SliceMatrix<double,ColMajor> mat, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -387,7 +388,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               SliceMatrix<Complex,ColMajor> mat, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -399,7 +400,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & mir,
               SliceMatrix<double,ColMajor> mat, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -411,7 +412,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & mir,
               SliceMatrix<Complex,ColMajor> mat,   
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -422,7 +423,7 @@ public:
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              BareSliceMatrix<SIMD<double>> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const override
   {
     // mat = 0;   // take care: unused elements not zerod !!!!
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -435,7 +436,7 @@ public:
          const BaseMappedIntegrationPoint & mip,
          FlatVector<double> x, 
          FlatVector<double> flux,
-         LocalHeap & lh) const
+         LocalHeap & lh) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -447,7 +448,7 @@ public:
          const BaseMappedIntegrationPoint & mip,
          FlatVector<Complex> x, 
          FlatVector<Complex> flux,
-         LocalHeap & lh) const
+         LocalHeap & lh) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -459,7 +460,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         BareSliceMatrix<SIMD<double>> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -470,7 +471,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<Complex> x, 
-         BareSliceMatrix<SIMD<Complex>> flux) const
+         BareSliceMatrix<SIMD<Complex>> flux) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -484,7 +485,7 @@ public:
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
               FlatVector<double> x, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     x = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -497,7 +498,7 @@ public:
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
               FlatVector<Complex> x, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     x = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -509,7 +510,7 @@ public:
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
             BareSliceMatrix<SIMD<double>> flux,
-            BareSliceVector<double> x) const
+            BareSliceVector<double> x) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -520,7 +521,7 @@ public:
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
             BareSliceMatrix<SIMD<Complex>> flux,
-            BareSliceVector<Complex> x) const
+            BareSliceVector<Complex> x) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);

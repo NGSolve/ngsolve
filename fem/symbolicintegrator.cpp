@@ -872,6 +872,14 @@ namespace ngfem
             if (nodecf.StoreUserData())
               gridfunction_cfs.Append (&nodecf);
         });
+
+    for (auto proxy : trial_proxies)
+      if (!proxy->Evaluator()->SupportsVB(vb))
+        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is misssing");
+    for (auto proxy : test_proxies)
+      if (!proxy->Evaluator()->SupportsVB(vb))
+        throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is misssing");
+    
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
     cout << IM(6) << "cumulated test_proxy dims  " << test_cum << endl;
