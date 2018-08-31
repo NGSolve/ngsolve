@@ -1203,7 +1203,7 @@ namespace ngcomp
                                        idnums1[ldof] = NO_DOF_NR;
                                      */
 
-                                     Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size());
+                                     Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size(), lh);
                                      for (int i : Range(idofs1))
                                        {
                                          DofId d = dnums[idofs1[i]];
@@ -2729,7 +2729,7 @@ namespace ngcomp
                                ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
                              */
 
-                             Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size());
+                             Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size(), lh);
                              for (int i : Range(idofs1))
                                {
                                  DofId d = dnums[idofs1[i]];
