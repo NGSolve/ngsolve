@@ -26,6 +26,7 @@ namespace ngfem
     static string Name() { return typeid(DiffOp<DOP>()).name(); }
     static constexpr bool SUPPORT_PML = false;
     static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
+    static bool SupportsVB (VorB checkvb) { return DOP::DIM_SPACE-DOP::DIM_ELEMENT == int(checkvb); }
     /**
        Computes the B-matrix. 
        The height is DIM_DMAT, the width is fel.GetNDof(). 
@@ -201,6 +202,8 @@ namespace ngfem
     bool Boundary() const { return vb == BND; }
     VorB VB() const { return vb; }
 
+    virtual bool SupportsVB (VorB checkvb) const { return checkvb == vb; }
+    
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     // virtual int DiffOrder() const = 0;
     int DiffOrder() const { return difforder; } 
@@ -352,7 +355,9 @@ namespace ngfem
     virtual bool Boundary() const { return diffop->Boundary(); }
     virtual int DiffOrder() const { return diffop->DiffOrder(); }
     */
-    shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
+    shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
+    virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
 
     NGS_DLL_HEADER virtual void
@@ -437,6 +442,7 @@ namespace ngfem
     virtual bool operator== (const DifferentialOperator & diffop2) const override
     { return typeid(*this) == typeid(diffop2); }
 
+    virtual bool SupportsVB (VorB checkvb) const override { return DIFFOP::SupportsVB(checkvb); }
     
     virtual void
     CalcMatrix (const FiniteElement & bfel,
