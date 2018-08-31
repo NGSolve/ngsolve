@@ -676,13 +676,13 @@ namespace ngcomp
       {
         Scalar2ElemVector<TV, TSCAL> ev(elvec);
 	for (int k = 0; k < dnums.Size(); k++)
-	  if (dnums[k] != -1)
+	  if (IsRegularDof(dnums[k]))
 	    fv(dnums[k]) += ev(k);
       }
     else
       {
 	for (int k = 0; k < dnums.Size(); k++)
-	  if (dnums[k] != -1)
+	  if (IsRegularDof(dnums[k]))
 	    fv(dnums[k])(cachecomp) += elvec(k);
       }
   }
@@ -710,7 +710,7 @@ namespace ngcomp
   {
     FlatVector<TV> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
-      if (dnums[k] != -1)
+      if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
 	  fv(dnums[k])(j) = elvec(k*HEIGHT+j);
   }
@@ -738,7 +738,7 @@ namespace ngcomp
   {
     FlatVector<TV> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
-      if (dnums[k] != -1)
+      if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
 	  elvec(k*HEIGHT+j) = fv(dnums[k])(j);
   }
