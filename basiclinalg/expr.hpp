@@ -901,7 +901,7 @@ namespace ngbla
     auto operator() (size_t i, size_t j) const { return -a(i,j); }
     size_t Height() const { return a.Height(); }
     size_t Width() const { return a.Width(); }
-
+    INLINE const TA & A() const { return a; }
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
 

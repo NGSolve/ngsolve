@@ -8,6 +8,7 @@
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #pragma clang diagnostic ignored "-Wparentheses-equality"
 #pragma clang diagnostic ignored "-Wunused-value"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 // BEGIN EVIL HACK: Patch PyThread_get_key_value/PyThread_tss_get inside pybind11 to avoid deadlocks

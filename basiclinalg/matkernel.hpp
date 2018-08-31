@@ -1,4 +1,4 @@
-enum OPERATION { ADD, SUB, SET };
+enum OPERATION { ADD, SUB, SET, SETNEG };
 template <size_t H, size_t W, OPERATION OP>
 inline void MatKernelMultAB
 (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
@@ -20,6 +20,22 @@ for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b0(pb+0*SW);
 SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b0,sum00);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<1, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -74,6 +90,22 @@ for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b0 = pb[0];
 SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b0,sum00);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<1, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -131,6 +163,27 @@ SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b0,sum00);
 SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<2, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -202,6 +255,27 @@ SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b0,sum00);
 SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<2, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -276,6 +350,32 @@ SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
 SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<3, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -364,6 +464,32 @@ SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
 SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<3, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -455,6 +581,37 @@ SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
 SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<4, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -560,6 +717,37 @@ SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
 SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<4, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -668,6 +856,42 @@ SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
 SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<5, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -790,6 +1014,42 @@ SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
 SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<5, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -915,6 +1175,47 @@ SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
 SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b0,sum50);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<6, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -1054,6 +1355,47 @@ SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
 SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b0,sum50);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<6, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
 }
 sum00.Store(pc+SW*0);
 pc += dc;
@@ -1351,6 +1693,26 @@ sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
 pc += dc;
 }
+template <> INLINE void MatKernelMultAB<1, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+}
 template <> INLINE void MatKernelMultAB<1, 2, ADD>
     (size_t n,
      double * pa, size_t da,
@@ -1412,6 +1774,26 @@ SIMD<double> b1 = pb[1];
 SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b0,sum00);
 FMAasm(a0,b1,sum01);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<1, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -1483,6 +1865,34 @@ FMAasm(a0,b1,sum01);
 SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
 FMAasm(a1,b1,sum11);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<2, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -1575,6 +1985,34 @@ FMAasm(a0,b1,sum01);
 SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
 FMAasm(a1,b1,sum11);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<2, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -1672,6 +2110,42 @@ FMAasm(a1,b1,sum11);
 SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
 FMAasm(a2,b1,sum21);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<3, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -1790,6 +2264,42 @@ FMAasm(a1,b1,sum11);
 SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
 FMAasm(a2,b1,sum21);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<3, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -1913,6 +2423,50 @@ FMAasm(a2,b1,sum21);
 SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
 FMAasm(a3,b1,sum31);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<4, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -2057,6 +2611,50 @@ FMAasm(a2,b1,sum21);
 SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
 FMAasm(a3,b1,sum31);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<4, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -2206,6 +2804,58 @@ FMAasm(a3,b1,sum31);
 SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
 FMAasm(a4,b1,sum41);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<5, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -2376,6 +3026,58 @@ FMAasm(a3,b1,sum31);
 SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
 FMAasm(a4,b1,sum41);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<5, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -2551,6 +3253,66 @@ FMAasm(a4,b1,sum41);
 SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b0,sum50);
 FMAasm(a5,b1,sum51);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+pc += dc;
+sum50.Store(pc+SW*0);
+sum51.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<6, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+sum51 -= a5 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -2747,6 +3509,66 @@ FMAasm(a4,b1,sum41);
 SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b0,sum50);
 FMAasm(a5,b1,sum51);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+pc += dc;
+sum50.Store(pc+SW*0);
+sum51.Store(pc+SW*1);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<6, 2, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+sum51 -= a5 * b1;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -3161,6 +3983,30 @@ sum01.Store(pc+SW*1);
 sum02.Store(pc+SW*2);
 pc += dc;
 }
+template <> INLINE void MatKernelMultAB<1, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+}
 template <> INLINE void MatKernelMultAB<1, 3, ADD>
     (size_t n,
      double * pa, size_t da,
@@ -3233,6 +4079,30 @@ SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b0,sum00);
 FMAasm(a0,b1,sum01);
 FMAasm(a0,b2,sum02);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<1, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> b2 = pb[2];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -3318,6 +4188,41 @@ SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
 FMAasm(a1,b1,sum11);
 FMAasm(a1,b2,sum12);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<2, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -3431,6 +4336,41 @@ SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b0,sum10);
 FMAasm(a1,b1,sum11);
 FMAasm(a1,b2,sum12);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<2, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> b2 = pb[2];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -3551,6 +4491,52 @@ SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
 FMAasm(a2,b1,sum21);
 FMAasm(a2,b2,sum22);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<3, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -3699,6 +4685,52 @@ SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b0,sum20);
 FMAasm(a2,b1,sum21);
 FMAasm(a2,b2,sum22);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<3, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> b2 = pb[2];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -3854,6 +4886,63 @@ SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
 FMAasm(a3,b1,sum31);
 FMAasm(a3,b2,sum32);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<4, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+sum32 -= a3 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -4037,6 +5126,63 @@ SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b0,sum30);
 FMAasm(a3,b1,sum31);
 FMAasm(a3,b2,sum32);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<4, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> b2 = pb[2];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+sum32 -= a3 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -4227,6 +5373,74 @@ SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
 FMAasm(a4,b1,sum41);
 FMAasm(a4,b2,sum42);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+sum42.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<5, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum42(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+sum32 -= a3 * b2;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
+sum42 -= a4 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -4445,6 +5659,74 @@ SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b0,sum40);
 FMAasm(a4,b1,sum41);
 FMAasm(a4,b2,sum42);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+sum42.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<5, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum42(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> b2 = pb[2];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+sum32 -= a3 * b2;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
+sum42 -= a4 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -4670,6 +5952,85 @@ SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b0,sum50);
 FMAasm(a5,b1,sum51);
 FMAasm(a5,b2,sum52);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+sum42.Store(pc+SW*2);
+pc += dc;
+sum50.Store(pc+SW*0);
+sum51.Store(pc+SW*1);
+sum52.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<6, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum42(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+SIMD<double> sum52(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+sum32 -= a3 * b2;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
+sum42 -= a4 * b2;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+sum51 -= a5 * b1;
+sum52 -= a5 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -4923,6 +6284,85 @@ SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b0,sum50);
 FMAasm(a5,b1,sum51);
 FMAasm(a5,b2,sum52);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+sum42.Store(pc+SW*2);
+pc += dc;
+sum50.Store(pc+SW*0);
+sum51.Store(pc+SW*1);
+sum52.Store(pc+SW*2);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<6, 3, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum42(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+SIMD<double> sum52(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> b1 = pb[1];
+SIMD<double> b2 = pb[2];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+sum01 -= a0 * b1;
+sum02 -= a0 * b2;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+sum11 -= a1 * b1;
+sum12 -= a1 * b2;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+sum21 -= a2 * b1;
+sum22 -= a2 * b2;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+sum31 -= a3 * b1;
+sum32 -= a3 * b2;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+sum41 -= a4 * b1;
+sum42 -= a4 * b2;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+sum51 -= a5 * b1;
+sum52 -= a5 * b2;
 }
 sum00.Store(pc+SW*0);
 sum01.Store(pc+SW*1);
@@ -5426,6 +6866,1078 @@ pc[1]= sum51;
 pc[2]= sum52;
 pc += dc;
 }
+template <> INLINE void MatKernelMultAB<8, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<8, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+SIMD<double> sum80(0);
+SIMD<double> sum90(0);
+SIMD<double> sum100(0);
+SIMD<double> sum110(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+SIMD<double> a8(pa[8*da]);
+FMAasm(a8,b0,sum80);
+SIMD<double> a9(pa[9*da]);
+FMAasm(a9,b0,sum90);
+SIMD<double> a10(pa[10*da]);
+FMAasm(a10,b0,sum100);
+SIMD<double> a11(pa[11*da]);
+FMAasm(a11,b0,sum110);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+SIMD<double> sum80(0);
+SIMD<double> sum90(0);
+SIMD<double> sum100(0);
+SIMD<double> sum110(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+SIMD<double> a8(pa[8*da]);
+sum80 -= a8 * b0;
+SIMD<double> a9(pa[9*da]);
+sum90 -= a9 * b0;
+SIMD<double> a10(pa[10*da]);
+sum100 -= a10 * b0;
+SIMD<double> a11(pa[11*da]);
+sum110 -= a11 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+SIMD<double> sum80(pc+SW*0);
+pc += dc;
+SIMD<double> sum90(pc+SW*0);
+pc += dc;
+SIMD<double> sum100(pc+SW*0);
+pc += dc;
+SIMD<double> sum110(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+SIMD<double> a8(pa[8*da]);
+FMAasm(a8,b0,sum80);
+SIMD<double> a9(pa[9*da]);
+FMAasm(a9,b0,sum90);
+SIMD<double> a10(pa[10*da]);
+FMAasm(a10,b0,sum100);
+SIMD<double> a11(pa[11*da]);
+FMAasm(a11,b0,sum110);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+SIMD<double> sum80(pc+SW*0);
+pc += dc;
+SIMD<double> sum90(pc+SW*0);
+pc += dc;
+SIMD<double> sum100(pc+SW*0);
+pc += dc;
+SIMD<double> sum110(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+SIMD<double> a8(pa[8*da]);
+sum80 -= a8 * b0;
+SIMD<double> a9(pa[9*da]);
+sum90 -= a9 * b0;
+SIMD<double> a10(pa[10*da]);
+sum100 -= a10 * b0;
+SIMD<double> a11(pa[11*da]);
+sum110 -= a11 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+SIMD<double> sum80(0);
+SIMD<double> sum90(0);
+SIMD<double> sum100(0);
+SIMD<double> sum110(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+SIMD<double> a8(pa[8*da]);
+FMAasm(a8,b0,sum80);
+SIMD<double> a9(pa[9*da]);
+FMAasm(a9,b0,sum90);
+SIMD<double> a10(pa[10*da]);
+FMAasm(a10,b0,sum100);
+SIMD<double> a11(pa[11*da]);
+FMAasm(a11,b0,sum110);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, SETNEG>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+SIMD<double> sum80(0);
+SIMD<double> sum90(0);
+SIMD<double> sum100(0);
+SIMD<double> sum110(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+SIMD<double> a8(pa[8*da]);
+sum80 -= a8 * b0;
+SIMD<double> a9(pa[9*da]);
+sum90 -= a9 * b0;
+SIMD<double> a10(pa[10*da]);
+sum100 -= a10 * b0;
+SIMD<double> a11(pa[11*da]);
+sum110 -= a11 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+SIMD<double> sum80(pc+SW*0);
+pc += dc;
+SIMD<double> sum90(pc+SW*0);
+pc += dc;
+SIMD<double> sum100(pc+SW*0);
+pc += dc;
+SIMD<double> sum110(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+SIMD<double> a6(pa[6*da]);
+FMAasm(a6,b0,sum60);
+SIMD<double> a7(pa[7*da]);
+FMAasm(a7,b0,sum70);
+SIMD<double> a8(pa[8*da]);
+FMAasm(a8,b0,sum80);
+SIMD<double> a9(pa[9*da]);
+FMAasm(a9,b0,sum90);
+SIMD<double> a10(pa[10*da]);
+FMAasm(a10,b0,sum100);
+SIMD<double> a11(pa[11*da]);
+FMAasm(a11,b0,sum110);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
+template <> INLINE void MatKernelMultAB<12, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(pc+SW*0);
+pc += dc;
+SIMD<double> sum10(pc+SW*0);
+pc += dc;
+SIMD<double> sum20(pc+SW*0);
+pc += dc;
+SIMD<double> sum30(pc+SW*0);
+pc += dc;
+SIMD<double> sum40(pc+SW*0);
+pc += dc;
+SIMD<double> sum50(pc+SW*0);
+pc += dc;
+SIMD<double> sum60(pc+SW*0);
+pc += dc;
+SIMD<double> sum70(pc+SW*0);
+pc += dc;
+SIMD<double> sum80(pc+SW*0);
+pc += dc;
+SIMD<double> sum90(pc+SW*0);
+pc += dc;
+SIMD<double> sum100(pc+SW*0);
+pc += dc;
+SIMD<double> sum110(pc+SW*0);
+pc += dc;
+pc = hpc;
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0 = pb[0];
+SIMD<double> a0(pa[0*da]);
+sum00 -= a0 * b0;
+SIMD<double> a1(pa[1*da]);
+sum10 -= a1 * b0;
+SIMD<double> a2(pa[2*da]);
+sum20 -= a2 * b0;
+SIMD<double> a3(pa[3*da]);
+sum30 -= a3 * b0;
+SIMD<double> a4(pa[4*da]);
+sum40 -= a4 * b0;
+SIMD<double> a5(pa[5*da]);
+sum50 -= a5 * b0;
+SIMD<double> a6(pa[6*da]);
+sum60 -= a6 * b0;
+SIMD<double> a7(pa[7*da]);
+sum70 -= a7 * b0;
+SIMD<double> a8(pa[8*da]);
+sum80 -= a8 * b0;
+SIMD<double> a9(pa[9*da]);
+sum90 -= a9 * b0;
+SIMD<double> a10(pa[10*da]);
+sum100 -= a10 * b0;
+SIMD<double> a11(pa[11*da]);
+sum110 -= a11 * b0;
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+sum60.Store(pc+SW*0);
+pc += dc;
+sum70.Store(pc+SW*0);
+pc += dc;
+sum80.Store(pc+SW*0);
+pc += dc;
+sum90.Store(pc+SW*0);
+pc += dc;
+sum100.Store(pc+SW*0);
+pc += dc;
+sum110.Store(pc+SW*0);
+pc += dc;
+}
 template <size_t H, OPERATION OP>
 inline void MatKernelMultABMask
 (size_t n, SIMD<mask64> mask, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
@@ -5443,6 +7955,21 @@ for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b((double*)pb,mask);
 SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b,sum0);
+}
+sum0.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<1, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5494,6 +8021,21 @@ for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b((double*)pb,mask);
 SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b,sum0);
+}
+sum0.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<1, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5548,6 +8090,26 @@ SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b,sum0);
 SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b,sum1);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<2, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5616,6 +8178,26 @@ SIMD<double> a0(pa[0*da]);
 FMAasm(a0,b,sum0);
 SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b,sum1);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<2, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5687,6 +8269,31 @@ SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b,sum1);
 SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b,sum2);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<3, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5772,6 +8379,31 @@ SIMD<double> a1(pa[1*da]);
 FMAasm(a1,b,sum1);
 SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b,sum2);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<3, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5860,6 +8492,36 @@ SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b,sum2);
 SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b,sum3);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+sum3.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<4, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+SIMD<double> sum3(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
+SIMD<double> a3(pa[3*da]);
+sum3 -= a3*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -5962,6 +8624,36 @@ SIMD<double> a2(pa[2*da]);
 FMAasm(a2,b,sum2);
 SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b,sum3);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+sum3.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<4, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+SIMD<double> sum3(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
+SIMD<double> a3(pa[3*da]);
+sum3 -= a3*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -6067,6 +8759,41 @@ SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b,sum3);
 SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b,sum4);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+sum3.Store(pc,mask);
+pc += dc;
+sum4.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<5, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+SIMD<double> sum3(0);
+SIMD<double> sum4(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
+SIMD<double> a3(pa[3*da]);
+sum3 -= a3*b;
+SIMD<double> a4(pa[4*da]);
+sum4 -= a4*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -6186,6 +8913,41 @@ SIMD<double> a3(pa[3*da]);
 FMAasm(a3,b,sum3);
 SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b,sum4);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+sum3.Store(pc,mask);
+pc += dc;
+sum4.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<5, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+SIMD<double> sum3(0);
+SIMD<double> sum4(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
+SIMD<double> a3(pa[3*da]);
+sum3 -= a3*b;
+SIMD<double> a4(pa[4*da]);
+sum4 -= a4*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -6308,6 +9070,46 @@ SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b,sum4);
 SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b,sum5);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+sum3.Store(pc,mask);
+pc += dc;
+sum4.Store(pc,mask);
+pc += dc;
+sum5.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<6, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+SIMD<double> sum3(0);
+SIMD<double> sum4(0);
+SIMD<double> sum5(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
+SIMD<double> a3(pa[3*da]);
+sum3 -= a3*b;
+SIMD<double> a4(pa[4*da]);
+sum4 -= a4*b;
+SIMD<double> a5(pa[5*da]);
+sum5 -= a5*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -6444,6 +9246,46 @@ SIMD<double> a4(pa[4*da]);
 FMAasm(a4,b,sum4);
 SIMD<double> a5(pa[5*da]);
 FMAasm(a5,b,sum5);
+}
+sum0.Store(pc,mask);
+pc += dc;
+sum1.Store(pc,mask);
+pc += dc;
+sum2.Store(pc,mask);
+pc += dc;
+sum3.Store(pc,mask);
+pc += dc;
+sum4.Store(pc,mask);
+pc += dc;
+sum5.Store(pc,mask);
+pc += dc;
+}
+template <> inline void MatKernelMultABMask<6, SETNEG>
+    (size_t n, SIMD<mask64> mask,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     double * pc, size_t dc)
+{
+SIMD<double> sum0(0);
+SIMD<double> sum1(0);
+SIMD<double> sum2(0);
+SIMD<double> sum3(0);
+SIMD<double> sum4(0);
+SIMD<double> sum5(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b((double*)pb,mask);
+SIMD<double> a0(pa[0*da]);
+sum0 -= a0*b;
+SIMD<double> a1(pa[1*da]);
+sum1 -= a1*b;
+SIMD<double> a2(pa[2*da]);
+sum2 -= a2*b;
+SIMD<double> a3(pa[3*da]);
+sum3 -= a3*b;
+SIMD<double> a4(pa[4*da]);
+sum4 -= a4*b;
+SIMD<double> a5(pa[5*da]);
+sum5 -= a5*b;
 }
 sum0.Store(pc,mask);
 pc += dc;
@@ -6903,6 +9745,185 @@ FMAasm(a0,b3,sum03);
 }
 return make_tuple(HSum(sum00,sum01,sum02,sum03));
 }
+template <> INLINE auto MatKernelScalAB<6, 2>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+size_t i = 0;
+for ( ; i+SW <= n; i+=SW) {
+SIMD<double> a0(pa+0*da+i);
+SIMD<double> a1(pa+1*da+i);
+SIMD<double> a2(pa+2*da+i);
+SIMD<double> a3(pa+3*da+i);
+SIMD<double> a4(pa+4*da+i);
+SIMD<double> a5(pa+5*da+i);
+SIMD<double> b0(pb+0*db+i);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+FMAasm(a4,b0,sum40);
+FMAasm(a5,b0,sum50);
+SIMD<double> b1(pb+1*db+i);
+FMAasm(a0,b1,sum01);
+FMAasm(a1,b1,sum11);
+FMAasm(a2,b1,sum21);
+FMAasm(a3,b1,sum31);
+FMAasm(a4,b1,sum41);
+FMAasm(a5,b1,sum51);
+}
+size_t r = n % SW;
+if (r) {
+SIMD<mask64> mask(r);
+SIMD<double> a0(pa+0*da+i, mask);
+SIMD<double> a1(pa+1*da+i, mask);
+SIMD<double> a2(pa+2*da+i, mask);
+SIMD<double> a3(pa+3*da+i, mask);
+SIMD<double> a4(pa+4*da+i, mask);
+SIMD<double> a5(pa+5*da+i, mask);
+SIMD<double> b0(pb+0*db+i, mask);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+FMAasm(a4,b0,sum40);
+FMAasm(a5,b0,sum50);
+SIMD<double> b1(pb+1*db+i, mask);
+FMAasm(a0,b1,sum01);
+FMAasm(a1,b1,sum11);
+FMAasm(a2,b1,sum21);
+FMAasm(a3,b1,sum31);
+FMAasm(a4,b1,sum41);
+FMAasm(a5,b1,sum51);
+}
+return make_tuple(HSum(sum00,sum01),HSum(sum10,sum11),HSum(sum20,sum21),HSum(sum30,sum31),HSum(sum40,sum41),HSum(sum50,sum51));
+}
+template <> INLINE auto MatKernelScalAB<6, 2>
+    (size_t n,
+     SIMD<double> * pa, size_t da,
+     SIMD<double> * pb, size_t db)
+{
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+size_t i = 0;
+for ( ; i < n; i++) {
+SIMD<double> a0(pa[0*da+i]);
+SIMD<double> a1(pa[1*da+i]);
+SIMD<double> a2(pa[2*da+i]);
+SIMD<double> a3(pa[3*da+i]);
+SIMD<double> a4(pa[4*da+i]);
+SIMD<double> a5(pa[5*da+i]);
+SIMD<double> b0(pb[0*db+i]);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+FMAasm(a4,b0,sum40);
+FMAasm(a5,b0,sum50);
+SIMD<double> b1(pb[1*db+i]);
+FMAasm(a0,b1,sum01);
+FMAasm(a1,b1,sum11);
+FMAasm(a2,b1,sum21);
+FMAasm(a3,b1,sum31);
+FMAasm(a4,b1,sum41);
+FMAasm(a5,b1,sum51);
+}
+return make_tuple(HSum(sum00,sum01),HSum(sum10,sum11),HSum(sum20,sum21),HSum(sum30,sum31),HSum(sum40,sum41),HSum(sum50,sum51));
+}
+template <> INLINE auto MatKernelScalAB<3, 2>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+size_t i = 0;
+for ( ; i+SW <= n; i+=SW) {
+SIMD<double> a0(pa+0*da+i);
+SIMD<double> a1(pa+1*da+i);
+SIMD<double> a2(pa+2*da+i);
+SIMD<double> b0(pb+0*db+i);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+SIMD<double> b1(pb+1*db+i);
+FMAasm(a0,b1,sum01);
+FMAasm(a1,b1,sum11);
+FMAasm(a2,b1,sum21);
+}
+size_t r = n % SW;
+if (r) {
+SIMD<mask64> mask(r);
+SIMD<double> a0(pa+0*da+i, mask);
+SIMD<double> a1(pa+1*da+i, mask);
+SIMD<double> a2(pa+2*da+i, mask);
+SIMD<double> b0(pb+0*db+i, mask);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+SIMD<double> b1(pb+1*db+i, mask);
+FMAasm(a0,b1,sum01);
+FMAasm(a1,b1,sum11);
+FMAasm(a2,b1,sum21);
+}
+return make_tuple(HSum(sum00,sum01),HSum(sum10,sum11),HSum(sum20,sum21));
+}
+template <> INLINE auto MatKernelScalAB<3, 2>
+    (size_t n,
+     SIMD<double> * pa, size_t da,
+     SIMD<double> * pb, size_t db)
+{
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+size_t i = 0;
+for ( ; i < n; i++) {
+SIMD<double> a0(pa[0*da+i]);
+SIMD<double> a1(pa[1*da+i]);
+SIMD<double> a2(pa[2*da+i]);
+SIMD<double> b0(pb[0*db+i]);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+SIMD<double> b1(pb[1*db+i]);
+FMAasm(a0,b1,sum01);
+FMAasm(a1,b1,sum11);
+FMAasm(a2,b1,sum21);
+}
+return make_tuple(HSum(sum00,sum01),HSum(sum10,sum11),HSum(sum20,sum21));
+}
 template <> INLINE auto MatKernelScalAB<8, 1>
     (size_t n,
      double * pa, size_t da,
@@ -6958,7 +9979,7 @@ FMAasm(a5,b0,sum50);
 FMAasm(a6,b0,sum60);
 FMAasm(a7,b0,sum70);
 }
-return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30),HSum(sum40),HSum(sum50),HSum(sum60),HSum(sum70));
+return make_tuple(HSum(sum00, sum10, sum20, sum30),HSum(sum40, sum50, sum60, sum70));
 }
 template <> INLINE auto MatKernelScalAB<8, 1>
     (size_t n,
@@ -6993,7 +10014,7 @@ FMAasm(a5,b0,sum50);
 FMAasm(a6,b0,sum60);
 FMAasm(a7,b0,sum70);
 }
-return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30),HSum(sum40),HSum(sum50),HSum(sum60),HSum(sum70));
+return make_tuple(HSum(sum00, sum10, sum20, sum30),HSum(sum40, sum50, sum60, sum70));
 }
 template <> INLINE auto MatKernelScalAB<6, 1>
     (size_t n,
@@ -7106,7 +10127,7 @@ FMAasm(a1,b0,sum10);
 FMAasm(a2,b0,sum20);
 FMAasm(a3,b0,sum30);
 }
-return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30));
+return make_tuple(HSum(sum00, sum10, sum20, sum30));
 }
 template <> INLINE auto MatKernelScalAB<4, 1>
     (size_t n,
@@ -7129,7 +10150,7 @@ FMAasm(a1,b0,sum10);
 FMAasm(a2,b0,sum20);
 FMAasm(a3,b0,sum30);
 }
-return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30));
+return make_tuple(HSum(sum00, sum10, sum20, sum30));
 }
 template <> INLINE auto MatKernelScalAB<3, 1>
     (size_t n,
@@ -7676,4 +10697,7504 @@ sum51.Store(pc+SW*1);
 sum52.Store(pc+SW*2);
 sum53.Store(pc+SW*3);
 pc += dc;
+}
+template <size_t H, size_t W, OPERATION OP>
+inline void MatKernelDaxpy
+(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
+template <size_t H, size_t W, OPERATION OP>
+inline void MatKernelDaxpy
+(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);
+template <> INLINE void MatKernelDaxpy<1, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 2, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 2, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 2, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 3, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 3, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 3, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+SIMD<double> b2(pb2+i);
+c0 -= a02 * b2;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 -= a02 * b2;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 4, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+SIMD<double> b3(pb3+i);
+c0 += a03 * b3;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 += a03 * b3;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 4, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+SIMD<double> b3(pb3+i);
+c0 += a03 * b3;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 += a03 * b3;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<1, 4, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+double * pc0 = pc+0*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+SIMD<double> b2(pb2+i);
+c0 -= a02 * b2;
+SIMD<double> b3(pb3+i);
+c0 -= a03 * b3;
+c0.Store(pc0+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 -= a02 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 -= a03 * b3;
+c0.Store(pc0+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a10(pa[1*da+0]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a10(pa[1*da+0]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a10(pa[1*da+0]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 2, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 2, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 2, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 3, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 3, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 3, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+SIMD<double> b2(pb2+i);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 4, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a13(pa[1*da+3]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+SIMD<double> b3(pb3+i);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 4, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a13(pa[1*da+3]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+SIMD<double> b3(pb3+i);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<2, 4, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a13(pa[1*da+3]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+SIMD<double> b2(pb2+i);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+SIMD<double> b3(pb3+i);
+c0 -= a03 * b3;
+c1 -= a13 * b3;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 -= a03 * b3;
+c1 -= a13 * b3;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 1, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a20(pa[2*da+0]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 1, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a20(pa[2*da+0]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 1, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a20(pa[2*da+0]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 2, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 2, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 2, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c2 -= a21 * b1;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c2 -= a21 * b1;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 3, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+SIMD<double> a22(pa[2*da+2]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 3, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+SIMD<double> a22(pa[2*da+2]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 3, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+SIMD<double> a22(pa[2*da+2]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c2 -= a21 * b1;
+SIMD<double> b2(pb2+i);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+c2 -= a22 * b2;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c2 -= a21 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+c2 -= a22 * b2;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 4, SET>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a13(pa[1*da+3]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+SIMD<double> a22(pa[2*da+2]);
+SIMD<double> a23(pa[2*da+3]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+SIMD<double> b3(pb3+i);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c2 += a23 * b3;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(0);
+SIMD<double> c1(0);
+SIMD<double> c2(0);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c2 += a23 * b3;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 4, ADD>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a13(pa[1*da+3]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+SIMD<double> a22(pa[2*da+2]);
+SIMD<double> a23(pa[2*da+3]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+SIMD<double> b3(pb3+i);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c2 += a23 * b3;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 += a00 * b0;
+c1 += a10 * b0;
+c2 += a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 += a01 * b1;
+c1 += a11 * b1;
+c2 += a21 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 += a02 * b2;
+c1 += a12 * b2;
+c2 += a22 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 += a03 * b3;
+c1 += a13 * b3;
+c2 += a23 * b3;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+template <> INLINE void MatKernelDaxpy<3, 4, SUB>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> a00(pa[0*da+0]);
+SIMD<double> a01(pa[0*da+1]);
+SIMD<double> a02(pa[0*da+2]);
+SIMD<double> a03(pa[0*da+3]);
+SIMD<double> a10(pa[1*da+0]);
+SIMD<double> a11(pa[1*da+1]);
+SIMD<double> a12(pa[1*da+2]);
+SIMD<double> a13(pa[1*da+3]);
+SIMD<double> a20(pa[2*da+0]);
+SIMD<double> a21(pa[2*da+1]);
+SIMD<double> a22(pa[2*da+2]);
+SIMD<double> a23(pa[2*da+3]);
+double * pc0 = pc+0*dc;
+double * pc1 = pc+1*dc;
+double * pc2 = pc+2*dc;
+double * pb0 = pb+0*db;
+double * pb1 = pb+1*db;
+double * pb2 = pb+2*db;
+double * pb3 = pb+3*db;
+size_t i = 0;
+for ( ; i+SW < n; i+=SW) {
+SIMD<double> c0(pc0+i);
+SIMD<double> c1(pc1+i);
+SIMD<double> c2(pc2+i);
+SIMD<double> b0(pb0+i);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+SIMD<double> b1(pb1+i);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c2 -= a21 * b1;
+SIMD<double> b2(pb2+i);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+c2 -= a22 * b2;
+SIMD<double> b3(pb3+i);
+c0 -= a03 * b3;
+c1 -= a13 * b3;
+c2 -= a23 * b3;
+c0.Store(pc0+i);
+c1.Store(pc1+i);
+c2.Store(pc2+i);
+}
+SIMD<mask64> mask(n-i);
+SIMD<double> c0(pc0+i, mask);
+SIMD<double> c1(pc1+i, mask);
+SIMD<double> c2(pc2+i, mask);
+SIMD<double> b0(pb0+i, mask);
+c0 -= a00 * b0;
+c1 -= a10 * b0;
+c2 -= a20 * b0;
+SIMD<double> b1(pb1+i, mask);
+c0 -= a01 * b1;
+c1 -= a11 * b1;
+c2 -= a21 * b1;
+SIMD<double> b2(pb2+i, mask);
+c0 -= a02 * b2;
+c1 -= a12 * b2;
+c2 -= a22 * b2;
+SIMD<double> b3(pb3+i, mask);
+c0 -= a03 * b3;
+c1 -= a13 * b3;
+c2 -= a23 * b3;
+c0.Store(pc0+i, mask);
+c1.Store(pc1+i, mask);
+c2.Store(pc2+i, mask);
+}
+// C = A * B,  with short inner loop
+template <size_t WA, OPERATION OP>
+inline void MatKernelShortSum
+(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
+// C = A * B,  with short inner loop, unroll width B
+template <size_t WA, OPERATION OP>
+inline void MatKernelShortSum2
+(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
+template <> INLINE void MatKernelShortSum<0, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<0, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<0, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<0, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<1, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<1, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<1, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<1, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<2, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<2, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<2, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<2, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<3, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<3, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<3, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<3, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<4, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<4, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<4, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<4, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<5, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<5, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<5, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<5, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<6, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<6, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<6, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<6, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<7, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<7, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<7, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<7, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<8, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<8, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<8, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<8, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<9, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<9, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<9, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<9, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<10, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<10, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<10, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<10, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<11, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<11, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW,mask); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<11, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<11, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW,mask); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<12, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+SIMD<double> b11(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+SIMD<double> b11(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<12, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW); pb2 += db;
+SIMD<double> b110(pb2);
+SIMD<double> b111(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0 += SIMD<double>(pa2[11]) * b110;
+sum1 += SIMD<double>(pa2[11]) * b111;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW,mask); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW,mask); pb2 += db;
+SIMD<double> b110(pb2);
+SIMD<double> b111(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0 += SIMD<double>(pa2[11]) * b110;
+sum1 += SIMD<double>(pa2[11]) * b111;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+SIMD<double> b11(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+SIMD<double> b11(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum<12, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+SIMD<double> b11(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2);
+} }
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+SIMD<double> b11(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum(pc2, mask);
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2, mask);
+} }
+template <> INLINE void MatKernelShortSum2<12, ADD>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+{
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW); pb2 += db;
+SIMD<double> b110(pb2);
+SIMD<double> b111(pb2+SW); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0 += SIMD<double>(pa2[11]) * b110;
+sum1 += SIMD<double>(pa2[11]) * b111;
+sum0.Store(pc2);
+sum1.Store(pc2+SW);
+} }
+size_t rest = wb % (2*SW); 
+if (rest == 0) return; 
+if (rest >= SW) 
+{
+if (rest > SW)
+{
+SIMD<mask64> mask(rest-SW); 
+double * pb2 = pb;
+SIMD<double> b00(pb2);
+SIMD<double> b01(pb2+SW,mask); pb2 += db;
+SIMD<double> b10(pb2);
+SIMD<double> b11(pb2+SW,mask); pb2 += db;
+SIMD<double> b20(pb2);
+SIMD<double> b21(pb2+SW,mask); pb2 += db;
+SIMD<double> b30(pb2);
+SIMD<double> b31(pb2+SW,mask); pb2 += db;
+SIMD<double> b40(pb2);
+SIMD<double> b41(pb2+SW,mask); pb2 += db;
+SIMD<double> b50(pb2);
+SIMD<double> b51(pb2+SW,mask); pb2 += db;
+SIMD<double> b60(pb2);
+SIMD<double> b61(pb2+SW,mask); pb2 += db;
+SIMD<double> b70(pb2);
+SIMD<double> b71(pb2+SW,mask); pb2 += db;
+SIMD<double> b80(pb2);
+SIMD<double> b81(pb2+SW,mask); pb2 += db;
+SIMD<double> b90(pb2);
+SIMD<double> b91(pb2+SW,mask); pb2 += db;
+SIMD<double> b100(pb2);
+SIMD<double> b101(pb2+SW,mask); pb2 += db;
+SIMD<double> b110(pb2);
+SIMD<double> b111(pb2+SW,mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum0 = 0.0;
+SIMD<double> sum1 = 0.0;
+sum0 += SIMD<double>(pa2[0]) * b00;
+sum1 += SIMD<double>(pa2[0]) * b01;
+sum0 += SIMD<double>(pa2[1]) * b10;
+sum1 += SIMD<double>(pa2[1]) * b11;
+sum0 += SIMD<double>(pa2[2]) * b20;
+sum1 += SIMD<double>(pa2[2]) * b21;
+sum0 += SIMD<double>(pa2[3]) * b30;
+sum1 += SIMD<double>(pa2[3]) * b31;
+sum0 += SIMD<double>(pa2[4]) * b40;
+sum1 += SIMD<double>(pa2[4]) * b41;
+sum0 += SIMD<double>(pa2[5]) * b50;
+sum1 += SIMD<double>(pa2[5]) * b51;
+sum0 += SIMD<double>(pa2[6]) * b60;
+sum1 += SIMD<double>(pa2[6]) * b61;
+sum0 += SIMD<double>(pa2[7]) * b70;
+sum1 += SIMD<double>(pa2[7]) * b71;
+sum0 += SIMD<double>(pa2[8]) * b80;
+sum1 += SIMD<double>(pa2[8]) * b81;
+sum0 += SIMD<double>(pa2[9]) * b90;
+sum1 += SIMD<double>(pa2[9]) * b91;
+sum0 += SIMD<double>(pa2[10]) * b100;
+sum1 += SIMD<double>(pa2[10]) * b101;
+sum0 += SIMD<double>(pa2[11]) * b110;
+sum1 += SIMD<double>(pa2[11]) * b111;
+sum0.Store(pc2);
+sum1.Store(pc2+SW,mask);
+}
+return;
+}
+double * pb2 = pb;
+SIMD<double> b0(pb2); pb2 += db;
+SIMD<double> b1(pb2); pb2 += db;
+SIMD<double> b2(pb2); pb2 += db;
+SIMD<double> b3(pb2); pb2 += db;
+SIMD<double> b4(pb2); pb2 += db;
+SIMD<double> b5(pb2); pb2 += db;
+SIMD<double> b6(pb2); pb2 += db;
+SIMD<double> b7(pb2); pb2 += db;
+SIMD<double> b8(pb2); pb2 += db;
+SIMD<double> b9(pb2); pb2 += db;
+SIMD<double> b10(pb2); pb2 += db;
+SIMD<double> b11(pb2); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2);
+}
+return;
+}
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> b0(pb2, mask); pb2 += db;
+SIMD<double> b1(pb2, mask); pb2 += db;
+SIMD<double> b2(pb2, mask); pb2 += db;
+SIMD<double> b3(pb2, mask); pb2 += db;
+SIMD<double> b4(pb2, mask); pb2 += db;
+SIMD<double> b5(pb2, mask); pb2 += db;
+SIMD<double> b6(pb2, mask); pb2 += db;
+SIMD<double> b7(pb2, mask); pb2 += db;
+SIMD<double> b8(pb2, mask); pb2 += db;
+SIMD<double> b9(pb2, mask); pb2 += db;
+SIMD<double> b10(pb2, mask); pb2 += db;
+SIMD<double> b11(pb2, mask); pb2 += db;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+{
+SIMD<double> sum = 0.0;
+sum += SIMD<double>(pa2[0]) * b0;
+sum += SIMD<double>(pa2[1]) * b1;
+sum += SIMD<double>(pa2[2]) * b2;
+sum += SIMD<double>(pa2[3]) * b3;
+sum += SIMD<double>(pa2[4]) * b4;
+sum += SIMD<double>(pa2[5]) * b5;
+sum += SIMD<double>(pa2[6]) * b6;
+sum += SIMD<double>(pa2[7]) * b7;
+sum += SIMD<double>(pa2[8]) * b8;
+sum += SIMD<double>(pa2[9]) * b9;
+sum += SIMD<double>(pa2[10]) * b10;
+sum += SIMD<double>(pa2[11]) * b11;
+sum.Store(pc2, mask);
+} }
+// C = A^t * B,  with short inner loop
+template <size_t WA, OPERATION OP>
+inline void MatKernelAtB_SmallWA
+(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
+// C = A^t * B,  with short inner loop, unroll width B
+template <size_t WA, OPERATION OP>
+inline void MatKernelAtB_SmallWA
+(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
+template <> INLINE void MatKernelAtB_SmallWA<0, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+}
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+}
+}
+template <> INLINE void MatKernelAtB_SmallWA<1, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+}
+sum0.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<2, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<3, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<4, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<5, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<6, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<7, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+sum6.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+sum6.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<8, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+sum6.Store(pc2); pc2 += dc;
+sum7.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+sum6.Store(pc2, mask); pc2 += dc;
+sum7.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<9, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+sum6.Store(pc2); pc2 += dc;
+sum7.Store(pc2); pc2 += dc;
+sum8.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+sum6.Store(pc2, mask); pc2 += dc;
+sum7.Store(pc2, mask); pc2 += dc;
+sum8.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<10, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+SIMD<double> sum9(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+FMAasm (bjk,SIMD<double>(pa2[9]), sum9);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+sum6.Store(pc2); pc2 += dc;
+sum7.Store(pc2); pc2 += dc;
+sum8.Store(pc2); pc2 += dc;
+sum9.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+SIMD<double> sum9(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+FMAasm (bjk,SIMD<double>(pa2[9]), sum9);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+sum6.Store(pc2, mask); pc2 += dc;
+sum7.Store(pc2, mask); pc2 += dc;
+sum8.Store(pc2, mask); pc2 += dc;
+sum9.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<11, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+SIMD<double> sum9(0.0);
+SIMD<double> sum10(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+FMAasm (bjk,SIMD<double>(pa2[9]), sum9);
+FMAasm (bjk,SIMD<double>(pa2[10]), sum10);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+sum6.Store(pc2); pc2 += dc;
+sum7.Store(pc2); pc2 += dc;
+sum8.Store(pc2); pc2 += dc;
+sum9.Store(pc2); pc2 += dc;
+sum10.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+SIMD<double> sum9(0.0);
+SIMD<double> sum10(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+FMAasm (bjk,SIMD<double>(pa2[9]), sum9);
+FMAasm (bjk,SIMD<double>(pa2[10]), sum10);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+sum6.Store(pc2, mask); pc2 += dc;
+sum7.Store(pc2, mask); pc2 += dc;
+sum8.Store(pc2, mask); pc2 += dc;
+sum9.Store(pc2, mask); pc2 += dc;
+sum10.Store(pc2, mask); pc2 += dc;
+}
+template <> INLINE void MatKernelAtB_SmallWA<12, SET>
+    (size_t ha, size_t wb,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+{
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+SIMD<double> sum9(0.0);
+SIMD<double> sum10(0.0);
+SIMD<double> sum11(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+FMAasm (bjk,SIMD<double>(pa2[9]), sum9);
+FMAasm (bjk,SIMD<double>(pa2[10]), sum10);
+FMAasm (bjk,SIMD<double>(pa2[11]), sum11);
+}
+sum0.Store(pc2); pc2 += dc;
+sum1.Store(pc2); pc2 += dc;
+sum2.Store(pc2); pc2 += dc;
+sum3.Store(pc2); pc2 += dc;
+sum4.Store(pc2); pc2 += dc;
+sum5.Store(pc2); pc2 += dc;
+sum6.Store(pc2); pc2 += dc;
+sum7.Store(pc2); pc2 += dc;
+sum8.Store(pc2); pc2 += dc;
+sum9.Store(pc2); pc2 += dc;
+sum10.Store(pc2); pc2 += dc;
+sum11.Store(pc2); pc2 += dc;
+}
+size_t rest = wb % SW; 
+if (rest == 0) return; 
+SIMD<mask64> mask(rest); 
+double * pb2 = pb;
+SIMD<double> sum0(0.0);
+SIMD<double> sum1(0.0);
+SIMD<double> sum2(0.0);
+SIMD<double> sum3(0.0);
+SIMD<double> sum4(0.0);
+SIMD<double> sum5(0.0);
+SIMD<double> sum6(0.0);
+SIMD<double> sum7(0.0);
+SIMD<double> sum8(0.0);
+SIMD<double> sum9(0.0);
+SIMD<double> sum10(0.0);
+SIMD<double> sum11(0.0);
+double * pa2 = pa;
+double * pc2 = pc;
+__assume(ha>0);
+#pragma unroll 1
+for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+{
+SIMD<double> bjk(pb2, mask);
+FMAasm (bjk,SIMD<double>(pa2[0]), sum0);
+FMAasm (bjk,SIMD<double>(pa2[1]), sum1);
+FMAasm (bjk,SIMD<double>(pa2[2]), sum2);
+FMAasm (bjk,SIMD<double>(pa2[3]), sum3);
+FMAasm (bjk,SIMD<double>(pa2[4]), sum4);
+FMAasm (bjk,SIMD<double>(pa2[5]), sum5);
+FMAasm (bjk,SIMD<double>(pa2[6]), sum6);
+FMAasm (bjk,SIMD<double>(pa2[7]), sum7);
+FMAasm (bjk,SIMD<double>(pa2[8]), sum8);
+FMAasm (bjk,SIMD<double>(pa2[9]), sum9);
+FMAasm (bjk,SIMD<double>(pa2[10]), sum10);
+FMAasm (bjk,SIMD<double>(pa2[11]), sum11);
+}
+sum0.Store(pc2, mask); pc2 += dc;
+sum1.Store(pc2, mask); pc2 += dc;
+sum2.Store(pc2, mask); pc2 += dc;
+sum3.Store(pc2, mask); pc2 += dc;
+sum4.Store(pc2, mask); pc2 += dc;
+sum5.Store(pc2, mask); pc2 += dc;
+sum6.Store(pc2, mask); pc2 += dc;
+sum7.Store(pc2, mask); pc2 += dc;
+sum8.Store(pc2, mask); pc2 += dc;
+sum9.Store(pc2, mask); pc2 += dc;
+sum10.Store(pc2, mask); pc2 += dc;
+sum11.Store(pc2, mask); pc2 += dc;
 }
