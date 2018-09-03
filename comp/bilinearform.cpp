@@ -2577,7 +2577,7 @@ namespace ngcomp
                    }
 
                  for (auto d : dnums) 
-                   if (d != -1) useddof[d] = true;
+                   if (IsRegularDof(d)) useddof[d] = true;
                  
                  FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace->GetDimension(), lh);
                  FlatMatrix<SCAL> elmat(dnums.Size()*fespace->GetDimension(), lh);
@@ -2909,7 +2909,7 @@ namespace ngcomp
                           if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
                           
                           for (int k = 0; k < dnums.Size(); k++)
-                            if (dnums[k] != -1)
+                            if (IsRegularDof(dnums[k]))
                               useddof[dnums[k]] = true;
                           
                           int elmat_size = dnums.Size()*fespace->GetDimension();
@@ -2983,7 +2983,7 @@ namespace ngcomp
             el.GetDofNrs (dnums);
           
             for (int j = 0; j < dnums.Size(); j++)
-              if (dnums[j] != -1)
+              if (IsRegularDof(dnums[j]))
                 useddof[dnums[j]] = true;
           
             FlatMatrix<SCAL> elmat;
@@ -4756,7 +4756,7 @@ namespace ngcomp
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
     for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
+      if (IsRegularDof(dnums1[i]))
         {
           TM & mij = mat(dnums1[i], dnums1[i]);
           int hi = Height (mij);
@@ -4781,7 +4781,7 @@ namespace ngcomp
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
     for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
+      if (IsRegularDof(dnums1[i]))
         mat(dnums1[i], dnums1[i]) += elmat(i, i);
   }
 
@@ -4799,7 +4799,7 @@ namespace ngcomp
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
 
     for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
+      if (IsRegularDof(dnums1[i]))
         mat(dnums1[i], dnums1[i]) += elmat(i, i);
   }
 
@@ -4910,7 +4910,7 @@ namespace ngcomp
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
     for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
+      if (IsRegularDof(dnums1[i]))
         mat(dnums1[i], dnums1[i]) += diag(i);
   }
 
@@ -4924,7 +4924,7 @@ namespace ngcomp
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
 
     for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
+      if (IsRegularDof(dnums1[i]))
         mat(dnums1[i], dnums1[i]) += diag(i);
   }
 
