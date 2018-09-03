@@ -1442,10 +1442,10 @@ namespace ngfem
                     HeapReset hr(lh);
                     int bs = min2(size_t(BS), mir.Size()-i);
                     
-                    AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
-                    AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
-                    AFlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
-                      bbmat1 : AFlatMatrix<SCAL_SHAPES>(elmat.Height(), bs*proxy2->Dimension(), lh);
+                    FlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
+                    FlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
+                    FlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
+                      bbmat1 : FlatMatrix<SCAL_SHAPES>(elmat.Height(), bs*proxy2->Dimension(), lh);
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
@@ -1459,14 +1459,12 @@ namespace ngfem
                     // tdb.Start();
                     if (is_diagonal)
                       {
-                        AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
+                        FlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
                         diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
                                                       (i+bs)*proxy1->Dimension());
-                        /*
-                        for (int i = 0; i < diagd.Size(); i++)
+                        for (size_t i = 0; i < diagd.Size(); i++)
                           bdbmat1.Col(i) = diagd(i) * bbmat1.Col(i);
-                        */
-                        MultMatDiagMat(bbmat1, diagd, bdbmat1);
+                        // MultMatDiagMat(bbmat1, diagd, bdbmat1);
                         // tdb.AddFlops (bbmat1.Height()*bbmat1.Width());
                       }
                     else
@@ -1791,9 +1789,9 @@ namespace ngfem
                     HeapReset hr(lh);
                     int bs = min2(BS, mir.Size()-i);
                     
-                    AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
-                    AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
-                    AFlatMatrix<SCAL_SHAPES> bbmat2(elmat.Height(), bs*proxy2->Dimension(), lh);
+                    FlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
+                    FlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
+                    FlatMatrix<SCAL_SHAPES> bbmat2(elmat.Height(), bs*proxy2->Dimension(), lh);
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
