@@ -392,6 +392,7 @@ namespace ngcomp
 
     /// allocates (sparse) matrix data-structure
     virtual void AllocateMatrix () = 0;
+    virtual void AllocateInternalMatrices () = 0;
   };
 
 
@@ -575,6 +576,7 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
     */
+    virtual void AllocateInternalMatrices ();
   };
 
 
@@ -824,6 +826,8 @@ namespace ngcomp
     { throw Exception ("comp-bf - DoAssemble is illegal"); } 
     virtual void AllocateMatrix ()
     { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
+    virtual void AllocateInternalMatrices ()
+    { throw Exception ("comp-bf - AllocateInternalMatrices is illegal"); } 
     virtual double Energy (const BaseVector & x, LocalHeap & lh) const 
     { throw Exception ("comp-bf - Energy is illegal"); } 
 
