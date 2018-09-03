@@ -399,6 +399,71 @@ namespace ngbla
       }
   }
 
+
+
+
+  
+  // invert lower left matrix
+  template <typename T, ORDERING ORD>
+  void CalcInverseL (FlatMatrix<T,ORD> mat)
+  {
+    // M = L^{-1}
+    // i>j:   (M L)(i,j) = M_ik L_kj = 0   j <= k <= i
+    // M_ij L_jj + M_ik L_kj  = 0      j < k <= i
+    // M_ij = -1/{L_jj}  sum j < k <= i:  M_ik L_kj
+    
+    int n = mat.Height();
+    STACK_ARRAY(T, mem, n);
+    FlatVector<T> dinv(n, &mem);
+    
+    for (size_t i = 0; i < n; i++)
+      CalcInverse (mat(i,i), dinv(i));
+    
+    for (int i = n-1; i >= 0; i--)
+      {
+        mat(i,i) = dinv(i);
+        for (int j = i-1; j >= 0; j--)
+          {
+            T sum(0.0);
+            for (int k = j+1; k <= i; k++)
+              sum += mat(i,k) * mat(k,j);
+            mat(i,j) = -dinv(j) * sum;
+          }
+      }
+  }
+  
+  // calculate inverse from LDL factorization
+  template <typename T, ORDERING ORD>
+  void CalcInverseLDL (FlatMatrix<T,ORD> mat)
+  {
+    size_t n = mat.Height();
+    STACK_ARRAY(T,mem, n);
+    FlatVector<T> dinv(n, &mem);
+    
+    for (size_t i = 0; i < n; i++)
+      {
+        CalcInverse (mat(i,i), dinv(i));
+        mat(i,i) = dinv(i);
+      }
+    
+    CalcInverseL (mat);
+    
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j <= i; j++)
+        {
+          T sum = mat(i,j);
+          for (int k = i+1; k < n; k++)
+            sum += Trans(mat(k,i)) * dinv(k) * mat(k,j);
+          mat(i,j) = sum;
+        }
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = i+1; j < n; j++)
+        mat(i,j) = mat(j,i);
+  }
+  
+
+
+
   
 
   
