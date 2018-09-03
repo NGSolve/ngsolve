@@ -747,22 +747,23 @@ namespace ngfem
     ///
     virtual ~ParameterCoefficientFunction ();
     ///
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return val;
     }
     
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     { values.AddSize(Dimension(), ir.Size()) = val; }
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
-
+    */
     virtual void SetValue (double in) { val = in; }
     virtual double GetValue () { return val; }
-    virtual void PrintReport (ostream & ost) const;
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+    virtual void PrintReport (ostream & ost) const override;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   };
 
   
