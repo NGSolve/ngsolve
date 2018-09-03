@@ -1641,7 +1641,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetDofNrs (ni, dnums);
 	  for (auto d : dnums)
-	    if (d != -1) dofnodes[d] = ni;
+	    if (IsRegularDof(d)) dofnodes[d] = ni;
 	} 
 
     paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
