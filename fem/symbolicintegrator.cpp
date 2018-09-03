@@ -288,7 +288,7 @@ namespace ngfem
       result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
   }
 
-  
+  /*
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             FlatArray<AFlatMatrix<double>*> input,
@@ -296,7 +296,7 @@ namespace ngfem
   {
     ProxyFunction::Evaluate (mir, result);
   }
-
+  */
   
   void ProxyFunction ::
   Evaluate (const BaseMappedIntegrationPoint & ip,
@@ -308,6 +308,7 @@ namespace ngfem
     result = result_double;
   }
 
+  /*
   void ProxyFunction ::
   EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                  FlatMatrix<> result,
@@ -338,8 +339,9 @@ namespace ngfem
     if (ud->trialfunction == this)
       deriv.Col(ud->trial_comp) = 1;
   }
+  */
 
-
+  /*
   void ProxyFunction ::
   EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                   FlatMatrix<> result,
@@ -371,7 +373,7 @@ namespace ngfem
     if (ud->trialfunction == this)
       deriv.Col(ud->trial_comp) = 1;
   }
-
+  */
 
   void ProxyFunction ::
   Evaluate (const BaseMappedIntegrationRule & mir,
@@ -506,7 +508,7 @@ namespace ngfem
   }
 
   
-  
+  /*
   void ProxyFunction ::
   EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                  AFlatMatrix<double> result, AFlatMatrix<double> deriv) const
@@ -566,6 +568,7 @@ namespace ngfem
     if (ud->trialfunction == this)
       deriv.Row(ud->trial_comp) = 1;
   }
+  */
   
   void ProxyFunction ::  
   NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
