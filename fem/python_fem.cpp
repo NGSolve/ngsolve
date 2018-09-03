@@ -303,18 +303,18 @@ struct GenericPow {
     NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
     {
       return 0;
     }
-    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
       if (ip.Dim() != D)
         throw Exception("illegal dim of normal vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const // override 
     {
       const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
        if(!tpir)
@@ -365,14 +365,14 @@ struct GenericPow {
       }
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const override 
     {
       if (ir[0].Dim() != D)
 	throw Exception("illegal dim of normal vector");
       for (int i = 0; i < ir.Size(); i++)
 	res.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
         string miptype;
         if(code.is_simd)
           miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
@@ -385,19 +385,20 @@ struct GenericPow {
           code.body += Var(index,i).Assign(nv(i));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
     {
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
     }
 
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
+                           AFlatMatrix<double> values) const override 
     {
       Evaluate (ir, values);
     }
-    
+
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
     {
@@ -414,9 +415,10 @@ struct GenericPow {
       Evaluate (ir, result);
       deriv = 0.0;
     }
-
-    virtual CF_Type GetType() const { return CF_Type_normal_vector; }
-    virtual void DoArchive (Archive & archive)
+    */
+    
+    virtual CF_Type GetType() const override { return CF_Type_normal_vector; }
+    virtual void DoArchive (Archive & archive) override
     {
       int dim = D;
       archive & dim;
@@ -516,7 +518,7 @@ direction : int
   {
   public:
     MeshSizeCF () : CoefficientFunctionNoDerivative(1, false) { ; }
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
         {
@@ -543,7 +545,7 @@ direction : int
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     {
       if (ir[0].IP().FacetNr() != -1)
         for(size_t i : Range(ir))
@@ -553,13 +555,15 @@ direction : int
           values(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
 
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
       Evaluate (ir, values);
     }    
-
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+    */
+    
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       if(code.is_simd)
       {
         string type = "SIMD<double>";
@@ -600,7 +604,7 @@ direction : int
       }
     }
 
-    virtual CF_Type GetType() const { return CF_Type_mesh_size; }
+    virtual CF_Type GetType() const override { return CF_Type_mesh_size; }
   };
 
 

@@ -6,6 +6,7 @@
 namespace ngbla
 {
 
+#ifdef NONEALL
 
   template <typename T> struct FooAVectorType
   {
@@ -260,9 +261,9 @@ namespace ngbla
   {
     return AVXScaleExpr<TA> (s, a.Spec());
   }
+#endif
 
-
-
+#ifdef NONE
 
   class AFlatVectorD : public SIMDExpr<AFlatVectorD>
   {
@@ -369,7 +370,8 @@ namespace ngbla
   };
 
 
-
+#endif
+  
 
 #ifdef NONE
 
@@ -482,7 +484,7 @@ namespace ngbla
 
   
 
-  
+#ifdef NONE
   class AFlatMatrixD : public SIMDExpr<AFlatMatrixD>
   {
   protected:
@@ -638,7 +640,7 @@ namespace ngbla
     }
     using AFlatMatrixD::operator=;
   };
-
+#endif
 
 
 
@@ -878,11 +880,13 @@ namespace ngbla
     }
   */
 
+  /*
   INLINE SliceMatrix<double,ColMajor> Trans (const AFlatMatrixD & mat)
   {
     return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), SIMD<double>::Size()*mat.VWidth(), &mat(0,0));
   }
-
+  */
+  
 #ifdef NONE
 
   template <>
@@ -1239,7 +1243,8 @@ namespace ngbla
 
   /*
   */
-  
+
+  /*
   // c = a * Diag (diag)
   template <typename TA, typename TB, typename TC>
   void MultMatDiagMat(TA a, TB diag, TC c)
@@ -1247,7 +1252,8 @@ namespace ngbla
     for (int i = 0; i < a.Width(); i++)
       c.Col(i) = diag(i) * a.Col(i);
   }
-
+  */
+  
   void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
 #if defined(__AVX__) && not defined(__AVX512F__)
@@ -1266,7 +1272,7 @@ namespace ngbla
     SubAtB (Trans(b), Trans(a), Trans(c));
   }
     
-  extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
+  // extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 
 
 #else // __AVX__

@@ -1359,7 +1359,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
   void AddABtSymV1 (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
   {
     int i = 0;
@@ -1427,7 +1427,7 @@ namespace ngbla
           }
       }
   }
-
+#endif
 
   /*
     INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
@@ -3859,7 +3859,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
   // c = a * Diag (d)
   void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
   {
@@ -3890,7 +3890,8 @@ namespace ngbla
           }
       }
   }
-
+#endif
+  
 
 
   // }

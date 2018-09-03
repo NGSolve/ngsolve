@@ -19,46 +19,13 @@ namespace ngbla
   {
     constexpr int SW = SIMD<double>::Size();
     SIMD<mask64> mask(w % SW);
-    // bool rest = (w % SW) != 0;
-    // auto pd0 = pd;
+
     for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
       {
-        // memcpy (pd, ps, sizeof(double)*w);
-
         size_t js = 0, jd=0;
         for ( ; js+SW <= w; js+=SW, jd++)
-          {
-            pd[jd] = SIMD<double>(ps+js);
-            // Prefetch (psnext+j,  _MM_HINT_T1);
-          }
+          pd[jd] = SIMD<double>(ps+js);
         SIMD<double>(ps+js, mask).Store((double*) (pd+jd), mask);
-         /*
-        if (rest)
-          pd[jd] = SIMD<double>(ps+js, mask);
-         */
-        /*
-        size_t js = 0, jd=0;
-        for ( ; js+4*SW <= w; js+=4*SW, jd+=4)
-          {
-            SIMD<double> v0(ps+js);
-            SIMD<double> v1(ps+js+1*SW);
-            SIMD<double> v2(ps+js+2*SW);
-            SIMD<double> v3(ps+js+3*SW);
-            pd[jd+0] = v0;
-            pd[jd+1] = v1;
-            pd[jd+2] = v2;
-            pd[jd+3] = v3;
-            // Prefetch (psnext+j,  _MM_HINT_T1);
-          }
-        for ( ; js+SW <= w; js+=SW, jd+=1)
-          {
-            SIMD<double> v0(ps+js);
-            pd[jd+0] = v0;
-            // Prefetch (psnext+j,  _MM_HINT_T1);
-          }
-        SIMD<double>(ps+js, mask).Store((double*) (pd+jd), mask);
-        ps = psnext;
-        */
       }
   }
 
@@ -511,6 +478,7 @@ namespace ngbla
           MultMatMat_intern2<BBH,SETNEG> (ha, hbi, wb, a, b, c);
         }
   }
+
   
   void AddAB_intern (size_t ha, size_t wa, size_t wb,
                      BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
@@ -556,7 +524,9 @@ namespace ngbla
 
 
 
+  /*
 
+    // was not fast ...
 
   template <size_t HA,size_t WAREST>
   INLINE void MultMatMat_SmallA_intern2 (size_t wa, size_t wb,
@@ -606,7 +576,7 @@ namespace ngbla
       }
         
   }
-
+  */
 
 
   
@@ -2225,8 +2195,10 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (int j = 0; j < its; j++)
-            AddABt(SliceMatrix<double> (AFlatMatrix<double>(a)),
-                   SliceMatrix<double> (AFlatMatrix<double>(b)),c);
+            AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), &a(0)[0]),
+                   SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), &b(0)[0]),
+                   // SliceMatrix<double> (AFlatMatrix<double>(b)),
+                   c);
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));

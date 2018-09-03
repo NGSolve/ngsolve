@@ -65,8 +65,10 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
 
   Matrix<> vals(ir.Size(),cf->Dimension());
   cf->Evaluate(mir,vals);
-  AMatrix<> simd_vals (cf->Dimension(), simd_ir.GetNIP());
-
+  Matrix<SIMD<double>> simd_vals (cf->Dimension(), simd_ir.Size());
+  SliceMatrix<> simd_vals_ref(cf->Dimension(), simd_ir.GetNIP(), SIMD<double>::Size()*simd_ir.Size(),
+                              &simd_vals(0)[0]);
+                              
   // AutoDiff<SIMD> alignment not working !!!!
   Matrix<AutoDiff<1,SIMD<double>>> simd_ad(cf->Dimension(), simd_ir.Size());
   // Array<SIMD<double>> mem(2*cf->Dimension()*simd_ir.Size());
@@ -83,7 +85,10 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
         derivs(i,j) = dvals(i,j).DValue(0);
       }
   
-  AMatrix<> simd_derivs(cf->Dimension(),simd_ir.GetNIP());
+  Matrix<SIMD<double>> simd_derivs(cf->Dimension(),simd_ir.Size());
+  SliceMatrix<> simd_derivs_ref(cf->Dimension(), simd_ir.GetNIP(), SIMD<double>::Size()*simd_ir.Size(),
+                                &simd_derivs(0)[0]);
+  
   Matrix<> c_derivs(ir.Size(), cf->Dimension());  
 
   SECTION ("Evaluate")
@@ -106,22 +111,22 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
         {
           SECTION("SIMD")
             {
-              simd_vals = 0;
+              simd_vals = SIMD<double>(0);
               cf->Evaluate(simd_mir, simd_vals);
-              CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
+              CHECK(L2Norm(vals-Trans(simd_vals_ref)) < tolerance);
 
               SECTION("Compile")
                 {
-                  simd_vals = 0;
+                  simd_vals = SIMD<double>(0);
                   c_cf_f->Evaluate(simd_mir, simd_vals);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
+                  CHECK(L2Norm(vals-Trans(simd_vals_ref)) < tolerance);
                 }
 
               SECTION("TrueCompile")
                 {
-                  simd_vals = 0;
+                  simd_vals = SIMD<double>(0);
                   c_cf_t->Evaluate(simd_mir, simd_vals);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
+                  CHECK(L2Norm(vals-Trans(simd_vals_ref)) < tolerance);
                 }
             }
         }
@@ -175,56 +180,56 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
             {
               SECTION("no-compile SIMD")
                 {
-                  simd_vals = 0;
-                  simd_derivs = 0;
+                  simd_vals = SIMD<double>(0);
+                  simd_derivs = SIMD<double>(0);
                   // cf->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
                   cf->Evaluate(simd_mir, simd_ad);
-                  cout << "survived" << endl;
+                  // cout << "survived" << endl;
 
                   for (size_t i = 0; i < simd_ad.Height(); i++)
                     for (size_t j = 0; j < simd_ad.Width(); j++)
                       {
-                        simd_vals.Get(i,j) = simd_ad(i,j).Value();
-                        simd_derivs.Get(i,j) = simd_ad(i,j).DValue(0);
+                        simd_vals(i,j) = simd_ad(i,j).Value();
+                        simd_derivs(i,j) = simd_ad(i,j).DValue(0);
                       }
                   
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
-                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < tolerance);
+                  CHECK(L2Norm(vals-Trans(simd_vals_ref)) < tolerance);
+                  CHECK(L2Norm(derivs-Trans(simd_derivs_ref)) < tolerance);
                 }
               SECTION("Compile SIMD")
                 {
-                  simd_vals = 0;
-                  simd_derivs = 0;
+                  simd_vals = SIMD<double>(0);
+                  simd_derivs = SIMD<double>(0);
                   // c_cf_f->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
 
                   c_cf_f->Evaluate(simd_mir, simd_ad);
                   for (size_t i = 0; i < simd_ad.Height(); i++)
                     for (size_t j = 0; j < simd_ad.Width(); j++)
                       {
-                        simd_vals.Get(i,j) = simd_ad(i,j).Value();
-                        simd_derivs.Get(i,j) = simd_ad(i,j).DValue(0);
+                        simd_vals(i,j) = simd_ad(i,j).Value();
+                        simd_derivs(i,j) = simd_ad(i,j).DValue(0);
                       }
                   
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
-                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < tolerance);
+                  CHECK(L2Norm(vals-Trans(simd_vals_ref)) < tolerance);
+                  CHECK(L2Norm(derivs-Trans(simd_derivs_ref)) < tolerance);
                 }
 
               SECTION("TrueCompile SIMD")
                 {
-                  simd_vals = 0;
-                  simd_derivs = 0;
+                  simd_vals = SIMD<double>(0);
+                  simd_derivs = SIMD<double>(0);
                   // c_cf_t->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
 
                   c_cf_f->Evaluate(simd_mir, simd_ad);
                   for (size_t i = 0; i < simd_ad.Height(); i++)
                     for (size_t j = 0; j < simd_ad.Width(); j++)
                       {
-                        simd_vals.Get(i,j) = simd_ad(i,j).Value();
-                        simd_derivs.Get(i,j) = simd_ad(i,j).DValue(0);
+                        simd_vals(i,j) = simd_ad(i,j).Value();
+                        simd_derivs(i,j) = simd_ad(i,j).DValue(0);
                       }
                   
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
-                  CHECK(L2Norm(derivs - Trans(simd_derivs)) < tolerance);
+                  CHECK(L2Norm(vals-Trans(simd_vals_ref)) < tolerance);
+                  CHECK(L2Norm(derivs - Trans(simd_derivs_ref)) < tolerance);
                 }
             }
         }
