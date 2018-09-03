@@ -354,21 +354,24 @@ namespace ngbla
         CalcInverse (hm, mat(0,0));
         return;
       }
-    
-    for (int i = 0; i < n; i++)
+
+    /*
+      not working anymore
+    for (size_t i = 0; i < n; i++)
       {
         T dii = mat(i,i);
         T inv_dii;
         CalcInverse (dii, inv_dii);
-        for (int j = i+1; j < n; j++)
+        for (size_t j = i+1; j < n; j++)
           {
             T hji = mat(j,i);
             T hjiD = hji * inv_dii;
             mat(j,i) = hjiD;
-            for (int k = i+1; k <= j; k++)
+            for (size_t k = i+1; k <= j; k++)
               mat(j,k) -= hji * Trans(mat(k,i));
           }
       }
+    */
   }
 
   
