@@ -753,8 +753,73 @@ namespace ngcomp
 
 
   template <class SCAL>
-  S_BilinearForm<SCAL> :: ~S_BilinearForm() { ; }
+  S_BilinearForm<SCAL> :: ~S_BilinearForm () { ; }
 
+  
+  template <class SCAL>
+  void S_BilinearForm<SCAL> :: AllocateInternalMatrices ()
+  {
+    if (eliminate_internal && keep_internal)
+      {
+        VorB vb = VOL;
+        if (!VB_parts[VOL].Size()) vb = BND;
+        
+        size_t ne = ma->GetNE(vb);
+        size_t ndof = fespace->GetNDof();
+        size_t dim = fespace->GetDimension();
+        // ndof *= dim;
+
+        
+        Array<int> nidofs(ne), nodofs(ne);
+        nidofs = 0;
+        nodofs = 0;
+        
+        ParallelForRange
+          (ne, [&] (IntRange r)
+           {
+             Array<DofId> dnums;
+             for (size_t i : r)
+               {
+                 int ni = 0, no = 0;
+                 ElementId ei(vb,i);
+                 
+                 if (fespace->DefinedOn(ei))
+                   {
+                     fespace->GetDofNrs (ei, dnums );
+                     for (auto d : dnums)
+                       {
+                         auto ct = fespace->GetDofCouplingType(d);
+                         if (ct & EXTERNAL_DOF)
+                           no++;
+                         if (ct & LOCAL_DOF)
+                           ni++;
+                       }
+                   }
+                 nidofs[i] = dim*ni;
+                 nodofs[i] = dim*no;
+               }
+           });
+
+        /*
+        harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+        if (!symmetric)
+          harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+        else
+          harmonicexttrans = make_shared<Transpose>(*harmonicext);
+        innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+        if (store_inner)
+          innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+        */
+        harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nodofs, false, false, false);
+        if (!symmetric)
+          harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nodofs, nidofs, false, false, false);
+        else
+          harmonicexttrans = make_shared<Transpose>(*harmonicext);
+        innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nidofs, false, true, true);
+        if (store_inner)
+          innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nidofs, false, true, true);
+      }
+  }
 
 
 
@@ -934,6 +999,7 @@ namespace ngcomp
                 else // not diagonal
                   {
                     ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
+                    /*
                     if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
                       {
                         harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
@@ -945,7 +1011,7 @@ namespace ngcomp
                         if (store_inner)
                           innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
                       }
-                    
+                    */
                     IterateElements
                       (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                        {
@@ -2547,6 +2613,7 @@ namespace ngcomp
             RegionTimer reg(timervol);
             ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
 
+            /*
             if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
               {
                 size_t ndof = fespace->GetNDof();
@@ -2560,6 +2627,7 @@ namespace ngcomp
                 if (store_inner)
                   innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
               }
+            */
             
             IterateElements 
               (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
@@ -4469,7 +4537,11 @@ namespace ngcomp
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         this->mats[i].reset();
+
+
+    this->AllocateInternalMatrices();
   }
+
 
 
   template <class TM, class TV>
@@ -4602,6 +4674,8 @@ namespace ngcomp
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         this->mats[i].reset();
+
+    this->AllocateInternalMatrices();    
   }
 
 
