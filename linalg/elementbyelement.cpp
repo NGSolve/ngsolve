@@ -497,6 +497,8 @@ namespace ngla
 
         elmats[elnr].AssignMemory (sr, sc, &mat(0,0));
       }
+    else
+      throw Exception ("EBEMatrix::AddElementMatrix, illegal elnr");
 
     max_row_size = max2(max_row_size, sr);
     max_col_size = max2(max_col_size, sc);
@@ -543,6 +545,9 @@ namespace ngla
         elmats[elnr].AssignMemory (sr, sc, &elmats[refelnr](0,0));
 	clone.Set(elnr);
       }
+    else
+      throw Exception ("EBEMatrix::AddCloneElementMatrix, illegal elnr");
+    
   }
 
   template <class SCAL>
