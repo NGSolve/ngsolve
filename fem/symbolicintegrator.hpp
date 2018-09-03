@@ -48,7 +48,7 @@ public:
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
 
-  NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+  NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -110,7 +110,7 @@ public:
 
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
-  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     // Vector<> tmp(Dimension());
     STACK_ARRAY(double, mem, Dimension());
@@ -120,84 +120,85 @@ public:
   }
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const;
+                         FlatVector<> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const;
+                         FlatVector<Complex> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                                        BareSliceMatrix<> result) const;
+                                        BareSliceMatrix<> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<Complex> result) const;
+                         FlatMatrix<Complex> result) const override;
 
   // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
   // AFlatMatrix<double> values) const;
 
   NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         BareSliceMatrix<SIMD<double>> values) const;
+                         BareSliceMatrix<SIMD<double>> values) const override;
   NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         BareSliceMatrix<SIMD<Complex>> values) const;
+                         BareSliceMatrix<SIMD<Complex>> values) const override;
 
+  /*
   NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const;
+                         AFlatMatrix<double> values) const override;
 
   NGS_DLL_HEADER virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
-                              FlatMatrix<> deriv) const;
+                              FlatMatrix<> deriv) const override;
 
   NGS_DLL_HEADER virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                                FlatMatrix<> result,
                                FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const;
+                               FlatMatrix<> dderiv) const override;
 
   NGS_DLL_HEADER virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const;
+                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const override;
   
   NGS_DLL_HEADER virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                               AFlatMatrix<double> dderiv) const;
-
+                               AFlatMatrix<double> dderiv) const override;
+  */
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<BareSliceMatrix<SIMD<double>>> input,
-                         BareSliceMatrix<SIMD<double>> values) const
+                         BareSliceMatrix<SIMD<double>> values) const override
   {
     ProxyFunction::Evaluate (ir, values);
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiff<1,double>> values) const;
+                         BareSliceMatrix<AutoDiff<1,double>> values) const override;
   
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiffDiff<1,double>> values) const;
+                         BareSliceMatrix<AutoDiffDiff<1,double>> values) const override;
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const;
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
-                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
   {
     ProxyFunction::Evaluate (ir, values);
   }
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const;
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
-                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
   {
     ProxyFunction::Evaluate (ir, values);
   }
   
-  
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,
                               FlatArray<AFlatMatrix<>*> dinput,
                               AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
+                              AFlatMatrix<> deriv) const override
   {
     EvaluateDeriv (ir, result, deriv);
   }
@@ -208,22 +209,22 @@ public:
                                FlatArray<AFlatMatrix<>*> ddinput,
                                AFlatMatrix<> result,
                                AFlatMatrix<> deriv,
-                               AFlatMatrix<> dderiv) const
+                               AFlatMatrix<> dderiv) const override
   {
     EvaluateDDeriv (ir, result, deriv, dderiv);
   }
-
+  */
   
-  virtual bool ElementwiseConstant () const { return true; }
+  virtual bool ElementwiseConstant () const  override{ return true; }
 
   NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
                                               FlatVector<bool> nonzero,
                                               FlatVector<bool> nonzero_deriv,
-                                              FlatVector<bool> nonzero_dderiv) const;
+                                              FlatVector<bool> nonzero_dderiv) const override;
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
     NonZeroPattern (ud, nz, nzd, nzdd);

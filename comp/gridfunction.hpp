@@ -57,9 +57,12 @@ namespace ngcomp
 			   FlatMatrix<Complex> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const override
     { Evaluate (ir, values); }
+    */
+    
     /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 AFlatMatrix<> result,
