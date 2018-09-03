@@ -187,7 +187,7 @@ namespace ngcomp
     using DiffOp<DiffOpGradientHCurl<D>>::ApplySIMDIR;
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
@@ -197,13 +197,13 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      AFlatMatrix<double> hxl(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxr(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
+      FlatMatrix<SIMD<double>> hxl(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
 
-      for (int k = 0; k < mir.Size(); k++)
-        for (int m = 0; m < D*D; m++)
-          y.Get(m, k) = SIMD<double> (0.0).Data();
+      for (int m = 0; m < D*D; m++)
+        for (int k = 0; k < mir.Size(); k++)
+          y(m, k) = SIMD<double> (0.0);
       
       for (int j = 0; j < D; j++)
         {
@@ -238,7 +238,7 @@ namespace ngcomp
               for (int l = 0; l < D; l++)
                 {
                   for (int m = 0; m < D; m++)
-                    y.Get(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
+                    y(m*D+l, k) += (jacinv(j,m) * hx(l, k));
                 }
             }
         }
@@ -246,7 +246,7 @@ namespace ngcomp
 
     using DiffOp<DiffOpGradientHCurl<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                                ABareSliceMatrix<double> x, BareSliceVector<double> y)
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
@@ -256,7 +256,7 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
+      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
       
       for (int j = 0; j < D; j++)
         {
@@ -268,8 +268,8 @@ namespace ngcomp
                 {
                   SIMD<double> sum = 0;
                   for (int m = 0; m < D; m++)
-                    sum += jacinv(j,m) * x.Get(m*D+l, k);
-                  hx.Get(l,k) = (-(0.5/eps()) * sum).Data();
+                    sum += jacinv(j,m) * x(m*D+l, k);
+                  hx(l,k) = (-(0.5/eps()) * sum);
                 }
             }
 
