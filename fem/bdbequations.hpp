@@ -1642,6 +1642,7 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC-VB };
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
+    static bool SupportsVB (VorB checkvb) { return true; }
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
