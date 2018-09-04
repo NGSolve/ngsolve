@@ -1289,7 +1289,7 @@ namespace ngcomp
                                        {
                                          DofId d = dnums[idofs1[i]];
                                          if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
-                                           d = NO_DOF_NR; // or _CONDENSE; ???
+                                           d = NO_DOF_NR_CONDENSE;
                                          idnums1[i] = d;
                                        }
                                      for (int i : Range(odofs1))
