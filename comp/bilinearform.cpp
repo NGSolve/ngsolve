@@ -1162,7 +1162,7 @@ namespace ngcomp
                          */
 
                          bool has_hidden = false;
-                         if (eliminate_hidden)
+                         if (eliminate_hidden || eliminate_internal)
                            {
                              for (auto d : dnums)
                                if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
