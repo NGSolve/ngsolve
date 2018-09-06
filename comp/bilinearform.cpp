@@ -1162,7 +1162,7 @@ namespace ngcomp
                          */
 
                          bool has_hidden = false;
-                         if (eliminate_hidden)
+                         if (eliminate_hidden || eliminate_internal)
                            {
                              for (auto d : dnums)
                                if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
@@ -1289,7 +1289,7 @@ namespace ngcomp
                                        {
                                          DofId d = dnums[idofs1[i]];
                                          if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
-                                           d = NO_DOF_NR; // or _CONDENSE; ???
+                                           d = NO_DOF_NR_CONDENSE;
                                          idnums1[i] = d;
                                        }
                                      for (int i : Range(odofs1))
@@ -1314,7 +1314,41 @@ namespace ngcomp
                                        ednums += dim * IntRange(ednum1, ednum1+1);
                                      
                                      if (store_inner)
+                                     {
+                                       if (has_hidden)
+                                       {
+                                         HeapReset hr(lh);
+                                         Array<int> ldofs(idnums.Size(), lh); //LOCAL DOFs
+                                         Array<int> hdofs(idnums.Size(), lh); //HIDDEN DOFs
+                                         ldofs.SetSize0(); 
+                                         hdofs.SetSize0();
+
+                                         for (int i : Range(idnums))
+                                           if (idnums[i] == NO_DOF_NR_CONDENSE)
+                                             hdofs.AppendHaveMem(i);
+                                           else
+                                             ldofs.AppendHaveMem(i);
+
+                                         FlatMatrix<SCAL> 
+                                           da = d.Rows(ldofs).Cols(ldofs) | lh,
+                                           db = d.Rows(ldofs).Cols(hdofs) | lh,
+                                           dc = Trans(d.Rows(hdofs).Cols(ldofs)) | lh,
+                                           dd = d.Rows(hdofs).Cols(hdofs) | lh;
+
+                                         Array<int> cidnums(idnums.Size(), lh); //compressed idofs (no hidden)
+                                         cidnums.SetSize0();
+                                         for (DofId dof : idnums)
+                                           if (IsRegularDof(dof))
+                                             cidnums.AppendHaveMem(dof);
+
+                                         LapackAInvBt (dd, db);    // b <--- b d^-1
+                                         LapackMultAddABt (db, dc, -1, da);   
+                             
+                                         innermatrix ->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
+                                       }
+                                       else
                                        innermatrix ->AddElementMatrix(el.Nr(),idnums,idnums,d);
+                                     }
                                      
                                      /*
                                        Matrix<SCAL> hd = d;
