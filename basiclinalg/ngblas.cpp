@@ -32,10 +32,11 @@ namespace ngbla
   /* ************************ Matrix * Vector ************************** */
 
 
-
   template <int SX>
   void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
+    KernelMatVec<SX,SET> (y.Size(), &a(0), a.Dist(), &x(0), &y(0));
+#ifdef VER1
     constexpr int SW = SIMD<double>::Size();
     size_t h = y.Size();
     size_t i = 0;
@@ -81,7 +82,7 @@ namespace ngbla
         auto scal = MatKernelScalAB<2,1> (SX, pa, a.Dist(), &x(0), 0);
         y(i) = get<0>(scal);
       }
-
+#endif
   }
 
   
@@ -130,7 +131,7 @@ namespace ngbla
 
 
 
- pmult_matvec dispatch_matvec[13] =
+ pmult_matvec dispatch_matvec[25] =
     {
       &MultMatVecShort<0>,
       &MultMatVecShort<1>, 
@@ -144,7 +145,19 @@ namespace ngbla
       &MultMatVecShort<9>,
       &MultMatVecShort<10>,
       &MultMatVecShort<11>,
-      &MultMatVecShort<12>
+      &MultMatVecShort<12>,
+      &MultMatVecShort<13>,
+      &MultMatVecShort<14>,
+      &MultMatVecShort<15>,
+      &MultMatVecShort<16>,
+      &MultMatVecShort<17>,
+      &MultMatVecShort<18>,
+      &MultMatVecShort<19>,
+      &MultMatVecShort<20>,
+      &MultMatVecShort<21>,
+      &MultMatVecShort<22>,
+      &MultMatVecShort<23>,
+      &MultMatVecShort<24>
     };
 
   
