@@ -265,8 +265,12 @@ void GenerateScalAB (ostream & out, int h, int w, bool simded)
       else
         out << "SIMD<double> b" << j << "(pb+" << j << "*db+i);" << endl;    
       for (int i = 0; i < h; i++)
-        // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
-        out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        {
+          if (h*w < 12)  // with 12 we are on the limit of registers -> fmaasm better
+            out << "sum" << i << j << " += a" << i << " * b" << j << ";" << endl;
+          else
+            out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        }
     }
   out << "}" << endl;
 
@@ -446,7 +450,7 @@ void GenerateDaxpy (ostream & out, int h, int w, OP op, bool aligned_b)
 
 
 
-  out << "SIMD<mask64> mask(n-i);" << endl;
+  out << "SIMD<mask64> mask(n%SW);" << endl;
   if (op == SET || op == SETNEG)
     {
       for (int i = 0; i < h; i++)
@@ -936,10 +940,9 @@ int main ()
       << "inline void MatKernelDaxpy" << endl
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
-  GenerateDaxpy (out, 1, 1);  
-  GenerateDaxpy (out, 1, 2);  
-  GenerateDaxpy (out, 1, 3);  
-  GenerateDaxpy (out, 1, 4);  
+  for (int i = 0; i <= 12; i++)
+    GenerateDaxpy (out, 1, i);
+
   GenerateDaxpy (out, 2, 1);  
   GenerateDaxpy (out, 2, 2);  
   GenerateDaxpy (out, 2, 3);  
@@ -948,7 +951,6 @@ int main ()
   GenerateDaxpy (out, 3, 2);  
   GenerateDaxpy (out, 3, 3);  
   GenerateDaxpy (out, 3, 4);
-
 
   out << "// C = A * B,  with short inner loop\n"
       << "template <size_t WA, OPERATION OP>\n"

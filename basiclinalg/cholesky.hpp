@@ -129,7 +129,7 @@ namespace ngbla
 
 
   // high performance LDL factorization as used for SparseCholesky
-
+  /*
   template <typename T, ORDERING ORD>
   INLINE void MySubABt (SliceMatrix<T,ORD> a,
                         SliceMatrix<T,ORD> b,
@@ -179,7 +179,9 @@ namespace ngbla
           }
       }
   }
-                      
+  */
+
+  
 /*
   A   B^t     =  L1        D1  0       L1^t  B1 
   B   C       =  B1 L2      0  D2            L2^t
