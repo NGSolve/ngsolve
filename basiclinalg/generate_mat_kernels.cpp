@@ -844,6 +844,80 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
 
 
 
+void  GenerateMatVec (ostream & out, int wa, OP op)
+{
+  out << "template <> INLINE void KernelMatVec<" << wa << ", " << ToString(op) << ">" << endl
+      << "(size_t ha, double * pa, size_t da, double * x, double * y) {" << endl;
+
+  int SW = SIMD<double>::Size();
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+  int i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    out << "SIMD<double> x" << i << "(x+" << i*SW << ");" << endl;
+  if (wa % SW)
+    {
+      out << "SIMD<mask64> mask(" << wa%SW << ");" << endl;
+      out << "SIMD<double> x" << i << "(x+" << i*SW << ", mask);" << endl;
+    }
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+4 <= ha; i+=4, pa += 4*da) {" << endl;
+  out << "SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);" << endl;
+  i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    {
+      out << "sum0 += SIMD<double>(pa+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double>(pa+da+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum2 += SIMD<double>(pa+2*da+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum3 += SIMD<double>(pa+3*da+" << i*SW << ") * x" << i << ";" << endl;
+    }
+      
+  if (wa % SW)
+    {
+      out << "sum0 += SIMD<double>(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double>(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum2 += SIMD<double>(pa+2*da+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum3 += SIMD<double>(pa+3*da+" << i*SW << ", mask) * x" << i << ";" << endl;
+    }
+  out << "SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);" << endl;
+  out << "vsum.Store(y+i);" << endl;
+  out << "}" << endl;
+
+
+  out << "if (ha & 2) {" << endl;
+  out << "SIMD<double> sum0(0.0), sum1(0.0);" << endl;
+  i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    {
+      out << "sum0 += SIMD<double>(pa+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double>(pa+da+" << i*SW << ") * x" << i << ";" << endl;
+    }
+      
+  if (wa % SW)
+    {
+      out << "sum0 += SIMD<double>(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double>(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
+    }
+  out << "SIMD<double,2> vsum = HSum(sum0,sum1);" << endl;
+  out << "vsum.Store(y+i);" << endl;
+  out << "i += 2; pa += 2*da;" << endl;
+  out << "}" << endl;
+  
+  
+  out << "if (ha & 1) {" << endl;
+  out << "SIMD<double> sum(0.0);" << endl;
+  i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    out << "sum += SIMD<double>(pa+" << i*SW << ") * x" << i << ";" << endl;
+  if (wa % SW)
+    out << "sum += SIMD<double>(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
+  out << "y[i] = HSum(sum);" << endl;
+
+  out << "} }" << endl;
+}
+
+
+
+
 
 int main ()
 {
@@ -982,5 +1056,12 @@ int main ()
       << "(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);\n";
 
   for (int i = 0; i <= 12; i++)
-    GenerateAtB_SmallWA (out, i, SET);  
+    GenerateAtB_SmallWA (out, i, SET);
+
+  out << "// y = A * x,  with fix width" << endl;
+  out << "template <size_t WA, OPERATION OP>" << endl
+      << "inline void KernelMatVec" << endl
+      << "(size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
+  for (int i = 0; i <= 24; i++)
+    GenerateMatVec (out, i, SET);
 }

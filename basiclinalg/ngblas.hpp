@@ -14,11 +14,11 @@ namespace ngbla
 
   extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
   typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
-  extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[13];
+  extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[25];
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t sx = x.Size();
-    if (sx <= 12)
+    if (sx <= 24)
       (*dispatch_matvec[sx])  (a, x, y);
     else
       MultMatVec_intern (a, x, y);
@@ -265,7 +265,7 @@ namespace ngbla
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
 
-    SubABt (a, Trans(b), c);
+    SubABt (a, Trans(b), BareSliceMatrix<>(c));
   }
   
   template <> INLINE void NgGEMM<true,true> (SliceMatrix<> a, SliceMatrix<double,ColMajor> b, SliceMatrix<> c)
