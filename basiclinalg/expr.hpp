@@ -516,8 +516,8 @@ namespace ngbla
     template<typename TOP, typename TB>
     INLINE T & Assign (const Expr<TB> & v)
     {
-      static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
-      ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+      // static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
+      // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
       
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
