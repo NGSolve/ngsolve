@@ -1384,7 +1384,8 @@ namespace ngcomp
                                        // V2:
                                        // he = -d * Trans(c) | Lapack;
                                        // V3:
-                                       MinusMultABt (d, c, he);
+                                       // MinusMultABt (d, c, he);
+                                       he = -d * Trans(c);
                                      }
                                      
                                      harmonicext ->AddElementMatrix(el.Nr(),idnums,ednums,he);
@@ -1392,7 +1393,8 @@ namespace ngcomp
                                        {
                                          FlatMatrix<SCAL> het (sizeo, sizei, lh);
                                          // het = -b*d | Lapack;
-                                         MinusMultAB (b, d, het);
+                                         // MinusMultAB (b, d, het);
+                                         het = -b * d;
                                          static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans.get())
                                            ->AddElementMatrix(el.Nr(),ednums,idnums,het);
                                        }
@@ -1403,7 +1405,8 @@ namespace ngcomp
                                        NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
                                                                    b.Height()*b.Width()*he.Width());
                                        // a += b * he | Lapack;
-                                       AddAB (b, he, a);
+                                       // AddAB (b, he, a);
+                                       a += b * he;
                                      }
                                      
                                      if (spd)
