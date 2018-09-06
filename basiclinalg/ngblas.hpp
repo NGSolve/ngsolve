@@ -12,8 +12,32 @@
 namespace ngbla
 {
 
-  extern void REGCALL MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
-  extern void REGCALL MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[13];
+  INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    size_t sx = x.Size();
+    if (sx <= 12)
+      (*dispatch_matvec[sx])  (a, x, y);
+    else
+      MultMatVec_intern (a, x, y);
+  }
+
+  
+  extern NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  typedef void (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmult_mattransvec dispatch_mattransvec[13];
+  
+  INLINE void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    size_t sx = x.Size();
+    if (sx <= 12)
+      (*dispatch_mattransvec[sx])  (a, x, y);
+    else
+      MultMatTransVec_intern (a, x, y);
+  }
+
 
     
   template <typename TA, typename TB, typename TC>
@@ -146,6 +170,131 @@ namespace ngbla
     SubAtDB (Trans(b), diag, Trans(a), Trans(c));
   }  
 
+
+  // ADD/POS 
+  // f   f    C = -A*B
+  // f   t    C = A*B
+  // t   f    C -= A*B
+  // t   t    C += A*B
+
+  template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
+  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
+  {
+    static Timer t("NgGEMM unresolved" + ToString(ADD) + ToString(POS) + ToString(orda) + ToString(ordb));
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
+    
+    if (!ADD)
+      {
+        if (!POS)
+          c = -1*a*b;
+        else
+          c = 1*a*b;
+      }
+    else
+      {
+        if (!POS)
+          c -= 1*a*b;
+        else
+          c += 1*a*b;
+      }
+  }
+  
+  template <> INLINE void NgGEMM<false,true> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    static Timer t("NgGEMM  MultMatMat");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
+
+    MultMatMat (a,b,c);
+  }
+
+  template <> INLINE void NgGEMM<true,true> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    static Timer t("NgGEMM  AddAB");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
+
+    AddAB (a,b,c);
+  }
+
+  template <> INLINE void NgGEMM<true,false> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    static Timer t("NgGEMM  SubAB");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
+
+    SubAB (a,b,c);
+  }
+
+  template <> INLINE void NgGEMM<false,false> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    static Timer t("NgGEMM  MinusAB");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
+
+    MinusMultAB (a, b, c);
+  }
+  
+  template <> INLINE void NgGEMM<false,false> (SliceMatrix<> a, SliceMatrix<double,ColMajor> b, SliceMatrix<> c)
+  {
+    static Timer t("NgGEMM  MinusABt");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
+
+    MinusMultABt (a, Trans(b), c);
+  }
+  
+  
+  
+  template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
+  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c)
+  {
+    NgGEMM<ADD,POS> (Trans(b), Trans(a), Trans(c));
+  }
+
+
+
+  template <bool ADD, bool POS, ORDERING ord>
+  void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
+  {
+    static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
+    
+    if (!ADD)
+      {
+        if (!POS)
+          y = -1*a*x;
+        else
+          y = 1*a*x;
+      }
+    else
+      {
+        if (!POS)
+          y -= 1*a*x;
+        else
+          y += 1*a*x;
+      }
+  }
+
+  template <> INLINE void NgGEMV<false,true> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    static Timer t("NgGEMV  MultMatVec");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
+
+    MultMatVec (a,x,y);
+  }
+  
+  template <> INLINE void NgGEMV<false,true> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    static Timer t("NgGEMV  MultMatTransVec");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
+
+    MultMatTransVec (Trans(a),x,y);
+  }
   
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k);

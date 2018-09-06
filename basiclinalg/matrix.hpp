@@ -12,7 +12,7 @@ namespace ngbla
 
   
   template <int H, int W, typename T> class Mat;
-  template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
+  // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
@@ -1598,8 +1598,18 @@ namespace ngbla
     }
   };
 
+  
+  template <typename T, ORDERING ORDER>
+  SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
+  template <int W, typename T, int DIST>
+  SliceMatrix<T,RowMajor> make_SliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat) { return mat; }
 
+  template <int H, typename T, int DIST>
+  SliceMatrix<T,ColMajor> make_SliceMatrix (FlatMatrixFixHeight<H,T,DIST> mat) { return mat; }
+  
+  template <typename T, ORDERING ORDER>
+  SliceMatrix<T,ORDER> make_SliceMatrix (SliceMatrix<T,ORDER> mat) { return mat; }
 
 
   template <typename T, ORDERING ORD> 
@@ -2197,6 +2207,7 @@ namespace ngbla
   //  Can we put a SliceMatrix over a matrix ? 
   //
 
+  
   template <typename TMAT, typename T = double>
   class Is_Sliceable { public: enum { VAL = false };  };
 

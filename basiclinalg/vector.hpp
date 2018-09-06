@@ -14,7 +14,6 @@ namespace ngbla
   template <int S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
-  template <class T> class FlatVector;
   template <class T> class Vector;
   template <class T = double, class TIND = size_t> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;

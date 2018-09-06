@@ -23,6 +23,27 @@ namespace ngbla
   template <int H, typename T> class DiagMat;
   template <int S, typename T> class Vec;
 
+  template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
+  template <class T> class FlatVector;
+
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToSliceMatrix ()
+  {
+    return is_convertible<T,SliceMatrix<TELEM, RowMajor>>::value ||
+      is_convertible<T,SliceMatrix<TELEM, ColMajor>>::value;
+  }
+
+
+  
+  template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
+  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c);
+
+  template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
+  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c);
+  
+  template <bool ADD, bool POS, ORDERING ord>
+  void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y);
 
   /*
     Matrix expression templates
@@ -469,7 +490,7 @@ namespace ngbla
 
 
   template <class TA, class TB> class MultExpr;
-  
+  template <class TA> class MinusExpr;
   
   /**
      The base class for matrices.
@@ -495,6 +516,9 @@ namespace ngbla
     template<typename TOP, typename TB>
     INLINE T & Assign (const Expr<TB> & v)
     {
+      static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
+      ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+      
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	{
@@ -575,6 +599,56 @@ namespace ngbla
     };
 	
 
+
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod) 
+    {
+      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
+      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
+      
+      NgGEMM<ADD,POS> (make_SliceMatrix(prod.Spec().A()),
+                       make_SliceMatrix(prod.Spec().B()),
+                       make_SliceMatrix(Spec()));
+      return Spec();
+    }
+
+
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<MinusExpr<TA>, TB>> & prod) 
+    {
+      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
+      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
+      
+      NgGEMM<ADD,!POS> (make_SliceMatrix(prod.Spec().A().A()),
+                        make_SliceMatrix(prod.Spec().B()),
+                        make_SliceMatrix(Spec()));
+      return Spec();
+    }
+
+
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              // typename enable_if<is_convertible<T,FlatVector<double>>::value,int>::type = 0>
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
+    {
+      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
+      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
+      
+      NgGEMV<ADD,POS> (make_SliceMatrix(prod.Spec().A()),
+                       prod.Spec().B(),
+                       Spec());
+      return Spec();
+    }
+
+
+
+    
     template<typename TB>
     INLINE T & operator= (const Expr<TB> & v)
     {
@@ -603,7 +677,19 @@ namespace ngbla
     }
 
 
-
+    /*
+    template <typename TA, typename TB,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0>
+    INLINE T & operator= (const Expr<MultExpr<TA, TB>> & prod) 
+    {
+      cout << "using fast" << endl;
+      NgGEMM<false,true> (make_SliceMatrix(prod.Spec().A()),
+                          make_SliceMatrix(prod.Spec().B()),
+                          make_SliceMatrix(Spec()));
+      return Spec();
+    }
+    */
 
     template <typename TA, typename TB>
     INLINE T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
