@@ -1989,6 +1989,9 @@ namespace ngfem
     // for DG jump terms
     void SetOtherMIR (const SIMD_BaseMappedIntegrationRule * other) { other_mir = other; }
     auto GetOtherMIR () const { return other_mir; }
+
+    virtual void TransformGradient (BareSliceMatrix<SIMD<double>> grad) const = 0; // covariant transformation
+    virtual void TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const = 0; // covariant transformation transpose
   };
 
   inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mir)
@@ -2024,8 +2027,8 @@ namespace ngfem
                                                      DummySize(mips.Size(), DIM_SPACE));
       }
 
-    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
-    SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (size_t i) const
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) override;
+    SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (size_t i) const 
     { 
       return mips[i]; 
     }
@@ -2037,7 +2040,10 @@ namespace ngfem
                                             DummySize(mips.Size(), DIM_SPACE));
     }
     */
-    virtual void Print (ostream & ost) const;
+    virtual void Print (ostream & ost) const override;
+
+    virtual void TransformGradient (BareSliceMatrix<SIMD<double>> grad) const override;
+    virtual void TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const override;
   };
 }
 
