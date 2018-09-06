@@ -3316,6 +3316,32 @@ namespace ngfem
     for (size_t i = 0; i < mips.Size(); i++)
       mips[i].Print(ost);
   }
+
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
+  TransformGradient (BareSliceMatrix<SIMD<double>> grad) const 
+  {
+    if (DIM_ELEMENT != DIM_SPACE)
+      throw Exception("transformgrad only available for volume mapping");
+    
+    for (size_t i = 0; i < mips.Size(); i++)
+      {
+        Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
+        // Vec<DIM_SPACE,SIMD<double>> vphys = Trans(mips[i].GetJacobianInverse()) * vref;
+        // grad.Col(i).AddSize(DIM_SPACE) = vphys;
+        Vec<DIM_SPACE,SIMD<double>> vphys = 
+        grad.Col(i).AddSize(DIM_SPACE) = Trans(mips[i].GetJacobianInverse()) * vref;
+      }
+  }
+  
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
+  TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const 
+  {
+    throw Exception ("transformgrad not implemented");
+  }
+
   
   
   template class SIMD_MappedIntegrationRule<0,0>;
