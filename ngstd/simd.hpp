@@ -1058,12 +1058,6 @@ namespace ngstd
   template <int i, typename T, int N>
   T get(SIMD<T,N> a) { return a[i]; }
   
-  class ExceptionNOSIMD : public Exception
-  {
-  public:
-    using Exception :: Exception;
-  };
-  
 }
 
 #endif
