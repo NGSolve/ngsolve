@@ -31,6 +31,9 @@ fi
 
 cd 
 cd src/ngsolve
+cd external_dependencies
+rm -rf netgen
+cd ..
 git submodule update --init --recursive
 cd
 mkdir -p build/ngsolve
