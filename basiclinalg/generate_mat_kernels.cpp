@@ -860,7 +860,11 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
   for ( ; SW*(i+1) <= wa; i++)
     out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ");" << endl;
   
-  if (wa % SW == 2)
+  if (SW == 4 && (wa % SW == 1))
+    {
+      out << "double x" << i << " = x[" << i*SW << "];" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
     {
       out << "SIMD<double,2> x" << i << "(x+" << i*SW << ");" << endl;      
     }
@@ -880,8 +884,13 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       out << "sum2 += SIMD<double," << SW << ">(pa+2*da+" << i*SW << ") * x" << i << ";" << endl;
       out << "sum3 += SIMD<double," << SW << ">(pa+3*da+" << i*SW << ") * x" << i << ";" << endl;
     }
-      
-  if (wa % SW == 2)
+
+  if (SW == 4 && (wa % SW == 1))
+    {
+      for (int k = 0; k < 4; k++)
+        out << "sum"<<k<< " += SIMD<double,4> (pa[" << k << "*da+" << i*SW << "] * x" << i << ", 0,0,0);" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
     {
       out << "SIMD<double,2> zero(0.0);" << endl;
       out << "sum0 += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
@@ -910,7 +919,12 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ") * x" << i << ";" << endl;
     }
   
-  if (wa % SW == 2)
+  if (SW == 4 && (wa % SW == 1))
+    {
+      for (int k = 0; k < 2; k++)
+        out << "sum"<<k<< " += SIMD<double,4> (pa[" << k << "*da+" << i*SW << "] * x" << i << ", 0,0,0);" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
     {
       out << "SIMD<double,2> zero(0.0);" << endl;
       out << "sum0 += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
@@ -933,7 +947,12 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
   for ( ; SW*(i+1) <= wa; i++)
     out << "sum += SIMD<double," << SW << ">(pa+" << i*SW << ") * x" << i << ";" << endl;
 
-  if (wa % SW == 2)
+  
+  if (SW == 4 && (wa % SW == 1))
+    {
+      out << "sum += SIMD<double,4> (pa[" << i*SW << "] * x" << i << ", 0,0,0);" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
     {
       out << "SIMD<double,2> zero(0.0);" << endl;
       out << "sum += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
