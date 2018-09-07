@@ -1,6 +1,11 @@
 // ngscxx generate_mat_kernels.cpp ; a.out
 
-#include <ngstd.hpp>
+#include "../include/ngs_stdcpp_include.hpp"
+#define NGS_DLL_HEADER
+
+using namespace std;
+
+#include "../ngstd/simd.hpp"
 using namespace ngstd;
 
 enum OP { ADD, SUB, SET, SETNEG };

@@ -58,6 +58,12 @@ public:
 		  int ind, int imin, int imax);
 };
 
+  class ExceptionNOSIMD : public Exception
+  {
+  public:
+    using Exception :: Exception;
+  };
+
 }
 
 #endif
