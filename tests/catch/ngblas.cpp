@@ -6,27 +6,69 @@ void SetRandom (SliceMatrix<> mat)
 {
   for (int i = 0; i < mat.Height(); i++)
     for (int j = 0; j < mat.Width(); j++)
-      mat(i,j) = sin(3*i+5*j);
+      mat(i,j) = sin(2+3*i+5*j);
 }
 
 void SetRandom (SliceVector<> vec)
 {
   for (int i = 0; i < vec.Size(); i++)
-    vec(i) = sin(3*i);
+    vec(i) = sin(3+3*i);
 }
 
 void SetRandom (SliceMatrix<Complex> mat)
 {
   for (int i = 0; i < mat.Height(); i++)
     for (int j = 0; j < mat.Width(); j++)
-      mat(i,j) = Complex( sin(3*i+5*j), cos(2*i-j) );
+      mat(i,j) = Complex(4+ sin(3*i+5*j), cos(2*i-j) );
 }
 
 void SetRandom (SliceVector<Complex> vec)
 {
   for (int i = 0; i < vec.Size(); i++)
-    vec(i) = Complex( sin(3*i), cos(2*i) );
+    vec(i) = Complex(5+ sin(3*i), cos(2*i) );
 }
+
+
+TEST_CASE ("MatVec", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                  Matrix<> a(n,m);
+                  Vector<> x(m), y(n);
+                  SetRandom(a);
+                  SetRandom(x);
+                  y = a*x;
+                  double err = L2Norm (a*x-y);
+                  CHECK(err < 1e-13);
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE ("MatTransVec", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                  Matrix<> a(n,m);
+                  Vector<> x(n), y(m);
+                  SetRandom(a);
+                  SetRandom(x);
+                  y = Trans(a)*x;
+                  // MultMatTransVec(a, x, y);
+                  double err = L2Norm (Trans(a)*x-y);
+                  CHECK(err < 1e-13);
+                }
+            }
+        }
+    }
+}
+
+
+
+
 
 
 TEST_CASE ("MultMatMat", "[ngblas]") {
@@ -147,7 +189,7 @@ TEST_CASE ("SubAtDB", "[ngblas]") {
                             c2 -= Trans(a) * b;
 
                             double err = L2Norm(c-c2);
-                            CHECK(err < 1e-13);
+                            CHECK(err < 1e-10);
                         }
                     }
                 }

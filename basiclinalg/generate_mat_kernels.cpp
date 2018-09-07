@@ -415,7 +415,7 @@ void GenerateDaxpy (ostream & out, int h, int w, OP op, bool aligned_b)
     out << "double * pb" << i << " = pb+" << i << "*db;" << endl;
 
   out << "size_t i = 0;" << endl;
-  out << "for ( ; i+SW < n; i+=SW) {" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
   
   
   if (op == SET || op == SETNEG)
@@ -859,7 +859,12 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
   int i = 0;
   for ( ; SW*(i+1) <= wa; i++)
     out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ");" << endl;
-  if (wa % SW)
+  
+  if (wa % SW == 2)
+    {
+      out << "SIMD<double,2> x" << i << "(x+" << i*SW << ");" << endl;      
+    }
+  else if (wa % SW)  // do the mask load :-(
     {
       out << "SIMD<mask64," << SW << "> mask(" << wa%SW << "UL);" << endl;
       out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ", mask);" << endl;
@@ -876,7 +881,15 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       out << "sum3 += SIMD<double," << SW << ">(pa+3*da+" << i*SW << ") * x" << i << ";" << endl;
     }
       
-  if (wa % SW)
+  if (wa % SW == 2)
+    {
+      out << "SIMD<double,2> zero(0.0);" << endl;
+      out << "sum0 += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum1 += SIMD<double,4> (SIMD<double,2>(pa+da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum2 += SIMD<double,4> (SIMD<double,2>(pa+2*da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum3 += SIMD<double,4> (SIMD<double,2>(pa+3*da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+    }
+  else if (wa % SW)
     {
       out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
       out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
@@ -896,8 +909,14 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ") * x" << i << ";" << endl;
       out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ") * x" << i << ";" << endl;
     }
-      
-  if (wa % SW)
+  
+  if (wa % SW == 2)
+    {
+      out << "SIMD<double,2> zero(0.0);" << endl;
+      out << "sum0 += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum1 += SIMD<double,4> (SIMD<double,2>(pa+da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+    }
+  else if (wa % SW)
     {
       out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
       out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
@@ -913,7 +932,13 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
   i = 0;
   for ( ; SW*(i+1) <= wa; i++)
     out << "sum += SIMD<double," << SW << ">(pa+" << i*SW << ") * x" << i << ";" << endl;
-  if (wa % SW)
+
+  if (wa % SW == 2)
+    {
+      out << "SIMD<double,2> zero(0.0);" << endl;
+      out << "sum += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
+    }
+  else if (wa % SW)
     out << "sum += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
   out << "y[i] = HSum(sum);" << endl;
 
