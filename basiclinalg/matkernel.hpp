@@ -19890,1163 +19890,1163 @@ template <> INLINE void KernelMatVec<0, SET>
 constexpr int SW = SIMD<double>::Size();
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
+SIMD<double,4> sum0(0.0), sum1(0.0);
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
+SIMD<double,4> sum(0.0);
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<1, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<mask64> mask(1);
-SIMD<double> x0(x+0, mask);
+SIMD<mask64,4> mask(1UL);
+SIMD<double,4> x0(x+0, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0, mask) * x0;
-sum1 += SIMD<double>(pa+da+0, mask) * x0;
-sum2 += SIMD<double>(pa+2*da+0, mask) * x0;
-sum3 += SIMD<double>(pa+3*da+0, mask) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0, mask) * x0;
+sum1 += SIMD<double,4>(pa+da+0, mask) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0, mask) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0, mask) * x0;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0, mask) * x0;
-sum1 += SIMD<double>(pa+da+0, mask) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0, mask) * x0;
+sum1 += SIMD<double,4>(pa+da+0, mask) * x0;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0, mask) * x0;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0, mask) * x0;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<2, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<mask64> mask(2);
-SIMD<double> x0(x+0, mask);
+SIMD<mask64,4> mask(2UL);
+SIMD<double,4> x0(x+0, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0, mask) * x0;
-sum1 += SIMD<double>(pa+da+0, mask) * x0;
-sum2 += SIMD<double>(pa+2*da+0, mask) * x0;
-sum3 += SIMD<double>(pa+3*da+0, mask) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0, mask) * x0;
+sum1 += SIMD<double,4>(pa+da+0, mask) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0, mask) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0, mask) * x0;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0, mask) * x0;
-sum1 += SIMD<double>(pa+da+0, mask) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0, mask) * x0;
+sum1 += SIMD<double,4>(pa+da+0, mask) * x0;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0, mask) * x0;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0, mask) * x0;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<3, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<mask64> mask(3);
-SIMD<double> x0(x+0, mask);
+SIMD<mask64,4> mask(3UL);
+SIMD<double,4> x0(x+0, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0, mask) * x0;
-sum1 += SIMD<double>(pa+da+0, mask) * x0;
-sum2 += SIMD<double>(pa+2*da+0, mask) * x0;
-sum3 += SIMD<double>(pa+3*da+0, mask) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0, mask) * x0;
+sum1 += SIMD<double,4>(pa+da+0, mask) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0, mask) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0, mask) * x0;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0, mask) * x0;
-sum1 += SIMD<double>(pa+da+0, mask) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0, mask) * x0;
+sum1 += SIMD<double,4>(pa+da+0, mask) * x0;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0, mask) * x0;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0, mask) * x0;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<4, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
+SIMD<double,4> x0(x+0);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<5, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<mask64> mask(1);
-SIMD<double> x1(x+4, mask);
+SIMD<double,4> x0(x+0);
+SIMD<mask64,4> mask(1UL);
+SIMD<double,4> x1(x+4, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4, mask) * x1;
-sum1 += SIMD<double>(pa+da+4, mask) * x1;
-sum2 += SIMD<double>(pa+2*da+4, mask) * x1;
-sum3 += SIMD<double>(pa+3*da+4, mask) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4, mask) * x1;
+sum1 += SIMD<double,4>(pa+da+4, mask) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4, mask) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4, mask) * x1;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4, mask) * x1;
-sum1 += SIMD<double>(pa+da+4, mask) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4, mask) * x1;
+sum1 += SIMD<double,4>(pa+da+4, mask) * x1;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4, mask) * x1;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4, mask) * x1;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<6, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<mask64> mask(2);
-SIMD<double> x1(x+4, mask);
+SIMD<double,4> x0(x+0);
+SIMD<mask64,4> mask(2UL);
+SIMD<double,4> x1(x+4, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4, mask) * x1;
-sum1 += SIMD<double>(pa+da+4, mask) * x1;
-sum2 += SIMD<double>(pa+2*da+4, mask) * x1;
-sum3 += SIMD<double>(pa+3*da+4, mask) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4, mask) * x1;
+sum1 += SIMD<double,4>(pa+da+4, mask) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4, mask) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4, mask) * x1;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4, mask) * x1;
-sum1 += SIMD<double>(pa+da+4, mask) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4, mask) * x1;
+sum1 += SIMD<double,4>(pa+da+4, mask) * x1;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4, mask) * x1;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4, mask) * x1;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<7, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<mask64> mask(3);
-SIMD<double> x1(x+4, mask);
+SIMD<double,4> x0(x+0);
+SIMD<mask64,4> mask(3UL);
+SIMD<double,4> x1(x+4, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4, mask) * x1;
-sum1 += SIMD<double>(pa+da+4, mask) * x1;
-sum2 += SIMD<double>(pa+2*da+4, mask) * x1;
-sum3 += SIMD<double>(pa+3*da+4, mask) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4, mask) * x1;
+sum1 += SIMD<double,4>(pa+da+4, mask) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4, mask) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4, mask) * x1;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4, mask) * x1;
-sum1 += SIMD<double>(pa+da+4, mask) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4, mask) * x1;
+sum1 += SIMD<double,4>(pa+da+4, mask) * x1;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4, mask) * x1;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4, mask) * x1;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<8, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<9, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<mask64> mask(1);
-SIMD<double> x2(x+8, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<mask64,4> mask(1UL);
+SIMD<double,4> x2(x+8, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8, mask) * x2;
-sum1 += SIMD<double>(pa+da+8, mask) * x2;
-sum2 += SIMD<double>(pa+2*da+8, mask) * x2;
-sum3 += SIMD<double>(pa+3*da+8, mask) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8, mask) * x2;
+sum1 += SIMD<double,4>(pa+da+8, mask) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8, mask) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8, mask) * x2;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8, mask) * x2;
-sum1 += SIMD<double>(pa+da+8, mask) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8, mask) * x2;
+sum1 += SIMD<double,4>(pa+da+8, mask) * x2;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8, mask) * x2;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8, mask) * x2;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<10, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<mask64> mask(2);
-SIMD<double> x2(x+8, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<mask64,4> mask(2UL);
+SIMD<double,4> x2(x+8, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8, mask) * x2;
-sum1 += SIMD<double>(pa+da+8, mask) * x2;
-sum2 += SIMD<double>(pa+2*da+8, mask) * x2;
-sum3 += SIMD<double>(pa+3*da+8, mask) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8, mask) * x2;
+sum1 += SIMD<double,4>(pa+da+8, mask) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8, mask) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8, mask) * x2;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8, mask) * x2;
-sum1 += SIMD<double>(pa+da+8, mask) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8, mask) * x2;
+sum1 += SIMD<double,4>(pa+da+8, mask) * x2;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8, mask) * x2;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8, mask) * x2;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<11, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<mask64> mask(3);
-SIMD<double> x2(x+8, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<mask64,4> mask(3UL);
+SIMD<double,4> x2(x+8, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8, mask) * x2;
-sum1 += SIMD<double>(pa+da+8, mask) * x2;
-sum2 += SIMD<double>(pa+2*da+8, mask) * x2;
-sum3 += SIMD<double>(pa+3*da+8, mask) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8, mask) * x2;
+sum1 += SIMD<double,4>(pa+da+8, mask) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8, mask) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8, mask) * x2;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8, mask) * x2;
-sum1 += SIMD<double>(pa+da+8, mask) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8, mask) * x2;
+sum1 += SIMD<double,4>(pa+da+8, mask) * x2;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8, mask) * x2;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8, mask) * x2;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<12, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<13, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<mask64> mask(1);
-SIMD<double> x3(x+12, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<mask64,4> mask(1UL);
+SIMD<double,4> x3(x+12, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12, mask) * x3;
-sum1 += SIMD<double>(pa+da+12, mask) * x3;
-sum2 += SIMD<double>(pa+2*da+12, mask) * x3;
-sum3 += SIMD<double>(pa+3*da+12, mask) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12, mask) * x3;
+sum1 += SIMD<double,4>(pa+da+12, mask) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12, mask) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12, mask) * x3;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12, mask) * x3;
-sum1 += SIMD<double>(pa+da+12, mask) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12, mask) * x3;
+sum1 += SIMD<double,4>(pa+da+12, mask) * x3;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12, mask) * x3;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12, mask) * x3;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<14, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<mask64> mask(2);
-SIMD<double> x3(x+12, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<mask64,4> mask(2UL);
+SIMD<double,4> x3(x+12, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12, mask) * x3;
-sum1 += SIMD<double>(pa+da+12, mask) * x3;
-sum2 += SIMD<double>(pa+2*da+12, mask) * x3;
-sum3 += SIMD<double>(pa+3*da+12, mask) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12, mask) * x3;
+sum1 += SIMD<double,4>(pa+da+12, mask) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12, mask) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12, mask) * x3;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12, mask) * x3;
-sum1 += SIMD<double>(pa+da+12, mask) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12, mask) * x3;
+sum1 += SIMD<double,4>(pa+da+12, mask) * x3;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12, mask) * x3;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12, mask) * x3;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<15, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<mask64> mask(3);
-SIMD<double> x3(x+12, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<mask64,4> mask(3UL);
+SIMD<double,4> x3(x+12, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12, mask) * x3;
-sum1 += SIMD<double>(pa+da+12, mask) * x3;
-sum2 += SIMD<double>(pa+2*da+12, mask) * x3;
-sum3 += SIMD<double>(pa+3*da+12, mask) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12, mask) * x3;
+sum1 += SIMD<double,4>(pa+da+12, mask) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12, mask) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12, mask) * x3;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12, mask) * x3;
-sum1 += SIMD<double>(pa+da+12, mask) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12, mask) * x3;
+sum1 += SIMD<double,4>(pa+da+12, mask) * x3;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12, mask) * x3;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12, mask) * x3;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<16, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<17, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<mask64> mask(1);
-SIMD<double> x4(x+16, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<mask64,4> mask(1UL);
+SIMD<double,4> x4(x+16, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16, mask) * x4;
-sum1 += SIMD<double>(pa+da+16, mask) * x4;
-sum2 += SIMD<double>(pa+2*da+16, mask) * x4;
-sum3 += SIMD<double>(pa+3*da+16, mask) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16, mask) * x4;
+sum1 += SIMD<double,4>(pa+da+16, mask) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16, mask) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16, mask) * x4;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16, mask) * x4;
-sum1 += SIMD<double>(pa+da+16, mask) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16, mask) * x4;
+sum1 += SIMD<double,4>(pa+da+16, mask) * x4;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16, mask) * x4;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16, mask) * x4;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<18, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<mask64> mask(2);
-SIMD<double> x4(x+16, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<mask64,4> mask(2UL);
+SIMD<double,4> x4(x+16, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16, mask) * x4;
-sum1 += SIMD<double>(pa+da+16, mask) * x4;
-sum2 += SIMD<double>(pa+2*da+16, mask) * x4;
-sum3 += SIMD<double>(pa+3*da+16, mask) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16, mask) * x4;
+sum1 += SIMD<double,4>(pa+da+16, mask) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16, mask) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16, mask) * x4;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16, mask) * x4;
-sum1 += SIMD<double>(pa+da+16, mask) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16, mask) * x4;
+sum1 += SIMD<double,4>(pa+da+16, mask) * x4;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16, mask) * x4;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16, mask) * x4;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<19, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<mask64> mask(3);
-SIMD<double> x4(x+16, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<mask64,4> mask(3UL);
+SIMD<double,4> x4(x+16, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16, mask) * x4;
-sum1 += SIMD<double>(pa+da+16, mask) * x4;
-sum2 += SIMD<double>(pa+2*da+16, mask) * x4;
-sum3 += SIMD<double>(pa+3*da+16, mask) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16, mask) * x4;
+sum1 += SIMD<double,4>(pa+da+16, mask) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16, mask) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16, mask) * x4;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16, mask) * x4;
-sum1 += SIMD<double>(pa+da+16, mask) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16, mask) * x4;
+sum1 += SIMD<double,4>(pa+da+16, mask) * x4;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16, mask) * x4;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16, mask) * x4;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<20, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<double> x4(x+16);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<double,4> x4(x+16);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum2 += SIMD<double>(pa+2*da+16) * x4;
-sum3 += SIMD<double>(pa+3*da+16) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16) * x4;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16) * x4;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16) * x4;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<21, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<double> x4(x+16);
-SIMD<mask64> mask(1);
-SIMD<double> x5(x+20, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<double,4> x4(x+16);
+SIMD<mask64,4> mask(1UL);
+SIMD<double,4> x5(x+20, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum2 += SIMD<double>(pa+2*da+16) * x4;
-sum3 += SIMD<double>(pa+3*da+16) * x4;
-sum0 += SIMD<double>(pa+20, mask) * x5;
-sum1 += SIMD<double>(pa+da+20, mask) * x5;
-sum2 += SIMD<double>(pa+2*da+20, mask) * x5;
-sum3 += SIMD<double>(pa+3*da+20, mask) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16) * x4;
+sum0 += SIMD<double,4>(pa+20, mask) * x5;
+sum1 += SIMD<double,4>(pa+da+20, mask) * x5;
+sum2 += SIMD<double,4>(pa+2*da+20, mask) * x5;
+sum3 += SIMD<double,4>(pa+3*da+20, mask) * x5;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum0 += SIMD<double>(pa+20, mask) * x5;
-sum1 += SIMD<double>(pa+da+20, mask) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum0 += SIMD<double,4>(pa+20, mask) * x5;
+sum1 += SIMD<double,4>(pa+da+20, mask) * x5;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16) * x4;
-sum += SIMD<double>(pa+20, mask) * x5;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16) * x4;
+sum += SIMD<double,4>(pa+20, mask) * x5;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<22, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<double> x4(x+16);
-SIMD<mask64> mask(2);
-SIMD<double> x5(x+20, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<double,4> x4(x+16);
+SIMD<mask64,4> mask(2UL);
+SIMD<double,4> x5(x+20, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum2 += SIMD<double>(pa+2*da+16) * x4;
-sum3 += SIMD<double>(pa+3*da+16) * x4;
-sum0 += SIMD<double>(pa+20, mask) * x5;
-sum1 += SIMD<double>(pa+da+20, mask) * x5;
-sum2 += SIMD<double>(pa+2*da+20, mask) * x5;
-sum3 += SIMD<double>(pa+3*da+20, mask) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16) * x4;
+sum0 += SIMD<double,4>(pa+20, mask) * x5;
+sum1 += SIMD<double,4>(pa+da+20, mask) * x5;
+sum2 += SIMD<double,4>(pa+2*da+20, mask) * x5;
+sum3 += SIMD<double,4>(pa+3*da+20, mask) * x5;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum0 += SIMD<double>(pa+20, mask) * x5;
-sum1 += SIMD<double>(pa+da+20, mask) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum0 += SIMD<double,4>(pa+20, mask) * x5;
+sum1 += SIMD<double,4>(pa+da+20, mask) * x5;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16) * x4;
-sum += SIMD<double>(pa+20, mask) * x5;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16) * x4;
+sum += SIMD<double,4>(pa+20, mask) * x5;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<23, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<double> x4(x+16);
-SIMD<mask64> mask(3);
-SIMD<double> x5(x+20, mask);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<double,4> x4(x+16);
+SIMD<mask64,4> mask(3UL);
+SIMD<double,4> x5(x+20, mask);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum2 += SIMD<double>(pa+2*da+16) * x4;
-sum3 += SIMD<double>(pa+3*da+16) * x4;
-sum0 += SIMD<double>(pa+20, mask) * x5;
-sum1 += SIMD<double>(pa+da+20, mask) * x5;
-sum2 += SIMD<double>(pa+2*da+20, mask) * x5;
-sum3 += SIMD<double>(pa+3*da+20, mask) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16) * x4;
+sum0 += SIMD<double,4>(pa+20, mask) * x5;
+sum1 += SIMD<double,4>(pa+da+20, mask) * x5;
+sum2 += SIMD<double,4>(pa+2*da+20, mask) * x5;
+sum3 += SIMD<double,4>(pa+3*da+20, mask) * x5;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum0 += SIMD<double>(pa+20, mask) * x5;
-sum1 += SIMD<double>(pa+da+20, mask) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum0 += SIMD<double,4>(pa+20, mask) * x5;
+sum1 += SIMD<double,4>(pa+da+20, mask) * x5;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16) * x4;
-sum += SIMD<double>(pa+20, mask) * x5;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16) * x4;
+sum += SIMD<double,4>(pa+20, mask) * x5;
 y[i] = HSum(sum);
 } }
 template <> INLINE void KernelMatVec<24, SET>
 (size_t ha, double * pa, size_t da, double * x, double * y) {
 constexpr int SW = SIMD<double>::Size();
-SIMD<double> x0(x+0);
-SIMD<double> x1(x+4);
-SIMD<double> x2(x+8);
-SIMD<double> x3(x+12);
-SIMD<double> x4(x+16);
-SIMD<double> x5(x+20);
+SIMD<double,4> x0(x+0);
+SIMD<double,4> x1(x+4);
+SIMD<double,4> x2(x+8);
+SIMD<double,4> x3(x+12);
+SIMD<double,4> x4(x+16);
+SIMD<double,4> x5(x+20);
 size_t i = 0;
 for ( ; i+4 <= ha; i+=4, pa += 4*da) {
-SIMD<double> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum2 += SIMD<double>(pa+2*da+0) * x0;
-sum3 += SIMD<double>(pa+3*da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum2 += SIMD<double>(pa+2*da+4) * x1;
-sum3 += SIMD<double>(pa+3*da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum2 += SIMD<double>(pa+2*da+8) * x2;
-sum3 += SIMD<double>(pa+3*da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum2 += SIMD<double>(pa+2*da+12) * x3;
-sum3 += SIMD<double>(pa+3*da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum2 += SIMD<double>(pa+2*da+16) * x4;
-sum3 += SIMD<double>(pa+3*da+16) * x4;
-sum0 += SIMD<double>(pa+20) * x5;
-sum1 += SIMD<double>(pa+da+20) * x5;
-sum2 += SIMD<double>(pa+2*da+20) * x5;
-sum3 += SIMD<double>(pa+3*da+20) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum2 += SIMD<double,4>(pa+2*da+0) * x0;
+sum3 += SIMD<double,4>(pa+3*da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum2 += SIMD<double,4>(pa+2*da+4) * x1;
+sum3 += SIMD<double,4>(pa+3*da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum2 += SIMD<double,4>(pa+2*da+8) * x2;
+sum3 += SIMD<double,4>(pa+3*da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum2 += SIMD<double,4>(pa+2*da+12) * x3;
+sum3 += SIMD<double,4>(pa+3*da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum2 += SIMD<double,4>(pa+2*da+16) * x4;
+sum3 += SIMD<double,4>(pa+3*da+16) * x4;
+sum0 += SIMD<double,4>(pa+20) * x5;
+sum1 += SIMD<double,4>(pa+da+20) * x5;
+sum2 += SIMD<double,4>(pa+2*da+20) * x5;
+sum3 += SIMD<double,4>(pa+3*da+20) * x5;
 SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);
 vsum.Store(y+i);
 }
 if (ha & 2) {
-SIMD<double> sum0(0.0), sum1(0.0);
-sum0 += SIMD<double>(pa+0) * x0;
-sum1 += SIMD<double>(pa+da+0) * x0;
-sum0 += SIMD<double>(pa+4) * x1;
-sum1 += SIMD<double>(pa+da+4) * x1;
-sum0 += SIMD<double>(pa+8) * x2;
-sum1 += SIMD<double>(pa+da+8) * x2;
-sum0 += SIMD<double>(pa+12) * x3;
-sum1 += SIMD<double>(pa+da+12) * x3;
-sum0 += SIMD<double>(pa+16) * x4;
-sum1 += SIMD<double>(pa+da+16) * x4;
-sum0 += SIMD<double>(pa+20) * x5;
-sum1 += SIMD<double>(pa+da+20) * x5;
+SIMD<double,4> sum0(0.0), sum1(0.0);
+sum0 += SIMD<double,4>(pa+0) * x0;
+sum1 += SIMD<double,4>(pa+da+0) * x0;
+sum0 += SIMD<double,4>(pa+4) * x1;
+sum1 += SIMD<double,4>(pa+da+4) * x1;
+sum0 += SIMD<double,4>(pa+8) * x2;
+sum1 += SIMD<double,4>(pa+da+8) * x2;
+sum0 += SIMD<double,4>(pa+12) * x3;
+sum1 += SIMD<double,4>(pa+da+12) * x3;
+sum0 += SIMD<double,4>(pa+16) * x4;
+sum1 += SIMD<double,4>(pa+da+16) * x4;
+sum0 += SIMD<double,4>(pa+20) * x5;
+sum1 += SIMD<double,4>(pa+da+20) * x5;
 SIMD<double,2> vsum = HSum(sum0,sum1);
 vsum.Store(y+i);
 i += 2; pa += 2*da;
 }
 if (ha & 1) {
-SIMD<double> sum(0.0);
-sum += SIMD<double>(pa+0) * x0;
-sum += SIMD<double>(pa+4) * x1;
-sum += SIMD<double>(pa+8) * x2;
-sum += SIMD<double>(pa+12) * x3;
-sum += SIMD<double>(pa+16) * x4;
-sum += SIMD<double>(pa+20) * x5;
+SIMD<double,4> sum(0.0);
+sum += SIMD<double,4>(pa+0) * x0;
+sum += SIMD<double,4>(pa+4) * x1;
+sum += SIMD<double,4>(pa+8) * x2;
+sum += SIMD<double,4>(pa+12) * x3;
+sum += SIMD<double,4>(pa+16) * x4;
+sum += SIMD<double,4>(pa+20) * x5;
 y[i] = HSum(sum);
 } }
