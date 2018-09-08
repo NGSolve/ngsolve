@@ -22,6 +22,8 @@ namespace ngmg
     : BaseMatrix (), ma(ama), fespace(afespace), biform(abiform), 
       smoother(asmoother), prolongation(aprolongation)
   {
+    if (!prolongation)
+      throw Exception ("MultigridPrecond: did not get a prolongation");
     coarsegridpre = NULL;
 
     SetSmoothingSteps (1);
