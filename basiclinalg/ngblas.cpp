@@ -36,53 +36,6 @@ namespace ngbla
   void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     KernelMatVec<SX,SET> (y.Size(), &a(0), a.Dist(), &x(0), &y(0));
-#ifdef VER1
-    constexpr int SW = SIMD<double>::Size();
-    size_t h = y.Size();
-    size_t i = 0;
-
-    /*
-    double * pa = &a(i,0);
-    for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
-      {
-        SIMD<double,4> sum1, sum2;
-        tie(sum1, sum2) = MatKernelScalAB<8,1> (SX, pa, a.Dist(), &x(0), 0);
-        sum1.Store(&y(i));        
-        sum2.Store(&y(i+4));        
-      }
-    
-    if (i+4 <= h)
-      {
-        SIMD<double,4> sum;
-        tie(sum) = MatKernelScalAB<4,1> (SX, pa, a.Dist(), &x(0), 0);
-        sum.Store(&y(i));
-        i += 4;
-        pa += 4*a.Dist();
-      }
-    */
-    double * pa = &a(i,0);
-    for ( ; i+4 <= h; i+=4, pa += 4*a.Dist())
-      {
-        SIMD<double,4> sum;
-        tie(sum) = MatKernelScalAB<4,1> (SX, pa, a.Dist(), &x(0), 0);
-        sum.Store(&y(i));        
-      }
-    
-    if (i+2 <= h)
-      {
-        auto scal = MatKernelScalAB<2,1> (SX, pa, a.Dist(), &x(0), 0);
-        SIMD<double,2> sum(get<0>(scal), get<1>(scal));
-        sum.Store(&y(i));
-        i += 2;
-        pa += 2*a.Dist();
-      }
-
-    if (i+1 <= h)
-      {
-        auto scal = MatKernelScalAB<2,1> (SX, pa, a.Dist(), &x(0), 0);
-        y(i) = get<0>(scal);
-      }
-#endif
   }
 
   
@@ -133,30 +86,12 @@ namespace ngbla
 
  pmult_matvec dispatch_matvec[25] =
     {
-      &MultMatVecShort<0>,
-      &MultMatVecShort<1>, 
-      &MultMatVecShort<2>,
-      &MultMatVecShort<3>,
-      &MultMatVecShort<4>,
-      &MultMatVecShort<5>,
-      &MultMatVecShort<6>,
-      &MultMatVecShort<7>,
-      &MultMatVecShort<8>,
-      &MultMatVecShort<9>,
-      &MultMatVecShort<10>,
-      &MultMatVecShort<11>,
-      &MultMatVecShort<12>,
-      &MultMatVecShort<13>,
-      &MultMatVecShort<14>,
-      &MultMatVecShort<15>,
-      &MultMatVecShort<16>,
-      &MultMatVecShort<17>,
-      &MultMatVecShort<18>,
-      &MultMatVecShort<19>,
-      &MultMatVecShort<20>,
-      &MultMatVecShort<21>,
-      &MultMatVecShort<22>,
-      &MultMatVecShort<23>,
+      &MultMatVecShort<0>, &MultMatVecShort<1>, &MultMatVecShort<2>, &MultMatVecShort<3>,
+      &MultMatVecShort<4>, &MultMatVecShort<5>, &MultMatVecShort<6>, &MultMatVecShort<7>,
+      &MultMatVecShort<8>, &MultMatVecShort<9>, &MultMatVecShort<10>, &MultMatVecShort<11>,
+      &MultMatVecShort<12>, &MultMatVecShort<13>, &MultMatVecShort<14>, &MultMatVecShort<15>,
+      &MultMatVecShort<16>, &MultMatVecShort<17>, &MultMatVecShort<18>, &MultMatVecShort<19>,
+      &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
       &MultMatVecShort<24>
     };
 
@@ -1163,7 +1098,6 @@ namespace ngbla
     // c -= a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c-ab; });
   }
-
 
 
 

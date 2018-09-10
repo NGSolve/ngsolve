@@ -266,12 +266,19 @@ namespace ngfem
             NgProfiler::AddThreadFlops (txmult, TaskManager::GetThreadId(), nipx*this->ndof);
             auto multxptr = GetMatVecFunction (nipx);            
             Cast().
+              /*
               Map2t3([multxptr, facx, trans2, trans3] (INT<4, size_t> i4) // base 3, base 2, base x, nr
                      {
                        // trans3.Range(i4[0], i4[0]+i4[3]) = facx.Rows(i4[2], i4[2]+i4[3]) * trans2.Row(i4[1]);
                        multxptr (facx.Rows(i4[2], i4[2]+i4[3]), trans2.Row(i4[1]), trans3.Range(i4[0], i4[0]+i4[3]));
                      });
-
+              */
+              Map2t3([multxptr, facx, trans2, trans3] (auto base3, auto base2, auto basex, auto cnt)
+                     {
+                       // trans3.Range(i4[0], i4[0]+i4[3]) = facx.Rows(i4[2], i4[2]+i4[3]) * trans2.Row(i4[1]);
+                       multxptr (facx.Rows(basex, basex+cnt), trans2.Row(base2), trans3.Range(base3,base3+cnt));
+                     });
+                     
             {
               ThreadRegionTimer regadd(tadd, TaskManager::GetThreadId());                                  
               coefs.AddSize(this->ndof) += trans3;
@@ -481,6 +488,7 @@ namespace ngfem
             ThreadRegionTimer regcalc(tcalcx, TaskManager::GetThreadId());
             NgProfiler::AddThreadFlops (tcalcx, TaskManager::GetThreadId(), 2*nipx*ndof);
             Cast().
+              /*
               Map2t3([facx_ref, facdx_ref, coefs, &gridx, &gridx_dx] (INT<4, size_t> i4)
                      // base 3, base 2, base x, nr
                      {
@@ -488,12 +496,14 @@ namespace ngfem
                        size_t base2 = i4[1];
                        size_t basex = i4[2];
                        size_t cnt = i4[3];
-
+              */
+              Map2t3([facx_ref, facdx_ref, coefs, &gridx, &gridx_dx] (auto base3, auto base2, auto basex, auto cnt)
+                     {
                        gridx.Row(base2)    =
                          Trans(facx_ref.Rows(basex,basex+cnt)) * coefs.Range(base3, base3+cnt);
                        gridx_dx.Row(base2) =
                          Trans(facdx_ref.Rows(basex,basex+cnt)) * coefs.Range(base3, base3+cnt);
-                   });          
+                     });          
           }
 
           {
@@ -547,7 +557,7 @@ namespace ngfem
                 mgrid_dy.Row(iz) += z * mgrid_dz.Row(iz);
               }
           }
-
+          
           ThreadRegionTimer regjac(ttransjac, TaskManager::GetThreadId());                              
           mir.TransformGradient (values);
           }
@@ -555,8 +565,250 @@ namespace ngfem
           // cout << "diff = " << L2Norm2( (values.AddSize(3,ir.Size()) - val1)) << endl;
           return;
         }
-      T_ScalarFiniteElement<SHAPES,ET,BASE>::EvaluateGrad (ir, bcoefs, values);      
+      T_ScalarFiniteElement<SHAPES,ET,BASE>::EvaluateGrad (mir, bcoefs, values);      
     }
+
+
+
+
+
+
+    virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & mir,
+                               BareSliceMatrix<SIMD<double>> values,
+                               BareSliceVector<> bcoefs) const override
+    {
+      const SIMD_IntegrationRule & ir = mir.IR();
+      /*
+      Vector<double> coefs1(this->ndof);
+      coefs1 = 0.0;
+      T_ScalarFiniteElement<SHAPES,ET,BASE>::AddGradTrans (mir, values, coefs1);      
+      */
+      
+      if (ir.IsTP())
+        {
+          static Timer t("AddGradTrans - fast");
+          static Timer tsetup("AddGradTrans - setup");
+          static Timer tcalc("AddGradTrans - calc");
+          static Timer tcalcx("AddGradTrans - calcx");
+          static Timer tcalcy("AddGradTrans - calcy");
+          static Timer tcalcz("AddGradTrans - calcz");
+
+          static Timer ttransx("AddGradTrans - transx");
+          static Timer ttransy("AddGradTrans - transy");
+          static Timer ttransz("AddGradTrans - transz");
+          static Timer ttransjac("AddGradTrans - trans jacobi");
+
+          ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+
+          STACK_ARRAY (double, mem_coefs, this->ndof);
+          FlatVector<> coefs(this->ndof, &mem_coefs[0]);
+          // coefs = bcoefs;
+          
+          auto & irx = ir.GetIRX();
+          auto & iry = ir.GetIRY();
+          auto & irz = ir.GetIRZ();
+	  
+          size_t nipx = irx.GetNIP();
+          size_t nipy = iry.GetNIP();
+          size_t nipz = irz.GetNIP();
+
+          size_t nipxy = nipx*nipy;
+          size_t nip = nipx * nipy * nipz;
+          size_t ndof = this->ndof;
+          size_t ndof1d = static_cast<const FEL&> (*this).GetNDof1d ();
+          size_t ndof2d = static_cast<const FEL&> (*this).GetNDof2d ();
+
+          int nshapex = Cast().NShapeX();          
+          STACK_ARRAY(SIMD<double>, mem_facx, 2*nshapex*irx.Size());
+          FlatMatrix<SIMD<double> > facx(ndof, irx.Size(), &mem_facx[0]);
+          FlatMatrix<SIMD<double> > facdx(ndof, irx.Size(), &mem_facx[nshapex*irx.Size()]);
+
+          STACK_ARRAY(SIMD<double>, mem_facy, 2*ndof2d*iry.Size());          
+          FlatMatrix<SIMD<double> > facy(ndof2d, iry.Size(), &mem_facy[0]);
+          FlatMatrix<SIMD<double> > facdy(ndof2d, iry.Size(), &mem_facy[ndof2d*iry.Size()]);
+
+          STACK_ARRAY(SIMD<double>, mem_facz, 2*ndof1d*irz.Size());          
+          FlatMatrix<SIMD<double> > facz(ndof1d, irz.Size(), &mem_facz[0]);
+          FlatMatrix<SIMD<double> > facdz(ndof1d, irz.Size(), &mem_facz[ndof1d*irz.Size()]);
+
+          STACK_ARRAY(SIMD<double>, memx, irx.Size());
+          STACK_ARRAY(SIMD<double>, memy, iry.Size());
+          STACK_ARRAY(SIMD<double>, memz, irz.Size());
+          FlatVector<SIMD<double>> vecx(irx.Size(), &memx[0]);
+          FlatVector<SIMD<double>> vecy(iry.Size(), &memy[0]);
+          FlatVector<SIMD<double>> vecz(irz.Size(), &memz[0]);
+
+          
+          for (size_t i1 = 0; i1 < irz.Size(); i1++)
+            {
+              vecz(i1) = irz[i1](0);                            
+              AutoDiff<1,SIMD<double>> z (irz[i1](0), 0);
+              Cast().CalcZFactorIP
+                (z, SBLambda ([&](int iz, auto shape)
+                              {
+                                facz(iz, i1) = shape.Value();
+                                facdz(iz, i1) = shape.DValue(0);
+                              }));
+            }
+    
+          for (size_t i1 = 0; i1 < iry.Size(); i1++)
+            {
+              vecy(i1) = iry[i1](0);              
+              AutoDiff<1,SIMD<double>> y (iry[i1](0), 0);
+              Cast().CalcYFactorIP
+                (y, SBLambda ([&](int iy, auto shape)
+                              {
+                                facy(iy, i1) = shape.Value();
+                                facdy(iy, i1) = shape.DValue(0);
+                              }));
+            }
+          
+          for (size_t i1 = 0; i1 < irx.Size(); i1++)
+            {
+              vecx(i1) = irx[i1](0);
+              AutoDiff<1,SIMD<double>> x (irx[i1](0), 0);
+              Cast().CalcXFactorIP
+                (x, SBLambda ([&](int ix, auto shape)
+                              {
+                                facx(ix, i1) = shape.Value();
+                                facdx(ix, i1) = shape.DValue(0);
+                              }));
+            }
+
+          SliceMatrix<double> facz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), &facz(0)[0]);
+          SliceMatrix<double> facdz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), &facdz(0)[0]);
+
+          SliceMatrix<double> facy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), &facy(0)[0]);
+          SliceMatrix<double> facdy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), &facdy(0)[0]);
+          
+          SliceMatrix<double> facx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), &facx(0)[0]);
+          SliceMatrix<double> facdx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), &facdx(0)[0]);
+          
+          STACK_ARRAY(double, mem_gridx, 2*ndof2d*nipx);
+          FlatMatrix<double> gridx(ndof2d, nipx, &mem_gridx[0]);
+          FlatMatrix<double> gridx_dx(ndof2d, nipx, &mem_gridx[ndof2d*nipx]);
+
+          STACK_ARRAY(double, mem_gridxy, 3*ndof1d*nipxy);          
+          FlatMatrix<double> gridxy(ndof1d, nipx*nipy, &mem_gridxy[0]);
+          FlatMatrix<double> gridxy_dx(ndof1d, nipx*nipy, &mem_gridxy[ndof1d*nipxy]);
+          FlatMatrix<double> gridxy_dy(ndof1d, nipx*nipy, &mem_gridxy[2*ndof1d*nipxy]);
+
+          FlatMatrix<> mgrid_dx(nipz, nipx*nipy, &values(0,0)[0]);
+          FlatMatrix<> mgrid_dy(nipz, nipx*nipy, &values(1,0)[0]);
+          FlatMatrix<> mgrid_dz(nipz, nipx*nipy, &values(2,0)[0]);
+          // values.Col(ir.Size()-1).AddSize(3) = SIMD<double>(0);
+          
+          FlatVector<double> vecx_ref(irx.GetNIP(), &vecx(0)[0]);
+          FlatVector<double> vecy_ref(iry.GetNIP(), &vecy(0)[0]);
+          FlatVector<double> vecz_ref(irz.GetNIP(), &vecz(0)[0]);
+
+
+
+          
+          {
+          ThreadRegionTimer regcalc(tcalc, TaskManager::GetThreadId());
+
+          {
+            ThreadRegionTimer regjac(ttransjac, TaskManager::GetThreadId());                              
+            mir.TransformGradientTrans (values);
+          }
+
+          {
+            ThreadRegionTimer regcalc(ttransz, TaskManager::GetThreadId());                    
+            for (int iz = 0; iz < nipz; iz++)
+              {
+                double z = vecz_ref(iz);
+                mgrid_dz.Row(iz) += z * mgrid_dx.Row(iz);
+                mgrid_dz.Row(iz) += z * mgrid_dy.Row(iz);
+              }
+          }
+
+          {
+            ThreadRegionTimer regcalc(tcalcz, TaskManager::GetThreadId());
+            NgProfiler::AddThreadFlops (tcalcz, TaskManager::GetThreadId(), 3*nipxy*nipz*ndof1d);
+            /*
+            mgrid_dx = Trans(facz_ref) * gridxy_dx;
+            mgrid_dy = Trans(facz_ref) * gridxy_dy;
+            mgrid_dz = Trans(facdz_ref) * gridxy;
+            */
+            gridxy_dx = facz_ref * mgrid_dx;
+            gridxy_dy = facz_ref * mgrid_dy;
+            gridxy    = facdz_ref * mgrid_dz;
+          }
+
+
+          {
+            ThreadRegionTimer regcalc(ttransy, TaskManager::GetThreadId());
+            for (size_t iy = 0, ixy = 0; iy < iry.GetNIP(); iy++, ixy+=nipx)
+              {
+                double y = vecy_ref(iy);
+                IntRange cols(ixy, ixy+nipx);
+                /*
+                gridxy_dx.Cols(cols) += y * gridxy_dy.Cols(cols);
+                gridxy.Cols(cols) *= 1/(1-y);
+                */
+                gridxy.Cols(cols) *= 1/(1-y);
+                gridxy_dy.Cols(cols) += y * gridxy_dx.Cols(cols);
+              }
+          }
+
+
+          {
+            ThreadRegionTimer regcalc(tcalcy, TaskManager::GetThreadId());
+            NgProfiler::AddThreadFlops (tcalcy, TaskManager::GetThreadId(), 3*nipxy*ndof2d);          
+            Cast().
+              Map1t2([&] (size_t i1d, IntRange r) 
+                     {
+                       FlatMatrix<> mgridxy(nipy, nipx, &gridxy(i1d,0));
+                       FlatMatrix<> mgridxy_dx(nipy, nipx, &gridxy_dx(i1d,0));
+                       FlatMatrix<> mgridxy_dy(nipy, nipx, &gridxy_dy(i1d,0));
+                       /*
+                       mgridxy    = Trans(facy_ref.Rows(r)) * gridx.Rows(r);
+                       mgridxy_dx = Trans(facy_ref.Rows(r)) * gridx_dx.Rows(r);
+                       mgridxy_dy = Trans(facdy_ref.Rows(r)) * gridx.Rows(r);
+                       */
+                       gridx.Rows(r) = facy_ref.Rows(r) * mgridxy;
+                       gridx_dx.Rows(r) = facy_ref.Rows(r) * mgridxy_dx;
+                       gridx.Rows(r) += facdy_ref.Rows(r) * mgridxy_dy;
+                     });          
+          }
+          
+          {
+            ThreadRegionTimer regcalc(ttransx, TaskManager::GetThreadId());          
+            for (size_t ix = 0; ix < nipx; ix++)
+              gridx.Col(ix) *= 1.0 / (1-vecx_ref(ix));
+          }
+          
+          
+          {
+            ThreadRegionTimer regcalc(tcalcx, TaskManager::GetThreadId());
+            NgProfiler::AddThreadFlops (tcalcx, TaskManager::GetThreadId(), 2*nipx*ndof);
+            Cast().
+              Map2t3([facx_ref, facdx_ref, coefs, &gridx, &gridx_dx] (auto base3, auto base2, auto basex, auto cnt)
+                     {
+                       /*
+                       gridx.Row(base2)    =
+                         Trans(facx_ref.Rows(basex,basex+cnt)) * coefs.Range(base3, base3+cnt);
+                       gridx_dx.Row(base2) =
+                         Trans(facdx_ref.Rows(basex,basex+cnt)) * coefs.Range(base3, base3+cnt);
+                       */
+                       coefs.Range(base3, base3+cnt) = facx_ref.Rows(basex,basex+cnt) * gridx.Row(base2);
+                       coefs.Range(base3, base3+cnt) += facdx_ref.Rows(basex,basex+cnt) * gridx_dx.Row(base2);
+                     });          
+          }
+
+          bcoefs.AddSize(this->ndof) += coefs;
+          }
+
+          // cout << "diff = " << L2Norm2( (coefs - coefs1))/(L2Norm2(coefs1)+1e-40) << endl;
+          return;
+        }
+      T_ScalarFiniteElement<SHAPES,ET,BASE>::AddGradTrans (mir, values, bcoefs);
+      values.AddSize(3, mir.Size()) = 0.0;
+    }
+
+
+
     
   };
 
@@ -585,11 +837,21 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const;
 
-    virtual void ComputeNDof() { ; } 
-    virtual void SetOrder (INT<DIM> p) { ; } 
-    virtual void PrecomputeTrace () { ; } 
-    virtual void PrecomputeGrad () { ; }
+    virtual void ComputeNDof() override { ; } 
+    virtual void SetOrder (INT<DIM> p) override { ; } 
+    virtual void PrecomputeTrace () override { ; } 
+    virtual void PrecomputeGrad () override { ; }
 
+    virtual void 
+    GetDiagMassMatrix(FlatVector<> mass) const override
+    {
+      int order = this->order;
+      for (int ix = 0, ii = 0; ix <= order; ix++)
+        for (int iy = 0; iy <= order - ix; iy++)
+          for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
+          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+    }
+    
     int GetNDof1d () const { return this->order+1; }
     int GetNDof2d () const { return (this->order+1)*(this->order+2)/2; }
     int NShapeX () const { return (this->order+1)*(this->order+1); }
@@ -736,7 +998,7 @@ namespace ngfem
            Iterate<ORDER-i.value+1>
              ([f,&jj,&ii,i] (auto j)
               {
-                f(INT<4, size_t> (ii, jj, (i.value+j.value)*(ORDER+1), ORDER+1-i.value-j.value));
+                f(ii, jj, (i.value+j.value)*(ORDER+1), ORDER+1-i.value-j.value);
                 // base 3, base 2, base x, nr
                 ii += ORDER+1-i.value-j.value;
                 jj++;
@@ -766,7 +1028,7 @@ namespace ngfem
       for (size_t i = 0, ii = 0, jj = 0; i <= order; i++)
         for (size_t j = 0; j <= order-i; j++, jj++)
           {
-            f(INT<4, size_t> (ii, jj, (i+j)*(order+1), this->order+1-i-j)); // base 3, base 2, base x, nr
+            f(ii, jj, (i+j)*(order+1), this->order+1-i-j); // base 3, base 2, base x, nr
             ii += order+1-i-j;
           }
     }

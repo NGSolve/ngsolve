@@ -887,8 +887,11 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
 
   if (SW == 4 && (wa % SW == 1))
     {
+      /*
       for (int k = 0; k < 4; k++)
-        out << "sum"<<k<< " += SIMD<double,4> (pa[" << k << "*da+" << i*SW << "] * x" << i << ", 0,0,0);" << endl;      
+        out << "sum"<<k<< " += SIMD<double,4> (pa[" << k << "*da+" << i*SW << "] * x" << i << ", 0,0,0);" << endl;
+      */
+      ;
     }
   else if (SW == 4 && (wa % SW == 2))
     {
@@ -906,6 +909,16 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       out << "sum3 += SIMD<double," << SW << ">(pa+3*da+" << i*SW << ", mask) * x" << i << ";" << endl;
     }
   out << "SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);" << endl;
+
+  if (SW == 4 && (wa % SW == 1))
+    {
+      out << "vsum += x" << i << "*SIMD<double,4> ("
+          << "pa[0*da+" << i*SW << "], "
+          << "pa[1*da+" << i*SW << "], "
+          << "pa[2*da+" << i*SW << "], "
+          << "pa[3*da+" << i*SW << "]);" << endl;
+    }
+  
   out << "vsum.Store(y+i);" << endl;
   out << "}" << endl;
 
