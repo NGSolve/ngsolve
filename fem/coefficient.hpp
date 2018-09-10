@@ -622,6 +622,8 @@ namespace ngfem
     virtual ~ConstantCoefficientFunction ();
     ///
     using BASE::Evaluate;
+    virtual bool ElementwiseConstant () const override { return true; }
+    
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return val;
