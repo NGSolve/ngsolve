@@ -5,6 +5,11 @@ stages:
   - cleanup
   - deploy
 
+
+variables:
+  UBUNTU_VERSION_LATEST: "17.10"
+  UBUNTU_VERSION_LTS: "18.04"
+
 ############################################
 # Windows
 ############################################
@@ -77,61 +82,45 @@ win_avx_cleanup:
     - docker
     - avx
 
-.template_ubuntu_1604: &ubuntu_1604
+.template_ubuntu_latest: &ubuntu_latest
   <<: *ubuntu
   variables:
-    IMAGE_VERSION: "16.04"
-    UBUNTU_VERSION: "16.04"
-    UBUNTU_VERSION_NAME: "xenial"
-
-.template_ubuntu_1710: &ubuntu_1710
-  <<: *ubuntu
-  variables:
-    IMAGE_VERSION: "17.10"
-    UBUNTU_VERSION: "17.10"
-    UBUNTU_VERSION_NAME: "artful"
+    IMAGE_NAME: "latest"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LATEST
 
 .template_ubuntu_avx: &ubuntu_avx
   <<: *ubuntu
   variables:
-    IMAGE_VERSION: "avx"
-    UBUNTU_VERSION: "17.10"
-    UBUNTU_VERSION_NAME: "artful"
+    IMAGE_NAME: "avx"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
     - docker
     - avx512
   variables:
-    IMAGE_VERSION: "avx512"
-    UBUNTU_VERSION: "17.10"
-    UBUNTU_VERSION_NAME: "artful"
+    IMAGE_NAME: "avx512"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
 
 .template_ubuntu_debug: &ubuntu_debug
   <<: *ubuntu
   variables:
-    IMAGE_VERSION: "debug"
-    UBUNTU_VERSION: "17.10"
-    UBUNTU_VERSION_NAME: "artful"
+    IMAGE_NAME: "debug"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
 
 .template_ubuntu_mpi: &ubuntu_mpi
   <<: *ubuntu
   variables:
-    IMAGE_VERSION: "mpi"
-    UBUNTU_VERSION: "17.10"
-    UBUNTU_VERSION_NAME: "artful"
+    IMAGE_NAME: "mpi"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
 
 .template_build_linux: &build_linux
   stage: build
   script:
     - source tests/gitlab-ci/ubuntu/build.sh
 
-ubuntu_1604_build:
-  <<: *ubuntu_1604
-  <<: *build_linux
-
-ubuntu_1710_build:
-  <<: *ubuntu_1710
+ubuntu_latest_build:
+  <<: *ubuntu_latest
   <<: *build_linux
 
 ubuntu_avx_build:
@@ -146,7 +135,7 @@ ubuntu_debug_build:
   <<: *ubuntu_debug
   <<: *build_linux
 
-mpi_build:
+ubuntu_mpi_build:
   <<: *ubuntu_mpi
   <<: *build_linux
 
@@ -155,12 +144,8 @@ mpi_build:
   script:
     - source tests/gitlab-ci/ubuntu/test.sh
 
-ubuntu_1604_test:
-  <<: *ubuntu_1604
-  <<: *test_linux
-
-ubuntu_1710_test:
-  <<: *ubuntu_1710
+ubuntu_latest_test:
+  <<: *ubuntu_latest
   <<: *test_linux
 
 ubuntu_avx_test:
@@ -171,12 +156,12 @@ ubuntu_avx512_test:
   <<: *ubuntu_avx512
   <<: *test_linux
 
-debug_test:
+ubuntu_debug_test:
   <<: *ubuntu_debug
   <<: *test_linux
   allow_failure: true
 
-mpi_test:
+ubuntu_mpi_test:
   <<: *ubuntu_mpi
   <<: *test_linux
   allow_failure: true
