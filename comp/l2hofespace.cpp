@@ -197,24 +197,31 @@ namespace ngcomp
     if(low_order_space) low_order_space -> Update(lh);
 
     nel = ma->GetNE();
-    order_inner.SetSize(nel); 
- 
-    order_inner = INT<3>(order);
 
-    if(var_order) 
-      for(int i = 0; i < nel; i++) 
-        order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
-    
-    for(int i = 0; i < nel; i++) 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+
+    if (first_update)
       {
-        ElementId ei(VOL,i);
-        order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
-        order_inner[i] = Max(order_inner[i], INT<3>(0));
-        if (!DefinedOn (VOL, ma->GetElIndex (ei)))
-          order_inner[i] = 0;
+	order_inner.SetSize(nel); 
+	
+	order_inner = INT<3>(order);
+	
+	if(var_order) 
+	  for(int i = 0; i < nel; i++) 
+	    order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
+    
+	for(int i = 0; i < nel; i++) 
+	  {
+	    ElementId ei(VOL,i);
+	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    if (!DefinedOn (VOL, ma->GetElIndex (ei)))
+	      order_inner[i] = 0;
+	  }
+	if(print) 
+	  *testout << " order_inner (l2ho) " << order_inner << endl;
       }
-    if(print) 
-      *testout << " order_inner (l2ho) " << order_inner << endl; 
 
     UpdateDofTables();
     while (ma->GetNLevels() > ndlevel.Size())
@@ -295,6 +302,9 @@ namespace ngcomp
 
     prol->Update(*this);
   }
+
+
+  
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
@@ -569,22 +579,21 @@ namespace ngcomp
 
   void L2HighOrderFESpace :: SetOrder (NodeId ni, int order)
   {
-    if (ni.GetType() == NT_ELEMENT)
+    if (CoDim(ni.GetType(), ma->GetDimension()) == 0)
       {
         if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
       }
     else
-      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType 'ELEMENT'");
+      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType of codimension 0!");
   }
   
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
   {
-    if (ni.GetType() == NT_ELEMENT)
-      {
+    if (CoDim(ni.GetType(), ma->GetDimension()) == 0)
         if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
-      }
+    
     return 0;
   }
   
@@ -809,28 +818,55 @@ namespace ngcomp
   {
     nel = ma->GetNSE();
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
+    order_inner.SetSize(nel);
+
+    if (first_update)
+      {
+	order_inner = INT<3>(order);
+
+	for(int i = 0; i < nel; i++) 
+	  {
+	    ElementId ei(BND,i);
+	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    if (!DefinedOn (BND, ma->GetElIndex (ei)))
+	      order_inner[i] = 0;
+	  }
+    
+	if(print) 
+	  *testout << " order_inner (l2surf) " << order_inner << endl;
+      }
+    
     ndof = 0;
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
         ElementId sei(BND, i);
 	first_element_dof[i] = ndof;
+	INT<3> pi = order_inner[i];
 	switch (ma->GetElType(sei))
 	  {
 	  case ET_SEGM:
-	    ndof += order+1;
+	    ndof += pi[0]+1;
 	    break;
 	  case ET_TRIG:
-	    ndof += (order+1)*(order+2)/2;
+	    ndof += (pi[0]+1)*(pi[1]+2)/2;
 	    break;
 	  case ET_QUAD:
-	    ndof += (order+1)*(order+1);
+	    ndof += (pi[0]+1)*(pi[1]+1);
 	    break;
 	  default:
 	    ;
 	  }
       }
     first_element_dof[nel] = ndof;
+
+    if(print) 
+      *testout << " first_element dof (l2surf) " << first_element_dof << endl;
+    
     UpdateCouplingDofArray();
   }
 
@@ -844,6 +880,28 @@ namespace ngcomp
         ctofdof[r] = definedon ? WIREBASKET_DOF : UNUSED_DOF;
       }
   }
+
+
+  void L2SurfaceHighOrderFESpace ::SetOrder (NodeId ni, int order)
+  {
+    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+      {
+	if (ni.GetNr() < order_inner.Size())
+	  order_inner[ni.GetNr()] = order;
+      }
+    else
+      throw Exception ("L2SurfaceHighOrderFESpace::SetOrder requires NodeType of codimension 1!");
+  }
+  
+  int L2SurfaceHighOrderFESpace ::GetOrder (NodeId ni) const
+  {
+    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_inner.Size())
+	return order_inner[ni.GetNr()][0];
+        
+    return 0;
+  }
+  
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   // {
   //   if (ma->GetDimension() == 2)
