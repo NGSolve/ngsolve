@@ -1005,7 +1005,7 @@ cf : ngsolve.CoefficientFunction
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
            py::arg("maxderiv")=2,
-           py::arg("wait")=false, docu_string(R"raw_string(
+          py::arg("wait")=false, py::call_guard<py::gil_scoped_release>(), docu_string(R"raw_string(
 Compile list of individual steps, experimental improvement for deep trees
 
 Parameters:
