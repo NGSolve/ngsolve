@@ -828,6 +828,12 @@ namespace ngstd
     return 113*lind[0]+lind[1];
   }
 
+  template <typename TI>  
+  INLINE size_t HashValue (const INT<1,TI> ind)
+  {
+    return ind[0];
+  }
+
 
   template <typename TKEY, typename T>
   class ParallelHashTable
