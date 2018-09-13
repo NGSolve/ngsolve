@@ -15,7 +15,8 @@ namespace ngcomp
     shared_ptr<BaseMatrix> harmonicext, harmonicexttrans, 
       innersolve;
 
-    shared_ptr<BaseMatrix> pwbmat;    
+    shared_ptr<BaseMatrix> pwbmat;
+    shared_ptr<BaseSparseMatrix> sparse_pwbmat;
 
     shared_ptr<SparseMatrix<SCAL,TV,TV>> sparse_innersolve, 
       sparse_harmonicext, sparse_harmonicexttrans;
@@ -169,7 +170,9 @@ namespace ngcomp
         pwbmat = make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
-      dynamic_pointer_cast<BaseSparseMatrix>(pwbmat) -> SetSPD ( bfa->IsSPD() );
+      sparse_pwbmat = dynamic_pointer_cast<BaseSparseMatrix>(pwbmat);
+      sparse_pwbmat-> SetSPD ( bfa->IsSPD() );
+      
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
@@ -191,7 +194,7 @@ namespace ngcomp
 
     {
       static Timer timer ("BDDC - Addmatrix", 2);
-      // RegionTimer reg(timer);
+      ThreadRegionTimer reg (timer, TaskManager::GetThreadId());
       static Timer timer2("BDDC - Add to sparse", 3);
       static Timer timer3("BDDC - compute", 3);
 
@@ -237,42 +240,46 @@ namespace ngcomp
 
       if (sizei)
 	{      
-	  RegionTimer reg(timer3);
-	  timer3.AddFlops (sizei*sizei*sizei + 2*sizei*sizei*sizew);
+          ThreadRegionTimer regcompute (timer3, TaskManager::GetThreadId());
+          NgProfiler::AddThreadFlops (timer3, TaskManager::GetThreadId(),
+                                      sizei*sizei*sizei + 2*sizei*sizei*sizew);
 
-          if (sizei > 30)
-            LapackInverse (d);
-          else
-            CalcInverse (d);
-
+          CalcInverse (d);  // , INVERSE_LIB::INV_NGBLA);
+          
 	  if (sizew)
 	    {
+              /*
 	      he = SCAL(0.0);
 
 	      he -= d*c   | Lapack;
 	      a += b*he   | Lapack;
-	  
+              */
+              he = -d*c;
+              a += b*he;
 	      //R * E
-	      for (int k = 0; k < sizei; k++)
+	      for (size_t k = 0; k < sizei; k++)
 		he.Row(k) *= el2ifweight[k]; 
 
 	      if (!bfa->SymmetricStorage())
-		{	      
+		{
+                  /*
 		  het = SCAL(0.0);
 		  het -= b*d  | Lapack;
-		  
+		  */
+                  het = -b*d;
+                  
 		  //E * R^T
-		  for (int l = 0; l < sizei; l++)
+		  for (size_t l = 0; l < sizei; l++)
 		    het.Col(l) *= el2ifweight[l];
 		}
 	    }
 	  //R * A_ii^(-1) * R^T
-	  for (int k = 0; k < sizei; k++) d.Row(k) *= el2ifweight[k]; 
-	  for (int l = 0; l < sizei; l++) d.Col(l) *= el2ifweight[l]; 
+	  for (size_t k = 0; k < sizei; k++) d.Row(k) *= el2ifweight[k]; 
+	  for (size_t l = 0; l < sizei; l++) d.Col(l) *= el2ifweight[l]; 
 	}
 
-      RegionTimer regadd(timer2);
-
+      ThreadRegionTimer regadd (timer2, TaskManager::GetThreadId());
+      
       FlatArray<int> wbdofs(localwbdofs.Size(), lh);
       FlatArray<int> intdofs(localintdofs.Size(), lh);   
       wbdofs = dnums[localwbdofs];
@@ -288,7 +295,7 @@ namespace ngcomp
         sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
       
       sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
-	
+
       dynamic_pointer_cast<SparseMatrix<SCAL,TV,TV>>(pwbmat)
         ->AddElementMatrix(wbdofs,wbdofs,a);
       if (coarse)
@@ -360,7 +367,7 @@ namespace ngcomp
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
 	  cout << IM(3) << "call block-jacobi inverse" << endl;
 
-	  inv = dynamic_pointer_cast<BaseSparseMatrix> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
+	  inv = sparse_pwbmat->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
 	  // inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateJacobiPrecond(wb_free_dofs);
 
 	  cout << IM(3) << "has inverse" << endl << endl;
@@ -656,7 +663,6 @@ namespace ngcomp
 		    LocalHeap & lh)
   {
     // auto fes = bfa->GetFESpace();
-
     int used = 0;
     for (int i : Range(dnums))
       if (IsRegularDof(dnums[i]) && freedofs->Test(dnums[i])) used++;
