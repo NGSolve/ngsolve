@@ -1690,7 +1690,12 @@ weights : list
     ;
 
 
-  py::class_<MeshPoint>(m, "MeshPoint");
+  py::class_<MeshPoint>(m, "MeshPoint")
+    .def_property_readonly("pnt", [](MeshPoint& p) { return py::make_tuple(p.x,p.y,p.z); })
+    .def_property_readonly("mesh", [](MeshPoint& p) { return p.mesh; })
+    .def_property_readonly("vb", [](MeshPoint& p) { return p.vb; })
+    .def_property_readonly("nr", [](MeshPoint& p) { return p.nr; })
+    ;
 
   if (have_numpy)
   {
