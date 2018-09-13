@@ -142,13 +142,16 @@ namespace ngcomp
                   shared_ptr<BitArray> freedofs,
                   FlatArray<INT<2>> e2v,
                   FlatArray<double> edge_weights,
-                  FlatArray<double> vertex_weights)
+                  FlatArray<double> vertex_weights,
+                  size_t level)
       : mat(amat)
     {
+      static Timer t("H1AMG"); RegionTimer reg(t);
+      
       size_t num_edges = edge_weights.Size();
       size_t num_vertices = vertex_weights.Size();
 
-      cout << "H1AMG: ne = " << num_edges << ", nv = " << num_vertices << endl;
+      cout << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
 
       size = mat->Height();
 
@@ -172,7 +175,7 @@ namespace ngcomp
                    });
 
       // sort edges by collapse weights
-    
+      /*
       Array<int> indices(num_edges);
       ParallelFor (num_edges, [&] (size_t edge)
                    { indices[edge] = edge; });
@@ -184,7 +187,7 @@ namespace ngcomp
                    {
                      invindices[indices[edge]] = edge;
                    });
-
+      */
 
       // which edges to collapse ? 
     
@@ -204,7 +207,8 @@ namespace ngcomp
     
       ParallelFor (v2e.Size(), [&] (size_t vnr)
                    {
-                     QuickSortI (invindices, v2e[vnr]);
+                     // QuickSortI (invindices, v2e[vnr]);
+                     QuickSortI (edge_collapse_weights, v2e[vnr]);
                    }, TasksPerThread(5));
     
       // build edge dependency
@@ -362,46 +366,39 @@ namespace ngcomp
 
 
       // smoothed prolongation
-      for (auto i : Range(num_vertices))
-        nne[i] = 1+v2e[i].Size();
-      *testout << "nne = " << nne << endl;
-      auto smoothprol = make_shared<SparseMatrix<double>> (nne, num_vertices);      
-      smoothprol->AsVector() = 47;
-      for (int i = 0; i < num_vertices; i++)
+      if (level % 4 == 2)
         {
-          *testout << "row " << i << endl;
-          double sum = 0;
-          for (auto e : v2e[i])
-            sum += edge_weights[e];
-          // if (sum > 0)
-          if (false)
-            {
-              for (auto e : v2e[i])
-                {
-                  auto v2 = e2v[e][0]+e2v[e][1]-i;
-                  (*smoothprol)(i,v2) = 0.5*edge_weights[e]/sum;
-                }
-              (*smoothprol)(i, i) = 0.5;
-            }
-          else
-            {
-              for (auto e : v2e[i])
-                {
-                  auto v2 = e2v[e][0]+e2v[e][1]-i;
-                  *testout << "col = " << v2 << endl;
-                  (*smoothprol)(i,v2) = 0.0;
-                }
-              (*smoothprol)(i, i) = 1;
-            }
+          for (auto i : Range(num_vertices))
+            nne[i] = 1+v2e[i].Size();
+          
+          auto smoothprol = make_shared<SparseMatrix<double>> (nne, num_vertices);
+          ParallelFor
+            (num_vertices, [&] (auto i)
+             {
+               double sum = 0;
+               for (auto e : v2e[i])
+                 sum += edge_weights[e];
+               
+               for (auto e : v2e[i])
+                 {
+                   auto v2 = e2v[e][0]+e2v[e][1]-i;
+                   (*smoothprol)(i,v2) = 0.0;
+                 }
+               (*smoothprol)(i, i) = 0.0;
+               
+               for (auto e : v2e[i])
+                 {
+                   auto v2 = e2v[e][0]+e2v[e][1]-i;
+                   (*smoothprol)(i,v2) = 0.5*edge_weights[e]/sum;
+                 }
+               (*smoothprol)(i, i) = 0.5;
+             });
+          
+          prolongation = MatMult (*smoothprol, *prolongation);
         }
-
-      *testout << "prol1 = " << *prolongation << endl;
-      *testout << "smoothprol = " << *smoothprol << endl;
-      prolongation = MatMult (*smoothprol, *prolongation);
-      *testout << "prol2 = " << *prolongation << endl;
       
       restriction = TransposeMatrix (*prolongation);
-      
+          
       auto coarsemat = mat -> Restrict (*prolongation);
 
       // coarse freedofs
@@ -418,7 +415,7 @@ namespace ngcomp
         coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
       else
         coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrixTM<SCAL>> (coarsemat), coarse_freedofs,
-                                                    coarse_e2v, coarse_edge_weights, coarse_vertex_weights);
+                                                    coarse_e2v, coarse_edge_weights, coarse_vertex_weights, level+1);
     }
 
     virtual int VHeight() const override { return size; }
@@ -463,7 +460,7 @@ namespace ngcomp
                           const string aname = "H1AMG_cprecond")
       : Preconditioner (abfa, aflags, aname)
     {
-      cout << "Create H1AMG" << endl;
+      cout << IM(5) << "Create H1AMG" << endl;
     }
 
     H1AMG_Preconditioner (const PDE & pde, const Flags & aflags, const string & aname)
@@ -475,12 +472,10 @@ namespace ngcomp
     virtual void InitLevel (shared_ptr<BitArray> _freedofs) 
     {
       freedofs = _freedofs;
-      cout << "init level" << endl;
     }
 
     virtual void FinalizeLevel (const BaseMatrix * matrix)
     {
-      cout << "Finalize" << endl;
       auto smat = dynamic_pointer_cast<SparseMatrixTM<SCAL>> (const_cast<BaseMatrix*>(matrix)->shared_from_this());
 
       size_t num_vertices = matrix->Height();
@@ -503,7 +498,7 @@ namespace ngcomp
          {
            vertex_weights[i] = weight;
          });
-      mat = make_shared<H1AMG_Matrix<double>> (smat, freedofs, e2v, edge_weights, vertex_weights);
+      mat = make_shared<H1AMG_Matrix<double>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
     }
 
 
