@@ -11,7 +11,7 @@ namespace ngcomp
 
   /// Identity
   template <int D>
-  class DiffOpIdFacet : public DiffOp<DiffOpIdFacet<D> >
+  class DiffOpIdFacet_ : public DiffOp<DiffOpIdFacet_<D> >
   {
   public:
     enum { DIM = 1 };
@@ -20,6 +20,8 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
+    static bool SupportsVB (VorB checkvb) { return true; }
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
@@ -238,7 +240,7 @@ namespace ngcomp
       }
     else
       {
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
 	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
 	
