@@ -508,7 +508,63 @@ namespace ngcomp
                                    LocalHeap & lh)
     {
       // vertex weights
-      BitArray used(dnums.Size());
+      static Timer t("h1amg - addelmat");
+      static Timer t1("h1amg - addelmat calc v-schur");
+      static Timer t3("h1amg - addelmat calc e-schur");
+      static Timer t5("h1amg - addelmat invert");
+      
+      ThreadRegionTimer reg (t, TaskManager::GetThreadId());
+      
+      size_t ndof = dnums.Size();
+      
+      BitArray used(ndof, lh);
+
+      FlatMatrix<SCAL> ext_elmat(ndof+1, ndof+1, lh);
+
+      
+      {
+      ThreadRegionTimer reg (t5, TaskManager::GetThreadId());
+      ext_elmat.Rows(0,ndof).Cols(0,ndof) = elmat;
+      ext_elmat.Row(ndof) = 1;
+      ext_elmat.Col(ndof) = 1;
+      ext_elmat(ndof, ndof) = 0;
+      CalcInverse (ext_elmat);
+      }
+      
+      {
+      ThreadRegionTimer reg (t1, TaskManager::GetThreadId());
+      for (size_t i = 0; i < dnums.Size(); i++)
+        {
+          Mat<2,2,SCAL> ai;
+          ai(0,0) = ext_elmat(i,i);
+          ai(0,1) = ai(1,0) = ext_elmat(i, ndof);
+          ai(1,1) = ext_elmat(ndof, ndof);
+          ai = Inv(ai);
+          SCAL weight = ai(0,0);
+          vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
+        }
+      }
+      {
+      ThreadRegionTimer reg (t3, TaskManager::GetThreadId());
+      for (size_t i = 0; i < dnums.Size(); i++)
+        for (size_t j = 0; j < i; j++)
+          {
+            Mat<3,3,SCAL> ai;
+            ai(0,0) = ext_elmat(i,i);
+            ai(1,1) = ext_elmat(j,j);
+            ai(0,1) = ai(1,0) = ext_elmat(i,j);
+            ai(2,2) = ext_elmat(ndof,ndof);
+            ai(0,2) = ai(2,0) = ext_elmat(i,ndof);
+            ai(1,2) = ai(2,1) = ext_elmat(j,ndof);
+            ai = Inv(ai);
+            SCAL weight = ai(0,0);
+            edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
+          }
+      }
+
+
+      
+      /*
       FlatMatrix<SCAL> schur_vertex(1,1,lh);
       for (size_t i = 0; i < dnums.Size(); i++)
         {
@@ -531,6 +587,7 @@ namespace ngcomp
             double weight = schur_edge(0,0);
             edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
+      */
     }
 
     virtual void Update () { ; } 
