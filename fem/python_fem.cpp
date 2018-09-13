@@ -1721,6 +1721,11 @@ weights : list
   py::class_<BaseMappedIntegrationPoint>(m, "BaseMappedIntegrationPoint")
     .def(py::init([](MeshPoint& pnt)
                   {
+                    if(pnt.nr == -1){
+                      cout << "WARNING: MeshPoint not in mesh, can't convert to BaseMappedIntegrationPoint!" << endl;
+                      throw Exception("Meshpoint at (" + to_string(pnt.x) + ", " + to_string(pnt.y) + ", " +
+                                      to_string(pnt.z) + ") not in mesh!");
+                    }
                     auto& trafo = pnt.mesh->GetTrafo(ElementId(pnt.vb, pnt.nr), global_alloc);
                     auto& mip = trafo(IntegrationPoint(pnt.x,pnt.y,pnt.z),global_alloc);
                     mip.SetOwnsTrafo(true);
