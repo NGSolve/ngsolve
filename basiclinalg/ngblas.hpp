@@ -41,7 +41,7 @@ namespace ngbla
 
     
   template <typename TA, typename TB, typename TC>
-  void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
+  INLINE void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
   {
     c = a * b;
   }
@@ -178,7 +178,7 @@ namespace ngbla
   // t   t    C += A*B
 
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
+  INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
   {
     // static Timer t("NgGEMM unresolved" + ToString(ADD) + ToString(POS) + ToString(orda) + ToString(ordb));
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
@@ -288,10 +288,10 @@ namespace ngbla
 
     MultAtB (Trans(a), b, c);
   }
-  
+
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c)
+  INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c)
   {
     NgGEMM<ADD,POS> (Trans(b), Trans(a), Trans(c));
   }

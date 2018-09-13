@@ -457,20 +457,20 @@ namespace ngbla
     Matrix (size_t ah, size_t aw) : FlatMatrix<T,ORD> (ah, aw, new T[ah*aw]) { ; }
 
     /// allocate and copy matrix  
-    Matrix (const Matrix & m2) 
+    INLINE Matrix (const Matrix & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       FlatMatrix<T,ORD>::operator= (m2);
     }
     
     /// move matrix
-    Matrix (Matrix && m2)
+    INLINE Matrix (Matrix && m2)
       : FlatMatrix<T> (m2.h, m2.w, m2.data)
     { m2.data = nullptr; m2.w = 0; m2.h = 0; } 
 
     /// allocate and compute 
     template<typename TB>
-    Matrix (const Expr<TB> & m2) 
+    INLINE Matrix (const Expr<TB> & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
@@ -524,7 +524,7 @@ namespace ngbla
 
     /// assign matrix, sizes must match
     template<typename TB>
-    Matrix & operator= (const Expr<TB> & m) 
+    INLINE Matrix & operator= (const Expr<TB> & m) 
     { 
       SetSize (m.Height(), m.Width());
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m);
