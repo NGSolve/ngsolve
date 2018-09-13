@@ -140,7 +140,7 @@ namespace ngcomp
     // variable order is set to mesh_order + rel_order 
     int rel_order;
     // order of elements 
-    Array<INT<3> > order_cell;
+    Array<INT<3> > order_inner;
 
   public:
 
@@ -159,7 +159,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh) override;
     /// 
     virtual void UpdateCouplingDofArray() override;    
-    //virtual void UpdateDofTables();
+    //virtual void UpdateDofTables() override;
     ///
     virtual size_t GetNDof () const throw() override;
 
@@ -179,7 +179,11 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
 
     virtual bool VarOrder() const override { return var_order; } 
-    virtual int GetRelOrder() const override { return rel_order; }   
+    virtual int GetRelOrder() const override { return rel_order; }
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    
     auto GetElementDofs (size_t nr) const
     {
       return Range (first_element_dof[nr], first_element_dof[nr+1]);
