@@ -1,7 +1,7 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
 from ngsolve import Projector, Norm
-
+from ngsolve.ngstd import Timer
 
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method
@@ -45,6 +45,8 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
 
     """
 
+    timer = Timer("CG-Solver")
+    timer.Start()
     u = sol if sol else rhs.CreateVector()
     d = rhs.CreateVector()
     w = rhs.CreateVector()
@@ -86,6 +88,7 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
     else:
         print("Warning: CG did not converge to TOL")
 
+    timer.Stop()
     return u
 
 
