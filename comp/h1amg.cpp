@@ -360,6 +360,46 @@ namespace ngcomp
       for (int i = 0; i < num_vertices; i++)
         (*prolongation)(i, v2cv[i]) = 1;
 
+
+      // smoothed prolongation
+      for (auto i : Range(num_vertices))
+        nne[i] = 1+v2e[i].Size();
+      *testout << "nne = " << nne << endl;
+      auto smoothprol = make_shared<SparseMatrix<double>> (nne, num_vertices);      
+      smoothprol->AsVector() = 47;
+      for (int i = 0; i < num_vertices; i++)
+        {
+          *testout << "row " << i << endl;
+          double sum = 0;
+          for (auto e : v2e[i])
+            sum += edge_weights[e];
+          // if (sum > 0)
+          if (false)
+            {
+              for (auto e : v2e[i])
+                {
+                  auto v2 = e2v[e][0]+e2v[e][1]-i;
+                  (*smoothprol)(i,v2) = 0.5*edge_weights[e]/sum;
+                }
+              (*smoothprol)(i, i) = 0.5;
+            }
+          else
+            {
+              for (auto e : v2e[i])
+                {
+                  auto v2 = e2v[e][0]+e2v[e][1]-i;
+                  *testout << "col = " << v2 << endl;
+                  (*smoothprol)(i,v2) = 0.0;
+                }
+              (*smoothprol)(i, i) = 1;
+            }
+        }
+
+      *testout << "prol1 = " << *prolongation << endl;
+      *testout << "smoothprol = " << *smoothprol << endl;
+      prolongation = MatMult (*smoothprol, *prolongation);
+      *testout << "prol2 = " << *prolongation << endl;
+      
       restriction = TransposeMatrix (*prolongation);
       
       auto coarsemat = mat -> Restrict (*prolongation);
@@ -381,15 +421,15 @@ namespace ngcomp
                                                     coarse_e2v, coarse_edge_weights, coarse_vertex_weights);
     }
 
-    virtual int VHeight() const { return size; }
-    virtual int VWidth() const { return size; }
+    virtual int VHeight() const override { return size; }
+    virtual int VWidth() const override { return size; }
 
     virtual AutoVector CreateRowVector () const override { return mat->CreateColVector(); }
     virtual AutoVector CreateColVector () const override { return mat->CreateRowVector(); }
     
     
 
-    virtual void Mult (const BaseVector & b, BaseVector & x) const
+    virtual void Mult (const BaseVector & b, BaseVector & x) const override
     {
       x = 0;
 
@@ -494,7 +534,7 @@ namespace ngcomp
             used.Set(j);
             CalcSchurComplement(elmat, schur_edge, used, lh);
             double weight = schur_edge(0,0);
-            edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]), [weight] (auto & v) { v += weight; });
+            edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
     }
 
