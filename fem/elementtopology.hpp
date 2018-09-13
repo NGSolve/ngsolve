@@ -60,6 +60,14 @@ namespace ngfem
   }
   // INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
+  INLINE int CoDim(NODE_TYPE nt, int meshdim)
+  {
+    int dim(nt);
+    if (dim <= 3)
+      return meshdim-dim;
+    return dim-NT_ELEMENT;
+    
+  }
 
   INLINE constexpr int Dim (ELEMENT_TYPE et)
   {
