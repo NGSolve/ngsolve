@@ -4,7 +4,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
-#define FILE_L2HOFE_CPP
+// #define FILE_L2HOFE_TRIG_CPP
  
 #include <fem.hpp>
 #include <tscalarfe_impl.hpp>
@@ -16,17 +16,25 @@ namespace ngfem
   
   template class L2HighOrderFE<ET_TRIG>;  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
+
+  constexpr int MAX_FO_TRIG = 2;
   
   template<>
   ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_TRIG> (int order, FlatArray<int> vnums, Allocator & lh)
   {
-    DGFiniteElement<2> * hofe = 0;
+    DGFiniteElement<2> * hofe = nullptr;
 
     // now we orient trigs such that the first vertex is the lowest
     if (vnums[0] < vnums[1] && vnums[0] < vnums[2] )
       {
         if (vnums[1] < vnums[2])
           {
+            Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
+                                    {
+                                      if (nr.value == order)
+                                        hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value, FixedOrientation<0,1,2>> ();
+                                    });
+            /*
             switch (order)
               {
               case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0, FixedOrientation<0,1,2>> (); break;
@@ -36,9 +44,16 @@ namespace ngfem
               case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,1,2>> (); break;
               default: ; 
               }
+            */
           }
         else
           {
+            Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
+                                    {
+                                      if (nr.value == order)
+                                        hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value, FixedOrientation<0,2,1>> ();
+                                    });
+            /*
             switch (order)
               {
               case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0, FixedOrientation<0,2,1>> (); break;
@@ -48,10 +63,18 @@ namespace ngfem
               case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,2,1>> (); break;
               default: ; 
               }
+            */
           }
       }
 
     if (!hofe)
+      Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
+                              {
+                                if (nr.value == order)
+                                  hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value> ();
+                              });
+
+      /*
       switch (order)
         {
         case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
@@ -64,6 +87,9 @@ namespace ngfem
         // case 10: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,10> (); break;
         default: hofe = new (lh) L2HighOrderFE<ET_TRIG> (order); break;
       }
+      */
+    if (!hofe)
+      hofe = new (lh) L2HighOrderFE<ET_TRIG> (order); 
     
     for (int j = 0; j < 3; j++)
       hofe->SetVertexNumber (j, vnums[j]);
