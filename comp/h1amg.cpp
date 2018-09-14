@@ -189,6 +189,7 @@ namespace ngcomp
                    });
       */
 
+
       // which edges to collapse ? 
     
       Array<bool> vertex_collapse(num_vertices);
@@ -244,13 +245,20 @@ namespace ngcomp
             auto v1 = e2v[e][1];
             vertex_collapse[max2(v0,v1)] = true;
           }
-    
+
+      BitArray isolated_verts(num_vertices);
+      isolated_verts.Clear();
+      for (size_t i = 0; i < num_vertices; i++)
+        if (sum_vertex_weights[i] == vertex_weights[i])
+          isolated_verts.Set(i);
+      *testout << "isolated_vertex = " << endl << isolated_verts << endl;
       
       // vertex 2 coarse vertex
       Array<size_t> v2cv(num_vertices);
       size_t num_coarse_vertices = 0;
+      v2cv = -1; 
       for (size_t i = 0; i < num_vertices; i++)
-        if (!vertex_collapse[i])
+        if (!vertex_collapse[i] && !isolated_verts.Test(i))
           v2cv[i] = num_coarse_vertices++;
       for (size_t e = 0; e < num_edges; e++)
         if (edge_collapse[e])
@@ -313,7 +321,6 @@ namespace ngcomp
                         });
                    });
 
-      
       ParallelFor(num_edges, [&] (int edge)
                   {
                     int vertex1 = v2cv[e2v[edge][0]];
@@ -359,11 +366,13 @@ namespace ngcomp
 
       // build prolongation
       Array<int> nne(num_vertices);
-      nne = 1;
+
+      for (int i = 0; i < num_vertices; i++)
+        nne[i] = (v2cv[i] != -1) ? 1 : 0;
       prolongation = make_shared<SparseMatrix<double>> (nne, num_coarse_vertices);
       for (int i = 0; i < num_vertices; i++)
-        (*prolongation)(i, v2cv[i]) = 1;
-
+        if (v2cv[i] != -1)
+          (*prolongation)(i, v2cv[i]) = 1;
 
       // smoothed prolongation
       if (level % 4 == 2)
@@ -396,7 +405,7 @@ namespace ngcomp
           
           prolongation = MatMult (*smoothprol, *prolongation);
         }
-      
+
       restriction = TransposeMatrix (*prolongation);
           
       auto coarsemat = mat -> Restrict (*prolongation);
@@ -410,7 +419,6 @@ namespace ngcomp
                       coarse_freedofs->Set(v2cv[v]);
                   });
       
-
       if (num_coarse_vertices < 10)
         coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
       else
@@ -428,6 +436,7 @@ namespace ngcomp
 
     virtual void Mult (const BaseVector & b, BaseVector & x) const override
     {
+      static Timer t("H1AMG::Mult"); RegionTimer reg(t);      
       x = 0;
 
       smoother->GSSmooth(x, b, smoothing_steps);
@@ -493,11 +502,13 @@ namespace ngcomp
 
     
       Array<double> vertex_weights(num_vertices);
+      vertex_weights = 0.0;
       vertex_weights_ht.IterateParallel
         ([&vertex_weights] (size_t i, INT<1> key, double weight)
          {
            vertex_weights[i] = weight;
          });
+
       mat = make_shared<H1AMG_Matrix<double>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
     }
 
@@ -516,7 +527,6 @@ namespace ngcomp
       ThreadRegionTimer reg (t, TaskManager::GetThreadId());
       
       size_t ndof = dnums.Size();
-      
       BitArray used(ndof, lh);
 
       FlatMatrix<SCAL> ext_elmat(ndof+1, ndof+1, lh);
