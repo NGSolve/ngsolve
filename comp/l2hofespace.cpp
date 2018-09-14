@@ -821,10 +821,10 @@ namespace ngcomp
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
-    order_inner.SetSize(nel);
-
+    
     if (first_update)
       {
+	order_inner.SetSize(nel);
 	order_inner = INT<3>(order);
 
 	for(int i = 0; i < nel; i++) 
@@ -994,7 +994,7 @@ namespace ngcomp
               }
 
             fe1d -> SetVertexNumbers (ngel.vertices);
-            fe1d -> SetOrder (INT<1> (order));
+            fe1d -> SetOrder (order_inner[ei.Nr()]);
             fe1d -> ComputeNDof(); 
             return *fe1d;
           }
@@ -1013,7 +1013,7 @@ namespace ngcomp
               }
 	
             fe2d -> SetVertexNumbers (ngel.vertices);
-            fe2d -> SetOrder (INT<2> (order));
+            fe2d -> SetOrder (order_inner[ei.Nr()]);
             fe2d -> ComputeNDof(); 
             return *fe2d;
           }
@@ -1041,16 +1041,15 @@ namespace ngcomp
   void L2SurfaceHighOrderFESpace :: 
   GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
+    dnums.SetSize0();
+    if (!DefinedOn (ei))
+      return;
     if(ei.VB()!=BND || !DefinedOn(ei)) return;
     int first = first_element_dof[ei.Nr()];
     int neldofs = first_element_dof[ei.Nr()+1] - first;
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
 
-    if (!DefinedOn (ei))
-      dnums = -1;
-    
   }
   
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
