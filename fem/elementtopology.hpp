@@ -58,6 +58,15 @@ namespace ngfem
       default: return nt;
       }
   }
+
+  INLINE int CoDimension (NODE_TYPE nt, int meshdim)
+  {
+    int dim(nt);
+    if (dim <= 3)  // V, E, F C
+      return meshdim-dim;
+    else
+      return dim-NT_ELEMENT; 
+  }
   // INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
 
