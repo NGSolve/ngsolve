@@ -263,6 +263,9 @@ namespace ngcomp
     TORDER minorder = 99; 
 
     if (low_order_space) low_order_space -> Update(lh);
+
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
     int dim = ma->GetDimension();
     size_t nv = ma->GetNV();
@@ -270,205 +273,207 @@ namespace ngcomp
     size_t nfa = (dim <= 2) ? 0 : ma->GetNFaces();
     size_t ne = ma->GetNE();
 
-    used_edge.SetSize(ned); 
-    used_face.SetSize(nfa); 
-    used_vertex.SetSize(nv); 
+    if (first_update)
+      {
+	used_edge.SetSize(ned); 
+	used_face.SetSize(nfa); 
+	used_vertex.SetSize(nv); 
 
-    used_edge = false; 
-    used_face = false; 
-    used_vertex = false; 
+	used_edge = false; 
+	used_face = false; 
+	used_vertex = false; 
 
-    // for (FESpace::Element el : Elements (VOL))
+	// for (FESpace::Element el : Elements (VOL))
 
-    for (auto vb : { VOL, BND })
-      ParallelFor
-        (ma->GetNE(vb), [&] (size_t nr)
-         {
-           ElementId ei(vb, nr);
-           Ngs_Element el = (*ma)[ei];
+	for (auto vb : { VOL, BND })
+	  ParallelFor
+	    (ma->GetNE(vb), [&] (size_t nr)
+	     {
+	       ElementId ei(vb, nr);
+	       Ngs_Element el = (*ma)[ei];
            
-           if (!DefinedOn (el)) return; 
+	       if (!DefinedOn (el)) return; 
            
-           used_vertex[el.Vertices()] = true;
-           if (dim >= 2) used_edge[el.Edges()] = true;
-           if (dim == 3) used_face[el.Faces()] = true;
-         });
+	       used_vertex[el.Vertices()] = true;
+	       if (dim >= 2) used_edge[el.Edges()] = true;
+	       if (dim == 3) used_face[el.Faces()] = true;
+	     });
     
-    /*
-    for (FESpace::Element el : Elements (BND))
-      {
-        used_vertex[el.Vertices()] = true;
-        if (dim >= 2) used_edge[el.Edges()] = true;
-        if (dim == 3) used_face[el.Faces()] = true;
-      }
-    */
+	/*
+	  for (FESpace::Element el : Elements (BND))
+	  {
+	  used_vertex[el.Vertices()] = true;
+	  if (dim >= 2) used_edge[el.Edges()] = true;
+	  if (dim == 3) used_face[el.Faces()] = true;
+	  }
+	*/
     
-    ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
-    ma->AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
-    ma->AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
+	ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
+	ma->AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
+	ma->AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
 
-    // timer1.Stop();
-    // timer2.Start();
+	// timer1.Stop();
+	// timer2.Start();
     
-    order_edge.SetSize (ned);
-    order_face.SetSize (nfa);
-    order_inner.SetSize (ne);
+	order_edge.SetSize (ned);
+	order_face.SetSize (nfa);
+	order_inner.SetSize (ne);
 
-    int p = var_order ?  1 : order; 
+	int p = var_order ?  1 : order; 
     
-    order_edge = p; 
-    order_face = p; 
-    order_inner = p;
+	order_edge = p; 
+	order_face = p; 
+	order_inner = p;
 	
-    if(var_order) 
-      for (Ngs_Element el : ma->Elements<VOL>())
-        {	
-          if (!DefinedOn (el)) continue;
-          int i = el.Nr();
+	if(var_order) 
+	  for (Ngs_Element el : ma->Elements<VOL>())
+	    {	
+	      if (!DefinedOn (el)) continue;
+	      int i = el.Nr();
           
-          ELEMENT_TYPE eltype = el.GetType(); 
-          const FACE * faces = ElementTopology::GetFaces (eltype);
-          const EDGE * edges = ElementTopology::GetEdges (eltype);
-          const POINT3D * points = ElementTopology :: GetVertices (eltype);
+	      ELEMENT_TYPE eltype = el.GetType(); 
+	      const FACE * faces = ElementTopology::GetFaces (eltype);
+	      const EDGE * edges = ElementTopology::GetEdges (eltype);
+	      const POINT3D * points = ElementTopology :: GetVertices (eltype);
 
-          auto vnums = el.Vertices();
-          auto eledges = el.Edges();
+	      auto vnums = el.Vertices();
+	      auto eledges = el.Edges();
 	
-          INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order);
+	      INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order);
 
-          maxorder = max2 (maxorder, Max(el_orders));
-          minorder = min2 (minorder, Min(el_orders));
-          // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
-          // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
+	      maxorder = max2 (maxorder, Max(el_orders));
+	      minorder = min2 (minorder, Min(el_orders));
+	      // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
+	      // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
           
-          order_inner[i] = Max (order_inner[i], el_orders + INT<3,TORDER>(et_bonus_order[eltype]));
-          // for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
+	      order_inner[i] = Max (order_inner[i], el_orders + INT<3,TORDER>(et_bonus_order[eltype]));
+	      // for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
 
-          for(int j=0;j<eledges.Size();j++)
-            {
-              for(int k=0;k<dim;k++)
-                if(points[edges[j][0]][k] != points[edges[j][1]][k])
-                  { 
-                    order_edge[eledges[j]] = max2(order_edge[eledges[j]],
-                                                  TORDER(el_orders[k]+et_bonus_order[ET_SEGM]));
-                    k=dim; 
-                  }
-            }
+	      for(int j=0;j<eledges.Size();j++)
+		{
+		  for(int k=0;k<dim;k++)
+		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
+		      { 
+			order_edge[eledges[j]] = max2(order_edge[eledges[j]],
+						      TORDER(el_orders[k]+et_bonus_order[ET_SEGM]));
+			k=dim; 
+		      }
+		}
           
-          if(dim==3)
-            {
-              auto elfaces = el.Faces();              
-              for(int j=0;j<elfaces.Size();j++)
-                {
-                  // trig_face
-                  if(faces[j][3]==-1) 
-                    {
-                      order_face[elfaces[j]][0] = 
-                        int(max2(order_face[elfaces[j]][0], 
-                                 TORDER(el_orders[0]+et_bonus_order[ET_TRIG])));
-                      order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
-                    }
-                  else //quad_face
-                    {
-                      int fmax = 0;
-                      for(int k = 1; k < 4; k++) 
-                        if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+	      if(dim==3)
+		{
+		  auto elfaces = el.Faces();              
+		  for(int j=0;j<elfaces.Size();j++)
+		    {
+		      // trig_face
+		      if(faces[j][3]==-1) 
+			{
+			  order_face[elfaces[j]][0] = 
+			    int(max2(order_face[elfaces[j]][0], 
+				     TORDER(el_orders[0]+et_bonus_order[ET_TRIG])));
+			  order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
+			}
+		      else //quad_face
+			{
+			  int fmax = 0;
+			  for(int k = 1; k < 4; k++) 
+			    if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
                       
-                      INT<2> f((fmax+3)%4,(fmax+1)%4); 
-                      if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+			  INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			  if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
                       
-                      for(int l=0;l<2;l++)
-                        for(int k=0;k<3;k++)
-                          if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-                            {
-                              order_face[elfaces[j]][l] = 
-                                int(max2(order_face[elfaces[j]][l], 
-                                         TORDER(el_orders[k]+et_bonus_order[ET_TRIG])));
-                              break;
-                            }
-                    }
-                }
-            }
-        }
+			  for(int l=0;l<2;l++)
+			    for(int k=0;k<3;k++)
+			      if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+				{
+				  order_face[elfaces[j]][l] = 
+				    int(max2(order_face[elfaces[j]][l], 
+					     TORDER(el_orders[k]+et_bonus_order[ET_TRIG])));
+				  break;
+				}
+			}
+		    }
+		}
+	    }
     
-    else  // not var_order
+	else  // not var_order
 
-      {
-      // for (Ngs_Element el : ma->Elements<VOL>())
-      ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
-                   {
-                     ElementId ei(VOL, nr);
-                     Ngs_Element el = (*ma)[ei];
+	  {
+	    // for (Ngs_Element el : ma->Elements<VOL>())
+	    ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
+			 {
+			   ElementId ei(VOL, nr);
+			   Ngs_Element el = (*ma)[ei];
                      
-                     if (!DefinedOn (el)) return; 
+			   if (!DefinedOn (el)) return; 
                      
-                     if (dim >= 2)
-                       for (auto e : el.Edges())
-                         order_edge[e] = p + et_bonus_order[ET_SEGM];
+			   if (dim >= 2)
+			     for (auto e : el.Edges())
+			       order_edge[e] = p + et_bonus_order[ET_SEGM];
                      
-                     if (dim == 3)
-                       for (auto f : el.Faces())
-                         order_face[f] = p + et_bonus_order[ma->GetFaceType(f)];
+			   if (dim == 3)
+			     for (auto f : el.Faces())
+			       order_face[f] = p + et_bonus_order[ma->GetFaceType(f)];
 
-                     order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
-                   });
-      }
-    /* 
-       if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
-       {
-       for (int i = 0; i < nel; i++)
-       {
-       if (ma->GetElType(i) == ET_TRIG)
-       order_inner = INT<3> (uniform_order_trig, uniform_order_trig, uniform_order_trig);
-       else
-       order_inner = INT<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
-       }
-       }
-    */
+			   order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
+			 });
+	  }
+	/* 
+	   if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
+	   {
+	   for (int i = 0; i < nel; i++)
+	   {
+	   if (ma->GetElType(i) == ET_TRIG)
+	   order_inner = INT<3> (uniform_order_trig, uniform_order_trig, uniform_order_trig);
+	   else
+	   order_inner = INT<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
+	   }
+	   }
+	*/
 
-    // timer2.Stop();
-    // timer3.Start();
+	// timer2.Stop();
+	// timer3.Start();
     
-    if(uniform_order_inner > -1)  
-      order_inner = uniform_order_inner;
-    if(uniform_order_face > -1 && dim == 3) 
-      order_face = uniform_order_face;
-    if(uniform_order_edge > -1)   
-      order_edge = uniform_order_edge; 
+	if(uniform_order_inner > -1)  
+	  order_inner = uniform_order_inner;
+	if(uniform_order_face > -1 && dim == 3) 
+	  order_face = uniform_order_face;
+	if(uniform_order_edge > -1)   
+	  order_edge = uniform_order_edge; 
 
-    for (auto i : Range(used_edge))
-      if (!used_edge[i]) order_edge[i] = 1; 
+	for (auto i : Range(used_edge))
+	  if (!used_edge[i]) order_edge[i] = 1; 
 
-    for (auto i : used_face.Range())
-      if (!used_face[i]) order_face[i] = 1; 
+	for (auto i : used_face.Range())
+	  if (!used_face[i]) order_face[i] = 1; 
 
-    for (ElementId ei : ma->Elements<VOL>())
-      if (!DefinedOn(ei)) order_inner[ei.Nr()] = 1;
+	for (ElementId ei : ma->Elements<VOL>())
+	  if (!DefinedOn(ei)) order_inner[ei.Nr()] = 1;
 
-    if(print) 
-      {
-	*testout << " H1HoFESpace order " << order << " , var_order " << var_order << " , relorder " << rel_order << endl;  
-	(*testout) << "used_vertex (h1): " << used_vertex << endl;
-	(*testout) << "used_edge (h1): " << used_edge << endl;
-	(*testout) << "used_face (h1): " << used_face << endl;
+	if(print) 
+	  {
+	    *testout << " H1HoFESpace order " << order << " , var_order " << var_order << " , relorder " << rel_order << endl;  
+	    (*testout) << "used_vertex (h1): " << used_vertex << endl;
+	    (*testout) << "used_edge (h1): " << used_edge << endl;
+	    (*testout) << "used_face (h1): " << used_face << endl;
 	
 	
-	(*testout) << "order_edge (h1): " << order_edge << endl;
+	    (*testout) << "order_edge (h1): " << order_edge << endl;
 	
-	(*testout) << "order_face (h1): " << order_face <<  endl;
-	(*testout) << "order_inner (h1): " << order_inner << endl;
-      }
+	    (*testout) << "order_face (h1): " << order_face <<  endl;
+	    (*testout) << "order_inner (h1): " << order_inner << endl;
+	  }
     
 #ifdef SABINE 
-    // fuer EE damit ich mit rel_order auch p-ref machen kann :) 
-    order=order_inner[0][0]; 
+	// fuer EE damit ich mit rel_order auch p-ref machen kann :) 
+	order=order_inner[0][0]; 
 
-    if (!var_order) { maxorder = order; minorder = order; }; 
-    order = maxorder;
+	if (!var_order) { maxorder = order; minorder = order; }; 
+	order = maxorder;
 
-    cout << " H1FESPACE : " << minorder << " <= order <= " << maxorder << endl;  
+	cout << " H1FESPACE : " << minorder << " <= order <= " << maxorder << endl;  
 #endif 
-
+      }
     UpdateDofTables ();
     UpdateCouplingDofArray ();
 
@@ -1904,6 +1909,19 @@ namespace ngcomp
     FESpace::SetOrder(et, order);
     for (auto & spc : spaces)
       spc->SetOrder (et, order);
+  }
+
+  void VectorH1FESpace :: SetOrder (NodeId ni, int order) 
+  {
+    for (auto & spc : spaces)
+      spc->SetOrder (ni, order);
+  }
+  
+  int VectorH1FESpace :: GetOrder (NodeId ni) const
+  {
+    if (GetNSpaces())
+      return spaces[0]->GetOrder (ni);
+    return 0;
   }
 
   
