@@ -687,7 +687,10 @@ kwargs : kwargs
               py::arg("dgjumps") = "bool = False\n"
               "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
               "  since the dofs have a different coupling then and this changes the sparsity\n"
-              "  pattern of matrices."
+              "  pattern of matrices.",
+              py::arg("low_order_space") = "bool = True\n"
+              "  Generate a lowest order space together with the high-order space,\n"
+              "  needed for some preconditioners."
               );
          })
     .def_static("__special_treated_flags__", [] ()
