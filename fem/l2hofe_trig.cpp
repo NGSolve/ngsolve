@@ -29,67 +29,70 @@ namespace ngfem
       {
         if (vnums[1] < vnums[2])
           {
+            /*
             Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
                                     {
                                       if (nr.value == order)
                                         hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value, FixedOrientation<0,1,2>> ();
                                     });
-            /*
+            */
+
             switch (order)
               {
               case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0, FixedOrientation<0,1,2>> (); break;
               case 1: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,1, FixedOrientation<0,1,2>> (); break;
               case 2: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,2, FixedOrientation<0,1,2>> (); break;
-              case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3, FixedOrientation<0,1,2>> (); break;
-              case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,1,2>> (); break;
+                // case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3, FixedOrientation<0,1,2>> (); break;
+                // case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,1,2>> (); break;
               default: ; 
               }
-            */
           }
         else
           {
+            /*
             Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
                                     {
                                       if (nr.value == order)
                                         hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value, FixedOrientation<0,2,1>> ();
                                     });
-            /*
+            */
+
             switch (order)
               {
               case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0, FixedOrientation<0,2,1>> (); break;
               case 1: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,1, FixedOrientation<0,2,1>> (); break;
               case 2: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,2, FixedOrientation<0,2,1>> (); break;
-              case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3, FixedOrientation<0,2,1>> (); break;
-              case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,2,1>> (); break;
+                // case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3, FixedOrientation<0,2,1>> (); break;
+                // case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,2,1>> (); break;
               default: ; 
               }
-            */
           }
       }
 
+    /*
     if (!hofe)
       Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
                               {
                                 if (nr.value == order)
                                   hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value> ();
                               });
+    if (!hofe)
+      hofe = new (lh) L2HighOrderFE<ET_TRIG> (order); 
+    */
 
-      /*
       switch (order)
         {
         case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
         case 1: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
         case 2: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
-        case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
-        case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
+          // case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
+          // case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
           // case 5: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,5> (); break;
           // case 6: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,6> (); break;
         // case 10: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,10> (); break;
         default: hofe = new (lh) L2HighOrderFE<ET_TRIG> (order); break;
       }
-      */
-    if (!hofe)
-      hofe = new (lh) L2HighOrderFE<ET_TRIG> (order); 
+
     
     for (int j = 0; j < 3; j++)
       hofe->SetVertexNumber (j, vnums[j]);
