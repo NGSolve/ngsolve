@@ -188,6 +188,10 @@ namespace ngfem
 
 
 
+// #ifdef FILE_L2HOFE_TRIG_CPP
+// #include <tscalarfe_impl.hpp>
+// #include <l2hofe_impl.hpp>
+// #endif
 
 namespace ngfem
 {
