@@ -1611,6 +1611,8 @@ parallel : bool
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
             
+            py::gil_scoped_release release;
+            
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
