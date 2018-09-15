@@ -180,6 +180,15 @@ namespace ngcomp
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
   { ; }
 
+  DocInfo L2HighOrderFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu();
+    docu.Arg("hide_all_dofs") = "bool = False\n"
+      "  Set all used dofs to HIDDEN_DOFs";
+    return docu;
+  }
+
+  
   shared_ptr<FESpace> L2HighOrderFESpace :: 
   Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
@@ -1906,9 +1915,9 @@ namespace ngcomp
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create);
-      GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO);
-      GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create, L2HighOrderFESpace::GetDocu);
+      GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO, L2HighOrderFESpace::GetDocu);
+      GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create, L2SurfaceHighOrderFESpace::GetDocu);
     }
     
     Init init;

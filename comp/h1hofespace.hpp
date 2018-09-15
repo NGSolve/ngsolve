@@ -54,6 +54,9 @@ namespace ngcomp
     ///
     virtual ~H1HighOrderFESpace ();
 
+    static DocInfo GetDocu ();
+
+    
     virtual string GetClassName () const override
     {
       return "H1HighOrderFESpace";

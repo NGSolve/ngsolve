@@ -244,7 +244,17 @@ namespace ngcomp
     ;
   }
 
+  DocInfo H1HighOrderFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu();
+    docu.Arg("wb_withedges") = "bool = true(3D) / false(2D)\n"
+      "  use lowest-order edge dofs for BDDC wirebasket";
+    docu.Arg("wb_fulledges") = "bool = false\n"
+      "  use all edge dofs for BDDC wirebasket";
+    return docu;
+  }
 
+  
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
     static Timer timer ("H1HighOrderFESpace::Update");

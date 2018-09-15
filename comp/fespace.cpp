@@ -294,6 +294,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // delete paralleldofs;
   }
+
+
+  DocInfo FESpace :: GetDocu ()
+  {
+    DocInfo docu;
+    return docu;
+  }
+
   
   void FESpace :: SetNDof (size_t _ndof)
   {
@@ -2853,9 +2861,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpaceClasses :: 
   AddFESpace (const string & aname,
-	      shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags))
+	      shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
+              DocInfo (*getdocu)())
   {
-    fesa.Append (make_shared<FESpaceInfo> (aname, acreator));
+    fesa.Append (make_shared<FESpaceInfo> (aname, acreator, getdocu));
   }
 
   const shared_ptr<FESpaceClasses::FESpaceInfo> 
