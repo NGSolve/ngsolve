@@ -627,7 +627,14 @@ namespace ngla
   template <class SCAL>  
   BaseVector & S_BaseVector<SCAL> :: SetScalar (double scal)
   {
-    FVScal() = scal;
+    static Timer t("S_BaseVector::SetScalar");
+    RegionTimer reg(t);
+    
+    auto me = FVScal();
+    ParallelForRange (me.Size(),
+                      [me, scal] (IntRange r) { me.Range(r) = scal; });
+    
+    // FVScal() = scal;
     return *this;
   }
   
