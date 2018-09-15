@@ -79,6 +79,7 @@ namespace ngcomp
     HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~HCurlHighOrderFESpace ();
+    static DocInfo GetDocu ();
   
     virtual string GetClassName () const override
     {

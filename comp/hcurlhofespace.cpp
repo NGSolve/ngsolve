@@ -506,7 +506,20 @@ namespace ngcomp
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace () { ; }
+  
+  DocInfo HCurlHighOrderFESpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg ("nograds") = "bool = False\n"
+      "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+    docu.Arg("type1") = "bool = False\n"
+      "  Use type 1 Nedelec elements";
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HCurl space";
+    return docu;
+  }
 
+  
   void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);

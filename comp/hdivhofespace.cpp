@@ -216,6 +216,24 @@ namespace ngcomp
     ;
   }
 
+  DocInfo HDivHighOrderFESpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("nograds") = "bool = False\n"
+      "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+    
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HDiv space";
+    docu.Arg("hodivfree") = "bool = False\n"
+      "  Remove high order element bubbles with non zero divergence";
+    docu.Arg("highest_order_dc") = "bool = False\n"
+      "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+    docu.Arg("hide_all_dofs") = "bool = False\n"
+      "  Set all used dofs to HIDDEN_DOFs";
+    return docu;
+  }
+  
+
   void HDivHighOrderFESpace :: Average (BaseVector & vec) const
   {
     // auto & pairs = GetDCPairs();
@@ -258,7 +276,7 @@ namespace ngcomp
     order_inner_curl.SetSize(nel); 
     fine_facet.SetSize(nfa); 
     boundary_facet.SetSize(nfa); 
-   
+    
     boundary_facet = false;
     /*
     for (int i = 0; i < ma->GetNSE(); i++)

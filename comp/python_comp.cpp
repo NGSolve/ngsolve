@@ -196,6 +196,8 @@ template <typename FES, typename BASE=FESpace>
 auto ExportFESpace (py::module & m, string pyname)
 {
   auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str());
+
+
   pyspace
     .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
                   {
@@ -212,7 +214,19 @@ auto ExportFESpace (py::module & m, string pyname)
     .def(py::pickle(fesPickle,
                     (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
     ;
-  
+
+  auto docu = FES::GetDocu();
+  if (docu.arguments.size())
+    pyspace.def_static("__flags_doc__", [docu]()
+                       {
+                         auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                             attr("FESpace").
+                                                             attr("__flags_doc__")());
+                         for (auto & flagdoc : docu.arguments)
+                           flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+                         return flags_doc;
+                       });
+      
   return pyspace;
 }
 
@@ -1152,20 +1166,7 @@ rho : ngsolve.fem.CoefficientFunction
     ;
 
   
-         ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                      attr("FESpace").
-                                                      attr("__flags_doc__")());
-                  flags_doc["nograds"] = "bool = False\n"
-                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-                  flags_doc["type1"] = "bool = False\n"
-                    "  Use type 1 Nedelec elements";
-                  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HCurl space";
-                  return flags_doc;
-                })
+  ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
         auto fesh1 = self->CreateGradientSpace();
         shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
@@ -1173,39 +1174,12 @@ rho : ngsolve.fem.CoefficientFunction
       })
     ;
   
-         ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
-    .def_static("__flags_doc__", [] ()
-              {
-                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                    attr("FESpace").
-                                                    attr("__flags_doc__")());
-                flags_doc["discontinuous"] = "bool = False\n"
-                  "  Create discontinuous HDiv space";
-                flags_doc["hodivfree"] = "bool = False\n"
-                  "  Remove high order element bubbles with non zero divergence";
-                flags_doc["highest_order_dc"] = "bool = False\n"
-                  "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
-                flags_doc["hide_all_dofs"] = "bool = False\n"
-                  "  Set all used dofs to HIDDEN_DOFs";
-                return flags_doc;
-              })
+  ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
     .def("Average", &HDivHighOrderFESpace::Average,
-          py::arg("vector"))
-     ;
-  
-  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                      attr("FESpace").
-                                                      attr("__flags_doc__")());
-                  flags_doc["wb_withedges"] = "bool = true(3D) / false(2D)\n"
-                  "  use lowest-order edge dofs for BDDC wirebasket";
-                  flags_doc["wb_fulledges"] = "bool = false\n"
-                  "  use all edge dofs for BDDC wirebasket";
-                  return flags_doc;
-                })
+         py::arg("vector"))
     ;
+  
+  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
 
   auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
  
@@ -1215,21 +1189,7 @@ rho : ngsolve.fem.CoefficientFunction
 
   auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
 
-  ExportFESpace<L2HighOrderFESpace> (m, "L2")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		              flags_doc["all_dofs_together"] = "bool = False\n"
-                    "  Don't use lowest-order high-order ordering but block all dofs of one element ";
-                  flags_doc["hide_all_dofs"] = "bool = False\n"
-                    "  Set all used dofs to HIDDEN_DOFs";
-                return flags_doc;
-                })
-    ;
-
-
+  ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
     .def_static("__flags_doc__", [] ()
@@ -1245,7 +1205,7 @@ rho : ngsolve.fem.CoefficientFunction
                   return flags_doc;
                 })
     ;
-
+  
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface")    
     .def_static("__flags_doc__", [] ()
                 {
@@ -1257,43 +1217,31 @@ rho : ngsolve.fem.CoefficientFunction
                   return flags_doc;
                 })
     ;
-
+  
   ExportFESpace<VectorFacetFESpace> (m, "VectorFacet")
     .def_static("__flags_doc__", [] ()
-              {
-                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                    attr("FESpace").
-                                                    attr("__flags_doc__")());
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                      attr("FESpace").
+                                                      attr("__flags_doc__")());
                 flags_doc["highest_order_dc"] = "bool = False\n"
                   "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
                 flags_doc["hide_highest_order_dc"] = "bool = False\n"
                   "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
                 return flags_doc;
-              })
+                })
     ;
 
-  ExportFESpace<FacetFESpace> (m, "FacetFESpace")
-    .def_static("__flags_doc__", [] ()
-              {
-                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                    attr("FESpace").
-                                                    attr("__flags_doc__")());
-                flags_doc["highest_order_dc"] = "bool = False\n"
-                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
-                flags_doc["hide_highest_order_dc"] = "bool = False\n"
-                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
-                return flags_doc;
-              })
-    ;
-
+  ExportFESpace<FacetFESpace> (m, "FacetFESpace");
+  
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
-
+  
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
+                                                      attr("FESpace").
+                                                      attr("__flags_doc__")());
                   flags_doc["discontinuous"] = "bool = False\n"
                     "  Create discontinuous HDivSurface space";
                   return flags_doc;

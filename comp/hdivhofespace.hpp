@@ -62,6 +62,7 @@ namespace ngcomp
                           bool parseflags=false);
     ///
     virtual ~HDivHighOrderFESpace ();
+    static DocInfo GetDocu ();
 
     virtual void UpdateDofTables() override;  
 

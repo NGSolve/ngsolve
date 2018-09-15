@@ -10,6 +10,23 @@
 namespace ngcomp
 {
 
+
+  class DocInfo
+  {
+  public:
+    string short_docu;
+    string long_docu;
+    std::vector<tuple<string,string>> arguments;
+
+    string & Arg(string name)
+    {
+      arguments.push_back ( tuple<string,string> (name, "none") );
+      return get<1> (arguments.back());
+    }
+  };
+
+
+  
   /** 
       NGSolve base class
   */
