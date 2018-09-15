@@ -419,7 +419,10 @@ namespace ngcomp
                   });
       
       if (num_coarse_vertices < 10)
-        coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
+	{
+	  coarsemat->SetInverseType(SPARSECHOLESKY);
+	  coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
+	}
       else
         coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrixTM<SCAL>> (coarsemat), coarse_freedofs,
                                                     coarse_e2v, coarse_edge_weights, coarse_vertex_weights, level+1);
