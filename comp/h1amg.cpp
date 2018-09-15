@@ -251,7 +251,6 @@ namespace ngcomp
       for (size_t i = 0; i < num_vertices; i++)
         if (sum_vertex_weights[i] == vertex_weights[i])
           isolated_verts.Set(i);
-      *testout << "isolated_vertex = " << endl << isolated_verts << endl;
       
       // vertex 2 coarse vertex
       Array<size_t> v2cv(num_vertices);

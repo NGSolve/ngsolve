@@ -1193,7 +1193,19 @@ rho : ngsolve.fem.CoefficientFunction
           py::arg("vector"))
      ;
   
-  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
+  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1")
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                      attr("FESpace").
+                                                      attr("__flags_doc__")());
+                  flags_doc["wb_withedges"] = "bool = true(3D) / false(2D)\n"
+                  "  use lowest-order edge dofs for BDDC wirebasket";
+                  flags_doc["wb_fulledges"] = "bool = false\n"
+                  "  use all edge dofs for BDDC wirebasket";
+                  return flags_doc;
+                })
+    ;
 
   auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
  

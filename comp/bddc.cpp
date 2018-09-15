@@ -327,26 +327,29 @@ namespace ngcomp
                    [&] (size_t i)
                    {
                      FlatArray<int> cols = sparse_innersolve -> GetRowIndices(i);
+                     FlatVector<SCAL> values = sparse_innersolve->GetRowValues(i);
+                     double wi = weight[i];
                      for (int j = 0; j < cols.Size(); j++)
-                       sparse_innersolve->GetRowValues(i)(j) *= weight[i] * weight[cols[j]];
-                   });
+                       values(j) *= wi * weight[cols[j]];
+                   }, TasksPerThread(5));
 
       ParallelFor (sparse_harmonicext->Height(),
                    [&] (size_t i)
                    {
                      sparse_harmonicext->GetRowValues(i) *= weight[i];                     
-                   });
+                   }, TasksPerThread(5));
       
       if (!bfa->SymmetricStorage())
         {
-          ParallelFor (sparse_harmonicexttrans->Height(),
+          ParallelFor (// sparse_harmonicexttrans->Height(),
+                       sparse_harmonicexttrans->GetBalancing(),
                        [&] (size_t i)
                        {
                          FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
                          FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
                          for (int j = 0; j < rowind.Size(); j++)
                            values[j] *= weight[rowind[j]];
-                       });
+                       }, TasksPerThread(5));
         }
       
       // now generate wire-basked solver
