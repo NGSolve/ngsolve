@@ -216,6 +216,8 @@ auto ExportFESpace (py::module & m, string pyname)
     ;
 
   auto docu = FES::GetDocu();
+  // cout << "short docu: " << docu.short_docu << endl;
+  // cout << "long docu: " << docu.long_docu << endl;
   if (docu.arguments.size())
     pyspace.def_static("__flags_doc__", [docu]()
                        {
