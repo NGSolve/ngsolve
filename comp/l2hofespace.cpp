@@ -8,10 +8,6 @@
    High Order Finite Element Space for L2
 */
 
-/* ***********************************************
-To do: *Internal External Dofs (eliminate internal) 
-       *Flag for low-order dofs eliminated ...   
-************************* */ 
 
 #include <comp.hpp>
 #include <multigrid.hpp>
@@ -182,7 +178,26 @@ namespace ngcomp
 
   DocInfo L2HighOrderFESpace :: GetDocu ()
   {
-    DocInfo docu = FESpace::GetDocu();
+    DocInfo docu = FESpace::GetDocu(); 
+    docu.short_docu = "An L2-conforming finite element space";
+    docu.long_docu =
+      R"raw_string(The L2 finite element space consists of element-wise polynomials,
+which are discontinuous from element to element. It uses an
+L2-orthogonal hierarchical basis which leads to orthogonal
+mass-matrices on non-curved elements.
+
+Boundary values are not meaningful for an L2 function space.
+
+The L2 space supports element-wise variable order, which can be set
+for ELEMENT-nodes.
+
+Per default, all dofs a local dofs and are condensed if static
+condensation is performed. The lowest order can be kept in the
+WIRE_BASKET via the flag 'lowest_order_wb=True'.
+
+All dofs can be hidden. Then the basis functions don't show up in the
+global system.)raw_string";
+    
     docu.Arg("hide_all_dofs") = "bool = False\n"
       "  Set all used dofs to HIDDEN_DOFs";
     return docu;
