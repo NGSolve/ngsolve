@@ -235,7 +235,7 @@ namespace ngcomp
                                    vertex_collapse[v1] = true;
                                  }
                              });
-      edge_dag.~Table<int>();
+      edge_dag = Table<int>();
       
       // collapse the larger vertex
       vertex_collapse = false;
@@ -332,7 +332,7 @@ namespace ngcomp
                       e2ce[edge] = -1;
                   });
 
-      coarse_edge_ht.~ParallelHashTable<INT<2>, int>();
+      coarse_edge_ht = ParallelHashTable<INT<2>, int>();
       
       Array<double> coarse_edge_weights (num_coarse_edges);
       Array<double> coarse_vertex_weights (num_coarse_vertices);
@@ -504,7 +504,7 @@ namespace ngcomp
            edge_weights[i] = weight;
            e2v[i] = key;
          });
-      edge_weights_ht.~ParallelHashTable<INT<2>,double>();
+      edge_weights_ht = ParallelHashTable<INT<2>,double>();
       
       Array<double> vertex_weights(num_vertices);
       vertex_weights = 0.0;
@@ -513,7 +513,7 @@ namespace ngcomp
          {
            vertex_weights[i] = weight;
          });
-      vertex_weights_ht.~ParallelHashTable<INT<1>,double>();
+      vertex_weights_ht = ParallelHashTable<INT<1>,double>();
       
       mat = make_shared<H1AMG_Matrix<double>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
     }
