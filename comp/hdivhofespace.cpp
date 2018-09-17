@@ -691,8 +691,17 @@ namespace ngcomp
 	  order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
 	break;
       case 0:
-	// TODO: FACE->ELEMENT nr in 2D
-	if (ni.GetNr() < order_inner.Size())
+        if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      {
+		order_inner[elnr[0]] = order;
+		order_inner_curl[elnr[0]] = order;
+	      }
+	  }
+        else if (ni.GetNr() < order_inner.Size())
 	  {
 	    order_inner[ni.GetNr()] = order;
 	    order_inner_curl[ni.GetNr()] = order;
@@ -712,7 +721,14 @@ namespace ngcomp
 	  return order_facet[ni.GetNr()][0];
 	break;
       case 0:
-	if (ni.GetNr() < order_inner.Size())
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
 	  return order_inner[ni.GetNr()][0];
 	break;
       default:

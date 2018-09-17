@@ -586,10 +586,16 @@ namespace ngcomp
     if (order < 0)
       order = 0;
 
-    //TODO: FACE->ELEMENT nr in 2D
     if (CoDim(ni.GetType(), ma->GetDimension()) == 0)
       {
-        if (ni.GetNr() < order_inner.Size())
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
       }
     else
@@ -599,8 +605,17 @@ namespace ngcomp
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
   {
     if (CoDim(ni.GetType(), ma->GetDimension()) == 0)
-        if (ni.GetNr() < order_inner.Size())
+      {
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
+      }
     
     return 0;
   }
@@ -897,11 +912,17 @@ namespace ngcomp
     if (order < 0)
       order = 0;
 
-    //TODO: FACE->ELEMENT nr in 3D
     if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
       {
-	if (ni.GetNr() < order_inner.Size())
-	  order_inner[ni.GetNr()] = order;
+	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
       }
     else
       throw Exception ("L2SurfaceHighOrderFESpace::SetOrder requires NodeType of codimension 1!");
@@ -910,8 +931,17 @@ namespace ngcomp
   int L2SurfaceHighOrderFESpace ::GetOrder (NodeId ni) const
   {
     if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
-      if (ni.GetNr() < order_inner.Size())
-	return order_inner[ni.GetNr()][0];
+      {
+	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+      }
         
     return 0;
   }
