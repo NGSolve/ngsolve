@@ -73,8 +73,7 @@ namespace ngmg
     ///
     virtual AutoVector CreateVector(int level) const = 0;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
-    { ; }
+    virtual Array<MemoryUsage> GetMemoryUsage () const { return Array<MemoryUsage>(); }
   };
 
 
@@ -213,7 +212,7 @@ namespace ngmg
     ///
     virtual AutoVector CreateVector(int level) const;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
   };
 
 

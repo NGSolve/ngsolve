@@ -1197,6 +1197,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
 
+  Array<MemoryUsage> FESpace :: GetMemoryUsage () const
+  {
+    Array<MemoryUsage> mu;
+    mu += { "coupling types", ctofdof.Size()*sizeof(COUPLING_TYPE), 1 };
+    return mu;
+  }
+
+  
   /*
   size_t FESpace :: GetNDofLevel (int level) const
   {

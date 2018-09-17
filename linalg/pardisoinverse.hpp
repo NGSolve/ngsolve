@@ -137,9 +137,9 @@ namespace ngla
     ///
     virtual ostream & Print (ostream & ost) const;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+    virtual Array<MemoryUsage> GetMemoryUsage () const
     {
-      mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
+      return { MemoryUsage ("Pardiso", nze*sizeof(TM), 1) };
     }
   };
 

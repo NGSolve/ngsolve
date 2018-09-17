@@ -264,11 +264,13 @@ ANY                  1 1 1 1 | 15
     const Table<int> & FacetColoring() const;
     
     /// print report to stream
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
 
     /// Dump/restore fespace
     virtual void DoArchive (Archive & archive);
 
+    Array<MemoryUsage> GetMemoryUsage () const override;
+    
     /// order of finite elements
     int GetOrder () const { return order; }
 

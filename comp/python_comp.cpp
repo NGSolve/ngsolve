@@ -426,6 +426,14 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<NGS_Object, shared_ptr<NGS_Object>>(m, "NGS_Object")
     // .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
     .def_property("name", &NGS_Object::GetName, &NGS_Object::SetName)
+    .def_property_readonly("__memory__",
+                           [] (const NGS_Object & self)
+                           {
+                             std::vector<tuple<string,size_t, size_t>> ret;
+                             for (auto mui : self.GetMemoryUsage())
+                               ret.push_back ( { mui.Name(), mui.NBytes(), mui.NBlocks() });
+                             return ret;
+                           })
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -598,7 +606,7 @@ file : string
   //////////////////////////////////////////////////////////////////////////////////////////
 
 
-  auto fes_class = py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
+  auto fes_class = py::class_<FESpace, shared_ptr<FESpace>, NGS_Object>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
 
 Provides the functionality for finite element calculations.
@@ -1826,7 +1834,7 @@ diffop : ngsolve.fem.DifferentialOperator
 
 
   typedef BilinearForm BF;
-  auto bf_class = py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
+  auto bf_class = py::class_<BF, shared_ptr<BilinearForm>, NGS_Object>(m, "BilinearForm",
                                              docu_string(R"raw_string(
 Used to store the left hand side of a PDE. integrators (ngsolve.BFI)
 to it to implement your PDE. If the left hand side is linear

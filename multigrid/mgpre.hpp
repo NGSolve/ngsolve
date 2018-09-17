@@ -118,8 +118,7 @@ namespace ngmg
       return biform.GetMatrix().VWidth();
     }
 
-
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const override;
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
   };
 
 
@@ -179,7 +178,8 @@ namespace ngmg
       return mat->VWidth();
     }
   
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const override;
+
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
   };
 
 }

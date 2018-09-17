@@ -472,15 +472,13 @@ namespace ngcomp
   }
 
 
-  void MGPreconditioner::MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> MGPreconditioner::GetMemoryUsage () const
   {
-    int olds = mu.Size();
-    
-    // if (&GetMatrix())
-    GetMatrix().MemoryUsage (mu);;
+    auto mu = GetMatrix().GetMemoryUsage ();;
 
-    for (int i = olds; i < mu.Size(); i++)
-      mu[i]->AddName (string(" mgpre ")); // +GetName());
+    for (int i = 0; i < mu.Size(); i++)
+      mu[i].AddName (string(" mgpre ")); // +GetName());
+    return mu;
   }
     
 

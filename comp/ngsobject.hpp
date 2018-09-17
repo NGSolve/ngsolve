@@ -92,8 +92,8 @@ namespace ngcomp
 
     virtual string GetClassName () const;
     virtual void PrintReport (ostream & ost) const;
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
+    
     Timer & GetTimer () { return timer; }
     const Timer & GetTimer () const { return timer; }
 

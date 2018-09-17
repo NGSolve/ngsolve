@@ -243,25 +243,25 @@ namespace ngcomp
 
   void PDE :: PrintMemoryUsage (ostream & ost)
   {
-    Array<MemoryUsageStruct*> memuse;
+    Array<MemoryUsage> memuse;
     for (int i = 0; i < spaces.Size(); i++)
-      spaces[i]->MemoryUsage (memuse);
+      memuse += spaces[i]->GetMemoryUsage ();
     for (int i = 0; i < bilinearforms.Size(); i++)
-      bilinearforms[i]->MemoryUsage (memuse);
+      memuse += bilinearforms[i]->GetMemoryUsage ();
     for (int i = 0; i < linearforms.Size(); i++)
-      linearforms[i]->MemoryUsage (memuse);
+      memuse += linearforms[i]->GetMemoryUsage ();
     for (int i = 0; i < gridfunctions.Size(); i++)
-      gridfunctions[i]->MemoryUsage (memuse);
+      memuse += gridfunctions[i]->GetMemoryUsage ();
     for (int i = 0; i < preconditioners.Size(); i++)
-      preconditioners[i]->MemoryUsage (memuse);
+      memuse += preconditioners[i]->GetMemoryUsage ();
 
     int sumbytes = 0, sumblocks = 0;
     for (int i = 0; i < memuse.Size(); i++)
       {
-	ost << memuse[i]->Name() << ": " << memuse[i]->NBytes()
-	    << " bytes in " << memuse[i]->NBlocks() << " blocks." << endl;
-	sumbytes += memuse[i]->NBytes();
-	sumblocks += memuse[i]->NBlocks();
+	ost << memuse[i].Name() << ": " << memuse[i].NBytes()
+	    << " bytes in " << memuse[i].NBlocks() << " blocks." << endl;
+	sumbytes += memuse[i].NBytes();
+	sumblocks += memuse[i].NBlocks();
       }
     cout << IM(1) << "total bytes " << sumbytes << " in " << sumblocks << " blocks." << endl;
   }

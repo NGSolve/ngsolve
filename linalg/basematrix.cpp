@@ -59,8 +59,7 @@ namespace ngla
     return (ost << "Print base-matrix" << endl);
   }
 
-  void BaseMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
-  { ; }
+  Array<MemoryUsage> BaseMatrix :: GetMemoryUsage () const { return Array<MemoryUsage>(); } 
 
   size_t BaseMatrix :: NZE () const
   {

@@ -66,6 +66,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh) override;
 
     virtual void DoArchive (Archive & archive) override;
+    Array<MemoryUsage> GetMemoryUsage () const override;
 
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
