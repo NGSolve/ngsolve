@@ -676,6 +676,14 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: SetOrder (NodeId ni, int order) 
   {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In HDivHighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+    
     switch( CoDim(ni.GetType(), ma->GetDimension()) )
       {
       case 1:
@@ -683,6 +691,7 @@ namespace ngcomp
 	  order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
 	break;
       case 0:
+	// TODO: FACE->ELEMENT nr in 2D
 	if (ni.GetNr() < order_inner.Size())
 	  {
 	    order_inner[ni.GetNr()] = order;

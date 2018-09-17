@@ -852,6 +852,14 @@ namespace ngcomp
   
   int H1HighOrderFESpace :: GetOrder (NodeId ni) const
   {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In H1HighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 1)
+      order = 1;
+    
     switch (ni.GetType())
       {
       case NT_VERTEX:
