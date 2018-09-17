@@ -40,15 +40,16 @@ namespace ngcomp
       ost << "  " << parts[i]->Name() << endl;
   }
 
-  void LinearForm :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> LinearForm :: GetMemoryUsage () const
   {
     if (GetVectorPtr())  
       {
-	int olds = mu.Size();
-	GetVectorPtr()->MemoryUsage (mu);
-	for (int i = olds; i < mu.Size(); i++)
-	  mu[i]->AddName (string(" lf ")+GetName());
+	auto mu = GetVectorPtr()->GetMemoryUsage ();
+	for (int i = 0; i < mu.Size(); i++)
+	  mu[i].AddName (string(" lf ")+GetName());
+        return mu;
       }
+    return Array<MemoryUsage>();
   }
 
   template <class SCAL>

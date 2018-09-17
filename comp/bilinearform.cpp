@@ -737,18 +737,20 @@ namespace ngcomp
   }
 
 
-  void BilinearForm :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> BilinearForm :: GetMemoryUsage () const
   {
+    Array<MemoryUsage> mu;
     if (low_order_bilinear_form)
-      low_order_bilinear_form -> MemoryUsage (mu);
+      mu = low_order_bilinear_form -> GetMemoryUsage ();
   
     int olds = mu.Size();
 
     for (int i = 0; i < mats.Size(); i++)
-      if (mats[i]) mats[i]->MemoryUsage (mu);
+      if (mats[i]) mu += mats[i]->GetMemoryUsage ();
 
     for (int i = olds; i < mu.Size(); i++)
-      mu[i]->AddName (string(" bf ")+GetName());
+      mu[i].AddName (string(" bf ")+GetName());
+    return mu;
   }
 
 

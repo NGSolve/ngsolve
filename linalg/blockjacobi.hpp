@@ -172,7 +172,7 @@ namespace ngla
       ;
     }
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+    virtual Array<MemoryUsage> GetMemoryUsage () const
     {
       int nels = 0;
       for (int i = 0; i < blocktable->Size(); i++)
@@ -180,7 +180,7 @@ namespace ngla
 	  int bs = (*blocktable)[i].Size();
 	  nels += bs*bs;
 	}
-      mu.Append (new MemoryUsageStruct ("BlockJac", nels*sizeof(TM), blocktable->Size()));
+      return { MemoryUsage ("BlockJac", nels*sizeof(TM), blocktable->Size()) };
     }
 
 

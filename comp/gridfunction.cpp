@@ -190,17 +190,19 @@ namespace ngcomp
 	<< "nested = " << nested << endl;
   }
 
-  void GridFunction :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> GridFunction :: GetMemoryUsage () const
   {
     //if (&const_cast<GridFunction&> (*this).GetVector())
     if (this->GetVectorPtr())
       {
-	int olds = mu.Size();
+	// int olds = mu.Size();
 	//const_cast<GridFunction&> (*this).GetVector().MemoryUsage (mu);
-	this->GetVector().MemoryUsage (mu);
-	for (int i = olds; i < mu.Size(); i++)
-	  mu[i]->AddName (string(" gf ")+GetName());
+	auto mu = this->GetVector().GetMemoryUsage ();
+	for (int i = 0; i < mu.Size(); i++)
+	  mu[i].AddName (string(" gf ")+GetName());
+        return mu;
       }
+    return Array<MemoryUsage>();
   }
 
 

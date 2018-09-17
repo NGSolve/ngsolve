@@ -237,9 +237,9 @@ namespace ngla
     return sum;
   }
 
-  void BaseVector :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> BaseVector :: GetMemoryUsage () const
   { 
-    ;
+    return Array<MemoryUsage>();
   }
 
   void BaseVector :: SetRandom () 

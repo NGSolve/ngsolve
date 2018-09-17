@@ -279,12 +279,23 @@ namespace ngmg
       }
   }
 
-
+  /*
   void MultigridPreconditioner :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     if (coarsegridpre) coarsegridpre->MemoryUsage (mu);
     if (smoother) smoother->MemoryUsage (mu);
   }
+  */
+  Array<MemoryUsage> MultigridPreconditioner :: GetMemoryUsage () const
+  {
+    Array<MemoryUsage> mem;
+    if (coarsegridpre) mem += coarsegridpre->GetMemoryUsage ();
+    if (smoother) mem += smoother->GetMemoryUsage ();
+    return mem;
+  }
+
+
+  
 
   TwoLevelMatrix :: 
   TwoLevelMatrix (const BaseMatrix * amat, 
@@ -360,11 +371,12 @@ namespace ngmg
 
 
 
-
-  void TwoLevelMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> TwoLevelMatrix :: GetMemoryUsage () const  
   {
-    if (cpre) cpre->MemoryUsage (mu);
-    if (smoother) smoother->MemoryUsage (mu);
+    Array<MemoryUsage> mem;
+    if (cpre) mem += cpre->GetMemoryUsage ();
+    if (smoother) mem += smoother->GetMemoryUsage ();
+    return mem;
   }
 
 

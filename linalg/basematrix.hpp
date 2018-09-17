@@ -71,7 +71,7 @@ namespace ngla
     virtual void SetZero();
 
     virtual ostream & Print (ostream & ost) const;
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
     virtual size_t NZE () const;
     // virtual const void * Data() const;
     // virtual void * Data();

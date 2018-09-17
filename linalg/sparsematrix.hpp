@@ -146,7 +146,7 @@ namespace ngla
 
     ostream & Print (ostream & ost) const;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;    
   };
 
 
@@ -366,9 +366,7 @@ namespace ngla
     virtual ostream & Print (ostream & ost) const;
 
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
-
+    virtual Array<MemoryUsage> GetMemoryUsage () const;    
   };
   
 

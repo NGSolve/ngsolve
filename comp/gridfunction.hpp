@@ -171,9 +171,8 @@ namespace ngcomp
     ///
     virtual void PrintReport (ostream & ost) const;
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
 
-    ///
     // void Visualize(const string & name);
 
     ///
