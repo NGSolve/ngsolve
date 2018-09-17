@@ -186,6 +186,8 @@ public:
   {
     delete [] data; 
     delete [] index;
+    data = nullptr;
+    index = nullptr;
   }
 
   /// Size of table

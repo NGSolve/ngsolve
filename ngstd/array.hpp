@@ -675,6 +675,7 @@ namespace ngstd
     INLINE ~Array()
     {
       delete [] mem_to_delete;
+      mem_to_delete = nullptr;
     }
 
     /// we tell the compiler that there is no need for deleting the array ..
