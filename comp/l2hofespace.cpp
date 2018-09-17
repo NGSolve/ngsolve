@@ -216,7 +216,7 @@ namespace ngcomp
 	    ElementId ei(VOL,i);
 	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
 	    order_inner[i] = Max(order_inner[i], INT<3>(0));
-	    if (!DefinedOn (VOL, ma->GetElIndex (ei)))
+	    if (!DefinedOn (ei))
 	      order_inner[i] = 0;
 	  }
 	if(print) 
@@ -258,10 +258,9 @@ namespace ngcomp
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
-        ElementId ei(VOL, i);
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i]; 
-	switch (ma->GetElType(ei))
+	switch (ma->GetElType(ElementId(VOL,i)))
 	  {
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
@@ -550,7 +549,7 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!ei.IsVolume()) return;
-    if (!DefinedOn (VOL, ma->GetElIndex (ei))) return;
+    if (!DefinedOn (ei)) return;
     
     if (!all_dofs_together)
       dranges.Append (IntRange (ei.Nr(), ei.Nr()+1));
@@ -841,7 +840,7 @@ namespace ngcomp
 	    ElementId ei(BND,i);
 	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
 	    order_inner[i] = Max(order_inner[i], INT<3>(0));
-	    if (!DefinedOn (BND, ma->GetElIndex (ei)))
+	    if (!DefinedOn (ei))
 	      order_inner[i] = 0;
 	  }
     
@@ -853,10 +852,9 @@ namespace ngcomp
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
-        ElementId sei(BND, i);
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i];
-	switch (ma->GetElType(sei))
+	switch (ma->GetElType(ElementId(BND, i)))
 	  {
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
@@ -884,9 +882,7 @@ namespace ngcomp
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNSE()))
       {
-        bool definedon = DefinedOn(ElementId(BND,i));
-        auto r = GetElementDofs(i);
-        ctofdof[r] = definedon ? WIREBASKET_DOF : UNUSED_DOF;
+        ctofdof[GetElementDofs(i)] = DefinedOn(ElementId(BND,i)) ? WIREBASKET_DOF : UNUSED_DOF;
       }
   }
 
@@ -996,7 +992,7 @@ namespace ngcomp
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    if (ei.VB() == BND && DefinedOn(ma->GetElement(ei)))
+    if (ei.VB() == BND && DefinedOn(ei))
       {
         if (ma->GetDimension() == 2)
           {
@@ -1060,14 +1056,12 @@ namespace ngcomp
   GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
-    if (!DefinedOn (ei))
-      return;
-    if(ei.VB()!=BND || !DefinedOn(ei)) return;
+    if (ei.VB()!=BND || !DefinedOn (ei)) return;
+ 
     int first = first_element_dof[ei.Nr()];
     int neldofs = first_element_dof[ei.Nr()+1] - first;
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
-
   }
   
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
@@ -1093,10 +1087,10 @@ namespace ngcomp
 
 
   void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { dnums.SetSize0(); return; }
   
   void  L2SurfaceHighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { dnums.SetSize0(); return; }
   
   void  L2SurfaceHighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { GetDofNrs ( fanr, dnums ); return; }
