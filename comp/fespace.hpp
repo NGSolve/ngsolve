@@ -1281,7 +1281,7 @@ ANY                  1 1 1 1 | 15
     /// add a descriptor
     void AddFESpace (const string & aname, 
 		     shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
-                     DocInfo (*getdocu)());
+                     DocInfo (*getdocu)() = FESpace::GetDocu);
   
     /// returns all creators
     const Array<shared_ptr<FESpaceInfo>> & GetFESpaces() { return fesa; }
