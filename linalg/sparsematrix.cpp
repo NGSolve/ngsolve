@@ -1229,9 +1229,9 @@ namespace ngla
   }
 
 
-  void MatrixGraph :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> MatrixGraph :: GetMemoryUsage () const
   {
-    mu.Append (new MemoryUsageStruct ("MatrixGraph", (nze+size)*sizeof(int), 1));
+    return { { "MatrixGraph", (nze+size)*sizeof(int), 1 } };
   }
 
 
@@ -1637,13 +1637,15 @@ namespace ngla
     return ost;
   }
 
-
+  
   template <class TM>
-  void SparseMatrixTM<TM> ::
-  MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> SparseMatrixTM<TM> ::
+  GetMemoryUsage () const
   {
-    mu.Append (new MemoryUsageStruct ("SparseMatrix", nze*sizeof(TM), 1));
-    if (owner) MatrixGraph::MemoryUsage (mu);
+    Array<MemoryUsage> mu;
+    mu += { "SparseMatrix", nze*sizeof(TM), 1 };
+    if (owner) mu += MatrixGraph::GetMemoryUsage ();
+    return mu;
   }
 
 

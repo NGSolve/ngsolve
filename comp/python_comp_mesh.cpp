@@ -615,7 +615,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          [](MeshAccess & ma)
           {
             ma.Refine();
-          },
+          },py::call_guard<py::gil_scoped_release>(),
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP",

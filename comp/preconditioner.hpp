@@ -48,7 +48,7 @@ namespace ngcomp
     ///
     virtual bool LaterUpdate (void) { return laterupdate; }
     ///
-    virtual void Update () = 0;
+    virtual void Update ()  override = 0;
     ///
     virtual void CleanUpLevel () { ; }
     ///
@@ -62,10 +62,10 @@ namespace ngcomp
       return BaseMatrix::SharedFromThis<BaseMatrix>();
     }
 
-    virtual bool IsComplex() const { return GetMatrix().IsComplex(); }
+    virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
         
     ///
-    virtual void Mult (const BaseVector & x, BaseVector & y) const
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
       GetMatrix().Mult(x, y);
     }
@@ -92,18 +92,18 @@ namespace ngcomp
     { return "base-class Preconditioner"; }
 
 
-    virtual void PrintReport (ostream & ost) const
+    virtual void PrintReport (ostream & ost) const override
     {
       ost << "type = " << ClassName() << endl;
     }
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+    virtual Array<MemoryUsage> GetMemoryUsage () const override
     {
-      cout << "MemoryUsage not implemented for preconditioner " << ClassName() << endl;
+      throw Exception(string("MemoryUsage not implemented for preconditioner ")+ClassName());
     }
 
-    virtual int VHeight() const { return GetMatrix().VHeight();}
-    virtual int VWidth() const { return GetMatrix().VWidth();}
+    virtual int VHeight() const override { return GetMatrix().VHeight();}
+    virtual int VWidth() const override { return GetMatrix().VWidth();}
 
     void Test () const;
     void Timing () const;
@@ -264,29 +264,29 @@ namespace ngcomp
 
     void FreeSmootherMem(void);
 
-    virtual void FinalizeLevel (const BaseMatrix * mat)
+    virtual void FinalizeLevel (const BaseMatrix * mat) override
     {
       Update();
     }
 
     ///
-    virtual void Update ();
+    virtual void Update () override;
     ///
-    virtual void CleanUpLevel ();
+    virtual void CleanUpLevel () override;
     ///
-    virtual const BaseMatrix & GetMatrix() const;
+    virtual const BaseMatrix & GetMatrix() const override;
     ///
-    virtual const BaseMatrix & GetAMatrix() const
+    virtual const BaseMatrix & GetAMatrix() const override
     {
       return bfa->GetMatrix();
     }
     ///
-    virtual const char * ClassName() const
+    virtual const char * ClassName() const override
     { return "Multigrid Preconditioner"; }
 
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     void MgTest () const;
   };

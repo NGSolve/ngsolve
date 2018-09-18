@@ -150,8 +150,8 @@ namespace ngfem
 
 
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    int i = 0;
-    for ( ; i < hir.Size()-1; i+=2)
+    size_t i = 0;
+    for ( ; i+2 <= hir.Size(); i+=2)
       {
         /*
         Vec<DIM,SIMD<double>> pt1 = hir[i];

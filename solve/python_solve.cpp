@@ -699,14 +699,18 @@ void ExportVisFunctions(py::module &m) {
             min = std::numeric_limits<float>::max();
             max = std::numeric_limits<float>::lowest();
             auto nf = ma->GetNFacets();
+            BitArray fine_facet(nf);
+            fine_facet.Clear();
+            for(auto el : ma->Elements(VOL))
+              for(auto fnr : ma->GetElFacets(el))
+                fine_facet.Set(fnr);
             // position of facet in result array
-            vector<int> position;
-            position.reserve(nf);
+            Array<int> position(nf);
             map<ngfem::ELEMENT_TYPE, int> count;
-            for(auto i : Range(nf))
-              position.push_back(-1);
+            position = -1;
             for(auto fnr : Range(ma->GetNFacets()))
-              position[fnr] = count[ma->GetFacetType(fnr)]++;
+                if(fine_facet[fnr])
+                  position[fnr] = count[ma->GetFacetType(fnr)]++;
 
             for(auto et : irs)
               {
@@ -736,7 +740,7 @@ void ExportVisFunctions(py::module &m) {
                                       for(auto j : Range(nip))
                                         ir_facet[j].SetFacetNr(i);
                                       int values_per_element = nip * ncomps;
-                                      size_t first = fnrs[i] * values_per_element;
+                                      size_t first = position[fnrs[i]] * values_per_element;
                                       size_t next = first + values_per_element;
                                       auto& mir = trafo(ir_facet, mlh);
                                       if(cf->IsComplex())

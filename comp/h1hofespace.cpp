@@ -244,7 +244,17 @@ namespace ngcomp
     ;
   }
 
+  DocInfo H1HighOrderFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu();
+    docu.Arg("wb_withedges") = "bool = true(3D) / false(2D)\n"
+      "  use lowest-order edge dofs for BDDC wirebasket";
+    docu.Arg("wb_fulledges") = "bool = false\n"
+      "  use all edge dofs for BDDC wirebasket";
+    return docu;
+  }
 
+  
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
     static Timer timer ("H1HighOrderFESpace::Update");
@@ -686,6 +696,16 @@ namespace ngcomp
     archive & level_adapted_order & nodalp2;
   }
 
+  Array<MemoryUsage> H1HighOrderFESpace :: GetMemoryUsage () const
+  {
+    auto mu = FESpace::GetMemoryUsage();
+    mu += { "H1HighOrder::order_inner", order_inner.Size()*sizeof(INT<3,TORDER>), 1 };
+    mu += { "H1HighOrder::order_face", order_face.Size()*sizeof(INT<2,TORDER>), 1 };
+    mu += { "H1HighOrder::order_edge", order_edge.Size()*sizeof(TORDER), 1 };
+    return mu;
+  }
+
+  
   Timer tgetfe("H1FESpace::GetFE");
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {

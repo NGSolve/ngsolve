@@ -129,11 +129,12 @@ void NGS_Object :: PrintReport (ostream & ost) const
   ost << typeid(*this).name();
 }
 
-
-void NGS_Object :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
-{
-  cout << "MemoryUsage not implemented for class " << GetClassName() << endl;
-}
-
+  
+  Array<MemoryUsage> NGS_Object :: GetMemoryUsage () const
+  {
+    cout << "MemoryUsage not overloaded for class " << GetClassName() << endl;
+    return Array<MemoryUsage>();
+  }
+  
  
 } // namespace

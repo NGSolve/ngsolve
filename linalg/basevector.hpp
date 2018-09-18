@@ -239,7 +239,7 @@ namespace ngla
     virtual void SaveText(ostream & ost) const;
     virtual void LoadText(istream & ist);
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
     virtual size_t CheckSum () const;
     // 
     // virtual shared_ptr<BaseVector> CreateVector () const = 0;

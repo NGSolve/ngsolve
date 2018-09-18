@@ -106,9 +106,8 @@ namespace ngcomp
     ///
     virtual void PrintReport (ostream & ost) const;
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
-
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
+      
     virtual void AddElementVector (FlatArray<int> dnums,
                                    FlatVector<double> elvec,
 				   int cachecomp = -1);

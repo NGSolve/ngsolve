@@ -8,10 +8,6 @@
    High Order Finite Element Space for L2
 */
 
-/* ***********************************************
-To do: *Internal External Dofs (eliminate internal) 
-       *Flag for low-order dofs eliminated ...   
-************************* */ 
 
 #include <comp.hpp>
 #include <multigrid.hpp>
@@ -180,6 +176,44 @@ namespace ngcomp
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
   { ; }
 
+  DocInfo L2HighOrderFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu(); 
+    docu.short_docu = "An L2-conforming finite element space.";
+    docu.long_docu =
+      R"raw_string(The L2 finite element space consists of element-wise polynomials,
+which are discontinuous from element to element. It uses an
+L2-orthogonal hierarchical basis which leads to orthogonal
+mass-matrices on non-curved elements.
+
+Boundary values are not meaningful for an L2 function space.
+
+The L2 space supports element-wise variable order, which can be set
+for ELEMENT-nodes.
+
+Per default, all dofs are local dofs and are condensed if static
+condensation is performed. The lowest order can be kept in the
+WIRE_BASKET via the flag 'lowest_order_wb=True'.
+
+All dofs can be hidden. Then the basis functions don't show up in the
+global system.
+)raw_string";
+    
+    docu.Arg("all_dofs_together") = "bool = False\n"
+      "  Change ordering of dofs. If this flag ist set,\n"
+      "  all dofs of an element are ordered successively.\n"
+      "  Otherwise, the lowest order dofs (the constants)\n"
+      "  of all elements are ordered first.";
+
+    docu.Arg("lowest_order_wb") = "bool = False\n"
+      "  Keep lowest order dof in WIRE_BASKET";
+
+    docu.Arg("hide_all_dofs") = "bool = False\n"
+      "  Set all used dofs to HIDDEN_DOFs";
+    return docu;
+  }
+
+  
   shared_ptr<FESpace> L2HighOrderFESpace :: 
   Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
@@ -586,7 +620,7 @@ namespace ngcomp
     if (order < 0)
       order = 0;
 
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 0)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
       {
 	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
@@ -604,7 +638,7 @@ namespace ngcomp
   
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
   {
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 0)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
       {
 	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
@@ -912,7 +946,7 @@ namespace ngcomp
     if (order < 0)
       order = 0;
 
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       {
 	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
 	  {
@@ -930,7 +964,7 @@ namespace ngcomp
   
   int L2SurfaceHighOrderFESpace ::GetOrder (NodeId ni) const
   {
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       {
 	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
 	  {
@@ -2005,9 +2039,9 @@ namespace ngcomp
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create);
-      GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO);
-      GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create, L2HighOrderFESpace::GetDocu);
+      GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO, L2HighOrderFESpace::GetDocu);
+      GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create, L2SurfaceHighOrderFESpace::GetDocu);
     }
     
     Init init;
