@@ -13,23 +13,27 @@ namespace ngstd
 /**
    Reports amount of used memory
  */
-class MemoryUsageStruct
+class MemoryUsage
 {
 protected:
   string name;
-  int nbytes;
-  int nblocks;
+  size_t nbytes;
+  size_t nblocks;
 public:
-  MemoryUsageStruct (const string & aname,
-		     int anbytes,
-		     int anblocks)
+  MemoryUsage () = default;
+  MemoryUsage (const string & aname,
+               size_t anbytes, size_t anblocks)
     : name(aname), nbytes(anbytes), nblocks(anblocks)
   { ; }
-
+  MemoryUsage (const MemoryUsage &) = default;
+  MemoryUsage (MemoryUsage &&) = default;
+  MemoryUsage & operator= (const MemoryUsage &) = default;
+  MemoryUsage & operator= (MemoryUsage &&) = default;
+  
   void AddName (const string & aname) { name += aname; }
   const string & Name() const { return name; }
-  int NBytes () const { return nbytes; }
-  int NBlocks () const { return nblocks; }
+  size_t NBytes () const { return nbytes; }
+  size_t NBlocks () const { return nblocks; }
 };
 
 }

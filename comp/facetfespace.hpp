@@ -52,6 +52,7 @@ namespace ngcomp
     FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~FacetFESpace ();
+    static DocInfo GetDocu();
     ///
     virtual string GetClassName () const override
     {

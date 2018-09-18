@@ -113,10 +113,12 @@ template<class TM,
     ///
     virtual ostream & Print (ostream & ost) const;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+    virtual Array<MemoryUsage> GetMemoryUsage () const
     {
-      mu.Append (new MemoryUsageStruct ("SuperLUInverse", nze*sizeof(TM), 1));
+      return { MemoryUsage ("SuperLUInverse", nze*sizeof(TM), 1) };
     }
+
+    
 
 /*    ///
     void Set (int i, int j, const TM & val);

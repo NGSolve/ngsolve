@@ -244,6 +244,8 @@ ANY                  1 1 1 1 | 15
     /// cleanup
     virtual ~FESpace ();
 
+    static DocInfo GetDocu ();
+    
     /// update dof-table
     virtual void Update(LocalHeap & lh);
 
@@ -262,11 +264,13 @@ ANY                  1 1 1 1 | 15
     const Table<int> & FacetColoring() const;
     
     /// print report to stream
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
 
     /// Dump/restore fespace
     virtual void DoArchive (Archive & archive);
 
+    Array<MemoryUsage> GetMemoryUsage () const override;
+    
     /// order of finite elements
     int GetOrder () const { return order; }
 
@@ -1257,10 +1261,13 @@ ANY                  1 1 1 1 | 15
       string name;
       /// function pointer to creator function
       shared_ptr<FESpace> (*creator)(shared_ptr<MeshAccess> ma, const Flags & flags);
+      /// function pointer to docu function
+      DocInfo (*getdocu)();
       /// creates a descriptor
       FESpaceInfo (const string & aname,
-		   shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags))
-	: name(aname), creator(acreator) {;}
+		   shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
+                   DocInfo (*agetdocu)())
+	: name(aname), creator(acreator), getdocu(agetdocu) {;}
     };
   private:
     Array<shared_ptr<FESpaceInfo>> fesa;
@@ -1273,7 +1280,8 @@ ANY                  1 1 1 1 | 15
 
     /// add a descriptor
     void AddFESpace (const string & aname, 
-		     shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags));
+		     shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
+                     DocInfo (*getdocu)() = FESpace::GetDocu);
   
     /// returns all creators
     const Array<shared_ptr<FESpaceInfo>> & GetFESpaces() { return fesa; }
@@ -1305,7 +1313,7 @@ ANY                  1 1 1 1 | 15
     /// constructor registers fespace
     RegisterFESpace (string label)
     {
-      GetFESpaceClasses().AddFESpace (label, Create);
+      GetFESpaceClasses().AddFESpace (label, Create, FES::GetDocu);
       // cout << "register fespace '" << label << "'" << endl;
     }
     

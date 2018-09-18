@@ -594,14 +594,14 @@ namespace ngcomp
     if (order < 0)
       order = 0;
     
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       if (ni.GetNr() < order_facet.Size())
 	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
   }
   
   int VectorFacetFESpace :: GetOrder (NodeId ni) const
   {
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       if (ni.GetNr() < order_facet.Size())
 	return order_facet[ni.GetNr()][0];
      

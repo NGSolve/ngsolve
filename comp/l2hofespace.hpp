@@ -41,6 +41,9 @@ namespace ngcomp
     L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~L2HighOrderFESpace ();
+
+    static DocInfo GetDocu ();
+    
     // Create if order=0 ElementFESpace Constructor, else L2HOFE 
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
     // Creates also for order=0 a L2HighOrderFESpace 

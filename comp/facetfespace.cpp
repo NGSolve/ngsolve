@@ -193,7 +193,44 @@ namespace ngcomp
   FacetFESpace :: ~FacetFESpace ()
   { ; }
 
+  DocInfo FacetFESpace :: GetDocu()
+  {
+    DocInfo docu = FESpace::GetDocu();
 
+    docu.short_docu = "A finite element space living on facets.";
+      
+    docu.long_docu =
+      R"raw_string(The FacetFESpace provides polynomials on facets, i.e. faces in 3D,
+edges in 2D, and vertices in 1D. The functions are discontinuous from facet to facet.
+
+Typecal usecases for the FacetFESpace are hybrid mixed and hybrid DG methods.
+
+The function is only defined on the mesh skeleton. Evaluation inside the element throws
+an exception. Thus, functions from the FacetFESpace can be used only within element_boundary 
+or skeleton expressions. 
+
+Functions have meaningful boundary-values, which are obtained using the Trace-operator.
+(the trace operator might become redundant in future).
+
+(coming soon) The FacetFESpace provides variable order, which can be set for FACET-nodes. Alternatively,
+one can use FACE, EDGE, or VERTEX nodes for 3D, 2D, or 1D meshes, respectively.
+
+The basis is L2-orthogonal on the facets. The highest order basis functions can be duplicated
+for the two neighbouring elements. This allows a simple implementation of the Lehrenfeld-Schoeberl
+'projected jumps' HDG method.
+)raw_string";
+                   
+    docu.Arg("highest_order_dc") = "bool = False\n"
+      "  Splits highest order facet functions into two which are associated with\n"
+      "  the corresponding neighbors and are local dofs on the corresponding element\n"
+      "  (used to realize projected jumps)";
+    docu.Arg("hide_highest_order_dc") = "bool = False\n"
+      "  if highest_order_dc is used this flag marks the corresponding local dofs\n"
+      "  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n"
+      "  can also be compressed.";
+    return docu;
+  }
+  
   void FacetFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
@@ -836,14 +873,14 @@ namespace ngcomp
     if (order < 0)
       order = 0;
     
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       if (ni.GetNr() < order_facet.Size())
 	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
   }
   
   int FacetFESpace :: GetOrder (NodeId ni) const
   {
-    if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       if (ni.GetNr() < order_facet.Size())
 	return order_facet[ni.GetNr()][0];
      

@@ -921,10 +921,12 @@ namespace ngmg
     return biform.GetMatrix(level).CreateVector();
   }
 
-  void BlockSmoother :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> BlockSmoother :: GetMemoryUsage () const
   {
+    Array<MemoryUsage> mu;
     for (int i = 0; i < jac.Size(); i++)
-      if (jac[i]) jac[i]->MemoryUsage (mu);
+      if (jac[i]) mu += jac[i]->GetMemoryUsage ();
+    return mu;
   }
 
 

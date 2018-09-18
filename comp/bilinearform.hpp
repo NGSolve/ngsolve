@@ -378,7 +378,7 @@ namespace ngcomp
     virtual void PrintReport (ostream & ost) const;
 
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
 
     /// creates a compatible vector
     virtual shared_ptr<BaseVector> CreateVector() const = 0;

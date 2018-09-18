@@ -54,6 +54,9 @@ namespace ngcomp
     ///
     virtual ~H1HighOrderFESpace ();
 
+    static DocInfo GetDocu ();
+
+    
     virtual string GetClassName () const override
     {
       return "H1HighOrderFESpace";
@@ -63,6 +66,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh) override;
 
     virtual void DoArchive (Archive & archive) override;
+    Array<MemoryUsage> GetMemoryUsage () const override;
 
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
