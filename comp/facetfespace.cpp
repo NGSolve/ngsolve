@@ -238,112 +238,117 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     if(print) 
       *testout << " FacetFEspace with order " << order << " rel_order " << rel_order << " var_order " << var_order << endl; 
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
     if (low_order_space)
       low_order_space -> Update(lh);
 
     nel = ma->GetNE();
     nfa = ma->GetNFacets(); 
-    
-    int p = 0; 
-    if(!var_order) p = order; 
-    
-    order_facet.SetSize(nfa);
-    order_facet = p;
 
-    fine_facet.SetSize(nfa);
-    fine_facet = false; 
-    
-    Array<int> fanums;
-
-    for (Ngs_Element el : ma->Elements<BND>())
-      if (DefinedOn(el))
-	fine_facet[el.Facets()] = true;
-    
-    for (int i = 0; i < nel; i++)
+    if (first_update)
       {
-        ElementId ei(VOL, i);
-        if (!DefinedOn(ei)) continue;
-	ELEMENT_TYPE eltype=ma->GetElType(ei); 
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
+	int p = 0; 
+	if(!var_order) p = order; 
+    
+	order_facet.SetSize(nfa);
+	order_facet = p;
+
+	fine_facet.SetSize(nfa);
+	fine_facet = false; 
+    
+	Array<int> fanums;
+
+	for (Ngs_Element el : ma->Elements<BND>())
+	  if (DefinedOn(el))
+	    fine_facet[el.Facets()] = true;
+    
+	for (int i = 0; i < nel; i++)
+	  {
+	    ElementId ei(VOL, i);
+	    if (!DefinedOn(ei)) continue;
+	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
+	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
-	if (ma->GetDimension() == 2)
-	  {
-            /*
-	    ma->GetElEdges (ei, fanums);
-	    for (int j=0;j<fanums.Size();j++) 
-	      fine_facet[fanums[j]] = 1; 
-            */
-            auto fanums = ma->GetElEdges(ei);
-            for (auto f : fanums)
-              fine_facet[f] = true;
+	    if (ma->GetDimension() == 2)
+	      {
+		/*
+		  ma->GetElEdges (ei, fanums);
+		  for (int j=0;j<fanums.Size();j++) 
+		  fine_facet[fanums[j]] = 1; 
+		*/
+		auto fanums = ma->GetElEdges(ei);
+		for (auto f : fanums)
+		  fine_facet[f] = true;
             
-	    if(var_order)
-	      {
-                INT<3> el_orders = ma->GetElOrders(i); 
-
-                const EDGE * edges = ElementTopology::GetEdges (eltype);
-                for(int j=0; j<fanums.Size(); j++)
-		  for(int k=0;k<2;k++)
-		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		      { 
-			order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
-			break; 
-		      }
-	      }
-	  }
-	else
-	  {
-	    // Array<int> elfaces,vnums;
-	    // ma->GetElFaces(ei,elfaces);
-            auto elfaces = ma->GetElFaces(ei); 
-	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
-	    
-	    if(var_order) 
-	      {
-                INT<3> el_orders = ma->GetElOrders(i); 
-
-		// ma->GetElVertices (i, vnums);
-                auto vnums = ma->GetElVertices(ei);
-		const FACE * faces = ElementTopology::GetFaces (eltype);
-		for(int j=0;j<elfaces.Size();j++)
+		if(var_order)
 		  {
-		    if(faces[j][3]==-1) // trig  
-		      {
-			order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
-			order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
-		      }
-		    else //quad_face
-		      {
-			int fmax = 0;
-			for(int k = 1; k < 4; k++) 
-			  if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-					
-			INT<2> f((fmax+3)%4,(fmax+1)%4); 
-			if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-			
-			// fmax > f[0] > f[1]
-			// p[0] for direction fmax,f[0] 
-			// p[1] for direction fmax,f[1] 
-			for(int l=0;l<2;l++)
-			  for(int k=0;k<3;k++)
-			    if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-			      {
-				order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
-				break; 
-			      } 
-			
-		      }
+		    INT<3> el_orders = ma->GetElOrders(i); 
+
+		    const EDGE * edges = ElementTopology::GetEdges (eltype);
+		    for(int j=0; j<fanums.Size(); j++)
+		      for(int k=0;k<2;k++)
+			if(points[edges[j][0]][k] != points[edges[j][1]][k])
+			  { 
+			    order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
+			    break; 
+			  }
 		  }
 	      }
+	    else
+	      {
+		// Array<int> elfaces,vnums;
+		// ma->GetElFaces(ei,elfaces);
+		auto elfaces = ma->GetElFaces(ei); 
+		for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
-	  }
+		if(var_order) 
+		  {
+		    INT<3> el_orders = ma->GetElOrders(i); 
+
+		    // ma->GetElVertices (i, vnums);
+		    auto vnums = ma->GetElVertices(ei);
+		    const FACE * faces = ElementTopology::GetFaces (eltype);
+		    for(int j=0;j<elfaces.Size();j++)
+		      {
+			if(faces[j][3]==-1) // trig  
+			  {
+			    order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
+			    order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
+			  }
+			else //quad_face
+			  {
+			    int fmax = 0;
+			    for(int k = 1; k < 4; k++) 
+			      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+					
+			    INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+			
+			    // fmax > f[0] > f[1]
+			    // p[0] for direction fmax,f[0] 
+			    // p[1] for direction fmax,f[1] 
+			    for(int l=0;l<2;l++)
+			      for(int k=0;k<3;k++)
+				if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+				  {
+				    order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
+				    break; 
+				  } 
+			
+			  }
+		      }
+		  }
+	    
+	      }
 	
-      }
+	  }
     
 
-    for (int i = 0; i < nfa; i++)
-      if (!fine_facet[i]) order_facet[i] = 0;
-
+	for (int i = 0; i < nfa; i++)
+	  if (!fine_facet[i]) order_facet[i] = 0;
+      }
     // distribute dofs
     ncfa = 0; 
     //ndof = nfa; // low_order space
@@ -858,6 +863,30 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     return spclusters;
   }
 
+   void FacetFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In FacetFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+    
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_facet.Size())
+	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+  }
+  
+  int FacetFESpace :: GetOrder (NodeId ni) const
+  {
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_facet.Size())
+	return order_facet[ni.GetNr()][0];
+     
+    return 0;
+  }
+
 
 
 
@@ -1160,6 +1189,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     return make_shared<Table<int>> (creator.MoveTable());
   }
 
+ 
 
   
   // ------------------------------------------------------------------------

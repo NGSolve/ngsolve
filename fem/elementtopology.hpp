@@ -69,7 +69,6 @@ namespace ngfem
   }
   // INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
-
   INLINE constexpr int Dim (ELEMENT_TYPE et)
   {
     return (et == ET_POINT) ? 0 :

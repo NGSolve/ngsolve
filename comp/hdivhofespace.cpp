@@ -263,6 +263,9 @@ namespace ngcomp
     rel_curl_order= rel_order; 
     curl_order = order; 
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
     if (low_order_space)
       low_order_space -> Update(lh);
     
@@ -270,132 +273,135 @@ namespace ngcomp
     size_t nel = ma->GetNE();
     size_t nfa = ma->GetNFacets();
     size_t dim = ma->GetDimension();
-       
-    order_facet.SetSize(nfa);
-    order_inner.SetSize(nel); 
-    order_inner_curl.SetSize(nel); 
-    fine_facet.SetSize(nfa); 
-    boundary_facet.SetSize(nfa); 
-    
-    boundary_facet = false;
-    /*
-    for (int i = 0; i < ma->GetNSE(); i++)
+
+    if (first_update)
       {
-	Array<int> elfacets; 
-	ma->GetSElFacets (i,elfacets); 
-	boundary_facet[elfacets[0]] = true;
-      }
-    */
-    for (auto el : ma->Elements(BND))
-      boundary_facet[el.Facets()] = true;
-
-    // cout << " order hdiv " << order << endl; 
-    // cout << " curl_order hdiv " << curl_order << endl; 
-
-    int p = 0, pc = 0; 
-    
-    if(!var_order)
-      {
-	p = order; 
-	pc = curl_order; 
-      } 
-    
-    order_facet = pc;
-    order_inner = p;
-    order_inner_curl = pc;
-    fine_facet = 0; //!!!! 
-
-
-    for (auto el : ma->Elements(VOL))
-      {
-        if (!DefinedOn (el))
-          {
-            order_inner[el.Nr()] = 0;
-            order_inner_curl[el.Nr()] = 0;
-            continue;
-          }
-          
-	ELEMENT_TYPE eltype = el.GetType();
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);
-	
-	// Array<int> elfacets; 
-	// ma->GetElFacets (el.Nr(), elfacets); 
-	// auto elfacets = ma->GetElFacets (el);
-        auto elfacets = el.Facets();
-        
-        fine_facet[elfacets] = true;
-	
-	if(!var_order) continue; 
-	
-	INT<3> el_orders = ma->GetElOrders(el.Nr());  
-	
-        int i = el.Nr();
-	for(int k=0;k<dim;k++)
+	order_facet.SetSize(nfa);
+	order_inner.SetSize(nel); 
+	order_inner_curl.SetSize(nel); 
+	fine_facet.SetSize(nfa); 
+	boundary_facet.SetSize(nfa); 
+   
+	boundary_facet = false;
+	/*
+	  for (int i = 0; i < ma->GetNSE(); i++)
 	  {
-	    order_inner_curl[i][k]= max2(el_orders[k] + rel_curl_order,0);
-	    order_inner[i][k] = max2(el_orders[k]+rel_order,0);
+	  Array<int> elfacets; 
+	  ma->GetSElFacets (i,elfacets); 
+	  boundary_facet[elfacets[0]] = true;
 	  }
+	*/
+	for (auto el : ma->Elements(BND))
+	  boundary_facet[el.Facets()] = true;
 
-	if(dim==2)
-	  {
-	    const EDGE * edges = ElementTopology::GetEdges (eltype);
-	    for(int j=0; j<elfacets.Size(); j++)
-	      for(int k=0;k<2;k++)
-		if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		  { 
-		    order_facet[elfacets[j]][0] = max2(el_orders[k]+rel_curl_order, order_facet[elfacets[j]][0]);
-		    break; 
-		  }
-	  }
-	else
-	  {
-	    // Array<int> vnums (el.Vertices());
-            auto vnums = el.Vertices();
-	    const FACE * faces = ElementTopology::GetFaces (eltype);
+	// cout << " order hdiv " << order << endl; 
+	// cout << " curl_order hdiv " << curl_order << endl; 
 
-	    for(int j = 0; j < elfacets.Size(); j++)
+	int p = 0, pc = 0; 
+    
+	if(!var_order)
+	  {
+	    p = order; 
+	    pc = curl_order; 
+	  } 
+    
+	order_facet = pc;
+	order_inner = p;
+	order_inner_curl = pc;
+	fine_facet = 0; //!!!! 
+
+
+	for (auto el : ma->Elements(VOL))
+	  {
+	    if (!DefinedOn (el))
 	      {
-		if(faces[j][3]==-1) // trig  
+		order_inner[el.Nr()] = 0;
+		order_inner_curl[el.Nr()] = 0;
+		continue;
+	      }
+          
+	    ELEMENT_TYPE eltype = el.GetType();
+	    const POINT3D * points = ElementTopology :: GetVertices (eltype);
+	
+	    // Array<int> elfacets; 
+	    // ma->GetElFacets (el.Nr(), elfacets); 
+	    // auto elfacets = ma->GetElFacets (el);
+	    auto elfacets = el.Facets();
+        
+	    fine_facet[elfacets] = true;
+	
+	    if(!var_order) continue; 
+	
+	    INT<3> el_orders = ma->GetElOrders(el.Nr());  
+	
+	    int i = el.Nr();
+	    for(int k=0;k<dim;k++)
+	      {
+		order_inner_curl[i][k]= max2(el_orders[k] + rel_curl_order,0);
+		order_inner[i][k] = max2(el_orders[k]+rel_order,0);
+	      }
+
+	    if(dim==2)
+	      {
+		const EDGE * edges = ElementTopology::GetEdges (eltype);
+		for(int j=0; j<elfacets.Size(); j++)
+		  for(int k=0;k<2;k++)
+		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
+		      { 
+			order_facet[elfacets[j]][0] = max2(el_orders[k]+rel_curl_order, order_facet[elfacets[j]][0]);
+			break; 
+		      }
+	      }
+	    else
+	      {
+		// Array<int> vnums (el.Vertices());
+		auto vnums = el.Vertices();
+		const FACE * faces = ElementTopology::GetFaces (eltype);
+
+		for(int j = 0; j < elfacets.Size(); j++)
 		  {
-		    order_facet[elfacets[j]][0] = max2(order_facet[elfacets[j]][0],el_orders[0]+rel_curl_order);
-		    order_facet[elfacets[j]][1] = order_facet[elfacets[j]][0]; 
-		  }
-		else //quad_face
-		  {
-		    int fmax = 0;
-		    for(int k = 1; k < 4; k++) 
-		      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+		    if(faces[j][3]==-1) // trig  
+		      {
+			order_facet[elfacets[j]][0] = max2(order_facet[elfacets[j]][0],el_orders[0]+rel_curl_order);
+			order_facet[elfacets[j]][1] = order_facet[elfacets[j]][0]; 
+		      }
+		    else //quad_face
+		      {
+			int fmax = 0;
+			for(int k = 1; k < 4; k++) 
+			  if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
 		    
-		    INT<2> f((fmax+3)%4,(fmax+1)%4); 
-		    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+			INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
 		    
-		    // fmax > f[0] > f[1]
-		    // p[0] for direction fmax,f[0] 
-		    // p[1] for direction fmax,f[1] 
-		    for(int l=0;l<2;l++)
-		      for(int k=0;k<3;k++)
-                        if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-                          {
-                            order_facet[elfacets[j]][l] = max2(order_facet[elfacets[j]][l], rel_curl_order + 
-                                                              el_orders[k]);
-                            break; 
-                          } 
+			// fmax > f[0] > f[1]
+			// p[0] for direction fmax,f[0] 
+			// p[1] for direction fmax,f[1] 
+			for(int l=0;l<2;l++)
+			  for(int k=0;k<3;k++)
+			    if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+			      {
+				order_facet[elfacets[j]][l] = max2(order_facet[elfacets[j]][l], rel_curl_order + 
+								   el_orders[k]);
+				break; 
+			      } 
 		    
+		      }
 		  }
 	      }
 	  }
+
+	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE,
+				fine_facet, MPI_LOR);
+
+	if(uniform_order_inner > -1) order_inner = uniform_order_inner;
+	if(uniform_order_facet > -1) order_facet = uniform_order_facet;
+
+	for (auto i : Range(nfa)) if (!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
+
+	// by SZ ... since order_inner_curl is not working yet for hdivhofe
+	order_inner_curl = order_inner;
       }
-
-    ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE,
-			   fine_facet, MPI_LOR);
-
-    if(uniform_order_inner > -1) order_inner = uniform_order_inner;
-    if(uniform_order_facet > -1) order_facet = uniform_order_facet;
-
-    for (auto i : Range(nfa)) if (!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
-
-    // by SZ ... since order_inner_curl is not working yet for hdivhofe
-    order_inner_curl = order_inner; 
     
     if(print) 
       {
@@ -421,7 +427,7 @@ namespace ngcomp
     first_facet_dof.SetSize(nfa+1); 
     first_inner_dof.SetSize(nel+1); 
 
-    ndof = nfa; 
+    ndof = nfa;
     first_facet_dof = ndof; 
 
     if(dim==2)
@@ -433,7 +439,7 @@ namespace ngcomp
             int inc = fine_facet[i] ? order_facet[i][0] : 0;
 	    if (highest_order_dc && !boundary_facet[i]) inc--;
             if (inc > 0) ndof += inc;
-
+	   
             /*
             if(fine_facet[i])
 	      ndof += order_facet[i][0];
@@ -482,7 +488,7 @@ namespace ngcomp
 
             first_inner_dof[i] = ndof;
             if (inci > 0) ndof+=inci;
-          }
+	  }
         first_inner_dof[nel] = ndof;
 
 
@@ -539,7 +545,7 @@ namespace ngcomp
             if (inci < 0) inci = 0;
             first_facet_dof[i] = ndof;
             ndof+= inci;
-
+	    
           }
         first_facet_dof[nfa] = ndof;
 	 
@@ -589,7 +595,7 @@ namespace ngcomp
             if (inci < 0) inci = 0;
             first_inner_dof[i] = ndof;
             ndof+= inci;
-          }
+	  }
         first_inner_dof[nel] = ndof;
 
 
@@ -657,6 +663,7 @@ namespace ngcomp
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
+
     //    prol->Update();
   }
 
@@ -682,6 +689,71 @@ namespace ngcomp
     
     for (auto el : Range (ma->GetNE()))
       ctofdof[GetElementDofs(el)] = local_ct;
+  }
+
+
+  void HDivHighOrderFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In HDivHighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+    
+    switch( CoDimension(ni.GetType(), ma->GetDimension()) )
+      {
+      case 1:
+	if (ni.GetNr() < order_facet.Size())
+	  order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+	break;
+      case 0:
+        if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      {
+		order_inner[elnr[0]] = order;
+		order_inner_curl[elnr[0]] = order;
+	      }
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+	  {
+	    order_inner[ni.GetNr()] = order;
+	    order_inner_curl[ni.GetNr()] = order;
+	  }
+	break;
+      default:
+	break;
+      }
+  }
+  
+  int HDivHighOrderFESpace :: GetOrder (NodeId ni) const
+  {
+    switch( CoDimension(ni.GetType(), ma->GetDimension()) )
+      {
+      case 1:
+	if (ni.GetNr() < order_facet.Size())
+	  return order_facet[ni.GetNr()][0];
+	break;
+      case 0:
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+	  return order_inner[ni.GetNr()][0];
+	break;
+      default:
+	break;
+      }
+    
+    return 0;
   }
 
 

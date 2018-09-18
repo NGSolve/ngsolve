@@ -231,24 +231,31 @@ global system.
     if(low_order_space) low_order_space -> Update(lh);
 
     nel = ma->GetNE();
-    order_inner.SetSize(nel); 
- 
-    order_inner = INT<3>(order);
 
-    if(var_order) 
-      for(int i = 0; i < nel; i++) 
-        order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
-    
-    for(int i = 0; i < nel; i++) 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+
+    if (first_update)
       {
-        ElementId ei(VOL,i);
-        order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
-        order_inner[i] = Max(order_inner[i], INT<3>(0));
-        if (!DefinedOn (VOL, ma->GetElIndex (ei)))
-          order_inner[i] = 0;
+	order_inner.SetSize(nel); 
+	
+	order_inner = INT<3>(order);
+	
+	if(var_order) 
+	  for(int i = 0; i < nel; i++) 
+	    order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
+    
+	for(int i = 0; i < nel; i++) 
+	  {
+	    ElementId ei(VOL,i);
+	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    if (!DefinedOn (ei))
+	      order_inner[i] = 0;
+	  }
+	if(print) 
+	  *testout << " order_inner (l2ho) " << order_inner << endl;
       }
-    if(print) 
-      *testout << " order_inner (l2ho) " << order_inner << endl; 
 
     UpdateDofTables();
     while (ma->GetNLevels() > ndlevel.Size())
@@ -285,10 +292,9 @@ global system.
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
-        ElementId ei(VOL, i);
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i]; 
-	switch (ma->GetElType(ei))
+	switch (ma->GetElType(ElementId(VOL,i)))
 	  {
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
@@ -329,6 +335,9 @@ global system.
 
     prol->Update(*this);
   }
+
+
+  
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
@@ -574,7 +583,7 @@ global system.
     dranges.SetSize(0);
 
     if (!ei.IsVolume()) return;
-    if (!DefinedOn (VOL, ma->GetElIndex (ei))) return;
+    if (!DefinedOn (ei)) return;
     
     if (!all_dofs_together)
       dranges.Append (IntRange (ei.Nr(), ei.Nr()+1));
@@ -603,22 +612,45 @@ global system.
 
   void L2HighOrderFESpace :: SetOrder (NodeId ni, int order)
   {
-    if (ni.GetType() == NT_ELEMENT)
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In L2HighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
       {
-        if (ni.GetNr() < order_inner.Size())
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
       }
     else
-      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType 'ELEMENT'");
+      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType of codimension 0!");
   }
   
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
   {
-    if (ni.GetType() == NT_ELEMENT)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
       {
-        if (ni.GetNr() < order_inner.Size())
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
       }
+    
     return 0;
   }
   
@@ -843,28 +875,54 @@ global system.
   {
     nel = ma->GetNSE();
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
+    
+    if (first_update)
+      {
+	order_inner.SetSize(nel);
+	order_inner = INT<3>(order);
+
+	for(int i = 0; i < nel; i++) 
+	  {
+	    ElementId ei(BND,i);
+	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    if (!DefinedOn (ei))
+	      order_inner[i] = 0;
+	  }
+    
+	if(print) 
+	  *testout << " order_inner (l2surf) " << order_inner << endl;
+      }
+    
     ndof = 0;
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
-        ElementId sei(BND, i);
 	first_element_dof[i] = ndof;
-	switch (ma->GetElType(sei))
+	INT<3> pi = order_inner[i];
+	switch (ma->GetElType(ElementId(BND, i)))
 	  {
 	  case ET_SEGM:
-	    ndof += order+1;
+	    ndof += pi[0]+1;
 	    break;
 	  case ET_TRIG:
-	    ndof += (order+1)*(order+2)/2;
+	    ndof += (pi[0]+1)*(pi[1]+2)/2;
 	    break;
 	  case ET_QUAD:
-	    ndof += (order+1)*(order+1);
+	    ndof += (pi[0]+1)*(pi[1]+1);
 	    break;
 	  default:
 	    ;
 	  }
       }
     first_element_dof[nel] = ndof;
+
+    if(print) 
+      *testout << " first_element dof (l2surf) " << first_element_dof << endl;
+    
     UpdateCouplingDofArray();
   }
 
@@ -873,11 +931,55 @@ global system.
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNSE()))
       {
-        bool definedon = DefinedOn(ElementId(BND,i));
-        auto r = GetElementDofs(i);
-        ctofdof[r] = definedon ? WIREBASKET_DOF : UNUSED_DOF;
+        ctofdof[GetElementDofs(i)] = DefinedOn(ElementId(BND,i)) ? WIREBASKET_DOF : UNUSED_DOF;
       }
   }
+
+
+  void L2SurfaceHighOrderFESpace ::SetOrder (NodeId ni, int order)
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In L2SurfaceHighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      {
+	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
+      }
+    else
+      throw Exception ("L2SurfaceHighOrderFESpace::SetOrder requires NodeType of codimension 1!");
+  }
+  
+  int L2SurfaceHighOrderFESpace ::GetOrder (NodeId ni) const
+  {
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      {
+	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+      }
+        
+    return 0;
+  }
+  
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   // {
   //   if (ma->GetDimension() == 2)
@@ -954,7 +1056,7 @@ global system.
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    if (ei.VB() == BND && DefinedOn(ma->GetElement(ei)))
+    if (ei.VB() == BND && DefinedOn(ei))
       {
         if (ma->GetDimension() == 2)
           {
@@ -970,7 +1072,7 @@ global system.
               }
 
             fe1d -> SetVertexNumbers (ngel.vertices);
-            fe1d -> SetOrder (INT<1> (order));
+            fe1d -> SetOrder (order_inner[ei.Nr()]);
             fe1d -> ComputeNDof(); 
             return *fe1d;
           }
@@ -989,7 +1091,7 @@ global system.
               }
 	
             fe2d -> SetVertexNumbers (ngel.vertices);
-            fe2d -> SetOrder (INT<2> (order));
+            fe2d -> SetOrder (order_inner[ei.Nr()]);
             fe2d -> ComputeNDof(); 
             return *fe2d;
           }
@@ -1017,16 +1119,13 @@ global system.
   void L2SurfaceHighOrderFESpace :: 
   GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-    if(ei.VB()!=BND || !DefinedOn(ei)) return;
+    dnums.SetSize0();
+    if (ei.VB()!=BND || !DefinedOn (ei)) return;
+ 
     int first = first_element_dof[ei.Nr()];
     int neldofs = first_element_dof[ei.Nr()+1] - first;
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
-
-    if (!DefinedOn (ei))
-      dnums = -1;
-    
   }
   
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
@@ -1052,10 +1151,10 @@ global system.
 
 
   void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { dnums.SetSize0(); return; }
   
   void  L2SurfaceHighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { dnums.SetSize0(); return; }
   
   void  L2SurfaceHighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { GetDofNrs ( fanr, dnums ); return; }

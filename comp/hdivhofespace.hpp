@@ -66,7 +66,10 @@ namespace ngcomp
 
     virtual void UpdateDofTables() override;  
 
-    virtual void UpdateCouplingDofArray() override;   
+    virtual void UpdateCouplingDofArray() override;
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
     
     virtual string GetClassName () const override
     {
