@@ -632,10 +632,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("ei"), py::arg("refine"),
 	 "Set refinementflag for mesh-refinement")
 
-    .def("GetElementLevel", &MeshAccess::GetElementLevel,
-         py::arg("ei"),
-         "Return refinement level of element")
-
     .def("GetParentElement", static_cast<ElementId(MeshAccess::*)(ElementId)const> (&MeshAccess::GetParentElement),
          py::arg("ei"),
          "Return parent element id on refined mesh")
