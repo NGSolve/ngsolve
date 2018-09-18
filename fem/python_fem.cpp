@@ -142,15 +142,15 @@ void ExportStdMathFunction(py::module &m, string name, string description)
   m.def (name.c_str(), [name] (py::object x) -> py::object
             {
               FUNC func;
+              py::extract<double> ed(x);
+              if (ed.check()) return py::cast(func(ed()));
+              if (py::extract<Complex> (x).check())
+                return py::cast(func(py::extract<Complex> (x)()));
               if (py::extract<shared_ptr<CF>>(x).check())
                 {
                   auto coef = py::extract<shared_ptr<CF>>(x)();
                   return py::cast(unary_math_functions[name](coef));
                 }
-              py::extract<double> ed(x);
-              if (ed.check()) return py::cast(func(ed()));
-              if (py::extract<Complex> (x).check())
-                return py::cast(func(py::extract<Complex> (x)()));
               throw py::type_error (string("can't compute math-function, type = ")
                                     + typeid(FUNC).name());
             }, py::arg("x"), description.c_str());
@@ -1123,6 +1123,15 @@ wait : bool
                      }))
     ;
 
+
+  py::implicitly_convertible<double, CoefficientFunction>();
+  py::implicitly_convertible<Complex, CoefficientFunction>();
+  py::implicitly_convertible<int, CoefficientFunction>();
+  py::implicitly_convertible<py::tuple, CoefficientFunction>();
+  py::implicitly_convertible<py::list, CoefficientFunction>();
+
+
+  
   if(have_numpy)
     {
       cf_class.def("__call__", [](shared_ptr<CF> self, py::array_t<MeshPoint> points) -> py::array
