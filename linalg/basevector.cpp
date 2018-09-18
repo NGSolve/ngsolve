@@ -823,10 +823,13 @@ namespace ngla
   }
   
   
-
+  template <typename TSCAL>
+  S_BaseVectorPtr<TSCAL> :: ~S_BaseVectorPtr ()
+  {
+    if (ownmem) delete [] pdata;
+  }
 
   template <typename TSCAL>
-  // shared_ptr<BaseVector> S_BaseVectorPtr<TSCAL> :: CreateVector () const
   AutoVector S_BaseVectorPtr<TSCAL> :: CreateVector () const
   {
     switch (es)
@@ -837,6 +840,28 @@ namespace ngla
       }
     return make_shared<S_BaseVectorPtr<TSCAL>> (this->size, es);
   }
+  
+  template <typename TSCAL>
+  ostream & S_BaseVectorPtr<TSCAL> :: Print (ostream & ost) const 
+  {
+    if (es == 1)
+      ost << FlatVector<TSCAL> (this->size, pdata) << endl;
+    else
+      ost << FlatSysVector<TSCAL> (this->size, es, pdata);
+    return ost;
+  }
+  
+  
+  template <typename TSCAL>
+  Array<MemoryUsage> S_BaseVectorPtr<TSCAL> :: GetMemoryUsage () const
+  {
+    if (ownmem)
+      return { { "Vector", sizeof(TSCAL)*es*this->size, 1 } };
+    else
+      return Array<MemoryUsage>();
+  }
+  
+  
 
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (size_t begin, size_t end) const

@@ -195,7 +195,11 @@ shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 template <typename FES, typename BASE=FESpace>
 auto ExportFESpace (py::module & m, string pyname)
 {
-  auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str());
+  auto docu = FES::GetDocu();
+  // cout << "short docu: " << docu.short_docu << endl;
+  // cout << "long docu: " << docu.long_docu << endl;
+  string docuboth = docu.short_docu + "\n\n" + docu.long_docu;
+  auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docuboth.c_str());
 
 
   pyspace
@@ -215,9 +219,6 @@ auto ExportFESpace (py::module & m, string pyname)
                     (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
     ;
 
-  auto docu = FES::GetDocu();
-  // cout << "short docu: " << docu.short_docu << endl;
-  // cout << "long docu: " << docu.long_docu << endl;
   if (docu.arguments.size())
     pyspace.def_static("__flags_doc__", [docu]()
                        {
