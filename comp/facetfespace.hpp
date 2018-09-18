@@ -67,6 +67,10 @@ namespace ngcomp
     // virtual size_t GetNDof () const throw() override;
     // virtual size_t GetNDofLevel (int level) const override;
 
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+
+
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
     template <ELEMENT_TYPE ET>
@@ -82,7 +86,7 @@ namespace ngcomp
   
     virtual void GetFacetDofNrs (int nr, Array<DofId> & dnums) const
     {
-      dnums.SetSize(0);
+      dnums.SetSize0();
       dnums += nr;
       dnums += GetFacetDofs(nr);
     }
@@ -133,7 +137,7 @@ namespace ngcomp
   
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     {
-      dnums.SetSize(0);
+      dnums.SetSize0();
     }
     
     bool AllDofsTogether(){return all_dofs_together;};

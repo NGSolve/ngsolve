@@ -147,11 +147,11 @@ namespace ngcomp
 	for (size_t i = 0; i < nel; i++)
 	  {
 	    ElementId ei(VOL,i);
-	    if (!DefinedOn (VOL, ma->GetElIndex (ei)))
+	    if (!DefinedOn (ei))
 	      continue;
 	    INT<3> el_orders = ma->GetElOrders(i); 
 
-	    ELEMENT_TYPE eltype=ma->GetElType(ElementId(VOL,i)); 
+	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
 	    if (ma->GetDimension() == 2)
@@ -586,6 +586,14 @@ namespace ngcomp
 
   void VectorFacetFESpace :: SetOrder (NodeId ni, int order) 
   {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In VectorFacetFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+    
     if (CoDim(ni.GetType(), ma->GetDimension()) == 1)
       if (ni.GetNr() < order_facet.Size())
 	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
