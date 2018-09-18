@@ -55,6 +55,11 @@ namespace ngcomp
 
     virtual void Update (LocalHeap& lh) override;
     virtual void UpdateCouplingDofArray() override;
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+
+    
     virtual size_t GetNDof() const throw() override { return ndof; }
 
     virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }

@@ -134,6 +134,9 @@ namespace ngcomp
 
     virtual void SetOrder (ELEMENT_TYPE et, TORDER order) override;
 
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+
     virtual string GetClassName () const override
     {
       return "VectorH1FESpace";

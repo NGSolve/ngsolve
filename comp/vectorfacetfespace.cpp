@@ -115,115 +115,119 @@ namespace ngcomp
       *testout << "VectorFacetFESpace, order " << order << endl 
 	       << "rel_order " << rel_order << ", var_order " << var_order << endl;
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
     if ( low_order_space ) 
       low_order_space -> Update(lh);
 
     size_t nel = ma->GetNE();
     size_t nfacets = ma->GetNFacets();
- 
-    int p = 0; 
-    if (!var_order) p = order; 
-    
-    order_facet.SetSize(nfacets);
-    fine_facet.SetSize(nfacets);
 
-    order_facet = p;
-    fine_facet = 0; 
+    if (first_update)
+      {
+	int p = 0; 
+	if (!var_order) p = order; 
     
-    for (Ngs_Element el : ma->Elements<BND>())
-      if (DefinedOn(el))
-	fine_facet[el.Facets()] = true;
+	order_facet.SetSize(nfacets);
+	fine_facet.SetSize(nfacets);
+
+	order_facet = p;
+	fine_facet = 0; 
+    
+	for (Ngs_Element el : ma->Elements<BND>())
+	  if (DefinedOn(el))
+	    fine_facet[el.Facets()] = true;
 #ifdef PARALLEL
-    if(var_order)
-      throw Exception("MPI + variable order for VectorFacetFESpace is not implemented.");
+	if(var_order)
+	  throw Exception("MPI + variable order for VectorFacetFESpace is not implemented.");
 #endif
 
 
-    for (size_t i = 0; i < nel; i++)
-      {
-        ElementId ei(VOL,i);
-	if (!DefinedOn (VOL, ma->GetElIndex (ei)))
-	    continue;
-	INT<3> el_orders = ma->GetElOrders(i); 
+	for (size_t i = 0; i < nel; i++)
+	  {
+	    ElementId ei(VOL,i);
+	    if (!DefinedOn (ei))
+	      continue;
+	    INT<3> el_orders = ma->GetElOrders(i); 
 
-	ELEMENT_TYPE eltype=ma->GetElType(ElementId(VOL,i)); 
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
+	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
+	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
-	if (ma->GetDimension() == 2)
-	  {
-	    auto fanums = ma->GetElEdges (ei);
-	    for (int j=0;j<fanums.Size();j++) 
-	      fine_facet[fanums[j]] = 1; 
-	    
-	    if(var_order)
+	    if (ma->GetDimension() == 2)
 	      {
-		const EDGE * edges = ElementTopology::GetEdges (eltype);
-		for(int j=0; j<fanums.Size(); j++)
-		  for(int k=0;k<2;k++)
-		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		      { 
-			order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
-			break; 
-		      }
-	      }
-	  }
-	else
-	  {
-	    auto elfaces = ma->GetElFaces(ei);
-	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
+		auto fanums = ma->GetElEdges (ei);
+		for (int j=0;j<fanums.Size();j++) 
+		  fine_facet[fanums[j]] = 1; 
 	    
-	    if(var_order) 
-	      {
-		auto vnums = ma->GetElVertices (ei);
-		const FACE * faces = ElementTopology::GetFaces (eltype);
-		for(int j=0;j<elfaces.Size();j++)
+		if(var_order)
 		  {
-		    if(faces[j][3]==-1) // trig  
-		      {
-			order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
-			order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
-		      }
-		    else //quad_face
-		      {
-			int fmax = 0;
-			for(int k = 1; k < 4; k++) 
-			  if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-					
-			INT<2> f((fmax+3)%4,(fmax+1)%4); 
-			if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-			
-			// fmax > f[0] > f[1]
-			// p[0] for direction fmax,f[0] 
-			// p[1] for direction fmax,f[1] 
-			for(int l=0;l<2;l++)
-			  for(int k=0;k<3;k++)
-			    if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-			      {
-				order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
-				break; 
-			      } 
-			
-		      }
+		    const EDGE * edges = ElementTopology::GetEdges (eltype);
+		    for(int j=0; j<fanums.Size(); j++)
+		      for(int k=0;k<2;k++)
+			if(points[edges[j][0]][k] != points[edges[j][1]][k])
+			  { 
+			    order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
+			    break; 
+			  }
 		  }
 	      }
+	    else
+	      {
+		auto elfaces = ma->GetElFaces(ei);
+		for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
-	  }
+		if(var_order) 
+		  {
+		    auto vnums = ma->GetElVertices (ei);
+		    const FACE * faces = ElementTopology::GetFaces (eltype);
+		    for(int j=0;j<elfaces.Size();j++)
+		      {
+			if(faces[j][3]==-1) // trig  
+			  {
+			    order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
+			    order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
+			  }
+			else //quad_face
+			  {
+			    int fmax = 0;
+			    for(int k = 1; k < 4; k++) 
+			      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+					
+			    INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+			
+			    // fmax > f[0] > f[1]
+			    // p[0] for direction fmax,f[0] 
+			    // p[1] for direction fmax,f[1] 
+			    for(int l=0;l<2;l++)
+			      for(int k=0;k<3;k++)
+				if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+				  {
+				    order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
+				    break; 
+				  } 
+			
+			  }
+		      }
+		  }
+	    
+	      }
 	
+	  }
+
+	for (int i = 0; i < fine_facet.Size(); i++)
+	  if (!fine_facet[i]) order_facet[i] = 0;
+
+	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE, 
+				fine_facet, MPI_LOR);
       }
 
-    for (int i = 0; i < fine_facet.Size(); i++)
-      if (!fine_facet[i]) order_facet[i] = 0;
-
-    ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE, 
-			   fine_facet, MPI_LOR);
-
-
-    // update dofs
-
+    // dof tables
     // ncfacets = 0;
     int ndof_lo = (ma->GetDimension() == 2) ? nfacets : 2*nfacets;
     ndof = ndof_lo;
-
+    
     first_facet_dof.SetSize(nfacets+1);
     first_facet_dof = ndof_lo;
 
@@ -304,10 +308,10 @@ namespace ngcomp
     if(print)
       {
 	*testout << "*** Update VectorFacetFESpace: General Information" << endl;
-	*testout << " order facet (facet) " << order_facet << endl; 
+	*testout << " order facet (facet) " << order_facet << endl;
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
 	*testout << " first_inner_dof (facet)  " << first_inner_dof << endl; 
-      } 
+      }
     
     UpdateCouplingDofArray();
   }
@@ -578,6 +582,30 @@ namespace ngcomp
       }
     //if(ei.VB()==BBND)
     //  dnums.SetSize(0);
+  }
+
+  void VectorFacetFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In VectorFacetFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+    
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_facet.Size())
+	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+  }
+  
+  int VectorFacetFESpace :: GetOrder (NodeId ni) const
+  {
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_facet.Size())
+	return order_facet[ni.GetNr()][0];
+     
+    return 0;
   }
 
   shared_ptr<Table<int>> VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
