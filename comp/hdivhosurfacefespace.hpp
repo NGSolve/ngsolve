@@ -40,6 +40,7 @@ namespace ngcomp
                           bool parseflags=false);
 
     virtual ~HDivHighOrderSurfaceFESpace ();
+    static DocInfo GetDocu ();
     
     virtual string GetClassName () const override
     {

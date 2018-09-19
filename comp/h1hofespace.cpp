@@ -247,6 +247,28 @@ namespace ngcomp
   DocInfo H1HighOrderFESpace :: GetDocu ()
   {
     DocInfo docu = FESpace::GetDocu();
+    docu.short_docu = "An H1-conforming finite element space.";
+    docu.long_docu =
+      R"raw_string(The H1 finite element space consists of continuous and
+elemenet-wise polynomial functions. It uses a hierarchical (=modal)
+basis built from integrated Legendre polynomials on tensor-product elements,
+and Jaboci polynomials on simplicial elements. 
+
+Boundary values are well defined. The function can be used directly on the
+boundary, using the trace operator is optional.
+
+The H1 space supports variable order, which can be set individually for edges, 
+faces and cells. 
+
+Internal degrees of freedom are declared as local dofs and are eliminated 
+if static condensation is on.
+
+The wirebasket consists of all vertex dofs. Optionally, one can include the 
+first (the quadratic bubble) edge basis function, or all edge basis functions
+into the wirebasket.
+)raw_string";      
+
+    
     docu.Arg("wb_withedges") = "bool = true(3D) / false(2D)\n"
       "  use lowest-order edge dofs for BDDC wirebasket";
     docu.Arg("wb_fulledges") = "bool = false\n"

@@ -106,7 +106,15 @@ namespace ngcomp
     // Update();
   }
   
-
+  DocInfo VectorFacetFESpace :: GetDocu()
+  {
+    DocInfo docu = FESpace::GetDocu();
+    docu.Arg("highest_order_dc")  = "bool = False\n"
+      "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+    docu.Arg("hide_highest_order_dc") = "bool = False\n"
+      "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+    return docu;
+  }
 
   void VectorFacetFESpace :: Update(LocalHeap& lh)
   {

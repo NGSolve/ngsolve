@@ -196,11 +196,8 @@ template <typename FES, typename BASE=FESpace>
 auto ExportFESpace (py::module & m, string pyname)
 {
   auto docu = FES::GetDocu();
-  // cout << "short docu: " << docu.short_docu << endl;
-  // cout << "long docu: " << docu.long_docu << endl;
   string docuboth = docu.short_docu + "\n\n" + docu.long_docu;
   auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docuboth.c_str());
-
 
   pyspace
     .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
@@ -219,16 +216,15 @@ auto ExportFESpace (py::module & m, string pyname)
                     (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
     ;
 
-  if (docu.arguments.size())
-    pyspace.def_static("__flags_doc__", [docu]()
-                       {
-                         auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                             attr("FESpace").
-                                                             attr("__flags_doc__")());
-                         for (auto & flagdoc : docu.arguments)
-                           flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
-                         return flags_doc;
-                       });
+  pyspace.def_static("__flags_doc__", [docu]()
+                     {
+                       auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                           attr("FESpace").
+                                                           attr("__flags_doc__")());
+                       for (auto & flagdoc : docu.arguments)
+                         flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+                       return flags_doc;
+                     });
       
   return pyspace;
 }
@@ -691,8 +687,14 @@ kwargs : kwargs
                   "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
                   )
 
+
     .def_static("__flags_doc__", [] ()
          {
+           py::dict flags_doc;
+           for (auto & flagdoc : FESpace::GetDocu().arguments)
+             flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+           return flags_doc;
+           /*
            return py::dict
              (
               py::arg("order") = "int = 1\n"
@@ -717,6 +719,7 @@ kwargs : kwargs
               "  Generate a lowest order space together with the high-order space,\n"
               "  needed for some preconditioners."
               );
+           */
          })
     .def_static("__special_treated_flags__", [] ()
                 {
@@ -1190,73 +1193,29 @@ rho : ngsolve.fem.CoefficientFunction
          py::arg("vector"))
     ;
   
-  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
+  ExportFESpace<H1HighOrderFESpace> (m, "H1");
 
-  auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
+  ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
  
-  auto vectorl2 = ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
+  ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
 
-  auto l2surface = ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
+  ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
 
-  auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
+  ExportFESpace<NumberFESpace> (m, "NumberSpace");
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
-  ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivDiv space";
-		  flags_doc["plus"] = "bool = False\n"
-                    "  Add additional internal element bubble";
-
-                  return flags_doc;
-                })
-    ;
+  ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
   
-  ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface")    
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivDivSurface space";
-                  return flags_doc;
-                })
-    ;
+  ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   
-  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                      attr("FESpace").
-                                                      attr("__flags_doc__")());
-                flags_doc["highest_order_dc"] = "bool = False\n"
-                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
-                flags_doc["hide_highest_order_dc"] = "bool = False\n"
-                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
-                return flags_doc;
-                })
-    ;
+  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
   
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
   
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                      attr("FESpace").
-                                                      attr("__flags_doc__")());
-                  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivSurface space";
-                  return flags_doc;
-                })
     .def("Average", &HDivHighOrderSurfaceFESpace::Average,
          py::arg("vector"))
     ;

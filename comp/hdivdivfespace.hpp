@@ -25,6 +25,7 @@ namespace ngcomp
 
   public:
     HDivDivFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
+    static DocInfo GetDocu ();
 
     virtual string GetClassName () const override
     {
