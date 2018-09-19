@@ -602,7 +602,8 @@ namespace ngbla
 
     template <typename OP, typename TA, typename TB,
               typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0>
+              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>
     INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod) 
     {
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
@@ -617,7 +618,8 @@ namespace ngbla
 
     template <typename OP, typename TA, typename TB,
               typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0>
+              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>    
     INLINE T & Assign (const Expr<MultExpr<MinusExpr<TA>, TB>> & prod) 
     {
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
