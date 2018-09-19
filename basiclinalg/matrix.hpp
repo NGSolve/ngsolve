@@ -81,7 +81,7 @@ namespace ngbla
       w = m2.A().Width();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (h*w);
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m2.A());
+      CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::operator= (m2.A());
     }
 
     /// useful to put FlatMatrix over other matrix
@@ -188,8 +188,8 @@ namespace ngbla
       return SliceVector<T,TIND> (h, w+1, &data[0]);
     }
 
-    using CMCPMatExpr<FlatMatrix<T> >::Rows;
-    using CMCPMatExpr<FlatMatrix<T> >::Cols;
+    using CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::Rows;
+    using CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::Cols;
 
     INLINE FlatMatrix Rows (size_t first, size_t next) const
     {
