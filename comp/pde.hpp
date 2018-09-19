@@ -224,7 +224,8 @@ namespace ngcomp
 
     ///
     shared_ptr<MeshAccess> GetMeshAccess (int nr = 0) const  
-    { 
+    {
+      if (nr >= mas.Size()) throw Exception ("PDE::GetMeshAccess, no mesh");
       return mas[nr]; 
     }
     ///
