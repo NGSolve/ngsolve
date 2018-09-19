@@ -188,8 +188,8 @@ namespace ngbla
       return SliceVector<T,TIND> (h, w+1, &data[0]);
     }
 
-    using CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::Rows;
-    using CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::Cols;
+    using CMCPMatExpr<FlatMatrix>::Rows;
+    using CMCPMatExpr<FlatMatrix>::Cols;
 
     INLINE FlatMatrix Rows (size_t first, size_t next) const
     {
