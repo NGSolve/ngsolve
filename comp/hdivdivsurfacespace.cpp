@@ -263,6 +263,14 @@ namespace ngcomp
   HDivDivSurfaceSpace :: ~HDivDivSurfaceSpace()
   {
   }
+  
+  DocInfo HDivDivSurfaceSpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HDivDiv space";
+    return docu;
+  }
 
 
   void HDivDivSurfaceSpace::Update(LocalHeap & lh)

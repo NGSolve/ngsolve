@@ -330,6 +330,14 @@ public:
   }
 
 
+  DocInfo HDivHighOrderSurfaceFESpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HDivSurface space";
+    return docu;
+  }
+  
 void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 {
   // auto & pairs = GetDCPairs();

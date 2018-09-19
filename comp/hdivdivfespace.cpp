@@ -478,6 +478,16 @@ namespace ngcomp
     }
   }
 
+  DocInfo HDivDivFESpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HDivDiv space";
+    docu.Arg("plus") = "bool = False\n"
+      "  Add additional internal element bubble";
+    return docu;
+  }
+
   void HDivDivFESpace :: Update(LocalHeap & lh)
   {
     // use order k+1 for certain inner or boundary shapes

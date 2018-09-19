@@ -299,6 +299,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
   DocInfo FESpace :: GetDocu ()
   {
     DocInfo docu;
+    docu.Arg("order") = "int = 1\n"
+      "  order of finite element space";
+    docu.Arg("complex") = "bool = False\n"
+      "  Set if FESpace should be complex";
+    docu.Arg("dirichlet") = "regexpr\n"
+      "  Regular expression string defining the dirichlet boundary.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichlet = 'top|right'";
+    docu.Arg("definedon") = "Region or regexpr\n"
+      "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
+      "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
+      "  mesh.Materials('regexpr').";
+    docu.Arg("dim") = "int = 1\n"
+      "  Create multi dimensional FESpace (i.e. [H1]^3)";
+    docu.Arg("dgjumps") = "bool = False\n"
+      "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
+      "  since the dofs have a different coupling then and this changes the sparsity\n"
+      "  pattern of matrices.";
+    docu.Arg("low_order_space") = "bool = True\n"
+      "  Generate a lowest order space together with the high-order space,\n"
+      "  needed for some preconditioners.";
+    docu.Arg("order_policy") = "ORDER_POLICY = ORDER_POLICY.OLDSTYLE\n"
+      "  CONSTANT .. use the same fixed order for all elements,\n"
+      "  NODAL ..... use the same order for nodes of same shape,\n"
+      "  VARIBLE ... use an individual order for each edge, face and cell,\n"
+      "  OLDSTYLE .. as it used to be for the last decade";
     return docu;
   }
 
