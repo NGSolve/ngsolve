@@ -749,6 +749,7 @@ namespace ngfem
     ///
     virtual ~ParameterCoefficientFunction ();
     ///
+    using CoefficientFunction::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return val;
@@ -785,7 +786,8 @@ namespace ngfem
     ///
     virtual ~DomainConstantCoefficientFunction ();
     ///
-
+      using T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>::Evaluate;
+      using CoefficientFunction::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override; 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override;

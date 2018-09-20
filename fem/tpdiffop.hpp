@@ -24,7 +24,7 @@ namespace ngfem
     {
       return evaluators[num];
     }
-    
+      using DifferentialOperator::Apply;
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
         const BaseMappedIntegrationRule & mir,
@@ -222,6 +222,7 @@ namespace ngfem
         SliceMatrix<double,ColMajor> mat,   
         LocalHeap & lh) const { throw Exception("2 not implemented"); }
 
+      using BlockDifferentialOperator::CalcMatrix;
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
         const BaseMappedIntegrationPoint & bmip,
@@ -368,6 +369,7 @@ namespace ngfem
         LocalHeap & lh) const;
 
     /// calculates the matrix
+      using BlockDifferentialOperator::CalcMatrix;
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
         const BaseMappedIntegrationPoint & mip,

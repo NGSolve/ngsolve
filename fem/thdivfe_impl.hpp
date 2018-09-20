@@ -149,7 +149,7 @@ namespace ngfem
                {
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIPHDiv(mir[i]);
                  static_cast<const FEL*> (this) ->                 
-                   T_CalcShape (adp, SBLambda ([shapes,i,DIMSPACE] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
+                   T_CalcShape (adp, SBLambda ([shapes,i] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
                                                  auto vshape = shape.Data(); 
                                                  for (size_t k = 0; k < vshape.Size(); k++)

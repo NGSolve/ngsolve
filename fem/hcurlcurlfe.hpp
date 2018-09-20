@@ -362,7 +362,7 @@ namespace ngfem
           Mat<DIM,DIM,SIMD<double>> mat;
           
           Iterate<4-DIM>
-            ([this,&bmir,i,&mat,values](auto CODIM)
+            ([&bmir,i,&mat,values](auto CODIM)
              {
                constexpr auto DIMSPACE = DIM+CODIM.value;
                if (bmir.DimSpace() == DIMSPACE)

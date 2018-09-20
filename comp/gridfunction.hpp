@@ -43,6 +43,8 @@ namespace ngcomp
     virtual bool DefinedOn (const ElementTransformation & trafo) override;
     void SelectComponent (int acomp) { comp = acomp; }
     const GridFunction & GetGridFunction() const { return *gf; }
+      using CoefficientFunction::Evaluate;
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override; 
 

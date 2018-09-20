@@ -303,6 +303,7 @@ struct GenericPow {
     NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
     {
       return 0;
@@ -457,6 +458,7 @@ struct GenericPow {
           code.body += Var(index,i).Assign(tv(i));
     }
 
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
       for (size_t i = 0; i < ir.Size(); i++)
@@ -545,6 +547,7 @@ direction : int
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
 
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     {
       if (ir[0].IP().FacetNr() != -1)
