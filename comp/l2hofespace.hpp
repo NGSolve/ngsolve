@@ -186,6 +186,7 @@ namespace ngcomp
 
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
     
     auto GetElementDofs (size_t nr) const
     {

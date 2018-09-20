@@ -99,6 +99,7 @@ namespace ngcomp
 
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
     
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
     void SetFaceOrder (int fnr, INT<2> fo) { order_face[fnr] = fo; }
@@ -136,6 +137,7 @@ namespace ngcomp
 
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
 
     virtual string GetClassName () const override
     {
