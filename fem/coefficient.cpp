@@ -1569,6 +1569,7 @@ public:
     dim1 = cfmat->Dimension();
   }
   
+    using CoefficientFunctionNoDerivative::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return 0;
@@ -1614,6 +1615,7 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }  
   
+    using T_CoefficientFunction<NormCoefficientFunction>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     Vec<1> res;
@@ -1918,7 +1920,7 @@ public:
           values(j*d1+k) += va(j*inner_dim+l) * vb(l*d1+k);
   }
 
-  
+    using T_CoefficientFunction<MultMatMatCoefficientFunction>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     throw Exception ("MultMatMatCF:: scalar evaluate for matrix called");
@@ -2110,7 +2112,7 @@ public:
       for (size_t j = 0; j < inner_dim; j++)
         values(i) += va(i*inner_dim+j) * vb(j);
   }
-  
+    using T_CoefficientFunction<MultMatVecCoefficientFunction>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     throw Exception ("MultMatVecCF:: scalar evaluate for matrix called");
@@ -2251,7 +2253,7 @@ public:
       for (size_t k = 0; k < hdims[1]; k++)
         values(j*hdims[1]+k) = in0(k*hdims[0]+j);
   }
-  
+    using T_CoefficientFunction<TransposeCoefficientFunction>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     throw Exception ("TransposeCF:: scalar evaluate for matrix called");
@@ -3035,6 +3037,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
     }
     */
     
+      using T_CoefficientFunction<IfPosCoefficientFunction>::Evaluate;
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const override
     {
       if(cf_if->Evaluate(ip)>0)
@@ -4481,7 +4484,7 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "RealCF";
     }
-
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
       if(cf->IsComplex())
@@ -4547,7 +4550,7 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "ImagCF";
     }
-
+    using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
       if(!cf->IsComplex())

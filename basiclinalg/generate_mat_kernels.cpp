@@ -523,8 +523,9 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "{" << endl;
   out << "constexpr int SW = SIMD<double>::Size();\n" 
       << "for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)\n"
-      << "{\n"
-      << "double * pb2 = pb;\n";
+      << "{\n";
+  if (wa > 0)
+    out << "double * pb2 = pb;\n";
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> b" << k << "(pb2); pb2 += db;\n";
   out << "double * pa2 = pa;\n"
@@ -586,8 +587,9 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "{" << endl;
   out << "constexpr int SW = SIMD<double>::Size();\n" 
       << "for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)\n"
-      << "{\n"
-      << "double * pb2 = pb;\n";
+      << "{\n";
+  if (wa > 0)
+    out << "double * pb2 = pb;\n";
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> b" << k << "0(pb2);\n"
         << "SIMD<double> b" << k << "1(pb2+SW); pb2 += db;\n";
