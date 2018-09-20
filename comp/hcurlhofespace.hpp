@@ -94,6 +94,7 @@ namespace ngcomp
     virtual size_t GetNDof () const throw() override;
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
     
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
