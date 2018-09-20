@@ -208,6 +208,10 @@ struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
   static string Name() { return "sin"; }
 };
+struct GenericIdentity {
+  template <typename T> T operator() (T x) const { return x; }
+  static string Name() { return  " "; }
+};
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
   static string Name() { return "cos"; }
@@ -665,6 +669,7 @@ direction : int
   ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
   ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
   ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
+  ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians");
   ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
