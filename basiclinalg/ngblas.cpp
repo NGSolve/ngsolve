@@ -918,7 +918,9 @@ namespace ngbla
       case 12: MultAtBSmallWA<12> (a.Height(), b.Width(), a, b, c); return;
       }
     */
-    c.AddSize(a.Width(), b.Width()) = Trans(a) * b;
+
+    // todo: optimize generic size function
+    c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
   }
 
   /* ***************************** A * B^T *************************************** */
