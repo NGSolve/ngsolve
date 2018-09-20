@@ -342,7 +342,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           Flags flags;
           py::dict d(obj);          
           SetFlag (flags, "", d);
-          return move(flags);
+          return flags;
         }), py::arg("obj"), "Create Flags by given object")
     /*
     .def("__init__", [] (Flags &f, py::object & obj) {

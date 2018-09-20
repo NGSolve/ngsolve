@@ -2794,7 +2794,7 @@ namespace ngcomp
                        {
                          HeapReset hr (lh);
                          
-                         int size = sum_elmat.Height();
+                         // int size = sum_elmat.Height();
                          int dim = fespace->GetDimension();                         
                          // int dim = size / dnums.Size();
 

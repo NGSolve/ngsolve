@@ -915,8 +915,10 @@ namespace ngcomp
 				       const BaseVector * aveclin);
 
     ///
+      using BilinearFormApplication::Mult;
     virtual void Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
     ///
+      using BilinearFormApplication::MultAdd;
     virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;

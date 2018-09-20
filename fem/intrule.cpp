@@ -3328,8 +3328,8 @@ namespace ngfem
     for (size_t i = 0; i < mips.Size(); i++)
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
-        Vec<DIM_SPACE,SIMD<double>> vphys = 
-          grad.Col(i).AddSize(DIM_SPACE) = Trans(mips[i].GetJacobianInverse()) * vref;
+        // Vec<DIM_SPACE,SIMD<double>> vphys =
+        grad.Col(i).AddSize(DIM_SPACE) = Trans(mips[i].GetJacobianInverse()) * vref;
       }
   }
   
@@ -3343,8 +3343,8 @@ namespace ngfem
     for (size_t i = 0; i < mips.Size(); i++)
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
-        Vec<DIM_SPACE,SIMD<double>> vphys = 
-          grad.Col(i).AddSize(DIM_SPACE) = mips[i].GetJacobianInverse() * vref;
+        // Vec<DIM_SPACE,SIMD<double>> vphys =
+        grad.Col(i).AddSize(DIM_SPACE) = mips[i].GetJacobianInverse() * vref;
       }
   }
 

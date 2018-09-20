@@ -1731,6 +1731,7 @@ namespace ngfem
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
 
+    using DifferentialOperator::Apply;
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,

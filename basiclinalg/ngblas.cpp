@@ -41,7 +41,7 @@ namespace ngbla
   
   NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    constexpr int SW = SIMD<double>::Size();
+    // constexpr int SW = SIMD<double>::Size();
     size_t h = y.Size();
     size_t w = x.Size();
     size_t i = 0;

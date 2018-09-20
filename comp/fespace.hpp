@@ -486,13 +486,14 @@ ANY                  1 1 1 1 | 15
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
+      /*
     [[deprecated("Use GetFE with element-id instead of elnr!")]]    
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
     virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
     virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
-
+*/
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
     void GetDofNrs (int elnr, Array<DofId> & dnums) const
@@ -1112,7 +1113,7 @@ ANY                  1 1 1 1 | 15
   class NGS_DLL_HEADER SurfaceElementFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     int n_el_dofs;
   public:
     ///
@@ -1123,23 +1124,23 @@ ANY                  1 1 1 1 | 15
     ~SurfaceElementFESpace ();
 
     ///
-    virtual string GetClassName() const
+    virtual string GetClassName() const override
     { return "SurfaceElement"; }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
 
     ///
-    virtual size_t GetNDof () const throw() { return ndlevel.Last(); } 
+    // virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
 
     ///
-    virtual const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
     ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    // virtual size_t GetNDofLevel (int level) const;
 
   };
 

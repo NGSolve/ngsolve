@@ -1301,6 +1301,7 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
   
+    using T_CoefficientFunction<MultVecVecCoefficientFunction>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     Vec<1> res;

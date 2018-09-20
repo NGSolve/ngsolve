@@ -277,7 +277,6 @@ namespace ngcomp
       
       ParallelFor (num_edges, [&] (size_t edge) 
                    {
-                     auto verts = e2v[edge];
                      size_t cv1 = v2cv[e2v[edge][0]];
                      size_t cv2 = v2cv[e2v[edge][1]];
 

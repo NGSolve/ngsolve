@@ -901,12 +901,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
 
 
-  
+  /*
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(VOL,elnr),lh));
   }
-
+*/
+    
   Table<int> FESpace :: CreateDofTable (VorB vorb) const
   {
     TableCreator<int> creator;
@@ -1161,6 +1162,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return bli;
   }
 
+    /*
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(BND,selnr),lh));
@@ -1170,7 +1172,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
-
+*/
+    
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
   {
     switch (type)
@@ -1713,7 +1716,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (auto d : el.GetDofs())
           if (IsRegularDof(d))
             ba.Set(d);
-    return move(ba);
+    return ba;
   }
   
 
@@ -2337,20 +2340,55 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void SurfaceElementFESpace :: Update(LocalHeap & lh)
   {
     // const MeshAccess & ma = GetMeshAccess();
-
-    while (ma->GetNLevels() > ndlevel.Size())
+    /*
+      while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma->GetNSE());
+    */
+    SetNDof (n_el_dofs*ma->GetNE(BND));
   }
-
-  const FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, LocalHeap & lh) const
+  
+  FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    throw Exception ("SurfaceElementFESpace::GetFE not available");
+    auto et = ma->GetElement(ei).GetType();
+    if (ei.IsBoundary())
+      {
+        if (order == 0)
+          switch (et)
+            {
+            case ET_SEGM: return * new (lh) ScalarFE<ET_SEGM,0>;
+            case ET_TRIG: return * new (lh) ScalarFE<ET_TRIG,0>;
+            case ET_QUAD: return * new (lh) ScalarFE<ET_QUAD,0>;
+            default:
+              ;
+            }
+        else if (order == 1)
+          switch (et)
+            {
+            case ET_SEGM: return * new (lh) FE_Segm1;
+            case ET_TRIG: return * new (lh) ScalarFE<ET_TRIG,1>;
+            case ET_QUAD: return * new (lh) ScalarFE<ET_QUAD,1>;
+            default:
+              ;
+            }
+        else if (order == 2)
+          switch (et)
+            {
+            case ET_SEGM: return * new (lh) FE_Segm2;
+            case ET_TRIG: return * new (lh) FE_Trig2HB;
+            case ET_QUAD: throw Exception("SurfaceFESpace, second order quad not here");
+              // return * new (lh) ScalarFE<ET_QUAD,1>;
+            default:
+              ;
+            }
+      }
+    return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                    { return * new (lh) DummyFE<type.ElementType()>(); });
   }
-
+  
   
   void SurfaceElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if(ei.VB()!=BND) {dnums.SetSize (0); return; }
+    if(ei.VB()!=BND) {dnums.SetSize0 (); return; }
     if (order == 0)
       {
 	dnums.SetSize(1);
@@ -2399,11 +2437,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
   }
   
+    /*
   size_t SurfaceElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
+*/
 
 
 
