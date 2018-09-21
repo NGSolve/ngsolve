@@ -371,7 +371,7 @@ namespace ngfem
 
                    auto jacI = mir[i].GetJacobianInverse();
 
-                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat;
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
                    for (size_t k = 0; k < sqr(DIMSPACE); k++)
                      physmat(k) = values(k,i);
                    mat =  jacI * physmat * Trans(jacI);

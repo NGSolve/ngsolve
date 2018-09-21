@@ -823,8 +823,7 @@ namespace ngfem
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
                {
-                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
-                 GetTIP(mir[i], adp);
+                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                  double * pcoef = &coefs(0);
                  size_t dist = coefs.Dist();
                  Vec<DIMSPACE,SIMD<double>> vals = values.Col(i);
@@ -862,8 +861,7 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
-                     GetTIP(mir[i], adp);
+                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
@@ -893,8 +891,7 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
-                     GetTIP(mir[i], adp);
+                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      Vec<DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);

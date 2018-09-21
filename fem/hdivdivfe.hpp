@@ -420,7 +420,7 @@ namespace ngfem
                    auto jac = mir[i].GetJacobian();
                    auto d2 = sqr(mir[i].GetJacobiDet());
 
-                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat;
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
                    for (size_t k = 0; k < sqr(DIMSPACE); k++)
                      physmat(k) = values(k,i);
                    mat = 1/d2 * Trans(jac) * physmat * jac;
