@@ -236,6 +236,8 @@ namespace ngcomp
       }
 
     prol = make_shared<LinearProlongation> (GetMeshAccess());
+
+    needs_transform_vec = false;
   }
 
 

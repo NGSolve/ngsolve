@@ -2460,6 +2460,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (parseflags) CheckFlags(flags);
     
     prol = make_shared<CompoundProlongation> (this);
+
+    needs_transform_vec = false;
   }
 
 
@@ -2478,6 +2480,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (auto space : spaces)
       hprol -> AddProlongation (space->GetProlongation());      
     prol = hprol;
+
+    needs_transform_vec = false;
+    for (auto space : spaces)
+      if (space->NeedsTransformVec())
+        needs_transform_vec = true;
   }
 
 
@@ -2485,6 +2492,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     spaces.Append (fes);
     dynamic_pointer_cast<CompoundProlongation> (prol) -> AddProlongation (fes->GetProlongation());
+    if (fes->NeedsTransformVec())      
+      needs_transform_vec = true;
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -2828,6 +2837,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace::T_TransformVec (ElementId ei, 
                                         SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
+    if (!needs_transform_vec) return;
+    
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {
