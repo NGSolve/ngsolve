@@ -117,7 +117,6 @@ namespace ngcomp
 
     low_order_space = 0; // never used?
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
-		cout << "setting all_dofs_together " << all_dofs_together << endl;
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
@@ -164,6 +163,8 @@ namespace ngcomp
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (order == 0)
       highest_order_dc = false;
+
+    hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
     
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
@@ -192,7 +193,44 @@ namespace ngcomp
   FacetFESpace :: ~FacetFESpace ()
   { ; }
 
+  DocInfo FacetFESpace :: GetDocu()
+  {
+    DocInfo docu = FESpace::GetDocu();
 
+    docu.short_docu = "A finite element space living on facets.";
+      
+    docu.long_docu =
+      R"raw_string(The FacetFESpace provides polynomials on facets, i.e. faces in 3D,
+edges in 2D, and vertices in 1D. The functions are discontinuous from facet to facet.
+
+Typecal usecases for the FacetFESpace are hybrid mixed and hybrid DG methods.
+
+The function is only defined on the mesh skeleton. Evaluation inside the element throws
+an exception. Thus, functions from the FacetFESpace can be used only within element_boundary 
+or skeleton expressions. 
+
+Functions have meaningful boundary-values, which are obtained using the Trace-operator.
+(the trace operator might become redundant in future).
+
+(coming soon) The FacetFESpace provides variable order, which can be set for FACET-nodes. Alternatively,
+one can use FACE, EDGE, or VERTEX nodes for 3D, 2D, or 1D meshes, respectively.
+
+The basis is L2-orthogonal on the facets. The highest order basis functions can be duplicated
+for the two neighbouring elements. This allows a simple implementation of the Lehrenfeld-Schoeberl
+'projected jumps' HDG method.
+)raw_string";
+                   
+    docu.Arg("highest_order_dc") = "bool = False\n"
+      "  Splits highest order facet functions into two which are associated with\n"
+      "  the corresponding neighbors and are local dofs on the corresponding element\n"
+      "  (used to realize projected jumps)";
+    docu.Arg("hide_highest_order_dc") = "bool = False\n"
+      "  if highest_order_dc is used this flag marks the corresponding local dofs\n"
+      "  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n"
+      "  can also be compressed.";
+    return docu;
+  }
+  
   void FacetFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
@@ -200,112 +238,117 @@ namespace ngcomp
     if(print) 
       *testout << " FacetFEspace with order " << order << " rel_order " << rel_order << " var_order " << var_order << endl; 
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
     if (low_order_space)
       low_order_space -> Update(lh);
 
     nel = ma->GetNE();
     nfa = ma->GetNFacets(); 
-    
-    int p = 0; 
-    if(!var_order) p = order; 
-    
-    order_facet.SetSize(nfa);
-    order_facet = p;
 
-    fine_facet.SetSize(nfa);
-    fine_facet = false; 
-    
-    Array<int> fanums;
-
-    for (Ngs_Element el : ma->Elements<BND>())
-      if (DefinedOn(el))
-	fine_facet[el.Facets()] = true;
-    
-    for (int i = 0; i < nel; i++)
+    if (first_update)
       {
-        ElementId ei(VOL, i);
-        if (!DefinedOn(ei)) continue;
-	ELEMENT_TYPE eltype=ma->GetElType(ei); 
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
+	int p = 0; 
+	if(!var_order) p = order; 
+    
+	order_facet.SetSize(nfa);
+	order_facet = p;
+
+	fine_facet.SetSize(nfa);
+	fine_facet = false; 
+    
+	Array<int> fanums;
+
+	for (Ngs_Element el : ma->Elements<BND>())
+	  if (DefinedOn(el))
+	    fine_facet[el.Facets()] = true;
+    
+	for (int i = 0; i < nel; i++)
+	  {
+	    ElementId ei(VOL, i);
+	    if (!DefinedOn(ei)) continue;
+	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
+	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
-	if (ma->GetDimension() == 2)
-	  {
-            /*
-	    ma->GetElEdges (ei, fanums);
-	    for (int j=0;j<fanums.Size();j++) 
-	      fine_facet[fanums[j]] = 1; 
-            */
-            auto fanums = ma->GetElEdges(ei);
-            for (auto f : fanums)
-              fine_facet[f] = true;
+	    if (ma->GetDimension() == 2)
+	      {
+		/*
+		  ma->GetElEdges (ei, fanums);
+		  for (int j=0;j<fanums.Size();j++) 
+		  fine_facet[fanums[j]] = 1; 
+		*/
+		auto fanums = ma->GetElEdges(ei);
+		for (auto f : fanums)
+		  fine_facet[f] = true;
             
-	    if(var_order)
-	      {
-                INT<3> el_orders = ma->GetElOrders(i); 
-
-                const EDGE * edges = ElementTopology::GetEdges (eltype);
-                for(int j=0; j<fanums.Size(); j++)
-		  for(int k=0;k<2;k++)
-		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		      { 
-			order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
-			break; 
-		      }
-	      }
-	  }
-	else
-	  {
-	    // Array<int> elfaces,vnums;
-	    // ma->GetElFaces(ei,elfaces);
-            auto elfaces = ma->GetElFaces(ei); 
-	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
-	    
-	    if(var_order) 
-	      {
-                INT<3> el_orders = ma->GetElOrders(i); 
-
-		// ma->GetElVertices (i, vnums);
-                auto vnums = ma->GetElVertices(ei);
-		const FACE * faces = ElementTopology::GetFaces (eltype);
-		for(int j=0;j<elfaces.Size();j++)
+		if(var_order)
 		  {
-		    if(faces[j][3]==-1) // trig  
-		      {
-			order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
-			order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
-		      }
-		    else //quad_face
-		      {
-			int fmax = 0;
-			for(int k = 1; k < 4; k++) 
-			  if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-					
-			INT<2> f((fmax+3)%4,(fmax+1)%4); 
-			if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-			
-			// fmax > f[0] > f[1]
-			// p[0] for direction fmax,f[0] 
-			// p[1] for direction fmax,f[1] 
-			for(int l=0;l<2;l++)
-			  for(int k=0;k<3;k++)
-			    if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-			      {
-				order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
-				break; 
-			      } 
-			
-		      }
+		    INT<3> el_orders = ma->GetElOrders(i); 
+
+		    const EDGE * edges = ElementTopology::GetEdges (eltype);
+		    for(int j=0; j<fanums.Size(); j++)
+		      for(int k=0;k<2;k++)
+			if(points[edges[j][0]][k] != points[edges[j][1]][k])
+			  { 
+			    order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
+			    break; 
+			  }
 		  }
 	      }
+	    else
+	      {
+		// Array<int> elfaces,vnums;
+		// ma->GetElFaces(ei,elfaces);
+		auto elfaces = ma->GetElFaces(ei); 
+		for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
-	  }
+		if(var_order) 
+		  {
+		    INT<3> el_orders = ma->GetElOrders(i); 
+
+		    // ma->GetElVertices (i, vnums);
+		    auto vnums = ma->GetElVertices(ei);
+		    const FACE * faces = ElementTopology::GetFaces (eltype);
+		    for(int j=0;j<elfaces.Size();j++)
+		      {
+			if(faces[j][3]==-1) // trig  
+			  {
+			    order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
+			    order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
+			  }
+			else //quad_face
+			  {
+			    int fmax = 0;
+			    for(int k = 1; k < 4; k++) 
+			      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+					
+			    INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+			
+			    // fmax > f[0] > f[1]
+			    // p[0] for direction fmax,f[0] 
+			    // p[1] for direction fmax,f[1] 
+			    for(int l=0;l<2;l++)
+			      for(int k=0;k<3;k++)
+				if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+				  {
+				    order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
+				    break; 
+				  } 
+			
+			  }
+		      }
+		  }
+	    
+	      }
 	
-      }
+	  }
     
 
-    for (int i = 0; i < nfa; i++)
-      if (!fine_facet[i]) order_facet[i] = 0;
-
+	for (int i = 0; i < nfa; i++)
+	  if (!fine_facet[i]) order_facet[i] = 0;
+      }
     // distribute dofs
     ncfa = 0; 
     //ndof = nfa; // low_order space
@@ -455,7 +498,7 @@ namespace ngcomp
       }
     
     if(highest_order_dc)
-      ctofdof.Range(first_inner_dof[0],ndof) = HIDDEN_DOF;
+      ctofdof.Range(first_inner_dof[0],ndof) = hide_highest_order_dc ? HIDDEN_DOF : LOCAL_DOF;
     
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
@@ -820,6 +863,30 @@ namespace ngcomp
     return spclusters;
   }
 
+   void FacetFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In FacetFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+    
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_facet.Size())
+	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+  }
+  
+  int FacetFESpace :: GetOrder (NodeId ni) const
+  {
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      if (ni.GetNr() < order_facet.Size())
+	return order_facet[ni.GetNr()][0];
+     
+    return 0;
+  }
+
 
 
 
@@ -1122,6 +1189,7 @@ namespace ngcomp
     return make_shared<Table<int>> (creator.MoveTable());
   }
 
+ 
 
   
   // ------------------------------------------------------------------------

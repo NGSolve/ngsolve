@@ -49,18 +49,18 @@ namespace ngla
       this->pdata = static_cast<TSCAL*> (adata); 
     }
     
-    virtual ~S_BaseVectorPtr ()
-    {
-      if (ownmem) delete [] pdata;
-    }
+    virtual ~S_BaseVectorPtr ();
 
-    virtual void * Memory () const throw()
+    virtual void * Memory () const throw() override
     {
       return pdata; 
     }
+
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
+
     
-    NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const;
-    NGS_DLL_HEADER virtual AutoVector Range (T_Range<size_t> range) const;
+    NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const override;
+    NGS_DLL_HEADER virtual AutoVector Range (T_Range<size_t> range) const override;
 
     template<typename TIND, typename std::enable_if<std::is_integral<TIND>::value, int>::type = 0>
     FlatVector<TSCAL> operator() (TIND i) const
@@ -68,28 +68,9 @@ namespace ngla
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
 
-    // NGS_DLL_HEADER virtual shared_ptr<BaseVector> CreateVector () const;
-    NGS_DLL_HEADER virtual AutoVector CreateVector () const;
-    /*
-    {
-      switch (es)
-	{
-	case 1: return new VVector<TSCAL> (this->size);
-	case 2: return new VVector<Vec<2,TSCAL> > (this->size);
-	case 3: return new VVector<Vec<3,TSCAL> > (this->size);
-	}
-      return new S_BaseVectorPtr<TSCAL> (this->size, es);
-    }
-    */
-    virtual ostream & Print (ostream & ost) const
-    {
-      // return (ost << FV() << endl);
-      if (es == 1)
-	ost << FlatVector<TSCAL> (this->size, pdata) << endl;
-      else
-	ost << FlatSysVector<TSCAL> (this->size, es, pdata);
-      return ost;
-    }
+    NGS_DLL_HEADER virtual AutoVector CreateVector () const override;
+
+    virtual ostream & Print (ostream & ost) const override;
   };
 
 

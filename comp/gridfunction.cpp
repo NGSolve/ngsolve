@@ -190,17 +190,19 @@ namespace ngcomp
 	<< "nested = " << nested << endl;
   }
 
-  void GridFunction :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> GridFunction :: GetMemoryUsage () const
   {
     //if (&const_cast<GridFunction&> (*this).GetVector())
     if (this->GetVectorPtr())
       {
-	int olds = mu.Size();
+	// int olds = mu.Size();
 	//const_cast<GridFunction&> (*this).GetVector().MemoryUsage (mu);
-	this->GetVector().MemoryUsage (mu);
-	for (int i = olds; i < mu.Size(); i++)
-	  mu[i]->AddName (string(" gf ")+GetName());
+	auto mu = this->GetVector().GetMemoryUsage ();
+	for (int i = 0; i < mu.Size(); i++)
+	  mu[i].AddName (string(" gf ")+GetName());
+        return mu;
       }
+    return Array<MemoryUsage>();
   }
 
 
@@ -815,9 +817,24 @@ namespace ngcomp
 
     this -> vec.SetSize (gf_parent.GetMultiDim());
     GridFunction::multidim = gf_parent.GetMultiDim();
-    for (int i = 0; i < gf_parent.GetMultiDim(); i++)
-      (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
-  
+
+#ifdef PARALLEL
+    if (MyMPI_GetNTasks()>1)
+      {
+	auto pds = cfes[comp]->GetParallelDofs();
+	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
+	  {
+	    auto fvec = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
+	    (this->vec)[i] = make_shared<ParallelVFlatVector<SCAL>> (fvec.Size(), (SCAL*)fvec.Memory(), pds, CUMULATED);
+	  }
+      }
+    else
+#endif
+      {
+	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
+	  (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
+      }
+
     this -> level_updated = this -> ma->GetNLevels();
 
     for (int i = 0; i < this->compgfs.Size(); i++)
@@ -925,7 +942,7 @@ namespace ngcomp
 	      {
 		*vec[i]->Range (0, ovec->Size()) += *ovec;
 
-		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update();
+		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update(*this->GetFESpace());
 		
 		this->GetFESpace()->GetProlongation()->ProlongateInline
 		  (this->GetMeshAccess()->GetNLevels()-1, *vec[i]);

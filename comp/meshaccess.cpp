@@ -14,6 +14,11 @@
 
 namespace ngcomp
 {
+
+
+  template <int DIMS, int DIMR, typename BASE> class ALE_ElementTransformation;
+  
+  
   string Ngs_Element::defaultstring = "default";
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
@@ -177,6 +182,12 @@ namespace ngcomp
         mir[i].Compute();
     }
 
+    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const override
+    {
+      return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ElementTransformation<DIMS,DIMR>>
+        (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
+    }
+    
   };
   
 
@@ -692,6 +703,12 @@ namespace ngcomp
           hmir[i].Compute();
         }
     }
+    virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const override
+    {
+      return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ConstElementTransformation<DIMS,DIMR>>
+        (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
+    }
+
   };
   
 
@@ -928,12 +945,35 @@ namespace ngcomp
         nbboundaries++;
         nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
       }
+
+    int & nbbboundaries = nregions[BBBND];
+    if(mesh.GetDimension() == 1 || mesh.GetDimension() == 2)
+      {
+        nbbboundaries = 0;
+      }
+    else
+      {
+        nbbboundaries = -1;
+        for (auto el : Elements(BBBND))          
+          {
+            int elindex = el.GetIndex();
+            if (elindex >=0)
+              nbbboundaries = max2(nbbboundaries, elindex);
+          }
+        nbbboundaries++;
+        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX);
+      }
     
     // update periodic mappings
     auto nid = mesh.GetNIdentifications();
     periodic_node_pairs[NT_VERTEX]->SetSize(0);
     periodic_node_pairs[NT_EDGE]->SetSize(0);
     periodic_node_pairs[NT_FACE]->SetSize(0);
+#ifdef PARALLEL
+    if(MyMPI_GetNTasks()>1 && MyMPI_GetId()==0)
+      nid = 0; //hopefully this is enough...
+      //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
+#endif
     for (auto idnr : Range(nid))
       {
         // only if it is periodic

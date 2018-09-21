@@ -43,6 +43,8 @@ namespace ngcomp
     virtual bool DefinedOn (const ElementTransformation & trafo) override;
     void SelectComponent (int acomp) { comp = acomp; }
     const GridFunction & GetGridFunction() const { return *gf; }
+      using CoefficientFunction::Evaluate;
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override; 
 
@@ -57,9 +59,12 @@ namespace ngcomp
 			   FlatMatrix<Complex> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const override
     { Evaluate (ir, values); }
+    */
+    
     /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 AFlatMatrix<> result,
@@ -168,9 +173,8 @@ namespace ngcomp
     ///
     virtual void PrintReport (ostream & ost) const;
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
 
-    ///
     // void Visualize(const string & name);
 
     ///

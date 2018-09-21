@@ -79,6 +79,7 @@ namespace ngcomp
     HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~HCurlHighOrderFESpace ();
+    static DocInfo GetDocu ();
   
     virtual string GetClassName () const override
     {
@@ -91,6 +92,10 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive) override;
     ///
     virtual size_t GetNDof () const throw() override;
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
+    
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///

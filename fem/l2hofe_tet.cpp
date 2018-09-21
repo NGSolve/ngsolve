@@ -4,7 +4,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
-#define FILE_L2HOFE_CPP
+// #define FILE_L2HOFE_CPP
 
 #include <fem.hpp>
 #include <tscalarfe_impl.hpp>

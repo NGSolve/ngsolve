@@ -65,5 +65,3 @@ Function Documentation
 ----------------------
 
 .. autofunction:: ngsolve.Periodic
-		
-   

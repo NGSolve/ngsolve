@@ -13,3 +13,8 @@ def test_multiple_meshes_refine():
 
     for v in range(mesh.nv):
         assert parents[v] == mesh.GetParentVertices(v)
+
+def test_call_operator_with_vectorization():
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=1))
+    p = mesh(0.5,0.5,0.5)
+    p2 = mesh([0.5, 0.1],0.5,0.5)

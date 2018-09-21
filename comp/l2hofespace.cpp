@@ -8,13 +8,10 @@
    High Order Finite Element Space for L2
 */
 
-/* ***********************************************
-To do: *Internal External Dofs (eliminate internal) 
-       *Flag for low-order dofs eliminated ...   
-************************* */ 
 
 #include <comp.hpp>
 #include <multigrid.hpp>
+#include "../fem/l2hofetp.hpp"
 
 using namespace ngmg;
 
@@ -65,6 +62,7 @@ namespace ngcomp
     DefineNumFlag("relorder");
     DefineDefineFlag("l2ho");
     DefineDefineFlag("all_dofs_together");
+    DefineDefineFlag("hide_all_dofs");
 
     if (parseflags) CheckFlags(flags);
 
@@ -137,8 +135,9 @@ namespace ngcomp
 
 
 
-
+    tensorproduct = flags.GetDefineFlag ("tp");
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
+    hide_all_dofs = flags.GetDefineFlag ("hide_all_dofs");
 
     Flags loflags;
     loflags.SetFlag ("order", 0.0);
@@ -177,6 +176,44 @@ namespace ngcomp
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
   { ; }
 
+  DocInfo L2HighOrderFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu(); 
+    docu.short_docu = "An L2-conforming finite element space.";
+    docu.long_docu =
+      R"raw_string(The L2 finite element space consists of element-wise polynomials,
+which are discontinuous from element to element. It uses an
+L2-orthogonal hierarchical basis which leads to orthogonal
+mass-matrices on non-curved elements.
+
+Boundary values are not meaningful for an L2 function space.
+
+The L2 space supports element-wise variable order, which can be set
+for ELEMENT-nodes.
+
+Per default, all dofs are local dofs and are condensed if static
+condensation is performed. The lowest order can be kept in the
+WIRE_BASKET via the flag 'lowest_order_wb=True'.
+
+All dofs can be hidden. Then the basis functions don't show up in the
+global system.
+)raw_string";
+    
+    docu.Arg("all_dofs_together") = "bool = False\n"
+      "  Change ordering of dofs. If this flag ist set,\n"
+      "  all dofs of an element are ordered successively.\n"
+      "  Otherwise, the lowest order dofs (the constants)\n"
+      "  of all elements are ordered first.";
+
+    docu.Arg("lowest_order_wb") = "bool = False\n"
+      "  Keep lowest order dof in WIRE_BASKET";
+
+    docu.Arg("hide_all_dofs") = "bool = False\n"
+      "  Set all used dofs to HIDDEN_DOFs";
+    return docu;
+  }
+
+  
   shared_ptr<FESpace> L2HighOrderFESpace :: 
   Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
@@ -194,49 +231,58 @@ namespace ngcomp
     if(low_order_space) low_order_space -> Update(lh);
 
     nel = ma->GetNE();
-    order_inner.SetSize(nel); 
- 
-    order_inner = INT<3>(order);
 
-    if(var_order) 
-      for(int i = 0; i < nel; i++) 
-        order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
-    
-    for(int i = 0; i < nel; i++) 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+
+    if (first_update)
       {
-        ElementId ei(VOL,i);
-        order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
-        order_inner[i] = Max(order_inner[i], INT<3>(0));
-        if (!DefinedOn (VOL, ma->GetElIndex (ei)))
-          order_inner[i] = 0;
+	order_inner.SetSize(nel); 
+	
+	order_inner = INT<3>(order);
+	
+	if(var_order) 
+	  for(int i = 0; i < nel; i++) 
+	    order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
+    
+	for(int i = 0; i < nel; i++) 
+	  {
+	    ElementId ei(VOL,i);
+	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    if (!DefinedOn (ei))
+	      order_inner[i] = 0;
+	  }
+	if(print) 
+	  *testout << " order_inner (l2ho) " << order_inner << endl;
       }
-    if(print) 
-      *testout << " order_inner (l2ho) " << order_inner << endl; 
 
     UpdateDofTables();
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
-    if(low_order_space) prol->Update();
+    if(low_order_space) prol->Update(*this);
 
     UpdateCouplingDofArray();
   } 
   
   void L2HighOrderFESpace :: UpdateCouplingDofArray()
   {
+    auto ct_local = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
+    auto ct_lowest_order = hide_all_dofs ? HIDDEN_DOF : lowest_order_ct;
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNE()))
       {
         bool definedon = DefinedOn(ElementId(VOL,i));
         auto r = GetElementDofs(i);
-        ctofdof[r] = definedon ? LOCAL_DOF : UNUSED_DOF;
+        ctofdof[r] = definedon ? ct_local : UNUSED_DOF;
         
         if (!all_dofs_together)
-	  ctofdof[i] = definedon ? lowest_order_ct : UNUSED_DOF;
+	  ctofdof[i] = definedon ? ct_lowest_order : UNUSED_DOF;
         else
           if (r.Size() != 0)
-            ctofdof[r.First()] = definedon ? lowest_order_ct : UNUSED_DOF;            
+            ctofdof[r.First()] = definedon ? ct_lowest_order : UNUSED_DOF;            
       }
   }
 
@@ -246,10 +292,9 @@ namespace ngcomp
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
-        ElementId ei(VOL, i);
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i]; 
-	switch (ma->GetElType(ei))
+	switch (ma->GetElType(ElementId(VOL,i)))
 	  {
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
@@ -288,8 +333,11 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
-    prol->Update();
+    prol->Update(*this);
   }
+
+
+  
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
@@ -320,10 +368,14 @@ namespace ngcomp
                             { return *new(alloc) ScalarDummyFE<et.ElementType()>(); });
           }
 
-	if (eltype == ET_TRIG) 
+	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
-        if (eltype == ET_TET)         
+        if (tensorproduct)
+          if (eltype == ET_TET)
+            return * new (alloc) L2HighOrderFETP<ET_TET> (order, ngel.Vertices(), alloc);
+        
+        if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
 
         /*
@@ -531,7 +583,7 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!ei.IsVolume()) return;
-    if (!DefinedOn (VOL, ma->GetElIndex (ei))) return;
+    if (!DefinedOn (ei)) return;
     
     if (!all_dofs_together)
       dranges.Append (IntRange (ei.Nr(), ei.Nr()+1));
@@ -560,20 +612,45 @@ namespace ngcomp
 
   void L2HighOrderFESpace :: SetOrder (NodeId ni, int order)
   {
-    if (ni.GetType() == NT_ELEMENT)
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In L2HighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
       {
-        if (ni.GetNr() < order_inner.Size())
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
       }
+    else
+      throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType of codimension 0!");
   }
   
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
   {
-    if (ni.GetType() == NT_ELEMENT)
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
       {
-        if (ni.GetNr() < order_inner.Size())
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
       }
+    
     return 0;
   }
   
@@ -716,6 +793,22 @@ namespace ngcomp
     {
       static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
     }
+
+    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      static_cast<const FEL&>(fel).EvaluateGrad (mir, x, y);
+    }
+
+    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      static_cast<const FEL&>(fel).AddGradTrans (mir, y, x);
+    }
+
+    static string Name() { return "grad"; }
   };
 
 
@@ -782,28 +875,54 @@ namespace ngcomp
   {
     nel = ma->GetNSE();
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+    
+    
+    if (first_update)
+      {
+	order_inner.SetSize(nel);
+	order_inner = INT<3>(order);
+
+	for(int i = 0; i < nel; i++) 
+	  {
+	    ElementId ei(BND,i);
+	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    if (!DefinedOn (ei))
+	      order_inner[i] = 0;
+	  }
+    
+	if(print) 
+	  *testout << " order_inner (l2surf) " << order_inner << endl;
+      }
+    
     ndof = 0;
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
-        ElementId sei(BND, i);
 	first_element_dof[i] = ndof;
-	switch (ma->GetElType(sei))
+	INT<3> pi = order_inner[i];
+	switch (ma->GetElType(ElementId(BND, i)))
 	  {
 	  case ET_SEGM:
-	    ndof += order+1;
+	    ndof += pi[0]+1;
 	    break;
 	  case ET_TRIG:
-	    ndof += (order+1)*(order+2)/2;
+	    ndof += (pi[0]+1)*(pi[1]+2)/2;
 	    break;
 	  case ET_QUAD:
-	    ndof += (order+1)*(order+1);
+	    ndof += (pi[0]+1)*(pi[1]+1);
 	    break;
 	  default:
 	    ;
 	  }
       }
     first_element_dof[nel] = ndof;
+
+    if(print) 
+      *testout << " first_element dof (l2surf) " << first_element_dof << endl;
+    
     UpdateCouplingDofArray();
   }
 
@@ -812,11 +931,55 @@ namespace ngcomp
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNSE()))
       {
-        bool definedon = DefinedOn(ElementId(BND,i));
-        auto r = GetElementDofs(i);
-        ctofdof[r] = definedon ? WIREBASKET_DOF : UNUSED_DOF;
+        ctofdof[GetElementDofs(i)] = DefinedOn(ElementId(BND,i)) ? WIREBASKET_DOF : UNUSED_DOF;
       }
   }
+
+
+  void L2SurfaceHighOrderFESpace ::SetOrder (NodeId ni, int order)
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In L2SurfaceHighOrderFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      {
+	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
+      }
+    else
+      throw Exception ("L2SurfaceHighOrderFESpace::SetOrder requires NodeType of codimension 1!");
+  }
+  
+  int L2SurfaceHighOrderFESpace ::GetOrder (NodeId ni) const
+  {
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      {
+	if (ma->GetDimension() == 3 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+      }
+        
+    return 0;
+  }
+  
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   // {
   //   if (ma->GetDimension() == 2)
@@ -893,7 +1056,7 @@ namespace ngcomp
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    if (ei.VB() == BND && DefinedOn(ma->GetElement(ei)))
+    if (ei.VB() == BND && DefinedOn(ei))
       {
         if (ma->GetDimension() == 2)
           {
@@ -909,7 +1072,7 @@ namespace ngcomp
               }
 
             fe1d -> SetVertexNumbers (ngel.vertices);
-            fe1d -> SetOrder (INT<1> (order));
+            fe1d -> SetOrder (order_inner[ei.Nr()]);
             fe1d -> ComputeNDof(); 
             return *fe1d;
           }
@@ -928,7 +1091,7 @@ namespace ngcomp
               }
 	
             fe2d -> SetVertexNumbers (ngel.vertices);
-            fe2d -> SetOrder (INT<2> (order));
+            fe2d -> SetOrder (order_inner[ei.Nr()]);
             fe2d -> ComputeNDof(); 
             return *fe2d;
           }
@@ -956,16 +1119,13 @@ namespace ngcomp
   void L2SurfaceHighOrderFESpace :: 
   GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-    if(ei.VB()!=BND || !DefinedOn(ei)) return;
+    dnums.SetSize0();
+    if (ei.VB()!=BND || !DefinedOn (ei)) return;
+ 
     int first = first_element_dof[ei.Nr()];
     int neldofs = first_element_dof[ei.Nr()+1] - first;
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
-
-    if (!DefinedOn (ei))
-      dnums = -1;
-    
   }
   
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
@@ -991,10 +1151,10 @@ namespace ngcomp
 
 
   void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { dnums.SetSize0(); return; }
   
   void  L2SurfaceHighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { dnums.SetSize0(); return; }
   
   void  L2SurfaceHighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { GetDofNrs ( fanr, dnums ); return; }
@@ -1879,9 +2039,9 @@ namespace ngcomp
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create);
-      GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO);
-      GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create, L2HighOrderFESpace::GetDocu);
+      GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO, L2HighOrderFESpace::GetDocu);
+      GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create, L2SurfaceHighOrderFESpace::GetDocu);
     }
     
     Init init;

@@ -48,7 +48,7 @@ public:
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
 
-  NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+  NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -110,7 +110,7 @@ public:
 
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
-  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     // Vector<> tmp(Dimension());
     STACK_ARRAY(double, mem, Dimension());
@@ -120,84 +120,85 @@ public:
   }
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const;
+                         FlatVector<> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const;
+                         FlatVector<Complex> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                                        BareSliceMatrix<> result) const;
+                                        BareSliceMatrix<> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<Complex> result) const;
+                         FlatMatrix<Complex> result) const override;
 
   // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
   // AFlatMatrix<double> values) const;
 
   NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         BareSliceMatrix<SIMD<double>> values) const;
+                         BareSliceMatrix<SIMD<double>> values) const override;
   NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         BareSliceMatrix<SIMD<Complex>> values) const;
+                         BareSliceMatrix<SIMD<Complex>> values) const override;
 
+  /*
   NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const;
+                         AFlatMatrix<double> values) const override;
 
   NGS_DLL_HEADER virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
-                              FlatMatrix<> deriv) const;
+                              FlatMatrix<> deriv) const override;
 
   NGS_DLL_HEADER virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                                FlatMatrix<> result,
                                FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const;
+                               FlatMatrix<> dderiv) const override;
 
   NGS_DLL_HEADER virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const;
+                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const override;
   
   NGS_DLL_HEADER virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                               AFlatMatrix<double> dderiv) const;
-
+                               AFlatMatrix<double> dderiv) const override;
+  */
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<BareSliceMatrix<SIMD<double>>> input,
-                         BareSliceMatrix<SIMD<double>> values) const
+                         BareSliceMatrix<SIMD<double>> values) const override
   {
     ProxyFunction::Evaluate (ir, values);
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiff<1,double>> values) const;
+                         BareSliceMatrix<AutoDiff<1,double>> values) const override;
   
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiffDiff<1,double>> values) const;
+                         BareSliceMatrix<AutoDiffDiff<1,double>> values) const override;
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const;
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
-                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
   {
     ProxyFunction::Evaluate (ir, values);
   }
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const;
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
-                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
   {
     ProxyFunction::Evaluate (ir, values);
   }
   
-  
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,
                               FlatArray<AFlatMatrix<>*> dinput,
                               AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
+                              AFlatMatrix<> deriv) const override
   {
     EvaluateDeriv (ir, result, deriv);
   }
@@ -208,22 +209,22 @@ public:
                                FlatArray<AFlatMatrix<>*> ddinput,
                                AFlatMatrix<> result,
                                AFlatMatrix<> deriv,
-                               AFlatMatrix<> dderiv) const
+                               AFlatMatrix<> dderiv) const override
   {
     EvaluateDDeriv (ir, result, deriv, dderiv);
   }
-
+  */
   
-  virtual bool ElementwiseConstant () const { return true; }
+  virtual bool ElementwiseConstant () const  override{ return true; }
 
   NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
                                               FlatVector<bool> nonzero,
                                               FlatVector<bool> nonzero_deriv,
-                                              FlatVector<bool> nonzero_dderiv) const;
+                                              FlatVector<bool> nonzero_dderiv) const override;
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
     NonZeroPattern (ud, nz, nzd, nzdd);
@@ -350,8 +351,9 @@ public:
   virtual ~CompoundDifferentialOperator () = default;
   shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
   int Component () const { return comp; }
-
-  virtual bool operator== (const DifferentialOperator & diffop2) const
+  virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+  
+  virtual bool operator== (const DifferentialOperator & diffop2) const override
   {
     const CompoundDifferentialOperator * do2 =
       dynamic_cast<const CompoundDifferentialOperator*> (&diffop2);
@@ -361,9 +363,9 @@ public:
   }
 
   
-  virtual string Name() const { return diffop->Name(); }
+  virtual string Name() const override { return diffop->Name(); }
 
-  virtual IntRange UsedDofs(const FiniteElement & bfel) const
+  virtual IntRange UsedDofs(const FiniteElement & bfel) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     size_t base = BlockDim() * fel.GetRange(comp).First();
@@ -375,7 +377,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               SliceMatrix<double,ColMajor> mat, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -387,7 +389,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               SliceMatrix<Complex,ColMajor> mat, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -399,7 +401,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & mir,
               SliceMatrix<double,ColMajor> mat, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -411,7 +413,7 @@ public:
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & mir,
               SliceMatrix<Complex,ColMajor> mat,   
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -422,7 +424,7 @@ public:
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              BareSliceMatrix<SIMD<double>> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const override
   {
     // mat = 0;   // take care: unused elements not zerod !!!!
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -435,7 +437,7 @@ public:
          const BaseMappedIntegrationPoint & mip,
          FlatVector<double> x, 
          FlatVector<double> flux,
-         LocalHeap & lh) const
+         LocalHeap & lh) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -447,7 +449,7 @@ public:
          const BaseMappedIntegrationPoint & mip,
          FlatVector<Complex> x, 
          FlatVector<Complex> flux,
-         LocalHeap & lh) const
+         LocalHeap & lh) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -459,7 +461,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         BareSliceMatrix<SIMD<double>> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -470,7 +472,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<Complex> x, 
-         BareSliceMatrix<SIMD<Complex>> flux) const
+         BareSliceMatrix<SIMD<Complex>> flux) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -484,7 +486,7 @@ public:
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
               FlatVector<double> x, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     x = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -497,7 +499,7 @@ public:
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
               FlatVector<Complex> x, 
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
   {
     x = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -509,7 +511,7 @@ public:
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
             BareSliceMatrix<SIMD<double>> flux,
-            BareSliceVector<double> x) const
+            BareSliceVector<double> x) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -520,7 +522,7 @@ public:
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
             BareSliceMatrix<SIMD<Complex>> flux,
-            BareSliceVector<Complex> x) const
+            BareSliceVector<Complex> x) const override
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -538,11 +540,12 @@ public:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
     VorB vb;
-    bool element_boundary;
+    // bool element_boundary;
+    VorB element_vb;
 
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                  bool aelement_boundary);
+                                                 VorB aelement_vb);
 
     virtual VorB VB() const override { return vb; }
     virtual string Name () const override { return string ("Symbolic LFI"); }
@@ -780,7 +783,7 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
-    bool element_boundary;    
+    VorB element_vb;    
 
     Timer timer{"SymbolicEnergy",2};
     Array<int> trial_cum;     // cumulated dimension of proxies
@@ -788,7 +791,7 @@ public:
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     
   public:
-    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);
 
     virtual VorB VB() const { return vb; }
     virtual xbool IsSymmetric() const { return true; } 

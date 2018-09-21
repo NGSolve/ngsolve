@@ -30,6 +30,8 @@ namespace ngcomp
     HDivDivSurfaceSpace(shared_ptr<MeshAccess> ama, const Flags & aflags, bool parseflags = false);
 
     virtual ~HDivDivSurfaceSpace ();
+    static DocInfo GetDocu ();
+    
 
     virtual string GetClassName () const
     {

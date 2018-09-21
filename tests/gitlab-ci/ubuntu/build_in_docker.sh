@@ -8,7 +8,7 @@ mkdir -p ~/.ssh
 [[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
 
 
-if [ "$IMAGE_VERSION" == "debug" ]
+if [ "$IMAGE_NAME" == "debug" ]
 then
   export CMAKE_CXX_FLAGS="-Og -Wall -Wno-sign-compare -DDebug"
   export CMAKE_BUILD_TYPE="Debug"
@@ -16,14 +16,14 @@ else
   export CMAKE_BUILD_TYPE="Release"
 fi
 
-if [ "$IMAGE_VERSION" == "avx" ] || [ "$IMAGE_VERSION" == "avx512" ]
+if [ "$IMAGE_NAME" == "avx" ] || [ "$IMAGE_NAME" == "avx512" ]
 then
   export USE_NATIVE_ARCH="ON"
 else
   export USE_NATIVE_ARCH="OFF"
 fi
 
-if [ "$IMAGE_VERSION" == "mpi" ]
+if [ "$IMAGE_NAME" == "mpi" ]
 then
   apt-get -y install libopenmpi-dev openmpi-bin gfortran
   export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF"
@@ -31,6 +31,9 @@ fi
 
 cd 
 cd src/ngsolve
+cd external_dependencies
+rm -rf netgen
+cd ..
 git submodule update --init --recursive
 cd
 mkdir -p build/ngsolve
@@ -57,27 +60,19 @@ make install
 make package
 cd ngsolve
 
-if [ "$IMAGE_NAME" != "debug" ] && [ "$IMAGE_NAME" != "avx" ] && [ "$IMAGE_VERSION" != "mpi" ]
+if [ "$IMAGE_NAME" == "latest" ]
 then
-  ## upload built packages to server
-  export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
-
+  ## build and upload docu to server
   apt-get install -y rsync
 
-  if [ "artful" = "$UBUNTU_VERSION_NAME" ]
-  then
-    echo "build docu"
-    make docs
-    echo "upload docu"
-    rsync -ztrl --del -e ssh \
-      --rsync-path="mkdir -p deploy/builds/$CI_PIPELINE_ID/docu/ && rsync" \
-      docs/html/* \
-      gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/docu/
-  fi
-  cd ..
-
+  echo "build docu"
+  make docs
+  find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
+  cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files
+  zip -r docs/html/i-tutorials.zip docs/html/jupyter-files
+  echo "upload docu"
   rsync -ztrl --del -e ssh \
-    --rsync-path="mkdir -p $UPLOAD_DIR && rsync" \
-    *.deb \
-    gitlab-runner@vector.asc.tuwien.ac.at:$UPLOAD_DIR/
+    --rsync-path="mkdir -p deploy/builds/$CI_PIPELINE_ID/docu/ && rsync" \
+    docs/html/* \
+    gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/docu/
 fi

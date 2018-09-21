@@ -87,6 +87,27 @@ namespace ngcomp
           mat(j,i) = shape(i,j);
 
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
+    }
+
+    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+    }    
   };
 
   template<int D>
@@ -455,6 +476,16 @@ namespace ngcomp
       integrator[VOL] = make_shared<HDivDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
     }
+  }
+
+  DocInfo HDivDivFESpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HDivDiv space";
+    docu.Arg("plus") = "bool = False\n"
+      "  Add additional internal element bubble";
+    return docu;
   }
 
   void HDivDivFESpace :: Update(LocalHeap & lh)

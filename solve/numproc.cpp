@@ -3512,7 +3512,27 @@ void ExportDrawFlux(py::module &m)
               return make_shared<NumProcCalcFlux> (pde, bfa, gfu, gfflux, applyd);
             },
             py::arg("pde"), py::arg("bf"), py::arg("gf"),
-            py::arg("flux"), py::arg("applyd")=false
+            py::arg("flux"), py::arg("applyd")=false, docu_string(R"raw_string(
+Calculate Flux
+
+Parameters:
+
+pde : ngsolve.comp.PDE
+  input pde
+
+bf : ngsolve.comp.BilinearForm
+  input bilinear form
+
+gf : ngsolve.comp.GridFunction
+  input GridFunction where the solution is saved
+
+flux : ngsolve.comp.GridFunction
+  input GridFunction where the flux is saved
+
+applyd : bool
+  input applyd
+
+)raw_string")
 	   );
   m.def ("DrawFlux", [](shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
@@ -3524,8 +3544,28 @@ void ExportDrawFlux(py::module &m)
               return make_shared<NumProcDrawFlux> (bfa, gfu, alabel, applyd, useall);
             },
             py::arg("bf"), py::arg("gf"), 
-            py::arg("label")="flux", py::arg("applyd")=false, py::arg("useall")=false
-	   );
+            py::arg("label")="flux", py::arg("applyd")=false, py::arg("useall")=false, docu_string(R"raw_string(
+draw Flux
+
+Parameters:
+
+
+bf : ngsolve.comp.BilinearForm
+  input bilinear form
+
+gf : ngsolve.comp.GridFunction
+  input GridFunction where the flux is saved
+
+label : string
+  input name of the flux
+
+applyd : bool
+  input applyd
+
+useall : bool
+  input useall
+
+)raw_string"));
 
 
 }

@@ -1,7 +1,6 @@
 #include <bla.hpp>
 
 
-
 namespace ngbla
 {
 
@@ -20,49 +19,175 @@ namespace ngbla
   {
     constexpr int SW = SIMD<double>::Size();
     SIMD<mask64> mask(w % SW);
-    // bool rest = (w % SW) != 0;
-    // auto pd0 = pd;
+
     for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
       {
-        // memcpy (pd, ps, sizeof(double)*w);
-
         size_t js = 0, jd=0;
         for ( ; js+SW <= w; js+=SW, jd++)
-          {
-            pd[jd] = SIMD<double>(ps+js);
-            // Prefetch (psnext+j,  _MM_HINT_T1);
-          }
+          pd[jd] = SIMD<double>(ps+js);
         SIMD<double>(ps+js, mask).Store((double*) (pd+jd), mask);
-         /*
-        if (rest)
-          pd[jd] = SIMD<double>(ps+js, mask);
-         */
-        /*
-        size_t js = 0, jd=0;
-        for ( ; js+4*SW <= w; js+=4*SW, jd+=4)
-          {
-            SIMD<double> v0(ps+js);
-            SIMD<double> v1(ps+js+1*SW);
-            SIMD<double> v2(ps+js+2*SW);
-            SIMD<double> v3(ps+js+3*SW);
-            pd[jd+0] = v0;
-            pd[jd+1] = v1;
-            pd[jd+2] = v2;
-            pd[jd+3] = v3;
-            // Prefetch (psnext+j,  _MM_HINT_T1);
-          }
-        for ( ; js+SW <= w; js+=SW, jd+=1)
-          {
-            SIMD<double> v0(ps+js);
-            pd[jd+0] = v0;
-            // Prefetch (psnext+j,  _MM_HINT_T1);
-          }
-        SIMD<double>(ps+js, mask).Store((double*) (pd+jd), mask);
-        ps = psnext;
-        */
       }
   }
 
+  /* ************************ Matrix * Vector ************************** */
+
+
+  template <int SX>
+  void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    KernelMatVec<SX,SET> (y.Size(), &a(0), a.Dist(), &x(0), &y(0));
+  }
+
+  
+  NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    // constexpr int SW = SIMD<double>::Size();
+    size_t h = y.Size();
+    size_t w = x.Size();
+    size_t i = 0;
+
+    double * pa = &a(i,0);
+    for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
+      {
+        SIMD<double,4> sum1, sum2;
+        tie(sum1, sum2) = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        sum1.Store(&y(i));        
+        sum2.Store(&y(i+4));        
+      }
+    
+    if (i+4 <= h)
+      {
+        SIMD<double,4> sum;
+        tie(sum) = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        sum.Store(&y(i));
+        i += 4;
+        pa += 4*a.Dist();
+      }
+
+    if (i+2 <= h)
+      {
+        auto scal = MatKernelScalAB<2,1> (w, pa, a.Dist(), &x(0), 0);
+        SIMD<double,2> sum(get<0>(scal), get<1>(scal));
+        sum.Store(&y(i));
+        i += 2;
+        pa += 2*a.Dist();
+      }
+
+    if (i+1 <= h)
+      {
+        auto scal = MatKernelScalAB<2,1> (w, pa, a.Dist(), &x(0), 0);
+        y(i) = get<0>(scal);
+      }
+
+  }
+
+
+
+
+ pmult_matvec dispatch_matvec[25] =
+    {
+      &MultMatVecShort<0>, &MultMatVecShort<1>, &MultMatVecShort<2>, &MultMatVecShort<3>,
+      &MultMatVecShort<4>, &MultMatVecShort<5>, &MultMatVecShort<6>, &MultMatVecShort<7>,
+      &MultMatVecShort<8>, &MultMatVecShort<9>, &MultMatVecShort<10>, &MultMatVecShort<11>,
+      &MultMatVecShort<12>, &MultMatVecShort<13>, &MultMatVecShort<14>, &MultMatVecShort<15>,
+      &MultMatVecShort<16>, &MultMatVecShort<17>, &MultMatVecShort<18>, &MultMatVecShort<19>,
+      &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
+      &MultMatVecShort<24>
+    };
+
+  
+
+  // ************************** transpose Mat * vec ***************
+
+  
+  template <int SX>
+  void MultMatTransVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    MatKernelDaxpy<1, SX, SET> (y.Size(), &x(0), 1, &a(0), a.Dist(), &y(0), 1);
+  }
+  
+
+
+  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = x.Size();
+    size_t w = y.Size();
+    size_t dist = a.Dist();
+
+    size_t i = 0;
+    for ( ; i+SW <= w; i+= SW)
+      {
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum.Store(&y(i));
+      }
+    
+    if (i < w)
+      {
+        SIMD<mask64> mask(w % SW);
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist, mask);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist, mask);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum.Store(&y(i), mask);
+      }
+  }
+
+
+  
+  // typedef void REGCALL (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);  
+  pmult_mattransvec dispatch_mattransvec[13] =
+    {
+      &MultMatTransVecShort<0>,
+      &MultMatTransVecShort<1>,
+      &MultMatTransVecShort<2>,
+      &MultMatTransVecShort<3>,
+      &MultMatTransVecShort<4>,
+      &MultMatTransVecShort<5>,
+      &MultMatTransVecShort<6>,
+      &MultMatTransVecShort<7>,
+      &MultMatTransVecShort<8>,
+      &MultMatTransVecShort<9>,
+      &MultMatTransVecShort<10>,
+      &MultMatTransVecShort<11>,
+      &MultMatTransVecShort<12>
+    };
+  
+
+  
+
+  
   /* *********************** C = A * B ********************************* */
   
   // b.Width() = W * SIMD
@@ -143,7 +268,6 @@ namespace ngbla
   INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, TB * pb, size_t db, double * pc, size_t dc)
   {
     constexpr size_t SW = SIMD<double>::Size();
-    // constexpr size_t SWdTB = sizeof(TB)/sizeof(double);
     constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
     size_t l = 0, lb = 0;
     for ( ; l+3*SW <= wb; l += 3*SW, lb += 3*SWdTB)
@@ -153,7 +277,8 @@ namespace ngbla
     if (l < wb)
       MatKernelMultABMask<H,OP>(hb, SIMD<mask64>(wb-l), pa, da, pb+lb, db, pc+l, dc);
   }
-  
+
+  /*
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
@@ -169,17 +294,13 @@ namespace ngbla
     constexpr size_t SW = SIMD<double>::Size();
     alignas(64) SIMD<double> bb[BBH*BBW/SW];
 
-    // c.AddSize(ha, wb) = 0.0;
-
     double *pb = &b(0);
     for (size_t i = 0; i < wa; i += BBH, pb += BBH*b.Dist())
       for (size_t j = 0; j < wb; j += BBW)
         {
           size_t hbi = min2(BBH, wa-i);
           size_t wbi = min2(BBW, wb-j);
-          // cout << "copy B source = " << endl << SliceMatrix<> (hbi, wbi, b.Dist(), pb+j) << endl;
           CopyMatrixIn (hbi, wbi, pb+j, b.Dist(), &bb[0], BBW/SW);
-          // cout << "copy B dest = " << endl << SliceMatrix<> (hbi, wbi, BBW, (double*)&bb[0]) << endl;          
           double * pa = &a(0)+i;
           double * pc = &c(0)+j;
 
@@ -231,7 +352,290 @@ namespace ngbla
             }
         }
   }
+  */
 
+
+
+  template <size_t BBH, OPERATION OP>
+  void REGCALL MultMatMat_intern2_SlimB (size_t ha, size_t wa, size_t wb,
+                                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    double * pa0 = &a(0);
+    size_t dista = a.Dist();
+    double * pb = &b(0);
+    size_t distb = b.Dist();
+
+    
+    constexpr size_t SW = SIMD<double>::Size();
+    alignas(64) SIMD<double> bb[BBH];
+#ifdef __AVX512F__
+    constexpr size_t HA = 6;
+#else
+    constexpr size_t HA = 4;
+#endif
+
+    double * pc = &c(0,0);
+    for (size_t j = 0; j+SW <= wb; j+=SW, pb += SW, pc += SW)
+      {
+        for (size_t k = 0; k < wa; k++)
+          bb[k] = SIMD<double> (pb+k*distb);
+
+        double * pc1 = pc;
+        double * pa1 = pa0;
+        size_t k = 0;
+        for ( ; k+2*HA <= ha; k += 2*HA, pc1 += 2*HA*c.Dist(), pa1 += 2*HA*dista)
+          MatKernelMultAB<2*HA, 1, OP> (wa, pa1, dista, bb, 1, pc1, c.Dist());
+        for ( ; k+HA <= ha; k += HA, pc1 += HA*c.Dist(), pa1 += HA*dista)
+          MatKernelMultAB<HA, 1, OP> (wa, pa1, dista, bb, 1, pc1, c.Dist());
+        for ( ; k+1 <= ha; k += 1, pc1 += c.Dist(), pa1 += dista)
+          MatKernelMultAB<1, 1, OP> (wa, pa1, dista, bb, 1, pc1, c.Dist());
+      }
+
+    
+    if (wb % SW != 0)
+      {
+        SIMD<mask64> mask(wb%SW);
+        for (size_t k = 0; k < wa; k++)
+          bb[k] = SIMD<double> (pb+k*distb, mask);
+        
+        size_t k = 0;
+        double * pc1 = pc;        
+        for ( ; k+HA <= ha; k += HA, pc1 += HA*c.Dist())
+          MatKernelMultABMask<HA, OP> (wa, mask, pa0+k*dista, dista, bb, 1, pc1, c.Dist());
+        for ( ; k+1 <= ha; k += 1, pc1 += c.Dist())
+          MatKernelMultABMask<1, OP> (wa, mask, pa0+k*dista, dista, bb, 1, pc1, c.Dist());
+      }
+  } 
+
+
+  template <size_t BBH, OPERATION OP>
+  void  REGCALL MultMatMat_intern2 (size_t ha, size_t wa, size_t wb,
+                                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    if (wb < 3*SIMD<double>::Size())
+      {
+        MultMatMat_intern2_SlimB<BBH,OP> (ha, wa, wb, a, b, c);
+        return;
+      }
+
+    double * pa0 = &a(0);
+    size_t dista = a.Dist();
+    double * pb = &b(0);
+    size_t distb = b.Dist();
+    
+#ifdef __AVX512F__
+    constexpr size_t HA = 6;
+#else
+    constexpr size_t HA = 4;
+#endif
+    
+    // blockwise B, fits into L2 cache
+    // constexpr size_t BBH = 128;
+    constexpr size_t BBW = 96;
+    constexpr size_t SW = SIMD<double>::Size();
+    alignas(64) SIMD<double> bb[BBH*BBW/SW];
+
+    for (size_t j = 0; j < wb; j += BBW)
+      {
+        size_t hbi = wa;
+        size_t wbi = min2(BBW, wb-j);
+        CopyMatrixIn (hbi, wbi, pb+j, distb, &bb[0], BBW/SW);
+
+        double * pa = pa0;
+        double * pc = &c(0)+j;
+        
+        size_t k = 0;
+        for ( ; k+HA <= ha; k += HA, pa += HA*dista, pc += HA * c.Dist())
+          MatKernel2AddAB<HA,OP> (hbi, wbi, pa, dista,  &bb[0], BBW/SW, pc, c.Dist());
+        switch (ha-k)
+          {
+          case 0: break;
+          case 1: MatKernel2AddAB<1,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist()); break;
+          case 2: MatKernel2AddAB<2,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist()); break;
+          case 3: MatKernel2AddAB<3,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist()); break;
+          case 4:
+            if (HA > 4)
+              MatKernel2AddAB<4,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist());
+            break;
+          case 5:
+            if (HA > 5)
+              MatKernel2AddAB<5,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist());
+            break;
+          default: ; 
+          }
+      }
+  }
+ 
+
+  template <size_t WA, OPERATION OP=SET> 
+  REGCALL void MultMatMat_intern2_ShortSum (size_t ha, size_t wb,
+                                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    if (WA <= 6 && OP==SET)
+      MatKernelShortSum2<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+    else
+      MatKernelShortSum<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+  }
+
+
+  pmultAB dispatch_multAB[13] =
+    { &MultMatMat_intern2_ShortSum<0>,
+      &MultMatMat_intern2_ShortSum<1>,
+      &MultMatMat_intern2_ShortSum<2>,
+      &MultMatMat_intern2_ShortSum<3>,
+      &MultMatMat_intern2_ShortSum<4>,
+      &MultMatMat_intern2_ShortSum<5>,
+      &MultMatMat_intern2_ShortSum<6>,
+      &MultMatMat_intern2_ShortSum<7>,
+      &MultMatMat_intern2_ShortSum<8>,
+      &MultMatMat_intern2_ShortSum<9>,
+      &MultMatMat_intern2_ShortSum<10>,
+      &MultMatMat_intern2_ShortSum<11>,
+      &MultMatMat_intern2_ShortSum<12>
+    };
+
+  
+  
+  void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
+                          BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    constexpr size_t BBH = 128;
+    if (wa <= BBH)
+      {
+        if (wb < 3*SIMD<double>::Size())
+          MultMatMat_intern2_SlimB<BBH,SET> (ha, wa, wb, a, b, c);
+        else
+          MultMatMat_intern2<BBH,SET> (ha, wa, wb, a, b, c);
+      }
+    else
+      {
+        MultMatMat_intern2<BBH,SET> (ha, BBH, wb, a, b, c);    
+
+        for (size_t i = BBH; i < wa; i += BBH)
+          {
+            a.IncPtr(BBH);
+            b.IncPtr(BBH*b.Dist());
+            size_t hbi = min2(BBH, wa-i);        
+            MultMatMat_intern2<BBH,ADD> (ha, hbi, wb, a, b, c);
+          }
+      }
+  }
+
+  void MinusMultAB_intern (size_t ha, size_t wa, size_t wb,
+                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    constexpr size_t BBH = 128;
+    if (wb < 3*SIMD<double>::Size())
+      MultMatMat_intern2_SlimB<BBH,SETNEG> (ha, wa, wb, a, b, c);
+    else
+      for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
+        {
+          size_t hbi = min2(BBH, wa-i);        
+          MultMatMat_intern2<BBH,SETNEG> (ha, hbi, wb, a, b, c);
+        }
+  }
+
+  
+  void AddAB_intern (size_t ha, size_t wa, size_t wb,
+                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    switch (wa)
+      {
+      case 0: return;
+      case 1: MultMatMat_intern2_ShortSum<1,ADD> (ha, wb, a, b, c); return;
+      case 2: MultMatMat_intern2_ShortSum<2,ADD> (ha, wb, a, b, c); return;
+      case 3: MultMatMat_intern2_ShortSum<3,ADD> (ha, wb, a, b, c); return;
+      case 4: MultMatMat_intern2_ShortSum<4,ADD> (ha, wb, a, b, c); return;
+      case 5: MultMatMat_intern2_ShortSum<5,ADD> (ha, wb, a, b, c); return;
+      case 6: MultMatMat_intern2_ShortSum<6,ADD> (ha, wb, a, b, c); return;
+      default:
+        ;
+      }
+    
+    constexpr size_t BBH = 128;
+    if (wb < 3*SIMD<double>::Size())
+      MultMatMat_intern2_SlimB<BBH,ADD> (ha, wa, wb, a, b, c);
+    else
+      for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
+        {
+          size_t hbi = min2(BBH, wa-i);        
+          MultMatMat_intern2<BBH,ADD> (ha, hbi, wb, a, b, c);
+        }
+  }
+
+  void SubAB_intern (size_t ha, size_t wa, size_t wb,
+                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    constexpr size_t BBH = 128;
+    if (wb < 3*SIMD<double>::Size())
+      MultMatMat_intern2_SlimB<BBH,SUB> (ha, wa, wb, a, b, c);
+    else
+      for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
+        {
+          size_t hbi = min2(BBH, wa-i);        
+          MultMatMat_intern2<BBH,SUB> (ha, hbi, wb, a, b, c);
+        }
+  }
+
+
+
+
+  /*
+
+    // was not fast ...
+
+  template <size_t HA,size_t WAREST>
+  INLINE void MultMatMat_SmallA_intern2 (size_t wa, size_t wb,
+                                  double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+  {
+    MatKernelDaxpy<HA,WAREST,SET> (wb, pa, da, pb, db, pc, dc);
+    for (size_t j = WAREST ; j+4 <= wa; j += 4)
+      MatKernelDaxpy<HA,4,ADD> (wb, pa+j, da, pb+j*db, db, pc, dc);
+  }
+  
+  template <size_t WAREST>
+  void REGCALL MultMatMat_SmallA_intern3 (size_t ha, size_t wa, size_t wb,
+                                            BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    double * pa = &a(0);
+    size_t da = a.Dist();
+    double * pb = &b(0);
+    size_t db = b.Dist();
+    double * pc = &c(0);
+    size_t dc = c.Dist();
+
+    size_t i = 0;
+    for ( ; i+3 <= ha; i += 3, pa += 3*da, pc += 3*dc)
+      MultMatMat_SmallA_intern2<3,WAREST> (wa, wb, pa, da, pb, db, pc, dc);
+    switch (ha-i)
+      {
+      case 1:
+        MultMatMat_SmallA_intern2<1,WAREST> (wa, wb, pa, da, pb, db, pc, dc);
+        break;
+      case 2:
+        MultMatMat_SmallA_intern2<2,WAREST> (wa, wb, pa, da, pb, db, pc, dc);
+        break;
+      }
+  }
+
+  void REGCALL MultMatMat_SmallA_intern (size_t ha, size_t wa, size_t wb,
+                                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    switch (wa & 3)
+      {
+      case 1: MultMatMat_SmallA_intern3<1> (ha, wa, wb, a, b, c); break;
+      case 2: MultMatMat_SmallA_intern3<2> (ha, wa, wb, a, b, c); break;
+      case 3: MultMatMat_SmallA_intern3<3> (ha, wa, wb, a, b, c); break;
+      case 0: MultMatMat_SmallA_intern3<4> (ha, wa, wb, a, b, c); break;
+      default:
+        __assume(false); 
+      }
+        
+  }
+  */
+
+
+  
   /* ********************* C = A * B  with B is SIMD **************************** */
 
   // b.Width() = W * SIMD
@@ -277,8 +681,247 @@ namespace ngbla
       MatKernel2MultAB<1>(ha, wa, a, b.Cols(k,k+SW), c.Cols(k,k+SW));
   }
 
+  /* ******************************* A^T B *************************************** */
+
+  template <size_t WA>
+  INLINE void MultAtBSmallWA2 (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                               BareSliceMatrix<double> c)
+  {
+    constexpr size_t SW = SIMD<double>::Size();    
+
+    size_t da = a.Dist();
+    size_t db = b.Dist();
+    size_t dc = c.Dist();
+
+    size_t j = 0;
+    double * pc0 = &c(0);
+    for ( ; j+2*SW <= wb; j+=2*SW, pc0+=2*SW)
+      {
+        Vec<WA, SIMD<double>> sum0;
+        Vec<WA, SIMD<double>> sum1;
+        for (size_t i = 0; i < WA; i++)
+          {
+            sum0[i] = SIMD<double> (0);
+            sum1[i] = SIMD<double> (0);
+          }
+        
+        double * pa = &a(0);
+        double * pb = &b(j);
+        __assume(ha > 0);
+        for (size_t k = 0; k < ha; k++, pa += da, pb += db)
+          {
+            SIMD<double> bjk0(pb);
+            SIMD<double> bjk1(pb+SW);
+            
+            for (size_t i = 0; i < WA; i++)
+              {
+                SIMD<double> ai(pa[i]);
+                FMAasm (bjk0, ai, sum0[i]);
+                FMAasm (bjk1, ai, sum1[i]);
+              }
+          }
+
+        double * pc = pc0;
+        for (size_t i = 0; i < WA; i++, pc += dc)
+          {
+            sum0[i].Store (pc);
+            sum1[i].Store (pc+SW);
+          }
+      }
+
+    for ( ; j+SW <= wb; j+=SW, pc0+=SW)
+      {
+        Vec<WA, SIMD<double>> sum;
+        for (size_t i = 0; i < WA; i++)
+          sum[i] = SIMD<double> (0);
+        
+        double * pa = &a(0);
+        double * pb = &b(j);
+        __assume(ha > 0);
+        for (size_t k = 0; k < ha; k++, pa += da, pb += db)
+          {
+            SIMD<double> bjk(pb);
+            for (size_t i = 0; i < WA; i++)
+              // sum[i] += bjk*pa[i];
+              FMAasm (bjk, SIMD<double>(pa[i]), sum[i]);
+          }
+
+        double * pc = pc0;
+        for (size_t i = 0; i < WA; i++, pc += dc)
+          sum[i].Store (pc);
+      }
+
+    
+    SIMD<mask64> mask(wb-j);
+    std::array<SIMD<double>,WA> sum;
+    for (size_t i = 0; i < WA; i++)
+      sum[i] = SIMD<double> (0);
+    
+    double * pa = &a(0);
+    double * pb = &b(j);
+    __assume(ha > 0);    
+    for (size_t k = 0; k < ha; k++, pa += da, pb += db)
+      {
+        SIMD<double> bi(pb, mask);
+        for (size_t i = 0; i < WA; i++)
+          sum[i] += bi*pa[i];
+      }
+
+    double * pc = &c(j);    
+    for (size_t i = 0; i < WA; i++, pc += dc)
+      sum[i].Store (pc, mask);
+  }
 
 
+
+  template <size_t WA>
+  void REGCALL MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                               BareSliceMatrix<double> c)
+  /*
+  template <size_t WA>
+  void __attribute__((preserve_most)) MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                               BareSliceMatrix<double> c)
+  */
+  {
+    if (WA <= 6)
+      {
+        MultAtBSmallWA2<WA> (ha, wb, a, b, c);
+        return;
+      }
+    MatKernelAtB_SmallWA<WA,SET> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+    /*
+    constexpr size_t SW = SIMD<double>::Size();    
+
+    size_t da = a.Dist();
+    size_t db = b.Dist();
+    size_t dc = c.Dist();
+
+    size_t j = 0;
+    double * pc0 = &c(0);
+    for ( ; j+SW <= wb; j+=SW, pc0+=SW)
+      {
+        HTArray<WA, SIMD<double>> sum;
+        // for (size_t i = 0; i < WA; i++)
+          // sum[i] = SIMD<double> (0);
+        Iterate<WA> ( [&sum] (auto i)
+                      { sum.template Elem<i>() = SIMD<double>(0); });
+        double * pa = &a(0);
+        double * pb = &b(j);
+        __assume(ha > 0);
+        for (size_t k = 0; k < ha; k++, pa += da, pb += db)
+          {
+            SIMD<double> bjk(pb);
+            // for (size_t i = 0; i < WA; i++)
+              // sum[i] += bjk*pa[i];
+              // FMAasm (bjk, SIMD<double>(pa[i]), sum[i]);
+            Iterate<WA> ( [&sum, pa, bjk] (auto i)
+                          { FMAasm (bjk,SIMD<double>(pa[i]), sum.template Elem<i>()); });
+          }
+
+        double * pc = pc0;
+        //         for (size_t i = 0; i < WA; i++, pc += dc)
+        // sum[i].Store (pc);
+        Iterate<WA> ( [&sum, &pc,dc] (auto i)
+                      { sum.template Elem<i>().Store(pc); pc+=dc; });
+
+      }
+
+    
+    SIMD<mask64> mask(wb-j);
+    std::array<SIMD<double>,WA> sum;    
+    for (size_t i = 0; i < WA; i++)
+      sum[i] = SIMD<double> (0);
+    
+    double * pa = &a(0);
+    double * pb = &b(j);
+    __assume(ha > 0);    
+    for (size_t k = 0; k < ha; k++, pa += da, pb += db)
+      {
+        SIMD<double> bi(pb, mask);
+        for (size_t i = 0; i < WA; i++)
+          sum[i] += bi*pa[i];
+      }
+
+    double * pc = &c(j);    
+    for (size_t i = 0; i < WA; i++, pc += dc)
+      sum[i].Store (pc, mask);
+    */
+  }
+
+  pfunc_atb dispatch_atb[13] =
+    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
+      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
+      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
+      &MultAtBSmallWA<12>
+    };
+
+
+  
+  template 
+  void MultAtBSmallWA<0> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<1> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<2> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<3> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<4> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<5> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<6> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<7> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<8> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<9> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                          BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<10> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                           BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<11> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                           BareSliceMatrix<double> c);
+  template 
+  void MultAtBSmallWA<12> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                           BareSliceMatrix<double> c);
+
+
+  void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    /*
+    switch (a.Width())
+      {
+      case 0: MultAtBSmallWA<0> (a.Height(), b.Width(), a, b, c); return;
+      case 1: MultAtBSmallWA<1> (a.Height(), b.Width(), a, b, c); return;
+      case 2: MultAtBSmallWA<2> (a.Height(), b.Width(), a, b, c); return;
+      case 3: MultAtBSmallWA<3> (a.Height(), b.Width(), a, b, c); return;
+      case 4: MultAtBSmallWA<4> (a.Height(), b.Width(), a, b, c); return;
+      case 5: MultAtBSmallWA<5> (a.Height(), b.Width(), a, b, c); return;
+      case 6: MultAtBSmallWA<6> (a.Height(), b.Width(), a, b, c); return;
+      case 7: MultAtBSmallWA<7> (a.Height(), b.Width(), a, b, c); return;
+      case 8: MultAtBSmallWA<8> (a.Height(), b.Width(), a, b, c); return;
+      case 9: MultAtBSmallWA<9> (a.Height(), b.Width(), a, b, c); return;
+      case 10: MultAtBSmallWA<10> (a.Height(), b.Width(), a, b, c); return;
+      case 11: MultAtBSmallWA<11> (a.Height(), b.Width(), a, b, c); return;
+      case 12: MultAtBSmallWA<12> (a.Height(), b.Width(), a, b, c); return;
+      }
+    */
+
+    // todo: optimize generic size function
+    c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
+  }
 
   /* ***************************** A * B^T *************************************** */
 
@@ -305,6 +948,15 @@ namespace ngbla
             Iterate<HA> ([&] (auto i) {
                 double * pci = pc+i.value*dc+j;
                 auto si = func (SIMD<double,4>(pci), get<i.value>(scal));
+                si.Store(pci);
+              });
+          }
+        for ( ; j+2 <= wc; j += 2, pb += 2*db)
+          {
+            auto scal = MatKernelScalAB<HA,2>(wa, pa, da, pb, db);
+            Iterate<HA> ([&] (auto i) {
+                double * pci = pc+i.value*dc+j;
+                auto si = func (SIMD<double,2>(pci), get<i.value>(scal));
                 si.Store(pci);
               });
           }
@@ -371,6 +1023,37 @@ namespace ngbla
       TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
   }
+
+  void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    // c = a * Trans(b);
+
+    constexpr size_t bs = 256;
+    size_t wa = a.Width();
+
+    TAddABt2 (min2(bs, wa), a.Height(), b.Height(),
+              &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist(),
+              [] (auto c, auto ab) { return ab; });
+
+    if (wa > bs)
+      TAddABt1 (a.Cols(bs, wa), b.Cols(bs, wa), c, [] (auto c, auto ab) { return c+ab; });        
+  }
+
+  void MinusMultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    // c = -a * Trans(b);
+    
+    constexpr size_t bs = 256;
+    size_t wa = a.Width();
+
+    TAddABt2 (min2(bs, wa), a.Height(), b.Height(),
+              &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist(),
+              [] (auto c, auto ab) { return -ab; });
+
+    if (wa > bs)
+      TAddABt1 (a.Cols(bs, wa), b.Cols(bs, wa), c, [] (auto c, auto ab) { return c-ab; });        
+  }
+
   
   void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
@@ -417,7 +1100,6 @@ namespace ngbla
     // c -= a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c-ab; });
   }
-
 
 
 
@@ -1366,17 +2048,24 @@ namespace ngbla
           "0 ... run all timings\n"
           "1 ... A = B,   A,B = n*m,   A = aligned, fixed dist\n"
           "2 ... A = 0,   A = n*m,     but sliced\n"
+          "3 ... A = B^t, A = n*m, \n"
+          "5 ... y = A*x,   A = n*m\n"
+          "6 ... y = A^t*x,   A = n*m\n"
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
           "60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag\n"
+          "61 .. C = A^t B,  A=n*k, B=n*m, C = k*m\n"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
           "111.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW, B aligned\n"
           "150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n"
-          "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned"
+          "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned\n"
+          "200.. CalcInverse        A = nxn\n"
+          "205.. LDL                A = nxn\n"
+          "210.. CalcInverseLapack  A = nxn\n"
              << endl;
         return list<tuple<string,double>>();
       }
@@ -1397,7 +2086,7 @@ namespace ngbla
         FlatMatrix<SIMD<double>> a(n,WA/SIMD<double>::Size(),&mema[0]);
         b = 1;
         double tot = n*m;
-        int its = 1e10 / tot + 1;
+        int its = 1e9 / tot + 1;
         {
           Timer t("Copy matrix, packed dest");
           t.Start();
@@ -1415,7 +2104,7 @@ namespace ngbla
         // A = 0
         Matrix<> a(n,m);
         double tot = n*m;
-        int its = 1e10 / tot + 1;
+        int its = 1e9 / tot + 1;
         {
           Timer t("Zero matrix, packed dest");
           t.Start();
@@ -1427,6 +2116,75 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 3)
+      {
+        // A = B^t
+        Matrix<> a(n,m), b(m,n);
+        b = 1;
+        double tot = n*m;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Matrix Transpose");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            TransposeMatrix(b, a);
+          t.Stop();
+          cout << "Lapack GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Transpose matrix", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
+
+
+    
+    if (what == 0 || what == 5)
+      {
+        // y = A*x
+        Matrix<> a(n,m);
+        Vector<> x(m), y(n);
+        a = 1; x = 2;
+        double tot = n*m;
+        int its = 1e9 / tot + 1;
+        {
+          MultMatVec(a,x,y);
+          if (L2Norm(a*x-y) > 1e-8)
+            throw Exception("MultMatVec is faulty");
+          Timer t("y = A*x");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MultMatVec(a,x,y);
+          t.Stop();
+          cout << "MultMatVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVec", 1e-9 * n*m*its / t.GetTime()));
+        }
+        {
+          Timer t("y = A*x, Lapack");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            LapackMultAx (a, x, y);
+          t.Stop();
+          cout << "MultMatVec Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVecLapack", 1e-9 * n*m*its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 6)
+      {
+        // y = A*x
+        Matrix<> a(n,m);
+        Vector<> x(n), y(m);
+        a = 1; x = 2;
+        double tot = n*m;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("y = A*x");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MultMatTransVec(a,x,y);
+          t.Stop();
+          cout << "MultMatTransVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVec", 1e-9 * n*m*its / t.GetTime()));
+        }
+      }
 
     
     if (what == 0 || what == 10)
@@ -1434,8 +2192,20 @@ namespace ngbla
         // C=A*B
         Matrix<> a(n,m), b(m,k), c(n,k);
         a = 1; b = 2;
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < m; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (int i = 0; i < m; i++)
+          for (int j = 0; j < k; j++)
+            b(i,j) = cos(i+3) * cos(j);
+        
         double tot = n*m*k;
         int its = 1e10 / tot + 1;
+        MultMatMat(a,b,c);
+        double err = L2Norm(a*b-c);
+        if (err > 1e-8)
+          throw Exception("MultMatMat is faulty");
+        
         {
           Timer t("C = A*B");
           t.Start();
@@ -1482,8 +2252,10 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (int j = 0; j < its; j++)
-            AddABt(SliceMatrix<double> (AFlatMatrix<double>(a)),
-                   SliceMatrix<double> (AFlatMatrix<double>(b)),c);
+            AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), &a(0)[0]),
+                   SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), &b(0)[0]),
+                   // SliceMatrix<double> (AFlatMatrix<double>(b)),
+                   c);
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
@@ -1507,6 +2279,35 @@ namespace ngbla
           t.Stop();
           cout << "AddAtDB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddAtDB", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 61)
+      {
+        // C=A*B^t
+        Matrix<> a(n,k), b(n,m), c(k,m);
+        for (int i = 0; i < a.Height(); i++)
+          for (int j = 0; j < a.Width(); j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (int i = 0; i < b.Height(); i++)
+          for (int j = 0; j < b.Width(); j++)
+            b(i,j) = cos(i+3) * cos(j);
+        
+        c = 0.0;
+        MultAtB (a,b,c);
+        double err = L2Norm(Trans(a)*b-c);
+        if (err > 1e-8)
+          throw Exception("MultAtB is faulty");
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C -= A^t*D*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MultAtB(a, b, c);
+          t.Stop();
+          cout << "MultAtB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
         }
       }
 
@@ -1644,6 +2445,83 @@ namespace ngbla
     
 
 
+    if (what == 0 || what == 200)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            CalcInverse(a, INVERSE_LIB::INV_NGBLA);
+          t.Stop();
+          cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+
+    if (what == 0 || what == 205)
+      {
+        // CalcInverse
+        Matrix<double,ColMajor> a(n,n);
+        a = 1;
+        Trans(a).Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            CalcLDL (SliceMatrix<double,ColMajor> (a));
+          t.Stop();
+          cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    
+     if (what == 0 || what == 210)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            LapackInverse(a);
+          t.Stop();
+          cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("LapackInv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+     if (what == 0 || what == 211)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            LapackInverseSPD(a);
+          t.Stop();
+          cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("LapackInv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
 
     
     return timings;

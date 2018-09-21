@@ -54,6 +54,9 @@ namespace ngcomp
     ///
     virtual ~H1HighOrderFESpace ();
 
+    static DocInfo GetDocu ();
+
+    
     virtual string GetClassName () const override
     {
       return "H1HighOrderFESpace";
@@ -63,6 +66,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh) override;
 
     virtual void DoArchive (Archive & archive) override;
+    Array<MemoryUsage> GetMemoryUsage () const override;
 
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
@@ -95,6 +99,7 @@ namespace ngcomp
 
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
     
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
     void SetFaceOrder (int fnr, INT<2> fo) { order_face[fnr] = fo; }
@@ -129,6 +134,15 @@ namespace ngcomp
                      bool checkflags = false);
 
     virtual void SetOrder (ELEMENT_TYPE et, TORDER order) override;
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
+
+    virtual string GetClassName () const override
+    {
+      return "VectorH1FESpace";
+    }
   };
 
 }

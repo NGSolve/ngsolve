@@ -14,7 +14,6 @@ namespace ngbla
   template <int S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
-  template <class T> class FlatVector;
   template <class T> class Vector;
   template <class T = double, class TIND = size_t> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
@@ -764,9 +763,9 @@ namespace ngbla
     }
 
     INLINE FlatSysVector<T> Range(size_t first, size_t last)
-    { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
+    { return FlatSysVector<T> (last-first, blocksize, data+(first*blocksize)); }
     INLINE /* const */ FlatSysVector<T> Range(size_t first, size_t last) const
-    { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
+    { return FlatSysVector<T> (last-first, blocksize, data+(first*blocksize)); }
 
     INLINE size_t Size () const { return s; }
     INLINE size_t Height () const { return s; }
@@ -824,42 +823,25 @@ namespace ngbla
       (*this) = v;
     }
 
-    /// initialize zeroth and first elements
-    INLINE Vec (const T & s1, const T & s2)
+
+    // Helper function for variadic constructor
+    template <int I, class... T2>
+    void Set(const TELEM &v, T2... rest)
     {
-      static_assert (S==2, "Init Vec<S> with 2 elements, but S != 2");
-      data[0] = s1;
-      data[1] = s2;
+      data[I] = v;
+      Set<I+1>(rest...);
     }
 
-    /// initialize zeroth, first, and second elements
-    INLINE Vec (const T & s1, const T & s2, const T & s3)
+    template <int I>
+    void Set(const TELEM &v)
     {
-      static_assert (S==3, "Init Vec<S> with 3 elements, but S != 3");
-      data[0] = s1;
-      data[1] = s2;
-      data[2] = s3;
+      data[I] = v;
     }
 
-    /// initialize zeroth, first, and second elements
-    INLINE Vec (const T & s1, const T & s2, const T & s3, const T & s4)
-    {
-      static_assert (S==4, "Init Vec<S> with 4 elements, but S != 4");
-      data[0] = s1;
-      data[1] = s2;
-      data[2] = s3;
-      data[3] = s4;
-    }
-
-    INLINE Vec (const T & s1, const T & s2, const T & s3, const T & s4, const T & s5, const T & s6)
-    {
-      static_assert (S==6, "Init Vec<S> with 6 elements, but S != 6");
-      data[0] = s1;
-      data[1] = s2;
-      data[2] = s3;
-      data[3] = s4;
-      data[4] = s5;
-      data[5] = s6;
+    template <class... T2>
+    Vec(const TELEM &v, T2... rest) {
+      static_assert(S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
+      Set<0>(v, rest...);
     }
 
 

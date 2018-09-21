@@ -237,9 +237,9 @@ namespace ngla
     return sum;
   }
 
-  void BaseVector :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> BaseVector :: GetMemoryUsage () const
   { 
-    ;
+    return Array<MemoryUsage>();
   }
 
   void BaseVector :: SetRandom () 
@@ -357,7 +357,7 @@ namespace ngla
         for (auto i : ind.Range())
           {
             int index = ind[i];
-            v(i) = (index != -1) ? lsv(index) : 0;
+            v(i) = IsRegularIndex(index) ? lsv(index) : 0;
           }
         /*
         int i = 0;
@@ -385,7 +385,7 @@ namespace ngla
         FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
         
         for (int i = 0; i < ind.Size(); i++)
-          if (ind[i] != -1)
+          if (IsRegularIndex(ind[i]))
             sv(i) = lsv(ind[i]);
           else
             sv(i) = -1.0;
@@ -400,7 +400,7 @@ namespace ngla
     FlatSysVector<Complex> sv(ind.Size(), EntrySize(), &v(0));
 
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
+      if (IsRegularIndex(ind[i]))
 	sv(i) = lsv(ind[i]);
       else
 	sv(i) = -1.0;
@@ -439,7 +439,7 @@ namespace ngla
     int es = EntrySize() / 2;
     int ii = 0;
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
+      if (IsRegularIndex(ind[i]))
 	{
 	  int base = es * ind[i];
 	  for (int j = 0; j < es; j++)
@@ -463,7 +463,7 @@ namespace ngla
     FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
 
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
+      if (IsRegularIndex(ind[i]))
 	lsv(ind[i]) = sv(i);
 
     /*
@@ -489,7 +489,7 @@ namespace ngla
     int es = EntrySize() / 2;
     int ii = 0;
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
+      if (IsRegularIndex(ind[i]))
 	{
 	  int base = es * ind[i];
 	  for (int j = 0; j < es; j++)
@@ -544,13 +544,13 @@ namespace ngla
         if (!use_atomic)
           {
             for (int i = 0; i < ind.Size(); i++)
-              if (ind[i] != -1)
+              if (IsRegularIndex(ind[i]))
                 lsv(ind[i]) += v(i);
           }
         else
           {
             for (int i = 0; i < ind.Size(); i++)
-              if (ind[i] != -1)
+              if (IsRegularIndex(ind[i]))
                 MyAtomicAdd (lsv(ind[i]), v(i));
             // lsv(ind[i]) += v(i);
           }
@@ -561,7 +561,7 @@ namespace ngla
         FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
         
         for (int i = 0; i < ind.Size(); i++)
-          if (ind[i] != -1)
+          if (IsRegularIndex(ind[i]))
             lsv(ind[i]) += sv(i);
       }
   }
@@ -577,13 +577,13 @@ namespace ngla
         if (!use_atomic)
           {
             for (int i = 0; i < ind.Size(); i++)
-              if (ind[i] != -1)
+              if (IsRegularIndex(ind[i]))
                 fv(ind[i]) += v(i);
           }
         else
           {
             for (int i = 0; i < ind.Size(); i++)
-              if (ind[i] != -1)
+              if (IsRegularIndex(ind[i]))
                 MyAtomicAdd (fv(ind[i]), v(i));
           }
       }
@@ -592,7 +592,7 @@ namespace ngla
     
         int ii = 0;
         for (int i = 0; i < ind.Size(); i++)
-          if (ind[i] != -1)
+          if (IsRegularIndex(ind[i]))
             {
               int base = es * ind[i];
               for (int j = 0; j < es; j++)
@@ -627,7 +627,14 @@ namespace ngla
   template <class SCAL>  
   BaseVector & S_BaseVector<SCAL> :: SetScalar (double scal)
   {
-    FVScal() = scal;
+    static Timer t("S_BaseVector::SetScalar");
+    RegionTimer reg(t);
+    
+    auto me = FVScal();
+    ParallelForRange (me.Size(),
+                      [me, scal] (IntRange r) { me.Range(r) = scal; });
+    
+    // FVScal() = scal;
     return *this;
   }
   
@@ -816,10 +823,13 @@ namespace ngla
   }
   
   
-
+  template <typename TSCAL>
+  S_BaseVectorPtr<TSCAL> :: ~S_BaseVectorPtr ()
+  {
+    if (ownmem) delete [] pdata;
+  }
 
   template <typename TSCAL>
-  // shared_ptr<BaseVector> S_BaseVectorPtr<TSCAL> :: CreateVector () const
   AutoVector S_BaseVectorPtr<TSCAL> :: CreateVector () const
   {
     switch (es)
@@ -830,6 +840,28 @@ namespace ngla
       }
     return make_shared<S_BaseVectorPtr<TSCAL>> (this->size, es);
   }
+  
+  template <typename TSCAL>
+  ostream & S_BaseVectorPtr<TSCAL> :: Print (ostream & ost) const 
+  {
+    if (es == 1)
+      ost << FlatVector<TSCAL> (this->size, pdata) << endl;
+    else
+      ost << FlatSysVector<TSCAL> (this->size, es, pdata);
+    return ost;
+  }
+  
+  
+  template <typename TSCAL>
+  Array<MemoryUsage> S_BaseVectorPtr<TSCAL> :: GetMemoryUsage () const
+  {
+    if (ownmem)
+      return { { "Vector", sizeof(TSCAL)*es*this->size, 1 } };
+    else
+      return Array<MemoryUsage>();
+  }
+  
+  
 
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (size_t begin, size_t end) const

@@ -28,28 +28,67 @@ void ExportNgcompMesh (py::module &m)
     ;
   
   py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,size_t>())
-    .def(py::init<size_t>())
-    .def(py::init<Ngs_Element>())
+                         docu_string(R"raw_string(
+An element identifier containing element number and Volume/Boundary flag
+
+3 __init__ overloads:
+
+1)
+
+Parameters:
+
+vb : ngsolve.comp.VorB
+  input Volume or Boundary (VOL, BND, BBND, BBBND)
+
+nr : int
+  input element number
+
+
+2)
+
+Parameters:
+
+nr : int
+  input element number
+
+
+3)
+
+Parameters:
+
+el : ngcomp::Ngs_Element
+  input Ngs element
+
+)raw_string"))
+    .def(py::init<VorB,size_t>(), py::arg("vb"), py::arg("nr"))
+    .def(py::init<size_t>(), py::arg("nr"))
+    .def(py::init<Ngs_Element>(), py::arg("el"))
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
     .def("VB", &ElementId::VB, "VorB of element")
+    .def_property_readonly("valid", [] (ElementId ei) { return ei.Nr() != -1; }, "is element valid")
     .def(py::self!=py::self)
     .def(py::self==py::self)
     .def("__hash__" , &ElementId::Nr)
     ;
   
   m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
+          py::arg("nr"), docu_string(R"raw_string(
+Creates an element-id for a boundary element
+
+Parameters:
+
+nr : int
+  input Bnd element number
+
+)raw_string"))
     ;
 
 
   
   py::class_<NodeId> (m, "NodeId",
                       "an node identifier containing node type and node nr")
-    .def(py::init<NODE_TYPE,size_t>())
+    .def(py::init<NODE_TYPE,size_t>(), py::arg("type"), py::arg("nr"))
     .def("__str__", &ToString<NodeId>)
     .def("__repr__", &ToString<NodeId>)
     .def(py::self!=py::self)
@@ -191,7 +230,8 @@ void ExportNgcompMesh (py::module &m)
 
   py::class_<Ngs_Element>(m, "Ngs_Element")
     .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
-    .def("VB", &Ngs_Element::VB, "VorB of element")   
+    .def("VB", &Ngs_Element::VB, "VorB of element")
+    .def_property_readonly("valid", [] (ElementId ei) { return ei.Nr() != -1; }, "is element valid")    
     .def_property_readonly("vertices", [](Ngs_Element &el)
                            {
                              return MakePyTuple(Substitute(el.Vertices(), Nr2Vert));
@@ -238,10 +278,10 @@ void ExportNgcompMesh (py::module &m)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
-    .def(py::init<shared_ptr<MeshAccess>,VorB,string>())
-    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>())
-    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); })
-    .def("VB", [](Region & reg) { return VorB(reg); })
+    .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
+    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
+    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); }, "BitArray mask of the region")
+    .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
     .def(py::self + py::self)
     .def(py::self + string())
     .def(py::self - py::self)
@@ -257,17 +297,18 @@ void ExportNgcompMesh (py::module &m)
   
   typedef PML_Transformation PML;
   
-  py::class_<MeshAccess, shared_ptr<MeshAccess>>(m, "Mesh", docu_string(R"raw_string(
+  py::class_<MeshAccess, shared_ptr<MeshAccess>> mesh_access(m, "Mesh", docu_string(R"raw_string(
 NGSolve interface to the Netgen mesh. Provides access and functionality
 to use the mesh for finite element calculations.
 
-Parameters
+Parameters:
 
 mesh (netgen.Mesh): a mesh generated from Netgen
 
 
-)raw_string") , py::dynamic_attr())
+)raw_string") , py::dynamic_attr());
     
+  mesh_access
     .def(py::init<shared_ptr<netgen::Mesh>>(),
          py::arg("ngmesh"),
          "Make an NGSolve-mesh from a Netgen-mesh")
@@ -284,7 +325,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
-         { return self == other; })
+         { return self == other; }, py::arg("mesh"))
     
     .def(py::pickle([](const MeshAccess& ma)
                     {
@@ -410,15 +451,15 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
-          { return &ma.GetTrafo(id, global_alloc); },
-          py::return_value_policy::take_ownership)
+          { return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
+          py::return_value_policy::take_ownership, "returns element transformation of given element id")
 
     .def("SetDeformation", 
 	 [](MeshAccess & ma, shared_ptr<GridFunction> gf)
-         { ma.SetDeformation(gf); },
+         { ma.SetDeformation(gf); }, py::arg("gf"),
          docu_string("Deform the mesh with the given GridFunction"))
 
-    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
+    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);}, "Unset the deformation")
 
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
@@ -452,7 +493,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
-          })
+          }, py::arg("definedon"), "Unset PML transformation on domain")
     
     .def("GetPMLTrafos", [](MeshAccess & ma) 
       {
@@ -555,12 +596,26 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 (py::arg("self"), py::arg("pattern")),
 	 "Return co dim 2 boundary mesh-region matching the given regex pattern")
 
+    .def("GetBBBoundaries",
+	 [](const MeshAccess & ma)
+	  {
+            return MakePyTuple(ma.GetMaterials(BBBND));
+	  },
+	 "Return list of boundary conditions for co dimension 3")
+
+    .def("BBBoundaries", [](const shared_ptr<MeshAccess> & ma, string pattern)
+	  {
+	    return Region (ma, BBBND, pattern);
+	  },
+	 (py::arg("self"), py::arg("pattern")),
+	 "Return co dim 3 boundary mesh-region matching the given regex pattern")
+
     // TODO: explain how to mark elements
     .def("Refine",
          [](MeshAccess & ma)
           {
             ma.Refine();
-          },
+          },py::call_guard<py::gil_scoped_release>(),
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP",
@@ -577,9 +632,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("ei"), py::arg("refine"),
 	 "Set refinementflag for mesh-refinement")
 
-    .def("GetParentElement", &MeshAccess::GetParentElement,
-         py::arg("elnum"),
-         "Return parent element numbers on refined mesh")
+    .def("GetParentElement", static_cast<ElementId(MeshAccess::*)(ElementId)const> (&MeshAccess::GetParentElement),
+         py::arg("ei"),
+         "Return parent element id on refined mesh")
 
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
           {
@@ -593,33 +648,11 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          [](MeshAccess & ma, ElementId id, int order)
          {
            ma.SetElOrder(id.Nr(), order);
-         }, "For backward compatibility, not recommended to use")
+         }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
     
     .def("Curve", &MeshAccess::Curve,
          py::arg("order"),
          "Curve the mesh elements for geometry approximation of given order")
-
-    .def("__call__",
-         [](MeshAccess & ma, double x, double y, double z, VorB vb) 
-          {
-            IntegrationPoint ip;
-            int elnr;
-            if (vb == VOL)
-              elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
-            else
-              elnr = ma.FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
-              
-            if (elnr < 0) throw Exception ("point out of domain");
-
-            ElementTransformation & trafo = ma.GetTrafo(ElementId(vb, elnr), global_alloc);
-            BaseMappedIntegrationPoint & mip = trafo(ip, global_alloc);
-            mip.SetOwnsTrafo(true);
-            return &mip;
-          } 
-          , 
-         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
-         py::arg("VOL_or_BND") = VOL,
-	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
 
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
@@ -632,6 +665,21 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
 
     ;
+    PyDefVectorized(mesh_access, "__call__",
+         [](MeshAccess* ma, double x, double y, double z, VorB vb)
+          {
+            IntegrationPoint ip;
+            int elnr;
+            if (vb == VOL)
+              elnr = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            else
+              elnr = ma->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
+            return MeshPoint { ip(0), ip(1), ip(2), ma, vb, elnr };
+          },
+         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
+         py::arg("VOL_or_BND") = VOL,
+	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"));
+
   
   
 }
@@ -708,7 +756,7 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
             return make_shared<SumPML<3>> (pml1,pml2);
           }
         throw Exception("No valid dimension");
-      })
+         }, py::arg("pml"))
     ;
 
   m.def("Radial", [](py::object _origin, double rad, Complex alpha) -> shared_ptr<PML>{

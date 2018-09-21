@@ -8,25 +8,38 @@
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #pragma clang diagnostic ignored "-Wparentheses-equality"
 #pragma clang diagnostic ignored "-Wunused-value"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-// BEGIN EVIL HACK: Patch PyThread_get_key_value inside pybind11 to avoid deadlocks
-// see https://github.com/pybind/pybind11/pull/1211
+// BEGIN EVIL HACK: Patch PyThread_get_key_value/PyThread_tss_get inside pybind11 to avoid deadlocks
+// see https://github.com/pybind/pybind11/pull/1211 (please merge!)
+#if defined(__GNUG__) && !defined(__clang__)
+#  pragma GCC diagnostic ignored "-Wattributes"
+#endif
 #include <Python.h>
 #include <pythread.h>
-namespace pybind11 {
-    inline void * PyThread_get_key_value(int state) {
-        PyThreadState *tstate = (PyThreadState *) ::PyThread_get_key_value(state);
+#include <pybind11/cast.h>
+#undef PYBIND11_TLS_GET_VALUE
+#if PY_VERSION_HEX >= 0x03070000
+    inline void * PYBIND11_TLS_GET_VALUE(Py_tss_t *state) {
+        PyThreadState *tstate = (PyThreadState *) PyThread_tss_get(state);
         if (!tstate) tstate = PyGILState_GetThisThreadState();
         return tstate;
     }
-}
+#else
+    inline void * PYBIND11_TLS_GET_VALUE(int state) {
+        PyThreadState *tstate = (PyThreadState *) PyThread_get_key_value(state);
+        if (!tstate) tstate = PyGILState_GetThisThreadState();
+        return tstate;
+    }
+#endif
 // END EVIL HACK
 #include <pybind11/pybind11.h>
 #include <pybind11/eval.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl.h>
+#include<pybind11/numpy.h>
 
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -42,6 +55,20 @@ using namespace pybind11::literals;
 using std::string;
 using std::cout;
 using std::endl;
+
+namespace ngstd {
+  extern bool have_numpy;
+
+  template<typename TClass, typename TFunc, typename... T>
+  TClass &  PyDefVectorized(TClass & cls, const char * name, TFunc && f, T && ... args )
+  {
+      if(have_numpy)
+          cls.def(name, py::vectorize(std::forward<TFunc>(f)), std::forward<T>(args)...);
+      else
+          cls.def(name, std::forward<TFunc>(f), std::forward<T>(args)...);
+      return cls;
+  }
+}
 
 using namespace ngstd;
 
@@ -145,6 +172,20 @@ inline void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t 
         throw py::error_already_set();
 }
 
+template<typename T>
+py::array_t<T> MoveToNumpyArray( Array<T> &a )
+{
+  if(a.Size()) {
+      py::capsule free_when_done(&a[0], [](void *f) {
+                                 delete [] reinterpret_cast<T *>(f);
+                                 });
+      a.NothingToDelete();
+      return py::array_t<T>(a.Size(), &a[0], free_when_done);
+  }
+  else
+      return py::array_t<T>(0, nullptr);
+}
+
 
 
 //////////////////////////////////////////////////////////////////////
@@ -217,8 +258,8 @@ void PyDefROBracketOperator( py::module &m, TCLASS &c )
       throw py::index_error();
       return TELEM();
     }; 
-    c.def("__getitem__", Get);
-    c.def("Get", Get);
+    c.def("__getitem__", Get,py::arg("pos"), "Return value at given position");
+    c.def("Get", Get, py::arg("pos"), "Return value at given position");
 }
 
 // read-write bracket operator
@@ -232,8 +273,8 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
       else
         throw py::index_error();
     };
-    c.def("__setitem__", Set);
-    c.def("Set", Set);
+    c.def("__setitem__", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
+    c.def("Set", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
 }
 
 
@@ -242,7 +283,7 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
 template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
 void PyDefVector( py::module &m, TCLASS &c )
 {
-    c.def("__len__",  []( T& v) { return v.Size();}  );
+  c.def("__len__",  []( T& v) { return v.Size();}, "Return length of the array"  );
     c.def("__iter__", [] (T &v)
       { return py::make_iterator(v.begin(), v.end()); },
       py::keep_alive<0,1>()
@@ -370,12 +411,12 @@ void PyExportSymbolTable (py::module &m)
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return self[name]; 
-                                        })
+                                        }, py::arg("name"))
     .def("__getitem__", [](ST & self, int i) -> PY_T
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return self[i];  
-                                         })
+                                         }, py::arg("pos"))
     ;
 }  
 
@@ -390,17 +431,17 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
     .def("__str__", &ToString<ST>)
     .def("__len__", &ST::Size)
     .def("__contains__", &ST::Used)
-    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
+    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); }, py::arg("pos"))
     .def("__getitem__", [](ST & self, string name)
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return *self[name]; 
-                                        })
+                                        }, py::arg("name"))
     .def("__getitem__", [](ST & self, int i)
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return *self[i];  
-                                         })
+                                         }, py::arg("pos"))
     ;
 }
 

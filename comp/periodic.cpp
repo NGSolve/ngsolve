@@ -134,35 +134,35 @@ namespace ngcomp {
     {
       space->GetDofNrs(ei,dnums);
       for (auto & d : dnums)
-        if (d != -1) d = dofmap[d];
+        if (IsRegularDof(d)) d = dofmap[d];
     }
 
     void PeriodicFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
     {
       space->GetDofNrs(ni, dnums);
       for (auto & d : dnums)
-        if (d != -1) d = dofmap[d];
+        if (IsRegularDof(d)) d = dofmap[d];
     }
 
     void PeriodicFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
     { 
       space->GetVertexDofNrs(vnr, dnums); 
       for (auto & d : dnums)
-        if (d != -1) d = dofmap[d];
+        if (IsRegularDof(d)) d = dofmap[d];
     }
 
     void PeriodicFESpace :: GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
     { 
       space->GetEdgeDofNrs (ednr, dnums); 
       for (auto & d : dnums)
-        if (d != -1) d = dofmap[d];
+        if (IsRegularDof(d)) d = dofmap[d];
     }
     
     void PeriodicFESpace :: GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
     { 
       space->GetFaceDofNrs(fanr, dnums); 
       for (auto & d : dnums)
-        if (d != -1) d = dofmap[d];
+        if (IsRegularDof(d)) d = dofmap[d];
     }
 
 
@@ -228,7 +228,7 @@ namespace ngcomp {
 
   void QuasiPeriodicFESpace :: DofMapped(size_t from, size_t to, size_t idnr)
   {
-    dof_factors[from] *= (*factors)[idnr-1];
+    dof_factors[from] *= (*factors)[idnr];
   }
 
 }

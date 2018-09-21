@@ -208,6 +208,7 @@ namespace ngfem
          : CoefficientFunction(apcf.Dimension(),apcf.IsComplex()), pcf(apcf)
     { ; }
     ///
+      using CoefficientFunction::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const { return pcf.Evaluate(ip); }
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const { pcf.EvaluateStdRule(ir,values); }

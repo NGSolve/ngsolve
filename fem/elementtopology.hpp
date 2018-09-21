@@ -58,8 +58,16 @@ namespace ngfem
       default: return nt;
       }
   }
-  // INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
+  INLINE int CoDimension (NODE_TYPE nt, int meshdim)
+  {
+    int dim(nt);
+    if (dim <= 3)  // V, E, F C
+      return meshdim-dim;
+    else
+      return dim-NT_ELEMENT; 
+  }
+  // INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
   INLINE constexpr int Dim (ELEMENT_TYPE et)
   {
@@ -84,7 +92,7 @@ namespace ngfem
 
 
 
-  enum VorB { VOL, BND, BBND, BBBND };
+  enum VorB : int { VOL, BND, BBND, BBBND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
   inline ostream & operator<< (ostream & ost, VorB vb)
   {

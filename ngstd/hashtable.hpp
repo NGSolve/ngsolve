@@ -12,6 +12,26 @@ namespace ngstd
 {
 
 
+  template <int K> 
+  class MakeTupleFromInt
+  {
+  public:
+    template <typename I>
+    auto operator()(I & i)
+    { return tuple_cat(MakeTupleFromInt<K-1> ()(i), std::tie(i[K-1])); }
+  };
+  
+  template <> 
+  class MakeTupleFromInt<1>
+  {
+  public:
+    template <typename I>
+    auto operator()(I & i) { return std::tie(i[0]); }
+  };
+  
+  
+  
+
   /// N integers
   template <int N, typename T = int>
   class INT
@@ -140,6 +160,12 @@ namespace ngstd
       for (int j = 0; j < N; j++)
 	i[j] = v2[j];
       return *this;
+    }
+
+    template <typename... Ts>
+    operator std::tuple<Ts...> ()
+    {
+      return MakeTupleFromInt<N>()(*this);
     }
   };
 
@@ -800,6 +826,12 @@ namespace ngstd
   {
     INT<2,size_t> lind = ind;
     return 113*lind[0]+lind[1];
+  }
+
+  template <typename TI>  
+  INLINE size_t HashValue (const INT<1,TI> ind)
+  {
+    return ind[0];
   }
 
 

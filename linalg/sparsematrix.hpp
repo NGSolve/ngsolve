@@ -107,7 +107,8 @@ namespace ngla
     /// shadow matrix graph
     MatrixGraph (const MatrixGraph & graph, bool stealgraph);
     /// 
-    MatrixGraph (int size, const Table<int> & rowelements, const Table<int> & colelements, bool symmetric);
+    MatrixGraph (int size, int width,
+                 const Table<int> & rowelements, const Table<int> & colelements, bool symmetric);
     /// 
     // MatrixGraph (const Table<int> & dof2dof, bool symmetric);
     virtual ~MatrixGraph ();
@@ -141,11 +142,11 @@ namespace ngla
 
     void FindSameNZE();
     void CalcBalancing ();
-
+    const Partitioning & GetBalancing() const { return balance; } 
 
     ostream & Print (ostream & ost) const;
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;    
   };
 
 
@@ -173,9 +174,9 @@ namespace ngla
       : MatrixGraph (elsperrow, awidth) 
     { ; }
 
-    BaseSparseMatrix (int size, const Table<int> & rowelements, 
+    BaseSparseMatrix (int size, int width, const Table<int> & rowelements, 
 		      const Table<int> & colelements, bool symmetric)
-      : MatrixGraph (size, rowelements, colelements, symmetric)
+      : MatrixGraph (size, width, rowelements, colelements, symmetric)
     { ; }
 
     BaseSparseMatrix (const MatrixGraph & agraph, bool stealgraph)
@@ -279,9 +280,9 @@ namespace ngla
       ; 
     }
 
-    SparseMatrixTM (int size, const Table<int> & rowelements, 
+    SparseMatrixTM (int size, int width, const Table<int> & rowelements, 
 		    const Table<int> & colelements, bool symmetric)
-      : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
+      : BaseSparseMatrix (size, width, rowelements, colelements, symmetric), 
 	data(nze), nul(TSCAL(0))
     { 
       ; 
@@ -334,7 +335,7 @@ namespace ngla
       // { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
     { return FlatVector<TM> (firsti[i+1]-firsti[i], data+firsti[i]); }
 
-
+    static bool IsRegularIndex (int index) { return index >= 0; }
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
                                   FlatArray<int> dnums2, 
                                   BareSliceMatrix<TSCAL> elmat,
@@ -365,9 +366,7 @@ namespace ngla
     virtual ostream & Print (ostream & ost) const;
 
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
-
+    virtual Array<MemoryUsage> GetMemoryUsage () const;    
   };
   
 
@@ -397,9 +396,9 @@ namespace ngla
     SparseMatrix (const Array<int> & aelsperrow, int awidth)
       : SparseMatrixTM<TM> (aelsperrow, awidth) { ; }
 
-    SparseMatrix (int size, const Table<int> & rowelements, 
+    SparseMatrix (int height, int width, const Table<int> & rowelements, 
 		  const Table<int> & colelements, bool symmetric)
-      : SparseMatrixTM<TM> (size, rowelements, colelements, symmetric) { ; }
+      : SparseMatrixTM<TM> (height, width, rowelements, colelements, symmetric) { ; }
 
     SparseMatrix (const MatrixGraph & agraph, bool stealgraph);
     // : SparseMatrixTM<TM> (agraph, stealgraph) { ; }
@@ -538,7 +537,7 @@ namespace ngla
     SparseMatrixSymmetric (int size, const Table<int> & rowelements)
       // : SparseMatrixTM<TM> (size, rowelements, rowelements, true),
       // SparseMatrixSymmetricTM<TM> (size, rowelements),
-      : SparseMatrix<TM,TV,TV> (size, rowelements, rowelements, true)
+      : SparseMatrix<TM,TV,TV> (size, size, rowelements, rowelements, true)
     { ; }
 
     SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph);

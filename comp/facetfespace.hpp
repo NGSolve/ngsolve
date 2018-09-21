@@ -44,6 +44,7 @@ namespace ngcomp
     // Array<int> ndlevel;
     bool var_order; 
     bool highest_order_dc;
+    bool hide_highest_order_dc;
     bool nowirebasket;
     bool all_dofs_together;
   public:
@@ -51,6 +52,7 @@ namespace ngcomp
     FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~FacetFESpace ();
+    static DocInfo GetDocu();
     ///
     virtual string GetClassName () const override
     {
@@ -65,6 +67,11 @@ namespace ngcomp
     ///
     // virtual size_t GetNDof () const throw() override;
     // virtual size_t GetNDofLevel (int level) const override;
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
+
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
@@ -81,7 +88,7 @@ namespace ngcomp
   
     virtual void GetFacetDofNrs (int nr, Array<DofId> & dnums) const
     {
-      dnums.SetSize(0);
+      dnums.SetSize0();
       dnums += nr;
       dnums += GetFacetDofs(nr);
     }
@@ -132,7 +139,7 @@ namespace ngcomp
   
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     {
-      dnums.SetSize(0);
+      dnums.SetSize0();
     }
     
     bool AllDofsTogether(){return all_dofs_together;};

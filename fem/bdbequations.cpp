@@ -43,7 +43,7 @@ namespace ngfem
     auto shape_ull = shape_u.Col(2);
     auto shape_urr = shape_u.Col(3);
     
-    FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*(D-1), 1, &mem1[4*D*nd_u]);
+    // FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*(D-1), 1, &mem1[4*D*nd_u]);
     FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[5*D*nd_u]);
 
     LocalHeapMem<10000> lh("diffophesse-lh");

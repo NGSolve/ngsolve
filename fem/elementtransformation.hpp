@@ -13,7 +13,7 @@
   Transformation from reference element to actual element
 */
 
-
+namespace ngcomp { class GridFunction; }
 
 namespace ngfem
 {
@@ -156,6 +156,16 @@ namespace ngfem
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
     virtual const void * GetMesh () const { return NULL; }
 
+    const ElementTransformation & AddDeformation (const ngcomp::GridFunction * gf, LocalHeap & lh) const
+    {
+      if (!gf) return *this;
+      return VAddDeformation(gf,lh);
+    }
+    virtual const ElementTransformation & VAddDeformation (const ngcomp::GridFunction * gf, LocalHeap & lh) const
+    {
+      throw Exception ("don't know how to deform");
+    }
+    
     void * userdata = nullptr;
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }

@@ -30,12 +30,21 @@ namespace ngla
     BitArray clone;
     int max_row_size = 0;
     int max_col_size = 0;
+
+    Array<int> allrow, allcol;
+    Array<SCAL> allvalues;
   public:
     ElementByElementMatrix (int h, int ane, bool isymmetric=false);
     ElementByElementMatrix (int h, int w, int ane, bool isymmetric=false);
     ElementByElementMatrix (int h, int w, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
     ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols)
       : ElementByElementMatrix(h, h, ane, isymmetric, adisjointrows, adisjointcols) {};
+
+    // allocate all memory at once
+    ElementByElementMatrix (size_t h, size_t w,
+                            FlatArray<int> nrowi, FlatArray<int> ncoli,
+                            bool isymmetric, bool adisjointrows, bool adisjointcols);
+    
     ~ElementByElementMatrix();
     virtual bool IsComplex() const { return typeid(SCAL)==typeid(Complex); }
 

@@ -215,7 +215,7 @@ namespace ngcomp
     /// number of multigrid levels 
     int nlevels;
 
-    int nregions[3];
+    int nregions[4];
     
     /// max domain index
     // int & ndomains = nregions[0];
@@ -386,8 +386,9 @@ namespace ngcomp
             {
               HeapReset hr(clh);
               ElementId ei(vb, i);
-              Ngs_Element el(GetElement(ei), ei);
-              func (move(el), clh);
+              // Ngs_Element el(GetElement(ei), ei);
+	      func (GetElement(ei), clh);
+              // func (move(el), clh);
             }
         }
     }
@@ -451,10 +452,11 @@ namespace ngcomp
     {
       switch (vb)
         {
-        case VOL: return mesh.GetMaterialCD<0> (region_nr);
-        case BND: return mesh.GetMaterialCD<1> (region_nr);
-        case BBND: return mesh.GetMaterialCD<2> (region_nr);
-        case BBBND: default: return mesh.GetMaterialCD<3> (region_nr);
+        case VOL:   return mesh.GetMaterialCD<0> (region_nr);
+        case BND:   return mesh.GetMaterialCD<1> (region_nr);
+        case BBND:  return mesh.GetMaterialCD<2> (region_nr);
+        case BBBND: return mesh.GetMaterialCD<3> (region_nr);
+        default:    throw Exception("GetMaterial not implemented for " + ToString(vb));
         }
     }
 
@@ -942,12 +944,25 @@ namespace ngcomp
       return parents;
     }
     /// number of parent element on next coarser mesh
+    [[deprecated("Use GetParentElement(ElementId) instead!")]]                
     int GetParentElement (int ei) const
     { return mesh.GetParentElement (ei); }
     /// number of parent boundary element on next coarser mesh
+    [[deprecated("Use GetParentElement(ElementId) instead!")]]                    
     int GetParentSElement (int ei) const
     { return mesh.GetParentSElement (ei); }
-  
+
+    ElementId GetParentElement (ElementId ei) const
+    {
+      if (ei.VB() == VOL)
+        return ElementId(VOL, mesh.GetParentElement(ei.Nr()));
+      else if (ei.VB() == BND)
+        return ElementId(BND, mesh.GetParentSElement(ei.Nr()));
+      else
+        throw Exception ("GetParentElement only supported for VOL and BND");
+    }
+
+    
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
     { return Ng_GetClusterRepVertex (pi+1)-1; }
