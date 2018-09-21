@@ -1536,8 +1536,9 @@ namespace ngcomp
                       LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
                       Array<int> elnums_per(2, lh);
                       Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
-                      for (int i : sl)                
+                      for (int il : sl)
                         {
+                          int i = colfacets[il];
                           progress.Update();
                           if (!fine_facet.Test(i)) continue;
                           HeapReset hr(lh);
