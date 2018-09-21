@@ -550,8 +550,9 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   out << "size_t rest = wb % SW; \n"
       << "if (rest == 0) return; \n"
       << "SIMD<mask64> mask(rest); \n";
-  
-  out << "double * pb2 = pb;\n";
+
+  if (wa > 0)
+    out << "double * pb2 = pb;\n";
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> b" << k << "(pb2, mask); pb2 += db;\n";
   out << "double * pa2 = pa;\n"
@@ -617,8 +618,9 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "if (rest > SW)\n"
       << "{\n";
 
-  out << "SIMD<mask64> mask(rest-SW); \n";    
-  out << "double * pb2 = pb;\n";
+  out << "SIMD<mask64> mask(rest-SW); \n";
+  if (wa > 0)
+    out << "double * pb2 = pb;\n";
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> b" << k << "0(pb2);\n"
         << "SIMD<double> b" << k << "1(pb2+SW,mask); pb2 += db;\n";
@@ -642,6 +644,7 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "}\n";
     
     // rest == SW
+  if (wa > 0)
     out << "double * pb2 = pb;\n";
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> b" << k << "(pb2); pb2 += db;\n";
@@ -664,7 +667,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   
   // rest < SW
   out << "SIMD<mask64> mask(rest); \n";
-  out << "double * pb2 = pb;\n";
+  if (wa > 0)
+    out << "double * pb2 = pb;\n";
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> b" << k << "(pb2, mask); pb2 += db;\n";
   out << "double * pa2 = pa;\n"
@@ -857,7 +861,7 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       << "(size_t ha, double * pa, size_t da, double * x, double * y) {" << endl;
 
   int SW = SIMD<double>::Size();  // generate optimal code for my host
-  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+  // out << "constexpr int SW = SIMD<double>::Size();" << endl;
   int i = 0;
   for ( ; SW*(i+1) <= wa; i++)
     out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ");" << endl;

@@ -392,7 +392,7 @@ namespace ngfem
           size_t nipz = irz.GetNIP();
 
           size_t nipxy = nipx*nipy;
-          size_t nip = nipx * nipy * nipz;
+          // size_t nip = nipx * nipy * nipz;
           size_t ndof = this->ndof;
           size_t ndof1d = static_cast<const FEL&> (*this).GetNDof1d ();
           size_t ndof2d = static_cast<const FEL&> (*this).GetNDof2d ();

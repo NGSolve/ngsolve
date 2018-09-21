@@ -41,7 +41,7 @@
 
 
 #ifdef __clang__
-#pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
+// #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
 // related to clang Bug 2181:  https://www.nsnam.org/bugzilla/show_bug.cgi?id=2181
 #endif
 
