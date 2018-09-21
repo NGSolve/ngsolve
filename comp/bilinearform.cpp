@@ -1526,24 +1526,28 @@ namespace ngcomp
                     for (auto f : elfacets) fine_facet.Set(f);
                   }
                 
-                int cnt = 0;
-                // better: use facet coloring
-                ParallelForRange
-                  ( IntRange(nf), [&] ( IntRange r )
+                ProgressOutput progress(ma,string("assemble inner facet"), nf);
+                for (auto colfacets : fespace->FacetColoring())
+                {
+                  SharedLoop2 sl(colfacets.Size());
+                  ParallelJob
+                  ( [&] (const TaskInfo & ti) 
                     {
-                      LocalHeap lh = clh.Split();
-                      
+                      LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
                       Array<int> elnums_per(2, lh);
-
                       Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
-                      for (int i : r)
+                      for (int i : sl)                
                         {
+                          progress.Update();
                           if (!fine_facet.Test(i)) continue;
                           HeapReset hr(lh);
                                   
                           int el1 = -1, el2 = -1;
                           
                           ma->GetFacetElements(i,elnums);
+
+                          //if (i == asdf)
+
                           el1 = elnums[0];
 
                           int fac2 = i;
@@ -1573,15 +1577,6 @@ namespace ngcomp
                           
                           fnums = ma->GetElFacets(ei2);
                           int facnr2 = fnums.Pos(fac2);
-                          
-                          {
-                            lock_guard<mutex> guard(printmatasstatus2_mutex);
-                            cnt++;
-                            gcnt++;
-                            if (cnt % 10 == 0)
-                              cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
-                            ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
-                          }
                           
                           const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
                           const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
@@ -1752,15 +1747,13 @@ namespace ngcomp
                               //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                               //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
                               
-                              {
-                                lock_guard<mutex> guard(addelemfacin_mutex);
-                                AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat, ElementId(BND,i), lh);
-                              }
+                              AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat, ElementId(BND,i), lh);
                             }
                         }
                     });
-                cout << IM(3) << "\rassemble inner facet element " << nf << "/" << nf << endl;
-                
+                }
+                progress.Done();
+                gcnt += nf;
               }
 
             
