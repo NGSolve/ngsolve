@@ -838,13 +838,20 @@ namespace ngbla
       data[I] = v;
     }
 
+    /*
     template <class... T2>
     Vec(const TELEM &v, T2... rest) {
       static_assert(S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
       Set<0>(v, rest...);
     }
+    */
 
-
+    template <class... T2,
+              typename enable_if<S==1+sizeof...(T2),int>::type=0>
+    Vec(const TELEM &v, T2... rest) {
+      // static_assert(S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
+      Set<0>(v, rest...);
+    }
   
     /// copy vector
     INLINE Vec & operator= (const Vec & v)
