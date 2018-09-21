@@ -171,6 +171,8 @@ namespace ngcomp
       default:
         ;
       }
+
+    needs_transform_vec = false;    
   }
 
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
