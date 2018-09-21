@@ -555,7 +555,7 @@ namespace ngcomp
           ai(0,1) = ai(1,0) = ext_elmat(i, ndof);
           ai(1,1) = ext_elmat(ndof, ndof);
           ai = Inv(ai);
-          SCAL weight = ai(0,0);
+          double weight = fabs(ai(0,0));
           vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
         }
       }
@@ -572,7 +572,7 @@ namespace ngcomp
             ai(0,2) = ai(2,0) = ext_elmat(i,ndof);
             ai(1,2) = ai(2,1) = ext_elmat(j,ndof);
             ai = Inv(ai);
-            SCAL weight = ai(0,0);
+            double weight = fabs(ai(0,0));
             edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
       }
