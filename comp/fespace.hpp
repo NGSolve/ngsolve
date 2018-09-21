@@ -220,7 +220,10 @@ ANY                  1 1 1 1 | 15
     size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
-    
+    // only a few spaces (lowest order Nedelec) need the transformation
+    // of element vectors
+    bool needs_transform_vec = true;
+
     // move ndof and ndof_level to FESpace base class
   private:
     size_t ndof;
@@ -727,26 +730,31 @@ ANY                  1 1 1 1 | 15
       VTransformVC (ElementId(vb, elnr), vec, type);                  
     }
 
-    
+    bool NeedsTransformVec() const { return needs_transform_vec; }
+
     void TransformMat (ElementId ei, 
                        SliceMatrix<double> mat, TRANSFORM_TYPE type) const
     {
-      VTransformMR (ei, mat, type);
+      if (needs_transform_vec)      
+        VTransformMR (ei, mat, type);
     }
     void TransformMat (ElementId ei, 
 		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
     {
-      VTransformMC (ei, mat, type);
+      if (needs_transform_vec)      
+        VTransformMC (ei, mat, type);
     }		
     void TransformVec (ElementId ei, 
 		       SliceVector<double> vec, TRANSFORM_TYPE type) const
     {
-      VTransformVR (ei, vec, type);
+      if (needs_transform_vec)
+        VTransformVR (ei, vec, type);
     }
     void TransformVec (ElementId ei, 
 		       SliceVector<Complex> vec, TRANSFORM_TYPE type) const
     {
-      VTransformVC (ei, vec, type);
+      if (needs_transform_vec)
+        VTransformVC (ei, vec, type);
     }
 
     
