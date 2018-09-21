@@ -777,11 +777,7 @@ namespace ngbla
   template <size_t WA>
   void REGCALL MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                                BareSliceMatrix<double> c)
-  /*
-  template <size_t WA>
-  void __attribute__((preserve_most)) MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                               BareSliceMatrix<double> c)
-  */
+
   {
     if (WA <= 6)
       {
@@ -789,63 +785,6 @@ namespace ngbla
         return;
       }
     MatKernelAtB_SmallWA<WA,SET> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
-    /*
-    constexpr size_t SW = SIMD<double>::Size();    
-
-    size_t da = a.Dist();
-    size_t db = b.Dist();
-    size_t dc = c.Dist();
-
-    size_t j = 0;
-    double * pc0 = &c(0);
-    for ( ; j+SW <= wb; j+=SW, pc0+=SW)
-      {
-        HTArray<WA, SIMD<double>> sum;
-        // for (size_t i = 0; i < WA; i++)
-          // sum[i] = SIMD<double> (0);
-        Iterate<WA> ( [&sum] (auto i)
-                      { sum.template Elem<i>() = SIMD<double>(0); });
-        double * pa = &a(0);
-        double * pb = &b(j);
-        __assume(ha > 0);
-        for (size_t k = 0; k < ha; k++, pa += da, pb += db)
-          {
-            SIMD<double> bjk(pb);
-            // for (size_t i = 0; i < WA; i++)
-              // sum[i] += bjk*pa[i];
-              // FMAasm (bjk, SIMD<double>(pa[i]), sum[i]);
-            Iterate<WA> ( [&sum, pa, bjk] (auto i)
-                          { FMAasm (bjk,SIMD<double>(pa[i]), sum.template Elem<i>()); });
-          }
-
-        double * pc = pc0;
-        //         for (size_t i = 0; i < WA; i++, pc += dc)
-        // sum[i].Store (pc);
-        Iterate<WA> ( [&sum, &pc,dc] (auto i)
-                      { sum.template Elem<i>().Store(pc); pc+=dc; });
-
-      }
-
-    
-    SIMD<mask64> mask(wb-j);
-    std::array<SIMD<double>,WA> sum;    
-    for (size_t i = 0; i < WA; i++)
-      sum[i] = SIMD<double> (0);
-    
-    double * pa = &a(0);
-    double * pb = &b(j);
-    __assume(ha > 0);    
-    for (size_t k = 0; k < ha; k++, pa += da, pb += db)
-      {
-        SIMD<double> bi(pb, mask);
-        for (size_t i = 0; i < WA; i++)
-          sum[i] += bi*pa[i];
-      }
-
-    double * pc = &c(j);    
-    for (size_t i = 0; i < WA; i++, pc += dc)
-      sum[i].Store (pc, mask);
-    */
   }
 
   pfunc_atb dispatch_atb[13] =
@@ -855,74 +794,24 @@ namespace ngbla
       &MultAtBSmallWA<12>
     };
 
-
-  
-  template 
-  void MultAtBSmallWA<0> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<1> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<2> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<3> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<4> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<5> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<6> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<7> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<8> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<9> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                          BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<10> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                           BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<11> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                           BareSliceMatrix<double> c);
-  template 
-  void MultAtBSmallWA<12> (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
-                           BareSliceMatrix<double> c);
-
-
   void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
-    /*
-    switch (a.Width())
-      {
-      case 0: MultAtBSmallWA<0> (a.Height(), b.Width(), a, b, c); return;
-      case 1: MultAtBSmallWA<1> (a.Height(), b.Width(), a, b, c); return;
-      case 2: MultAtBSmallWA<2> (a.Height(), b.Width(), a, b, c); return;
-      case 3: MultAtBSmallWA<3> (a.Height(), b.Width(), a, b, c); return;
-      case 4: MultAtBSmallWA<4> (a.Height(), b.Width(), a, b, c); return;
-      case 5: MultAtBSmallWA<5> (a.Height(), b.Width(), a, b, c); return;
-      case 6: MultAtBSmallWA<6> (a.Height(), b.Width(), a, b, c); return;
-      case 7: MultAtBSmallWA<7> (a.Height(), b.Width(), a, b, c); return;
-      case 8: MultAtBSmallWA<8> (a.Height(), b.Width(), a, b, c); return;
-      case 9: MultAtBSmallWA<9> (a.Height(), b.Width(), a, b, c); return;
-      case 10: MultAtBSmallWA<10> (a.Height(), b.Width(), a, b, c); return;
-      case 11: MultAtBSmallWA<11> (a.Height(), b.Width(), a, b, c); return;
-      case 12: MultAtBSmallWA<12> (a.Height(), b.Width(), a, b, c); return;
-      }
-    */
-
-    // todo: optimize generic size function
-    c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
+    // c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
+    
+    constexpr size_t bs = 8;
+    size_t i = 0;
+    size_t ha = a.Height();    
+    size_t wa = a.Width();
+    size_t wb = b.Width();
+    BareSliceMatrix<> bare_a(a);
+    BareSliceMatrix<> bare_b(b);
+    for ( ; i+bs <= a.Width(); i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
+      MultAtBSmallWA<bs> (ha, wb, bare_a, bare_b, c);
+    dispatch_atb[a.Width()-i] (ha, wb, bare_a, bare_b, c);
   }
 
+
+  
   /* ***************************** A * B^T *************************************** */
 
   template <typename TAB, typename FUNC>
