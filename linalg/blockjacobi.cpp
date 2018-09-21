@@ -368,7 +368,7 @@ namespace ngla
       }
 
 
-    atomic<int> cnt(0);
+    // atomic<int> cnt(0);
     SharedLoop2 sl(blocktable->Size());
 
     /*

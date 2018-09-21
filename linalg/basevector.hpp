@@ -239,7 +239,7 @@ namespace ngla
     virtual void SaveText(ostream & ost) const;
     virtual void LoadText(istream & ist);
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
     virtual size_t CheckSum () const;
     // 
     // virtual shared_ptr<BaseVector> CreateVector () const = 0;
@@ -251,6 +251,7 @@ namespace ngla
     virtual AutoVector Range (size_t begin, size_t end) const;
     virtual AutoVector Range (T_Range<size_t> range) const;
 
+    static bool IsRegularIndex (int index) { return index >= 0; }
     virtual void GetIndirect (FlatArray<int> ind, 
                               FlatVector<double> v) const = 0;
     virtual void GetIndirect (FlatArray<int> ind, 

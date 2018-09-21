@@ -311,6 +311,7 @@ namespace ngbla
   { BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta); }
 
 
+
   /*
   template <typename TA>
   inline void LapackMultAdd (SliceMatrix<double> a, 
@@ -393,6 +394,17 @@ namespace ngbla
 
 
 
+  template <typename TA, typename TB, typename Talpha, typename Tc, typename Tbeta>
+  inline void LapackMultAdd (MinusExpr<TA> a, 
+			     const TB & b, 
+			     Talpha alpha,			     
+			     const Tc & c,
+			     Tbeta beta)
+  { LapackMultAdd (a.A(), b, -alpha, c, beta); }
+
+
+
+  
 
 
   // we don't have a lapack function for that 

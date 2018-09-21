@@ -263,6 +263,14 @@ namespace ngcomp
   HDivDivSurfaceSpace :: ~HDivDivSurfaceSpace()
   {
   }
+  
+  DocInfo HDivDivSurfaceSpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HDivDiv space";
+    return docu;
+  }
 
 
   void HDivDivSurfaceSpace::Update(LocalHeap & lh)
@@ -456,8 +464,17 @@ namespace ngcomp
         }
 
       case BBND:
-        return * new (lh) DummyFE<ET_SEGM>();
-
+        {
+          if(!noncontinuous)
+            {
+              auto vnums = ma->GetElVertices(ei);
+              auto feseg = new (lh) HDivDivSurfaceFE<ET_SEGM> (order);
+              feseg->SetVertexNumbers (vnums);
+              feseg->ComputeNDof();
+              return *feseg;
+            }
+          return * new (lh) DummyFE<ET_SEGM>();
+        }
       case BBBND:
         return * new (lh) DummyFE<ET_POINT>();
 

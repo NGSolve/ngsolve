@@ -59,6 +59,8 @@ namespace ngfem
     std::array<unique_ptr<SIMD_IntegrationRule>,25> userdefined_simd_intrules;
 
     mutable bool simd_evaluate = true;
+
+    shared_ptr<ngcomp::GridFunction> deformation; // ALE for this integrator
     
   protected:
     void DeleteCurveIPs ( void );
@@ -255,6 +257,9 @@ namespace ngfem
 
     bool SimdEvaluate () const { return simd_evaluate; }
     void SetSimdEvaluate (bool b = true) { simd_evaluate = b; }
+
+    void SetDeformation (shared_ptr<ngcomp::GridFunction> adeform) { deformation = adeform; } 
+    const shared_ptr<ngcomp::GridFunction> & GetDeformation() const { return deformation; }
   };
 
 
@@ -1726,6 +1731,7 @@ namespace ngfem
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
 
+    using DifferentialOperator::Apply;
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,

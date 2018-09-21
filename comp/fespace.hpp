@@ -26,19 +26,21 @@ namespace ngcomp
 			TRANSFORM_SOL = 8 };
   /**
     coupling types: Each degree of freedom is either
+     - an unused or hidden dof (invisible)
      - a local degree of freedom 
      - an interface degree of freedom 
      or
      - a wirebasket degree of freedom
   */
-  enum COUPLING_TYPE {  UNUSED_DOF = 0,
+  enum COUPLING_TYPE : char {  UNUSED_DOF = 0,
 			HIDDEN_DOF = 1,
 			LOCAL_DOF = 2,
-			CONDENSATABLE_DOF = 3,
+			CONDENSABLE_DOF = 3,
 			INTERFACE_DOF = 4,
 			NONWIREBASKET_DOF = 6,
 			WIREBASKET_DOF = 8,
 			EXTERNAL_DOF = 12,
+			VISIBLE_DOF = 14,
 			ANY_DOF = 15
 		      };
 /*
@@ -46,11 +48,12 @@ Bit encoding:
 UNUSED                     0 |  0
 HIDDEN                     1 |  1
 LOCAL                    1 0 |  2
-CONDENSATABLE            1 1 |  3
+CONDENSABLE              1 1 |  3
 INTERFACE              1 0 0 |  4
 NONWIREBASKET          1 1 0 |  6
 WIREBASKET           1 0 0 0 |  8
 EXTERNAL             1 1 0 0 | 12
+VISIBLE              1 1 1 0 | 14
 ANY                  1 1 1 1 | 15
 */
 
@@ -70,7 +73,14 @@ ANY                  1 1 1 1 | 15
 
   // will be size_t some day 
   typedef int DofId;
+  enum IRREGULAR_DOF_NR
+    {
+      NO_DOF_NR = -1,            // don't assemble this dof (it has no regular number)
+      NO_DOF_NR_CONDENSE = -2    // condense out this dof, don't assemble to global system
+    };
+  INLINE bool IsRegularDof (DofId dof) { return dof >= 0; } // ATTENTION for size_t 
 
+  
   using ngmg::Prolongation;
 
   /**
@@ -234,6 +244,8 @@ ANY                  1 1 1 1 | 15
     /// cleanup
     virtual ~FESpace ();
 
+    static DocInfo GetDocu ();
+    
     /// update dof-table
     virtual void Update(LocalHeap & lh);
 
@@ -252,11 +264,13 @@ ANY                  1 1 1 1 | 15
     const Table<int> & FacetColoring() const;
     
     /// print report to stream
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
 
     /// Dump/restore fespace
     virtual void DoArchive (Archive & archive);
 
+    Array<MemoryUsage> GetMemoryUsage () const override;
+    
     /// order of finite elements
     int GetOrder () const { return order; }
 
@@ -289,8 +303,8 @@ ANY                  1 1 1 1 | 15
       et_order_right[et] = order;
     }
     */
-    virtual void SetOrder (NodeId ni, int order) { ; }
-    virtual int GetOrder (NodeId ni) const { return 0; }
+    virtual void SetOrder (NodeId ni, int order); //  { ; }
+    virtual int GetOrder (NodeId ni) const; //  { return 0; }
     /*
     {
       switch (ni.GetType())
@@ -472,20 +486,24 @@ ANY                  1 1 1 1 | 15
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
+      /*
     [[deprecated("Use GetFE with element-id instead of elnr!")]]    
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
     virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
     virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
-
+*/
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
     void GetDofNrs (int elnr, Array<DofId> & dnums) const
       { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
+    
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
+    void SetIrregularDofNrs (Array<DofId> & dnums) const;
+    
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (Region reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
@@ -496,7 +514,14 @@ ANY                  1 1 1 1 | 15
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
     /// get coupling types of dof
-    virtual COUPLING_TYPE GetDofCouplingType (DofId dof) const;
+    // virtual COUPLING_TYPE GetDofCouplingType (DofId dof) const;
+    // make sure we have it, otherwise throw exception
+    bool CouplingTypeArrayAvailable() const { return ctofdof.Size() == GetNDof(); }
+    COUPLING_TYPE GetDofCouplingType (DofId dof) const
+    { return IsRegularDof(dof)
+        ? ( (ctofdof.Size()==0) ? WIREBASKET_DOF : ctofdof[dof])  // would like to rely on the ctarray
+        : ( (dof == NO_DOF_NR) ? UNUSED_DOF : HIDDEN_DOF ); }
+    
     virtual void SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const;
     
     void CheckCouplingTypes() const;
@@ -507,6 +532,8 @@ ANY                  1 1 1 1 | 15
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
+    /// get dofs (local numbering) of a certain type
+    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
 
     /// get dofs on nr'th node of type nt.
@@ -1086,7 +1113,7 @@ ANY                  1 1 1 1 | 15
   class NGS_DLL_HEADER SurfaceElementFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     int n_el_dofs;
   public:
     ///
@@ -1097,23 +1124,23 @@ ANY                  1 1 1 1 | 15
     ~SurfaceElementFESpace ();
 
     ///
-    virtual string GetClassName() const
+    virtual string GetClassName() const override
     { return "SurfaceElement"; }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
 
     ///
-    virtual size_t GetNDof () const throw() { return ndlevel.Last(); } 
+    // virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
 
     ///
-    virtual const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
     ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    // virtual size_t GetNDofLevel (int level) const;
 
   };
 
@@ -1184,6 +1211,7 @@ ANY                  1 1 1 1 | 15
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
+    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
     ///
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
@@ -1234,10 +1262,13 @@ ANY                  1 1 1 1 | 15
       string name;
       /// function pointer to creator function
       shared_ptr<FESpace> (*creator)(shared_ptr<MeshAccess> ma, const Flags & flags);
+      /// function pointer to docu function
+      DocInfo (*getdocu)();
       /// creates a descriptor
       FESpaceInfo (const string & aname,
-		   shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags))
-	: name(aname), creator(acreator) {;}
+		   shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
+                   DocInfo (*agetdocu)())
+	: name(aname), creator(acreator), getdocu(agetdocu) {;}
     };
   private:
     Array<shared_ptr<FESpaceInfo>> fesa;
@@ -1250,7 +1281,8 @@ ANY                  1 1 1 1 | 15
 
     /// add a descriptor
     void AddFESpace (const string & aname, 
-		     shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags));
+		     shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
+                     DocInfo (*getdocu)() = FESpace::GetDocu);
   
     /// returns all creators
     const Array<shared_ptr<FESpaceInfo>> & GetFESpaces() { return fesa; }
@@ -1282,7 +1314,7 @@ ANY                  1 1 1 1 | 15
     /// constructor registers fespace
     RegisterFESpace (string label)
     {
-      GetFESpaceClasses().AddFESpace (label, Create);
+      GetFESpaceClasses().AddFESpace (label, Create, FES::GetDocu);
       // cout << "register fespace '" << label << "'" << endl;
     }
     
@@ -1350,6 +1382,7 @@ namespace ngstd
     /// returns MPI-type 
     static MPI_Datatype MPIType () 
     { 
+      if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) return MPI_CHAR;
       if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_INT;
       cout << "please provide MPI_Datatype for COUPLING_TYPE" << endl;
       exit(1);

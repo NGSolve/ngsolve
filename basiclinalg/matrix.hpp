@@ -12,7 +12,7 @@ namespace ngbla
 
   
   template <int H, int W, typename T> class Mat;
-  template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
+  // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
@@ -81,7 +81,7 @@ namespace ngbla
       w = m2.A().Width();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (h*w);
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m2.A());
+      CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::operator= (m2.A());
     }
 
     /// useful to put FlatMatrix over other matrix
@@ -188,8 +188,8 @@ namespace ngbla
       return SliceVector<T,TIND> (h, w+1, &data[0]);
     }
 
-    using CMCPMatExpr<FlatMatrix<T> >::Rows;
-    using CMCPMatExpr<FlatMatrix<T> >::Cols;
+    using CMCPMatExpr<FlatMatrix>::Rows;
+    using CMCPMatExpr<FlatMatrix>::Cols;
 
     INLINE FlatMatrix Rows (size_t first, size_t next) const
     {
@@ -457,20 +457,20 @@ namespace ngbla
     Matrix (size_t ah, size_t aw) : FlatMatrix<T,ORD> (ah, aw, new T[ah*aw]) { ; }
 
     /// allocate and copy matrix  
-    Matrix (const Matrix & m2) 
+    INLINE Matrix (const Matrix & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       FlatMatrix<T,ORD>::operator= (m2);
     }
     
     /// move matrix
-    Matrix (Matrix && m2)
+    INLINE Matrix (Matrix && m2)
       : FlatMatrix<T> (m2.h, m2.w, m2.data)
     { m2.data = nullptr; m2.w = 0; m2.h = 0; } 
 
     /// allocate and compute 
     template<typename TB>
-    Matrix (const Expr<TB> & m2) 
+    INLINE Matrix (const Expr<TB> & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
@@ -524,7 +524,7 @@ namespace ngbla
 
     /// assign matrix, sizes must match
     template<typename TB>
-    Matrix & operator= (const Expr<TB> & m) 
+    INLINE Matrix & operator= (const Expr<TB> & m) 
     { 
       SetSize (m.Height(), m.Width());
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m);
@@ -1598,8 +1598,18 @@ namespace ngbla
     }
   };
 
+  
+  template <typename T, ORDERING ORDER>
+  SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
+  template <int W, typename T, int DIST>
+  SliceMatrix<T,RowMajor> make_SliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat) { return mat; }
 
+  template <int H, typename T, int DIST>
+  SliceMatrix<T,ColMajor> make_SliceMatrix (FlatMatrixFixHeight<H,T,DIST> mat) { return mat; }
+  
+  template <typename T, ORDERING ORDER>
+  SliceMatrix<T,ORDER> make_SliceMatrix (SliceMatrix<T,ORDER> mat) { return mat; }
 
 
   template <typename T, ORDERING ORD> 
@@ -1667,7 +1677,7 @@ namespace ngbla
     
     /// 
     INLINE size_t Dist () const throw() { return dist; }
-
+    void IncPtr (size_t inc) { data += inc; } 
     SliceMatrix<T> AddSize (size_t h, size_t w) const
     {
 #ifdef DEBUG
@@ -2197,6 +2207,7 @@ namespace ngbla
   //  Can we put a SliceMatrix over a matrix ? 
   //
 
+  
   template <typename TMAT, typename T = double>
   class Is_Sliceable { public: enum { VAL = false };  };
 

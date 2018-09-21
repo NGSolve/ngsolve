@@ -1220,7 +1220,7 @@ namespace ngfem
 	}
       };
 
-    ip.precomputed_geometry = 1;
+    ip.SetPrecomputedGeometry(true);
     return ip;
   }
 
@@ -2777,8 +2777,8 @@ namespace ngfem
 		IntegrationRule * trigrule = new IntegrationRule; // (xx.Size()*xy.Size());
 	      
 		int ii = 0;
-		for (int i = 0; i < xx.Size(); i++)
-		  for (int j = 0; j < xy.Size(); j++)
+                for (int j = 0; j < xy.Size(); j++)
+                  for (int i = 0; i < xx.Size(); i++)
 		    {
 		      IntegrationPoint ip = 
 			IntegrationPoint (xx[i], xy[j]*(1-xx[i]), 0,
@@ -2834,9 +2834,15 @@ namespace ngfem
 		IntegrationRule * tetrule = new IntegrationRule; // (xx.Size()*xy.Size()*xz.Size());
 	      
 		int ii = 0;
+                /*
 		for (int i = 0; i < xx.Size(); i++)
 		  for (int j = 0; j < xy.Size(); j++)
 		    for (int k = 0; k < xz.Size(); k++)
+                */
+                // change loop order ... x-pnts are innermost
+                for (int k = 0; k < xz.Size(); k++)
+		  for (int j = 0; j < xy.Size(); j++)
+                    for (int i = 0; i < xx.Size(); i++)
 		      {
 			IntegrationPoint ip = 
 			  IntegrationPoint (xx[i], 
@@ -3310,6 +3316,38 @@ namespace ngfem
     for (size_t i = 0; i < mips.Size(); i++)
       mips[i].Print(ost);
   }
+
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
+  TransformGradient (BareSliceMatrix<SIMD<double>> grad) const 
+  {
+    if (DIM_ELEMENT != DIM_SPACE)
+      throw Exception("transformgrad only available for volume mapping");
+    
+    for (size_t i = 0; i < mips.Size(); i++)
+      {
+        Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
+        // Vec<DIM_SPACE,SIMD<double>> vphys =
+        grad.Col(i).AddSize(DIM_SPACE) = Trans(mips[i].GetJacobianInverse()) * vref;
+      }
+  }
+  
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
+  TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const 
+  {
+    if (DIM_ELEMENT != DIM_SPACE)
+      throw Exception("transformgrad only available for volume mapping");
+    
+    for (size_t i = 0; i < mips.Size(); i++)
+      {
+        Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
+        // Vec<DIM_SPACE,SIMD<double>> vphys =
+        grad.Col(i).AddSize(DIM_SPACE) = mips[i].GetJacobianInverse() * vref;
+      }
+  }
+
   
   
   template class SIMD_MappedIntegrationRule<0,0>;

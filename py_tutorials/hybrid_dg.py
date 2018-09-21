@@ -32,8 +32,9 @@ a += SymbolicBFI(grad(u)*n*(vhat-v)+grad(v)*n*(uhat-u)+10*order*order/h*(u-uhat)
 c = Preconditioner(type="direct", bf=a, inverse = "sparsecholesky")
 # c = Preconditioner(type="bddc", bf=a)
 
-a.Assemble()
-ainv = CGSolver(a.mat, c.mat)
+with TaskManager():
+    a.Assemble()
+    ainv = CGSolver(a.mat, c.mat)
 
 f = LinearForm(fes)
 f += SymbolicLFI(1*v)

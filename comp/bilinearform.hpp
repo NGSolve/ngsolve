@@ -90,6 +90,8 @@ namespace ngcomp
     bool elmat_ev;
     /// does static condensation of internal dofs
     bool eliminate_internal;
+    /// does static condensation of hidden dofs
+    bool eliminate_hidden;
     /// keeps matrices for reconstruction of internal dofs
     bool keep_internal;
     /// should A_ii itself be stored?!
@@ -271,6 +273,9 @@ namespace ngcomp
     /// use static condensation ?
     bool UsesEliminateInternal () const { return eliminate_internal; }
 
+    /// use static condensation for hidden?
+    bool UsesEliminateHidden () const { return eliminate_hidden; }
+
     /// stores the matrices for reconstructing internal dofs ?
     bool UsesKeepInternal () const { return keep_internal; }
 
@@ -329,6 +334,9 @@ namespace ngcomp
     void SetEliminateInternal (bool eliminate) 
     { eliminate_internal = eliminate; }
 
+    void SetEliminateHidden (bool eliminate) 
+    { eliminate_hidden = eliminate; }
+
     void SetKeepInternal (bool keep)
     { keep_internal = keep; }
 
@@ -370,7 +378,7 @@ namespace ngcomp
     virtual void PrintReport (ostream & ost) const;
 
     ///
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
 
     /// creates a compatible vector
     virtual shared_ptr<BaseVector> CreateVector() const = 0;
@@ -384,6 +392,7 @@ namespace ngcomp
 
     /// allocates (sparse) matrix data-structure
     virtual void AllocateMatrix () = 0;
+    virtual void AllocateInternalMatrices () = 0;
   };
 
 
@@ -407,6 +416,7 @@ namespace ngcomp
 #ifdef PARALLEL
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;
+    mutable Array<int> os_per;
     mutable Table<SCAL> send_table;
     mutable Table<SCAL> recv_table;
 #endif
@@ -566,6 +576,7 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
     */
+    virtual void AllocateInternalMatrices ();
   };
 
 
@@ -815,6 +826,8 @@ namespace ngcomp
     { throw Exception ("comp-bf - DoAssemble is illegal"); } 
     virtual void AllocateMatrix ()
     { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
+    virtual void AllocateInternalMatrices ()
+    { throw Exception ("comp-bf - AllocateInternalMatrices is illegal"); } 
     virtual double Energy (const BaseVector & x, LocalHeap & lh) const 
     { throw Exception ("comp-bf - Energy is illegal"); } 
 
@@ -902,8 +915,10 @@ namespace ngcomp
 				       const BaseVector * aveclin);
 
     ///
+      using BilinearFormApplication::Mult;
     virtual void Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
     ///
+      using BilinearFormApplication::MultAdd;
     virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;

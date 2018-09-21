@@ -97,10 +97,68 @@ namespace ngla
       }
   }
 
+  
+  
+  template <class SCAL>
+  ElementByElementMatrix<SCAL> ::
+  ElementByElementMatrix (size_t h, size_t w, 
+                          FlatArray<int> nrowi, FlatArray<int> ncoli,
+                          bool isymmetric, bool adisjointrows, bool adisjointcols)
+    : height(h), width(w), ne(nrowi.Size()), symmetric(isymmetric), disjointrows(adisjointrows), disjointcols(adisjointcols)
+  {
+    clone.SetSize(ne);
+    clone.Clear();
+    
+    size_t totmem_row = 0;
+    size_t totmem_col = 0;
+    size_t totmem_values = 0;
+    for (size_t i = 0; i < nrowi.Size(); i++)
+      {
+        totmem_row += nrowi[i];
+        totmem_col += ncoli[i];
+        totmem_values += nrowi[i]*ncoli[i];
+      }
 
+    allrow.SetSize(totmem_row+1);  // to mark as array-version
+    allcol.SetSize(totmem_col+1);
+    allvalues.SetSize(totmem_values+1);
+    allrow = -1;
+    allcol = -1;
+    /*
+    for (int i = 0; i < totmem_row; i++)
+      allrow.get()[i] = -1;
+    for (int i = 0; i < totmem_col; i++)
+      allcol.get()[i] = -1;
+    for (int i = 0; i < totmem_values; i++)
+      allvalues.get()[i] = -1;
+    */
+    
+    rowdnums.SetSize(ne);
+    coldnums.SetSize(ne);
+    elmats.SetSize(ne);
+    totmem_row = 0;
+    totmem_col = 0;
+    totmem_values = 0;
+    for (size_t i = 0; i < nrowi.Size(); i++)
+      {
+        new (&rowdnums[i]) FlatArray<int> (nrowi[i], allrow.Addr(totmem_row));
+        new (&coldnums[i]) FlatArray<int> (ncoli[i], allcol.Addr(totmem_col));
+        elmats[i].AssignMemory (nrowi[i], ncoli[i], allvalues.Addr(totmem_values));
+        totmem_row += nrowi[i];
+        totmem_col += ncoli[i];
+        totmem_values += nrowi[i]*ncoli[i];
+      }
+  }
+  
+
+
+  
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ~ElementByElementMatrix ()
   {
+    if (allvalues.Size())
+      return;  // all memory in unique_ptrs 
+    
     for (int i = 0; i < ne; i++)
       if (!clone.Test(i))
 	{
@@ -137,7 +195,8 @@ namespace ngla
 	      FlatArray<int> cdi = coldnums[i];
 	      
 	      if (!rdi.Size() || !cdi.Size()) continue;
-	      
+	      if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
+              // throw ("Illegal index in ebe mult");
 	      FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
 
 	      hv1 = vx(cdi);
@@ -161,6 +220,7 @@ namespace ngla
 	    FlatArray<int> cdi = coldnums[i];
 	    
 	    if (!rdi.Size() || !cdi.Size()) continue;
+            if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used            
 	    
 	    FlatVector<SCAL> hv(cdi.Size(), &mem1[0]);
 	    
@@ -205,6 +265,7 @@ namespace ngla
                   FlatArray<int> cdi (coldnums[i]);
                   
                   if (!rdi.Size() || !cdi.Size()) continue;
+                  if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
                   
                   FlatVector<> hv1(rdi.Size(), &mem1[0]);
                   FlatVector<> hv2(cdi.Size(), &mem2[0]);
@@ -237,7 +298,8 @@ namespace ngla
 	    FlatArray<int> cdi = coldnums[i];
 	    
 	    if (!rdi.Size() || !cdi.Size()) continue;
-	    
+            if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
+            
 	    FlatVector<double> hv(cdi.Size(), &mem1[0]);
 	    
 	    hv = vx(cdi);
@@ -279,7 +341,8 @@ namespace ngla
 	      FlatArray<int> rdi (rowdnums[i]);
 	      FlatArray<int> cdi (coldnums[i]);
 	      if (!rdi.Size() || !cdi.Size()) continue;
-	      
+              if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
+              
 	      FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
 
 	      hv1 = vx(rdi);
@@ -302,6 +365,7 @@ namespace ngla
             FlatArray<int> cdi (coldnums[i]);
             
             if (!rdi.Size() || !cdi.Size()) continue;
+            if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
             
             FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
             
@@ -340,7 +404,8 @@ namespace ngla
 	      FlatArray<int> rdi (rowdnums[i]);
 	      FlatArray<int> cdi (coldnums[i]);
 	      if (!rdi.Size() || !cdi.Size()) continue;
-	      
+              if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
+            
 	      FlatVector<> hv1(rdi.Size(), &mem1[0]);
 
 	      hv1 = vx(rdi);
@@ -371,6 +436,7 @@ namespace ngla
                       FlatArray<int> cdi (coldnums[i]);
                 
                       if (!rdi.Size() || !cdi.Size()) continue;
+                      if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
                       
                       FlatVector<> hv1(rdi.Size(), &mem1[0]);
                       FlatVector<> hv2(cdi.Size(), &mem2[0]);
@@ -403,6 +469,7 @@ namespace ngla
                 FlatArray<int> cdi (coldnums[i]);
                 
                 if (!rdi.Size() || !cdi.Size()) continue;
+                if (rdi[0] == -1 || cdi[0] == -1) continue;  // reserved but not used
                 
                 FlatVector<> hv1(rdi.Size(), &mem1[0]);
                 
@@ -462,6 +529,10 @@ namespace ngla
                                                          FlatArray<int> coldnums_in,
                                                          BareSliceMatrix<SCAL> elmat)
   {
+    if (elnr > elmats.Size())
+      throw Exception ("EBEMatrix::AddElementMatrix, illegal elnr");
+    
+    
     ArrayMem<int,50> usedrows;
     for (int i = 0; i < rowdnums_in.Size(); i++)
       if (rowdnums_in[i] >= 0) usedrows.Append(i);
@@ -472,32 +543,51 @@ namespace ngla
       if (coldnums_in[i] >= 0) usedcols.Append(i);
     int sc = usedcols.Size();
 
-    FlatMatrix<SCAL> mat (sr,sc, new SCAL[sr*sc]);
-    // mat = elmat.Rows(usedrows).Cols(usedcols);
-
-    for (int i = 0; i < sr; i++)
-      for (int j = 0; j < sc; j++)
-        mat(i,j) = elmat(usedrows[i], usedcols[j]);
-
-    FlatArray<int> dnr(sr, new int[sr]);
-    for (int i = 0; i < sr; i++)
-      dnr[i] = rowdnums_in[usedrows[i]];
-    
-    FlatArray<int> dnc(sc, new int[sc]);
-    for (int j = 0; j < sc; j++)
-      dnc[j] = coldnums_in[usedcols[j]];
-
-    if (elnr < elmats.Size())
+    if (allvalues.Size())
       {
-        // rowdnums[elnr] = dnr;
-	// coldnums[elnr] = dnc;
+        FlatMatrix<SCAL> mat(elmats[elnr]);
+        FlatArray<int> dnr(rowdnums[elnr]);
+        FlatArray<int> dnc(coldnums[elnr]);
 
-	new (&rowdnums[elnr]) FlatArray<int> (dnr);
-	new (&coldnums[elnr]) FlatArray<int> (dnc);
+        if (dnr.Size() != sr || dnc.Size() != sc || mat.Height() != sr || mat.Width() != sc)
+          {
+            throw Exception ("ebe, dnr or dnc has illegal size: \n"
+                             "dnr.size = "+ToString(dnr.Size()) + " sr = " +ToString(sr) + "\n"
+                             "dnc.size = "+ToString(dnc.Size()) + " sc = " +ToString(sc));
+          }
 
+        for (int i = 0; i < sr; i++)
+          for (int j = 0; j < sc; j++)
+            mat(i,j) = elmat(usedrows[i], usedcols[j]);
+
+        for (int i = 0; i < sr; i++)
+          dnr[i] = rowdnums_in[usedrows[i]];
+
+        for (int j = 0; j < sc; j++)
+          dnc[j] = coldnums_in[usedcols[j]];
+      }
+    else
+      {
+        FlatMatrix<SCAL> mat (sr,sc, new SCAL[sr*sc]);
+        
+        for (int i = 0; i < sr; i++)
+          for (int j = 0; j < sc; j++)
+            mat(i,j) = elmat(usedrows[i], usedcols[j]);
+        
+        FlatArray<int> dnr(sr, new int[sr]);
+        for (int i = 0; i < sr; i++)
+          dnr[i] = rowdnums_in[usedrows[i]];
+        
+        FlatArray<int> dnc(sc, new int[sc]);
+        for (int j = 0; j < sc; j++)
+          dnc[j] = coldnums_in[usedcols[j]];
+        
+        new (&rowdnums[elnr]) FlatArray<int> (dnr);
+        new (&coldnums[elnr]) FlatArray<int> (dnc);
         elmats[elnr].AssignMemory (sr, sc, &mat(0,0));
       }
 
+    
     max_row_size = max2(max_row_size, sr);
     max_col_size = max2(max_col_size, sc);
   }
@@ -508,6 +598,9 @@ namespace ngla
                                                          const FlatArray<int> & coldnums_in,
                                                          int refelnr)
   {
+    if (allvalues.Size())
+      throw Exception ("AddClone + allvalues not ready");
+
     ArrayMem<int,50> usedrows;
     for (int i = 0; i < rowdnums_in.Size(); i++)
       if (rowdnums_in[i] >= 0) usedrows.Append(i);
@@ -543,6 +636,9 @@ namespace ngla
         elmats[elnr].AssignMemory (sr, sc, &elmats[refelnr](0,0));
 	clone.Set(elnr);
       }
+    else
+      throw Exception ("EBEMatrix::AddCloneElementMatrix, illegal elnr");
+    
   }
 
   template <class SCAL>

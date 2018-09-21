@@ -36,6 +36,11 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
    install/gettingstarted.rst
    install/usejupyter.rst
 
+.. toctree::
+   :maxdepth: 2
+   :caption: i-Tutorials
+
+   i-tutorials/index.rst
 
 .. toctree::
   :maxdepth: 1

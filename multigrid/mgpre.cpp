@@ -22,6 +22,8 @@ namespace ngmg
     : BaseMatrix (), ma(ama), fespace(afespace), biform(abiform), 
       smoother(asmoother), prolongation(aprolongation)
   {
+    if (!prolongation)
+      throw Exception ("MultigridPrecond: did not get a prolongation");
     coarsegridpre = NULL;
 
     SetSmoothingSteps (1);
@@ -84,7 +86,7 @@ namespace ngmg
     if ( smoother )
       smoother->Update(update_always);
     if (prolongation)
-      prolongation->Update();
+      prolongation->Update(fespace);
 
 
     //  coarsegridpre = biform.GetMatrix(1).CreateJacobiPrecond();
@@ -277,12 +279,23 @@ namespace ngmg
       }
   }
 
-
+  /*
   void MultigridPreconditioner :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     if (coarsegridpre) coarsegridpre->MemoryUsage (mu);
     if (smoother) smoother->MemoryUsage (mu);
   }
+  */
+  Array<MemoryUsage> MultigridPreconditioner :: GetMemoryUsage () const
+  {
+    Array<MemoryUsage> mem;
+    if (coarsegridpre) mem += coarsegridpre->GetMemoryUsage ();
+    if (smoother) mem += smoother->GetMemoryUsage ();
+    return mem;
+  }
+
+
+  
 
   TwoLevelMatrix :: 
   TwoLevelMatrix (const BaseMatrix * amat, 
@@ -358,11 +371,12 @@ namespace ngmg
 
 
 
-
-  void TwoLevelMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> TwoLevelMatrix :: GetMemoryUsage () const  
   {
-    if (cpre) cpre->MemoryUsage (mu);
-    if (smoother) smoother->MemoryUsage (mu);
+    Array<MemoryUsage> mem;
+    if (cpre) mem += cpre->GetMemoryUsage ();
+    if (smoother) mem += smoother->GetMemoryUsage ();
+    return mem;
   }
 
 

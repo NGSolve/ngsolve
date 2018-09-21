@@ -17,6 +17,12 @@ namespace ngfem
 }
 
 
+shared_ptr<CoefficientFunction>
+MakeCoefficientFunction (CF_Type type,
+                         const Array<shared_ptr<CoefficientFunction>> & childs,
+                         py::list data);
+
+
 struct PythonCoefficientFunction : public CoefficientFunction {
   PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
@@ -123,7 +129,7 @@ std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_funct
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
 
 template <typename FUNC>
-void ExportStdMathFunction(py::module &m, string name)
+void ExportStdMathFunction(py::module &m, string name, string description)
 {
   auto f = [name] (shared_ptr<CF> coef) -> shared_ptr<CF>
             {
@@ -136,23 +142,23 @@ void ExportStdMathFunction(py::module &m, string name)
   m.def (name.c_str(), [name] (py::object x) -> py::object
             {
               FUNC func;
+              py::extract<double> ed(x);
+              if (ed.check()) return py::cast(func(ed()));
+              if (py::extract<Complex> (x).check())
+                return py::cast(func(py::extract<Complex> (x)()));
               if (py::extract<shared_ptr<CF>>(x).check())
                 {
                   auto coef = py::extract<shared_ptr<CF>>(x)();
                   return py::cast(unary_math_functions[name](coef));
                 }
-              py::extract<double> ed(x);
-              if (ed.check()) return py::cast(func(ed()));
-              if (py::extract<Complex> (x).check())
-                return py::cast(func(py::extract<Complex> (x)()));
               throw py::type_error (string("can't compute math-function, type = ")
                                     + typeid(FUNC).name());
-            });
+            }, py::arg("x"), description.c_str());
 }
 
 
 template <typename FUNC>
-void ExportStdMathFunction2(py::module &m, string name)
+void ExportStdMathFunction2(py::module &m, string name, string description)
 {
   auto f = [name] (shared_ptr<CF> cx, shared_ptr<CF> cy) -> shared_ptr<CF>
             {
@@ -178,7 +184,7 @@ void ExportStdMathFunction2(py::module &m, string name)
            py::extract<Complex> cx(x), cy(y);
            if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
            throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
-         });
+         }, py::arg("x"), py::arg("y"), description.c_str());
 }
 
 
@@ -201,6 +207,10 @@ struct GenericBSpline {
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
   static string Name() { return "sin"; }
+};
+struct GenericIdentity {
+  template <typename T> T operator() (T x) const { return x; }
+  static string Name() { return  " "; }
 };
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
@@ -297,18 +307,19 @@ struct GenericPow {
     NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+      using CoefficientFunctionNoDerivative::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
     {
       return 0;
     }
-    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
       if (ip.Dim() != D)
         throw Exception("illegal dim of normal vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const // override 
     {
       const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
        if(!tpir)
@@ -359,14 +370,14 @@ struct GenericPow {
       }
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const override 
     {
       if (ir[0].Dim() != D)
 	throw Exception("illegal dim of normal vector");
       for (int i = 0; i < ir.Size(); i++)
 	res.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
         string miptype;
         if(code.is_simd)
           miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
@@ -379,19 +390,20 @@ struct GenericPow {
           code.body += Var(index,i).Assign(nv(i));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
     {
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
     }
 
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
+                           AFlatMatrix<double> values) const override 
     {
       Evaluate (ir, values);
     }
-    
+
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
     {
@@ -408,9 +420,10 @@ struct GenericPow {
       Evaluate (ir, result);
       deriv = 0.0;
     }
-
-    virtual CF_Type GetType() const { return CF_Type_normal_vector; }
-    virtual void DoArchive (Archive & archive)
+    */
+    
+    virtual CF_Type GetType() const override { return CF_Type_normal_vector; }
+    virtual void DoArchive (Archive & archive) override
     {
       int dim = D;
       archive & dim;
@@ -449,6 +462,7 @@ struct GenericPow {
           code.body += Var(index,i).Assign(tv(i));
     }
 
+      using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
       for (size_t i = 0; i < ir.Size(); i++)
@@ -467,7 +481,6 @@ struct GenericPow {
 
 
 
-
 void ExportCoefficientFunction(py::module &m)
 {
   m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
@@ -475,13 +488,14 @@ void ExportCoefficientFunction(py::module &m)
               return IfPos(c1,
                            MakeCoefficient(then_obj),
                            MakeCoefficient(else_obj));
-            } ,docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
+            }, py::arg("c1"), py::arg("then_obj"), py::arg("else_obj") ,docu_string(R"raw_string(
+Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
 
 Parameters:
 
 c1 : ngsolve.CoefficientFunction
   Indicator function
-+
+
 then_obj : object
   Values of new CF if c1 is positive, object must be implicitly convertible to
   ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
@@ -489,20 +503,28 @@ then_obj : object
 else_obj : object
   Values of new CF if c1 is not positive, object must be implicitly convertible to
   ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
+
 )raw_string"))
     ;
   
   m.def("CoordCF", 
         [] (int direction)
-        { return MakeCoordinateCoefficientFunction(direction); },
-        "CoefficientFunction for x, y, z"
-        );
+        { return MakeCoordinateCoefficientFunction(direction); }, py::arg("direction"),
+        docu_string(R"raw_string(
+CoefficientFunction for x, y, z.
+
+Parameters:
+
+direction : int
+  input direction
+
+)raw_string"));
   
   class MeshSizeCF : public CoefficientFunctionNoDerivative
   {
   public:
     MeshSizeCF () : CoefficientFunctionNoDerivative(1, false) { ; }
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
         {
@@ -529,7 +551,8 @@ else_obj : object
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+      using CoefficientFunctionNoDerivative::Evaluate;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     {
       if (ir[0].IP().FacetNr() != -1)
         for(size_t i : Range(ir))
@@ -539,13 +562,15 @@ else_obj : object
           values(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
 
+    /*
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
       Evaluate (ir, values);
     }    
-
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+    */
+    
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       if(code.is_simd)
       {
         string type = "SIMD<double>";
@@ -586,7 +611,7 @@ else_obj : object
       }
     }
 
-    virtual CF_Type GetType() const { return CF_Type_mesh_size; }
+    virtual CF_Type GetType() const override { return CF_Type_mesh_size; }
   };
 
 
@@ -632,29 +657,30 @@ else_obj : object
     }
   };
 
-  ExportStdMathFunction<GenericSin>(m, "sin");
-  ExportStdMathFunction<GenericCos>(m, "cos");
-  ExportStdMathFunction<GenericTan>(m, "tan");
-  ExportStdMathFunction<GenericExp>(m, "exp");
-  ExportStdMathFunction<GenericLog>(m, "log");
-  ExportStdMathFunction<GenericATan>(m, "atan");
-  ExportStdMathFunction<GenericACos>(m, "acos");
-  ExportStdMathFunction<GenericASin>(m, "asin");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
-  ExportStdMathFunction<GenericFloor>(m, "floor");
-  ExportStdMathFunction<GenericCeil>(m, "ceil");
-  ExportStdMathFunction<GenericConj>(m, "Conj");
+  ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
+  ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
+  ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
+  ExportStdMathFunction<GenericExp>(m, "exp", "Exponential function");
+  ExportStdMathFunction<GenericLog>(m, "log", "Logarithm function");
+  ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
+  ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
+  ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root function");
+  ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
+  ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
+  ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
+  ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
-  ExportStdMathFunction2<GenericATan2>(m, "atan2");
-  ExportStdMathFunction2<GenericPow>(m, "pow");
+  ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians");
+  ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
 
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
-    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF,
+    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
          "depending on contents: normal-vector to geometry or element\n"
          "space-dimension must be provided")
-    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF,
+    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
          "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
     ;
@@ -662,8 +688,37 @@ else_obj : object
   
   m.attr("specialcf") = py::cast(&specialcf);
 
+  py::enum_<CF_Type>(m, "CFtype")
+    .value("undefined", CF_Type_undefined)
+    .value("constant", CF_Type_constant)
+    .value("vectorial", CF_Type_vectorial)
+    .value("coordinate", CF_Type_coordinate)
+    .value("norm", CF_Type_norm)
+    .value("trans", CF_Type_trans)
+    .value("component", CF_Type_component)
+    .value("real", CF_Type_real)
+    .value("imag", CF_Type_imag)
+    .value("ifpos", CF_Type_ifpos)
+    .value("normal_vector", CF_Type_normal_vector)
+    .value("tangential_vector", CF_Type_tangential_vector)
+    .value("mesh_size", CF_Type_mesh_size)
+    .value("scale", CF_Type_scale)
+    .value("scale_complex", CF_Type_scale_complex)
+    .value("add", CF_Type_add)
+    .value("sub", CF_Type_sub)
+    .value("mult", CF_Type_mult)
+    .value("div", CF_Type_div)
+    .value("domainconst", CF_Type_domainconst)
+    .value("domainwise", CF_Type_domainwise)
+    .value("unary_op", CF_Type_unary_op)
+    .value("binary_op", CF_Type_binary_op)
+    .value("usertype", CF_Type_usertype)
+    .value("eig", CF_Type_eig)
+    ;
 
-  py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
+  
+  
+  auto cf_class = py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
 R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
 Examples are coordinates x, y, z, domain-wise constants, solution-fields, ...
@@ -708,6 +763,15 @@ val : can be one of the following:
          "     use dims=(h,w) to define matrix-valued CF\n"
          "  a list of scalars and or CFs to define a domain-wise CF"
         )
+
+    .def(py::init([] (CF_Type type, py::list childs, py::list data)
+                  {
+                    auto cchilds = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (childs);
+                    return MakeCoefficientFunction (type, cchilds, data);
+                  }),
+         py::arg("type"), py::arg("childs"), py::arg("data")
+         )
+    
     .def("__str__",  [](CF& self) { return ToString<>(self);})
 
     .def("__call__", [] (CF& self, BaseMappedIntegrationPoint & mip) -> py::object
@@ -747,7 +811,7 @@ val : can be one of the following:
     */
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
-                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
+                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } , py::arg("tuple"),
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
     
     .def_property_readonly("is_complex",
@@ -777,30 +841,30 @@ val : can be one of the following:
 
                                            int comp = c1 * dims[1] + c2;
                                            return MakeComponentCoefficientFunction (self, comp);
-                                         })
+                                         }, py::arg("components"))
 
     // coefficient expressions
-    .def ("__add__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; } )
+    .def ("__add__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; }, py::arg("cf") )
     .def ("__add__", [] (shared_ptr<CF> coef, double val)
            {
              return coef + make_shared<ConstantCoefficientFunction>(val);
-           })
+           }, py::arg("value"))
     .def ("__radd__", [] (shared_ptr<CF> coef, double val)
-           { return coef + make_shared<ConstantCoefficientFunction>(val); })
+          { return coef + make_shared<ConstantCoefficientFunction>(val); }, py::arg("value"))
 
     .def ("__sub__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
-           { return c1-c2; })
+          { return c1-c2; }, py::arg("cf"))
 
     .def ("__sub__", [] (shared_ptr<CF> coef, double val)
-           { return coef - make_shared<ConstantCoefficientFunction>(val); })
+          { return coef - make_shared<ConstantCoefficientFunction>(val); }, py::arg("value"))
 
     .def ("__rsub__", [] (shared_ptr<CF> coef, double val)
-           { return make_shared<ConstantCoefficientFunction>(val) - coef; })
+          { return make_shared<ConstantCoefficientFunction>(val) - coef; }, py::arg("value"))
 
     .def ("__mul__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            {
              return c1*c2;
-           } )
+           }, py::arg("cf") )
 
     .def ("__pow__", [] (shared_ptr<CF> c1, int p)
            {
@@ -827,7 +891,7 @@ val : can be one of the following:
                return one/res;
              else
                return res;
-           } )
+           }, py::arg("exponent") )
 
     .def ("__pow__", binary_math_functions["pow"])
 
@@ -836,28 +900,36 @@ val : can be one of the following:
              GenericPow func;
 	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
              return binary_math_functions["pow"](c1, c2);
-           } )  
+           }, py::arg("exponent") )  
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
              return InnerProduct (c1, c2);
-           })
-    
-    .def("Norm",  NormCF)
+           }, py::arg("cf"), docu_string(R"raw_string( 
+Returns InnerProduct with another CoefficientFunction.
 
-    .def("Eig", EigCF)
+Parameters:
+
+cf : ngsolve.CoefficientFunction
+  input CoefficientFunction
+
+ )raw_string"))
+    
+    .def("Norm",  NormCF, "Returns Norm of the CF")
+
+    .def("Eig", EigCF, "Returns eigenvectors and eigenvalues of matrix-valued CF")
     
     .def ("Other", MakeOtherCoefficientFunction,
-          "evaluate on other element, as needed for DG jumps")
+          "Evaluate on other element, as needed for DG jumps")
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
     .def ("__mul__", [] (shared_ptr<CF> coef, double val)
            {
              return val * coef; 
-           })
+           }, py::arg("value"))
     .def ("__rmul__", [] (shared_ptr<CF> coef, double val)
-           { return val * coef; }
+          { return val * coef; }, py::arg("value")
            )
 
     .def ("__mul__", [] (shared_ptr<CF> coef, Complex val)
@@ -866,30 +938,30 @@ val : can be one of the following:
                return val.real() * coef;
              else
                return val * coef;
-           })
+           }, py::arg("value"))
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
            { 
              if (val.imag() == 0)
                return val.real() * coef;
              else
                return val * coef;
-           })
+           }, py::arg("value"))
 
     .def ("__truediv__", [] (shared_ptr<CF> coef, shared_ptr<CF> coef2)
            { return coef/coef2;
-           })
+           }, py::arg("cf"))
 
     .def ("__truediv__", [] (shared_ptr<CF> coef, double val)
            // { return coef.Get() * make_shared<ConstantCoefficientFunction>(1/val); })
-           { return (1/val) * coef; })
+          { return (1/val) * coef; }, py::arg("value"))
 
     .def ("__truediv__", [] (shared_ptr<CF> coef, Complex val)
-           { return (1.0/val) * coef; })
+          { return (1.0/val) * coef; }, py::arg("value"))
 
     .def ("__rtruediv__", [] (shared_ptr<CF> coef, double val)
-           { return make_shared<ConstantCoefficientFunction>(val) / coef; })
+          { return make_shared<ConstantCoefficientFunction>(val) / coef; }, py::arg("value"))
     .def ("__rtruediv__", [] (shared_ptr<CF> coef, Complex val)
-           { return make_shared<ConstantCoefficientFunctionC>(val) / coef; })
+          { return make_shared<ConstantCoefficientFunctionC>(val) / coef; }, py::arg("value"))
 
     .def ("__neg__", [] (shared_ptr<CF> coef)
            { return -1.0 * coef; })
@@ -906,10 +978,46 @@ val : can be one of the following:
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
            py::arg("maxderiv")=2,
-           py::arg("wait")=false,
-          "compile list of individual steps, experimental improvement for deep trees")
+          py::arg("wait")=false, py::call_guard<py::gil_scoped_release>(), docu_string(R"raw_string(
+Compile list of individual steps, experimental improvement for deep trees
+
+Parameters:
+
+realcompile : bool
+  True -> Compile to C++ code
+
+maxderiv : int
+  input maximal derivative
+
+wait : bool
+  True -> Waits until the previous Compile call is finished before start compiling
+
+)raw_string"))
 
 
+    .def_property_readonly ("type", [](shared_ptr<CF> cf) { return cf->GetType(); })
+    
+    .def_property("data",
+                  [] (shared_ptr<CF> cf)
+                  {
+                    PyOutArchive ar;
+                    cf->DoArchive(ar);
+                    return ar.GetList();
+                  },
+                  [] (shared_ptr<CF> cf, py::list data)
+                  {
+                    PyInArchive ar(data);
+                    cf->DoArchive(ar);
+                  })
+    .def_property_readonly("childs", [](shared_ptr<CF> cf)
+                  {
+                    py::list pychilds;
+                    for (auto child : cf->InputCoefficientFunctions())
+                      pychilds.append (child);
+                    return pychilds;
+                  })
+                  
+    
     .def (py::pickle([] (CoefficientFunction & cf)
                      {
                        PyOutArchive ar;
@@ -1023,19 +1131,77 @@ val : can be one of the following:
                      }))
     ;
 
+
+  py::implicitly_convertible<double, CoefficientFunction>();
+  py::implicitly_convertible<Complex, CoefficientFunction>();
+  py::implicitly_convertible<int, CoefficientFunction>();
+  py::implicitly_convertible<py::tuple, CoefficientFunction>();
+  py::implicitly_convertible<py::list, CoefficientFunction>();
+
+
+  
+  if(have_numpy)
+    {
+      cf_class.def("__call__", [](shared_ptr<CF> self, py::array_t<MeshPoint> points) -> py::array
+         {
+           auto pts = points.unchecked<1>(); // pts has array access without bounds checks
+           size_t npoints = pts.shape(0);
+           py::array np_array;
+           if (!self->IsComplex())
+             {
+               Array<double> vals(npoints * self->Dimension());
+               ParallelFor(Range(npoints), [&](size_t i)
+                           {
+                             LocalHeapMem<1000> lh("CF evaluate");
+                             auto& mp = pts(i);
+                             auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
+                             auto& mip = trafo(IntegrationPoint(mp.x,mp.y,mp.z),lh);
+                             FlatVector<double> fv(self->Dimension(), &vals[i*self->Dimension()]);
+                             self->Evaluate(mip, fv);
+                           });
+               np_array = MoveToNumpyArray(vals);
+             }
+           else
+             {
+               Array<Complex> vals(npoints * self->Dimension());
+               ParallelFor(Range(npoints), [&](size_t i)
+                           {
+                             LocalHeapMem<1000> lh("CF evaluate");
+                             auto& mp = pts(i);
+                             auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
+                             auto& mip = trafo(IntegrationPoint(mp.x,mp.y,mp.z),lh);
+                             FlatVector<Complex> fv(self->Dimension(), &vals[i*self->Dimension()]);
+                             self->Evaluate(mip, fv);
+                           });
+               np_array = MoveToNumpyArray(vals);
+             }
+           return np_array.attr("reshape")(npoints, self->Dimension());
+         });
+    }
+
   typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
   py::class_<ParameterCoefficientFunction, spParameterCF, CF>
-    (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
+    (m, "Parameter", docu_string(R"raw_string(
+CoefficientFunction with a modifiable value
 
 Parameters:
 
-val : float
+value : float
   Parameter value
+
 )raw_string"))
     .def (py::init ([] (double val)
-                    { return make_shared<ParameterCoefficientFunction>(val); }))
-    .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); },
-          "modify parameter value")
+                    { return make_shared<ParameterCoefficientFunction>(val); }), py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
+          docu_string(R"raw_string(
+Modify parameter value.
+
+Parameters:
+
+value : double
+  input scalar  
+
+)raw_string"))
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
     .def (py::pickle([] (shared_ptr<ParameterCoefficientFunction> self)
@@ -1049,18 +1215,19 @@ val : float
                      }))
     ;
 
-
-
-  py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
+  py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
+BSpline of arbitrary order
 
 Parameters:
 
 order : int
   order of the BSpline
 
-knots : list of float
+knots : list
+  list of float
 
-vals : list of float
+vals : list
+  list of float
 
 )raw")
     .def(py::init
@@ -1069,21 +1236,126 @@ vals : list of float
             return make_shared<BSpline> (order,
                                          makeCArray<double> (knots),
                                          makeCArray<double> (vals));
-          }),
+          }), py::arg("order"), py::arg("knots"), py::arg("vals"),
         "B-Spline of a certain order, provide knot and value vectors")
     .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
     .def("__call__", [](shared_ptr<BSpline> sp, shared_ptr<CF> coef)
           {
             return UnaryOpCF (coef, GenericBSpline(sp) /* , GenericBSpline(sp) */);
-          })
+          }, py::arg("cf"))
     .def("Integrate", 
-         [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); })
+         [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }, "Integrate the BSpline")
     .def("Differentiate", 
-         [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); })
+         [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); }, "Differentiate the BSpline")
     ;
 }
 
+
+  shared_ptr<CoefficientFunction>
+    MakeCoefficientFunction (CF_Type type,
+                             const Array<shared_ptr<CoefficientFunction>> & childs,
+                             py::list data)
+  {
+    PyInArchive ar(data);
+    shared_ptr<CoefficientFunction> cf;
+    switch (type)
+      {
+      case CF_Type_undefined:
+        cout << "undefined CF" << endl;
+        break;
+      case CF_Type_constant:
+        cf = make_shared<ConstantCoefficientFunction>(1);
+        break;
+      case CF_Type_vectorial:
+        cf = MakeVectorialCoefficientFunction(Array<shared_ptr<CoefficientFunction>>(childs));
+        break;
+      case CF_Type_coordinate:
+        cf = MakeCoordinateCoefficientFunction(-1);
+        break;
+      case CF_Type_norm:
+        cf = NormCF(childs[0]);
+        break;
+      case CF_Type_trans:
+        cf = TransposeCF(childs[0]);
+        break;
+      case CF_Type_component:
+        cf = MakeComponentCoefficientFunction (childs[0], 0);
+        break;
+      case CF_Type_real:
+        cf = Real(childs[0]);
+        break;
+      case CF_Type_imag:
+        cf = Imag(childs[0]);
+        break;
+      case CF_Type_ifpos:
+        cf = IfPos(childs[0], childs[1], childs[2]);
+        break;
+        /*
+      case CF_Type_normal_vector:
+        {
+          int dim = py::cast<int>(data[0]);
+          cf = specialcf.GetNormalVectorCF(dim);
+          break;
+        }
+      case CF_Type_tangential_vector:
+        {
+          int dim = py::cast<int>(data[0]);
+          cf = specialcf.GetTangentialVectorCF(dim);
+          break;
+        }
+      case CF_Type_mesh_size:
+        cf = specialcf.GetMeshSizeCF();
+        break;
+        */
+      case CF_Type_scale:
+        cf = 1.0 * childs[0];
+        break;
+      case CF_Type_scale_complex:
+        cf = Complex(1.0) * childs[0];
+        break;
+      case CF_Type_add:
+        cf = childs[0] + childs[1];
+        break;
+      case CF_Type_sub:
+        cf = childs[0] - childs[1];
+        break;
+      case CF_Type_mult:
+        cf = childs[0] * childs[1];
+        break;
+      case CF_Type_div:
+        cf = childs[0] / childs[1];
+        break;
+      case CF_Type_domainconst:
+        DomainConstantCoefficientFunction(Array<double>{});
+        break;
+      case CF_Type_domainwise:
+        MakeDomainWiseCoefficientFunction(Array<shared_ptr<CoefficientFunction>>(childs));
+        break;
+      case CF_Type_unary_op:
+        {
+          string name = py::cast<string>(data[0]);
+          cf = unary_math_functions[name](childs[0]);
+          break;
+        }
+      case CF_Type_binary_op:
+        {
+          string name = py::cast<string>(data[0]);
+          cf = binary_math_functions[name](childs[0], childs[1]);
+          break;
+        }
+        /*
+          case CF_Type_usertype:
+          break;
+        */
+      default:
+        cout << "undefined cftype" << endl;
+      }
+    if (cf)
+      cf->DoArchive(ar);
+    return cf;
+    
+  }
 
 
 
@@ -1092,7 +1364,7 @@ vals : list of float
 
 void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
-  py::enum_<ELEMENT_TYPE>(m, "ET")
+  py::enum_<ELEMENT_TYPE>(m, "ET", "Enumeration of all supported element types.")
     .value("POINT", ET_POINT)     .value("SEGM", ET_SEGM)
     .value("TRIG", ET_TRIG)       .value("QUAD", ET_QUAD)
     .value("TET", ET_TET)         .value("PRISM", ET_PRISM)
@@ -1100,7 +1372,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .export_values()
     ;
 
-  py::enum_<NODE_TYPE>(m, "NODE_TYPE")
+  py::enum_<NODE_TYPE>(m, "NODE_TYPE", "Enumeration of all supported node types.")
     .value("VERTEX", NT_VERTEX)
     .value("EDGE", NT_EDGE)
     .value("FACE", NT_FACE)
@@ -1111,10 +1383,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     ;
 
 
-  py::class_<ElementTopology> (m, "ElementTopology")
-    .def(py::init<ELEMENT_TYPE>())
+  py::class_<ElementTopology> (m, "ElementTopology", docu_string(R"raw_string(
+Element Topology
+
+Parameters:
+
+et : ngsolve.fem.ET
+  input element type
+
+)raw_string"))
+    .def(py::init<ELEMENT_TYPE>(), py::arg("et"))
     .def_property_readonly("name", 
-                  static_cast<const char*(ElementTopology::*)()> (&ElementTopology::GetElementName))
+                           static_cast<const char*(ElementTopology::*)()> (&ElementTopology::GetElementName), "Name of the element topology")
     .def_property_readonly("vertices", [](ElementTopology & self)
                                               {
                                                 py::list verts;
@@ -1128,7 +1408,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                                     verts.append (py::tuple(v));
                                                   }
                                                 return verts;
-                                              });
+                                              }, "Vertices of the element topology");
     ;
     
   py::class_<FiniteElement, shared_ptr<FiniteElement>>
@@ -1154,7 +1434,19 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             fe.CalcShape (ip, v);
             return v;
           },
-         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0,docu_string(R"raw_string(
+Parameters:
+
+x : double
+  input x value
+
+y : double
+  input y value
+
+z : double
+  input z value
+
+)raw_string"))
     .def("CalcShape",
          [] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
           {
@@ -1162,7 +1454,13 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             fe.CalcShape (mip.IP(), v);
             return v;
           },
-         py::arg("mip"))
+         py::arg("mip"),docu_string(R"raw_string(
+Parameters:
+
+mip : ngsolve.BaseMappedIntegrationPoint
+  input mapped integration point
+
+)raw_string"))
     .def("CalcDShape",
          [] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
           {
@@ -1186,7 +1484,15 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             */
             return mat;
           },
-         py::arg("mip"))
+         py::arg("mip"),docu_string(R"raw_string(
+Computes derivative of the shape in an integration point.
+
+Parameters:
+
+mip : ngsolve.BaseMappedIntegrationPoint
+  input mapped integration point
+
+)raw_string"))
     ;
 
 
@@ -1242,8 +1548,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                default: cerr << "cannot make fe " << et << endl;
                }
              return shared_ptr<BaseScalarFiniteElement>(fe);
-           },
-          "creates an H1 finite element of given geometric shape and polynomial order"
+           }, py::arg("et"), py::arg("order"),
+          docu_string(R"raw_string(Creates an H1 finite element of given geometric shape and polynomial order.
+
+Parameters:
+
+et : ngsolve.fem.ET
+  input element type
+
+order : int
+  input polynomial order
+
+)raw_string")
           );
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
@@ -1257,7 +1573,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                default: cerr << "cannot make fe " << et << endl;
                }
              return shared_ptr<BaseScalarFiniteElement>(fe);
-           }
+           }, py::arg("et"), py::arg("order"),
+          docu_string(R"raw_string(Creates an L2 finite element of given geometric shape and polynomial order.
+
+Parameters:
+
+et : ngsolve.fem.ET
+  input element type
+
+order : int
+  input polynomial order
+
+)raw_string")
           );
 
 
@@ -1266,10 +1593,37 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                            {
                              return py::make_tuple(self.Point()[0], self.Point()[1], self.Point()[2]);
                            }, "Integration point coordinates as tuple, has always x,y and z component, which do not have meaning in lesser dimensions")
-    .def_property_readonly("weight", &IntegrationPoint::Weight)
+    .def_property_readonly("weight", &IntegrationPoint::Weight, "Weight of the integration point")
     ;
 
-  py::class_<IntegrationRule>(m, "IntegrationRule")
+  py::class_<IntegrationRule>(m, "IntegrationRule", docu_string(R"raw_string(
+Integration rule
+
+2 __init__ overloads
+
+
+1)
+
+Parameters:
+
+element type : ngsolve.fem.ET
+  input element type
+
+order : int
+  input order of integration rule
+
+
+2)
+
+Parameters:
+
+points : list
+  input list of integration points
+
+weights : list
+  input list of integration weights
+
+)raw_string"))
     .def(py::init
          ([](ELEMENT_TYPE et, int order)
           { return new IntegrationRule (et, order); }),
@@ -1298,7 +1652,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                           if (nr < 0 || nr >= ir.Size())
                                             throw py::index_error();
                                           return ir[nr];
-                                        })
+                                        }, py::arg("nr"), "Return integration point at given position")
     .def("Integrate", [](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
@@ -1326,7 +1680,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                 first = false;
               }
             return sum;
-          })
+          }, py::arg("func"), "Integrates a given function")
     .def_property_readonly("weights", [] (IntegrationRule& self)
                            {
                              py::list weights;
@@ -1357,7 +1711,43 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     ;
 
 
+  py::class_<MeshPoint>(m, "MeshPoint")
+    .def_property_readonly("pnt", [](MeshPoint& p) { return py::make_tuple(p.x,p.y,p.z); })
+    .def_property_readonly("mesh", [](MeshPoint& p) { return p.mesh; })
+    .def_property_readonly("vb", [](MeshPoint& p) { return p.vb; })
+    .def_property_readonly("nr", [](MeshPoint& p) { return p.nr; })
+    ;
+
+  if (have_numpy)
+  {
+    py::detail::npy_format_descriptor<MeshPoint>::register_dtype({
+        py::detail::field_descriptor { "x", offsetof(MeshPoint, x), sizeof(double),
+            py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
+          py::detail::field_descriptor { "y", offsetof(MeshPoint, y), sizeof(double),
+              py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
+            py::detail::field_descriptor { "z", offsetof(MeshPoint, z), sizeof(double),
+                py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
+            py::detail::field_descriptor { "meshptr", offsetof(MeshPoint, mesh), sizeof(double),
+                py::format_descriptor<double>::format(), py::detail::npy_format_descriptor<double>::dtype() },
+            py::detail::field_descriptor { "VorB", offsetof(MeshPoint, vb), sizeof(int),
+                py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype() },
+              py::detail::field_descriptor {"nr", offsetof(MeshPoint, nr), sizeof(int),
+                  py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype()}});
+  }
+
   py::class_<BaseMappedIntegrationPoint>(m, "BaseMappedIntegrationPoint")
+    .def(py::init([](MeshPoint& pnt)
+                  {
+                    if(pnt.nr == -1){
+                      cout << "WARNING: MeshPoint not in mesh, can't convert to BaseMappedIntegrationPoint!" << endl;
+                      throw Exception("Meshpoint at (" + to_string(pnt.x) + ", " + to_string(pnt.y) + ", " +
+                                      to_string(pnt.z) + ") not in mesh!");
+                    }
+                    auto& trafo = pnt.mesh->GetTrafo(ElementId(pnt.vb, pnt.nr), global_alloc);
+                    auto& mip = trafo(IntegrationPoint(pnt.x,pnt.y,pnt.z),global_alloc);
+                    mip.SetOwnsTrafo(true);
+                    return &mip;
+                  }))
     .def("__str__",
          [] (const BaseMappedIntegrationPoint & bmip)
           {
@@ -1400,16 +1790,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             str << "measure = " << bmip.GetMeasure() << endl;
             return str.str();
           })
-    .def_property_readonly("measure", &BaseMappedIntegrationPoint::GetMeasure)
-    .def_property_readonly("point", &BaseMappedIntegrationPoint::GetPoint)
-    .def_property_readonly("jacobi", &BaseMappedIntegrationPoint::GetJacobian)
+    .def_property_readonly("measure", &BaseMappedIntegrationPoint::GetMeasure, "Measure of the mapped integration point ")
+    .def_property_readonly("point", &BaseMappedIntegrationPoint::GetPoint, "Point of the mapped integration point")
+    .def_property_readonly("jacobi", &BaseMappedIntegrationPoint::GetJacobian, "jacobian of the mapped integration point")
     // .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation)
-    .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation)
+    .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation, "Transformation of the mapped integration point")
     .def_property_readonly("elementid", [](BaseMappedIntegrationPoint & mip)
                                                {
                                                  return mip.GetTransformation().GetElementId();
-                                               })
+                                               }, "Element ID of the mapped integration point")
     ;
+
+  py::implicitly_convertible<MeshPoint, BaseMappedIntegrationPoint>();
 
   py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
     .def(py::init([] (ELEMENT_TYPE et, py::list vertices)
@@ -1434,9 +1826,9 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             }
         }),
         py::arg("et")=ET_TRIG,py::arg("vertices"))
-    .def_property_readonly("VB", &ElementTransformation::VB)
-    .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
-    .def_property_readonly("elementid", &ElementTransformation::GetElementId)
+    .def_property_readonly("VB", &ElementTransformation::VB, "VorB (VOL, BND, BBND, BBBND)")
+    .def_property_readonly("spacedim", &ElementTransformation::SpaceDim, "Space dimension of the element transformation")
+    .def_property_readonly("elementid", &ElementTransformation::GetElementId, "Element ID of the element transformation")
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, double x, double y, double z)
            {
              
@@ -1458,7 +1850,30 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     ;
 
   typedef BilinearFormIntegrator BFI;
-  auto bfi_class = py::class_<BFI, shared_ptr<BFI>> (m, "BFI");
+  auto bfi_class = py::class_<BFI, shared_ptr<BFI>> (m, "BFI", docu_string(R"raw_string(
+Bilinear Form Integrator
+
+Parameters:
+
+name : string
+  Name of the bilinear form integrator.
+
+py_coef : object
+  CoefficientFunction of the bilinear form.
+
+dim : int
+  dimension of the bilinear form integrator
+
+imag : bool
+  Multiplies BFI with 1J
+
+filename : string
+  filename 
+
+kwargs : kwargs
+  For a description of the possible kwargs have a look a bit further down.
+
+)raw_string"), py::dynamic_attr());
   bfi_class
     .def(py::init([bfi_class] (const string name, py::object py_coef, int dim, bool imag,
                       string filename, py::kwargs kwargs)
@@ -1531,18 +1946,45 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          })
     .def("__str__",  [](shared_ptr<BFI> self) { return ToString<BilinearFormIntegrator>(*self); } )
 
-    .def("Evaluator",  [](shared_ptr<BFI> self, string name ) { return self->GetEvaluator(name); } )
+    .def("Evaluator",  [](shared_ptr<BFI> self, string name ) { return self->GetEvaluator(name); }, py::arg("name"), docu_string(R"raw_string(
+Returns requested evaluator
+
+Parameters:
+
+name : string
+  input name of requested evaluator
+
+)raw_string") )
     // .def("DefinedOn", &Integrator::DefinedOn)
     .def("GetDefinedOn",  [] (shared_ptr<BFI> self) -> const BitArray &{ return self->GetDefinedOn(); } ,
-         py::return_value_policy::reference)
+         py::return_value_policy::reference, "Returns a BitArray where the bilinear form is defined on")
 
     .def("SetDefinedOnElements",  [](shared_ptr<BFI> self, shared_ptr<BitArray> ba )
-                                                  { self->SetDefinedOnElements (ba); } )
+         { self->SetDefinedOnElements (ba); }, py::arg("bitarray"), docu_string(R"raw_string( 
+Set the elements on which the bilinear form is defined on.
+
+Parameters:
+
+bitarray : ngsolve.ngstd.BitArray
+  input bitarray
+
+)raw_string") )
     .def("SetIntegrationRule", [] (shared_ptr<BFI> self, ELEMENT_TYPE et, IntegrationRule ir)
          {
            self -> SetIntegrationRule(et,ir);
            return self;
-         })
+         }, py::arg("et"), py::arg("intrule"), docu_string(R"raw_string( 
+Set integration rule of the bilinear form.
+
+Parameters:
+
+et : ngsolve.fem.Element_Type
+  input element type
+
+intrule : ngsolve.fem.Integrationrule
+  input integration rule
+
+)raw_string"))
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
              const FiniteElement & fe, const ElementTransformation &trafo,
@@ -1572,7 +2014,24 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                  }
                              }
                          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex") = false)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex") = false, docu_string(R"raw_string( 
+Calculate element matrix of a specific element.
+
+Parameters:
+
+fel : ngsolve.fem.FiniteElement
+  input finite element
+
+trafo : ngsolve.fem.ElementTransformation
+  input element transformation
+
+heapsize : int
+  input heapsize
+
+complex : bool
+  input complex
+
+)raw_string"))
     ;
 
 
@@ -1581,8 +2040,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                             {
                                 return make_shared<CompoundBilinearFormIntegrator>(bfi, comp);
                             },
-           py::arg("bfi")=NULL, py::arg("comp")=0
-      );
+           py::arg("bfi")=NULL, py::arg("comp")=0, docu_string(R"raw_string(
+Compound Bilinear Form Integrator
+
+Parameters:
+
+bfi : ngsolve.fem.BFI
+  input bilinear form integrator
+
+comp : int
+  input component
+
+)raw_string"));
 
   m.def("BlockBFI", 
           []( shared_ptr<BFI> bfi, int dim, int comp )
@@ -1590,11 +2059,51 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                 return make_shared<BlockBilinearFormIntegrator>(bfi, dim, comp);
                             },
            py::arg("bfi")=NULL, py::arg("dim")=2, py::arg("comp")=0
-      );
+      , docu_string(R"raw_string(
+Block Bilinear Form Integrator
+
+Parameters:
+
+bfi : ngsolve.fem.BFI
+  input bilinear form integrator
+
+dim : int
+  input dimension of block bilinear form integrator
+
+comp : int
+  input comp
+
+)raw_string"));
 
   typedef LinearFormIntegrator LFI;
   py::class_<LFI, shared_ptr<LFI>>
-    (m, "LFI")
+    (m, "LFI", docu_string(R"raw_string(
+Linear Form Integrator
+
+Parameters:
+
+name : string
+  Name of the linear form integrator.
+
+dim : int
+  dimension of the linear form integrator
+
+coef : object
+  CoefficientFunction of the bilinear form.
+
+definedon : object
+  input region where the linear form is defined on
+
+imag : bool
+  Multiplies LFI with 1J
+
+flags : ngsolve.ngstd.Flags
+  input flags
+
+definedonelem : object
+  input definedonelem
+
+)raw_string"), py::dynamic_attr())
     .def(py::init([] (string name, int dim,
                       py::object py_coef,
                       py::object definedon, bool imag, const Flags & flags,
@@ -1636,17 +2145,36 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     
     // .def("GetDefinedOn", &Integrator::GetDefinedOn)
     .def("GetDefinedOn",  [] (shared_ptr<LFI> self) -> const BitArray &{ return self->GetDefinedOn(); } ,
-         py::return_value_policy::reference)
+         py::return_value_policy::reference, "Reterns regions where the lienar form integrator is defined on.")
     .def("SetDefinedOnElements",  [](shared_ptr<LFI> self, shared_ptr<BitArray> ba )
-                                                  { self->SetDefinedOnElements (ba); } )
+         { self->SetDefinedOnElements (ba); }, py::arg("ba"), docu_string(R"raw_string(
+Set the elements on which the linear form integrator is defined on
+
+Parameters:
+
+ba : ngsolve.ngstd.BitArray
+  input bit array ( 1-> defined on, 0 -> not defoned on)
+
+)raw_string"))
     .def("SetIntegrationRule", [](shared_ptr<LFI> self, ELEMENT_TYPE et, IntegrationRule ir)
          {
            self->SetIntegrationRule(et,ir);
            return self;
-         })
+         }, py::arg("et"), py::arg("ir"), docu_string(R"raw_string(
+Set a different integration rule for elements of type et
+
+Parameters:
+
+et : ngsolve.fem.ET
+  input element type
+
+ir : ngsolve.fem.IntegrationRule
+  input integration rule
+
+)raw_string"))
 
     .def("CalcElementVector", 
-        static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
+         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector), py::arg("fel"), py::arg("trafo"), py::arg("vec"), py::arg("lh"))
     .def("CalcElementVector",
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
              size_t heapsize, bool complex)
@@ -1685,14 +2213,39 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                             {
                                 return shared_ptr<LFI>(make_shared<CompoundLinearFormIntegrator>(lfi, comp));
                             },
-           "lfi"_a=NULL, py::arg("comp")=0);
+           "lfi"_a=NULL, py::arg("comp")=0, docu_string(R"raw_string(
+Compound Linear Form Integrator
+
+Parameters:
+
+lfi : ngsolve.fem.LFI
+  input linear form integrator
+
+comp : int
+  input component
+
+)raw_string"));
 
   m.def("BlockLFI", 
           []( shared_ptr<LFI> lfi, int dim, int comp )
                             {
                                 return shared_ptr<LFI>(make_shared<BlockLinearFormIntegrator>(lfi, dim, comp));
                             },
-           "lfi"_a=NULL, py::arg("dim")=2, py::arg("comp")=0);
+           "lfi"_a=NULL, py::arg("dim")=2, py::arg("comp")=0, docu_string(R"raw_string(
+Block Linear Form Integrator
+
+Parameters:
+
+lfi : ngsolve.fem.LFI
+  input bilinear form integrator
+
+dim : int
+  input dimension of block linear form integrator
+
+comp : int
+  input comp
+
+)raw_string"));
 
 
   ExportCoefficientFunction (m);
@@ -1706,7 +2259,16 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                              pmlpar.Set("pml_alpha", alpha);
                              SetPMLParameters();
                            },
-           py::arg("rad")=1,py::arg("alpha")=1);
+         py::arg("rad")=1,py::arg("alpha")=1, docu_string(R"raw_string(
+Parameters:
+
+rad : double
+  input radius of PML
+
+alpha : double
+  input damping factor of PML
+
+)raw_string"));
     
                            
   m.def("GenerateL2ElementCode", &GenerateL2ElementCode);

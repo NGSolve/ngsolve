@@ -32,7 +32,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
-  
+    
     static string Name() { return "grad"; }
     static constexpr bool SUPPORT_PML = true;
     
@@ -281,7 +281,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    static bool SupportsVB (VorB checkvb) { return true; }
+    
     static string Name() { return "Id"; }
     static constexpr bool SUPPORT_PML = true;
     
@@ -1641,6 +1642,7 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC-VB };
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
+    static bool SupportsVB (VorB checkvb) { return true; }
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,

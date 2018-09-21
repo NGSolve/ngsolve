@@ -5,7 +5,9 @@
 
 namespace ngbla
 {
-  
+
+#ifdef NONEALL
+
   template <typename T> struct FooAVectorType
   {
     typedef FlatVector<T> flattype;
@@ -74,7 +76,7 @@ namespace ngbla
   using AMatrix = typename FooAMatrixType<T,ORD>::type;
 
 
-  template <typename T = double> class ABareVector;
+  // template <typename T = double> class ABareVector;
   template <typename T = double> class ABareMatrix;
   template <typename T = double> class ASliceMatrix;
   template <typename T = double> class ABareSliceMatrix;
@@ -259,9 +261,9 @@ namespace ngbla
   {
     return AVXScaleExpr<TA> (s, a.Spec());
   }
+#endif
 
-
-
+#ifdef NONE
 
   class AFlatVectorD : public SIMDExpr<AFlatVectorD>
   {
@@ -368,7 +370,8 @@ namespace ngbla
   };
 
 
-
+#endif
+  
 
 #ifdef NONE
 
@@ -481,7 +484,7 @@ namespace ngbla
 
   
 
-  
+#ifdef NONE
   class AFlatMatrixD : public SIMDExpr<AFlatMatrixD>
   {
   protected:
@@ -637,8 +640,11 @@ namespace ngbla
     }
     using AFlatMatrixD::operator=;
   };
+#endif
 
 
+
+#ifdef NONE
   class AFlatMatrixDCol
   {
   protected:
@@ -696,7 +702,7 @@ namespace ngbla
 
     using AFlatMatrixDCol::operator=;
   };
-  
+#endif
   
 
 
@@ -874,14 +880,14 @@ namespace ngbla
     }
   */
 
+  /*
   INLINE SliceMatrix<double,ColMajor> Trans (const AFlatMatrixD & mat)
   {
     return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), SIMD<double>::Size()*mat.VWidth(), &mat(0,0));
   }
-
-
-
-
+  */
+  
+#ifdef NONE
 
   template <>
   class ABareVector<double>
@@ -905,8 +911,9 @@ namespace ngbla
     AFlatVector<> AddSize(size_t s) const { return AFlatVector<> (s, data); }
     AFlatVector<> AddVSize(size_t s) const { return AFlatVector<> (s*SIMD<double>::Size(), data); }
   };
-
-
+#endif
+  
+  
 #ifdef NONE
   template <>
   class ABareVector<Complex>
@@ -922,7 +929,9 @@ namespace ngbla
   };
 #endif
 
-  
+
+
+#ifdef NONE
   template <>
   class ABareMatrix<double> : public DummySize
   {
@@ -951,7 +960,7 @@ namespace ngbla
     ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); }
     operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (dist, data, *this); }
   };
-
+  
 
   template <>
   class ASliceMatrix<double> : public SIMDExpr<ASliceMatrix<double>>
@@ -1036,6 +1045,8 @@ namespace ngbla
   };
 
 
+#endif
+  
 #ifdef NONE
   template <>
   class ASliceMatrix<Complex> : public SIMDExpr<ASliceMatrix<Complex>>
@@ -1132,9 +1143,7 @@ namespace ngbla
 
 
 
-
-  
-  
+#ifdef NONE
   template <>
   class ABareSliceMatrix<double> : public DummySize, public SIMDExpr<ABareSliceMatrix<double>>
   {
@@ -1177,7 +1186,7 @@ namespace ngbla
     ABareSliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); }
     operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (dist, data, *this); }
   };
-
+#endif
 
   /*
   template <>
@@ -1220,15 +1229,10 @@ namespace ngbla
 
 
 
-  
+  /*
   ABareSliceMatrix<> AFlatMatrixD::VCols (size_t begin, size_t end) const
   { return ABareSliceMatrix<> (data+begin, VWidth(), Height(), Width()); }
-
-
-
-
-
-
+  */
 
 
   template <typename TA, typename TB>
@@ -1239,7 +1243,8 @@ namespace ngbla
 
   /*
   */
-  
+
+  /*
   // c = a * Diag (diag)
   template <typename TA, typename TB, typename TC>
   void MultMatDiagMat(TA a, TB diag, TC c)
@@ -1247,11 +1252,11 @@ namespace ngbla
     for (int i = 0; i < a.Width(); i++)
       c.Col(i) = diag(i) * a.Col(i);
   }
-
+  */
+  
+  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
 #if defined(__AVX__) && not defined(__AVX512F__)
-
-  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
@@ -1267,12 +1272,11 @@ namespace ngbla
     SubAtB (Trans(b), Trans(a), Trans(c));
   }
     
-  extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
+  // extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 
 
 #else // __AVX__
 
-  
   // INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   // { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   

@@ -40,15 +40,16 @@ namespace ngcomp
       ost << "  " << parts[i]->Name() << endl;
   }
 
-  void LinearForm :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+  Array<MemoryUsage> LinearForm :: GetMemoryUsage () const
   {
     if (GetVectorPtr())  
       {
-	int olds = mu.Size();
-	GetVectorPtr()->MemoryUsage (mu);
-	for (int i = olds; i < mu.Size(); i++)
-	  mu[i]->AddName (string(" lf ")+GetName());
+	auto mu = GetVectorPtr()->GetMemoryUsage ();
+	for (int i = 0; i < mu.Size(); i++)
+	  mu[i].AddName (string(" lf ")+GetName());
+        return mu;
       }
+    return Array<MemoryUsage>();
   }
 
   template <class SCAL>
@@ -676,13 +677,13 @@ namespace ngcomp
       {
         Scalar2ElemVector<TV, TSCAL> ev(elvec);
 	for (int k = 0; k < dnums.Size(); k++)
-	  if (dnums[k] != -1)
+	  if (IsRegularDof(dnums[k]))
 	    fv(dnums[k]) += ev(k);
       }
     else
       {
 	for (int k = 0; k < dnums.Size(); k++)
-	  if (dnums[k] != -1)
+	  if (IsRegularDof(dnums[k]))
 	    fv(dnums[k])(cachecomp) += elvec(k);
       }
   }
@@ -710,7 +711,7 @@ namespace ngcomp
   {
     FlatVector<TV> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
-      if (dnums[k] != -1)
+      if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
 	  fv(dnums[k])(j) = elvec(k*HEIGHT+j);
   }
@@ -738,7 +739,7 @@ namespace ngcomp
   {
     FlatVector<TV> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
-      if (dnums[k] != -1)
+      if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
 	  elvec(k*HEIGHT+j) = fv(dnums[k])(j);
   }

@@ -23,16 +23,77 @@ namespace ngmg
     ;
   }
 
-
   LinearProlongation :: ~LinearProlongation() { ; }
+
+  
+  void LinearProlongation :: Update (const FESpace & fes)
+  {
+    if (ma->GetNLevels() > nvlevel.Size())
+      nvlevel.Append (ma->GetNV());
+  }
+
+  
+  void LinearProlongation :: ProlongateInline (int finelevel, BaseVector & v) const
+  {
+    static Timer t("Prolongate"); RegionTimer r(t);
+    size_t nc = nvlevel[finelevel-1];
+    size_t nf = nvlevel[finelevel];
+    
+    if (v.EntrySize() == 1)
+      {
+        FlatVector<> fv = v.FV<double>();        
+        fv.Range (nf, fv.Size()) = 0;
+        for (size_t i = nc; i < nf; i++)
+          {
+            auto parents = ma->GetParentNodes (i);
+            fv(i) = 0.5 * (fv(parents[0]) + fv(parents[1]));
+          }
+      }
+    else
+      {
+        FlatSysVector<> sv = v.SV<double>();
+        sv.Range (nf, sv.Size()) = 0;
+        for (size_t i = nc; i < nf; i++)
+          {
+            auto parents = ma->GetParentNodes (i);
+            sv(i) = 0.5 * (sv(parents[0]) + sv(parents[1]));
+          }
+      }
+  }
+
+
+  void LinearProlongation :: RestrictInline (int finelevel, BaseVector & v) const 
+    {
+      static Timer t("Restrict"); RegionTimer r(t);
+      
+      size_t nc = nvlevel[finelevel-1];
+      size_t nf = nvlevel[finelevel];
+
+      FlatSysVector<> fv = v.SV<double>();
+    
+      for (size_t i = nf; i-- > nc; )
+	{
+	  auto parents = ma->GetParentNodes (i);
+	  fv(parents[0]) += 0.5 * fv(i);
+	  fv(parents[1]) += 0.5 * fv(i);
+	}
+
+      for (size_t i = nf; i < fv.Size(); i++)
+	fv(i) = 0;  
+    }
 
 
   SparseMatrix< double >* LinearProlongation :: CreateProlongationMatrix( int finelevel ) const
   {
-    int i, nc, nf;
+    int i;
     int parents[2];
-    Array< int > indicesPerRow( space.GetNDof() );
 
+    int nc = nvlevel[finelevel-1];
+    int nf = nvlevel[finelevel];
+
+    Array< int > indicesPerRow(nf);
+
+    /*
     if (space.LowOrderFESpacePtr())
       {
         nf = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel );
@@ -43,6 +104,7 @@ namespace ngmg
         nf = space.GetNDofLevel( finelevel );
         nc = space.GetNDofLevel( finelevel-1 );
       }
+    */
     
     // count entries per row
     indicesPerRow = 0;
@@ -424,7 +486,7 @@ namespace ngmg
     ;
   }
   
-  void SurfaceElementProlongation :: Update ()
+  void SurfaceElementProlongation :: Update (const FESpace & fespace)
   {
     ;
   }
@@ -499,7 +561,7 @@ namespace ngmg
     
     for (int i = 0; i <ne; i++)
       {
-        int parent = ma->GetParentElement (i);
+        int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
         if(parent!=-1)
           fv(ndel*i) = fv(ndel*parent);
         for(int j = 1; j<ndel; j++)
@@ -521,11 +583,12 @@ namespace ngmg
   CompoundProlongation :: ~CompoundProlongation() { ; }
   
 
-  void CompoundProlongation :: Update ()
+  void CompoundProlongation :: Update (const FESpace & fespace)
   {
+    auto & cfes = dynamic_cast<const CompoundFESpace&> (fespace);
     for (int i = 0; i < prols.Size(); i++)
       if (prols[i])
-	prols[i] -> Update();
+	prols[i] -> Update(*cfes[i]);
   }
 
   void CompoundProlongation :: 

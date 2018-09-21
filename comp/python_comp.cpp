@@ -4,14 +4,14 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
+#include <multigrid.hpp> 
 
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
-#include "hcurldivfespace.hpp"
 #include "numberfespace.hpp"
-
+#include "compressedfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -196,7 +196,10 @@ shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 template <typename FES, typename BASE=FESpace>
 auto ExportFESpace (py::module & m, string pyname)
 {
-  auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str());
+  auto docu = FES::GetDocu();
+  string docuboth = docu.short_docu + "\n\n" + docu.long_docu;
+  auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docuboth.c_str());
+
   pyspace
     .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
                   {
@@ -213,7 +216,17 @@ auto ExportFESpace (py::module & m, string pyname)
     .def(py::pickle(fesPickle,
                     (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
     ;
-  
+
+  pyspace.def_static("__flags_doc__", [docu]()
+                     {
+                       auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                           attr("FESpace").
+                                                           attr("__flags_doc__")());
+                       for (auto & flagdoc : docu.arguments)
+                         flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+                       return flags_doc;
+                     });
+      
   return pyspace;
 }
 
@@ -252,8 +265,11 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
      * without static condensation a HIDDEN_DOF is treated as any other
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+     * When static condensation is applied (eliminate_hidden/
+       eliminate_internal) the block corresponding to HIDDEN_DOFs
+       has to be invertible.
 
-CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
+CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
 
 INTERFACE_DOF: Degree of freedom between two elements, these will not be
@@ -269,17 +285,20 @@ WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
 
 EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
 
+VISIBLE_DOF: not UNUSED_DOF or HIDDEN_DOF
+
 ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
     .value("UNUSED_DOF", UNUSED_DOF)
     .value("HIDDEN_DOF", HIDDEN_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
-    .value("CONDENSATABLE_DOF", CONDENSATABLE_DOF)
+    .value("CONDENSABLE_DOF", CONDENSABLE_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("VISIBLE_DOF", VISIBLE_DOF)
     .value("ANY_DOF", ANY_DOF)
     // .export_values()
     ;
@@ -287,7 +306,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<ElementRange, IntRange> (m, "ElementRange")
-    .def(py::init<const MeshAccess&,VorB,IntRange>())
+    .def(py::init<const MeshAccess&,VorB,IntRange>(), py::arg("mesh"), py::arg("vb"), py::arg("range"))
     .def("__iter__", [] (ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -302,7 +321,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   
-  py::enum_<ORDER_POLICY>(m, "ORDER_POLICY")
+  py::enum_<ORDER_POLICY>(m, "ORDER_POLICY", "Enumeration of all supported order policies")
     .value("CONSTANT", CONSTANT_ORDER)
     .value("NODETYPE", NODE_TYPE_ORDER)
     .value("VARIABLE", VARIABLE_ORDER)
@@ -365,10 +384,10 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<GlobalDummyVariables> (m, "GlobalVariables")
     .def_property("msg_level", 
                  &GlobalDummyVariables::GetMsgLevel,
-                 &GlobalDummyVariables::SetMsgLevel)
+                  &GlobalDummyVariables::SetMsgLevel, "message level")
     .def_property("testout", 
                  &GlobalDummyVariables::GetTestoutFile,
-                 &GlobalDummyVariables::SetTestoutFile)
+                  &GlobalDummyVariables::SetTestoutFile, "testout file")
     /*
     .def_property_readonly("pajetrace",
 		  &GlobalDummyVariables::GetTestoutFile,
@@ -405,6 +424,14 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<NGS_Object, shared_ptr<NGS_Object>>(m, "NGS_Object")
     // .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
     .def_property("name", &NGS_Object::GetName, &NGS_Object::SetName)
+    .def_property_readonly("__memory__",
+                           [] (const NGS_Object & self)
+                           {
+                             std::vector<tuple<string,size_t, size_t>> ret;
+                             for (auto mui : self.GetMemoryUsage())
+                               ret.push_back ( { mui.Name(), mui.NBytes(), mui.NBlocks() });
+                             return ret;
+                           })
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -446,7 +473,7 @@ when building the system matrices.
                    {
                      if (!self->Deriv()) return "";
                      return self->DerivEvaluator()->Name();
-                   })
+                   }, "name of the canonical derivative")
     .def("Operator",
          [] (const spProxy self, string name) -> py::object
           {
@@ -454,7 +481,16 @@ when building the system matrices.
             if (op)
               return py::cast(op);
             return py::none();
-	  }, "Use an additional operator of the finite element space")
+	  }, py::arg("name"), "Use an additional operator of the finite element space")
+    .def("Operators",
+         [] (const spProxy self)
+         {
+           py::list l;
+           auto ops = self->GetAdditionalEvaluators();
+           for (size_t i = 0; i < ops.Size(); i++)
+             l.append (ops.GetName(i));
+           return l;
+         },"returns list of available differential operators")
     ;
 
 
@@ -539,31 +575,43 @@ when building the system matrices.
               global_heapsize = heapsize;
               glh = LocalHeap (heapsize, "python-comp lh", true);
             }
-        });
+        }, py::arg("size"), docu_string(R"raw_string(
+Set a new heapsize.
+
+Parameters:
+
+size : int
+  input heap size
+
+)raw_string"));
   
   m.def("SetTestoutFile",
         [](string filename)
         {
           testout = new ofstream (filename);
-        }, "Enable some logging into file with given filename");
+        }, py::arg("file"), docu_string(R"raw_string(
+Enable some logging into file with given filename
+
+Parameters:
+
+file : string
+  input file name
+
+)raw_string")
+        );
 
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
 
-  auto fes_class = py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
+  auto fes_class = py::class_<FESpace, shared_ptr<FESpace>, NGS_Object>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
 
 Provides the functionality for finite element calculations.
 
 Some available FESpaces are:
 
-H1
-HCurl
-HDiv
-L2
-FacetFESpace
-HDivDiv
+H1, HCurl, HDiv, L2, FacetFESpace, HDivDiv
 
 2 __init__ overloads:
   1) To create a registered FESpace
@@ -571,7 +619,7 @@ HDivDiv
 
 1)
 
-Parameters
+Parameters:
 
 type : string
   Type of the finite element space. This parameter is automatically
@@ -580,7 +628,8 @@ type : string
 mesh : ngsolve.Mesh
   Mesh on which the finite element space is defined on.
 
-kwargs : For a description of the possible kwargs have a look a bit further down.
+kwargs : kwargs
+  For a description of the possible kwargs have a look a bit further down.
 
 2)
 
@@ -589,7 +638,8 @@ Parameters:
 spaces : list of ngsolve.FESpace
   List of the spaces for the compound finite element space
 
-kwargs : For a description of the possible kwargs have a look a bit further down.
+kwargs : kwargs
+  For a description of the possible kwargs have a look a bit further down.
 
 )raw_string"), py::dynamic_attr());
   fes_class
@@ -638,13 +688,20 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
                   )
 
+
     .def_static("__flags_doc__", [] ()
          {
+           py::dict flags_doc;
+           for (auto & flagdoc : FESpace::GetDocu().arguments)
+             flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+           return flags_doc;
+           /*
            return py::dict
              (
               py::arg("order") = "int = 1\n"
               "  order of finite element space",
-              py::arg("complex") = "bool = False",
+              py::arg("complex") = "bool = False\n"
+              "  Set if FESpace should be complex",
               py::arg("dirichlet") = "regexpr\n"
               "  Regular expression string defining the dirichlet boundary.\n"
               "  More than one boundary can be combined by the | operator,\n"
@@ -658,8 +715,12 @@ kwargs : For a description of the possible kwargs have a look a bit further down
               py::arg("dgjumps") = "bool = False\n"
               "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
               "  since the dofs have a different coupling then and this changes the sparsity\n"
-              "  pattern of matrices."
+              "  pattern of matrices.",
+              py::arg("low_order_space") = "bool = True\n"
+              "  Generate a lowest order space together with the high-order space,\n"
+              "  needed for some preconditioners."
               );
+           */
          })
     .def_static("__special_treated_flags__", [] ()
                 {
@@ -752,6 +813,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->FinalizeUpdate(glh);
          },
          "finalize update")
+     .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
+         {
+           shared_ptr<FESpace> space = self;
+           if (! py::extract<DummyArgument> (acomp).check())
+           {
+             auto comp = py::extract<int>(acomp)();
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
+             if (!compspace)
+               throw py::type_error("'components' is available only for product spaces");
+             space = (*compspace)[comp];
+             IntRange range = compspace->GetRange(comp);
+             for (auto d : range)
+             {
+               auto doftype = compspace->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 compspace->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           }
+           for (DofId d : Range(space->GetNDof()))
+             {
+               auto doftype = space->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 space->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           self->FinalizeUpdate(glh); //Update FreeDofs
+         }, py::arg("component")=DummyArgument(), 
+         "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
@@ -764,7 +852,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 			   { return self->LowOrderFESpacePtr(); })
     .def_property_readonly("mesh",
                            [](shared_ptr<FESpace> self) -> shared_ptr<MeshAccess>
-                           { return self->GetMeshAccess(); })
+                           { return self->GetMeshAccess(); }, "mesh on which the FESpace is created")
 
     // .def_property_readonly("order", [] (shared_ptr<FESpace> self) { return OrderProxy(*self); },
     // "proxy to set order for individual nodes")
@@ -778,7 +866,15 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("SetDefinedOn", [] (FESpace& self, Region& reg)
          {
            self.SetDefinedOn(reg.VB(),reg.Mask());
-         }, py::arg("Region"))
+         }, py::arg("region"), docu_string(R"raw_string(
+Set the regions on which the FESpace is defined.
+
+Parameters:
+
+region : ngsolve.comp.Region
+  input region
+
+)raw_string"))
 
     .def("SetOrder",
          [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order /*, py::object order_left, py::object order_right*/)
@@ -799,9 +895,23 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            */
          },
          py::arg("element_type"),
-         py::arg("order")
-         // py::arg("order_left")=DummyArgument(),
-         // py::arg("order_right")=DummyArgument()
+         py::arg("order"), docu_string(R"raw_string(
+
+Parameters:
+
+element_type : ngsolve.fem.ET
+  input element type
+
+order : object
+  input polynomial order
+
+order_left : object
+  input order_left
+
+order_right : object
+  input order right
+
+)raw_string")
          )
 
     .def("SetOrder",
@@ -810,40 +920,97 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->SetOrder(ni, order);
          },
          py::arg("nodeid"),
-         py::arg("order")
+         py::arg("order"), docu_string(R"raw_string(
+
+Parameters:
+
+nodeid : ngsolve.comp.NodeId
+  input node id
+
+order : int
+  input polynomial order
+
+)raw_string")
          )
     
     .def("Elements", 
          [](shared_ptr<FESpace> self, VorB vb)
          { return FESpace::ElementRange(self->Elements(vb, glh)); },
-         py::arg("VOL_or_BND")=VOL)
+         py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
+Returns an iterable range of elements.
+
+Parameters:
+
+VOL_or_BND : ngsolve.comp.VorB
+  input VOL, BND, BBND,...
+
+)raw_string"))
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
            Array<DofId> tmp; self->GetDofNrs(ei,tmp);
            return MakePyTuple(tmp);           
-         })
+         }, py::arg("ei"), docu_string(R"raw_string(
+
+Parameters:
+
+ei : ngsolve.comp.ElementId
+  input element id
+
+)raw_string"))
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
            Array<DofId> tmp; self->GetDofNrs(ni,tmp);
            return MakePyTuple(tmp);
-         })
+         }, py::arg("ni"), docu_string(R"raw_string(
+
+Parameters:
+
+ni : ngsolve.comp.NodeId
+  input node id
+
+)raw_string"))
 
     .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg)
           {
             return self->GetDofs(reg);
-          })
+          }, py::arg("region"), docu_string(R"raw_string(
+Returns all degrees of freedom in given region.
+
+Parameters:
+
+region : ngsolve.comp.Region
+  input region
+
+)raw_string"))
     
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
          { return self->GetDofCouplingType(dofnr); },
-         py::arg("dofnr"),
-         "get coupling type of a degree of freedom"
+         py::arg("dofnr"), docu_string(R"raw_string(
+         Get coupling type of a degree of freedom.
+
+Parameters:
+
+dofnr : int
+  input dof number
+
+)raw_string")
          )
     .def("SetCouplingType", [](shared_ptr<FESpace> self, DofId dofnr, COUPLING_TYPE ct)
          { self->SetDofCouplingType(dofnr,ct); },
-         py::arg("dofnr"), py::arg("coupling_type"),
-         "set coupling type of a degree of freedom"
+         py::arg("dofnr"), py::arg("coupling_type"), docu_string(R"raw_string(
+         Set coupling type of a degree of freedom.
+
+Parameters:
+
+dofnr : int
+  input dof number
+
+coupling_type : ngsolve.comp.COUPLING_TYPE
+  input coupling type
+
+)raw_string")
          )
 
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
@@ -859,7 +1026,15 @@ kwargs : For a description of the possible kwargs have a look a bit further down
             if (hcurlfe) return py::cast(hcurlfe);
             
             return py::cast(fe);
-          })
+          }, py::arg("ei"), docu_string(R"raw_string(
+Get the finite element to corresponding element id.
+
+Parameters:
+
+ei : ngsolve.com.ElementId
+   input element id
+
+)raw_string"))
 
     /*
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei, LocalHeap & lh)
@@ -872,16 +1047,29 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("FreeDofs",
          [] (const shared_ptr<FESpace>self, bool coupling)
          { return self->GetFreeDofs(coupling); },
-         py::arg("coupling")=false,
-         "Return BitArray of free (non-Dirichlet) dofs\n"
-         "coupling=False ... all free dofs including local dofs\n"
-         "coupling=True .... only element-boundary free dofs"
+         py::arg("coupling")=false,docu_string(R"raw_string(
+
+Return BitArray of free (non-Dirichlet) dofs\n
+coupling=False ... all free dofs including local dofs\n
+coupling=True .... only element-boundary free dofs
+
+Parameters:
+
+coupling : bool
+  input coupling
+
+)raw_string")
          )
 
     .def("ParallelDofs",
-         [] (const shared_ptr<FESpace>self)
+         [] (const shared_ptr<FESpace> self)
          { return self->GetParallelDofs(); },
          "Return dof-identification for MPI-distributed meshes")
+
+    .def("Prolongation",
+         [] (const shared_ptr<FESpace> self)
+         { return self->GetProlongation(); },
+         "Return prolongation operator for use in multi-grid")
 
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
@@ -892,8 +1080,15 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            IntRange r = compspace->GetRange(comp);
            return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
          },
-         "component"_a,
-         "Return interval of dofs of a component of a product space")
+         py::arg("component"), docu_string(R"raw_string(
+         Return interval of dofs of a component of a product space.
+
+Parameters:
+
+component : int
+  input component
+
+)raw_string"))
     
     .def_property_readonly("components", 
                   [](shared_ptr<FESpace> self)-> py::tuple
@@ -933,8 +1128,18 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
          { self->SolveM(rho.get(), vec, glh); },
-         py::arg("vec"), py::arg("rho")=nullptr,
-         "Solve with the mass-matrix. Available only for L2-like spaces")
+         py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
+         Solve with the mass-matrix. Available only for L2-like spaces.
+
+Parameters:
+
+vec : ngsolve.la.BaseVector
+  input right hand side vector
+
+rho : ngsolve.fem.CoefficientFunction
+  input CF
+
+)raw_string"))
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
@@ -946,7 +1151,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
          {
            return self == other;
-         })
+         }, py::arg("space"))
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
@@ -977,19 +1182,6 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                      attr("FESpace").
-                                                      attr("__flags_doc__")());
-                  flags_doc["nograds"] = "bool = False\n"
-                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-                  flags_doc["type1"] = "bool = False\n"
-                    "  Use type 1 Nedelec elements";
-                  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HCurl space";
-                  return flags_doc;
-                })
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
         auto fesh1 = self->CreateGradientSpace();
         shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
@@ -998,90 +1190,35 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     ;
   
   ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
-    .def_static("__flags_doc__", [] ()
-              {
-                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                    attr("FESpace").
-                                                    attr("__flags_doc__")());
-                flags_doc["discontinuous"] = "bool = False\n"
-                  "  Create discontinuous HDiv space";
-                flags_doc["hodivfree"] = "bool = False\n"
-                  "  Remove high order element bubbles with non zero divergence";
-                flags_doc["highest_order_dc"] = "bool = False\n"
-                  "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
-                return flags_doc;
-              })
     .def("Average", &HDivHighOrderFESpace::Average,
-          py::arg("vector"))
-     ;
+         py::arg("vector"))
+    ;
   
-  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
+  ExportFESpace<H1HighOrderFESpace> (m, "H1");
 
-  auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
+  ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
  
-  auto l2 = ExportFESpace<L2HighOrderFESpace> (m, "L2");
+  ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
 
-  auto vectorl2 = ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
+  ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
 
-  auto l2surface = ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
+  ExportFESpace<NumberFESpace> (m, "NumberSpace");
 
-  auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
+  ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
-  ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivDiv space";
-		  flags_doc["plus"] = "bool = False\n"
-                    "  Add additional internal element bubble";
-
-                  return flags_doc;
-                })
-    ;
-
-  ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface")    
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivDiv space";
-                  return flags_doc;
-                })
-    ;
-
-ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv")    
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HCurlDiv space";
-                  return flags_doc;
-                })
-    ;
-
+  ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
+  
+  ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
+  
+  ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
+  
   ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
-
+  
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
-
+  
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivSurface space";
-                  return flags_doc;
-                })
     .def("Average", &HDivHighOrderSurfaceFESpace::Average,
          py::arg("vector"))
     ;
@@ -1193,6 +1330,78 @@ used_idnrs : list of int = None
                     }))
     ;
 
+
+  py::class_<CompressedFESpace, shared_ptr<CompressedFESpace>, FESpace>(m, "Compress",
+	docu_string(R"delimiter(Wrapper Finite Element Spaces.
+The compressed fespace is a wrapper around a standard fespace which removes
+certain dofs (e.g. UNUSED_DOFs).
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+
+active_dofs : BitArray or None
+    don't use the COUPLING_TYPEs of dofs to compress the FESpace, 
+    but use a BitArray directly to compress the FESpace
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes,
+                      py::object active_dofs)
+                  {
+                    shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    if (compspace)
+                        throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
+                    auto ret = make_shared<CompressedFESpace> (fes);
+                    shared_ptr<BitArray> actdofs = nullptr;
+                    if (! py::extract<DummyArgument> (active_dofs).check())
+                      dynamic_pointer_cast<CompressedFESpace>(ret)->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
+                    ret->Update(glh);
+                    ret->FinalizeUpdate(glh);
+                    return ret;                    
+                  }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
+    .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
+         {
+           self.SetActiveDofs(active_dofs);
+         },
+         py::arg("dofs"))
+    .def(py::pickle([](const CompressedFESpace* compr_fes)
+                    {
+                      return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());
+                    },
+                    [] (py::tuple state) -> shared_ptr<CompressedFESpace>
+                    {
+                      auto fes = make_shared<CompressedFESpace>(state[0].cast<shared_ptr<FESpace>>());
+                      if (state[1].cast<shared_ptr<BitArray>>())
+                        fes->SetActiveDofs(state[1].cast<shared_ptr<BitArray>>());
+                      fes->Update(glh);
+                      fes->FinalizeUpdate(glh);
+                      return fes;
+                    }))
+    ;
+
+
+   m.def("CompressCompound", [](shared_ptr<FESpace> & fes, py::object active_dofs) -> shared_ptr<FESpace>
+            {
+              shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+              if (!compspace)
+                throw py::type_error("Not a CompoundFESpace!");
+              else
+              {
+                if (! py::extract<DummyArgument> (active_dofs).check())
+                  throw py::type_error("cannot apply compression on CompoundFESpace with active_dofs");
+                Array<shared_ptr<FESpace>> spaces(compspace->GetNSpaces());
+                for (int i = 0; i < compspace->GetNSpaces(); i++)
+                  spaces[i] = make_shared<CompressedFESpace> ((*compspace)[i]);
+                auto ret = make_shared<CompoundFESpace>(compspace->GetMeshAccess(),spaces, compspace->GetFlags());
+                ret->Update(glh);
+                ret->FinalizeUpdate(glh);
+                return ret;
+              }
+             }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
+
+
+
+
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
   py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
@@ -1257,7 +1466,8 @@ used_idnrs : list of int = None
                 {
                   return py::dict
                     (
-                     py::arg("multidim") = "Multidimensional GridFunction",
+                     py::arg("multidim") = "\n"
+                     " Multidimensional GridFunction",
                      py::arg("nested") = "bool = False\n"
 		     " Generates prolongation matrices for each mesh level and prolongates\n"
 		     " the solution onto the finer grid after a refinement."
@@ -1295,7 +1505,18 @@ used_idnrs : list of int = None
              for (auto d : self.GetVector().FVDouble())
                SaveBin(out, d);
          },
-         py::arg("filename"), py::arg("parallel")=false)
+         py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(
+Saves the gridfunction into a file.
+
+Parameters:
+
+filename : string
+  input file name
+
+parallel : bool
+  input parallel
+
+)raw_string"))
     .def("Load", [](GF& self, string filename, bool parallel)
          {
            ifstream in(filename, ios::binary);
@@ -1305,8 +1526,18 @@ used_idnrs : list of int = None
              for (auto & d : self.GetVector().FVDouble())
                LoadBin(in, d);
          },
-         py::arg("filename"), py::arg("parallel")=false)         
-         
+         py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(       
+Loads a gridfunction from a file.
+
+Parameters:
+
+filename : string
+  input file name
+
+parallel : bool
+  input parallel
+
+)raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
             VorB vb, py::object definedon)
@@ -1315,6 +1546,8 @@ used_idnrs : list of int = None
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
+            
+            py::gil_scoped_release release;
             
             if(tpspace)
             {
@@ -1328,10 +1561,22 @@ used_idnrs : list of int = None
          },
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
-         py::arg("definedon")=DummyArgument(),
-         "Set values"
-      )
-    .def_property_readonly("name", &GridFunction::GetName)
+         py::arg("definedon")=DummyArgument(), docu_string(R"raw_string(
+Set values
+
+Parameters:
+
+coefficient : ngsolve.fem.CoefficientFunction
+  input CF to set
+
+VOL_or_BND : ngsolve.comp.VorB
+  input VOL, BND, BBND, ...
+
+definedon : object
+  input definedon region
+
+)raw_string"))
+    .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 
     .def_property_readonly("components",
                            [](shared_ptr<GF> self)-> py::tuple
@@ -1362,8 +1607,18 @@ used_idnrs : list of int = None
          [](shared_ptr<GF> self) -> spCF
           {
             return self->GetDeriv();
-          })
+          }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
+    .def("Operators", [] (shared_ptr<GF> self)
+         {
+           py::list l;
+           auto ops = self->GetFESpace()->GetAdditionalEvaluators();
+           for (size_t i = 0; i < ops.Size(); i++)
+             l.append (ops.GetName(i));
+           return l;
+         },
+         "returns list of available differential operators")
+    
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
@@ -1390,7 +1645,18 @@ used_idnrs : list of int = None
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
             return py::none(); 
-          }, py::arg("name"), py::arg("VOL_or_BND")=VOL)
+          }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
+Get access to an operator depending on the FESpace.
+
+Parameters:
+
+name : string
+  input name of the requested operator
+
+VOL_or_BND : ngsolve.comp.VorB
+  input VOL, BND, BBND, ...
+
+)raw_string"))
 
     
     .def_property_readonly("derivname", 
@@ -1399,7 +1665,7 @@ used_idnrs : list of int = None
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
                      return deriv->Name();
-                   })
+                   }, "Name of canonical derivative of the space behind the GridFunction.")
 
     .def("__call__", 
          [](shared_ptr<GF> self, double x, double y, double z)
@@ -1439,39 +1705,11 @@ used_idnrs : list of int = None
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
 
-
-   .def("__call__", 
-        [](shared_ptr<GF> self, const BaseMappedIntegrationPoint & mip)
-          {
-            HeapReset hr(glh);
-            auto space = self->GetFESpace();
-
-            ElementId ei = mip.GetTransformation().GetElementId();
-            auto evaluator = space->GetEvaluator(VorB(ei));
-            const FiniteElement & fel = space->GetFE(ei, glh);
-
-            Array<int> dnums(fel.GetNDof());
-            space->GetDofNrs(ei, dnums);
-
-            if (space->IsComplex())
-              {
-                Vector<Complex> elvec(fel.GetNDof()*space->GetDimension());
-                Vector<Complex> values(evaluator->Dim());
-                self->GetElementVector(dnums, elvec);
-
-                evaluator->Apply(fel, mip, elvec, values, glh);
-                return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
-              }
-            else
-              {
-                Vector<> elvec(fel.GetNDof()*space->GetDimension());
-                Vector<> values(evaluator->Dim());
-                self->GetElementVector(dnums, elvec);
-                evaluator->Apply(fel, mip, elvec, values, glh);
-                return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
-              }
-          }, 
-        py::arg("mip"))
+    // expose CF __call__ to GF, because pybind11 doesn't do that if a function gets overloaded
+    .def("__call__", [](shared_ptr<GF> self, py::args args, py::kwargs kwargs)
+         {
+           return py::module::import("ngsolve").attr("CoefficientFunction").attr("__call__")(self, *args, **kwargs);
+         })
     
     /*
     .def("D", 
@@ -1543,7 +1781,14 @@ used_idnrs : list of int = None
               return make_shared<GridFunctionCoefficientFunction> (self, diffop);
             else
               return make_shared<GridFunctionCoefficientFunction> (self, nullptr, diffop);
-          })
+          }, py::arg("diffop"), docu_string(R"raw_string(
+
+Parameters:
+
+diffop : ngsolve.fem.DifferentialOperator
+  input differential operator
+
+)raw_string"))
     ;
 
 
@@ -1552,7 +1797,7 @@ used_idnrs : list of int = None
 
 
   typedef BilinearForm BF;
-  auto bf_class = py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
+  auto bf_class = py::class_<BF, shared_ptr<BilinearForm>, NGS_Object>(m, "BilinearForm",
                                              docu_string(R"raw_string(
 Used to store the left hand side of a PDE. integrators (ngsolve.BFI)
 to it to implement your PDE. If the left hand side is linear
@@ -1560,14 +1805,11 @@ you can use BilinearForm.Assemble to assemble it after adding
 your integrators. For nonlinear usage use BilinearForm.Apply or
 BilinearForm.AssembleLinearization instead of Bilinearform.Assemble.
 
-Parameters
+Parameters:
 
 space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
   can be a compound FESpace for a mixed formulation.
-
-check_unused : bool
-  If set prints warnings if not UNUSED_DOFS are not used
 
 )raw_string"));
   bf_class
@@ -1597,12 +1839,18 @@ check_unused : bool
                 {
                   return py::dict
                     (
-                     py::arg("eliminate_internal") = "bool = False\n"
+                     py::arg("condense") = "bool = False\n"
+                     "  (formerly known as 'eliminate_internal')\n"
                      "  Set up BilinearForm for static condensation of internal\n"
                      "  bubbles. Static condensation has to be done by user,\n"
                      "  this enables only the use of the members harmonic_extension,\n"
                      "  harmonic_extension_trans and inner_solve. Have a look at the\n"
                      "  documentation for further information.",
+                     py::arg("eliminate_internal") = "bool = False\n"
+                     "  deprecated for static condensation, replaced by 'condense'\n",
+                     py::arg("eliminate_hidden") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of hidden\n"
+                     "  dofs. May be overruled by eliminate_internal.",
                      py::arg("print") = "bool = False\n"
                      "  Write additional information to testout file. \n"
                      "  This file must be set by ngsolve.SetTestoutFile. Use \n"
@@ -1621,7 +1869,9 @@ check_unused : bool
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
                      "  preconditioner with a changing bilinearform.",
 		     py::arg("nonsym_storage") = "bool = False\n"
-		     " The full matrix is stored, even if the symmetric flag is set."
+		     " The full matrix is stored, even if the symmetric flag is set.",
+                     py::arg("check_unused") = "bool = True\n"
+		     " If set prints warnings if not UNUSED_DOFS are not used."
                      );
                 })
 
@@ -1629,20 +1879,35 @@ check_unused : bool
 
     .def("Add", [](BF& self, shared_ptr<BilinearFormIntegrator> bfi) -> BF&
                                  { self.AddIntegrator (bfi); return self; },
-         py::return_value_policy::reference,
-         "add integrator to bilinear-form")
+         py::return_value_policy::reference, py::arg("integrator"), docu_string(R"raw_string(
+         Add integrator to bilinear form.
+
+Parameters:
+
+integrator : ngsolve.fem.BFI
+  input bilinear form integrator
+
+)raw_string"))
     
-    .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; } )
-    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); })
+    .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
+    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
 
     .def_property_readonly("integrators", [](BF & self)
-                           { return MakePyTuple (self.Integrators()); })
+                           { return MakePyTuple (self.Integrators()); }, "integrators of the bilinear form")
     
     .def("Assemble", [](BF & self, bool reallocate)
          {
            self.ReAssemble(glh,reallocate);
          }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("reallocate")=false)
+         py::arg("reallocate")=false, docu_string(R"raw_string(
+Assemble the bilinear form.
+
+Parameters:
+
+reallocate : bool
+  input reallocate
+
+)raw_string"))
 
     .def_property_readonly("mat", [](BF & self)
                                          {
@@ -1650,7 +1915,7 @@ check_unused : bool
                                            if (!mat)
                                              throw py::type_error("matrix not ready - assemble bilinearform first");
                                            return mat;
-                                         })
+                                         }, "matrix of the assembled bilinear form")
 
     .def_property_readonly("components", [](shared_ptr<BilinearForm> self)-> py::list
                    { 
@@ -1665,18 +1930,31 @@ check_unused : bool
                      return bfs;
                    },
                   "list of components for bilinearforms on compound-space")
-
+    
+    .def_property_readonly("condense", [](shared_ptr<BilinearForm> self)
+                           { return self->UsesEliminateInternal(); },
+                           "use static condensation ?"
+                           )
+                           
     .def("__call__", [](BF & self, const GridFunction & u, const GridFunction & v)
           {
             auto au = self.GetMatrix().CreateVector();
             au = self.GetMatrix() * u.GetVector();
             return InnerProduct (au, v.GetVector());
-          })
+          }, py::arg("gfu"), py::arg("gfv"))
 
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
             return self.Energy(*x, glh);
-          }, py::call_guard<py::gil_scoped_release>())
+          }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), docu_string(R"raw_string(
+Computes the energy of EnergyIntegrators like SymbolicEnergy for given input vector.
+
+Parameters:
+
+x : ngsolve.la.BaseVector
+  input vector
+
+)raw_string"))
     
     .def("Apply", [](BF & self, BaseVector& x, BaseVector & y)
 	  {
@@ -1685,7 +1963,7 @@ check_unused : bool
          py::arg("x"),py::arg("y"), docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
 
-Parameters
+Parameters:
 
 x : ngsolve.BaseVector
   input vector
@@ -1699,38 +1977,63 @@ y : ngsolve.BaseVector
 	  {
 	    self.ComputeInternal (u, f, glh );
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("u"),py::arg("f"))
+         py::arg("u"),py::arg("f"), docu_string(R"raw_string(
+
+Parameters:
+
+u : ngsolve.la.BaseVector
+  input vector
+
+f : ngsolve.la.BaseVector
+  input right hand side
+
+)raw_string"))
 
     .def("AssembleLinearization", [](BF & self, BaseVector & ulin)
 	  {
 	    self.AssembleLinearization (ulin, glh);
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("ulin"))
+         py::arg("ulin"), docu_string(R"raw_string(
+Computes linearization of the bilinear form at given vecor.
+
+Parameters:
+
+ulin : ngsolve.la.BaseVector
+  input vector
+
+)raw_string"))
 
     .def("Flux", [](BF & self, shared_ptr<GridFunction> gf) -> spCF
           {
             return make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0));
-          })
+          }, py::arg("gf"), docu_string(R"raw_string(
+
+Parameters:
+
+gf : ngsolve.comp.GridFunction
+  input GridFunction
+
+)raw_string"))
     
     .def_property_readonly("harmonic_extension", [](BF & self)
                    {
                      return self.GetHarmonicExtension();
-                   }
+                   }, "harmonic_extension used for static condensaition"
                   )
     .def_property_readonly("harmonic_extension_trans", [](BF & self)
                    {
                      return self.GetHarmonicExtensionTrans();
-                   }
+                   }, "harmonic_extension_trans used for static condensation"
                   )
     .def_property_readonly("inner_solve", [](BF & self)
                    {
                      return self.GetInnerSolve();
-                   }
+                   }, "inner_solve used for static condensation"
                   )
     .def_property_readonly("inner_matrix", [](BF & self)
                    {
                      return self.GetInnerMatrix();
-                   }
+                   }, "inner_matrix of the bilinear form"
                   )
     ;
 
@@ -1741,7 +2044,7 @@ y : ngsolve.BaseVector
 Used to store the left hand side of a PDE. Add integrators
 (ngsolve.LFI) to it to implement your PDE.
 
-Parameters
+Parameters:
 
 space : ngsolve.FESpace
   The space the linearform is defined on. Can be a compound
@@ -1780,23 +2083,31 @@ flags : dict
     .def("__str__",  [](LF & self ) { return ToString<LinearForm>(self); } )
 
     .def_property_readonly("vec", [] (shared_ptr<LF> self)
-                           { return self->GetVectorPtr();})
+                           { return self->GetVectorPtr();}, "vector of the assembled linear form")
 
     .def("Add", [](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
           { 
             self->AddIntegrator (lfi);
             return self; 
           },
-         py::arg("integrator"))
+         py::arg("integrator"), docu_string(R"raw_string(
+Add integrator to linear form.
+
+Parameters:
+
+integrator : ngsolve.fem.LFI
+  input linear form integrator
+
+)raw_string"))
     
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
-         { (*self)+=lfi; return self; })
+         { (*self)+=lfi; return self; }, py::arg("lfi"))
 
     .def_property_readonly("integrators", [](shared_ptr<LF> self)
-                           { return MakePyTuple (self->Integrators()); })
+                           { return MakePyTuple (self->Integrators()); }, "returns tuple of integrators of the linear form")
 
     .def("Assemble", [](shared_ptr<LF> self)
-         { self->Assemble(glh); }, py::call_guard<py::gil_scoped_release>())
+         { self->Assemble(glh); }, py::call_guard<py::gil_scoped_release>(), "Assemble linear form")
     
     .def_property_readonly("components", [](shared_ptr<LF> self)
                    { 
@@ -1814,10 +2125,17 @@ flags : dict
     .def("__call__", [](shared_ptr<LF> self, const GridFunction & v)
           {
             return InnerProduct (self->GetVector(), v.GetVector());
-          })
+          }, py::arg("gf"))
 
     ;
 
+  ////////////////////////////// Prolongation ///////////////////////////////
+
+  py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
+    .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
+    .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
+    ;
+  
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
   auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");
@@ -1836,18 +2154,19 @@ flags : dict
                 {
                   return py::dict
                     (
-                     py::arg("inverse") = "Inverse type used in Preconditioner",
+                     py::arg("inverse") = "\n"
+                     "  Inverse type used in Preconditioner.",
                      py::arg("test") = "bool = False\n"
                      "  Computes condition number for preconditioner, if testout file\n"
                      "  is set, prints eigenvalues to file."
                      );
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
-    .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>())
+    .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
     .def_property_readonly("mat", [](Preconditioner &self)
                    {
                      return self.GetMatrixPtr();
-                   })
+                   }, "matrix of the preconditioner")
     ;
 
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
@@ -1890,12 +2209,12 @@ flags : dict
                            })
     */
     .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
-                     { return new PyNumProc(pde, flags); }))
-    .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); })
+                     { return new PyNumProc(pde, flags); }), py::arg("pde"), py::arg("flags"))
+    .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); }, "PDE of the NumProc")
     .def("Do", [](NumProc & self, LocalHeap & lh)
                                {
                                  self.Do(lh);
-                               }, py::call_guard<py::gil_scoped_release>())
+                               }, py::arg("lh"), py::call_guard<py::gil_scoped_release>())
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -1954,37 +2273,37 @@ flags : dict
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<MeshAccess> mesh)
                                 {
                                   self->AddMeshAccess (mesh);
-                                })
+                                }, py::arg("mesh"))
 
     .def("Add", [](shared_ptr<PDE> self, const string & name, double val)
                                 {
                                   self->AddConstant (name, val);
-                                })
+                                }, py::arg("name"), py::arg("value"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<FESpace> space)
                                 {
                                   self->AddFESpace (space->GetName(), space);
-                                })
+                                }, py::arg("space"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<GridFunction> gf)
                                 {
                                   self->AddGridFunction (gf->GetName(), gf);
-                                })
+                                }, py::arg("gf"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<BilinearForm> bf)
                                 {
                                   self->AddBilinearForm (bf->GetName(), bf);
-                                })
+                                }, py::arg("bf"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<LinearForm> lf)
                                 {
                                   self->AddLinearForm (lf->GetName(), lf);
-                                })
+                                }, py::arg("lf"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<Preconditioner> pre)
                                 {
                                   self->AddPreconditioner (pre->GetName(), pre);
-                                })
+                                }, py::arg("pre"))
 
 // TODO
 //     .def("Add", [](PyPDE self, shared_ptr<NumProcWrap> np)
@@ -1999,7 +2318,7 @@ flags : dict
 				  cnt++;
 				  string name = "np_from_py" + ToString(cnt);
                                   self->AddNumProc (name, np);
-                                })
+                                }, py::arg("np"))
 
     .def("Add", [](shared_ptr<PDE> self, const py::list &l)
                                 {
@@ -2049,12 +2368,12 @@ flags : dict
                                       
                                       cout << "warning: unknown object at position " << i << endl;
                                     }
-                                })
+                                }, py::arg("list"))
 
     .def("SetCurveIntegrator", [](shared_ptr<PDE> self, const string & filename, shared_ptr<LinearFormIntegrator> lfi)
           {
             self->SetLineIntegratorCurvePointInfo(filename, lfi.get());
-          })
+          }, py::arg("filename"), py::arg("lfi"))
 
     .def_property_readonly ("constants", [](shared_ptr<PDE> self) { return py::cast(self->GetConstantTable()); })
     .def_property_readonly ("variables", [](shared_ptr<PDE> self) { return py::cast(self->GetVariableTable()); })
@@ -2292,6 +2611,37 @@ flags : dict
 	py::arg("definedon")=DummyArgument(),
         py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
+        R"raw(
+Parameters
+----------
+
+cf: ngsolve.CoefficientFunction
+  Function to be integrated. Can be vector valued, then the result is an array. If you want to integrate
+  a lot of functions on the same domain, it will be faster to put them into a vector valued function,
+  NGSolve will then be able to use parallelization and SIMD vectorization more efficiently.
+
+mesh: ngsolve.Mesh
+  The mesh to be integrated on.
+
+VOL_or_BND: ngsolve.VorB = VOL
+  Co-dimension to be integrated on. Historically this could be volume (VOL) or boundary (BND). If your mesh
+  contains co-dim 2 elements this can now be BBND (edges in 3d) as well.
+
+order: int = 5
+  Integration order, polynomials up to this order will be integrated exactly.
+
+definedon: ngsolve.Region
+  Region to be integrated on. Such region can be created with mesh.Boundaries('bcname') or mesh.Materials('matname')
+  it will overwrite the VOL_or_BND argument if given.
+
+region_wise: bool = False
+  Integrates region wise on the co-dimension given by VOL_or_BND. Returns results as an array, matching the array
+  returned by mesh.GetMaterials() or mesh.GetBoundaries(). Does not support vector valued CoefficientFunctions.
+
+element_wise: bool = False
+  Integrates element wise and returns result in a list. This is typically used for local error estimators.
+  Does not support vector valued CoefficientFunctions
+)raw",
         py::call_guard<py::gil_scoped_release>())
     ;
   
@@ -2299,15 +2649,17 @@ flags : dict
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate) 
+             bool simd_evaluate, VorB element_vb) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
+             if (element_boundary) element_vb = BND;
+             
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
-               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_boundary);
+               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
              else
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
              
@@ -2344,14 +2696,52 @@ flags : dict
 	   py::arg("intrule")=IntegrationRule(),
            py::arg("bonus_intorder")=0,
            py::arg("definedonelements")=DummyArgument(),
-           py::arg("simd_evaluate")=true
+           py::arg("simd_evaluate")=true,
+           py::arg("element_vb")=VOL,
+        docu_string(R"raw_string(
+A symbolic linear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate right hand sides in a symbolic way.
+
+Parameters:
+
+form : ngsolve.fem.CoefficientFunction
+  input the symbolic right hand side form
+
+VOL_or_BND : ngsolve.comp.VorB
+  input VOL, BND, BBND, ...
+
+element_boundary : bool
+  input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
+
+skeleton : bool
+  input skeleton. True -> iterates over all faces, but uses volume transformations
+
+definedon : object
+  input definedon region
+
+intrule : ngsolve.fem.IntegrationRule
+  input integration rule
+
+bonus_intorder : int
+  input additional integration order
+
+definedonelements : object
+  input definedonelements
+
+simd_evaluate : bool
+  input simd_evaluate. True -> tries to use SIMD for faster evaluation
+
+element_vb : ngsolve.fem.VorB
+  input element VorB
+
+)raw_string")
           );
 
   m.def("SymbolicBFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate, VorB element_vb)
+             bool simd_evaluate, VorB element_vb,
+             shared_ptr<GridFunction> deformation)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2390,12 +2780,15 @@ flags : dict
              if (ir.Size())
                {
                  cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
+                 /*
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
+                 */
+                 bfi->SetIntegrationRule(ir);
                }
 
              bfi->SetSimdEvaluate (simd_evaluate);
-             
+             bfi->SetDeformation (deformation);
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return shared_ptr<BilinearFormIntegrator>(bfi);
@@ -2408,7 +2801,44 @@ flags : dict
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
-        py::arg("element_vb")=VOL
+        py::arg("element_vb")=VOL,
+        py::arg("deformation")=shared_ptr<GridFunction>(),
+        docu_string(R"raw_string(
+A symbolic bilinear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
+
+Parameters:
+
+form : ngsolve.fem.CoefficientFunction
+  input the symbolic right hand side form
+
+VOL_or_BND : ngsolve.comp.VorB
+  input VOL, BND, BBND, ...
+
+element_boundary : bool
+  input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
+
+skeleton : bool
+  input skeleton. True -> iterates over all faces, but uses volume transformations
+
+definedon : object
+  input definedon region
+
+intrule : ngsolve.fem.IntegrationRule
+  input integration rule
+
+bonus_intorder : int
+  input additional integration order
+
+definedonelements : object
+  input definedonelements
+
+simd_evaluate : bool
+  input simd_evaluate. True -> tries to use SIMD for faster evaluation
+
+element_vb : ngsolve.comp.VorB
+  input element_vb. Used for skeleton formulation. VOL -> interior faces, BND -> boundary faces
+
+)raw_string")
         );
           
   m.def("SymbolicTPBFI",
@@ -2455,14 +2885,17 @@ flags : dict
           
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
-           int bonus_intorder, py::object definedonelem, bool simd_evaluate)
+           int bonus_intorder, py::object definedonelem, bool simd_evaluate,
+           VorB element_vb)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_boundary);
+             if (element_boundary) element_vb = BND;
+             
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                {
@@ -2478,7 +2911,38 @@ flags : dict
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
-        py::arg("simd_evaluate")=true
+        py::arg("simd_evaluate")=true,
+        py::arg("element_vb")=VOL,
+        docu_string(R"raw_string(
+A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
+
+Parameters:
+
+form : ngsolve.fem.CoefficientFunction
+  input the symbolic right hand side form
+
+VOL_or_BND : ngsolve.comp.VorB
+  input VOL, BND, BBND, ...
+
+definedon : object
+  input definedon region
+
+element_boundary : bool
+  input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
+
+bonus_intorder : int
+  input additional integration order
+
+definedonelements : object
+  input definedonelements
+
+simd_evaluate : bool
+  input simd_evaluate. True -> tries to use SIMD for faster evaluation
+
+element_vb : ngsolve.fem.VorB
+  input eleemnt VorB
+
+)raw_string")
           );
 
    m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
@@ -2487,15 +2951,15 @@ flags : dict
              auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
              IntegrationPoint ip;
              int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
-             int ndofx = tpfes->Spaces(0)[0]->GetFE(elnr,glh).GetNDof();
-             int ndofy = tpfes->Spaces(0)[1]->GetFE(0,glh).GetNDof();
+             int ndofx = tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh).GetNDof();
+             int ndofy = tpfes->Spaces(0)[1]->GetFE(ElementId(VOL,0),glh).GetNDof();
              Array<int> indices(2);
              Array<int> dofs(ndofx*ndofy);
              tpfes->GetDofNrs(tpfes->GetIndex(elnr,0),dofs);
              FlatMatrix<> elmat(ndofx,ndofy,glh);
              gf_tp->GetVector().GetIndirect(dofs,elmat.AsVector());
              FlatVector<> shape(ndofx,glh);
-             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(elnr,glh)).CalcShape(ip,shape);
+             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh)).CalcShape(ip,shape);
              FlatVector<> result(ndofy,glh);
              result = Trans(elmat)*shape;
              gf_k->GetVector().FVDouble() = result;

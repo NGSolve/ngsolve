@@ -10,6 +10,9 @@ PythonEnvironment pyenv;
 
 
 using std::ostringstream;
+namespace ngstd {
+  bool have_numpy = false;
+}
 
 void SetFlag(Flags &flags, string s, py::object value) 
 {
@@ -163,6 +166,11 @@ void PyDefVecBuffer( TCLASS & c )
 
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
+  try {
+      auto numpy = py::module::import("numpy");
+      have_numpy = !numpy.is_none();
+  }
+  catch(...) {}
 
   
   std::string nested_name = "ngstd";
@@ -191,7 +199,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init([] (int n) { return new Array<double>(n); }))
+    .def(py::init([] (int n) { return new Array<double>(n); }), py::arg("n"), "Makes array of given length")
     .def(py::init([] (std::vector<double> const & x)
                   {
                     int s = x.size();
@@ -199,11 +207,11 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                     for (int i = 0; i < s; i++)
                       a[i] = x[i];
                     return a;
-                  }))
+                  }), py::arg("vec"), "Makes array with given vector")
     .def("__rand__" ,  []( Array<double> & a, shared_ptr<Archive> & arch )
                                          { cout << "output d array" << endl;
                                            *arch & a; return arch; })
-    .def("print", [](Array<double> &a) { cout << a << endl; } )
+    .def("print", [](Array<double> &a) { cout << a << endl; }, "print the array" )
     ;
 
   py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI", py::buffer_protocol());
@@ -213,7 +221,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init([] (int n) { return new Array<int>(n); }))
+    .def(py::init([] (int n) { return new Array<int>(n); }),py::arg("n"), "Makes array of given length")
     .def(py::init([] (std::vector<int> const & x)
                   {
                     int s = x.size();
@@ -221,7 +229,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                     for (int i = 0; i < s; i++)
                       tmp[i] = x[i]; 
                     return tmp;
-                  }))
+                  }), py::arg("vec"), "Makes array with given vector")
     ;
 
   py::class_<FlatArray<size_t> > class_flatarrayst (m, "FlatArray_sizet", py::buffer_protocol());
@@ -236,13 +244,13 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<ngstd::HeapReset>
     (m, "HeapReset","stores heap-pointer on init, and resets it on exit")
-    .def(py::init<LocalHeap&>())
+    .def(py::init<LocalHeap&>(), py::arg("lh"))
     ;
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
     // .def(py::init<size_t>()) // not doing the right thing ????? JS
-    .def(py::init([] (size_t n) { return make_shared<BitArray>(n); }))
-    .def(py::init([] (const BitArray& a) { return make_shared<BitArray>(a); } ))
+    .def(py::init([] (size_t n) { return make_shared<BitArray>(n); }),py::arg("n"))
+    .def(py::init([] (const BitArray& a) { return make_shared<BitArray>(a); } ), py::arg("ba"))
     .def(py::init([] (const vector<bool> & a)
                   {
                     auto ba = make_shared<BitArray>(a.size());
@@ -250,7 +258,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                     for (size_t i = 0; i < a.size(); i++)
                       if (a[i]) ba->Set(i);
                     return ba;
-                  } ))
+                  } ), py::arg("vec"))
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
     .def("__getitem__", [] (BitArray & self, int i) 
@@ -258,13 +266,13 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                            if (i < 0 || i >= self.Size())
                                              throw py::index_error();
                                            return self.Test(i); 
-                                         })
+                                         }, py::arg("pos"), "Returns bit from given position")
     .def("__setitem__", [] (BitArray & self, int i, bool b) 
                                          {
                                            if (i < 0 || i >= self.Size())
                                              throw py::index_error();
                                            if (b) self.Set(i); else self.Clear(i); 
-                                         })
+                                         }, py::arg("pos"), py::arg("value"), "Clear/Set bit at given position")
 
     .def("__setitem__", [] (BitArray & self, py::slice inds, bool b) 
                                          {
@@ -286,7 +294,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                                  for (size_t i=0; i<n; i++, start+=step)
                                                    self.Clear(start);
                                              }
-                                         })
+                                         }, py::arg("inds"), py::arg("value"), "Clear/Set bit at given positions")
     .def("NumSet", [] (BitArray & self) { return self.NumSet(); })
     .def("Set", [] (BitArray & self, py::object in)
                                    {
@@ -301,7 +309,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                      }
                                      else
                                        throw py::value_error();
-                                   }, py::arg("i") = DummyArgument())
+                                   }, py::arg("i") = DummyArgument(), "Set bit at given position")
     .def("Clear", [] (BitArray & self, py::object in)
                                    {
                                      if (py::isinstance<DummyArgument>(in))
@@ -315,7 +323,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                      }
                                      else
                                        throw py::value_error();
-                                   }, py::arg("i") = DummyArgument())
+                                   }, py::arg("i") = DummyArgument(), "Clear bit at given position")
 
 
     .def(py::self | py::self)
@@ -334,8 +342,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           Flags flags;
           py::dict d(obj);          
           SetFlag (flags, "", d);
-          return move(flags);
-        }))
+          return flags;
+        }), py::arg("obj"), "Create Flags by given object")
     /*
     .def("__init__", [] (Flags &f, py::object & obj) {
          py::dict d(obj);
@@ -348,26 +356,26 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
         stringstream str;
         self.SaveFlags(str);
         return py::make_tuple(py::cast(str.str())); 
-      })
+      }, "Return state of the flags")
     .def("__setstate__", [] (Flags & self, py::tuple state) {
         string s = state[0].cast<string>();
         stringstream str(s);
         new (&self) Flags();
         self.LoadFlags(str);
-      })
+      }, py::arg("state"), "Set the state of the flags" )
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
       SetFlag(self, "", aflags);
       return self;
-    })
+    }, py::arg("aflag"), "Set the flags by given dict")
 
     .def("Set",[](Flags & self, const char * akey, const py::object & value)->Flags&
     {             
       cout << "we call Set(key,obj)" << endl; 
         SetFlag(self, akey, value);
         return self;
-    })
+    }, py::arg("akey"), py::arg("value"), "Set flag by given value.")
 
     .def("__getitem__", [](Flags & self, const string& name) -> py::object {
 
@@ -387,10 +395,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 	    return py::cast(self.GetFlagsFlag(name));
 
 	  return py::cast(self.GetDefineFlag(name));
-	})
+      }, py::arg("name"), "Return flag by given name")
   ;
 
-  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; } );
+  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("flags") );
   py::implicitly_convertible<py::dict, Flags>();
 
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
@@ -403,8 +411,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<Timer> (m, "Timer")
     .def(py::init<const string&>())
-    .def("Start", &Timer::Start)
-    .def("Stop", &Timer::Stop)
+    .def("Start", &Timer::Start, "start timer")
+    .def("Stop", &Timer::Stop, "stop timer")
     ;
   
   m.def("Timers",
@@ -423,7 +431,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                  timers.append(timer);
                }
 	     return timers;
-	   }
+	   }, "Returns list of timers"
 	   );
 
   py::class_<Archive, shared_ptr<Archive>> (m, "Archive")
@@ -460,10 +468,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                            else
                              return make_shared<TextInArchive> (filename);
                          }
-                       }))
+                       }), py::arg("filename"), py::arg("write"), py::arg("binary"))
     .def("__and__" , [](shared_ptr<Archive> & self, Array<int> & a) 
                                          { cout << "output array" << endl;
-                                           *self & a; return self; })
+                                           *self & a; return self; }, py::arg("array"))
   ;
 
   m.def("RunWithTaskManager", 
@@ -471,10 +479,24 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                            {
                              cout << IM(3) << "running Python function with task-manager:" << endl;
                              RunWithTaskManager ([&] () { lam(); });
-                           })
+                           }, py::arg("lam"), docu_string(R"raw_string(
+Parameters:
+
+lam : object
+  input function
+
+)raw_string"))
           ;
 
-  m.def("SetNumThreads", &TaskManager::SetNumThreads );
+  m.def("SetNumThreads", &TaskManager::SetNumThreads, py::arg("threads"), docu_string(R"raw_string(
+Set number of threads
+
+Parameters:
+
+threads : int
+  input number of threads
+
+)raw_string") );
 
   // local TaskManager class to be used as context manager in Python
   class ParallelContextManager {
@@ -506,7 +528,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           size_t size = view.Size();
           pickler.attr("write")(py::bytes((char*) & size, sizeof(size_t)));
           pickler.attr("write")(py::memoryview(bi));
-        });
+        }, py::arg("pickler"), py::arg("view"));
   m.def("_UnpickleMemory", [](py::object unpickler)
         {
           auto size = *(size_t*) PyBytes_AsString(unpickler.attr("read")(sizeof(size_t)).ptr());
@@ -522,7 +544,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           auto buffer = unpickler.attr("read")(size-n);
           memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), size-n);
           unpickler.attr("append")(MemoryView(mem,size));
-        });
+        }, py::arg("unpickler"));
   py::class_<MemoryView>(m, "_MemoryView");
 
   

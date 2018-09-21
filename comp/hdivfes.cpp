@@ -264,7 +264,6 @@ namespace ngcomp
 
 
 
-  
   // register FESpaces
   namespace hdivfes_cpp
   {
@@ -276,7 +275,8 @@ namespace ngcomp
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("hdiv", RaviartThomasFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("hdiv", RaviartThomasFESpace::Create,
+                                      RaviartThomasFESpace::GetDocu);
     }
     
     Init init;

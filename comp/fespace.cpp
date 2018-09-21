@@ -79,7 +79,8 @@ namespace ngcomp
     timing = flags.GetDefineFlag("timing");
     print = flags.GetDefineFlag("print");
     dgjumps = flags.GetDefineFlag("dgjumps");
-    no_low_order_space = flags.GetDefineFlag("no_low_order_space");
+    no_low_order_space = flags.GetDefineFlagX("low_order_space").IsFalse() ||
+      flags.GetDefineFlag("no_low_order_space");
     if (dgjumps) 
       *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
 lot of new non-zero entries in the matrix!\n" << endl;
@@ -293,6 +294,40 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // delete paralleldofs;
   }
+
+
+  DocInfo FESpace :: GetDocu ()
+  {
+    DocInfo docu;
+    docu.Arg("order") = "int = 1\n"
+      "  order of finite element space";
+    docu.Arg("complex") = "bool = False\n"
+      "  Set if FESpace should be complex";
+    docu.Arg("dirichlet") = "regexpr\n"
+      "  Regular expression string defining the dirichlet boundary.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichlet = 'top|right'";
+    docu.Arg("definedon") = "Region or regexpr\n"
+      "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
+      "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
+      "  mesh.Materials('regexpr').";
+    docu.Arg("dim") = "int = 1\n"
+      "  Create multi dimensional FESpace (i.e. [H1]^3)";
+    docu.Arg("dgjumps") = "bool = False\n"
+      "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
+      "  since the dofs have a different coupling then and this changes the sparsity\n"
+      "  pattern of matrices.";
+    docu.Arg("low_order_space") = "bool = True\n"
+      "  Generate a lowest order space together with the high-order space,\n"
+      "  needed for some preconditioners.";
+    docu.Arg("order_policy") = "ORDER_POLICY = ORDER_POLICY.OLDSTYLE\n"
+      "  CONSTANT .. use the same fixed order for all elements,\n"
+      "  NODAL ..... use the same order for nodes of same shape,\n"
+      "  VARIBLE ... use an individual order for each edge, face and cell,\n"
+      "  OLDSTYLE .. as it used to be for the last decade";
+    return docu;
+  }
+
   
   void FESpace :: SetNDof (size_t _ndof)
   {
@@ -394,7 +429,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
           for (int d : el.GetDofs())
-            if (d != -1) dirichlet_dofs.Set (d);
+            if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 
     /*
     Array<DofId> dnums;
@@ -418,7 +453,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_VERTEX,i), dnums);
                for (DofId d : dnums)
-                 if (d != -1) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
     timer2.Stop();
@@ -441,7 +476,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_EDGE,i), dnums);
                for (DofId d : dnums)
-                 if (d != -1) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
 
@@ -451,7 +486,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetFaceDofNrs (i, dnums);
 	  for (DofId d : dnums)
-	    if (d != -1) dirichlet_dofs.Set (d);
+	    if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 	}
     
     tcolbits.Start();
@@ -460,13 +495,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     free_dofs->Invert();
     
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] == UNUSED_DOF)
+      if (!(ctofdof[i] & VISIBLE_DOF)) //hidden or unused
 	free_dofs->Clear(i);
 
     external_free_dofs = make_shared<BitArray>(GetNDof());
     *external_free_dofs = *free_dofs;
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] & CONDENSATABLE_DOF)
+      if (ctofdof[i] & CONDENSABLE_DOF)
 	external_free_dofs->Clear(i);
 
     if (print)
@@ -610,11 +645,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      if (HasAtomicDofs())
                        {
                          for (int i = dofs.Size()-1; i >= 0; i--)
-                           if (dofs[i] == -1 || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
+                           if (!IsRegularDof(dofs[i]) || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
                        }
                      else
                        for (int i = dofs.Size()-1; i >= 0; i--)
-                         if (dofs[i] == -1) dofs.DeleteElement(i);
+                         if (!IsRegularDof(dofs[i])) dofs.DeleteElement(i);
                      QuickSort (dofs);   // sort to avoid dead-locks
                      
                      for (auto d : dofs) 
@@ -679,7 +714,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // CheckCouplingTypes();
   }
 
-
   const Table<int> & FESpace :: FacetColoring() const
   {
     if (facet_coloring.Size()) return facet_coloring;
@@ -713,7 +747,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 if (f2 != f) // color both, left and right facet
                   {
                     ma->GetFacetElements (f2, elnums_per);
-                    elnums.Append(elnums_per[0]);
+		    // if the facet is identified across subdomain
+		    // boundary, we only have the surface element
+		    // and not the other volume element!
+		    // that case does not impact coloring
+		    if (elnums_per.Size())
+		      elnums.Append(elnums_per[0]);
                   }
               }
             for (auto el : elnums)
@@ -724,7 +763,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             
             unsigned check = 0;
             for (auto d : dofs)
-              if (d != -1) check |= mask[d];
+              if (IsRegularDof(d)) check |= mask[d];
             
             if (check != UINT_MAX) // 0xFFFFFFFF)
               {
@@ -741,7 +780,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 if (color > maxcolor) maxcolor = color;
 		
                 for (auto d : dofs)
-                  if (d != -1) mask[d] |= checkbit;
+                  if (IsRegularDof(d)) mask[d] |= checkbit;
               }
           }
         
@@ -848,13 +887,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
   //       __assume(false);
   //     }
   // }
-  
 
+
+  void FESpace :: SetOrder (NodeId ni, int order)
+  {
+    throw Exception (string("FESpace::SetOrder not overloaded for space") + typeid(*this).name());
+  }
+
+  int FESpace :: GetOrder (NodeId ni) const
+  {
+    throw Exception (string("FESpace::GetOrder not overloaded for space") + typeid(*this).name());
+  }
+    
+
+
+  /*
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(VOL,elnr),lh));
   }
-
+*/
+    
   Table<int> FESpace :: CreateDofTable (VorB vorb) const
   {
     TableCreator<int> creator;
@@ -866,6 +919,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return creator.MoveTable();
   }
 
+  /*
+  void FESpace :: CheckCouplingTypeArray() const
+  {
+    if (ctofdof.Size() < GetNDof())
+      throw Exception ("don't have a proper coupling type array, needed for static condensation");
+  }
+  */
+  
+  /*
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (DofId dof) const 
   {
@@ -874,7 +936,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (dof >= ctofdof.Size()) throw Exception("FESpace::GetDofCouplingType out of range. Did you set up ctofdof?");
     return ctofdof[dof];
   }
-
+  */
+  
   void FESpace :: SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const
   {
     if (dof >= ctofdof.Size()) throw Exception("FESpace::SetDofCouplingType out of range");
@@ -894,10 +957,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       {
         for (int i = 0; i < dnums.Size(); i++)
-          if (dnums[i] != -1)
+          if (IsRegularDof(dnums[i]))
             ctypes[i] = ctofdof[dnums[i]];
           else
-            ctypes[i] = UNUSED_DOF;
+            {
+              if (dnums[i] == NO_DOF_NR)
+                ctypes[i] = UNUSED_DOF;
+              else
+                ctypes[i] = HIDDEN_DOF;
+            }
       }
   }
 
@@ -916,7 +984,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (ElementId id : ma->Elements<VOL>())
       {
         GetDofNrs(id, dnums);
-        for (auto d : dnums) cnt[d]++;
+        for (auto d : dnums)
+          if (IsRegularDof(d)) cnt[d]++;
       }
     for (int i : IntRange(0,ndof))
       {
@@ -924,44 +993,53 @@ lot of new non-zero entries in the matrix!\n" << endl;
           cout << "dof " << i << " not used, but coupling-type = " << ctofdof[i] << endl;
       }
 
-
-    cout << "check dofs" << endl;
+    
+    // cout << "check dofs" << endl;
     for(auto vb : {VOL,BND,BBND})
       for (ElementId id : ma->Elements(vb))
 	{
 	  GetDofNrs (id, dnums);
 	  for (auto d : dnums)
-	    if (d < 0 || d >= ndof)
+	    if (IsRegularDof(d) && d >= ndof)
 	      cout << "dof out of range: " << d << endl;
 	}
   }
 
-
+  void FESpace :: SetIrregularDofNrs (Array<DofId> & dnums) const
+  {
+    for (DofId & d : dnums)
+      if (IsRegularDof(d))
+        {
+          auto ct = GetDofCouplingType(d);
+          if (ct == UNUSED_DOF) d = NO_DOF_NR;
+          if (ct == HIDDEN_DOF) d = NO_DOF_NR_CONDENSE;
+        }
+  }
+  
+  
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
-    ArrayMem<int,100> alldnums; 
-    GetDofNrs(ElementId(VOL,elnr), alldnums);
+    GetDofNrs(ElementId(VOL,elnr),dnums,ctype);
+  }
 
+  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(ei, alldnums);
     dnums.SetSize(0);
+
     if (ctofdof.Size() == 0)
       {
 	if ( (INTERFACE_DOF & ctype) != 0)
           dnums = alldnums;
       }
     else
-      {
-        /*
-	for (int i = 0; i < alldnums.Size(); i++)
-	  if ( (ctofdof[alldnums[i]] & ctype) != 0)
-	    dnums.Append(alldnums[i]);
-        */
         for (auto d : alldnums)
 	  if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
             dnums.Append(d);
       }
-  }
 
-  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  void FESpace :: GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const
   {
     ArrayMem<int,100> alldnums; 
     GetDofNrs(ei, alldnums);
@@ -970,13 +1048,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ctofdof.Size() == 0)
       {
         if ( (INTERFACE_DOF & ctype) != 0)
+        {
           dnums = alldnums;
+          for (int i : Range(alldnums.Size()))
+            dnums[i] = i;
+      }
       }
     else
-      for (auto d : alldnums)
+      for (int i : Range(alldnums.Size()))
+      {
+        auto d = alldnums[i];
         if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
-          dnums.Append(d);
+          dnums.Append(i);
+      }
   }
+
 
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
@@ -1076,6 +1162,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return bli;
   }
 
+    /*
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(BND,selnr),lh));
@@ -1085,7 +1172,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
-
+*/
+    
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
   {
     switch (type)
@@ -1138,6 +1226,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
 
+  Array<MemoryUsage> FESpace :: GetMemoryUsage () const
+  {
+    Array<MemoryUsage> mu;
+    mu += { "coupling types", ctofdof.Size()*sizeof(COUPLING_TYPE), 1 };
+    return mu;
+  }
+
+  
   /*
   size_t FESpace :: GetNDofLevel (int level) const
   {
@@ -1360,12 +1456,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
   void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
+
     definedon[vb].SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
       definedon[vb][i] = defon.Test(i);
 
     if (low_order_space)
       low_order_space -> SetDefinedOn (vb, defon);
+
+    timestamp = 0;
   }
 
   void FESpace :: SetDirichletBoundaries (const BitArray & dirbnds)
@@ -1549,11 +1648,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case UNUSED_DOF: ost << "unused"; break;
       case HIDDEN_DOF:  ost << "hidden"; break;
       case LOCAL_DOF:  ost << "local"; break;
-      case CONDENSATABLE_DOF:  ost << "condensable"; break;
+      case CONDENSABLE_DOF:  ost << "condensable"; break;
       case INTERFACE_DOF: ost << "interface"; break;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
       case EXTERNAL_DOF: ost << "external"; break;
+      case VISIBLE_DOF: ost << "visible"; break;
       case ANY_DOF: ost << "any"; break;
       };
     return ost;
@@ -1586,7 +1686,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetDofNrs (ni, dnums);
 	  for (auto d : dnums)
-	    if (d != -1) dofnodes[d] = ni;
+	    if (IsRegularDof(d)) dofnodes[d] = ni;
 	} 
 
     paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
@@ -1614,9 +1714,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (auto el : Elements(reg.VB()))
       if (reg.Mask().Test(el.GetIndex()))
         for (auto d : el.GetDofs())
-          if (d != -1)
+          if (IsRegularDof(d))
             ba.Set(d);
-    return move(ba);
+    return ba;
   }
   
 
@@ -1629,7 +1729,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     name="NodalFESpace";
     
-    prol = make_shared<LinearProlongation> (*this);
+    prol = make_shared<LinearProlongation> (GetMeshAccess());
 
     if (order >= 2)
       {
@@ -1785,7 +1885,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         SetNDof(ndof);
       }
 
-    prol->Update();
+      prol->Update(*this);
 
     if (dirichlet_boundaries.Size())
       {
@@ -1793,8 +1893,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_dofs.Clear();
 	for (auto el : Elements(BND))
           if (dirichlet_boundaries[el.GetIndex()])
-            for (int d : el.GetDofs())
-              if (d != -1) dirichlet_dofs.Set (d);
+            for (DofId d : el.GetDofs())
+              if (IsRegularDof(d)) dirichlet_dofs.Set (d);
       }
   }
 
@@ -2240,20 +2340,55 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void SurfaceElementFESpace :: Update(LocalHeap & lh)
   {
     // const MeshAccess & ma = GetMeshAccess();
-
-    while (ma->GetNLevels() > ndlevel.Size())
+    /*
+      while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma->GetNSE());
+    */
+    SetNDof (n_el_dofs*ma->GetNE(BND));
   }
-
-  const FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, LocalHeap & lh) const
+  
+  FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    throw Exception ("SurfaceElementFESpace::GetFE not available");
+    auto et = ma->GetElement(ei).GetType();
+    if (ei.IsBoundary())
+      {
+        if (order == 0)
+          switch (et)
+            {
+            case ET_SEGM: return * new (lh) ScalarFE<ET_SEGM,0>;
+            case ET_TRIG: return * new (lh) ScalarFE<ET_TRIG,0>;
+            case ET_QUAD: return * new (lh) ScalarFE<ET_QUAD,0>;
+            default:
+              ;
+            }
+        else if (order == 1)
+          switch (et)
+            {
+            case ET_SEGM: return * new (lh) FE_Segm1;
+            case ET_TRIG: return * new (lh) ScalarFE<ET_TRIG,1>;
+            case ET_QUAD: return * new (lh) ScalarFE<ET_QUAD,1>;
+            default:
+              ;
+            }
+        else if (order == 2)
+          switch (et)
+            {
+            case ET_SEGM: return * new (lh) FE_Segm2;
+            case ET_TRIG: return * new (lh) FE_Trig2HB;
+            case ET_QUAD: throw Exception("SurfaceFESpace, second order quad not here");
+              // return * new (lh) ScalarFE<ET_QUAD,1>;
+            default:
+              ;
+            }
+      }
+    return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                    { return * new (lh) DummyFE<type.ElementType()>(); });
   }
-
+  
   
   void SurfaceElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if(ei.VB()!=BND) {dnums.SetSize (0); return; }
+    if(ei.VB()!=BND) {dnums.SetSize0 (); return; }
     if (order == 0)
       {
 	dnums.SetSize(1);
@@ -2302,11 +2437,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
   }
   
+    /*
   size_t SurfaceElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
+*/
 
 
 
@@ -2424,7 +2560,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     // cout << "AtomicDofs = " << endl << is_atomic_dof << endl;
 
-    prol -> Update();
+    prol -> Update(*this);
 
     UpdateCouplingDofArray();
 
@@ -2481,7 +2617,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         external_free_dofs = make_shared<BitArray>(GetNDof());
         *external_free_dofs = *free_dofs;
         for (int i = 0; i < ctofdof.Size(); i++)
-          if (ctofdof[i] & CONDENSATABLE_DOF)
+          if (ctofdof[i] & CONDENSABLE_DOF)
             external_free_dofs->Clear(i);
 
 
@@ -2499,9 +2635,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ctofdof.SetSize(this->GetNDof());
 
     for (int i = 0; i < spaces.Size(); i++)
-      for (int j=0; j< spaces[i]->GetNDof();j++)
-	ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);	
-
+      {
+        if (spaces[i] -> CouplingTypeArrayAvailable())
+          for (int j=0; j< spaces[i]->GetNDof();j++)
+            ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);
+        else
+          ctofdof.Range(cummulative_nd[i], cummulative_nd[i+1]) = WIREBASKET_DOF;
+      }
     // *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 
@@ -2516,9 +2656,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
+  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2529,8 +2669,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto j : Range(hdnums))
           {
-            int val = hdnums[j];
-            if (val != -1)
+            DofId val = hdnums[j];
+            if (IsRegularDof(val))
               val += base_cum;
             dnums[base+j] = val;
           }
@@ -2539,7 +2679,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2550,8 +2690,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto j : Range(hdnums))
           {
-            int val = hdnums[j];
-            if (val != -1)
+            DofId val = hdnums[j];
+            if (IsRegularDof(val))
               val += base_cum;
             dnums[base+j] = val;
           }
@@ -2561,16 +2701,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    ArrayMem<int,500> hdnums;
+    ArrayMem<DofId,500> hdnums;
     dnums.SetSize(0);
     for (int i = 0; i < spaces.Size(); i++)
       {
 	spaces[i]->GetVertexDofNrs (vnr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2582,10 +2722,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetEdgeDofNrs (ednr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2597,10 +2737,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetFaceDofNrs (fanr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
 
@@ -2613,12 +2753,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	spaces[i]->GetInnerDofNrs (elnr, hdnums);
 	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
+	  if (IsRegularDof(hdnums[j]))
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
-	    dnums.Append (-1);
+	    dnums.Append (hdnums[j]);
       }
   }
+  
+  void CompoundFESpace :: GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, 
+                                                COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,500> hdnums;
+    dnums.SetSize(0);
+    int offset = 0;
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+        spaces[i]->GetElementDofsOfType (ei, hdnums, ctype);
+        for (int j = 0; j < hdnums.Size(); j++)
+          dnums.Append (hdnums[j]+offset);
+
+        if (i+1 < spaces.Size())
+        {
+          spaces[i]->GetDofNrs (ei, hdnums);
+          offset += hdnums.Size();
+        }
+      }      
+  }
+
   
 
   void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,
@@ -2773,9 +2934,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpaceClasses :: 
   AddFESpace (const string & aname,
-	      shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags))
+	      shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags),
+              DocInfo (*getdocu)())
   {
-    fesa.Append (make_shared<FESpaceInfo> (aname, acreator));
+    fesa.Append (make_shared<FESpaceInfo> (aname, acreator, getdocu));
   }
 
   const shared_ptr<FESpaceClasses::FESpaceInfo> 

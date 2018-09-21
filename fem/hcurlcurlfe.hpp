@@ -34,16 +34,19 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
-    //virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
-    //                                     BareSliceMatrix<SIMD<double>> shapes) const = 0;
-    
-    //virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
-    //                              BareSliceVector<> coefs,
-    //                              BareSliceMatrix<SIMD<double>> values) const = 0;
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape) const = 0;
 
-    //virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
-    //                              BareSliceMatrix<SIMD<double>> values,
-    //                              BareSliceVector<> coefs) const = 0;
+    virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
+                                         BareSliceMatrix<SIMD<double>> shapes) const = 0;
+    
+    virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
+                                  BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const = 0;
+
+    virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
+                                  BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const = 0;
   };
 
   template <int D,typename VEC,typename MAT>
@@ -68,16 +71,44 @@ namespace ngfem
   }
 
   template <typename T>
-  Vec<6> SymDyadProd(AutoDiff<3,T> a, AutoDiff<3,T> b)
+  Vec<6, AutoDiff<3,T>> SymDyadProd(AutoDiff<3,T> a, AutoDiff<3,T> b)
   {
-    return Vec<6>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),2*a.DValue(2)*b.DValue(2), a.DValue(1)*b.DValue(2)+a.DValue(2)*b.DValue(1), a.DValue(0)*b.DValue(2)+a.DValue(2)*b.DValue(0),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
+    return Vec<6, AutoDiff<3,T>>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),2*a.DValue(2)*b.DValue(2), a.DValue(1)*b.DValue(2)+a.DValue(2)*b.DValue(1), a.DValue(0)*b.DValue(2)+a.DValue(2)*b.DValue(0),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
   }
 
   template <typename T>
-  Vec<3> SymDyadProd(AutoDiff<2,T> a, AutoDiff<2,T> b)
+  Vec<3,AutoDiff<2,T>> SymDyadProd(AutoDiff<2,T> a, AutoDiff<2,T> b)
   {
-    return Vec<3>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
+    return Vec<3,AutoDiff<2,T>>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
   }
+
+
+  //------------------REGGE_SHAPE---------------------
+  template <int D, typename T> class T_REGGE_Shape;
+  template <typename T> class T_REGGE_Shape<2,T>
+  {
+    Vec<3,AutoDiff<2,T>> u;
+  public:
+    T_REGGE_Shape  (Vec<3,AutoDiff<2,T>> au) : u(au) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u(0).Value(), u(1).Value(), u(2).Value()); }
+    /*0 2
+      2 1*/
+    Vec<2,T> CurlShape() { return Vec<2,T> (u(2).DValue(0)-u(0).DValue(1), u(1).DValue(0)-u(2).DValue(1)); }
+  };
+  template <typename T> class T_REGGE_Shape<3,T>
+  {
+    Vec<6,AutoDiff<3,T>> u;
+  public:
+    T_REGGE_Shape  (Vec<6,AutoDiff<3,T>> au) : u(au) { ; }
+    Vec<6,T> Shape() { return Vec<6,T> (u(0).Value(), u(1).Value(), u(2).Value(), u(3).Value(), u(4).Value(), u(5).Value()); }
+    /*0 5 4
+      5 1 3
+      4 3 2*/
+    Vec<9,T> CurlShape() { return Vec<9,T> (u(4).DValue(1)-u(5).DValue(2), -u(4).DValue(0)+u(0).DValue(2), u(5).DValue(0)-u(0).DValue(1),
+					    u(3).DValue(1)-u(1).DValue(2), -u(3).DValue(0)+u(5).DValue(2), u(1).DValue(0)-u(5).DValue(1),
+					    u(2).DValue(1)-u(3).DValue(2), -u(2).DValue(0)+u(4).DValue(2), u(3).DValue(0)-u(4).DValue(1)); }
+  };
+  //---------------------------------------------------
 
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
 
@@ -89,6 +120,7 @@ namespace ngfem
   protected:
     enum { DIM = ET_trait<ET>::DIM };
     enum { DIM_STRESS = (DIM*(DIM+1))/2 };
+    enum { DIM_DMAT = 7*DIM-12 };
     
     using VertexOrientedFE<ET>::vnums;
     using HCurlCurlFiniteElement<ET_trait<ET>::DIM>::ndof;
@@ -130,9 +162,9 @@ namespace ngfem
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
         adp(i) = AutoDiff<DIM>(ip(i),i);
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, Vec<DIM_STRESS> val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val;
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
     }
 
@@ -143,9 +175,9 @@ namespace ngfem
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
    
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, Vec<DIM_STRESS> val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val;
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
     }
 
@@ -154,10 +186,217 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([shape](int nr,Vec<DIM_STRESS> val)
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([shape](int nr,auto val)
       {
-        VecToSymMat<DIM> (val, shape.Row(nr));
+        VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
       }));
+    }
+
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+                                     BareSliceMatrix<double> shape) const override
+    {
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM>> addp;
+      for (int i=0; i<DIM; i++)
+      {
+        addp[i] = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+
+      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      {
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
+        {
+          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+        }));
+      }
+      else // curved element
+      {
+        throw Exception("CalcMappedCurlShape not implemented for curved elements!");
+      }
+    }
+
+    template <int DIMSPACE>
+    void CalcMappedShape_Matrix2 (const SIMD_MappedIntegrationRule<DIM,DIMSPACE> & mir, 
+                                 BareSliceMatrix<SIMD<double>> shapes) const
+    {
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto jacI = mir[i].GetJacobianInverse();
+          
+          
+          Vec<DIM_STRESS,SIMD<double>> hv;
+          Mat<DIM,DIM,SIMD<double>> mat;
+          // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
+          SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
+          FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
+          for (int i = 0; i < DIM_STRESS; i++)
+            {
+              hv = SIMD<double>(0.0);
+              hv(i) = SIMD<double>(1.0);
+              VecToSymMat<DIM> (hv, mat);
+              Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
+                (Trans(jacI) * mat * jacI);
+              for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
+                trans(j,i) = physmat(j);
+            }
+          
+          
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          
+          this->Cast() -> T_CalcShape (addp,
+                                       SBLambda ([i,shapes,trans] (size_t j, auto val) 
+                                                 {
+                                                 
+                                                   Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
+                                                   transvec = trans * val.Shape();
+                                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                                     shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
+                                                 }));
+        }
+    }
+
+      
+    virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & bmir, 
+                                         BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      Iterate<4-DIM>
+        ([this, &bmir, shapes](auto CODIM) LAMBDA_INLINE
+         {
+           constexpr int CD = CODIM.value;
+           constexpr int DIMSPACE = DIM+CD;
+           if (bmir.DimSpace() == DIMSPACE)
+             {
+               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+               this->CalcMappedShape_Matrix2 (mir, shapes);
+
+#ifdef XXX
+               
+               for (size_t i = 0; i < mir.Size(); i++)
+                 {
+                   auto jacI = mir[i].GetJacobianInverse();
+           
+
+                   Vec<DIM_STRESS,SIMD<double>> hv;
+                   Mat<DIM,DIM,SIMD<double>> mat;
+                   // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
+                   SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
+                   FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
+                   for (int i = 0; i < DIM_STRESS; i++)
+                     {
+                       hv = SIMD<double>(0.0);
+                       hv(i) = SIMD<double>(1.0);
+                       VecToSymMat<DIM> (hv, mat);
+                       Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
+                         (Trans(jacI) * mat * jacI);
+                       for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
+                         trans(j,i) = physmat(j);
+                     }
+                   
+          
+                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+
+                   this->Cast() -> T_CalcShape (addp,
+                                                SBLambda ([i,shapes,trans] (size_t j, auto val) LAMBDA_INLINE
+                                                    {
+                                                      
+                                                      Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
+                                                      transvec = trans * val.Shape();
+                                                      for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                                        shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
+                                                    }));
+                 }
+#endif
+             }
+         });
+    }
+
+
+    virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & bmir,
+                                  BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const override
+    {
+      for (size_t i = 0; i < bmir.Size(); i++)
+        {
+          double *pcoefs = &coefs(0);
+          const size_t dist = coefs.Dist();
+          
+          Vec<DIM_STRESS,SIMD<double>> sum(0.0);
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          
+          Cast() -> T_CalcShape (addp,
+                                 SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
+                                           {
+                                             sum += (*pcoefs)*val.Shape();
+                                             pcoefs += dist;
+                                           }));
+
+          Mat<DIM,DIM,SIMD<double>> summat;
+          VecToSymMat<DIM> (sum, summat);
+          
+          Iterate<4-DIM>
+            ([values,&bmir,i,summat](auto CODIM)
+             {
+               constexpr auto DIMSPACE = DIM+CODIM.value;
+               if (bmir.DimSpace() == DIMSPACE)
+                 {
+                   auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+                   auto jacI = mir[i].GetJacobianInverse();
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =  (Trans(jacI) * summat * jacI);
+                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                     values(k,i) = physmat(k);
+                 }
+             });
+        }
+    }
+
+    virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & bmir,
+                                  BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const override
+    {
+       for (size_t i = 0; i < bmir.Size(); i++)
+        {
+          Mat<DIM,DIM,SIMD<double>> mat;
+          
+          Iterate<4-DIM>
+            ([&bmir,i,&mat,values](auto CODIM)
+             {
+               constexpr auto DIMSPACE = DIM+CODIM.value;
+               if (bmir.DimSpace() == DIMSPACE)
+                 {
+                   auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+
+                   auto jacI = mir[i].GetJacobianInverse();
+
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat;
+                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                     physmat(k) = values(k,i);
+                   mat =  jacI * physmat * Trans(jacI);
+                 }
+             });
+          
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          double *pcoefs = &coefs(0);
+          const size_t dist = coefs.Dist();
+
+          Cast() -> T_CalcShape (addp,
+                                 SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
+                                           {
+                                             Mat<DIM,DIM,SIMD<double>> mat2;
+                                             VecToSymMat<DIM> (val.Shape(), mat2);
+                                             
+                                             SIMD<double> sum = 0.0;
+                                             for (size_t k = 0; k < DIM*DIM; k++)
+                                               sum += mat(k) * mat2(k);
+                                             
+                                             *pcoefs += HSum(sum);
+                                             pcoefs += dist;
+                                           }));
+        }
     }
    
   };
@@ -212,13 +451,11 @@ namespace ngfem
           INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort(i,vnums);
 	  AutoDiff<2,T> ls = ddlami[e[0]], le = ddlami[e[1]];
 	  
-          Vec<3> symdyadic = SymDyadProd(ls,le);
+          Vec<3,AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
 
-          LegendrePolynomial::EvalScaled(order, ls.Value()-le.Value(),ls.Value()+le.Value(), SBLambda([symdyadic, &ii, shape] (size_t nr, double val)
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
-                              Vec<3> value = val*symdyadic;
-                              shape[ii] = value;
-                              ii++;
+                              shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
                             }));
         }
 
@@ -228,26 +465,22 @@ namespace ngfem
 	  INT<4> f = ET_trait<ET_TRIG>::GetFaceSort(0, vnums); 
 	  AutoDiff<2,T> ls = ddlami[f[0]], le = ddlami[f[1]], lt = ddlami[f[2]];
 	  
-	  Vec<3> symdyadic1 = lt.Value()*SymDyadProd(ls,le);
-	  Vec<3> symdyadic2 = ls.Value()*SymDyadProd(lt,le);
-	  Vec<3> symdyadic3 = le.Value()*SymDyadProd(ls,lt);
+	  Vec<3,AutoDiff<2,T>> symdyadic1 = lt*SymDyadProd(ls,le);
+	  Vec<3,AutoDiff<2,T>> symdyadic2 = ls*SymDyadProd(lt,le);
+	  Vec<3,AutoDiff<2,T>> symdyadic3 = le*SymDyadProd(ls,lt);
           
-	  DubinerBasis3::Eval(order-1, ls.Value(),le.Value(),
-			      SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, double val)
+	  DubinerBasis3::Eval(order-1, ls,le,
+			      SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
 				       {
-					 Vec<3> value = val*symdyadic1;
-					 shape[ii] = value;
-					 ii++;
-					 value = val*symdyadic2;
-					 shape[ii] = value;
-					 ii++;
-					 value = val*symdyadic3;
-					 shape[ii] = value;
-					 ii++;
+					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic1);
+					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic2);
+					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic3);
 				       }));
 	}
       
     };
+
+    
   };
   
   /*template <> class HCurlCurlFE<ET_QUAD> : public T_HCurlCurlFE<ET_QUAD> 
@@ -998,13 +1231,11 @@ namespace ngfem
           INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
           AutoDiff<3,T> ls = lam[e[0]], le = lam[e[1]];
 
-          Vec<6> symdyadic = SymDyadProd(ls,le);
+          Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(ls,le);
 
-          LegendrePolynomial::EvalScaled(order, ls.Value()-le.Value(),ls.Value()+le.Value(), SBLambda([symdyadic, &ii, shape] (size_t nr, double val)
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
-                              Vec<6> value = val*symdyadic;
-                              shape[ii] = value;
-                              ii++;
+                              shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
                             }));
         }
 
@@ -1015,22 +1246,16 @@ namespace ngfem
               INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
               AutoDiff<3,T> ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
               
-              Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);
-              Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);
-              Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);
+              Vec<6, AutoDiff<3,T>> symdyadic1 = lt*SymDyadProd(ls,le);
+              Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
+              Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
               
-              DubinerBasis3::Eval(order-1, ls.Value(),le.Value(),
-                                  SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, double val)
+              DubinerBasis3::Eval(order-1, ls,le,
+                                  SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
                                            {
-                                             Vec<6> value = val*symdyadic1;
-                                             shape[ii] = value;
-                                             ii++;
-                                             value = val*symdyadic2;
-                                             shape[ii] = value;
-                                             ii++;
-                                             value = val*symdyadic3;
-                                             shape[ii] = value;
-                                             ii++;
+                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
                                            }));
             }
         }
@@ -1039,50 +1264,38 @@ namespace ngfem
         {
           AutoDiff<3,T> li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
 
-          Vec<6> symdyadic1 = li.Value()*lj.Value()*SymDyadProd(lk,ll);
-          Vec<6> symdyadic2 = lj.Value()*lk.Value()*SymDyadProd(ll,li);
-          Vec<6> symdyadic3 = lk.Value()*ll.Value()*SymDyadProd(li,lj);
-          Vec<6> symdyadic4 = ll.Value()*li.Value()*SymDyadProd(lj,lk);
-          Vec<6> symdyadic5 = li.Value()*lk.Value()*SymDyadProd(lj,ll);
-          Vec<6> symdyadic6 = lj.Value()*ll.Value()*SymDyadProd(li,lk);
+          Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
+          Vec<6, AutoDiff<3,T>> symdyadic2 = lj*lk*SymDyadProd(ll,li);
+          Vec<6, AutoDiff<3,T>> symdyadic3 = lk*ll*SymDyadProd(li,lj);
+          Vec<6, AutoDiff<3,T>> symdyadic4 = ll*li*SymDyadProd(lj,lk);
+          Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
+          Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
 
           int order_inner = order;
 
           LegendrePolynomial leg;
           JacobiPolynomialAlpha jac1(1);    
           leg.EvalScaled1Assign 
-            (order_inner-2, lam[2].Value()-lam[3].Value(), lam[2].Value()+lam[3].Value(),
-             SBLambda ([&lam,order_inner,&jac1, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t k, double polz) LAMBDA_INLINE
+            (order_inner-2, lam[2]-lam[3], lam[2]+lam[3],
+             SBLambda ([&lam,order_inner,&jac1, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
                        {
                          // JacobiPolynomialAlpha jac(2*k+1);
                          JacobiPolynomialAlpha jac2(2*k+2);
                          
                          jac1.EvalScaledMult1Assign
-                           (order_inner-2-k, lam[1].Value()-lam[2].Value()-lam[3].Value(), 1-lam[0].Value(), polz, 
-                            SBLambda ([k,order_inner,&lam,&jac2, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6] (size_t j, double polsy) LAMBDA_INLINE
+                           (order_inner-2-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+                            SBLambda ([k,order_inner,&lam,&jac2, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
                                       {
                                         // JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                        jac2.EvalMult(order_inner-2 - k - j, 2 * lam[0].Value() - 1, polsy, 
-                                                      SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, double val) LAMBDA_INLINE
+                                        jac2.EvalMult(order_inner-2 - k - j, 2 * lam[0] - 1, polsy, 
+                                                      SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val) LAMBDA_INLINE
                                                                {
-                                                                 Vec<6> value = val*symdyadic1;
-                                                                 shape[ii] = value;
-                                                                 ii++;
-                                                                 value = val*symdyadic2;
-                                                                 shape[ii] = value;
-                                                                 ii++;
-                                                                 value = val*symdyadic3;
-                                                                 shape[ii] = value;
-                                                                 ii++;
-                                                                 value = val*symdyadic4;
-                                                                 shape[ii] = value;
-                                                                 ii++;
-                                                                 value = val*symdyadic5;
-                                                                 shape[ii] = value;
-                                                                 ii++;
-                                                                 value = val*symdyadic6;
-                                                                 shape[ii] = value;
-                                                                 ii++;
+                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
+                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
+                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
+                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);
                                                                }));
                                         jac2.IncAlpha2();
                                       }));
@@ -1252,6 +1465,8 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+      BareSliceMatrix<double> shape) const = 0;
   };
 
 
@@ -1265,6 +1480,7 @@ namespace ngfem
   protected:
     enum { DIM = ET_trait<ET>::DIM };
     enum { DIM_STRESS = ((DIM+2)*(DIM+1))/2 };
+    enum { DIM_DMAT = 7*DIM-5 };
     
     using VertexOrientedFE<ET>::vnums;
     using HCurlCurlSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
@@ -1282,7 +1498,7 @@ namespace ngfem
       order_inner = aorder;
     }
     
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HCurlCurlSurfaceFE<ET> * Cast() const { return static_cast<const HCurlCurlSurfaceFE<ET>*> (this); } 
     
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
@@ -1293,7 +1509,7 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
@@ -1302,15 +1518,15 @@ namespace ngfem
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([shape] (int nr, Vec<DIM_STRESS>& val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([shape] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val;
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
     }
 
 
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
@@ -1319,12 +1535,36 @@ namespace ngfem
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([shape](int nr, Vec<DIM_STRESS>& val)//Capture
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([shape](int nr, auto val)//Capture
       {
-        Vec<DIM_STRESS> vecshape = val;
+        Vec<DIM_STRESS> vecshape = val.Shape();
         BareVector<double> matshape = shape.Row(nr);
         VecToSymMat<DIM+1> (vecshape, matshape);
       }));
+    }
+
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+                                     BareSliceMatrix<double> shape) const override
+    {
+      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
+      for (int i=0; i<DIM+1; i++)
+      {
+        addp[i] = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+
+      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      {
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
+        {
+          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+        }));
+      }
+      else // curved element
+      {
+        throw Exception("CalcMappedCurlShape not implemented for curved elements!");
+      }
     }
 
 
@@ -1357,14 +1597,12 @@ namespace ngfem
       if(vnums[es] > vnums[ee]) swap (es,ee);
       AutoDiff<2,T> ls = ddlami[es],le = ddlami[ee];
    
-      Vec<3> symdyadic = SymDyadProd(ls,le);
+      Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
           
-      LegendrePolynomial::EvalScaled(order, ls.Value()-le.Value(),ls.Value()+le.Value(),
-                                     SBLambda([shape, &ii,symdyadic] (size_t nr, double val)
+      LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+                                     SBLambda([shape, &ii,symdyadic] (size_t nr, auto val)
                                               {
-                                                Vec<3> value = val*symdyadic;
-                                                shape[ii] = value;
-                                                ii++;
+                                                shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
                                               }));
       
     };
@@ -1421,15 +1659,13 @@ namespace ngfem
         {
           INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
           AutoDiff<3,T> ls = lx[e[0]], le = lx[e[1]];
-          Vec<6> symdyadic =  SymDyadProd(ls,le);
+          Vec<6, AutoDiff<3,T>> symdyadic =  SymDyadProd(ls,le);
               
-          LegendrePolynomial::EvalScaled(order, ls.Value()-le.Value(),ls.Value()+le.Value(),
-                                         SBLambda([shape,symdyadic, &ii] (size_t nr, double val)
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+                                         SBLambda([shape,symdyadic, &ii] (size_t nr, auto val)
                                                   {
-                                                    Vec<6> value = val*symdyadic;
-                                                    shape[ii] = value;
-                                                    ii++;
-                                                  }));
+                                                    shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
+						  }));
         }
 
 
@@ -1438,22 +1674,16 @@ namespace ngfem
           INT<4> f =  ET_trait<ET_TRIG>::GetFaceSort(0, vnums);
           
           AutoDiff<3,T> ls = lx[f[0]], le = lx[f[1]], lt = lx[f[2]];
-          Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);
-          Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);
-          Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);
+          Vec<6, AutoDiff<3,T>> symdyadic1 = lt*SymDyadProd(ls,le);
+          Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
+          Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
           
-          DubinerBasis3::Eval(order-1, ls.Value(),le.Value(),
-                              SBLambda([shape, &ii, symdyadic1, symdyadic2, symdyadic3] (size_t nr, double val)
+          DubinerBasis3::Eval(order-1, ls,le,
+                              SBLambda([shape, &ii, symdyadic1, symdyadic2, symdyadic3] (size_t nr, auto val)
                                        {
-                                         Vec<6> value = val*symdyadic1;
-                                         shape[ii] = value;
-                                         ii++;
-                                         value = val*symdyadic2;
-                                         shape[ii] = value;
-                                         ii++;
-                                         value = val*symdyadic3;
-                                         shape[ii] = value;
-                                         ii++;
+                                         shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                         shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                         shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
                                        }));
         }
      

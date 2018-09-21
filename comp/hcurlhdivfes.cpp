@@ -294,7 +294,7 @@ namespace ngcomp
       }
     
     
-    prol->Update();
+    prol->Update(*this);
     UpdateCouplingDofArray();
   }
 
@@ -2926,7 +2926,8 @@ namespace ngcomp
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("hcurl", NedelecFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("hcurl", NedelecFESpace::Create,
+                                      NedelecFESpace::GetDocu);
     }
 
     

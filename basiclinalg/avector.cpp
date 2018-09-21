@@ -584,6 +584,8 @@ namespace ngbla
     SIMD<double> s3 = HAdd (sum31.Data(), sum32.Data(), sum33.Data(), sum34.Data());
     return make_tuple(s1,s2,s3);
   }
+
+
 #endif
   
 
@@ -1357,7 +1359,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
   void AddABtSymV1 (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
   {
     int i = 0;
@@ -1425,7 +1427,7 @@ namespace ngbla
           }
       }
   }
-
+#endif
 
   /*
     INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
@@ -2519,7 +2521,16 @@ namespace ngbla
     // cout << "err = " << L2Norm(hc-c) << endl;
     }
   */
-#endif
+
+
+#else // AVX
+  
+  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b)
+  {
+    b = Trans(a);    
+  }
+  
+#endif // AVX
 
 
   // ////////////////////////// begin SubAtB  Version 4x12 ///////////////  
@@ -3848,7 +3859,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
   // c = a * Diag (d)
   void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
   {
@@ -3879,7 +3890,8 @@ namespace ngbla
           }
       }
   }
-
+#endif
+  
 
 
   // }

@@ -123,7 +123,7 @@ namespace ngstd
 
   
     /// free memory
-    INLINE ~LocalHeap ()
+    INLINE virtual ~LocalHeap ()
     {
       if (owner)
 	delete [] data;

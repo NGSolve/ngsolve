@@ -34,9 +34,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      //Necessary?
-      mat = 0;
-
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       fel.CalcMappedShape_Matrix (mip,Trans(mat));
@@ -46,9 +43,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      //Necessary?
-      mat = 0;
-
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
@@ -57,11 +51,157 @@ namespace ngcomp
       for(int i=0; i<nd; i++)
         for(int j = 0; j <DIM_DMAT; j++)
           mat(j,i) = shape(i,j);
+    }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
+    }
 
+    using DiffOp<DiffOpIdHCurlCurl<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHCurlCurl<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
     }
   };
 
+  template<int D>
+  class DiffOpCurlHCurlCurl: public DiffOp<DiffOpCurlHCurlCurl<D> >
+  {
+  };
+
+
+  template<>
+  class DiffOpCurlHCurlCurl<2>: public DiffOp<DiffOpCurlHCurlCurl<2> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 2 };
+    enum { DIM_ELEMENT = 2 };
+    enum { DIM_DMAT = 2 };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "curl"; }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlCurlFiniteElement<2> & fel =
+        dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel);
+
+      fel.CalcMappedCurlShape (sip, Trans(mat));
+    }
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<2> & fel =
+        dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel);
+
+      int nd = fel.GetNDof();
+      FlatMatrix<> curlshape(nd, 2, lh);
+      fel.CalcMappedCurlShape (sip, curlshape);
+      for (int i=0; i<nd; i++)
+        for (int j=0; j<2; j++)
+          mat(j,i) = curlshape(i,j);
+    }
+  };
+
+  template<>
+  class DiffOpCurlHCurlCurl<3>: public DiffOp<DiffOpCurlHCurlCurl<3> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 3 };
+    enum { DIM_ELEMENT = 3 };
+    enum { DIM_DMAT = 9 };
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ({3,3}); }
+
+    static string Name() { return "curl"; }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlCurlFiniteElement<3> & fel =
+        dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+
+      fel.CalcMappedCurlShape (sip, Trans(mat));
+    }
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<3> & fel =
+        dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+
+      int nd = fel.GetNDof();
+      FlatMatrix<> curlshape(nd, 9, lh);
+      fel.CalcMappedCurlShape (sip, curlshape);
+      for (int i=0; i<nd; i++)
+        for (int j=0; j<9; j++)
+          mat(j,i) = curlshape(i,j);
+    }
+  };
+
+  
+  class DiffOpCurlHCurlCurlBoundary : public DiffOp<DiffOpCurlHCurlCurlBoundary>
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 3 };
+    enum { DIM_ELEMENT = 2 };
+    enum { DIM_DMAT = 9 };//??????
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ({3,3}); }
+    
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlCurlSurfaceFiniteElement<2> & fel =
+        dynamic_cast<const HCurlCurlSurfaceFiniteElement<2>&> (bfel);
+
+      fel.CalcMappedCurlShape (sip, Trans(mat));
+    }
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      const HCurlCurlSurfaceFiniteElement<2> & fel =
+        dynamic_cast<const HCurlCurlSurfaceFiniteElement<2>&> (bfel);
+
+      int nd = fel.GetNDof();
+      FlatMatrix<> curlshape(nd, 9, lh);
+      fel.CalcMappedCurlShape (sip, curlshape);
+      for (int i=0; i<nd; i++)
+        for (int j=0; j<9; j++)
+          mat(j,i) = curlshape(i,j);
+
+    }
+
+  };
+  
 
   template<int D>
   class DiffOpIdBoundaryHCurlCurl: public DiffOp<DiffOpIdBoundaryHCurlCurl<D> >
@@ -128,14 +268,15 @@ namespace ngcomp
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<1>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<2>>>();
       integrator[VOL] = make_shared<HCurlCurlMassIntegrator<2>> (one);
-      //flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<2>>>();
+      flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<2>>>();
     }
     else
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<2>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<3>>>();
       integrator[VOL] = make_shared<HCurlCurlMassIntegrator<3>> (one);
-      //flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<3>>>();
+      flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<3>>>();
+      flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurlBoundary>>();
     }
   }
 
