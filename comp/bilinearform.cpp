@@ -3557,8 +3557,14 @@ namespace ngcomp
                                            BaseVector & y, LocalHeap & clh) const
   {
     static Timer timer ("Apply Matrix");
-    static Timer timervol ("Apply Matrix - volume");
-    static Timer timerbound ("Apply Matrix - boundary");
+    static Timer timervb[4] = { string("Apply Matrix - volume"),
+                                string("Apply Matrix - boundary"),
+                                string("Apply Matrix - cd2"), 
+                                string("Apply Matrix - cd3") };
+
+    // static Timer timer_loop ("Apply Matrix - all loop elmat");
+    // static Timer timer_applyelmat ("Apply Matrix - elmat");    
+
     static Timer timerDG ("Apply Matrix - DG");
     constexpr int tlevel = 4;
     static Timer timerDGpar ("Apply Matrix - DG par", tlevel);
@@ -3583,99 +3589,48 @@ namespace ngcomp
       AddMatrixTP(val,x,y,clh);
       return;
     }
-
-
     
     if (!MixedSpaces())
-
       {
-        // bool hasbound = VB_parts[BND].Size();
-        // bool hasinner = VB_parts[VOL].Size();
-        // bool hasskeletonbound = VB_skeleton_parts[BND].Size();
-        // bool hasskeletoninner = VB_skeleton_parts[VOL].Size();
-
-        /*
-        bool hasbound = false;
-        bool hasinner = false;
-        bool hasskeletonbound = false;
-        bool hasskeletoninner = false;
-
-        for (int j = 0; j < NumIntegrators(); j++)
-          {
-            const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-            if (bfi.BoundaryForm())
-              if (bfi.SkeletonForm())
-                hasskeletonbound = true;
-              else
-                hasbound = true;
-            else
-              if (bfi.SkeletonForm())
-                hasskeletoninner = true; 
-              else
-                hasinner = true;
-          }
-        */      
-
         for (auto vb : { VOL, BND, BBND, BBBND } )
           if (VB_parts[vb].Size())
             {
-              RegionTimer reg (timervol);
+              RegionTimer reg (timervb[vb]);
               
               IterateElements 
                 (*fespace, vb, clh, 
                  [&] (FESpace::Element el, LocalHeap & lh)
                  {
+                   // ThreadRegionTimer reg (timer_loop, TaskManager::GetThreadId());                   
                    auto & fel = el.GetFE();
                    auto & trafo = el.GetTrafo();
                    auto dnums = el.GetDofs();
-                   
+                                      
                    FlatVector<SCAL> elvecx (dnums.Size() * fespace->GetDimension(), lh);
                    FlatVector<SCAL> elvecy (dnums.Size() * fespace->GetDimension(), lh);
-                   
+
                    x.GetIndirect (dnums, elvecx);
                    this->fespace->TransformVec (el, elvecx, TRANSFORM_SOL);
-                   
+
                    for (auto & bfi : VB_parts[vb])
                      {
                        if (!bfi->DefinedOn (el.GetIndex())) continue;
                        if (!bfi->DefinedOnElement (el.Nr())) continue;
 
-                       auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);                       
-                       bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
+                       auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);
+
+                       {
+                         // ThreadRegionTimer reg (timer_applyelmat, TaskManager::GetThreadId());
+                         bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
+                       }
                        
                        this->fespace->TransformVec (el, elvecy, TRANSFORM_RHS);
                        
                        elvecy *= val;
-                       y.AddIndirect (dnums, elvecy, fespace->HasAtomicDofs());  // coloring	                      
+                       y.AddIndirect (dnums, elvecy, fespace->HasAtomicDofs());  // coloring
                      }
                  });
-            } // hasinner
-        
-        
-        /*
-        if (hasbound)
-          {
-            RegionTimer reg (timerbound);
-
-		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-                    
-		    IterateElements 
-		      (*fespace, BND, clh, 
-		       [&] (ElementId ei, LocalHeap & lh)
-                       
-		       {
-                         HeapReset hr(lh);
-                         
-                         const FiniteElement & fel = fespace->GetFE (ei, lh);
-                         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-			 Array<int> dnums (fel.GetNDof(), lh);
-                         fespace->GetDofNrs (ei, dnums);
-                         
-                         ApplyElementMatrix(x,y,val,dnums,eltrans,ei.Nr(),1,cnt,lh,&fel);
-                       });
-                  }
-        */
-
+            } 
         
 
         // if (hasskeletonbound||hasskeletoninner)
