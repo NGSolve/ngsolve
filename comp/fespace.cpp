@@ -231,8 +231,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
     level_updated = -1;
-
-
+    /*
     point = NULL;
     segm = NULL;
     trig = NULL;
@@ -241,7 +240,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     prism = NULL;
     pyramid = NULL;
     hex = NULL;
-    
+    */
+    /*
     dummy_tet = new DummyFE<ET_TET>();
     dummy_pyramid = new DummyFE<ET_PYRAMID>();
     dummy_prism = new DummyFE<ET_PRISM>();
@@ -250,7 +250,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dummy_quad = new DummyFE<ET_QUAD>();
     dummy_segm = new DummyFE<ET_SEGM>();
     dummy_point = new DummyFE<ET_POINT>();
-
+    */
     for(auto vb : {VOL,BND,BBND})
       {
 	evaluator[vb] = nullptr;
@@ -274,6 +274,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   FESpace :: ~FESpace ()
   {
+    /*
     delete tet;
     delete pyramid;
     delete prism;
@@ -282,7 +283,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete quad;
     delete segm;
     delete point;
-
+    */
+    /*
     delete dummy_tet;
     delete dummy_pyramid;
     delete dummy_prism;
@@ -291,7 +293,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_quad;
     delete dummy_segm;
     delete dummy_point;
-
+    */
     // delete paralleldofs;
   }
 
@@ -1004,7 +1006,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      cout << "dof out of range: " << d << endl;
 	}
   }
-
+  /*
   void FESpace :: SetIrregularDofNrs (Array<DofId> & dnums) const
   {
     for (DofId & d : dnums)
@@ -1015,7 +1017,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (ct == HIDDEN_DOF) d = NO_DOF_NR_CONDENSE;
         }
   }
-  
+  */
   
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
@@ -1173,7 +1175,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
 */
-    
+
+  /*
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
   {
     switch (type)
@@ -1189,6 +1192,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     throw Exception ("GetFE: unknown type");
   }
+  */
 
   
   void FESpace :: PrintReport (ostream & ost) const
@@ -2294,19 +2298,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
+      /*
       trig    = new ScalarFE<ET_TRIG,0>;
       quad    = new ScalarFE<ET_QUAD,0>;
       segm    = new FE_Segm0;
-
+      */
       n_el_dofs = 1;
     }
 
     else if (order == 1)
     {
+      /*
       trig    = new ScalarFE<ET_TRIG,1>;
       quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm1;
-	
+      */
       if (ma->GetDimension() == 2)
         n_el_dofs = 2;
       else
@@ -2315,10 +2321,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     else if (order == 2)
     {
+      /*
       trig    = new FE_Trig2HB;
       quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm2;
-
+      */
       if (ma->GetDimension() == 2)
         n_el_dofs = 3;
       else
