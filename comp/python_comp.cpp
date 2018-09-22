@@ -876,22 +876,9 @@ region : ngsolve.comp.Region
 )raw_string"))
 
     .def("SetOrder",
-         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order /*, py::object order_left, py::object order_right*/)
+         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order)
          {
            self->SetOrder (et, order);
-           /*
-           if (py::isinstance<py::int_> (order))
-             {
-               self->SetOrderLeft (et, order.cast<py::int_>());
-               self->SetOrderRight (et, order.cast<py::int_>());
-             }
-           */
-           /*
-           if (py::isinstance<py::int_> (order_left))
-             self->SetOrderLeft (et, order_left.cast<py::int_>());
-           if (py::isinstance<py::int_> (order_right))
-             self->SetOrderRight (et, order_right.cast<int>());
-           */
          },
          py::arg("element_type"),
          py::arg("order"), docu_string(R"raw_string(
@@ -903,13 +890,6 @@ element_type : ngsolve.fem.ET
 
 order : object
   input polynomial order
-
-order_left : object
-  input order_left
-
-order_right : object
-  input order right
-
 )raw_string")
          )
 
