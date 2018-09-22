@@ -124,8 +124,8 @@ ANY                  1 1 1 1 | 15
     Array<bool> dirichlet_vertex;
     Array<bool> dirichlet_edge;
     Array<bool> dirichlet_face;
-
-  
+    
+    /*
     /// Reference - element (low order only)
     FiniteElement * tet;  // = NULL;
     /// Reference - element (low order only)
@@ -142,8 +142,9 @@ ANY                  1 1 1 1 | 15
     FiniteElement * segm;// = NULL;
     /// Reference - element (low order only)
     FiniteElement * point;// = NULL;
-
-
+    */
+    
+    /*
     FiniteElement * dummy_tet; // = new <DummyFE<ET_TET>();
     FiniteElement * dummy_pyramid; // = new DummyFE<ET_PYRAMID>();
     FiniteElement * dummy_prism; // = new DummyFE<ET_PRISM>();
@@ -152,7 +153,8 @@ ANY                  1 1 1 1 | 15
     FiniteElement * dummy_quad; // = new DummyFE<ET_QUAD>();
     FiniteElement * dummy_segm; // = new DummyFE<ET_SEGM>();
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
-
+    */
+    
     /// Evaluator for visualization (new style)
     shared_ptr<DifferentialOperator> evaluator[4];
     /// Evaluator for flux
@@ -217,7 +219,7 @@ ANY                  1 1 1 1 | 15
     Array<INT<3,TORDER>> order_cell_left;
     Array<INT<3,TORDER>> order_cell_right;
     */
-    size_t order_timestamp = 0;
+    // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
     // only a few spaces (lowest order Nedelec) need the transformation
@@ -277,9 +279,10 @@ ANY                  1 1 1 1 | 15
     /// order of finite elements
     int GetOrder () const { return order; }
 
+    /*
     void SetBonusOrder (ELEMENT_TYPE et, int bonus) 
     { et_bonus_order[et] = bonus; }
-
+    */
     void SetOrderPolicy (ORDER_POLICY op)
     {
       order_policy = op;
@@ -306,32 +309,9 @@ ANY                  1 1 1 1 | 15
       et_order_right[et] = order;
     }
     */
-    virtual void SetOrder (NodeId ni, int order); //  { ; }
-    virtual int GetOrder (NodeId ni) const; //  { return 0; }
-    /*
-    {
-      switch (ni.GetType())
-        {
-        case NT_VERTEX:
-          break;
-        case NT_EDGE:
-          if (ni.GetNr() < order_edge.Size())
-            order_edge[ni.GetNr()] = order;
-          break;
-        case NT_FACE:
-          if (ni.GetNr() < order_face_left.Size())
-            order_face_left[ni.GetNr()] = order;
-          if (ni.GetNr() < order_face_right.Size())
-            order_face_right[ni.GetNr()] = order;
-          break;
-        case NT_CELL:
-          // not yet 
-          break;
-        case NT_ELEMENT: case NT_FACET:
-          break;
-        }
-    }
-    */
+    virtual void SetOrder (NodeId ni, int order); 
+    virtual int GetOrder (NodeId ni) const; 
+
     /// how many components
     int GetDimension () const { return dimension; }
 
@@ -505,7 +485,7 @@ ANY                  1 1 1 1 | 15
     /// get dof-nrs of domain or boundary element elnr
     
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
-    void SetIrregularDofNrs (Array<DofId> & dnums) const;
+    // void SetIrregularDofNrs (Array<DofId> & dnums) const;
     
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (Region reg) const;
@@ -611,7 +591,7 @@ ANY                  1 1 1 1 | 15
     ///
     void SetDirichletBoundaries (const BitArray & dirbnds);
     /// Get reference element for tet, prism, trig, etc ..
-    const FiniteElement & GetFE (ELEMENT_TYPE type) const;
+    // const FiniteElement & GetFE (ELEMENT_TYPE type) const;
 
     /// according low-order FESpace (if available)
     FESpace & LowOrderFESpace () { return *low_order_space; }
@@ -877,6 +857,7 @@ ANY                  1 1 1 1 | 15
     template <template <ELEMENT_TYPE ET> class FE>
     void SetDummyFE ()
     {
+      /*
       delete dummy_tet;
       delete dummy_pyramid;
       delete dummy_prism;
@@ -893,6 +874,7 @@ ANY                  1 1 1 1 | 15
       dummy_quad = new FE<ET_QUAD>();
       dummy_segm = new FE<ET_SEGM>();
       dummy_point = new FE<ET_POINT>();
+    */
     }
   };
 

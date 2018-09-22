@@ -1071,9 +1071,9 @@ namespace ngcomp
 
 
 
+  /*
 
-
-
+    // not supported anymore. required fixed-order elements
 
   template <class SCAL>
   void CalcGradient (shared_ptr<MeshAccess> ma,
@@ -1226,6 +1226,6 @@ namespace ngcomp
 			      const FESpace & fesh1,
 			      S_BaseVector<double> & vech1);
 
-
+*/
   
 }
