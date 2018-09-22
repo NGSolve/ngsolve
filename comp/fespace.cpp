@@ -2674,9 +2674,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
+    if (spaces.Size() == 0)
+      {
+        dnums.SetSize0();
+        return;
+      }
+    
+    spaces[0]->GetDofNrs(ei, dnums);
+      
     ArrayMem<DofId,500> hdnums;
-    dnums.SetSize0();
-    for (int i = 0; i < spaces.Size(); i++)
+    for (int i = 1; i < spaces.Size(); i++)
       {
 	spaces[i]->GetDofNrs (ei, hdnums);
         int base = dnums.Size();
