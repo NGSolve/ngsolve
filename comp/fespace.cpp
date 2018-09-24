@@ -1208,9 +1208,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (!free_dofs) return;
 
     ost << "ndof = " << GetNDof() << endl;
-    int ntype[8] = { 0 };
-    // for (int i = 0; i < ctofdof.Size(); i++)
-    // ntype[ctofdof[i]]++;
+    int ntype[16] = { 0 };
+
     for (auto ct : ctofdof) ntype[ct]++;
     if (ntype[UNUSED_DOF]) ost << "unused = " << ntype[UNUSED_DOF] << endl;
     if (ntype[HIDDEN_DOF]) ost << "hidden = " << ntype[HIDDEN_DOF] << endl;
@@ -1238,22 +1237,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  /*
-  size_t FESpace :: GetNDofLevel (int level) const
-  {
-    return GetNDof();
-  } 
-  */
-  
   std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double time;
     std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
-
-    // cout << endl << "timing fespace " << GetName() 
-    //      << (low_order_space ? "" : " low-order")
-    //      << " ..." << endl;
 
     time = RunTiming([&]() {
         ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
@@ -1453,15 +1441,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  if (!IsDirichletDof(i))
 	    creator.Add (i, i);
       }
-    // return shared_ptr<Table<int>> (creator.GetTable());
+
     return make_shared<Table<int>> (creator.MoveTable());
   }
 
     
   void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
-
     definedon[vb].SetSize(defon.Size());
+    
     for (int i = 0; i < defon.Size(); i++)
       definedon[vb][i] = defon.Test(i);
 
@@ -1477,7 +1465,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (low_order_space)
       low_order_space -> SetDirichletBoundaries (dirbnds);
   }
-
 
   shared_ptr<BitArray> FESpace :: GetFreeDofs (bool external) const
   {
@@ -1746,7 +1733,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     hb_defined = flags.GetDefineFlag("hb");
 
-    SetDummyFE<ScalarDummyFE> ();
+    // SetDummyFE<ScalarDummyFE> ();
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
@@ -1862,12 +1849,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  /*
-  size_t NodalFESpace :: GetNDof () const throw()
-  {
-    return ndlevel.Last();
-  }
-  */
   
   void NodalFESpace :: Update(LocalHeap & lh)
   {
@@ -1890,7 +1871,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
       prol->Update(*this);
-
+      
     if (dirichlet_boundaries.Size())
       {
 	dirichlet_dofs.SetSize (GetNDof());
@@ -1914,14 +1895,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
   }
 
-  /*
-  size_t NodalFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-  */
-
-
  
   void NodalFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
@@ -1932,7 +1905,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       
     if (!DefinedOn (ei)) dnums = -1;
   }
-
 
 
   void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
@@ -2044,11 +2016,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     switch (ma->GetElType(ei))
       {
-      case ET_TRIG: return *(new (lh)FE_NcTrig1);
+      case ET_TRIG: return *(new (lh) FE_NcTrig1);
       case ET_SEGM: return *(new (lh) FE_Segm0);
       default: throw Exception ("Element type not available in NonconformingFESpace::GetFE");
       }
   }
+  
   size_t NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
@@ -2160,7 +2133,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 6;
     }
 
-    SetDummyFE<ScalarDummyFE> ();
+    // SetDummyFE<ScalarDummyFE> ();
     static ConstantCoefficientFunction one(1);
 
     if (ma->GetDimension() == 2)
@@ -2270,20 +2243,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
   }
-
-  /*
-  size_t ElementFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-  */
-  
-  /*
-  const FiniteElement & ElementFESpace :: GetSFE (int selnr) const
-  {
-    throw Exception ("ElementFESpace::GetSFE not available");
-  }
-  */
 
 
  
