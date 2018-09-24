@@ -159,6 +159,9 @@ ANY                  1 1 1 1 | 15
     shared_ptr<DifferentialOperator> evaluator[4];
     /// Evaluator for flux
     shared_ptr<DifferentialOperator> flux_evaluator[4];
+
+    SymbolTable<shared_ptr<DifferentialOperator>> additional_evaluators;
+
     /// Evaluator for visualization (old style)
     shared_ptr<BilinearFormIntegrator> integrator[4];
 
@@ -191,34 +194,7 @@ ANY                  1 1 1 1 | 15
     typedef int8_t TORDER;
 
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
-    
-    /*
-      the function space H(curl) has high order basis functions which 
-      are gradients, and additional ones which span the domain of the curl.
-      In general, for function spaces of the de Rham sequence we refer to 
-      functions in the range of the differential operator from the left to 
-      the left sub-space, and functions spanning the domain of the right 
-      differential operator as the right sub-space. 
-      
-      We can give different polynomial orders to the left and the
-      right sub-space.  This allows to define Raviart-Thomas vs BDM
-      elements, or Nedelec-type 1 vs Nedelec-type 2 elements, and
-      more: We can skip all high order gradients in H(curl), or also
-      define a (high-order) div-free H(div) space.
-
-      We can give different orders for the left and right space for different
-      element-types (like trig or quad)
-     */
-    // int et_order_left[30];  // order for range of diff-op from the left 
-    // int et_order_right[30]; // order for domain of diff-op to the right
-
-    /*
-    Array<TORDER> order_edge; 
-    Array<INT<2,TORDER>> order_face_left;
-    Array<INT<2,TORDER>> order_face_right; 
-    Array<INT<3,TORDER>> order_cell_left;
-    Array<INT<3,TORDER>> order_cell_right;
-    */
+  
     // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
@@ -226,6 +202,7 @@ ANY                  1 1 1 1 | 15
     // of element vectors
     bool needs_transform_vec = true;
 
+    
     // move ndof and ndof_level to FESpace base class
   private:
     size_t ndof;
@@ -295,20 +272,7 @@ ANY                  1 1 1 1 | 15
       et_bonus_order[et] = order - this->order;
       // et_order_left[et] = et_order_right[et] = order;
     }
-    /*
-    void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
-    {
-      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
-        order_policy = NODE_TYPE_ORDER;      
-      et_order_left[et] = order;
-    }
-    void SetOrderRight (ELEMENT_TYPE et, TORDER order)
-    {
-      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
-        order_policy = NODE_TYPE_ORDER;
-      et_order_right[et] = order;
-    }
-    */
+
     virtual void SetOrder (NodeId ni, int order); 
     virtual int GetOrder (NodeId ni) const; 
 
@@ -325,7 +289,6 @@ ANY                  1 1 1 1 | 15
     /// number of dofs on the level
     virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
 
-    SymbolTable<shared_ptr<DifferentialOperator>> additional_evaluators;
        
     class Element : public Ngs_Element
     {
@@ -342,7 +305,6 @@ ANY                  1 1 1 1 | 15
 
       INLINE Element (const Element & el) = default;
       INLINE Element (Element && el) = default;
-      // ElementId operator() const { return ei; }
 
       INLINE FlatArray<DofId> GetDofs() const
       {
@@ -409,14 +371,12 @@ ANY                  1 1 1 1 | 15
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
         : IntRange(ar), fes(afes),
           definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
-          // FlatArray<bool>(fes.definedon) : FlatArray<bool>(fes.definedonbound)), 
           vb(avb), mylh(move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
         : IntRange(ar), fes(afes), 
           definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
-          // definedon( (avb==VOL) ? FlatArray<bool> (fes.definedon) : FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
 
@@ -447,13 +407,6 @@ ANY                  1 1 1 1 | 15
       }
     };
 
-    /*
-    ElementRange Elements (VorB vb = VOL, int heapsize = 10000) const
-    {
-      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), LocalHeap(heapsize));
-    }
-    */
-
     ElementRange Elements (VorB vb = VOL, LocalHeap && lh = 10000) const
     {
       // cout << "C++ FESpace::Elements with lh rvalue, name = " << lh.name << endl;
@@ -464,35 +417,18 @@ ANY                  1 1 1 1 | 15
     {
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), lh);
     }
-        
 
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
-      /*
-    [[deprecated("Use GetFE with element-id instead of elnr!")]]    
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
-    [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
-    [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
-*/
-    /// get dof-nrs of the element
-    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<DofId> & dnums) const
-      { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
-    
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
-    // void SetIrregularDofNrs (Array<DofId> & dnums) const;
     
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (Region reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
 
-    // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
-    
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
@@ -508,9 +444,6 @@ ANY                  1 1 1 1 | 15
     virtual void SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const;
     
     void CheckCouplingTypes() const;
-
-    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
       
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
@@ -519,12 +452,6 @@ ANY                  1 1 1 1 | 15
     virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
 
-    /// get dofs on nr'th node of type nt.
-    [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
-    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
-    /// get number of low-order dofs for node of type nt
-    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
-    // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
     // [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]
@@ -539,32 +466,9 @@ ANY                  1 1 1 1 | 15
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
-    /// returns dofs of sourface element
-    [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
-    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
-      { GetDofNrs(ElementId(BND,selnr),dnums); }
-
     bool DefinedOn(VorB vb, int domnr) const
     { return !definedon[vb].Size() || definedon[vb][domnr]; }
 
-    /// is the FESpace defined for this sub-domain nr ?
-    [[deprecated("Use Definedon(VorB,int) instead")]]
-    bool DefinedOn (int domnr) const
-    { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
-    /// is the FESpace defined for this boundary nr ?
-    [[deprecated("Use Definedon(VorB,int) instead")]]
-    bool DefinedOnBoundary (int bnr) const
-    {return !definedon[BND].Size() || definedon[BND][bnr]; }
-
-    /// is the FESpace defined for this sub-domain / boundary nr ?
-    [[deprecated("Use DefinedOn(VorB, int) instead")]]
-    bool DefinedOn (int index, bool bound) const
-    {
-      if (bound)
-        return !definedon[BND].Size() || definedon[BND][index];
-      else
-        return !definedon[VOL].Size() || definedon[VOL][index];
-    }
 
     bool DefinedOn (ElementId id) const
     {
@@ -598,10 +502,6 @@ ANY                  1 1 1 1 | 15
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
-    ///
-    // void SetLowOrderSpace (bool los) { is_low_order_space = los; }
-    ///
-    // bool IsLowOrderSpace () const { return is_low_order_space; }
 
     /// non Dirichlet dofs
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
@@ -648,67 +548,6 @@ ANY                  1 1 1 1 | 15
     bool IsAtomicDof (size_t nr) const { return (is_atomic_dof.Size() != 0) && is_atomic_dof[nr]; }
     bool HasAtomicDofs () const { return is_atomic_dof.Size() != 0; }
 
-    [[deprecated("Use TransformMat with VorB  instead of bool")]]
-    void TransformMat (int elnr, bool boundary,
-		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
-    {
-      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
-    }
-  
-    [[deprecated("Use TransformMat with VorB  instead of bool")]]
-    void TransformMat (int elnr, bool boundary,
-		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
-    {
-      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
-    }
-  
-    [[deprecated("Use TransformVec with VorB  instead of bool")]]
-    void TransformVec (int elnr, bool boundary,
-		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
-    {
-      // VTransformVR (elnr, boundary ? BND : VOL, vec, type);
-      VTransformVR (ElementId(boundary ? BND : VOL, elnr), vec, type);
-    }
-  
-    [[deprecated("Use TransformVec with VorB  instead of bool")]]
-    void TransformVec (int elnr, bool boundary,
-		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
-    {
-      // VTransformVC (elnr, boundary ? BND : VOL, vec, type);
-      VTransformVC (ElementId(boundary ? BND : VOL, elnr), vec, type);      
-    }
-
-    [[deprecated("Use TransformMat with VorB  instead of bool")]]    
-    void TransformMat (int elnr, VorB vb,
-                       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
-    {
-      // VTransformMR (elnr, vb, mat, type);
-      VTransformMR (ElementId(vb, elnr), mat, type);            
-    }
-
-    [[deprecated("Use TransformMat with VorB  instead of bool")]]    
-    void TransformMat (int elnr, VorB vb,
-		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
-    {
-      // VTransformMC (elnr, vb, mat, type);
-      VTransformMC (ElementId(vb, elnr), mat, type);                  
-    }
-
-    [[deprecated("Use TransformVec with VorB  instead of bool")]]        
-    void TransformVec (int elnr, VorB vb,
-		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
-    {
-      // VTransformVR (elnr, vb, vec, type);
-      VTransformVR (ElementId(vb, elnr), vec, type);            
-    }
-
-    [[deprecated("Use TransformVec with VorB  instead of bool")]]            
-    void TransformVec (int elnr, VorB vb,
-		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
-    {
-      // VTransformVC (elnr, vb, vec, type);
-      VTransformVC (ElementId(vb, elnr), vec, type);                  
-    }
 
     bool NeedsTransformVec() const { return needs_transform_vec; }
 
@@ -780,38 +619,16 @@ ANY                  1 1 1 1 | 15
       return evaluator[vb];
     }
 
-    [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
-    shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
-    {
-      if(boundary)
-	return evaluator[BND];
-      else
-	return evaluator[VOL];
-    }
 
-    shared_ptr<DifferentialOperator> GetFluxEvaluator (VorB vb=VOL) const
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (VorB vb = VOL) const
     {
       return flux_evaluator[vb];
     }
 
-    [[deprecated("Use GetFluxEvaluator(VorB) instead of GetFluxEvaluator(bool)!")]]
-    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool boundary) const
-    {
-      if(boundary)
-	return flux_evaluator[BND];
-      else
-	return flux_evaluator[VOL];
-    }
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
     { return additional_evaluators; } 
 
-    /// returns function-evaluator
-    [[deprecated("Use GetIntegrator(VorB) instead of GetIntegrator(bool)!")]]    
-    shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
-    {
-      return integrator[vb];
-    }
 
     shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const;
     /*
@@ -853,11 +670,148 @@ ANY                  1 1 1 1 | 15
     bool timing;
     std::list<std::tuple<std::string,double>> Timing () const;
 
+
+
+
+      /*
+    [[deprecated("Use GetFE with element-id instead of elnr!")]]    
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
+    [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
+    [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
+*/
+    /// get dof-nrs of the element
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<DofId> & dnums) const
+      { GetDofNrs(ElementId(VOL,elnr),dnums); }
+
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+
+    /// get dofs on nr'th node of type nt.
+    [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
+    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
+    /// get number of low-order dofs for node of type nt
+    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
+    // { return lodofs_per_node[nt]; }
+
+    /// returns dofs of sourface element
+    [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
+    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
+      { GetDofNrs(ElementId(BND,selnr),dnums); }
+
+    /// is the FESpace defined for this sub-domain nr ?
+    [[deprecated("Use Definedon(VorB,int) instead")]]
+    bool DefinedOn (int domnr) const
+    { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
+    /// is the FESpace defined for this boundary nr ?
+    [[deprecated("Use Definedon(VorB,int) instead")]]
+    bool DefinedOnBoundary (int bnr) const
+    {return !definedon[BND].Size() || definedon[BND][bnr]; }
+
+    /// is the FESpace defined for this sub-domain / boundary nr ?
+    [[deprecated("Use DefinedOn(VorB, int) instead")]]
+    bool DefinedOn (int index, bool bound) const
+    {
+      if (bound)
+        return !definedon[BND].Size() || definedon[BND][index];
+      else
+        return !definedon[VOL].Size() || definedon[VOL][index];
+    }
+
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]
+    void TransformMat (int elnr, bool boundary,
+		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    {
+      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
+    }
+  
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]
+    void TransformMat (int elnr, bool boundary,
+		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+    {
+      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
+    }
+  
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]
+    void TransformVec (int elnr, bool boundary,
+		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
+    {
+      // VTransformVR (elnr, boundary ? BND : VOL, vec, type);
+      VTransformVR (ElementId(boundary ? BND : VOL, elnr), vec, type);
+    }
+  
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]
+    void TransformVec (int elnr, bool boundary,
+		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+    {
+      // VTransformVC (elnr, boundary ? BND : VOL, vec, type);
+      VTransformVC (ElementId(boundary ? BND : VOL, elnr), vec, type);      
+    }
+
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]    
+    void TransformMat (int elnr, VorB vb,
+                       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    {
+      // VTransformMR (elnr, vb, mat, type);
+      VTransformMR (ElementId(vb, elnr), mat, type);            
+    }
+
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]    
+    void TransformMat (int elnr, VorB vb,
+		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+    {
+      // VTransformMC (elnr, vb, mat, type);
+      VTransformMC (ElementId(vb, elnr), mat, type);                  
+    }
+
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]        
+    void TransformVec (int elnr, VorB vb,
+		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
+    {
+      // VTransformVR (elnr, vb, vec, type);
+      VTransformVR (ElementId(vb, elnr), vec, type);            
+    }
+
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]            
+    void TransformVec (int elnr, VorB vb,
+		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+    {
+      // VTransformVC (elnr, vb, vec, type);
+      VTransformVC (ElementId(vb, elnr), vec, type);                  
+    }
+
+    [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
+    shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
+    {
+      if(boundary)
+	return evaluator[BND];
+      else
+	return evaluator[VOL];
+    }
+
+    [[deprecated("Use GetFluxEvaluator(VorB) instead of GetFluxEvaluator(bool)!")]]
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool boundary) const
+    {
+      if(boundary)
+	return flux_evaluator[BND];
+      else
+	return flux_evaluator[VOL];
+    }
+
+    /// returns function-evaluator
+    [[deprecated("Use GetIntegrator(VorB) instead of GetIntegrator(bool)!")]]    
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
+    {
+      return integrator[vb];
+    }
+    
   protected:
+      /*
     template <template <ELEMENT_TYPE ET> class FE>
     void SetDummyFE ()
     {
-      /*
       delete dummy_tet;
       delete dummy_pyramid;
       delete dummy_prism;
@@ -874,8 +828,8 @@ ANY                  1 1 1 1 | 15
       dummy_quad = new FE<ET_QUAD>();
       dummy_segm = new FE<ET_SEGM>();
       dummy_point = new FE<ET_POINT>();
-    */
     }
+    */
   };
 
 
