@@ -13,6 +13,7 @@
 
 
 #include <fem.hpp>
+#include "tscalarfe_impl.hpp"
 #include "h1lofe.hpp"
 #include "l2hofe.hpp"
 
@@ -617,5 +618,24 @@ namespace ngfem
   template class DGFiniteElement<3>;
   
 
+
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_SEGM>,ET_SEGM>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TRIG>,ET_TRIG>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_QUAD>,ET_QUAD>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TET>,ET_TET>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PRISM>,ET_PRISM>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEX>,ET_HEX>;
+  
+  template class  ScalarDummyFE<ET_POINT>;
+  template class  ScalarDummyFE<ET_SEGM>;
+  template class  ScalarDummyFE<ET_TRIG>;
+  template class  ScalarDummyFE<ET_QUAD>;
+  template class  ScalarDummyFE<ET_TET>;
+  template class  ScalarDummyFE<ET_PRISM>;
+  template class  ScalarDummyFE<ET_PYRAMID>;
+  template class  ScalarDummyFE<ET_HEX>;
+  
 }
 

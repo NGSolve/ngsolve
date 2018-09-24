@@ -2010,22 +2010,50 @@ namespace ngfem
 
 
 
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<1> >;
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<2> >;
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<3> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<3> >;
 
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundary<1> >;
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundary<2> >;
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundary<3> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundary<1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundary<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundary<3> >;
+
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<1,VOL> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<2,VOL> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,VOL> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<1,BND> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<2,BND> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BND> >;
 
 
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<1> >;
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<2> >;
-  BDBEQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<3> >;
 
+  
 
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<3> >;
 
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradVectorH1<1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradVectorH1<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradVectorH1<3> >;
 
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundary<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundary<3> >;
+
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3> >;
+
+  
+
+  
+
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHesse<1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHesse<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHesse<3> >;
+
+  // extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHesseBoundary<1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHesseBoundary<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHesseBoundary<3> >;
 }
 
 #endif

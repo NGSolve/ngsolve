@@ -129,7 +129,7 @@ namespace ngfem
     Tx x = hx[0];
     Tx lam[2] = { x, 1-x };
 
-    ArrayMem<Tx,20> adpol1(order);
+    // ArrayMem<Tx,20> adpol1(order);
 	
     INT<2> e = GetEdgeSort (0, vnums);	  
     
@@ -141,13 +141,24 @@ namespace ngfem
     if(p > 0 && usegrad_cell)
       { 
         // LegendrePolynomial::
+        /*
         EdgeOrthoPol::
           EvalScaledMult (p-1, 
                           lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                           lam[e[0]]*lam[e[1]], adpol1);
-        
+
         for(int j = 0; j < p; j++) 	      
           shape[j+1] = Du (adpol1[j]);
+        */
+        size_t ii = 1;
+        EdgeOrthoPol::
+          EvalScaledMult (p-1, 
+                          lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                          lam[e[0]]*lam[e[1]], 
+                          SBLambda ([&](int nr, Tx val)
+                                    {
+                                      shape[ii++] = Du (val);
+                                    }));
       }
   }
   
