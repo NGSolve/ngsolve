@@ -576,12 +576,12 @@ ANY                  1 1 1 1 | 15
         VTransformVC (ei, vec, type);
     }
 
-    
+    /*
     template < int S, class T >
+    [[deprecated("Use TransformVec with element-id instead of elnr!")]]        
     void TransformVec (int elnr, VorB vb,
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
-    /*
     template < class T >
     void TransformVec (ElementId ei,
 		       const T & vec, TRANSFORM_TYPE type) const
@@ -1104,6 +1104,7 @@ ANY                  1 1 1 1 | 15
     Array<int> cummulative_nd;
     /// dofs on each multigrid level
     /// Array<int> ndlevel;
+    bool all_the_same;
   public:
     /// generates a compound space.
     /// components will be added later

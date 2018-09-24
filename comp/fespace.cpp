@@ -1551,7 +1551,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
   
-
+  /*
   // Aendern, Bremse!!!
   template < int S, class T >
   void FESpace :: TransformVec (int elnr, VorB vb,
@@ -1630,7 +1630,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 					const FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
-
+  */
 
   ostream & operator<< (ostream & ost, COUPLING_TYPE ct)
   {
@@ -1798,21 +1798,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & NodalFESpace :: GetFE(ElementId ei, Allocator & lh) const
   {
+    ELEMENT_TYPE et = ma->GetElType(ei);
     if(order == 1)
       {
+        return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                        { return * new (lh) ScalarFE<type.ElementType(),1>(); });
+
+        /*
         switch (ma->GetElType(ei))
           {
-          case ET_SEGM:    return *(new (lh) FE_Segm1);
+          case ET_SEGM:    return *(new (lh) ScalarFE<ET_SEGM,1>);
           case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
           case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
           case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
-          case ET_PRISM:   return *(new (lh) FE_Prism1);
-          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
-          case ET_HEX:     return *(new (lh) FE_Hex1);
-          case ET_POINT:   return *(new (lh) FE_Point);
+          case ET_PRISM:   return *(new (lh) ScalarFE<ET_PRISM,1>);
+          case ET_PYRAMID: return *(new (lh) ScalarFE<ET_PYRAMID,1>);
+          case ET_HEX:     return *(new (lh) ScalarFE<ET_HEX,1>);
+          case ET_POINT:   return *(new (lh) ScalarFE<ET_POINT,1>);
           default:
             throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
           }
+        */
       }
     else
       {
@@ -2175,9 +2181,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & ElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
+    ELEMENT_TYPE et = ma->GetElType(ei);
+    if (ei.VB() != VOL)
+      return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                      { return * new (lh) DummyFE<type.ElementType()>(); });
     
     if (order == 0)
       {
+        return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                        { return * new (lh) ScalarFE<type.ElementType(),0>(); });
+
+        /*
         switch (ma->GetElType(ei))
           {
           case ET_TET:     return * new (lh) ScalarFE<ET_TET,0>;
@@ -2189,9 +2203,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_SEGM:    return * new (lh) FE_Segm0;
           case ET_POINT:   return * new (lh) FE_Point;
           }
+        */
       }
     else
       {
+        return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                        { return * new (lh) ScalarFE<type.ElementType(),1>(); });
+        /*
         switch (ma->GetElType(ei))
           {
           case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
@@ -2203,6 +2221,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_SEGM:    return *(new (lh) FE_Segm1);
           case ET_POINT:   return * new (lh) FE_Point;            
           }
+        */
       }
     throw Exception ("Illegal element type in ElementFESpace::GetFE");
   }
@@ -2428,10 +2447,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     prol = make_shared<CompoundProlongation> (this);
 
     needs_transform_vec = false;
+    all_the_same = true;
   }
 
 
-
+  /*
   CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
 				      const Array<shared_ptr<FESpace>> & aspaces,
 				      const Flags & flags, bool parseflags)
@@ -2452,14 +2472,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (space->NeedsTransformVec())
         needs_transform_vec = true;
   }
+  */
+  
+  CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
+				      const Array<shared_ptr<FESpace>> & aspaces,
+				      const Flags & flags, bool parseflags)
+    : CompoundFESpace (ama, flags, parseflags)
+  {
+    for (auto space : aspaces)
+      AddSpace (space);
+  }
 
-
+  
   void CompoundFESpace :: AddSpace (shared_ptr<FESpace> fes)
   {
     spaces.Append (fes);
     dynamic_pointer_cast<CompoundProlongation> (prol) -> AddProlongation (fes->GetProlongation());
     if (fes->NeedsTransformVec())      
       needs_transform_vec = true;
+    if (fes != spaces[0])
+      all_the_same = false;
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -2625,8 +2657,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FiniteElement & CompoundFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), alloc);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetFE(ei, alloc);
+    if (!all_the_same)
+      {
+        for (int i = 0; i < fea.Size(); i++)
+          fea[i] = &spaces[i]->GetFE(ei, alloc);
+      }
+    else
+      {
+        if (fea.Size() > 0)
+          {
+            fea[0] = &spaces[0]->GetFE(ei, alloc);
+            for (int i = 1; i < fea.Size(); i++)
+              fea[i] = fea[0];
+          }
+      }
     return *new (alloc) CompoundFiniteElement (fea);
   }
 
