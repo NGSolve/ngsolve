@@ -392,9 +392,12 @@ struct GenericPow {
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
     {
+      /*
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
+      */
+      values.AddSize(D, ir.Size()) = Trans(ir.GetNormals());
     }
 
     /*
