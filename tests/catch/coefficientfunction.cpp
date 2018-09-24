@@ -266,7 +266,7 @@ TEST_OPERATOR_COEFFICIENTFUNCTION(MakeVectorialCoefficientFunction({u,u*u}));
 auto xyz = MakeVectorialCoefficientFunction({x,u,z});
 auto mat = MakeVectorialCoefficientFunction({a,b,x,y,z,b,u,a,b});
 int set_dimension = [](auto mat) {
-mat->SetDimensions (INT<2>(3,3));
+mat->SetDimensions (ngstd::INT<2>(3,3));
 return 1; }(mat);
 TEST_OPERATOR_COEFFICIENTFUNCTION(xyz);
 // TEST_OPERATOR_COEFFICIENTFUNCTION(NormCF(xyz));
