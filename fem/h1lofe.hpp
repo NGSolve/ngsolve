@@ -849,35 +849,6 @@ namespace ngfem
 
 
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_SEGM>,ET_SEGM>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TRIG>,ET_TRIG>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_QUAD>,ET_QUAD>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TET>,ET_TET>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PRISM>,ET_PRISM>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEX>,ET_HEX>;
-
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_POINT>,ET_POINT,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_SEGM>,ET_SEGM,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_TRIG>,ET_TRIG,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_QUAD>,ET_QUAD,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_TET>,ET_TET,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_PRISM>,ET_PRISM,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<ScalarDummyFE<ET_HEX>,ET_HEX,0,0>;
-
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_POINT>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_SEGM>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_TRIG>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_QUAD>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_TET>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_PRISM>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_PYRAMID>;
-  H1LOFE_EXTERN template class  ScalarDummyFE<ET_HEX>;
-
-
-
 
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Point,ET_POINT>;

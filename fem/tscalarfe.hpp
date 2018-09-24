@@ -171,15 +171,37 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  class ScalarDummyFE : public T_ScalarFiniteElementFO<ScalarDummyFE<ET>,ET,0,0>
+  class ScalarDummyFE : public T_ScalarFiniteElement<ScalarDummyFE<ET>,ET>
   {
   public:
-    INLINE NGS_DLL_HEADER ScalarDummyFE() { ; }
+    INLINE NGS_DLL_HEADER ScalarDummyFE()
+    {
+      this->ndof= 0;
+      this->order = 0;
+    }
     HD NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
     template<typename Tx, typename TFA>  
     INLINE static void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) 
     { ; }
   };
+
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_SEGM>,ET_SEGM>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TRIG>,ET_TRIG>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_QUAD>,ET_QUAD>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TET>,ET_TET>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PRISM>,ET_PRISM>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEX>,ET_HEX>;
+
+  extern template class  ScalarDummyFE<ET_POINT>;
+  extern template class  ScalarDummyFE<ET_SEGM>;
+  extern template class  ScalarDummyFE<ET_TRIG>;
+  extern template class  ScalarDummyFE<ET_QUAD>;
+  extern template class  ScalarDummyFE<ET_TET>;
+  extern template class  ScalarDummyFE<ET_PRISM>;
+  extern template class  ScalarDummyFE<ET_PYRAMID>;
+  extern template class  ScalarDummyFE<ET_HEX>;
 }
 
 
