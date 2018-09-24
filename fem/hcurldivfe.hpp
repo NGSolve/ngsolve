@@ -7,6 +7,9 @@
 /* Date:   2017/2018                                                 */
 /*********************************************************************/
 
+//include recursive_pol.hpp;
+#include "recursive_pol_tet.hpp"
+
 namespace ngfem
 {
 
@@ -713,12 +716,12 @@ namespace ngfem
   /* ############### Special functions for curld-bubbles ############### */
   /* this produces a nt-bubble, but div(sigma) = 0 is equal to zero */
   /* given by the curl(phi) and phi is a Nedelec-bubble (in 3d) */
-  template <int D, typename T> class T_curlbubble;
-  template <typename T> class T_curlbubble<2,T>
+  template <int D, typename T> class T_curlbubble2D;
+  template <typename T> class T_curlbubble2D<2,T>
   {
     AutoDiffDiff<2,T> u;
   public:
-    T_curlbubble  (AutoDiffDiff<2,T> au) : u(au){ ; }
+    T_curlbubble2D  (AutoDiffDiff<2,T> au) : u(au){ ; }
 
     Vec<4,T> Shape() {
       return Vec<4,T> (-u.DValue(1), u.DValue(0), -u.DValue(1), u.DValue(0));
@@ -737,7 +740,92 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto CurlBubble (AutoDiffDiff<D,T> au) { return T_curlbubble<D, T>(au); }
+  auto CurlBubble2D (AutoDiffDiff<D,T> au) { return T_curlbubble2D<D, T>(au); }
+
+  //////////////////////////
+  /* type 1: hdiv bubble: Du_Cross_Dv */
+  
+  template <int D, typename T> class T_curlbubble3D_type1;
+  template <typename T> class T_curlbubble3D_type1<3,T>
+  {
+    AutoDiff<3,T> u;
+    AutoDiff<3,T> v;
+    AutoDiff<3,T> ei;
+  public:
+    T_curlbubble3D_type1  (AutoDiff<3,T> au, AutoDiff<3,T> av, AutoDiff<3,T> aei) : u(au), v(av), ei(aei){ ; }
+
+    Vec<9,T> Shape() {
+
+      
+      Vec<9,T> sigmaref;
+      AutoDiff<3,T> hv = Cross (u, v);
+
+      for (int i=0; i<3; i++)
+	{
+	  sigmaref(i*3)=  hv.DValue(0) * ei.DValue(i);
+	  sigmaref(i*3+1)=  hv.DValue(1) * ei.DValue(i);
+	  sigmaref(i*3+2)=  hv.DValue(2) * ei.DValue(i);
+	}
+      
+      return sigmaref;
+    }
+
+    Vec<3,T> DivShape()
+    {
+      return Vec<3,T> (0.0,0.0, 0.0);
+    }
+
+    Vec<3,T> CurlShape()
+    {     
+      throw Exception("not implemented for curlbubbles");
+    }
+    
+  };
+
+  template <int D, typename T>
+  auto CurlBubble3D_type1 (AutoDiff<D,T> au, AutoDiff<D,T> av,  AutoDiff<D,T> aei) { return T_curlbubble3D_type1<D, T>(au, av, aei); }
+
+  //////////////////////////
+  /* type 1: hdiv bubble: curl_uDvw_minus_Duvw */
+  
+  template <int D, typename T> class T_curlbubble3D_type2;
+  template <typename T> class T_curlbubble3D_type2<3,T>
+  {
+    AutoDiff<3,T> u;
+    AutoDiff<3,T> v;
+    AutoDiff<3,T> w;
+    AutoDiff<3,T> ei;
+  public:
+    T_curlbubble3D_type2  (AutoDiff<3,T> au, AutoDiff<3,T> av, AutoDiff<3,T> aw, AutoDiff<3,T> aei) : u(au), v(av), w(aw), ei(aei){ ; }
+
+    Vec<9,T> Shape() {      
+      Vec<9,T> sigmaref;
+      AutoDiff<3,T> hv = Cross (u*w, v) - Cross (v*w, u);
+
+      for (int i=0; i<3; i++)
+	{
+	  sigmaref(i*3)=  hv.DValue(0) * ei.DValue(i);
+	  sigmaref(i*3+1)=  hv.DValue(1) * ei.DValue(i);
+	  sigmaref(i*3+2)=  hv.DValue(2) * ei.DValue(i);
+	}
+      
+      return sigmaref;
+    }
+
+    Vec<3,T> DivShape()
+    {
+      return Vec<3,T> (0.0,0.0, 0.0);
+    }
+
+    Vec<3,T> CurlShape()
+    {     
+      throw Exception("not implemented for curlbubbles");
+    }
+    
+  };
+
+  template <int D, typename T>
+  auto CurlBubble3D_type2 (AutoDiff<D,T> au, AutoDiff<D,T> av, AutoDiff<D,T> aw,  AutoDiff<D,T> aei) { return T_curlbubble3D_type2<D, T>(au, av, aw, aei); }
 
   
   /* Edge basis functions which are normal-tangential continuous */
@@ -986,10 +1074,12 @@ namespace ngfem
 	{
 	  IntLegNoBubble::EvalMult (oi, le-ls, 0.25*le*ls, u);
 	  LegendrePolynomial::EvalMult(oi, 2*lt-1, lt, v);
+
+	  //in 2 dimensions u[i]*v[oi-1-i] should be a H1_0 bubble
       
 	  for(int i = 0; i <= oi-1; i++)
 	    {
-	      shape[ii++] = CurlBubble(u[i]*v[oi-1-i]);
+	      shape[ii++] = CurlBubble2D(u[i]*v[oi-1-i]);
 	    }
 	}
             
@@ -1143,6 +1233,12 @@ namespace ngfem
 	  ndof += (order_trace +1) * (order_trace+2)* (order_trace+3)/6.0;
 	  order = max2(order, order_trace);
 	}
+
+      if (curlbubbles)
+	{
+	  ndof += 3*((order_inner+1)*order_inner + order_inner);
+	  order +=1;
+	}
       
     }
     
@@ -1257,6 +1353,40 @@ namespace ngfem
 				      }));
 			 jac1.IncAlpha2();
 		       }));
+	}
+
+      if(curlbubbles)
+	{
+	  int oc = oi+1;
+	  
+	  //STACK_ARRAY(Tx, mem, 3*oc);
+	  //Tx * adpol1 = &mem[0];
+	  //Tx * adpol2 = &mem[oc];
+	  //Tx * adpol3 = &mem[2*oc];
+
+	  ArrayMem<AutoDiff<3,T>,20> adpol1(oc); 
+	  ArrayMem<AutoDiff<3,T>,20> adpol2(oc);
+	  ArrayMem<AutoDiff<3,T>,20> adpol3(oc);
+
+	  //T_INNERSHAPES::CalcSplitted(oc+2, ddlami[0]-ddlami[3], ddlami[1], ddlami[2], adpol1, adpol2, adpol3 );
+	  TetShapesInnerLegendre::CalcSplitted(oc+2, ddlami[0]-ddlami[3], ddlami[1], ddlami[2], adpol1, adpol2, adpol3 );
+	  
+	  for (int i = 0; i <3; i++)
+	    {
+	      for (int j = 0; j <= oc-2; j++)
+		for (int k = 0; k <= oc-2-j; k++)
+		  {
+		    //  [grad v  x  grad (uw)] o-times Dlami
+		    shape[ii++] = CurlBubble3D_type1(adpol2[j], adpol1[oc-2-j-k]*adpol3[k], ddlami[i]);
+        
+		    // grad w  x  grad (uv)
+		    shape[ii++] = CurlBubble3D_type1(adpol3[k], adpol1[oc-2-j-k]*adpol2[j], ddlami[i]);
+		  }     
+
+	      // ned = [lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0])] o-times Dlami
+	      for (int j= 0; j <= oc-2; j++)
+		shape[ii++] = CurlBubble3D_type2(ddlami[0], ddlami[3], adpol2[j]*adpol3[oc-2-j], ddlami[i]);
+	    }
 	}
             
      };

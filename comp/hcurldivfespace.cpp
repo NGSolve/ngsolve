@@ -553,6 +553,9 @@ namespace ngcomp
 	ndof += 8 * oi * (oi+1)*(oi+2)/6;
 	if(ot>-1)
 	  ndof += (ot + 1)*(ot+2)*(ot+3)/6;
+
+	if (curlbubbles)
+	  ndof += 3*((oi+1)*oi + oi);
 	
 	if(discontinuous)
         {
@@ -691,7 +694,7 @@ namespace ngcomp
     }
     case ET_QUAD:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order);
+      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order, curlbubbles);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -703,7 +706,7 @@ namespace ngcomp
     }
     case ET_TET:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TET> (order);
+      auto fe = new (alloc) HCurlDivFE<ET_TET> (order, curlbubbles);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
