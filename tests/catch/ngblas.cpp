@@ -92,6 +92,28 @@ TEST_CASE ("MultMatMat", "[ngblas]") {
     }
 }
 
+TEST_CASE ("MultAtB", "[ngblas]") {
+    for (int n = 1; n < 20; n++) {
+        SECTION ("n = "+to_string(n)) {
+            for (int m = 1; m < 20; m++) {
+                SECTION ("m = "+to_string(m)) {
+                    for (int k = 1; k < 20; k++) {
+                        SECTION ("k = "+to_string(k)) {
+                            Matrix<> a(m,n), b(m,k), c(n,k);
+                            SetRandom(a);
+                            SetRandom(b);
+                            c = Trans(a)*b;
+                            double err = L2Norm (Trans(a)*b-c);
+                            CHECK(err < 1e-13);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 
 TEST_CASE ("MinusMultAB", "[ngblas]") {
     for (int n = 1; n < 20; n++) {

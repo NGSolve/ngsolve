@@ -231,8 +231,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
     level_updated = -1;
-
-
+    /*
     point = NULL;
     segm = NULL;
     trig = NULL;
@@ -241,7 +240,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     prism = NULL;
     pyramid = NULL;
     hex = NULL;
-    
+    */
+    /*
     dummy_tet = new DummyFE<ET_TET>();
     dummy_pyramid = new DummyFE<ET_PYRAMID>();
     dummy_prism = new DummyFE<ET_PRISM>();
@@ -250,7 +250,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dummy_quad = new DummyFE<ET_QUAD>();
     dummy_segm = new DummyFE<ET_SEGM>();
     dummy_point = new DummyFE<ET_POINT>();
-
+    */
     for(auto vb : {VOL,BND,BBND})
       {
 	evaluator[vb] = nullptr;
@@ -274,6 +274,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   FESpace :: ~FESpace ()
   {
+    /*
     delete tet;
     delete pyramid;
     delete prism;
@@ -282,7 +283,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete quad;
     delete segm;
     delete point;
-
+    */
+    /*
     delete dummy_tet;
     delete dummy_pyramid;
     delete dummy_prism;
@@ -291,7 +293,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_quad;
     delete dummy_segm;
     delete dummy_point;
-
+    */
     // delete paralleldofs;
   }
 
@@ -1004,7 +1006,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      cout << "dof out of range: " << d << endl;
 	}
   }
-
+  /*
   void FESpace :: SetIrregularDofNrs (Array<DofId> & dnums) const
   {
     for (DofId & d : dnums)
@@ -1015,7 +1017,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (ct == HIDDEN_DOF) d = NO_DOF_NR_CONDENSE;
         }
   }
-  
+  */
   
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
@@ -1173,7 +1175,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
 */
-    
+
+  /*
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
   {
     switch (type)
@@ -1189,6 +1192,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     throw Exception ("GetFE: unknown type");
   }
+  */
 
   
   void FESpace :: PrintReport (ostream & ost) const
@@ -1204,9 +1208,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (!free_dofs) return;
 
     ost << "ndof = " << GetNDof() << endl;
-    int ntype[8] = { 0 };
-    // for (int i = 0; i < ctofdof.Size(); i++)
-    // ntype[ctofdof[i]]++;
+    int ntype[16] = { 0 };
+
     for (auto ct : ctofdof) ntype[ct]++;
     if (ntype[UNUSED_DOF]) ost << "unused = " << ntype[UNUSED_DOF] << endl;
     if (ntype[HIDDEN_DOF]) ost << "hidden = " << ntype[HIDDEN_DOF] << endl;
@@ -1234,22 +1237,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  /*
-  size_t FESpace :: GetNDofLevel (int level) const
-  {
-    return GetNDof();
-  } 
-  */
-  
   std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double time;
     std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
-
-    // cout << endl << "timing fespace " << GetName() 
-    //      << (low_order_space ? "" : " low-order")
-    //      << " ..." << endl;
 
     time = RunTiming([&]() {
         ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
@@ -1449,15 +1441,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  if (!IsDirichletDof(i))
 	    creator.Add (i, i);
       }
-    // return shared_ptr<Table<int>> (creator.GetTable());
+
     return make_shared<Table<int>> (creator.MoveTable());
   }
 
     
   void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
-
     definedon[vb].SetSize(defon.Size());
+    
     for (int i = 0; i < defon.Size(); i++)
       definedon[vb][i] = defon.Test(i);
 
@@ -1473,7 +1465,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (low_order_space)
       low_order_space -> SetDirichletBoundaries (dirbnds);
   }
-
 
   shared_ptr<BitArray> FESpace :: GetFreeDofs (bool external) const
   {
@@ -1560,7 +1551,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
   
-
+  /*
   // Aendern, Bremse!!!
   template < int S, class T >
   void FESpace :: TransformVec (int elnr, VorB vb,
@@ -1639,7 +1630,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 					const FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
-
+  */
 
   ostream & operator<< (ostream & ost, COUPLING_TYPE ct)
   {
@@ -1742,7 +1733,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     hb_defined = flags.GetDefineFlag("hb");
 
-    SetDummyFE<ScalarDummyFE> ();
+    // SetDummyFE<ScalarDummyFE> ();
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
@@ -1807,21 +1798,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & NodalFESpace :: GetFE(ElementId ei, Allocator & lh) const
   {
+    ELEMENT_TYPE et = ma->GetElType(ei);
     if(order == 1)
       {
+        return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                        { return * new (lh) ScalarFE<type.ElementType(),1>(); });
+
+        /*
         switch (ma->GetElType(ei))
           {
-          case ET_SEGM:    return *(new (lh) FE_Segm1);
+          case ET_SEGM:    return *(new (lh) ScalarFE<ET_SEGM,1>);
           case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
           case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
           case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
-          case ET_PRISM:   return *(new (lh) FE_Prism1);
-          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
-          case ET_HEX:     return *(new (lh) FE_Hex1);
-          case ET_POINT:   return *(new (lh) FE_Point);
+          case ET_PRISM:   return *(new (lh) ScalarFE<ET_PRISM,1>);
+          case ET_PYRAMID: return *(new (lh) ScalarFE<ET_PYRAMID,1>);
+          case ET_HEX:     return *(new (lh) ScalarFE<ET_HEX,1>);
+          case ET_POINT:   return *(new (lh) ScalarFE<ET_POINT,1>);
           default:
             throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
           }
+        */
       }
     else
       {
@@ -1858,12 +1855,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  /*
-  size_t NodalFESpace :: GetNDof () const throw()
-  {
-    return ndlevel.Last();
-  }
-  */
   
   void NodalFESpace :: Update(LocalHeap & lh)
   {
@@ -1886,7 +1877,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
       prol->Update(*this);
-
+      
     if (dirichlet_boundaries.Size())
       {
 	dirichlet_dofs.SetSize (GetNDof());
@@ -1910,14 +1901,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
   }
 
-  /*
-  size_t NodalFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-  */
-
-
  
   void NodalFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
@@ -1928,7 +1911,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       
     if (!DefinedOn (ei)) dnums = -1;
   }
-
 
 
   void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
@@ -2040,11 +2022,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     switch (ma->GetElType(ei))
       {
-      case ET_TRIG: return *(new (lh)FE_NcTrig1);
+      case ET_TRIG: return *(new (lh) FE_NcTrig1);
       case ET_SEGM: return *(new (lh) FE_Segm0);
       default: throw Exception ("Element type not available in NonconformingFESpace::GetFE");
       }
   }
+  
   size_t NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
@@ -2156,7 +2139,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 6;
     }
 
-    SetDummyFE<ScalarDummyFE> ();
+    // SetDummyFE<ScalarDummyFE> ();
     static ConstantCoefficientFunction one(1);
 
     if (ma->GetDimension() == 2)
@@ -2198,9 +2181,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & ElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
+    ELEMENT_TYPE et = ma->GetElType(ei);
+    if (ei.VB() != VOL)
+      return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                      { return * new (lh) DummyFE<type.ElementType()>(); });
     
     if (order == 0)
       {
+        return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                        { return * new (lh) ScalarFE<type.ElementType(),0>(); });
+
+        /*
         switch (ma->GetElType(ei))
           {
           case ET_TET:     return * new (lh) ScalarFE<ET_TET,0>;
@@ -2212,9 +2203,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_SEGM:    return * new (lh) FE_Segm0;
           case ET_POINT:   return * new (lh) FE_Point;
           }
+        */
       }
     else
       {
+        return SwitchET(et, [&lh] (auto type) -> FiniteElement&
+                        { return * new (lh) ScalarFE<type.ElementType(),1>(); });
+        /*
         switch (ma->GetElType(ei))
           {
           case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
@@ -2226,6 +2221,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_SEGM:    return *(new (lh) FE_Segm1);
           case ET_POINT:   return * new (lh) FE_Point;            
           }
+        */
       }
     throw Exception ("Illegal element type in ElementFESpace::GetFE");
   }
@@ -2267,20 +2263,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  /*
-  size_t ElementFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-  */
-  
-  /*
-  const FiniteElement & ElementFESpace :: GetSFE (int selnr) const
-  {
-    throw Exception ("ElementFESpace::GetSFE not available");
-  }
-  */
-
 
  
   SurfaceElementFESpace :: 
@@ -2294,19 +2276,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
+      /*
       trig    = new ScalarFE<ET_TRIG,0>;
       quad    = new ScalarFE<ET_QUAD,0>;
       segm    = new FE_Segm0;
-
+      */
       n_el_dofs = 1;
     }
 
     else if (order == 1)
     {
+      /*
       trig    = new ScalarFE<ET_TRIG,1>;
       quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm1;
-	
+      */
       if (ma->GetDimension() == 2)
         n_el_dofs = 2;
       else
@@ -2315,10 +2299,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     else if (order == 2)
     {
+      /*
       trig    = new FE_Trig2HB;
       quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm2;
-
+      */
       if (ma->GetDimension() == 2)
         n_el_dofs = 3;
       else
@@ -2460,10 +2445,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (parseflags) CheckFlags(flags);
     
     prol = make_shared<CompoundProlongation> (this);
+
+    needs_transform_vec = false;
+    all_the_same = true;
   }
 
 
-
+  /*
   CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
 				      const Array<shared_ptr<FESpace>> & aspaces,
 				      const Flags & flags, bool parseflags)
@@ -2478,13 +2466,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (auto space : spaces)
       hprol -> AddProlongation (space->GetProlongation());      
     prol = hprol;
+
+    needs_transform_vec = false;
+    for (auto space : spaces)
+      if (space->NeedsTransformVec())
+        needs_transform_vec = true;
+  }
+  */
+  
+  CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
+				      const Array<shared_ptr<FESpace>> & aspaces,
+				      const Flags & flags, bool parseflags)
+    : CompoundFESpace (ama, flags, parseflags)
+  {
+    for (auto space : aspaces)
+      AddSpace (space);
   }
 
-
+  
   void CompoundFESpace :: AddSpace (shared_ptr<FESpace> fes)
   {
     spaces.Append (fes);
     dynamic_pointer_cast<CompoundProlongation> (prol) -> AddProlongation (fes->GetProlongation());
+    if (fes->NeedsTransformVec())      
+      needs_transform_vec = true;
+    if (fes != spaces[0])
+      all_the_same = false;
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -2650,17 +2657,36 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FiniteElement & CompoundFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), alloc);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetFE(ei, alloc);
+    if (!all_the_same)
+      {
+        for (int i = 0; i < fea.Size(); i++)
+          fea[i] = &spaces[i]->GetFE(ei, alloc);
+      }
+    else
+      {
+        if (fea.Size() > 0)
+          {
+            fea[0] = &spaces[0]->GetFE(ei, alloc);
+            for (int i = 1; i < fea.Size(); i++)
+              fea[i] = fea[0];
+          }
+      }
     return *new (alloc) CompoundFiniteElement (fea);
   }
 
 
   void CompoundFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
+    if (spaces.Size() == 0)
+      {
+        dnums.SetSize0();
+        return;
+      }
+    
+    spaces[0]->GetDofNrs(ei, dnums);
+      
     ArrayMem<DofId,500> hdnums;
-    dnums.SetSize0();
-    for (int i = 0; i < spaces.Size(); i++)
+    for (int i = 1; i < spaces.Size(); i++)
       {
 	spaces[i]->GetDofNrs (ei, hdnums);
         int base = dnums.Size();
@@ -2828,6 +2854,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace::T_TransformVec (ElementId ei, 
                                         SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
+    if (!needs_transform_vec) return;
+    
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {

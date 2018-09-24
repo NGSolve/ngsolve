@@ -205,13 +205,25 @@ namespace ngcomp
                          v2e_creator.Add (e2v[e][j], e);
                      });
       Table<int> v2e = v2e_creator.MoveTable();
-    
+
+      /*
       ParallelFor (v2e.Size(), [&] (size_t vnr)
                    {
                      // QuickSortI (invindices, v2e[vnr]);
                      QuickSortI (edge_collapse_weights, v2e[vnr]);
                    }, TasksPerThread(5));
-    
+      */
+
+      ParallelFor (v2e.Size(), [&] (size_t vnr)
+                   {
+                     QuickSort (v2e[vnr], [&edge_collapse_weights](size_t e1, size_t e2)
+                                {
+                                  double w1 = edge_collapse_weights[e1], w2 = edge_collapse_weights[e2];
+                                  if (w1 == w2) return e1 < e2;
+                                  return w1 < w2;
+                                } );
+                   }, TasksPerThread(5));
+      
       // build edge dependency
       TableCreator<int> edge_dag_creator(num_edges);
       for ( ; !edge_dag_creator.Done(); edge_dag_creator++)  
@@ -555,7 +567,7 @@ namespace ngcomp
           ai(0,1) = ai(1,0) = ext_elmat(i, ndof);
           ai(1,1) = ext_elmat(ndof, ndof);
           ai = Inv(ai);
-          SCAL weight = ai(0,0);
+          double weight = fabs(ai(0,0));
           vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
         }
       }
@@ -572,7 +584,7 @@ namespace ngcomp
             ai(0,2) = ai(2,0) = ext_elmat(i,ndof);
             ai(1,2) = ai(2,1) = ext_elmat(j,ndof);
             ai = Inv(ai);
-            SCAL weight = ai(0,0);
+            double weight = fabs(ai(0,0));
             edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
       }
