@@ -582,7 +582,8 @@ namespace ngfem
     enum { DIFFORDER = 2 };
     
     static string Name() { return "hesse"; }
-    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
+    // static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
+    static INT<2> GetDimensions() { return { D,D }; }
     
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const ScalarFiniteElement<D>&> (fel); }
@@ -608,7 +609,8 @@ namespace ngfem
     enum { DIFFORDER = 2 };
 
     static string Name() { return "hesseboundary"; }
-    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
+    // static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
+    static INT<2> GetDimensions() { return { D,D }; }    
     
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -1709,8 +1711,9 @@ namespace ngfem
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
 
-    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
-      
+    // static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+    static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
+    
     static string Name() { return "grad"; }
     
     template <typename FEL, typename MIP, typename MAT>
@@ -1796,8 +1799,9 @@ namespace ngfem
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
 
-    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
-      
+    // static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+    static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
+    
     static string Name() { return "gradbnd"; }
     
     template <typename FEL, typename MIP, typename MAT>
