@@ -19,7 +19,7 @@ if(WIN32 AND USE_UMFPACK)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(ngla PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES}
+    target_link_libraries(ngla PUBLIC ngbla ngstd interface ${NETGEN_PYTHON_LIBRARIES}
 PRIVATE ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
     target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     install( TARGETS ngla ${ngs_install_dir} )
