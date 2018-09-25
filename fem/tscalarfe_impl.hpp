@@ -831,11 +831,12 @@ namespace ngfem
                  size_t dist = coefs.Dist();
                  Vec<DIMSPACE,SIMD<double>> vals = values.Col(i);
                  this->T_CalcShape (adp,
-                                    SBLambda ([=,&pcoef] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                    SBLambda ([=,&pcoef] (size_t j, auto shape)
                                         {
+                                          auto grad = ::GetGradient(shape);
                                           SIMD<double> sum = 0.0;
                                           for (size_t k = 0; k < DIMSPACE; k++)
-                                            sum += shape.DValue(k) * vals(k); 
+                                            sum += grad(k) * vals(k); 
                                           *pcoef += HSum(sum);
                                           pcoef += dist;
                                         }));
@@ -870,18 +871,19 @@ namespace ngfem
                      size_t dist = coefs.Dist();
                      Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
                      this->T_CalcShape (adp,
-                                        SBLambda ([=,&pcoef] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                        SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
+                                                    auto grad = ::GetGradient(shape);
                                                     SIMD<double> sum1 = 0.0;
                                                     SIMD<double> sum2 = 0.0;
                                                     SIMD<double> sum3 = 0.0;
                                                     SIMD<double> sum4 = 0.0;
                                                     for (size_t k = 0; k < DIMSPACE; k++)
                                                       {
-                                                        sum1 += shape.DValue(k) * vals(k); 
-                                                        sum2 += shape.DValue(k) * vals(k+DIMSPACE); 
-                                                        sum3 += shape.DValue(k) * vals(k+2*DIMSPACE); 
-                                                        sum4 += shape.DValue(k) * vals(k+3*DIMSPACE);
+                                                        sum1 += grad(k) * vals(k); 
+                                                        sum2 += grad(k) * vals(k+DIMSPACE); 
+                                                        sum3 += grad(k) * vals(k+2*DIMSPACE); 
+                                                        sum4 += grad(k) * vals(k+3*DIMSPACE);
                                                       }
                                                     SIMD<double,4> allsum = HSum(sum1, sum2, sum3, sum4);
                                                     allsum += SIMD<double,4> (pcoef);
@@ -901,12 +903,16 @@ namespace ngfem
                      size_t dist = coefs.Dist();
                      Vec<DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);
                      this->T_CalcShape (adp,
-                                        SBLambda ([=,&pcoef] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                        SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
+                                                    /*
+                                                    auto grad = ::GetGradient(shape);
                                                     SIMD<double> sum = 0.0;
                                                     for (size_t k = 0; k < DIMSPACE; k++)
-                                                      sum += shape.DValue(k) * vals(k); 
+                                                      sum += grad(k) * vals(k); 
                                                     *pcoef += HSum(sum);
+                                                    */
+                                                    *pcoef += HSum(InnerProduct(::GetGradient(shape), vals));
                                                     pcoef += dist;
                                                   }));
                    }

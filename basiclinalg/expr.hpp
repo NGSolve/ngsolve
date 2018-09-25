@@ -1467,6 +1467,14 @@ namespace ngbla
   template <int DIM>
   AutoDiff<DIM> InnerProduct (AutoDiff<DIM> a, AutoDiff<DIM> b) {return a * b;}
 
+  template <int N>
+  SIMD<double> InnerProduct (SIMD<double,N> a, SIMD<double,N> b) { return a*b; }
+  template <int N>
+  SIMD<Complex> InnerProduct (SIMD<Complex,N> a, SIMD<double,N> b) { return a*b; }
+  template <int N>
+  SIMD<Complex> InnerProduct (SIMD<double,N> a, SIMD<Complex,N> b) { return a*b; }
+  template <int N>
+  SIMD<Complex> InnerProduct (SIMD<Complex,N> a, SIMD<Complex,N> b) { return a*b; }
 
   /**
      Inner product

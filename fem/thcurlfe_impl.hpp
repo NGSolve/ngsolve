@@ -611,12 +611,14 @@ namespace ngfem
                  Vec<DIMSPACE,SIMD<double>> vali = values.Col(i);
                  T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
+                                                   /*
                                                    auto shape = s.Value();
                                                    SIMD<double> sum = 0.0;
                                                    for (size_t k = 0; k < shape.Size(); k++)
                                                      sum += shape(k) * vali(k);
                                                    coefs(j) += HSum(sum);
-                                                   // coefs(j) += HSum(InnerProduct(s.Value(), vali));
+                                                   */
+                                                   coefs(j) += HSum(InnerProduct(s.Value(), vali));
                                                  }));
                }
            }
@@ -691,11 +693,14 @@ namespace ngfem
                  Vec<DIMSPACE,SIMD<Complex>> vali = values.Col(i);
                  T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
+                                                   /*
                                                    auto shape = s.Value();
                                                    SIMD<Complex> sum = 0.0;
                                                    for (size_t k = 0; k < shape.Size(); k++)
                                                      sum += shape(k) * vali(k);
                                                    coefs(j) += HSum(sum);
+                                                   */
+                                                   coefs(j) += HSum(InnerProduct(s.Value(), vali));
                                                  }));
                }
            }
@@ -776,12 +781,14 @@ namespace ngfem
                  Vec<DIM_CURL,SIMD<double>> vali = values.Col(i);
                  T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
+                                                   /*
                                                    auto cshape = s.CurlValue();
                                                    SIMD<double> sum = 0.0;
                                                    for (size_t k = 0; k < cshape.Size(); k++)
                                                      sum += cshape(k) * vali(k);
                                                    coefs(j) += HSum(sum);
-                                                   // coefs(j) += HSum(InnerProduct(s.Value(), vali));
+                                                   */
+                                                   coefs(j) += HSum(InnerProduct(s.CurlValue(), vali));
                                                  }));
                }
            }
@@ -865,12 +872,14 @@ namespace ngfem
                  Vec<DIM_CURL,SIMD<Complex>> vali = values.Col(i);
                  T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
+                                                   /*
                                                    auto cshape = s.CurlValue();
                                                    SIMD<Complex> sum = 0.0;
                                                    for (size_t k = 0; k < cshape.Size(); k++)
                                                      sum += cshape(k) * vali(k);
                                                    coefs(j) += HSum(sum);
-                                                   // coefs(j) += HSum(InnerProduct(s.Value(), vali));
+                                                   */
+                                                   coefs(j) += HSum(InnerProduct(s.CurlValue(), vali));
                                                  }));
                }
            }
