@@ -50,8 +50,9 @@ namespace ngfem
       {
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
         T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
-                     SBLambda ([&] (size_t j, HCurl_Shape<DIM,SIMD<double>> shape)
+                     SBLambda ([&] (size_t j, auto s)
                                {
+                                 auto shape = s.Value();
                                  for (size_t k = 0; k < DIM; k++)
                                    shapes(j*DIM+k, i) = shape(k);
                                }));
@@ -69,8 +70,9 @@ namespace ngfem
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
         T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
-                     SBLambda ([&] (int j, HCurl_Shape<DIM,SIMD<double>> shape)
+                     SBLambda ([&] (int j, auto s)
                                {
+                                 auto shape = s.Value();
                                  double coef = coefs(j);
                                  Iterate<DIM> ( [&] (auto ii) {
                                      sum(ii.value) += coef * shape(ii.value);
@@ -91,8 +93,9 @@ namespace ngfem
       {
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
         T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
-                     SBLambda ([&] (size_t j, HCurl_Shape<DIM,SIMD<double>> shape)
+                     SBLambda ([&] (size_t j, auto s)
                                {
+                                 auto shape = s.Value();
                                  SIMD<double> sum = 0.0;
                                  for (int k = 0; k < DIM; k++)
                                    sum += shape(k) * values(k,i);
