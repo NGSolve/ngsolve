@@ -207,7 +207,6 @@ namespace ngfem
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
             BareSliceMatrix<SIMD<double>> values) const
   {
-    /*
     Iterate<4-DIM>
       ([this,&bmir,coefs,values](auto CODIM)
        {
@@ -219,20 +218,22 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIMSPACE,SIMD<double>> sum(0.0);
-                 T_CalcShape (&adp(0), SBLambda ([&] (auto j, HCurl_Shape<DIMSPACE,SIMD<double>> shape)
+                 T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (auto j, auto shape)
                                                  {
-                                                   // sum += coefs(j) * Vec<DIMSPACE,SIMD<double>> (shape);
+                                                   sum += coefs(j) * shape.Value();
+                                                   /*
                                                    double coef = coefs(j);
                                                    for (size_t k = 0; k < DIMSPACE; k++)
                                                      sum(k) += coef * shape(k);
+                                                   */
                                                  }));
                  for (size_t k = 0; k < DIMSPACE; k++)
                    values(k,i) = sum(k); 
                }
            }
        });
-    */
 
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -289,6 +290,7 @@ namespace ngfem
           }
 
       }
+    */
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
