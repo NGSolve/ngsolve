@@ -44,8 +44,11 @@ namespace ngfem
     // Vec<DIM, AutoDiff<DIM> > adp = ip;
     TIP<DIM,AutoDiff<DIM>> tip = ip;
     T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
-                 SBLambda ([dshape] (auto i, AutoDiff<DIM> shape)
-                           { shape.StoreGradient (&dshape(i,0)) ; }));
+                 SBLambda ([dshape] (int i, AutoDiff<DIM> shape)
+                           {
+			     for (int j = 0; j < DIM; i++)
+			       dshape(i, j) = shape.DValue(j);
+			   }));
   }
 
 #ifndef FASTCOMPILE
@@ -966,8 +969,11 @@ namespace ngfem
     Vec<DIM, AutoDiff<DIM>> adp = mip;
 
     T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ([&] (int i, AutoDiff<DIM> shape)
-                           { shape.StoreGradient (&dshape(i,0)) ; }));
+                 SBLambda ([dshape] (int i, AutoDiff<DIM> shape)
+                           {
+			     for (int j = 0; j < DIM; i++)
+			       dshape(i, j) = shape.DValue(j);
+		           }));
   }
 
 
