@@ -210,7 +210,9 @@ namespace ngfem
     Iterate<4-DIM>
       ([this,&bmir,coefs,values](auto CODIM)
        {
-         constexpr int DIMSPACE = DIM+CODIM.value;
+         constexpr int _DIM = DIM;
+         constexpr int _CODIM = CODIM.value;
+         constexpr int DIMSPACE = _DIM+_CODIM;
          if (bmir.DimSpace() == DIMSPACE)
            {
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
