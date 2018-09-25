@@ -9,11 +9,8 @@
 #include <fem.hpp>
 #include "l2hofefo.hpp"
 
-
-
 namespace ngfem
 {
-
 
   template<>
   ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_QUAD> (int order, FlatArray<int> vnums, Allocator & lh)
