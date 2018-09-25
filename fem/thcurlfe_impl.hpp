@@ -207,12 +207,11 @@ namespace ngfem
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
             BareSliceMatrix<SIMD<double>> values) const
   {
+    /*
     Iterate<4-DIM>
       ([this,&bmir,coefs,values](auto CODIM)
        {
-         constexpr int _DIM = DIM;
-         constexpr int _CODIM = CODIM.value;
-         constexpr int DIMSPACE = _DIM+_CODIM;
+         constexpr int DIMSPACE = DIM+CODIM.value;
          if (bmir.DimSpace() == DIMSPACE)
            {
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
@@ -232,8 +231,8 @@ namespace ngfem
                }
            }
        });
+    */
 
-    /*    
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -290,7 +289,6 @@ namespace ngfem
           }
 
       }
-    */
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
