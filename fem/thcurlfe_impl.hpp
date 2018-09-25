@@ -6,6 +6,7 @@
 namespace ngfem
 {
 
+  /*
   template <int DIM, typename SCAL = double>
   class HCurl_Shape : public Vec<DIM,SCAL>
   {
@@ -22,7 +23,7 @@ namespace ngfem
     HCurl_CurlShape (T shape) 
       : Vec<DIM_CURL_TRAIT<DIM>::DIM,SCAL> (shape.CurlValue()) { ; }
   };
-
+  */
 
 
   
@@ -68,7 +69,7 @@ namespace ngfem
   CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                    SliceMatrix<> shape) const
   {
-    for (int i = 0; i < mir.Size(); i++)
+    for (size_t i = 0; i < mir.Size(); i++)
       CalcMappedShape (mir[i], shape.Cols(i*DIM,(i+1)*DIM));
   }
 
@@ -87,11 +88,12 @@ namespace ngfem
              for (size_t i = 0; i < mir.Size(); i++)
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
-                 T_CalcShape (&adp(0), SBLambda ([shapes,DIMSPACE,i] (size_t j, auto s)
+                 auto shapei = shapes.Col(i);
+                 T_CalcShape (&adp(0), SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
                                                  {
                                                    auto shape = s.Value();
                                                    for (size_t k = 0; k < DIMSPACE; k++)
-                                                     shapes(j*DIMSPACE+k,i) = shape(k);
+                                                     shapei(j*DIMSPACE+k) = shape(k);
                                                  }));
                }
              
@@ -143,10 +145,9 @@ namespace ngfem
     else
       {
         Vec<DIM, AutoDiff<DIM> > adp = mip; 
-        T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
+        T_CalcShape (&adp(0), SBLambda ([&](size_t i, auto s) 
                                         { 
-                                          // curlshape.Row(i) = s; 
-                                          FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s; 
+                                          FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
                                         }));
       }
   }
@@ -168,6 +169,29 @@ namespace ngfem
   CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                        BareSliceMatrix<SIMD<double>> shapes) const
   {
+    Iterate<4-DIM>
+      ([this,&bmir,shapes](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             constexpr int DIM_CURL = DIM_CURL_(DIMSPACE);        
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 auto shapei = shapes.Col(i);
+                 T_CalcShape (&adp(0), SBLambda ([shapei,DIM_CURL] (size_t j, auto s)
+                                                 {
+                                                   auto cshape = s.CurlValue();
+                                                   for (size_t k = 0; k < DIM_CURL; k++)
+                                                     shapei(j*DIM_CURL+k) = cshape(k);
+                                                 }));
+               }
+           }
+       });
+
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         constexpr int DIM_CURL = DIM_CURL_(DIM);
@@ -197,6 +221,7 @@ namespace ngfem
                                             }));
           }
       }
+    */
   }
 
   
@@ -209,8 +234,8 @@ namespace ngfem
   {
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
     Vec<DIM_CURL_(DIM)> sum = 0.0;
-    T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
-                                    { sum += x(i) * s; }));
+    T_CalcShape (&adp(0), SBLambda ([&sum, x](size_t i, auto s) 
+                                    { sum += x(i) * s.CurlValue(); }));
     return sum;
   }
 
@@ -573,6 +598,31 @@ namespace ngfem
   AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
             BareSliceVector<> coefs) const
   {
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIMSPACE,SIMD<double>> vali = values.Col(i);
+                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                                                 {
+                                                   auto shape = s.Value();
+                                                   SIMD<double> sum = 0.0;
+                                                   for (size_t k = 0; k < shape.Size(); k++)
+                                                     sum += shape(k) * vali(k);
+                                                   coefs(j) += HSum(sum);
+                                                   // coefs(j) += HSum(InnerProduct(s.Value(), vali));
+                                                 }));
+               }
+           }
+       });
+
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -620,6 +670,7 @@ namespace ngfem
                                             }));
           }
       }
+    */
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
@@ -627,6 +678,30 @@ namespace ngfem
   AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<Complex>> values,
             BareSliceVector<Complex> coefs) const
   {
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIMSPACE,SIMD<Complex>> vali = values.Col(i);
+                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                                                 {
+                                                   auto shape = s.Value();
+                                                   SIMD<Complex> sum = 0.0;
+                                                   for (size_t k = 0; k < shape.Size(); k++)
+                                                     sum += shape(k) * vali(k);
+                                                   coefs(j) += HSum(sum);
+                                                 }));
+               }
+           }
+       });
+
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -675,6 +750,7 @@ namespace ngfem
           }
 
       }
+    */
   }
 
 
@@ -686,6 +762,34 @@ namespace ngfem
   AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         constexpr int DIM_CURL = DIM_CURL_(DIMSPACE);                                         
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIM_CURL,SIMD<double>> vali = values.Col(i);
+                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                                                 {
+                                                   auto cshape = s.CurlValue();
+                                                   SIMD<double> sum = 0.0;
+                                                   for (size_t k = 0; k < cshape.Size(); k++)
+                                                     sum += cshape(k) * vali(k);
+                                                   coefs(j) += HSum(sum);
+                                                   // coefs(j) += HSum(InnerProduct(s.Value(), vali));
+                                                 }));
+               }
+           }
+       });
+
+
+    
+    /*
     // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemented");        
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -738,6 +842,7 @@ namespace ngfem
           }
 
       }
+    */
   }
   
   
@@ -746,7 +851,32 @@ namespace ngfem
   AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<Complex>> values,
                 BareSliceVector<Complex> coefs) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemented");        
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         constexpr int DIM_CURL = DIM_CURL_(DIMSPACE);                                         
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIM_CURL,SIMD<Complex>> vali = values.Col(i);
+                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                                                 {
+                                                   auto cshape = s.CurlValue();
+                                                   SIMD<Complex> sum = 0.0;
+                                                   for (size_t k = 0; k < cshape.Size(); k++)
+                                                     sum += cshape(k) * vali(k);
+                                                   coefs(j) += HSum(sum);
+                                                   // coefs(j) += HSum(InnerProduct(s.Value(), vali));
+                                                 }));
+               }
+           }
+       });
+
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         constexpr int DIM_CURL = DIM_CURL_(DIM);                        
@@ -798,6 +928,7 @@ namespace ngfem
           }
 
       }
+    */
   }
 
 #endif
