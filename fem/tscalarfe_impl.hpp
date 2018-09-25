@@ -666,7 +666,7 @@ namespace ngfem
                               sum += coefs(i) * val;
                             }));
     // return AD2Vec<DIM> (sum);
-    return GetGradient(sum);
+    return ::GetGradient(sum);
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -681,7 +681,7 @@ namespace ngfem
         Vec<DIM> sum = 0.0;
         T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
-                               { sum += coefs(j) * GetGradient(shape); }));
+                               { sum += coefs(j) * ::GetGradient(shape); }));
         // vals.Row(i).AddSize(DIM) = sum;
         FlatVec<DIM>(vals.Addr(i,0)) = sum;
       }
@@ -769,7 +769,7 @@ namespace ngfem
         Vec<DIM,SIMD<double>> sum(0.0);
         T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>> (adp),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
-                               { sum += coefs(j) * GetGradient(shape); }));
+                               { sum += coefs(j) * ::GetGradient(shape); }));
         for (int k = 0; k < DIM; k++)
           values(k,i) = sum(k).Data();
       }
