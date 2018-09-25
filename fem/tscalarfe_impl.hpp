@@ -825,19 +825,22 @@ namespace ngfem
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
                {
-                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
-                 GetTIP(mir[i], adp);
+                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
+                 // GetTIP(mir[i], adp);
                  double * pcoef = &coefs(0);
                  size_t dist = coefs.Dist();
                  Vec<DIMSPACE,SIMD<double>> vals = values.Col(i);
                  this->T_CalcShape (adp,
-                                    SBLambda ([=,&pcoef] (size_t j, auto shape)
+                                    SBLambda ([dist,vals,&pcoef] (size_t j, auto shape)
                                         {
+                                          /*
                                           auto grad = ::GetGradient(shape);
                                           SIMD<double> sum = 0.0;
                                           for (size_t k = 0; k < DIMSPACE; k++)
                                             sum += grad(k) * vals(k); 
                                           *pcoef += HSum(sum);
+                                          */
+                                          *pcoef += HSum(InnerProduct(::GetGradient(shape), vals));
                                           pcoef += dist;
                                         }));
                }
@@ -869,22 +872,22 @@ namespace ngfem
                      GetTIP(mir[i], adp);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
-                     Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
+                     // Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
+                     Vec<DIMSPACE,SIMD<double>> vals1 = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);
+                     Vec<DIMSPACE,SIMD<double>> vals2 = values.Col(i).Range((j+1)*DIMSPACE, (j+2)*DIMSPACE);
+                     Vec<DIMSPACE,SIMD<double>> vals3 = values.Col(i).Range((j+2)*DIMSPACE, (j+3)*DIMSPACE);
+                     Vec<DIMSPACE,SIMD<double>> vals4 = values.Col(i).Range((j+3)*DIMSPACE, (j+4)*DIMSPACE);
+
+                     
                      this->T_CalcShape (adp,
                                         SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
                                                     auto grad = ::GetGradient(shape);
-                                                    SIMD<double> sum1 = 0.0;
-                                                    SIMD<double> sum2 = 0.0;
-                                                    SIMD<double> sum3 = 0.0;
-                                                    SIMD<double> sum4 = 0.0;
-                                                    for (size_t k = 0; k < DIMSPACE; k++)
-                                                      {
-                                                        sum1 += grad(k) * vals(k); 
-                                                        sum2 += grad(k) * vals(k+DIMSPACE); 
-                                                        sum3 += grad(k) * vals(k+2*DIMSPACE); 
-                                                        sum4 += grad(k) * vals(k+3*DIMSPACE);
-                                                      }
+                                                    SIMD<double> sum1 = InnerProduct(vals1, grad);
+                                                    SIMD<double> sum2 = InnerProduct(vals2, grad);
+                                                    SIMD<double> sum3 = InnerProduct(vals3, grad);
+                                                    SIMD<double> sum4 = InnerProduct(vals4, grad);
+
                                                     SIMD<double,4> allsum = HSum(sum1, sum2, sum3, sum4);
                                                     allsum += SIMD<double,4> (pcoef);
                                                     allsum.Store(pcoef);
