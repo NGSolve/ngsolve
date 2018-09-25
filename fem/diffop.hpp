@@ -169,6 +169,7 @@ namespace ngfem
     int difforder;
     Array<int> dimensions;
   public:
+    /*
     [[deprecated("Use DifferentialOperator(int,int,VorB,int) instead")]]
     NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, bool boundary, int adifforder)
       : dim(adim), blockdim(ablockdim), vb(boundary ? BND : VOL),  difforder(adifforder)
@@ -178,6 +179,7 @@ namespace ngfem
        else
          dimensions = Array<int> ( { dim/blockdim, blockdim });
      }
+    */
     NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, VorB avb, int adifforder)
       : dim(adim), blockdim(ablockdim), vb(avb), difforder(adifforder)
     { 
@@ -191,22 +193,18 @@ namespace ngfem
     ///
     virtual string Name() const { return typeid(*this).name(); }
     /// dimension of range
-    // NGS_DLL_HEADER virtual int Dim() const = 0;
     int Dim() const { return dim; }
     const Array<int> & Dimensions() const { return dimensions; } 
     /// number of copies of finite element by BlockDifferentialOperator
-    // NGS_DLL_HEADER virtual int BlockDim() const { return 1; }
     int BlockDim() const { return blockdim; }
     /// does it live on the boundary ?
-    //virtual bool Boundary() const { return false; }
-    //[[deprecated("use VB() instead")]]
+    [[deprecated("use VB() instead")]]
     bool Boundary() const { return vb == BND; }
     VorB VB() const { return vb; }
 
     virtual bool SupportsVB (VorB checkvb) const { return checkvb == vb; }
     
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
-    // virtual int DiffOrder() const = 0;
     int DiffOrder() const { return difforder; } 
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
@@ -349,13 +347,6 @@ namespace ngfem
     virtual ~BlockDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
-    /// dimension of range
-    /*
-    virtual int Dim() const { return dim*diffop->Dim(); }
-    virtual int BlockDim() const { return dim*diffop->BlockDim(); }
-    virtual bool Boundary() const { return diffop->Boundary(); }
-    virtual int DiffOrder() const { return diffop->DiffOrder(); }
-    */
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
@@ -428,16 +419,11 @@ namespace ngfem
 
   public:
     T_DifferentialOperator()
-    // : DifferentialOperator(DIFFOP::DIM_DMAT, 1, int(DIM_SPACE) > int(DIM_ELEMENT), DIFFOP::DIFFORDER)
       : DifferentialOperator(DIFFOP::DIM_DMAT, 1, VorB(int(DIM_SPACE)-int(DIM_ELEMENT)), DIFFOP::DIFFORDER)
     {
       dimensions = DIFFOP::GetDimensions();
     }
-    /*
-    virtual int Dim() const { return DIFFOP::DIM_DMAT; }
-    virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
-    virtual int DiffOrder() const { return DIFFOP::DIFFORDER; }
-    */
+
     virtual string Name() const override { return DIFFOP::Name(); }
     
     virtual bool operator== (const DifferentialOperator & diffop2) const override
