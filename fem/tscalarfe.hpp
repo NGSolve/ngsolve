@@ -232,6 +232,15 @@ namespace ngbla
       grad(i) = ad.DValue(i);
     return grad;
   }
+
+  template <int DIM, typename SCAL>
+  auto GetGradient (AutoDiffRec<DIM,SCAL> ad)
+  {
+    Vec<DIM,SCAL> grad;
+    for (int i = 0; i < DIM; i++)
+      grad(i) = ad.DValue(i);
+    return grad;
+  }
   
 }
 
