@@ -34,6 +34,25 @@ namespace ngfem
     template <typename T1, typename T2>    
     TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
   };
+
+  template <typename T>
+  class TIP<0,T>
+  {
+  public:
+    TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
+    TIP & operator= (const TIP &) = default;
+    TIP & operator= (TIP &&) = default;
+    
+    // TIP (T _x) : x(_x) { ; }
+    explicit TIP (Vec<0,T> v) { ; }    
+    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
+    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
+    template <typename T1, typename T2>
+    TIP (TIP<0,T1> ip1, TIP<0,T2> ip2) { ; } 
+  };
+
   
   template <typename T>
   class TIP<1,T>
