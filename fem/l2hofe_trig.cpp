@@ -29,14 +29,13 @@ namespace ngfem
       {
         if (vnums[1] < vnums[2])
           {
-            /*
             Iterate<MAX_FO_TRIG+1> ([&hofe,&lh,order] (auto nr)
                                     {
                                       if (nr.value == order)
                                         hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,nr.value, FixedOrientation<0,1,2>> ();
                                     });
-            */
 
+            /*
             switch (order)
               {
               case 0: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,0, FixedOrientation<0,1,2>> (); break;
@@ -46,6 +45,7 @@ namespace ngfem
                 // case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,1,2>> (); break;
               default: ; 
               }
+            */
           }
         else
           {
