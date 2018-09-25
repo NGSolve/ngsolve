@@ -665,7 +665,8 @@ namespace ngfem
                             { 
                               sum += coefs(i) * val;
                             }));
-    return AD2Vec<DIM> (sum);
+    // return AD2Vec<DIM> (sum);
+    return GetGradient(sum);
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -679,8 +680,8 @@ namespace ngfem
         TIP<DIM,AutoDiff<DIM>> tip = ir[i];
         Vec<DIM> sum = 0.0;
         T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
-                     SBLambda ([&] (int j, AD2Vec<DIM> shape)
-                               { sum += coefs(j) * shape; }));
+                     SBLambda ([&sum, coefs] (size_t j, auto shape)
+                               { sum += coefs(j) * GetGradient(shape); }));
         // vals.Row(i).AddSize(DIM) = sum;
         FlatVec<DIM>(vals.Addr(i,0)) = sum;
       }
@@ -710,7 +711,8 @@ namespace ngfem
                  // GetTIP(mir[i], adp);
                  this->T_CalcShape (adp,
                                     SBLambda ([DIMSPACE,&pcoefs,dist,&sum]
-                                              (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                              // (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                              (size_t j, auto shape)
                                               { 
                                                 for (auto k = 0; k < DIMSPACE; k++)
                                                   sum(k) += *pcoefs * shape.DValue(k); 
@@ -766,8 +768,8 @@ namespace ngfem
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = ir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
         T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>> (adp),
-                     SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                               { sum += coefs(j) * shape; }));
+                     SBLambda ([&sum, coefs] (size_t j, auto shape)
+                               { sum += coefs(j) * GetGradient(shape); }));
         for (int k = 0; k < DIM; k++)
           values(k,i) = sum(k).Data();
       }

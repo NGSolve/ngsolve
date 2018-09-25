@@ -224,6 +224,15 @@ namespace ngbla
     INLINE int Width () const { return 1; }
   };
 
+  template <int DIM, typename SCAL>
+  auto GetGradient (AutoDiff<DIM,SCAL> ad)
+  {
+    Vec<DIM,SCAL> grad;
+    for (int i = 0; i < DIM; i++)
+      grad(i) = ad.DValue(i);
+    return grad;
+  }
+  
 }
 
 
