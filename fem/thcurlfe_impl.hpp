@@ -218,14 +218,9 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIMSPACE,SIMD<double>> sum(0.0);
-                 T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (auto j, auto shape)
+                 T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (size_t j, auto shape)
                                                  {
                                                    sum += coefs(j) * shape.Value();
-                                                   /*
-                                                   double coef = coefs(j);
-                                                   for (size_t k = 0; k < DIMSPACE; k++)
-                                                     sum(k) += coef * shape(k);
-                                                   */
                                                  }));
                  for (size_t k = 0; k < DIMSPACE; k++)
                    values(k,i) = sum(k); 
@@ -298,6 +293,27 @@ namespace ngfem
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<Complex> coefs,
             BareSliceMatrix<SIMD<Complex>> values) const
   {
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIMSPACE,SIMD<Complex>> sum = SIMD<Complex>(0.0);
+                 T_CalcShape (&adp(0), SBLambda ([&] (size_t j, auto shape)
+                                                 {
+                                                   sum += coefs(j) * shape.Value();
+                                                 }));
+                 for (size_t k = 0; k < DIMSPACE; k++)
+                   values(k,i) = sum(k);
+               }
+           }
+       });
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -350,16 +366,37 @@ namespace ngfem
             for (size_t k = 0; k < DIM1; k++)
               values(k,i) = sum(k);
           }
-
       }
+    */
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemented");
-
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             constexpr int DIM_CURL = DIM_CURL_(DIMSPACE);
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIM_CURL,SIMD<double>> sum(0.0);            
+                 T_CalcShape (&adp(0), SBLambda ([coefs,&sum] (size_t j, auto shape)
+                                                 {
+                                                   sum += coefs(j) * shape.CurlValue();
+                                                 }));
+                 for (size_t k = 0; k < DIM_CURL; k++)
+                   values(k,i) = sum(k).Data();
+               }
+           }
+       });
+    
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         constexpr int DIM_CURL = DIM_CURL_(DIM);                
@@ -417,15 +454,37 @@ namespace ngfem
           }
 
       }
-
+    */
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemented");
-
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             constexpr int DIM_CURL = DIM_CURL_(DIMSPACE);
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
+                 Vec<DIM_CURL,SIMD<Complex>> sum = SIMD<Complex>(0.0);
+                 T_CalcShape (&adp(0), SBLambda ([coefs, &sum] (size_t j, auto shape)
+                                                 {
+                                                   sum += coefs(j) * shape.CurlValue();
+                                                 }));
+                 for (size_t k = 0; k < DIM_CURL; k++)
+                   values(k,i) = sum(k);
+               }
+           }
+       });
+  
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         constexpr int DIM_CURL = DIM_CURL_(DIM);                
@@ -483,8 +542,10 @@ namespace ngfem
           }
 	
       }
-
+    */
   }
+
+  
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
