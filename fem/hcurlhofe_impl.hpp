@@ -170,12 +170,11 @@ namespace ngfem
   //------------------------------------------------------------------------
   
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  INLINE void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
     Tx lam[3] = { x, y, 1-x-y };
 
-    ArrayMem<Tx,20> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
     for (int i = 0; i < 3; i++)
@@ -211,8 +210,6 @@ namespace ngfem
 	Tx xi  = lam[fav[2]]-lam[fav[1]];
 	Tx eta = lam[fav[0]]; 
 
-        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
-	
 	// gradients:
 	if(usegrad_face[0])
           {
@@ -249,6 +246,9 @@ namespace ngfem
 
         else
           {
+            ArrayMem<Tx,20> adpol1(order),adpol2(order);	
+            TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
+	
             // other combination
             for (int j = 0; j < p-1; j++)
               for (int k = 0; k < p-1-j; k++, ii++)

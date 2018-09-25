@@ -33,7 +33,7 @@ namespace ngfem
     HD virtual ELEMENT_TYPE ElementType() const { return ET; }
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
     { 
       static_cast<const SHAPES*> (this) -> T_CalcShape (hx, shape);
     }
