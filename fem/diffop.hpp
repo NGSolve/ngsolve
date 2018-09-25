@@ -198,7 +198,6 @@ namespace ngfem
     /// number of copies of finite element by BlockDifferentialOperator
     int BlockDim() const { return blockdim; }
     /// does it live on the boundary ?
-    [[deprecated("use VB() instead")]]
     bool Boundary() const { return vb == BND; }
     VorB VB() const { return vb; }
 
