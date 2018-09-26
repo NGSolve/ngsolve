@@ -242,76 +242,6 @@ namespace ngfem
   template <int D, typename T>
   auto type4 (AutoDiffDiff<D,T> al1, AutoDiffDiff<D,T> al2, AutoDiffDiff<D,T> av) { return T_type4<D,T>(al1, al2, av); }
   
-  /* ############### Special functions for curld-div bubbles ############### */
-  /* is equal to type 1 - tr(type 1)  */
-  /* this produces a divergence, but curldiv is equal to zero */
-  template <int D, typename T> class T_curldivfreebubbles;
-  template <typename T> class T_curldivfreebubbles<2,T>
-  {
-    AutoDiffDiff<2,T> u,v;
-  public:
-    T_curldivfreebubbles  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
-
-    Vec<4,T> Shape() {
-      return Vec<4,T> (-u.DDValue(0,1) * v.Value() -  v.DValue(0)*u.DValue(1),
-		     u.DDValue(0,0) * v.Value() + v.DValue(0)*u.DValue(0),
-		     -u.DDValue(1,1) * v.Value() - v.DValue(1)*u.DValue(1),
-		     u.DDValue(1,0) * v.Value() + v.DValue(1)*u.DValue(0)
-		     );
-    }
-
-    Vec<2,T> DivShape()
-    {
-      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      T ux = u.DValue(0), uy = u.DValue(1);
-      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
-      T vx = v.DValue(0), vy = v.DValue(1);
-      
-      return Vec<2,T> (-vxx*uy - vx*uxy + uxx*vy + ux*vxy,
-		     -uyy*vx - vxy*uy + uxy*vy + vyy*ux);
-
-    }
-
-    Vec<2,T> CurlShape()
-    {     
-      throw Exception("not implemented for curldivfreebubbles");
-    }
-    
-  };
-
-  template <int D, typename T>
-  auto curldivfreebubbles (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_curldivfreebubbles<D, T>(au, av); }
-
-
-  /* ############### Special functions for curld-bubbles ############### */
-  /* this produces a nt-bubble, but div(sigma) = 0 is equal to zero */
-  /* given by the curl(phi) and phi is a Nedelec-bubble (in 3d) */
-  template <int D, typename T> class T_curlbubble2D;
-  template <typename T> class T_curlbubble2D<2,T>
-  {
-    AutoDiffDiff<2,T> u;
-  public:
-    T_curlbubble2D  (AutoDiffDiff<2,T> au) : u(au){ ; }
-
-    Vec<4,T> Shape() {
-      return Vec<4,T> (-u.DValue(1), u.DValue(0), -u.DValue(1), u.DValue(0));
-    }
-
-    Vec<2,T> DivShape()
-    {
-      return Vec<2,T> (0.0,0.0);
-    }
-
-    Vec<2,T> CurlShape()
-    {     
-      throw Exception("not implemented for curlbubbles");
-    }
-    
-  };
-
-  template <int D, typename T>
-  auto CurlBubble2D (AutoDiffDiff<D,T> au) { return T_curlbubble2D<D, T>(au); }
-
   /* GG-bubble 2D from jay */
   
   template <int D, typename T> class T_GGbubble;
@@ -348,98 +278,10 @@ namespace ngfem
   template <int D, typename T>
   auto GGbubble (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab ) { return T_GGbubble<D, T>(aS, ab); }
   
-
-  //////////////////////////
-  /* type 1: hdiv bubble: Du_Cross_Dv */
-  
-  template <int D, typename T> class T_curlbubble3D_type1;
-  template <typename T> class T_curlbubble3D_type1<3,T>
-  {
-    AutoDiff<3,T> u;
-    AutoDiff<3,T> v;
-    AutoDiff<3,T> ei;
-  public:
-    T_curlbubble3D_type1  (AutoDiff<3,T> au, AutoDiff<3,T> av, AutoDiff<3,T> aei) : u(au), v(av), ei(aei){ ; }
-
-    Vec<9,T> Shape() {
-
-      
-      Vec<9,T> sigmaref;
-      AutoDiff<3,T> hv = Cross (u, v);
-
-      for (int i=0; i<3; i++)
-	{
-	  sigmaref(i*3)=  hv.DValue(0) * ei.DValue(i);
-	  sigmaref(i*3+1)=  hv.DValue(1) * ei.DValue(i);
-	  sigmaref(i*3+2)=  hv.DValue(2) * ei.DValue(i);
-	}
-      
-      return sigmaref;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      return Vec<3,T> (0.0,0.0, 0.0);
-    }
-
-    Vec<3,T> CurlShape()
-    {     
-      throw Exception("not implemented for curlbubbles");
-    }
-    
-  };
-
-  template <int D, typename T>
-  auto CurlBubble3D_type1 (AutoDiff<D,T> au, AutoDiff<D,T> av,  AutoDiff<D,T> aei) { return T_curlbubble3D_type1<D, T>(au, av, aei); }
-
-  //////////////////////////
-  /* type 1: hdiv bubble: curl_uDvw_minus_Duvw */
-  
-  template <int D, typename T> class T_curlbubble3D_type2;
-  template <typename T> class T_curlbubble3D_type2<3,T>
-  {
-    AutoDiff<3,T> u;
-    AutoDiff<3,T> v;
-    AutoDiff<3,T> w;
-    AutoDiff<3,T> ei;
-  public:
-    T_curlbubble3D_type2  (AutoDiff<3,T> au, AutoDiff<3,T> av, AutoDiff<3,T> aw, AutoDiff<3,T> aei) : u(au), v(av), w(aw), ei(aei){ ; }
-
-    Vec<9,T> Shape() {      
-      Vec<9,T> sigmaref;
-      AutoDiff<3,T> hv = Cross (u*w, v) - Cross (v*w, u);
-
-      for (int i=0; i<3; i++)
-	{
-	  sigmaref(i*3)=  hv.DValue(0) * ei.DValue(i);
-	  sigmaref(i*3+1)=  hv.DValue(1) * ei.DValue(i);
-	  sigmaref(i*3+2)=  hv.DValue(2) * ei.DValue(i);
-	}
-      
-      return sigmaref;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      return Vec<3,T> (0.0,0.0, 0.0);
-    }
-
-    Vec<3,T> CurlShape()
-    {     
-      throw Exception("not implemented for curlbubbles");
-    }
-    
-  };
-
-  template <int D, typename T>
-  auto CurlBubble3D_type2 (AutoDiff<D,T> au, AutoDiff<D,T> av, AutoDiff<D,T> aw,  AutoDiff<D,T> aei) { return T_curlbubble3D_type2<D, T>(au, av, aw, aei); }
-
-
   // GG-bubble of Jay
   // computes curl ( curl A B) where A is a skew sym matrix which is L^2 orthogonal on P^k-1
   // and B is the matrix bubble
   
-
   template <int D, typename T> class T_GGbubble_B1;
   template <typename T> class T_GGbubble_B1<3,T>
   {
@@ -661,46 +503,7 @@ namespace ngfem
   template <int D, typename T>
   auto GGbubble_B3 (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2, AutoDiffDiff<D,T> ab3) { return T_GGbubble_B3<D, T>(aS, ab0, ab1, ab2, ab3); }
     
-  /* Edge basis functions which are normal-tangential continuous */
-  /* calculates [(grad l1) o-times (rot-grad l2) ] * scaledlegendre */
-  /* DivShape assumes that phi_12 = [(grad l1) o-times (rot-grad l2) ] is constant!!! */
-  /* This is the old implementation! */
-  //
-  //class T_Dl2xRotDl1_v
-  //{
-  //  AutoDiffDiff<2> l1,l2,v;
-  //public:
-  //  T_Dl2xRotDl1_v  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av) { ; }
-  //
-  //  Vec<4> Shape() {
-  //    return Vec<4> (-v.Value()*(l1.DValue(0)*l2.DValue(1)),
-  //		     v.Value()*(l1.DValue(0)*l2.DValue(0)),
-  //		     -v.Value()*(l1.DValue(1)*l2.DValue(1)),
-  //		     v.Value()*(l1.DValue(1)*l2.DValue(0))
-  //		     );
-  //  }
-  //
-  //  Vec<2> DivShape()
-  //  {
-  //    double vx = v.DValue(0), vy = v.DValue(1);
-  //
-  //    double lam1x = l1.DValue(0);
-  //    double lam1y = l1.DValue(1);      
-  //    
-  //    double lam2x = l2.DValue(0);
-  //    double lam2y = l2.DValue(1);
-  //    
-  //    return Vec<2> (  - vx *lam1x*lam2y + vy*lam1x*lam2x, -vx *lam1y*lam2y + vy*lam1y*lam2x) ;      
-  //  }
-  //
-  //  Vec<2> CurlShape()
-  //  {     
-  //    throw Exception("not implemented for T_Dl2xRotDl1_v");
-  //  }
-  //
-  //};
-
-  
+   
   /* Face basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
   /* DivShape assumes that phi_12 =  [(grad l1) o-times (grad l2 x grad l3)] is constant!!! */
