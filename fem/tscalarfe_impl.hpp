@@ -46,7 +46,7 @@ namespace ngfem
     T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
                  SBLambda ([dshape] (int i, AutoDiff<DIM> shape)
                            {
-			     for (int j = 0; j < DIM; i++)
+			     for (int j = 0; j < DIM; j++)
 			       dshape(i, j) = shape.DValue(j);
 			   }));
   }
@@ -971,7 +971,7 @@ namespace ngfem
     T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
                  SBLambda ([dshape] (int i, AutoDiff<DIM> shape)
                            {
-			     for (int j = 0; j < DIM; i++)
+			     for (int j = 0; j < DIM; j++)
 			       dshape(i, j) = shape.DValue(j);
 		           }));
   }
