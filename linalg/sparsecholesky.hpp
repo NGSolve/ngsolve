@@ -154,7 +154,9 @@ namespace ngla
     virtual bool SupportsUpdate() const { return true; }     
     virtual void Update()
     {
-      FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
+      // FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
+      auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
+      FactorNew (*castmatrix);
     }
     ///
     void FactorNew (const SparseMatrix<TM> & a);

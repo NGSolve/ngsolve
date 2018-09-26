@@ -512,24 +512,39 @@ namespace ngla
     id = 0.0;
     SetIdentity(id);
 
-    for (size_t i = 0; i < nze; i++) lfact[i] = 0.0;
+    // for (size_t i = 0; i < nze; i++) lfact[i] = 0.0;
+    lfact = TM(0.0);
 
-    for (int i = 0; i < height; i++)
-      for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-	{
-	  int col = a.GetRowIndices(i)[j];
-	
-	  if ((!inner && !cluster) || 
-	      (inner && inner->Test(i) && inner->Test(col)) ||
+    if (!inner && !cluster)
+      ParallelFor 
+        (Range(height), [&](int i)
+         {
+           auto rowind = a.GetRowIndices(i);
+           auto rowvals = a.GetRowValues(i);
+           
+           for (size_t j = 0; j < rowind.Size(); j++)
+             if (rowind[j] <= i)
+               SetOrig (i, rowind[j], rowvals[j]);
+         });
+    
+    else
+      
+      for (int i = 0; i < height; i++)
+        for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+          {
+            int col = a.GetRowIndices(i)[j];
+            
+            if ((!inner && !cluster) || 
+                (inner && inner->Test(i) && inner->Test(col)) ||
 	      (!inner && cluster && (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) )
-	    {
-	      if ( col <= i ) SetOrig (i, col, a.GetRowValues(i)[j]);
-	    }
-          /*
-	  else if (i == col)
-	    SetOrig (i, i, id);
-          */
-	}
+              {
+                if ( col <= i ) SetOrig (i, col, a.GetRowValues(i)[j]);
+              }
+            /*
+              else if (i == col)
+              SetOrig (i, i, id);
+            */
+          }
     
     FactorSPD(); 
   }
