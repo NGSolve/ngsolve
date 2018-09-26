@@ -617,7 +617,7 @@ namespace ngcomp
       GetInnerDofNrs(e.Nr(), innerdofs);
       int offset = 0;
       
-      switch(ma->GetElType(e.Nr()))
+      switch(ma->GetElType(e))
 	{
 	case ET_TRIG:
 	  if(order_trace[e.Nr()]>-1)
