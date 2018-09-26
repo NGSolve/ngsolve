@@ -26,7 +26,9 @@ namespace ngcomp
     bool discontinuous;
 
     // add curl of Nedelec bubbles
-    bool curlbubbles;    
+    //bool curlbubbles;
+    // GG bubbles
+    bool GGbubbles;    
     
     int uniform_order_facet;
     int uniform_order_inner;
