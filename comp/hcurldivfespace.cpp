@@ -278,13 +278,29 @@ namespace ngcomp
       dynamic_cast<const HCurlDivFiniteElement<D>&>(fel).AddTrans (mir, y, x);
     } 
     
-    /*    
+
+  };
+
+  template<int D>
+  class DiffOpIdHCurlDiv_old : public DiffOp<DiffOpIdHCurlDiv_old<D> >
+  { 
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+    
+    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
+    
+                
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
-                               MAT & mat, LocalHeap & lh)
+			       MAT & mat, LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+	dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();     
       Mat<D> jac = sip.GetJacobian();
@@ -295,39 +311,39 @@ namespace ngcomp
       fel.CalcShape(sip.IP(), shape);
 
       for (int i = 0; i < fel.GetNDof(); i++)
-        {
-          Mat<D> sigma_ref;
-          // 2D case
-          if(D==2)
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(0,1) = shape(i,1);
-	    sigma_ref(1,0) = shape(i,2);
-	    sigma_ref(1,1) = shape(i,3);
-          }
-          else // 3D case
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(0,1) = shape(i,1);
-            sigma_ref(0,2) = shape(i,2);
-	    sigma_ref(1,0) = shape(i,3);
-            sigma_ref(1,1) = shape(i,4);
-            sigma_ref(1,2) = shape(i,5);
-	    sigma_ref(2,0) = shape(i,6);
-            sigma_ref(2,1) = shape(i,7);
-            sigma_ref(2,2) = shape(i,8);
-          }
+	{
+	  Mat<D> sigma_ref;	  
+	  
+	  // 2D case
+	  if(D==2)
+	    {
+	      sigma_ref(0,0) = shape(i,0);
+	      sigma_ref(0,1) = shape(i,1);
+	      sigma_ref(1,0) = shape(i,2);
+	      sigma_ref(1,1) = shape(i,3);
+	    }
+	  else // 3D case
+	    {
+	      sigma_ref(0,0) = shape(i,0);
+	      sigma_ref(0,1) = shape(i,1);
+	      sigma_ref(0,2) = shape(i,2);
+	      sigma_ref(1,0) = shape(i,3);
+	      sigma_ref(1,1) = shape(i,4);
+	      sigma_ref(1,2) = shape(i,5);
+	      sigma_ref(2,0) = shape(i,6);
+	      sigma_ref(2,1) = shape(i,7);
+	      sigma_ref(2,2) = shape(i,8);
+	    }
 
-          Mat<D> hm = Trans(jacinv) * sigma_ref;
-          Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / det);
+	  Mat<D> hm = Trans(jacinv) * sigma_ref;
+	  Mat<D> sigma = hm * Trans(jac);
+	  sigma *= (1.0 / det);
 
-          for (int j = 0; j < D*D; j++)
-            mat(j, i) = sigma(j);
-        }
-
+	  for (int j = 0; j < D*D; j++)
+	    mat(j, i) = sigma(j);
 	}
-    */
+
+    }        
   };
 
 
@@ -450,7 +466,11 @@ namespace ngcomp
     order = int (flags.GetNumFlag ("order",1));
 
     hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
-    curlbubbles = flags.GetDefineFlag("curlbubbles");
+
+    if(flags.GetDefineFlag("curlbubbles"))
+      throw Exception ("curlbubbles depricated, use GGbubbles instead");
+    
+    GGbubbles = flags.GetDefineFlag("GGbubbles");
     
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
@@ -469,7 +489,7 @@ namespace ngcomp
     else
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlDiv<2>>>();
-      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv<3>>>();
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>();
       integrator[VOL] = make_shared<HCurlDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<3>>>();
     }
@@ -528,8 +548,8 @@ namespace ngcomp
 	if (ot>-1)
 	  ndof += (ot + 1) * (ot + 2) / 2;
 
-	if (curlbubbles)
-	  ndof += oi;
+	if (GGbubbles)
+	  ndof += oi+1;
 	
         if(discontinuous)
         {
@@ -554,8 +574,10 @@ namespace ngcomp
 	if(ot>-1)
 	  ndof += (ot + 1)*(ot+2)*(ot+3)/6;
 
-	if (curlbubbles)
-	  ndof += 3*((oi+1)*oi + oi);
+	if (GGbubbles)
+	  ndof += 3*(oi+1)*(oi+2)/2;
+	  //if(!GG)
+	  //  ndof += 3*((oi+1)*oi + oi);	  
 	
 	if(discontinuous)
         {
@@ -682,7 +704,7 @@ namespace ngcomp
     {
     case ET_TRIG:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order, curlbubbles);
+      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order, GGbubbles);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -694,7 +716,7 @@ namespace ngcomp
     }
     case ET_QUAD:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order, curlbubbles);
+      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order, GGbubbles);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -706,7 +728,7 @@ namespace ngcomp
     }
     case ET_TET:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TET> (order, curlbubbles);
+      auto fe = new (alloc) HCurlDivFE<ET_TET> (order, GGbubbles);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
