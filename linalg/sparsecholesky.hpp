@@ -152,14 +152,14 @@ namespace ngla
 #endif
 
     virtual bool SupportsUpdate() const { return true; }     
-    virtual void Update()
+    NGS_DLL_HEADER virtual void Update()
     {
       // FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
       auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
       FactorNew (*castmatrix);
     }
     ///
-    void FactorNew (const SparseMatrix<TM> & a);
+    NGS_DLL_HEADER void FactorNew (const SparseMatrix<TM> & a);
 
     /**
        A = L+D+L^T
@@ -244,7 +244,7 @@ namespace ngla
     ///
     virtual ~SparseCholesky () { ; }
     
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    NGS_DLL_HEADER virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     virtual void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const;
 
