@@ -358,6 +358,21 @@ public:
         dmatop.Apply1 (fel, bmip, hflux, lh);
     }
 
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+              const BaseMappedIntegrationRule & bmir,
+              FlatVector<Complex> elx, 
+              FlatMatrix<Complex> flux,
+              bool applyd,
+              LocalHeap & lh) const
+    {
+      diffop->Apply (fel, bmir, elx, flux, lh);
+      
+      FlatMatrixFixWidth<DMATOP::DIM_DMAT,Complex> hflux(flux.Height(), &flux(0,0));
+      if (applyd)
+        dmatop.ApplyIR (fel, bmir, hflux, lh);
+    }
+
 
 
 

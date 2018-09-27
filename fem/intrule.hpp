@@ -34,6 +34,25 @@ namespace ngfem
     template <typename T1, typename T2>    
     TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
   };
+
+  template <typename T>
+  class TIP<0,T>
+  {
+  public:
+    TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
+    TIP & operator= (const TIP &) = default;
+    TIP & operator= (TIP &&) = default;
+    
+    // TIP (T _x) : x(_x) { ; }
+    explicit TIP (Vec<0,T> v) { ; }    
+    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
+    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
+    template <typename T1, typename T2>
+    TIP (TIP<0,T1> ip1, TIP<0,T2> ip2) { ; } 
+  };
+
   
   template <typename T>
   class TIP<1,T>
@@ -1617,9 +1636,10 @@ namespace ngstd
     ngbla::Vec<R,SIMD<double>> & Point() { return point; }
 
     INLINE const Vec<R,SIMD<double>> GetNV () const { return normalvec; }
+    INLINE Vec<R,SIMD<double>> & NV () { return normalvec; }    
     INLINE void SetNV (Vec<R,SIMD<double>> vec) { normalvec = vec; }
 
-    INLINE const Vec<R,SIMD<double>> GetTV () const { return tangentialvec; }
+    INLINE const Vec<R,SIMD<double>> & GetTV () const { return tangentialvec; }
     INLINE void SetTV (Vec<R,SIMD<double>> vec) { tangentialvec = vec; }
   };
 
@@ -1958,6 +1978,7 @@ namespace ngfem
     const SIMD_BaseMappedIntegrationRule * other_mir = nullptr;
 
     BareSliceMatrix<SIMD<double>> points{0,nullptr,DummySize(0,0)};
+    BareSliceMatrix<SIMD<double>> normals{0,nullptr,DummySize(0,0)};
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -1981,7 +2002,8 @@ namespace ngfem
     INLINE int DimSpace() const { return dim_space; }
     // virtual ABareMatrix<double> GetPoints() const = 0;
     // virtual BareSliceMatrix<SIMD<double>> GetPoints() const = 0;
-    BareSliceMatrix<SIMD<double>> GetPoints() const { return points; }
+    SliceMatrix<SIMD<double>> GetPoints() const { return points.AddSize(ir.Size(), dim_space) ; }
+    SliceMatrix<SIMD<double>> GetNormals() const { return normals.AddSize(ir.Size(), dim_space) ; }
     virtual void Print (ostream & ost) const = 0;
     bool IsComplex() const { return false; }
     BareSliceMatrix<SIMD<Complex>> GetPointsComplex() const { throw ExceptionNOSIMD("Not implemented"); }
@@ -2025,6 +2047,10 @@ namespace ngfem
         new (&points) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
                                                      &mips[0].Point()(0),
                                                      DummySize(mips.Size(), DIM_SPACE));
+        
+        new (&normals) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                      &mips[0].NV()(0),
+                                                      DummySize(mips.Size(), DIM_SPACE));
       }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) override;
