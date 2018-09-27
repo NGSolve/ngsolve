@@ -15,11 +15,95 @@
 typedef moodycamel::ConcurrentQueue<int> TQueue; 
 typedef moodycamel::ProducerToken TPToken; 
 typedef moodycamel::ConsumerToken TCToken; 
- 
+
+
 
 
 namespace ngla
 {
+
+
+  
+  static TQueue queue;
+
+
+  template <typename TFUNC>
+  void RunParallelDependency (const Table<int> & dag,
+                              const Table<int> & trans_dag, // transposed dag
+                              TFUNC func)
+  {
+    Array<atomic<int>> cnt_dep(dag.Size());
+    for (auto i : Range(cnt_dep))
+      cnt_dep[i].store (trans_dag[i].Size(), memory_order_relaxed);
+    
+    Array<int> ready(dag.Size());
+    ready.SetSize0();
+    int num_final = 0;
+
+    for (int j : Range(cnt_dep))
+      {
+        if (cnt_dep[j] == 0) ready.Append(j);
+        if (dag[j].Size() == 0) num_final++;
+      }
+
+
+    if (!task_manager)
+      {
+        while (ready.Size())
+          {
+            int size = ready.Size();
+            int nr = ready[size-1];
+            ready.SetSize(size-1);
+            
+            func(nr);
+            
+            for (int j : dag[nr])
+              {
+                cnt_dep[j]--;
+                if (cnt_dep[j] == 0)
+                  ready.Append(j);
+              }
+          }
+        return;
+      }
+
+    atomic<int> cnt_final(0);
+    SharedLoop sl(Range(ready));
+
+    task_manager -> CreateJob 
+      ([&] (const TaskInfo & ti)
+       {
+        TPToken ptoken(queue); 
+        TCToken ctoken(queue); 
+        
+        for (int i : sl)
+          queue.enqueue (ptoken, ready[i]);
+
+        while (1)
+           {
+             if (cnt_final >= num_final) break;
+
+             int nr;
+             if(!queue.try_dequeue_from_producer(ptoken, nr)) 
+               if(!queue.try_dequeue(ctoken, nr))  
+                 continue; 
+             
+             if (dag[nr].Size() == 0)
+               cnt_final++;
+
+             func(nr);
+
+             for (int j : dag[nr])
+               {
+                 if (--cnt_dep[j] == 0)
+                   queue.enqueue (ptoken, j);
+               }
+           }
+       });
+  }
+
+
+
 
 
 
@@ -405,7 +489,7 @@ namespace ngla
           creator.Add(i, j);
 
     block_dependency = creator.MoveTable();
-
+    
 
     // genare micro-tasks:
     Array<int> first_microtask;
@@ -898,12 +982,12 @@ namespace ngla
   {
     FactorSPD1(5.3);
   }
+
   template <>
   void SparseCholeskyTM<Complex> :: FactorSPD ()
   {
     FactorSPD1(5.2);
   }
-
   
   template <class TM> template<typename T>
   void SparseCholeskyTM<TM> :: FactorSPD1 (T dummy) 
@@ -942,12 +1026,20 @@ namespace ngla
     TM * hlfact = lfact.Addr(0);
     int percent = 0;
 
+    // #define CHOLESKY_ORIGINAL
+    // #define CHOLESKY_SIMPLE
+    // #define CHOLESKY_PARALLEL
+#define CHOLESKY_PARALLEL_ATOMIC
+
     
+#ifdef CHOLESKY_ORIGINAL
     Array<TM> tmpmem;
     for (size_t blocknr : Range(blocks.Size()-1))
       {
-        size_t i1 = blocks[blocknr];
-        size_t last_same = blocks[blocknr+1];
+        IntRange block = BlockDofs(blocknr);
+        
+        size_t i1 = block.First(); // blocks[blocknr];
+        size_t last_same = block.Next(); // blocks[blocknr+1];
         
         if(i1*100/n > percent)
           {
@@ -955,21 +1047,22 @@ namespace ngla
             Ng_SetThreadPercentage(percent);
           }
 
-        for (auto j : Range(i1, last_same))
-          {
-	    if (n > 2000 && (j) % 1000 == 999)
-	      {
-		if ((j) % 10000 == 9999)
-		  cout << IM(4) << "+" << flush;
-		else
-		  cout << IM(4) << "." << flush;
-	      }
-          }
+        if (n > 2000)
+          for (auto j : block)
+            {
+              if (j % 1000 == 999)
+                {
+                  if ((j) % 10000 == 9999)
+                    cout << IM(4) << "+" << flush;
+                  else
+                    cout << IM(4) << "." << flush;
+                }
+            }
         
         // timerb.Start();
 
 	// rows in same block ...
-	size_t mi = last_same - i1;
+	size_t mi = block.Size();  // last_same - i1;
         size_t nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
         // factor_dense1.Start();
@@ -1084,7 +1177,376 @@ namespace ngla
 	// i1 = last_same;
         // timerc.Stop();
       }
+#endif
 
+
+#ifdef CHOLESKY_SIMPLE
+    for (size_t blocknr : Range(blocks.Size()-1))
+      {
+        IntRange block = BlockDofs(blocknr);
+        
+        size_t i1 = block.First(); 
+        size_t last_same = block.Next();
+
+	// rows in same block ...
+	size_t mi = block.Size();  // last_same - i1;
+        size_t nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+
+        ArrayMem<TM,10000> tmpmem(nk*nk);
+        FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
+
+        tmp = TM(0.0);
+
+	for (size_t j = 0; j < mi; j++)
+	  {
+            tmp(j,j) = diag[i1+j];
+            tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
+          }
+
+        auto A11 = tmp.Rows(0,mi).Cols(0,mi);
+        auto B   = tmp.Rows(mi,nk).Cols(0,mi);
+        auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
+
+        CalcLDL (A11);
+        if (mi < nk)
+          {
+            CalcLDL_SolveL (A11,B);
+            CalcLDL_A2 (A11.Diag(),B,A22);
+          }
+        
+        for (size_t j = 0; j < mi; j++)
+          {
+            diag[i1+j] = A11(j,j);
+            FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
+          };
+
+	// merge rows
+	size_t firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
+	size_t firsti = hfirstinrow[i1] + last_same-i1-1;
+	size_t lasti = hfirstinrow[i1+1]-1;
+	mi = lasti-firsti+1;
+
+        for (size_t j = 0; j < mi; j++)
+          {
+            auto sum = A22.Col(j);
+            
+            // merge together
+            size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+            size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+            
+            for (size_t k = j+1; k < mi; k++)
+              {
+                size_t kk = hrowindex2[firsti_ri+k];
+                while (hrowindex2[firstj_ri] != kk)
+                  {
+                    firstj++;
+                    firstj_ri++;
+                  }
+                
+                lfact[firstj] += sum[k];
+                firstj++;
+                firstj_ri++;
+              }
+          };
+          
+	for (size_t i2 = i1; i2 < last_same; i2++)
+	  {
+	    size_t first = hfirstinrow[i2] + last_same-i2-1;
+	    size_t last = hfirstinrow[i2+1];
+	    size_t j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
+
+	    for (auto j = first; j < last; j++, j_ri++)
+	      {
+		TM q = diag[i2] * lfact[j];
+		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
+	      }
+	  }
+      }
+#endif
+
+
+
+
+
+#ifdef CHOLESKY_PARALLEL
+    
+    // find new dependency graph ...
+    
+    // first, find the transposed graph
+    
+    TableCreator<int> creator_trans(block_dependency.Size());
+    for ( ; !creator_trans.Done(); creator_trans++)
+      for (int i : Range(block_dependency))
+        for (int j : block_dependency[i])
+          creator_trans.Add(j, i);
+    auto block_dep_trans = creator_trans.MoveTable();
+
+    // sort to avoid cycles
+    for (auto entry : block_dep_trans)
+      QuickSort (entry);
+    
+    TableCreator<int> creator_transitive(block_dependency.Size());
+    for ( ; !creator_transitive.Done(); creator_transitive++)
+      for (int i : Range(block_dep_trans))
+        if (block_dep_trans[i].Size())
+          {
+            for (int j = 0; j < block_dep_trans[i].Size()-1; j++)
+              creator_transitive.Add(block_dep_trans[i][j], block_dep_trans[i][j+1]);
+            creator_transitive.Add(block_dep_trans[i].Last(), i);
+          }
+    auto dep_transitive = creator_transitive.MoveTable();
+    
+    TableCreator<int> creator_trans2(block_dependency.Size());
+    for ( ; !creator_trans2.Done(); creator_trans2++)
+      for (int i : Range(dep_transitive))
+        for (int j : dep_transitive[i])
+          creator_trans2.Add(j, i);
+    auto dep_transitive_trans = creator_trans2.MoveTable();
+
+    static Timer tdep("paralleldep");
+    static Timer tdep1("paralleldep1");
+    static Timer tdep2("paralleldep2");
+    
+    RunParallelDependency
+      (dep_transitive, dep_transitive_trans, [&] (int blocknr)
+       {
+         // for (size_t blocknr : Range(blocks.Size()-1))
+        IntRange block = BlockDofs(blocknr);
+        RegionTracer reg(TaskManager::GetThreadId(), tdep, block.Size());
+
+        size_t i1 = block.First(); 
+        size_t last_same = block.Next();
+
+	// rows in same block ...
+	size_t mi = block.Size();  // last_same - i1;
+        size_t nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+
+        ArrayMem<TM,1000> tmpmem(nk*nk);
+        FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
+
+        tmp = TM(0.0);
+
+	for (size_t j = 0; j < mi; j++)
+	  {
+            tmp(j,j) = diag[i1+j];
+            tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
+          }
+
+        auto A11 = tmp.Rows(0,mi).Cols(0,mi);
+        auto B   = tmp.Rows(mi,nk).Cols(0,mi);
+        auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
+
+        {
+        RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
+        CalcLDL (A11);
+        if (mi < nk)
+          {
+            CalcLDL_SolveL (A11,B);
+            CalcLDL_A2 (A11.Diag(),B,A22);
+          }
+        }
+        
+        for (size_t j = 0; j < mi; j++)
+          {
+            diag[i1+j] = A11(j,j);
+            FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
+          };
+
+	// merge rows
+	size_t firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
+	size_t firsti = hfirstinrow[i1] + last_same-i1-1;
+	size_t lasti = hfirstinrow[i1+1]-1;
+	mi = lasti-firsti+1;
+
+        {
+        RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
+        for (size_t j = 0; j < mi; j++)
+          {
+            auto sum = A22.Col(j);
+            
+            // merge together
+            size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+            size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+            
+            for (size_t k = j+1; k < mi; k++)
+              {
+                size_t kk = hrowindex2[firsti_ri+k];
+                while (hrowindex2[firstj_ri] != kk)
+                  {
+                    firstj++;
+                    firstj_ri++;
+                  }
+                
+                lfact[firstj] += sum[k];
+                firstj++;
+                firstj_ri++;
+              }
+          };
+        } 
+	for (size_t i2 = i1; i2 < last_same; i2++)
+	  {
+	    size_t first = hfirstinrow[i2] + last_same-i2-1;
+	    size_t last = hfirstinrow[i2+1];
+	    size_t j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
+
+	    for (auto j = first; j < last; j++, j_ri++)
+	      {
+		TM q = diag[i2] * lfact[j];
+		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
+	      }
+	  }
+       });
+#endif
+
+
+
+
+
+#ifdef CHOLESKY_PARALLEL_ATOMIC
+    
+    
+    // first, find the transposed graph
+    
+    TableCreator<int> creator_trans(block_dependency.Size());
+    for ( ; !creator_trans.Done(); creator_trans++)
+      for (int i : Range(block_dependency))
+        for (int j : block_dependency[i])
+          creator_trans.Add(j, i);
+    auto block_dep_trans = creator_trans.MoveTable();
+
+    static Timer tdep("paralleldep");
+    static Timer tdep1("paralleldep1");
+    static Timer tdep2("paralleldep2");
+
+    Array<MyMutex> locks(n);
+
+    
+    RunParallelDependency
+      (block_dependency, block_dep_trans, [&] (int blocknr)
+       {
+        IntRange block = BlockDofs(blocknr);
+        RegionTracer reg(TaskManager::GetThreadId(), tdep, block.Size());
+
+        size_t i1 = block.First(); 
+        size_t last_same = block.Next();
+
+	// rows in same block ...
+	size_t mi = block.Size();  // last_same - i1;
+        size_t nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+
+        ArrayMem<TM,1000> tmpmem(nk*nk);
+        FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
+
+        tmp = TM(0.0);
+
+	for (size_t j = 0; j < mi; j++)
+	  {
+            tmp(j,j) = diag[i1+j];
+            tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
+          }
+
+        auto A11 = tmp.Rows(0,mi).Cols(0,mi);
+        auto B   = tmp.Rows(mi,nk).Cols(0,mi);
+        auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
+
+        {
+        RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
+        CalcLDL (A11);
+        if (mi < nk)
+          {
+            CalcLDL_SolveL (A11,B);
+            CalcLDL_A2 (A11.Diag(),B,A22);
+          }
+        }
+        
+        for (size_t j = 0; j < mi; j++)
+          {
+            diag[i1+j] = A11(j,j);
+            FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
+          };
+
+	// merge rows
+	size_t firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
+	size_t firsti = hfirstinrow[i1] + last_same-i1-1;
+	size_t lasti = hfirstinrow[i1+1]-1;
+	mi = lasti-firsti+1;
+
+        {
+        RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
+        for (size_t j = 0; j < mi; j++)
+          {
+            auto other_row = hrowindex2[firsti_ri+j];
+            locks[other_row].lock();
+            
+            auto sum = A22.Col(j);
+            
+            // merge together
+            size_t firstj = hfirstinrow[other_row];
+            size_t firstj_ri = hfirstinrow_ri[other_row];
+            
+            for (size_t k = j+1; k < mi; k++)
+              {
+                size_t kk = hrowindex2[firsti_ri+k];
+                while (hrowindex2[firstj_ri] != kk)
+                  {
+                    firstj++;
+                    firstj_ri++;
+                  }
+                
+                // AsAtomic(lfact[firstj]) += sum[k];
+                lfact[firstj] += sum[k];
+                firstj++;
+                firstj_ri++;
+              }
+            locks[other_row].unlock();            
+          };
+        }
+
+
+        /*
+	for (size_t i2 = i1; i2 < last_same; i2++)
+	  {
+	    size_t first = hfirstinrow[i2] + last_same-i2-1;
+	    size_t last = hfirstinrow[i2+1];
+	    size_t j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
+
+	    for (auto j = first; j < last; j++, j_ri++)
+	      {
+		TM q = diag[i2] * lfact[j];
+		// AsAtomic(diag[rowindex2[j_ri]]) -= Trans (lfact[j]) * q;
+                
+                locks[rowindex2[j_ri]].lock();                            
+                diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
+                locks[rowindex2[j_ri]].unlock();                            
+	      }
+	  }
+        */
+
+        size_t num_other = hfirstinrow[i1+1] - (hfirstinrow[i1] + last_same-i1-1);
+        size_t j_ri = hfirstinrow_ri[i1] + last_same-i1-1;
+        
+        for (size_t j = 0; j < num_other; j++)
+          {
+            locks[rowindex2[j_ri+j]].lock();
+            for (size_t i2 = i1; i2 < last_same; i2++)          
+              {
+                size_t first = hfirstinrow[i2] + last_same-i2-1;
+                size_t last = hfirstinrow[i2+1];
+                
+                TM q = diag[i2] * lfact[first+j];
+                diag[rowindex2[j_ri+j]] -= Trans (lfact[first+j]) * q;
+              }
+            locks[rowindex2[j_ri+j]].unlock();            
+          }
+
+        
+       });
+#endif
+
+
+    
+    
+    
     /*
     size_t j = 0;
     for (size_t i = 0; i < n; i++)
@@ -1249,87 +1711,6 @@ namespace ngla
     }
   };
   */
-
-
-  
-  static TQueue queue;
-
-
-  template <typename TFUNC>
-  void RunParallelDependency (const Table<int> & dag,
-                              const Table<int> & trans_dag, // transposed dag
-                              TFUNC func)
-  {
-    Array<atomic<int>> cnt_dep(dag.Size());
-    for (auto i : Range(cnt_dep))
-      cnt_dep[i].store (trans_dag[i].Size(), memory_order_relaxed);
-    
-    Array<int> ready(dag.Size());
-    ready.SetSize0();
-    int num_final = 0;
-
-    for (int j : Range(cnt_dep))
-      {
-        if (cnt_dep[j] == 0) ready.Append(j);
-        if (dag[j].Size() == 0) num_final++;
-      }
-
-
-    if (!task_manager)
-      {
-        while (ready.Size())
-          {
-            int size = ready.Size();
-            int nr = ready[size-1];
-            ready.SetSize(size-1);
-            
-            func(nr);
-            
-            for (int j : dag[nr])
-              {
-                cnt_dep[j]--;
-                if (cnt_dep[j] == 0)
-                  ready.Append(j);
-              }
-          }
-        return;
-      }
-
-    atomic<int> cnt_final(0);
-    SharedLoop sl(Range(ready));
-
-    task_manager -> CreateJob 
-      ([&] (const TaskInfo & ti)
-       {
-        TPToken ptoken(queue); 
-        TCToken ctoken(queue); 
-        
-        for (int i : sl)
-          queue.enqueue (ptoken, ready[i]);
-
-        while (1)
-           {
-             if (cnt_final >= num_final) break;
-
-             int nr;
-             if(!queue.try_dequeue_from_producer(ptoken, nr)) 
-               if(!queue.try_dequeue(ctoken, nr))  
-                 continue; 
-             
-             if (dag[nr].Size() == 0)
-               cnt_final++;
-
-             func(nr);
-
-             for (int j : dag[nr])
-               {
-                 if (--cnt_dep[j] == 0)
-                   queue.enqueue (ptoken, j);
-               }
-           }
-       });
-  }
-
 
 
 
