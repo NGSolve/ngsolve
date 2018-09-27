@@ -9,7 +9,7 @@ namespace ngla
 
 
   template <typename TSCAL = double> 
-  class S_BaseVectorPtr : virtual public S_BaseVector<TSCAL>
+  class NGS_DLL_HEADER S_BaseVectorPtr : virtual public S_BaseVector<TSCAL>
   {
   protected:
     TSCAL * pdata;
@@ -49,18 +49,18 @@ namespace ngla
       this->pdata = static_cast<TSCAL*> (adata); 
     }
     
-    NGS_DLL_HEADER virtual ~S_BaseVectorPtr ();
+    virtual ~S_BaseVectorPtr ();
 
     virtual void * Memory () const throw() override
     {
       return pdata; 
     }
 
-    NGS_DLL_HEADER virtual Array<MemoryUsage> GetMemoryUsage () const override;
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     
-    NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const override;
-    NGS_DLL_HEADER virtual AutoVector Range (T_Range<size_t> range) const override;
+    virtual AutoVector Range (size_t begin, size_t end) const override;
+    virtual AutoVector Range (T_Range<size_t> range) const override;
 
     template<typename TIND, typename std::enable_if<std::is_integral<TIND>::value, int>::type = 0>
     FlatVector<TSCAL> operator() (TIND i) const
@@ -68,7 +68,7 @@ namespace ngla
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
 
-    NGS_DLL_HEADER virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateVector () const override;
 
     virtual ostream & Print (ostream & ost) const override;
   };
@@ -165,9 +165,6 @@ namespace ngla
     }
   };
 
-
-  extern template class S_BaseVectorPtr<double>;
-  extern template class S_BaseVectorPtr<Complex>;
   extern template class VVector<double>;
   extern template class VVector<Complex>;
 }
