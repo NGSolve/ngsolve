@@ -874,7 +874,10 @@ namespace ngla
   {
     return make_shared<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
   }
+
   
+  template class S_BaseVectorPtr<double>;
+  template class S_BaseVectorPtr<Complex>;
 
   template class S_BaseVector<double>;
   template class S_BaseVector<Complex>;

@@ -120,7 +120,7 @@ namespace ngstd
 
 
   
-  void RunWithTaskManager (function<void()> alg);
+  NGS_DLL_HEADER void RunWithTaskManager (function<void()> alg);
 
   // For Python context manager
   int  EnterTaskManager ();
