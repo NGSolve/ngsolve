@@ -375,7 +375,7 @@ namespace ngla
     
     blocks.Append(0);
     for (int i = 1; i < nused; i++)
-      if (blocknrs[i] == i || i >= blocks.Last()+256)
+      if (blocknrs[i] == i)  //  || i >= blocks.Last()+256) // don't subdivide, for this we have the micro-blocks
         blocks.Append (i);
     blocks.Append(nused);
 
@@ -927,24 +927,31 @@ namespace ngla
     size_t * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
     TM * hlfact = lfact.Addr(0);
+    int percent = 0;
+
     
     Array<TM> tmpmem;
-    for (size_t i1 = 0; i1 < n;  )
+    for (size_t blocknr : Range(blocks.Size()-1))
       {
-	size_t last_same = i1;
-	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
+        size_t i1 = blocks[blocknr];
+        size_t last_same = blocks[blocknr+1];
+        
+        if(i1*100/n > percent)
           {
-            last_same++;
+            percent = i1*100/n;
+            Ng_SetThreadPercentage(percent);
+          }
 
-	    if (n > 2000 && (last_same) % 1000 == 999)
+        for (auto j : Range(i1, last_same))
+          {
+	    if (n > 2000 && (j) % 1000 == 999)
 	      {
-		if ((last_same) % 10000 == 9999)
+		if ((j) % 10000 == 9999)
 		  cout << IM(4) << "+" << flush;
 		else
 		  cout << IM(4) << "." << flush;
 	      }
           }
-
         
         // timerb.Start();
 
@@ -1061,10 +1068,11 @@ namespace ngla
 	      }
 	  }
         // timerc2.Stop();
-	i1 = last_same;
+	// i1 = last_same;
         // timerc.Stop();
       }
 
+    /*
     size_t j = 0;
     for (size_t i = 0; i < n; i++)
       {
@@ -1074,7 +1082,13 @@ namespace ngla
 	for ( ; j < last; j++)
           lfact[j] = lfact[j] * ai;
       }
-
+    */
+    ParallelFor (n, [&] (size_t i)
+      {
+        TM ai = diag[i];
+        for (auto j : Range(hfirstinrow[i], hfirstinrow[i+1]))
+          lfact[j] = lfact[j] * ai;
+      });
 
     if (n > 2000)
       cout << IM(4) << endl;

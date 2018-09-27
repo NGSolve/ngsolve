@@ -9,7 +9,7 @@ namespace ngla
 
 
   template <typename TSCAL = double> 
-  class S_BaseVectorPtr : virtual public S_BaseVector<TSCAL>
+  class NGS_DLL_HEADER S_BaseVectorPtr : virtual public S_BaseVector<TSCAL>
   {
   protected:
     TSCAL * pdata;
@@ -59,8 +59,8 @@ namespace ngla
     virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     
-    NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const override;
-    NGS_DLL_HEADER virtual AutoVector Range (T_Range<size_t> range) const override;
+    virtual AutoVector Range (size_t begin, size_t end) const override;
+    virtual AutoVector Range (T_Range<size_t> range) const override;
 
     template<typename TIND, typename std::enable_if<std::is_integral<TIND>::value, int>::type = 0>
     FlatVector<TSCAL> operator() (TIND i) const
@@ -68,7 +68,7 @@ namespace ngla
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
 
-    NGS_DLL_HEADER virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateVector () const override;
 
     virtual ostream & Print (ostream & ost) const override;
   };
@@ -121,7 +121,7 @@ namespace ngla
      A specific vector based on Vector.
   */
   template <typename T = double> 
-  class  VVector : virtual public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
+  class VVector : virtual public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
   {
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -165,9 +165,6 @@ namespace ngla
     }
   };
 
-
-
   extern template class VVector<double>;
   extern template class VVector<Complex>;
-  
 }
