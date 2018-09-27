@@ -129,12 +129,12 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL_MAT;
 
     ///
-    SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
-                      shared_ptr<BitArray> ainner = nullptr,
-                      shared_ptr<const Array<int>> acluster = nullptr,
-                      bool allow_refactor = 0);
+    NGS_DLL_HEADER SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
+                                     shared_ptr<BitArray> ainner = nullptr,
+                                     shared_ptr<const Array<int>> acluster = nullptr,
+                                     bool allow_refactor = 0);
     ///
-    virtual ~SparseCholeskyTM ();
+    NGS_DLL_HEADER virtual ~SparseCholeskyTM ();
     ///
     int VHeight() const { return height; }
     ///

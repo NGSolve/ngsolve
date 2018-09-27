@@ -49,14 +49,14 @@ namespace ngla
       this->pdata = static_cast<TSCAL*> (adata); 
     }
     
-    virtual ~S_BaseVectorPtr ();
+    NGS_DLL_HEADER virtual ~S_BaseVectorPtr ();
 
     virtual void * Memory () const throw() override
     {
       return pdata; 
     }
 
-    virtual Array<MemoryUsage> GetMemoryUsage () const override;
+    NGS_DLL_HEADER virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     
     NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const override;
@@ -121,7 +121,7 @@ namespace ngla
      A specific vector based on Vector.
   */
   template <typename T = double> 
-  class  VVector : virtual public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
+  class VVector : virtual public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
   {
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -166,8 +166,8 @@ namespace ngla
   };
 
 
-
+  extern template class S_BaseVectorPtr<double>;
+  extern template class S_BaseVectorPtr<Complex>;
   extern template class VVector<double>;
   extern template class VVector<Complex>;
-  
 }
