@@ -592,6 +592,20 @@ void ExportVisFunctions(py::module &m) {
                     for (auto v : verts)
                         ei.data.Append(v);
 
+                    const auto & faces = el.Faces();
+                    ArrayMem<int, 10> neighbors (faces.Size());
+                    neighbors = -1;
+                    for (auto fi : Range(faces)) {
+                        auto f = faces[fi];
+                        ArrayMem<int, 2> els;
+                        ma->GetFaceElements(f, els);
+                        for (auto other : els)
+                            if(other != el.Nr())
+                                neighbors[fi] = other;
+                    }
+                    for (auto n : neighbors)
+                        ei.data.Append(n);
+
                     if(el.is_curved) {
                         ei.data.Append(vertices.Size()/3);
                         HeapReset hr(lh);

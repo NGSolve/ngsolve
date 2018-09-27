@@ -130,52 +130,36 @@ namespace ngfem
     virtual void AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
                                BareSliceVector<double> coefs) const;
   };
+
+
   
-}  
 
+  extern template class HCurlHighOrderFE<ET_SEGM>;
+  extern template class HCurlHighOrderFE<ET_TRIG>;
+  extern template class HCurlHighOrderFE<ET_QUAD>;
+  extern template class HCurlHighOrderFE<ET_TET>;
+  extern template class HCurlHighOrderFE<ET_PRISM>;
+  extern template class HCurlHighOrderFE<ET_PYRAMID>;
+  extern template class HCurlHighOrderFE<ET_HEX>;
 
-#ifdef FILE_HCURLHOFE_CPP
-
-#define HCURLHOFE_EXTERN
-#include <thcurlfe_impl.hpp>
-#include <hcurlhofe_impl.hpp>
-
-#else
-
-#define HCURLHOFE_EXTERN extern
-
-namespace ngfem
-{
-  // HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_POINT>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_SEGM>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_TRIG>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_QUAD>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_TET>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_PRISM>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_PYRAMID>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_HEX>;
-
-  // HCURLHOFE_EXTERN template class 
-  // T_HCurlHighOrderFiniteElement<ET_POINT, HCurlHighOrderFE_Shape<ET_POINT>>;
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_SEGM, HCurlHighOrderFE_Shape<ET_SEGM>>;
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_TRIG, HCurlHighOrderFE_Shape<ET_TRIG>>;
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_QUAD, HCurlHighOrderFE_Shape<ET_QUAD>>;
 
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_TET, HCurlHighOrderFE_Shape<ET_TET>>;
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_PRISM, HCurlHighOrderFE_Shape<ET_PRISM>>;
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_PYRAMID, HCurlHighOrderFE_Shape<ET_PYRAMID>>;
-  HCURLHOFE_EXTERN template class 
+  extern template class 
   T_HCurlHighOrderFiniteElement<ET_HEX, HCurlHighOrderFE_Shape<ET_HEX>>;
   
 }
 
-#endif // HCURLHOFE_EXTERN
 
 #endif
 
