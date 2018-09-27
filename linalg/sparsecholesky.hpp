@@ -14,7 +14,7 @@
 namespace ngla
 {
 
-  class SparseFactorization : public BaseMatrix
+  class NGS_DLL_HEADER SparseFactorization : public BaseMatrix
   { 
   protected:
     weak_ptr<BaseSparseMatrix> matrix;
@@ -59,7 +59,7 @@ namespace ngla
   template<class TM>
 	   // class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   // class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SparseCholeskyTM : public SparseFactorization
+  class NGS_DLL_HEADER SparseCholeskyTM : public SparseFactorization
   {
   protected:
     // height of the matrix
@@ -129,12 +129,12 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL_MAT;
 
     ///
-    NGS_DLL_HEADER SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
+    SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
                                      shared_ptr<BitArray> ainner = nullptr,
                                      shared_ptr<const Array<int>> acluster = nullptr,
                                      bool allow_refactor = 0);
     ///
-    NGS_DLL_HEADER virtual ~SparseCholeskyTM ();
+    virtual ~SparseCholeskyTM ();
     ///
     int VHeight() const { return height; }
     ///
@@ -152,14 +152,14 @@ namespace ngla
 #endif
 
     virtual bool SupportsUpdate() const { return true; }     
-    NGS_DLL_HEADER virtual void Update()
+    virtual void Update()
     {
       // FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
       auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
       FactorNew (*castmatrix);
     }
     ///
-    NGS_DLL_HEADER void FactorNew (const SparseMatrix<TM> & a);
+    void FactorNew (const SparseMatrix<TM> & a);
 
     /**
        A = L+D+L^T
@@ -207,7 +207,7 @@ namespace ngla
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SparseCholesky : public SparseCholeskyTM<TM>
+  class NGS_DLL_HEADER SparseCholesky : public SparseCholeskyTM<TM>
   {
     typedef SparseCholeskyTM<TM> BASE;
     using BASE::height;
@@ -244,7 +244,7 @@ namespace ngla
     ///
     virtual ~SparseCholesky () { ; }
     
-    NGS_DLL_HEADER virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     virtual void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const;
 
