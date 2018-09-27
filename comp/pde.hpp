@@ -453,14 +453,14 @@ namespace ngcomp
 
 
   ///
-  extern shared_ptr<PDE> LoadPDE (const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
+  NGS_DLL_HEADER extern shared_ptr<PDE> LoadPDE (const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
   ///
-  extern shared_ptr<PDE> LoadPDE (istream & input, const bool nomeshload = false, const bool nogeometryload = false);
+  NGS_DLL_HEADER extern shared_ptr<PDE> LoadPDE (istream & input, const bool nomeshload = false, const bool nogeometryload = false);
 
   
-  extern void LoadPDE (shared_ptr<PDE> pde, const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
+  NGS_DLL_HEADER extern void LoadPDE (shared_ptr<PDE> pde, const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
   ///
-  extern void LoadPDE (shared_ptr<PDE> pde, istream & input, const bool nomeshload = false, const bool nogeometryload = false);
+  NGS_DLL_HEADER extern void LoadPDE (shared_ptr<PDE> pde, istream & input, const bool nomeshload = false, const bool nogeometryload = false);
 
 
 

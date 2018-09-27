@@ -1,9 +1,12 @@
 git submodule update --init --recursive
 rm -rf $BUILD_DIR
-mkdir $BUILD_DIR
+mkdir -p $BUILD_DIR
+rm -rf $SRC_DIR
+mkdir -p $SRC_DIR
+cp -a . $SRC_DIR/
 cd $BUILD_DIR
 
-cmake $CI_PROJECT_DIR \
+cmake $SRC_DIR \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
       -DCMAKE_BUILD_TYPE=Release \
       -DUSE_NATIVE_ARCH=OFF \
