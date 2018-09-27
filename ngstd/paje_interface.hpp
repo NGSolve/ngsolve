@@ -26,7 +26,7 @@ namespace ngstd
     private:
       friend class TraceDisabler;
 
-      static size_t max_tracefile_size;
+      NGS_DLL_HEADER static size_t max_tracefile_size;
       static bool trace_thread_counter;
       static bool trace_threads;
 
