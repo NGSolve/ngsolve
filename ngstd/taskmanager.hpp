@@ -72,7 +72,7 @@ namespace ngstd
     static __thread int thread_id;
 #endif
     
-    static bool use_paje_trace;
+    NGS_DLL_HEADER static bool use_paje_trace;
   public:
     
     TaskManager();
