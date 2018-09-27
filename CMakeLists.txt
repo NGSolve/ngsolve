@@ -3,7 +3,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.8)
-set(CMAKE_CXX_STANDARD 17)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
