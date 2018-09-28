@@ -1412,9 +1412,12 @@ namespace ngla
     
     TableCreator<int> creator_trans(block_dependency.Size());
     for ( ; !creator_trans.Done(); creator_trans++)
-      for (int i : Range(block_dependency))
-        for (int j : block_dependency[i])
-          creator_trans.Add(j, i);
+      // for (int i : Range(block_dependency))
+      ParallelFor (block_dependency.Size(), [&] (int i)
+                   {
+                     for (int j : block_dependency[i])
+                       creator_trans.Add(j, i);
+                   });
     auto block_dep_trans = creator_trans.MoveTable();
 
     static Timer tdep("paralleldep");
@@ -1424,7 +1427,6 @@ namespace ngla
     static Timer tdep3("paralleldep3");
 
     Array<MyMutex> locks(n);
-    mutex m;
     
     RunParallelDependency
       (block_dependency, block_dep_trans, [&] (int blocknr)
@@ -1457,13 +1459,13 @@ namespace ngla
         auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
 
         {
-        RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
-        CalcLDL (A11);
-        if (mi < nk)
-          {
-            CalcLDL_SolveL (A11,B);
-            CalcLDL_A2 (A11.Diag(),B,A22);
-          }
+          RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
+          CalcLDL (A11);
+          if (mi < nk)
+            {
+              CalcLDL_SolveL (A11,B);
+              CalcLDL_A2 (A11.Diag(),B,A22);
+            }
         }
         
         for (size_t j = 0; j < mi; j++)
@@ -1477,38 +1479,38 @@ namespace ngla
 	size_t firsti = hfirstinrow[i1] + last_same-i1-1;
 	size_t lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
-
+        
         {
-        RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
-        // for (size_t j = 0; j < mi; j++)
-        ParallelFor (mi, [=,&locks] (size_t j)
-          {
-            auto other_row = hrowindex2[firsti_ri+j];
-            locks[other_row].lock();
-            
-            auto sum = A22.Col(j);
-            
-            // merge together
-            size_t firstj = hfirstinrow[other_row];
-            size_t firstj_ri = hfirstinrow_ri[other_row];
-            
-            for (size_t k = j+1; k < mi; k++)
-              {
-                size_t kk = hrowindex2[firsti_ri+k];
-                while (hrowindex2[firstj_ri] != kk)
-                  {
-                    firstj++;
-                    firstj_ri++;
-                  }
-
-                lfact[firstj] += sum[k];
-                firstj++;
-                firstj_ri++;
-              }
-            locks[other_row].unlock();            
-          }, mi > 50 ? TasksPerThread(1) : 1);   
-        }
-
+          RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
+          // for (size_t j = 0; j < mi; j++)
+          ParallelFor (mi, [=,&locks] (size_t j)
+            {
+              auto other_row = hrowindex2[firsti_ri+j];
+              locks[other_row].lock();
+              
+              auto sum = A22.Col(j);
+              
+              // merge together
+              size_t firstj = hfirstinrow[other_row];
+              size_t firstj_ri = hfirstinrow_ri[other_row];
+              
+              for (size_t k = j+1; k < mi; k++)
+                {
+                  size_t kk = hrowindex2[firsti_ri+k];
+                  while (hrowindex2[firstj_ri] != kk)
+                    {
+                      firstj++;
+                      firstj_ri++;
+                    }
+                  
+                  lfact[firstj] += sum[k];
+                  firstj++;
+                  firstj_ri++;
+                }
+              locks[other_row].unlock();
+            }, mi > 50 ? TasksPerThread(1) : 1);
+       }
+       
 
         {
           RegionTracer reg3(TaskManager::GetThreadId(), tdep3, block.Size());
