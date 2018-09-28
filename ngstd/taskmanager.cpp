@@ -247,11 +247,11 @@ namespace ngstd
 
     TNestedTask () { ; }
     TNestedTask (const function<void(TaskInfo&)> & _func,
-                 int _mynr,
+                 int _mynr, int _total,
                  atomic<int> & _endcnt)
-      : func(&_func), mynr(_mynr), endcnt(&_endcnt)
+      : func(&_func), mynr(_mynr), total(_total), endcnt(&_endcnt)
     {
-      total = *endcnt;
+      ;
     }
   };
 
@@ -267,9 +267,9 @@ namespace ngstd
   {
     TPToken ptoken(taskqueue); 
 
-    size_t num = endcnt;
+    int num = endcnt;
     for (int i = 0; i < num; i++)
-      taskqueue.enqueue (ptoken, { afunc, i, endcnt });
+      taskqueue.enqueue (ptoken, { afunc, i, num, endcnt });
   }
 
   mutex m;
@@ -320,7 +320,18 @@ namespace ngstd
 
     if (func)
       { // we are already parallel, use nested tasks
-        if (startup_function) (*startup_function)();
+        // startup for inner function not supported ...
+        // if (startup_function) (*startup_function)();
+
+        if (antasks == 1)
+          {
+            TaskInfo ti;
+            ti.task_nr = 0;
+            ti.ntasks = 1;
+            ti.thread_nr = 0; ti.nthreads = 1;
+            afunc(ti);
+            return;
+          }
         
         atomic<int> endcnt(antasks);
         AddTask (afunc, endcnt);
@@ -329,7 +340,7 @@ namespace ngstd
             ProcessTask();
           }
         
-        if (cleanup_function) (*cleanup_function)();
+        // if (cleanup_function) (*cleanup_function)();
         return;
       }
     
