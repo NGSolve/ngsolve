@@ -1418,11 +1418,13 @@ namespace ngla
     auto block_dep_trans = creator_trans.MoveTable();
 
     static Timer tdep("paralleldep");
+    static Timer tdep0("paralleldep0");
     static Timer tdep1("paralleldep1");
     static Timer tdep2("paralleldep2");
+    static Timer tdep3("paralleldep3");
 
     Array<MyMutex> locks(n);
-
+    mutex m;
     
     RunParallelDependency
       (block_dependency, block_dep_trans, [&] (int blocknr)
@@ -1440,8 +1442,10 @@ namespace ngla
         ArrayMem<TM,1000> tmpmem(nk*nk);
         FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
 
+        {
+        RegionTracer reg0(TaskManager::GetThreadId(), tdep0, block.Size());
         tmp = TM(0.0);
-
+        }        
 	for (size_t j = 0; j < mi; j++)
 	  {
             tmp(j,j) = diag[i1+j];
@@ -1476,7 +1480,8 @@ namespace ngla
 
         {
         RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
-        for (size_t j = 0; j < mi; j++)
+        // for (size_t j = 0; j < mi; j++)
+        ParallelFor (mi, [=,&locks] (size_t j)
           {
             auto other_row = hrowindex2[firsti_ri+j];
             locks[other_row].lock();
@@ -1495,53 +1500,40 @@ namespace ngla
                     firstj++;
                     firstj_ri++;
                   }
-                
-                // AsAtomic(lfact[firstj]) += sum[k];
+
                 lfact[firstj] += sum[k];
                 firstj++;
                 firstj_ri++;
               }
             locks[other_row].unlock();            
-          };
+          }, mi > 50 ? TasksPerThread(1) : 1);   
         }
 
 
-        /*
-	for (size_t i2 = i1; i2 < last_same; i2++)
-	  {
-	    size_t first = hfirstinrow[i2] + last_same-i2-1;
-	    size_t last = hfirstinrow[i2+1];
-	    size_t j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
+        {
+          RegionTracer reg3(TaskManager::GetThreadId(), tdep3, block.Size());
 
-	    for (auto j = first; j < last; j++, j_ri++)
-	      {
-		TM q = diag[i2] * lfact[j];
-		// AsAtomic(diag[rowindex2[j_ri]]) -= Trans (lfact[j]) * q;
-                
-                locks[rowindex2[j_ri]].lock();                            
-                diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
-                locks[rowindex2[j_ri]].unlock();                            
-	      }
-	  }
-        */
+          size_t num_other = hfirstinrow[i1+1] - (hfirstinrow[i1] + last_same-i1-1);
+          size_t j_ri = hfirstinrow_ri[i1] + last_same-i1-1;
 
-        size_t num_other = hfirstinrow[i1+1] - (hfirstinrow[i1] + last_same-i1-1);
-        size_t j_ri = hfirstinrow_ri[i1] + last_same-i1-1;
-        
-        for (size_t j = 0; j < num_other; j++)
-          {
-            locks[rowindex2[j_ri+j]].lock();
-            for (size_t i2 = i1; i2 < last_same; i2++)          
-              {
-                size_t first = hfirstinrow[i2] + last_same-i2-1;
-                size_t last = hfirstinrow[i2+1];
-                
-                TM q = diag[i2] * lfact[first+j];
-                diag[rowindex2[j_ri+j]] -= Trans (lfact[first+j]) * q;
-              }
-            locks[rowindex2[j_ri+j]].unlock();            
-          }
+          auto hdiag = diag.Addr(0);
+          ParallelFor (num_other, [=,&locks] (size_t j)
+            {
+              auto target_row = rowindex2[j_ri+j];
+              locks[target_row].lock();
 
+              for (auto i2 : block)
+                {
+                  size_t first = hfirstinrow[i2] + block.Next()-i2-1;
+                  
+                  TM q = hdiag[i2] * hlfact[first+j];
+                  hdiag[target_row] -= Trans (hlfact[first+j]) * q;
+                }
+              
+              locks[target_row].unlock();            
+            }, num_other > 50 ? TasksPerThread(1) : 1);  
+          
+        }
         
        });
 #endif
@@ -1566,7 +1558,7 @@ namespace ngla
         TM ai = diag[i];
         for (auto j : Range(hfirstinrow[i], hfirstinrow[i+1]))
           lfact[j] = lfact[j] * ai;
-      });
+      }, TasksPerThread(5));
 
     if (n > 2000){
       cout << IM(4) << endl;
