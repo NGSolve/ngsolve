@@ -17,12 +17,13 @@ typedef moodycamel::ProducerToken TPToken;
 typedef moodycamel::ConsumerToken TCToken; 
 
 
-
+namespace ngstd
+{
+  bool ProcessTask();
+}
 
 namespace ngla
 {
-
-
   
   static TQueue queue;
 
@@ -83,15 +84,17 @@ namespace ngla
            {
              if (cnt_final >= num_final) break;
 
+             while (ProcessTask()); // do the nested tasks
+             
              int nr;
              if(!queue.try_dequeue_from_producer(ptoken, nr)) 
                if(!queue.try_dequeue(ctoken, nr))  
                  continue; 
              
+             func(nr);
+
              if (dag[nr].Size() == 0)
                cnt_final++;
-
-             func(nr);
 
              for (int j : dag[nr])
                {
