@@ -592,7 +592,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     auto Last() const { return last; }
     auto & Rec() { return rec; }
     auto & Last() { return last; }
-    operator AutoDiff<D,SCAL> ()
+    operator AutoDiff<D,SCAL> () const
     {
       AutoDiff<D,SCAL> res(Value());
       for (int i = 0; i < D; i++)
@@ -628,6 +628,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     auto Last() const { return SCAL(0); }
     auto & Rec() { return val; }
     // auto & Last() { return val; }
+    operator AutoDiff<0,SCAL> () const { return AutoDiff<0,SCAL>(); }
   };
 
 
@@ -654,6 +655,13 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     auto Last() const { return last; }
     auto & Rec() { return val; }
     auto & Last() { return last; }
+
+    operator AutoDiff<1,SCAL> () const
+    {
+      AutoDiff<1,SCAL> res(Value());
+      res.DValue(0) = DValue(0);
+      return res;
+    }
   };
 
   template <int D, typename SCAL>
