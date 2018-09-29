@@ -18,7 +18,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx *x, TFA & shape) 
+    static void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) 
     { ; }
   };
 
@@ -123,9 +123,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0], y = hx[1];
+      // Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
       
       Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
@@ -234,9 +235,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0], y = hx[1];
+      // Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
       
       const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
@@ -251,9 +253,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0], y = hx[1];
+      // Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
       
       const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
@@ -271,9 +274,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0], y = hx[1];
+      // Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
       
       const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
@@ -404,11 +408,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[3], TFA & shape) 
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
       // Tx x = hx[0], y = hx[1], z = hx[2];
       // Tx lami[4] = { x, y, z, 1-x-y-z };
-      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };      
 
       const EDGE * edges = ElementTopology::GetEdges (ET_TET);
       for (int i = 0; i < 6; i++)
@@ -422,11 +426,12 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[3], TFA & shape) 
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
       // Tx x = hx[0], y = hx[1], z = hx[2];
       // Tx lami[4] = { x, y, z, 1-x-y-z };
-      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      // Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
       
       const EDGE * edges = ElementTopology::GetEdges (ET_TET);
       for (int i = 0; i < 6; i++)
@@ -442,9 +447,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[3], TFA & shape)
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape)
     {
-      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      // Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
       
       const EDGE * edges = ElementTopology::GetEdges (ET_TET);
       for (int i = 0; i < 6; i++)
@@ -646,9 +652,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0], y = hx[1], z = hx[2];
+      // Tx x = hx[0], y = hx[1], z = hx[2];
+      Tx x = ip.x, y = ip.y, z = ip.z;
 
       Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
       Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
@@ -920,9 +927,11 @@ static Matrix<> trans_trig;
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0], y = hx[1], z = hx[2];
+      // Tx x = hx[0], y = hx[1], z = hx[2];
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      
       z.Value() = z.Value()*(1-1e-12);
       
       Tx xt = x/(1-z); 
