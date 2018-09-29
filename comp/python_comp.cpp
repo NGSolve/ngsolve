@@ -428,7 +428,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                            {
                              std::vector<tuple<string,size_t, size_t>> ret;
                              for (auto mui : self.GetMemoryUsage())
-                               ret.push_back ( { mui.Name(), mui.NBytes(), mui.NBlocks() });
+                               ret.push_back ( make_tuple(mui.Name(), mui.NBytes(), mui.NBlocks()));
                              return ret;
                            })
     ;
