@@ -37,8 +37,8 @@ namespace ngfem
   CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {    
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
-    T_CalcShape (&adp(0), SBLambda ([shape](size_t i, auto s) 
-                                    { FlatVec<DIM> (&shape(i,0)) = s.Value(); }));
+    this->T_CalcShape (&adp(0), SBLambda ([shape](size_t i, auto s) 
+                                           { FlatVec<DIM> (&shape(i,0)) = s.Value(); }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
@@ -46,8 +46,8 @@ namespace ngfem
   CalcCurlShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {  
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
-    T_CalcShape (&adp(0), SBLambda ([shape](size_t i, auto s) 
-                                    { FlatVec<DIM_CURL_(DIM)> (&shape(i,0)) = s.CurlValue(); }));
+    this->T_CalcShape (&adp(0), SBLambda ([shape](size_t i, auto s) 
+                                           { FlatVec<DIM_CURL_(DIM)> (&shape(i,0)) = s.CurlValue(); }));
   } 
 
 #ifndef FASTCOMPILE
@@ -58,10 +58,10 @@ namespace ngfem
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
     Vec<DIM, AutoDiff<DIM> > adp = mip; 
-    T_CalcShape (&adp(0), SBLambda ([shape](size_t i, auto s) 
-				    { 
-				      FlatVec<DIM> (&shape(i,0)) = s.Value(); 
-				    }));
+    this->T_CalcShape (&adp(0), SBLambda ([shape](size_t i, auto s) 
+                                           { 
+                                             FlatVec<DIM> (&shape(i,0)) = s.Value(); 
+                                           }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
@@ -89,12 +89,13 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  auto shapei = shapes.Col(i);
-                 T_CalcShape (&adp(0), SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
-                                                 {
-                                                   auto shape = s.Value();
-                                                   for (size_t k = 0; k < DIMSPACE; k++)
-                                                     shapei(j*DIMSPACE+k) = shape(k);
-                                                 }));
+                 this->T_CalcShape
+                   (&adp(0), SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
+                                       {
+                                         auto shape = s.Value();
+                                         for (size_t k = 0; k < DIMSPACE; k++)
+                                           shapei(j*DIMSPACE+k) = shape(k);
+                                       }));
                }
              
            }
@@ -145,7 +146,7 @@ namespace ngfem
     else
       {
         Vec<DIM, AutoDiff<DIM> > adp = mip; 
-        T_CalcShape (&adp(0), SBLambda ([&](size_t i, auto s) 
+        this->T_CalcShape (&adp(0), SBLambda ([&](size_t i, auto s) 
                                         { 
                                           FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
                                         }));
@@ -181,7 +182,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  auto shapei = shapes.Col(i);
-                 T_CalcShape (&adp(0), SBLambda ([shapei,DIM_CURL] (size_t j, auto s)
+                 this->T_CalcShape (&adp(0), SBLambda ([shapei,DIM_CURL] (size_t j, auto s)
                                                  {
                                                    auto cshape = s.CurlValue();
                                                    for (size_t k = 0; k < DIM_CURL; k++)
@@ -234,7 +235,7 @@ namespace ngfem
   {
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
     Vec<DIM_CURL_(DIM)> sum = 0.0;
-    T_CalcShape (&adp(0), SBLambda ([&sum, x](size_t i, auto s) 
+    this->T_CalcShape (&adp(0), SBLambda ([&sum, x](size_t i, auto s) 
                                     { sum += x(i) * s.CurlValue(); }));
     return sum;
   }
@@ -265,7 +266,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIMSPACE,SIMD<double>> sum(0.0);
-                 T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (size_t j, auto shape)
+                 this->T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (size_t j, auto shape)
                                                  {
                                                    sum += coefs(j) * shape.Value();
                                                  }));
@@ -351,7 +352,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIMSPACE,SIMD<Complex>> sum = SIMD<Complex>(0.0);
-                 T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (size_t j, auto shape)
+                 this->T_CalcShape (&adp(0), SBLambda ([&sum,coefs] (size_t j, auto shape)
                                                  {
                                                    sum += coefs(j) * shape.Value();
                                                  }));
@@ -433,7 +434,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIM_CURL,SIMD<double>> sum(0.0);            
-                 T_CalcShape (&adp(0), SBLambda ([coefs,&sum] (size_t j, auto shape)
+                 this->T_CalcShape (&adp(0), SBLambda ([coefs,&sum] (size_t j, auto shape)
                                                  {
                                                    sum += coefs(j) * shape.CurlValue();
                                                  }));
@@ -521,7 +522,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIM_CURL,SIMD<Complex>> sum = SIMD<Complex>(0.0);
-                 T_CalcShape (&adp(0), SBLambda ([coefs, &sum] (size_t j, auto shape)
+                 this->T_CalcShape (&adp(0), SBLambda ([coefs, &sum] (size_t j, auto shape)
                                                  {
                                                    sum += coefs(j) * shape.CurlValue();
                                                  }));
@@ -609,7 +610,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIMSPACE,SIMD<double>> vali = values.Col(i);
-                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                 this->T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
                                                    /*
                                                    auto shape = s.Value();
@@ -691,7 +692,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIMSPACE,SIMD<Complex>> vali = values.Col(i);
-                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                 this->T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
                                                    /*
                                                    auto shape = s.Value();
@@ -779,17 +780,17 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIM_CURL,SIMD<double>> vali = values.Col(i);
-                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
-                                                 {
-                                                   /*
-                                                   auto cshape = s.CurlValue();
-                                                   SIMD<double> sum = 0.0;
-                                                   for (size_t k = 0; k < cshape.Size(); k++)
-                                                     sum += cshape(k) * vali(k);
-                                                   coefs(j) += HSum(sum);
-                                                   */
-                                                   coefs(j) += HSum(InnerProduct(s.CurlValue(), vali));
-                                                 }));
+                 this->T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                                                       {
+                                                         /*
+                                                           auto cshape = s.CurlValue();
+                                                           SIMD<double> sum = 0.0;
+                                                           for (size_t k = 0; k < cshape.Size(); k++)
+                                                           sum += cshape(k) * vali(k);
+                                                           coefs(j) += HSum(sum);
+                                                         */
+                                                         coefs(j) += HSum(InnerProduct(s.CurlValue(), vali));
+                                                       }));
                }
            }
        });
@@ -870,7 +871,7 @@ namespace ngfem
                {
                  Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
                  Vec<DIM_CURL,SIMD<Complex>> vali = values.Col(i);
-                 T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
+                 this->T_CalcShape (&adp(0), SBLambda ([vali,coefs] (size_t j, auto s)
                                                  {
                                                    /*
                                                    auto cshape = s.CurlValue();
