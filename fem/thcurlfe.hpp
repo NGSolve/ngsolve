@@ -33,7 +33,7 @@ namespace ngfem
     HD virtual ELEMENT_TYPE ElementType() const override { return ET; }
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[], TFA & shape) const
+    INLINE void T_CalcShape (const Tx & hx, TFA & shape) const
     { 
       static_cast<const SHAPES*> (this) -> T_CalcShape (hx, shape);
     }
