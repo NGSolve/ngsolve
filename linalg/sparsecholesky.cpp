@@ -241,7 +241,12 @@ namespace ngla
     diag.SetSize(nused);
     // lfact.SetSize (nze);
     lfact = NumaInterleavedArray<TM> (nze);
-    lfact = TM(0.0);     // first touch
+
+    // lfact = TM(0.0);     // first touch
+    ParallelForRange (nze, [&] (IntRange r)
+                      {
+                        lfact.Range(r) = TM(0.0);
+                      });
     
     endtime = clock();
     if (printstat)
@@ -366,6 +371,11 @@ namespace ngla
 	    const Array<MDOVertex> & vertices,
 	    const int * in_blocknr)
   {
+    static Timer tal1("Allocate - 1");
+    static Timer tal2("Allocate - 2");
+    static Timer tal3("Allocate - 3");
+    static Timer tal4("Allocate - 4");
+    static Timer tal5("Allocate - 5");
     int n = aorder.Size();
 
     order.SetSize (n);
@@ -378,7 +388,7 @@ namespace ngla
                       });
     for (int i = 0; i < nused; i++)
       order[aorder[i]] = i;
-
+    tal1.Start();
     inv_order.SetSize(nused);
     inv_order = aorder;
     
@@ -405,7 +415,7 @@ namespace ngla
     /* 
      *testout << " Sparse Cholesky mem needed " << double(cnt*sizeof(TM)+cnt_master*sizeof(int))*1e-6 << " MBytes " << endl; 
      */  
-
+    tal1.Stop();
     firstinrow.SetSize(nused+1);
     firstinrow_ri.SetSize(nused+1);
     rowindex2.SetSize (cnt_master);
@@ -414,6 +424,7 @@ namespace ngla
     cnt = 0;
     cnt_master = 0;
     maxrow = 0;
+    tal2.Start();
     for (int i = 0; i < nused; i++)
       {
 	firstinrow[i] = cnt;
@@ -439,14 +450,14 @@ namespace ngla
 	    cnt += firstinrow[i]-firstinrow[i-1]-1;
 	  }
       }
+    tal2.Stop();
     firstinrow[nused] = cnt;
     firstinrow_ri[nused] = cnt_master;
-
+    
     
     for (int i = 1; i < blocknrs.Size(); i++)
       if (blocknrs[i] < blocknrs[i-1])
         throw Exception ("blocknrs are unordered !!");
-
     /*
     for (int i = 1; i < blocknrs.Size(); i++)
       {
@@ -474,6 +485,7 @@ namespace ngla
     for (int i = 0; i < blocks.Size()-1; i++)
       block_of_dof[Range(blocks[i], blocks[i+1])] = i;
 
+    tal3.Start();
     DynamicTable<int> dep(blocks.Size()-1);
     for (int i = 0; i < nused; i++)
       {
@@ -482,7 +494,7 @@ namespace ngla
           if (block_of_dof[i] != block_of_dof[j])
             dep.AddUnique (block_of_dof[i], block_of_dof[j]);
       }
-
+    tal3.Stop();
 
     // generate compressed table
     TableCreator<int> creator(dep.Size());
@@ -492,8 +504,8 @@ namespace ngla
           creator.Add(i, j);
 
     block_dependency = creator.MoveTable();
-    
 
+    tal4.Start();
     // genare micro-tasks:
     Array<int> first_microtask;
     for (int i = 0; i < blocks.Size()-1; i++)
@@ -540,8 +552,8 @@ namespace ngla
           }
       }
     first_microtask.Append (microtasks.Size());
-
-
+    tal4.Stop();
+    tal5.Start();
     {
       TableCreator<int> creator(microtasks.Size());
       TableCreator<int> creator_trans(microtasks.Size());
@@ -575,7 +587,7 @@ namespace ngla
                   }
             }
         }
-
+      tal5.Stop();
       micro_dependency = creator.MoveTable();
       micro_dependency_trans = creator_trans.MoveTable();
     }
