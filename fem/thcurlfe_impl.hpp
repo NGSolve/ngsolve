@@ -59,12 +59,13 @@ namespace ngfem
                    SliceMatrix<> shape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-    // Vec<DIM, AutoDiff<DIM> > adp = mip;
-    // TIP<DIM,AutoDiff<DIM>> tip(adp);
-    this->T_CalcShape (GetTIP(mip), SBLambda ([shape](size_t i, auto s) 
-                                              { 
-                                                FlatVec<DIM> (&shape(i,0)) = s.Value(); 
-                                              }));
+    Vec<DIM, AutoDiff<DIM> > adp = mip;
+    TIP<DIM,AutoDiff<DIM>> tip(adp);
+    this->T_CalcShape (tip, // GetTIP(mip),
+                       SBLambda ([shape](size_t i, auto s) 
+                                 { 
+                                   FlatVec<DIM> (&shape(i,0)) = s.Value(); 
+                                 }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
