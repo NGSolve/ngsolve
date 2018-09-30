@@ -467,7 +467,9 @@ namespace ngstd
 
         if (jobnr == jobdone)
           {
-            // RegionTracer t(ti.thread_nr, tCASyield, ti.task_nr);            
+            // RegionTracer t(ti.thread_nr, tCASyield, ti.task_nr);
+            while (ProcessTask()); // do the nested tasks
+                   
             if(sleep)
               this_thread::sleep_for(chrono::microseconds(sleep_usecs));
             else
