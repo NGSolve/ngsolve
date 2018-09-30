@@ -149,15 +149,15 @@ namespace ngfem
       }
     else
     */
-      {
-        // Vec<DIM, AutoDiff<DIM> > adp = mip;
-        // TIP<DIM,AutoDiff<DIM>> tip(adp);
-        this->T_CalcShape (GetTIP(mip),
-                           SBLambda ([&](size_t i, auto s) 
-                                     { 
-                                       FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
-                                     }));
-      }
+    {
+      Vec<DIM, AutoDiff<DIM> > adp = mip;
+      TIP<DIM,AutoDiff<DIM>> tip(adp);
+      this->T_CalcShape (tip, // GetTIP(mip),
+                         SBLambda ([&](size_t i, auto s) 
+                                   { 
+                                     FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
+                                   }));
+    }
   }
 
 
