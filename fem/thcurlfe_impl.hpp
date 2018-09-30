@@ -59,12 +59,12 @@ namespace ngfem
                    SliceMatrix<> shape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-    Vec<DIM, AutoDiff<DIM> > adp = mip;
-    TIP<DIM,AutoDiff<DIM>> tip(adp);
-    this->T_CalcShape (tip, SBLambda ([shape](size_t i, auto s) 
-                                      { 
-                                        FlatVec<DIM> (&shape(i,0)) = s.Value(); 
-                                      }));
+    // Vec<DIM, AutoDiff<DIM> > adp = mip;
+    // TIP<DIM,AutoDiff<DIM>> tip(adp);
+    this->T_CalcShape (GetTIP(mip), SBLambda ([shape](size_t i, auto s) 
+                                              { 
+                                                FlatVec<DIM> (&shape(i,0)) = s.Value(); 
+                                              }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
@@ -90,16 +90,15 @@ namespace ngfem
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
                {
-                 // Vec<DIM, AutoDiff<DIMSPACE,SIMD<double>>> adp = mir[i];
-                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>> tip = GetTIP(mir[i]);
                  auto shapei = shapes.Col(i);
                  this->T_CalcShape
-                   (tip, SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
-                                       {
-                                         auto shape = s.Value();
-                                         for (size_t k = 0; k < DIMSPACE; k++)
-                                           shapei(j*DIMSPACE+k) = shape(k);
-                                       }));
+                   (GetTIP(mir[i]),
+                    SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
+                              {
+                                auto shape = s.Value();
+                                for (size_t k = 0; k < DIMSPACE; k++)
+                                  shapei(j*DIMSPACE+k) = shape(k);
+                              }));
                }
              
            }
@@ -141,20 +140,23 @@ namespace ngfem
   CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
                        SliceMatrix<> curlshape) const
   {
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);    
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+    /*
     if (DIM == 2)
       {
         CalcCurlShape (mip.IP(), curlshape);
         curlshape /= mip.GetJacobiDet();        
       }
     else
+    */
       {
-        Vec<DIM, AutoDiff<DIM> > adp = mip;
-        TIP<DIM,AutoDiff<DIM>> tip(adp);
-        this->T_CalcShape (tip, SBLambda ([&](size_t i, auto s) 
-                                          { 
-                                            FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
-                                          }));
+        // Vec<DIM, AutoDiff<DIM> > adp = mip;
+        // TIP<DIM,AutoDiff<DIM>> tip(adp);
+        this->T_CalcShape (GetTIP(mip),
+                           SBLambda ([&](size_t i, auto s) 
+                                     { 
+                                       FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
+                                     }));
       }
   }
 
