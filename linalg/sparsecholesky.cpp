@@ -1420,19 +1420,20 @@ namespace ngla
                    });
     auto block_dep_trans = creator_trans.MoveTable();
 
+    /*
     static Timer tdep("paralleldep");
     static Timer tdep0("paralleldep0");
     static Timer tdep1("paralleldep1");
     static Timer tdep2("paralleldep2");
     static Timer tdep3("paralleldep3");
-
+    */
     Array<MyMutex> locks(n);
     
     RunParallelDependency
       (block_dependency, block_dep_trans, [&] (int blocknr)
        {
         IntRange block = BlockDofs(blocknr);
-        RegionTracer reg(TaskManager::GetThreadId(), tdep, block.Size());
+        // RegionTracer reg(TaskManager::GetThreadId(), tdep, block.Size());
 
         size_t i1 = block.First(); 
         size_t last_same = block.Next();
@@ -1445,7 +1446,7 @@ namespace ngla
         FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
 
         {
-        RegionTracer reg0(TaskManager::GetThreadId(), tdep0, block.Size());
+          // RegionTracer reg0(TaskManager::GetThreadId(), tdep0, block.Size());
         tmp = TM(0.0);
         }        
 	for (size_t j = 0; j < mi; j++)
@@ -1459,7 +1460,7 @@ namespace ngla
         auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
 
         {
-          RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
+          // RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
           CalcLDL (A11);
           if (mi < nk)
             {
@@ -1481,7 +1482,7 @@ namespace ngla
 	mi = lasti-firsti+1;
         
         {
-          RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
+          // RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
           // for (size_t j = 0; j < mi; j++)
           ParallelFor (mi, [=,&locks] (size_t j)
             {
@@ -1513,7 +1514,7 @@ namespace ngla
        
 
         {
-          RegionTracer reg3(TaskManager::GetThreadId(), tdep3, block.Size());
+          // RegionTracer reg3(TaskManager::GetThreadId(), tdep3, block.Size());
 
           size_t num_other = hfirstinrow[i1+1] - (hfirstinrow[i1] + last_same-i1-1);
           size_t j_ri = hfirstinrow_ri[i1] + last_same-i1-1;
