@@ -710,11 +710,11 @@ namespace ngfem
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                  // GetTIP(mir[i], adp);
                  this->T_CalcShape (adp,
-                                    SBLambda ([DIMSPACE,&pcoefs,dist,&sum]
+                                    SBLambda ([&pcoefs,dist,&sum]
                                               // (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
                                               (size_t j, auto shape)
                                               { 
-                                                for (auto k = 0; k < DIMSPACE; k++)
+                                                for (auto k = 0; k < sum.Size(); k++)
                                                   sum(k) += *pcoefs * shape.DValue(k); 
                                                 pcoefs += dist;
                                               }));
