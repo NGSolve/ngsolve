@@ -1454,7 +1454,7 @@ namespace ngla
 	size_t mi = block.Size();  // last_same - i1;
         size_t nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
 
-        ArrayMem<TM,1000> tmpmem(nk*nk+1);
+        ArrayMem<TM,1000> tmpmem(nk*nk);
         FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
 
         {
