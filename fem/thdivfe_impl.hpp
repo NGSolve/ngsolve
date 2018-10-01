@@ -148,12 +148,13 @@ namespace ngfem
              for (size_t i = 0; i < mir.Size(); i++)
                {
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIPHDiv(mir[i]);
+                 auto shapesi = shapes.Col(i);
                  static_cast<const FEL*> (this) ->                 
-                   T_CalcShape (adp, SBLambda ([shapes,i,DIMSPACE] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
+                   T_CalcShape (adp, SBLambda ([shapesi/*,DIMSPACE*/] (size_t j, auto s) // THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
-                                                 auto vshape = shape.Data(); 
+                                                 auto vshape = HDiv2ShapeNew (s); // shape.Data(); 
                                                  for (size_t k = 0; k < vshape.Size(); k++)
-                                                   shapes(j*vshape.Size()+k, i) = vshape(k);
+                                                   shapesi(j*vshape.Size()+k) = vshape(k);
                                                }));
                }
            }
@@ -264,9 +265,9 @@ namespace ngfem
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>> adp = GetTIPHDiv(mir[i]);
                  Vec<DIMSPACE,SIMD<double>> sum(0.0);
                  static_cast<const FEL*> (this) ->         
-                   T_CalcShape (adp, SBLambda ([=,&sum] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
+                   T_CalcShape (adp, SBLambda ([coefs,&sum] (size_t j, auto s) // THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
-                                                 sum += coefs(j) * shape.Data();
+                                                 sum += coefs(j) * HDiv2ShapeNew(s); // .Data();
                                                }));
                  for (size_t k = 0; k < DIMSPACE; k++)
                    values(k,i) = sum(k);
@@ -319,9 +320,9 @@ namespace ngfem
                  for (int k = 0; k < DIMSPACE; k++)
                    vali(k) = values(k,i);
                  static_cast<const FEL*> (this) -> 
-                   T_CalcShape (adp, SBLambda ([=] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
+                   T_CalcShape (adp, SBLambda ([vali,coefs] (size_t j, auto s) //THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
-                                                 auto vshape = shape.Data(); 
+                                                 auto vshape = HDiv2ShapeNew(s); // shape.Data(); 
                                                  SIMD<double> sum = 0.0;
                                                  for (size_t k = 0; k < vshape.Size(); k++)
                                                    sum += vali(k) * vshape(k);

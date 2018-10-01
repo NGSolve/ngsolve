@@ -1895,6 +1895,67 @@ namespace ngfem
 
 
 
+  template<int DIMS, int DIMR>
+  INLINE auto GetTIP( const MappedIntegrationPoint<DIMS,DIMR> & mip) -> TIP<DIMS,AutoDiffRec<DIMR>>;
+  
+  template<int DIMR>
+  INLINE auto GetTIP( const MappedIntegrationPoint<0,DIMR> & mip) -> TIP<0,AutoDiffRec<DIMR>>
+  {
+    TIP<0,AutoDiffRec<DIMR>> adp;
+    return adp;
+  }
+
+    template<int DIMR>
+    INLINE auto GetTIP( const MappedIntegrationPoint<1,DIMR> & mip) -> TIP<1,AutoDiffRec<DIMR>>
+    {
+      TIP<1,AutoDiffRec<DIMR>> adp;
+      Mat<1,DIMR> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      return adp;
+    }
+
+  
+    template<int DIMR>
+    INLINE auto GetTIP( const MappedIntegrationPoint<2,DIMR> & mip) -> TIP<2,AutoDiffRec<DIMR>>
+    {
+      TIP<2,AutoDiffRec<DIMR>> adp;      
+      Mat<2,DIMR> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      return adp;
+    }
+
+  
+    template<int DIMR>
+    INLINE auto GetTIP(const MappedIntegrationPoint<3,DIMR> & mip) -> TIP<3, AutoDiffRec<DIMR>>
+    {
+      Mat<3,DIMR> ijac = mip.GetJacobianInverse();
+      TIP<3, AutoDiffRec<DIMR>> adp;
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      adp.z.Value() = ip(2);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.z.DValue(j) = ijac(2,j);
+      return adp;
+    }
+
+
+  
+
+
 
   
   class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
