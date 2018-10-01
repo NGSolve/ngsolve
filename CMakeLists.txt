@@ -485,6 +485,15 @@ endif (NETGEN_USE_MPI)
 
 
 #######################################################################
+add_library(ngs_interface INTERFACE)
+target_compile_definitions(ngs_interface INTERFACE ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngs_interface INTERFACE ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngs_interface INTERFACE ${NGSOLVE_INCLUDE_DIRS})
+target_compile_features(ngs_interface INTERFACE cxx_std_17)
+install( TARGETS ngs_interface ${ngs_install_dir} )
+
+add_library(ngs_private_interface INTERFACE)
+target_compile_definitions(ngs_private_interface INTERFACE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
 add_subdirectory(include)
 add_subdirectory(ngstd)

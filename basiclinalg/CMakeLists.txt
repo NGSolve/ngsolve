@@ -1,8 +1,7 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kernel_generator generate_mat_kernels.cpp)
-target_link_libraries(kernel_generator ngstd)
-target_compile_definitions(kernel_generator PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
+target_link_libraries(kernel_generator ngstd ngs_private_interface)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
   COMMAND kernel_generator
@@ -18,10 +17,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
         )
 add_dependencies(ngbla kernel_generated)
 
-target_compile_definitions(ngbla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(ngbla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngbla PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+target_link_libraries(ngbla PUBLIC ngs_interface PRIVATE ngs_private_interface)
 target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 

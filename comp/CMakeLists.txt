@@ -20,10 +20,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         periodic.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
         )
 
-target_compile_definitions(ngcomp PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(ngcomp PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(ngcomp PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngcomp PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+target_link_libraries( ngcomp PUBLIC ngs_interface PRIVATE ngs_private_interface)
 target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
 
 if(NOT WIN32)
