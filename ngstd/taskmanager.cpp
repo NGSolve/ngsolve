@@ -14,6 +14,11 @@
 #include <mkl.h>
 #endif
 
+
+#include "../linalg/concurrentqueue.h"
+
+
+
 namespace ngstd
 {
   TaskManager * task_manager = nullptr;
@@ -231,12 +236,73 @@ namespace ngstd
       ;
   }
 
+  /////////////////////// NEW: nested tasks using concurrent queue
+
+  struct TNestedTask
+  {
+    const function<void(TaskInfo&)> * func;
+    atomic<int> * endcnt;
+    int mynr;
+    int total;
+
+    TNestedTask () { ; }
+    TNestedTask (const function<void(TaskInfo&)> & _func,
+                 int _mynr, int _total,
+                 atomic<int> & _endcnt)
+      : func(&_func), mynr(_mynr), total(_total), endcnt(&_endcnt)
+    {
+      ;
+    }
+  };
+
+  typedef moodycamel::ConcurrentQueue<TNestedTask> TQueue; 
+  typedef moodycamel::ProducerToken TPToken; 
+  typedef moodycamel::ConsumerToken TCToken; 
+  
+  static TQueue taskqueue;
+
+  void AddTask (const function<void(TaskInfo&)> & afunc,
+                atomic<int> & endcnt)
+                
+  {
+    TPToken ptoken(taskqueue); 
+
+    int num = endcnt;
+    for (int i = 0; i < num; i++)
+      taskqueue.enqueue (ptoken, { afunc, i, num, endcnt });
+  }
+
+  mutex m;
+  bool ProcessTask()
+  {
+    TNestedTask task;
+    TCToken ctoken(taskqueue); 
+    
+    if (taskqueue.try_dequeue(ctoken, task))
+      {
+        TaskInfo ti;
+        ti.task_nr = task.mynr;
+        ti.ntasks = task.total;
+        ti.thread_nr = thread_id;
+        ti.nthreads = TaskManager::GetNumThreads();
+        /*
+        {
+          lock_guard<mutex> guard(m);
+          cout << "process nested, nr = " << ti.task_nr << "/" << ti.ntasks << endl;
+        }
+        */
+        (*task.func)(ti);
+        --*task.endcnt;
+        return true;
+      }
+    return false;
+  }
 
 
   void TaskManager :: CreateJob (const function<void(TaskInfo&)> & afunc,
                                  int antasks)
   {
-    if (num_threads == 1 || !task_manager || func)
+    if (num_threads == 1 || !task_manager) //  || func)
       {
         if (startup_function) (*startup_function)();
         
@@ -251,6 +317,33 @@ namespace ngstd
         return;
       }
 
+
+    if (func)
+      { // we are already parallel, use nested tasks
+        // startup for inner function not supported ...
+        // if (startup_function) (*startup_function)();
+
+        if (antasks == 1)
+          {
+            TaskInfo ti;
+            ti.task_nr = 0;
+            ti.ntasks = 1;
+            ti.thread_nr = 0; ti.nthreads = 1;
+            afunc(ti);
+            return;
+          }
+        
+        atomic<int> endcnt(antasks);
+        AddTask (afunc, endcnt);
+        while (endcnt > 0)
+          {
+            ProcessTask();
+          }
+        
+        // if (cleanup_function) (*cleanup_function)();
+        return;
+      }
+    
     
     trace->StartJob(jobnr, afunc.target_type());
 
@@ -374,7 +467,9 @@ namespace ngstd
 
         if (jobnr == jobdone)
           {
-            // RegionTracer t(ti.thread_nr, tCASyield, ti.task_nr);            
+            // RegionTracer t(ti.thread_nr, tCASyield, ti.task_nr);
+            while (ProcessTask()); // do the nested tasks
+                   
             if(sleep)
               this_thread::sleep_for(chrono::microseconds(sleep_usecs));
             else

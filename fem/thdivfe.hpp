@@ -281,7 +281,7 @@ namespace ngfem
 
 
 
-
+#ifdef UNUSED
   template <int DIM, typename SCAL = double> class THDiv2ShapeNew
   {
   public:
@@ -426,10 +426,161 @@ namespace ngfem
     INLINE Vec<3,SCAL> Data() const { return data; }    
   };
 
+#endif
 
 
 
 
+
+  /////////////////////
+
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (Class_Du<2,SCAL> uv)
+  {
+    return Vec<2,SCAL> (-uv.u.DValue(0), -uv.u.DValue(1));  // signs to fit historic inconsistency
+  }
+
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (Class_uDv<2,SCAL> uv)
+  {
+    return Vec<2,SCAL> (uv.u.Value()*uv.v.DValue(0), 
+                        uv.u.Value()*uv.v.DValue(1));
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDv_minus_vDu<2,SCAL> & uv) 
+  {
+    Vec<2,SCAL> data;
+    data(0) = uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data(1) = uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    return data;
+  }
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+  {
+    Vec<2,SCAL> data;    
+    data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data[1] =  uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    data[0] *= uv.w.Value();
+    data[1] *= uv.w.Value();
+    return data;
+  }
+  
+  template <typename SCAL>  
+  INLINE auto HDiv2ShapeNew (Class_Du<3,SCAL> uv)
+  {
+    return Vec<3,SCAL> (-uv.u.DValue(0), -uv.u.DValue(1), -uv.u.DValue(2));
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (Class_uDv<3,SCAL> uv)
+  {
+    return Vec<3,SCAL> (uv.u.Value()*uv.v.DValue(0), 
+                        uv.u.Value()*uv.v.DValue(1), 
+                        uv.u.Value()*uv.v.DValue(2));
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDv_minus_vDu<3,SCAL> & uv) 
+  {
+    Vec<3,SCAL> data;
+    data(0) = uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data(1) = uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    data(2) = uv.u.Value() * uv.v.DValue(2) - uv.u.DValue(2) * uv.v.Value();
+    return data;
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<3,SCAL> & uv) 
+  {
+    Vec<3,SCAL> data;
+    data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data[1] =  uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    data[2] =  uv.u.Value() * uv.v.DValue(2) - uv.u.DValue(2) * uv.v.Value();
+    data[0] *= uv.w.Value();
+    data[1] *= uv.w.Value();
+    data[2] *= uv.w.Value();
+    return data;
+  }
+    
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDvDw_Cyclic<3,SCAL> & uvw) 
+    { 
+      AutoDiff<3,SCAL> p1 = Cross (uvw.v, uvw.w);
+      AutoDiff<3,SCAL> p2 = Cross (uvw.w, uvw.u);
+      AutoDiff<3,SCAL> p3 = Cross (uvw.u, uvw.v);
+
+      Vec<3,SCAL> data;
+      for (int i = 0; i < 3; i++)
+        data[i] =
+          uvw.u.Value() * p1.DValue(i) + 
+          uvw.v.Value() * p2.DValue(i) + 
+          uvw.w.Value() * p3.DValue(i);
+      return data;
+    }
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_Du_Cross_Dv<3,SCAL> & uv) 
+  { 
+    AutoDiff<3,SCAL> hv = Cross (uv.u, uv.v);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = hv.DValue(i);
+    return data;
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_wDu_Cross_Dv<3,SCAL> & uvw) 
+  { 
+    AutoDiff<3,SCAL> hv = Cross (uvw.u, uvw.v);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = uvw.w.Value() * hv.DValue(i);
+    return data;
+  }
+  
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDvDw_minus_DuvDw<3,SCAL> & uvw) 
+  { 
+    /*
+      AutoDiff<3,SCAL> hv =
+      uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    */
+    AutoDiff<3,SCAL> p1 = Cross (uvw.v, uvw.w);
+    AutoDiff<3,SCAL> p2 = Cross (uvw.w, uvw.u);
+
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] =
+        uvw.u.Value() * p1.DValue(i) + 
+        uvw.v.Value() * p2.DValue(i);
+    return data;
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
+  { 
+    AutoDiff<3,SCAL> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = hv.DValue(i);
+    return data;
+  }
+
+
+  //////////////////////////
+
+
+
+  
 
   
 

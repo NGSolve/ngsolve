@@ -106,7 +106,7 @@ namespace ngfem
     using ET_trait<ET>::DIM;    
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[DIM], TFA & shape) const;
+    void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
 
     template <typename MIP, typename TFA>
     inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
@@ -124,9 +124,9 @@ namespace ngfem
 
   
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_SEGM> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0];
+    Tx x = ip.x;
     Tx lam[2] = { x, 1-x };
 
     // ArrayMem<Tx,20> adpol1(order);
@@ -170,9 +170,9 @@ namespace ngfem
   //------------------------------------------------------------------------
   
   template<> template<typename Tx, typename TFA>  
-  INLINE void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  INLINE void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1];
+    Tx x = ip.x, y = ip.y;
     Tx lam[3] = { x, y, 1-x-y };
 
 	
@@ -295,10 +295,10 @@ namespace ngfem
   
 
   template<> template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1];
-
+    Tx x = ip.x, y = ip.y;
+    Tx hx[2] = { x, y };
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
@@ -409,9 +409,10 @@ namespace ngfem
  
 
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;    
     Tx lam[4] = { x, y, z, 1-x-y-z };
 
     ArrayMem<Tx,20> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
@@ -511,12 +512,13 @@ namespace ngfem
   //------------------------------------------------------------------------
 
   template<> template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
     typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 
-    Tx x = hx[0], y = hx[1], z = hx[2];
-
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    
     Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
 
@@ -784,9 +786,10 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_HEX> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
 
     Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
                 (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
@@ -960,12 +963,13 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
     typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;  
 
-    Tx x = hx[0], y = hx[1], z = hx[2];
-
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    
     //if(z.Value()==1.) z.Value() -=1.e-8; 
     z.Value() = z.Value()*(1-1e-12);
 
