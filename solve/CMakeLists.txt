@@ -15,10 +15,7 @@ add_library( solve ${NGS_LIB_TYPE}
         ${solve_object_libs}
         )
 
-target_compile_definitions(solve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(solve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(solve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(solve PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+target_link_libraries( solve PUBLIC ngs_interface PRIVATE ngs_private_interface)
 
 if(NETGEN_USE_PYTHON)
 add_library( ngslib SHARED ngspy.cpp )
@@ -69,12 +66,9 @@ if (NETGEN_USE_GUI)
             ngsolve.cpp shapetester.cpp 
             )
 
+    target_link_libraries(ngsolve PUBLIC ngs_interface PRIVATE ngs_private_interface)
     target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-    target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-    target_compile_options(ngsolve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-    target_include_directories(ngsolve PUBLIC ${NGSOLVE_INCLUDE_DIRS})
     target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
 
     if(NOT WIN32)
