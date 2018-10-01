@@ -209,10 +209,11 @@ namespace ngbla
                          SliceMatrix<T,ORD> c,
                          bool symmetric)
   {
-    static Timer timer1("SparseCholesky::Factor gemm 1", 2);
-    static Timer timer2("SparseCholesky::Factor gemm 2", 2);
-    static Timer timer3("SparseCholesky::Factor gemm 3", 2);
-            
+    // static Timer timer1("SparseCholesky::Factor gemm 1", 2);
+    // static Timer timer2("SparseCholesky::Factor gemm 2", 2);
+    // static Timer timer3("SparseCholesky::Factor gemm 3", 2);
+
+    /*
     // if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
     if (c.Height() < 10 && c.Width() < 10 && a.Width() < 10)
     // if (false)
@@ -227,6 +228,7 @@ namespace ngbla
         // timer1.AddFlops(c.Height()*c.Width()*a.Width());
       }
     else
+    */
       {
         if ( (c.Height() < 128 && c.Width() < 128) ||
              (size_t(c.Height())*c.Width()*a.Width() < 10000) )
@@ -239,7 +241,7 @@ namespace ngbla
           }
         else
           {
-            timer3.Start();
+            // timer3.Start();
             // int nr = c.Height()/128+1;
             // int nc = c.Width()/128+1;
             constexpr int BH = 96;
@@ -262,8 +264,8 @@ namespace ngbla
                              // c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
                              ngbla::SubADBt(a.Rows(rowr),diag, b.Rows(colr), c.Rows(rowr).Cols(colr));
                            }, nr*nc);
-            timer3.AddFlops(size_t(c.Height())*c.Width()*a.Width());
-            timer3.Stop();
+            // timer3.AddFlops(size_t(c.Height())*c.Width()*a.Width());
+            // timer3.Stop();
           }
       }
   }
