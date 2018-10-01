@@ -311,8 +311,8 @@ namespace ngstd
       _mm_storeu_pd (p, _mm_or_pd (_mm_and_pd(_mm_castsi128_pd(mask.Data()), data),
                                    _mm_andnot_pd(_mm_castsi128_pd(mask.Data()), _mm_loadu_pd(p))));
       */
-      if (mask[0]) p[0] = data[0];
-      if (mask[1]) p[1] = data[1];
+      if (mask[0]) p[0] = (*this)[0];
+      if (mask[1]) p[1] = (*this)[1];
 #endif
     }    
     
