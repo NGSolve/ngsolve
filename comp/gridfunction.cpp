@@ -1096,7 +1096,7 @@ namespace ngcomp
       return gf->GetFESpace()->GetEvaluator()->Dim();
     */
     throw Exception(string ("don't know my dimension, space is ") +
-                    typeid(*gf->GetFESpace()).name());
+                    gf->GetFESpace()->GetClassName());
   }
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
