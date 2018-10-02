@@ -17,7 +17,7 @@ target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngstd PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS})
-target_compile_features(ngstd INTERFACE cxx_std_17)
+target_compile_features(ngstd PUBLIC cxx_std_17)
 
 add_dependencies( ngstd generate_version_file )
 

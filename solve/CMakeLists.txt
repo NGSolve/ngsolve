@@ -58,7 +58,7 @@ if (NETGEN_USE_GUI)
     endif(WIN32)
     add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp shapetester.cpp )
 
-    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
+    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ngmg)
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
     target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
