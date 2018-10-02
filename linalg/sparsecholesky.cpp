@@ -1029,7 +1029,7 @@ namespace ngla
     RegionTimer reg (factor_timer);
     
     size_t n = nused; // Height();
-    if (n > 20){
+    if (n > 2000){
       cout << IM(4) << " factor SPD " << flush;
       Ng_PushStatus("SparseCholesky factoring");
     }
