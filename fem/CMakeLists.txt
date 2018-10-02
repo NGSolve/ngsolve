@@ -23,7 +23,10 @@ add_library(ngfem ${NGS_LIB_TYPE}
         )
 # python_fem.cpp
 
-target_link_libraries(ngfem PUBLIC ngs_interface PRIVATE ngs_private_interface)
+target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(ngfem PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
+target_compile_options(ngfem PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngfem PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
 if(USE_CUDA)
     cuda_add_library( cuda_fem STATIC
