@@ -13,7 +13,11 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
-target_link_libraries(ngstd PUBLIC ngs_interface PRIVATE ngs_private_interface)
+target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(ngstd PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
+target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+target_compile_features(ngstd INTERFACE cxx_std_17)
 
 add_dependencies( ngstd generate_version_file )
 

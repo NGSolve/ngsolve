@@ -10,9 +10,10 @@ add_library(ngla ${NGS_LIB_TYPE}
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
         )
 
-target_link_libraries(ngla PUBLIC ngs_interface PRIVATE ngs_private_interface)
-target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR})
-
+target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
+target_compile_options(ngla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngla PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${UMFPACK_INCLUDE_DIR})
 if(WIN32 AND USE_UMFPACK)
     target_include_directories(ngla PUBLIC $<TARGET_PROPERTY:${UMFPACK_LIBRARIES},INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
