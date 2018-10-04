@@ -2538,7 +2538,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
 
-
+  /*
   class DubinerBasis
   {
   public:
@@ -2560,33 +2560,18 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       DubinerJacobiPolynomialsScaled_Linear<1,0> (n, x, y, t, c, values);
     }
   };
+  */
 
 
 
 
-
-
-  class DubinerBasis3
+  class DubinerBasis
   {
   public:
     template <typename TI, class S, class T>
     INLINE static void Eval (TI n, S x, S y, T && values)
     {
       EvalMult (n, x, y, 1, values);
-      /*
-      LegendrePolynomial leg;
-      int ii = 0;
-      leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
-	      SBLambda ([&] (int i, S val) LAMBDA_INLINE 
-                   {
-                     JacobiPolynomialAlpha jac(1+2*i);
-                     jac.EvalMult1Assign (n-i, 2*x-1, val, 
-				   SBLambda([&](int j, S v2) 
-					    {
-					      values[ii++] = v2;
-					    }));
-                   }));
-      */
     }
 
     template <typename TI, class S, class Sc, class T>
@@ -2598,15 +2583,6 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       leg.EvalScaledMult1Assign (n, y-(1-x-y), 1-x, c,
             SBLambda ([&] (TI i, S val) LAMBDA_INLINE 
                    {
-                     // JacobiPolynomialAlpha jac(1+2*i);
-
-                     /*
-                     jac.EvalMult (n-i, 2*x-1, val, 
-                                   SBLambda([&](int j, S v2) 
-                                            {
-                                              values[ii++] = v2;
-                                            }));
-                     */
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
                      ii += n-i+1;
                      jac.IncAlpha2();
@@ -2631,7 +2607,47 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
                      jac.EvalScaledMult1Assign (n-i, 2*x-1, t, val, values+ii);
                      ii += n-i+1;
                    }));
-      
+    }
+  };
+
+  //[[deprecated("Use DubinerBasis instead")]]
+  using DubinerBasis3 = DubinerBasis;
+  
+
+
+  class DubinerBasis3D
+  {
+  public:
+    template <typename TI, class S, class T>
+    INLINE static void Eval (TI n, S x, S y, S z, T && values)
+    {
+      EvalMult (n, x, y, z, 1, values);
+    }
+
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalMult (TI n, S x, S y, S z, Sc c, T && values)
+    {
+    size_t ii = 0;
+    S lam4 = 1.0 - x-y-z;
+    LegendrePolynomial leg;
+    JacobiPolynomialAlpha jac1(1);    
+    leg.EvalScaledMult1Assign 
+      (n, z-lam4, z+lam4, c,
+       SBLambda ([&](size_t k, S polz) LAMBDA_INLINE
+                 {
+                   // JacobiPolynomialAlpha jac(2*k+1);
+                   JacobiPolynomialAlpha jac2(2*k+2);
+ 
+                   jac1.EvalScaledMult1Assign
+                     (n-k, y-z-lam4, 1-x, polz, 
+                      SBLambda ([&] (size_t j, S polsy) LAMBDA_INLINE
+                                {
+                                  jac2.EvalMult(n-k-j, 2*x - 1, polsy, values+ii);
+                                  ii += n-k-j+1;
+                                  jac2.IncAlpha2();
+                                }));
+                   jac1.IncAlpha2();
+                 }));
     }
   };
 
