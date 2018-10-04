@@ -222,9 +222,8 @@ namespace ngcomp
   DocInfo HDivHighOrderFESpace :: GetDocu ()
   {
     auto docu = FESpace::GetDocu();
-    docu.Arg("nograds") = "bool = False\n"
-      "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-    
+    docu.Arg("RT") = "bool = False\n"
+      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDiv space";
     docu.Arg("hodivfree") = "bool = False\n"

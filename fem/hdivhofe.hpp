@@ -318,7 +318,6 @@ namespace ngfem
 
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
-    using HDivFiniteElement<DIM>::RT;
 
     using VertexOrientedFE<ET>::vnums;
     
@@ -328,7 +327,7 @@ namespace ngfem
 
     bool ho_div_free;
     bool only_ho_div;
-
+    bool RT = false;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     /// minimal constructor, orders will be set later
