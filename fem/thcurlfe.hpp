@@ -30,61 +30,71 @@ namespace ngfem
   public:
 
     NGS_DLL_HEADER T_HCurlHighOrderFiniteElement () { ; }
-    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
+    HD virtual ELEMENT_TYPE ElementType() const override { return ET; }
 
+    /*
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (const Tx & hx, TFA & shape) const
     { 
       static_cast<const SHAPES*> (this) -> T_CalcShape (hx, shape);
     }
+    */
+    
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const
+    { 
+      static_cast<const SHAPES*> (this) -> T_CalcShape (tip, shape);
+    }
 
+    // const SHAPES & Cast() const { return static_cast<const SHAPES&> (*this); }
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            SliceMatrix<> shape) const;
+                            SliceMatrix<> shape) const override;
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-                                SliceMatrix<> curlshape) const;
+                                SliceMatrix<> curlshape) const override;
 #ifndef FASTCOMPILE
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
-                                  SliceMatrix<> shape) const;
+                                  SliceMatrix<> shape) const override;
 
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                                  SliceMatrix<> shape) const;
+                                  SliceMatrix<> shape) const override;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  BareSliceMatrix<SIMD<double>> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const override;
 
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
-                                      SliceMatrix<> curlshape) const;
+                                      SliceMatrix<> curlshape) const override;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                                      SliceMatrix<> curlshape) const;
+                                      SliceMatrix<> curlshape) const override;
 
     virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                      BareSliceMatrix<SIMD<double>> curlshapes) const;
+                                      BareSliceMatrix<SIMD<double>> curlshapes) const override;
     
     virtual Vec <DIM_CURL_(DIM)>
     EvaluateCurlShape (const IntegrationPoint & ip, 
                        FlatVector<double> x,
-                       LocalHeap & lh) const;
+                       LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void 
-    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const;
+    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const override;
 #endif
 
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
     
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const;        
-    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;     
-    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const override;        
+    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;     
+    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const;  // actually not in base-class !!!!
 
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                                             BareSliceVector<> coefs) const;
+                                             BareSliceVector<> coefs) const override;
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
-                                             BareSliceVector<Complex> coefs) const;
+                                             BareSliceVector<Complex> coefs) const override;
     HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                                                 BareSliceVector<> coefs) const;
+                                                 BareSliceVector<> coefs) const override;
     HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
-                                                 BareSliceVector<Complex> coefs) const;
+                                                 BareSliceVector<Complex> coefs) const;  // actually not in base-class !!!!
 
 
     

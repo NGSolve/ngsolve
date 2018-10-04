@@ -51,6 +51,8 @@ namespace ngcomp
     ///
     bool fixed_order;
 
+    bool RT = false; 
+
     // highest-order facet dofs discontinuous ?
     bool highest_order_dc;
     // hide all used dofs

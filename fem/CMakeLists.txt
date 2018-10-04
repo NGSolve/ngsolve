@@ -8,7 +8,8 @@ endif(NGS_GOLD_DIR)
 
 
 add_library(ngfem ${NGS_LIB_TYPE}
-        bdbequations.cpp maxwellintegrator.cpp
+        bdbequations.cpp diffop_grad.cpp diffop_hesse.cpp
+        diffop_id.cpp maxwellintegrator.cpp
         hdiv_equations.cpp h1hofe.cpp h1lofe.cpp l2hofe.cpp  l2hofe_trig.cpp l2hofe_segm.cpp l2hofe_tet.cpp hcurlhofe.cpp
         hcurlhofe_hex.cpp hcurlhofe_tet.cpp hcurlhofe_prism.cpp hcurlhofe_pyramid.cpp
         hcurlfe.cpp vectorfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp

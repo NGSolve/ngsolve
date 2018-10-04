@@ -236,6 +236,8 @@ namespace ngcomp
       }
 
     prol = make_shared<LinearProlongation> (GetMeshAccess());
+
+    needs_transform_vec = false;
   }
 
 
@@ -773,13 +775,62 @@ into the wirebasket.
           }
         
         
-        int elnr = ei.Nr();
+        auto elnr = ei.Nr();
         if (ei.IsVolume())
           {
-            switch (eltype)
+            return SwitchET
+              (eltype, [&] (auto et) -> FiniteElement&
+               {
+                 // return T_GetFE<et.ElementType()> (elnr, alloc);
+                 
+                 constexpr ELEMENT_TYPE ET = et.ElementType();
+                 
+                 Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+                 H1HighOrderFE<ET> * hofe =  new (alloc) H1HighOrderFE<ET> ();
+                 
+                 hofe -> SetVertexNumbers (ngel.Vertices());
+                 
+                 switch (int(ET_trait<ET>::DIM))
+                   {
+                   case 0:
+                     break;
+                     
+                   case 1:
+                     {
+                       hofe -> SetOrderEdge (0, order_inner[elnr][0]);
+                       break;
+                     }
+                     
+                   case 2:
+                     {
+                       if(nodalp2)
+                         hofe -> SetNodalp2();
+                       hofe -> SetOrderEdge (order_edge[ngel.Edges()] );
+                       hofe -> SetOrderFace (0, order_inner[elnr]);
+                       break;
+                     }
+                     
+                   case 3: default:  
+                     {
+                       if(nodalp2)
+                         hofe -> SetNodalp2();
+                       hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+                       hofe -> SetOrderFace (order_face[ngel.Faces()]);
+                       hofe -> SetOrderCell (order_inner[elnr]);
+                       break;
+                     }
+                   }
+                 
+                 hofe -> ComputeNDof();
+                 return *hofe;
+               });
+            
+            /*
+              switch (eltype)
               {
+              case ET_POINT:    return T_GetFE<ET_POINT> (elnr, alloc);
               case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
-                
+              
               case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, alloc);
               case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, alloc);
                 
@@ -791,9 +842,9 @@ into the wirebasket.
               default:
                 throw Exception ("illegal element in H1HoFeSpace::GetFE");
               }
+            */
           }
-        else
-	  if (ei.IsBoundary())
+        else if (ei.IsBoundary())
           {
             /*
             switch (eltype)
@@ -936,6 +987,9 @@ into the wirebasket.
 
     switch (int(ET_trait<ET>::DIM))
       {
+      case 0:
+        break;
+        
       case 1:
         {
           hofe -> SetOrderEdge (0, order_inner[elnr][0]);

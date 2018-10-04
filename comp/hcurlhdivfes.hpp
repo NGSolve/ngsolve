@@ -140,6 +140,24 @@ public:
   //  enum NEDELEC_TYPE { N1, BDM1, BDM1A, N2, BDM2A, BDM2 };
 
 private:
+    /// Reference - element (low order only)
+    FiniteElement * tet;  // = NULL;
+    /// Reference - element (low order only)
+    FiniteElement * prism; // = NULL;
+    /// Reference - element (low order only) 
+    FiniteElement * pyramid;  // = NULL;
+    /// Reference - element (low order only)
+    FiniteElement * hex; //  = NULL;
+    /// Reference - element (low order only)
+    FiniteElement * trig; // = NULL;
+    /// Reference - element (low order only)
+    FiniteElement * quad;// = NULL;
+    /// Reference - element (low order only)
+    FiniteElement * segm;// = NULL;
+    /// Reference - element (low order only)
+    FiniteElement * point;// = NULL;
+
+  
   /// order in z-direction
   int zorder;
   ///

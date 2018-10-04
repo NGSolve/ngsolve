@@ -75,6 +75,35 @@ namespace ngfem
   { return Class_uDvDw_Cyclic<DIM,SCAL> (u,v,w); }
 
 
+
+
+  template <int DIM, typename SCAL>
+  class Class_z_times_uDvDw_Cyclic
+  {
+  public:
+    const AutoDiff<DIM,SCAL> u, v, w, z;
+    Class_z_times_uDvDw_Cyclic (const AutoDiff<DIM,SCAL> au, 
+                        const AutoDiff<DIM,SCAL> av,
+                        const AutoDiff<DIM,SCAL> aw,
+                        const AutoDiff<DIM,SCAL> az)
+      : u(au), v(av), w(aw), z(az) { ; }
+  };
+
+  template <int DIM, typename SCAL>
+  INLINE auto
+  z_times_uDvDw_Cyclic (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v,
+                        AutoDiff<DIM,SCAL> w, AutoDiff<DIM,SCAL> z)
+  { return Class_z_times_uDvDw_Cyclic<DIM,SCAL> (u,v,w,z); }
+  
+  template <int DIM, typename SCAL>
+  INLINE auto
+  z_times_uDvDw_Cyclic (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v,
+                AutoDiffRec<DIM,SCAL> w, AutoDiffRec<DIM,SCAL> z)
+  { return Class_z_times_uDvDw_Cyclic<DIM,SCAL> (u,v,w,z); }
+
+
+
+  
   template <int DIM, typename SCAL>
   class Class_Du_Cross_Dv
   {
@@ -232,6 +261,29 @@ namespace ngfem
           uvw.w.Value() * p3.DValue(i);
     }
 
+
+    INLINE THDiv2Shape (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+    { 
+      /*
+      AutoDiff<3,SCAL> hv =
+        uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u) +
+        uvw.w.Value() * Cross (uvw.u, uvw.v);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+      */
+      AutoDiff<3,SCAL> p1 = Cross (uvwz.v, uvwz.w);
+      AutoDiff<3,SCAL> p2 = Cross (uvwz.w, uvwz.u);
+      AutoDiff<3,SCAL> p3 = Cross (uvwz.u, uvwz.v);
+
+      for (int i = 0; i < 3; i++)
+        data[i] =
+          uvwz.z.Value() * uvwz.u.Value() * p1.DValue(i) + 
+          uvwz.z.Value() * uvwz.v.Value() * p2.DValue(i) + 
+          uvwz.z.Value() * uvwz.w.Value() * p3.DValue(i);
+    }
+    
     INLINE THDiv2Shape (const Class_Du_Cross_Dv<3,SCAL> & uv) 
     { 
       AutoDiff<3,SCAL> hv = Cross (uv.u, uv.v);
@@ -281,7 +333,7 @@ namespace ngfem
 
 
 
-
+#ifdef UNUSED
   template <int DIM, typename SCAL = double> class THDiv2ShapeNew
   {
   public:
@@ -361,15 +413,6 @@ namespace ngfem
     
     INLINE THDiv2ShapeNew (const Class_uDvDw_Cyclic<3,SCAL> & uvw) 
     { 
-      /*
-      AutoDiff<3,SCAL> hv =
-        uvw.u.Value() * Cross (uvw.v, uvw.w) +
-        uvw.v.Value() * Cross (uvw.w, uvw.u) +
-        uvw.w.Value() * Cross (uvw.u, uvw.v);
-
-      for (int i = 0; i < 3; i++)
-        data[i] = hv.DValue(i);
-      */
       AutoDiff<3,SCAL> p1 = Cross (uvw.v, uvw.w);
       AutoDiff<3,SCAL> p2 = Cross (uvw.w, uvw.u);
       AutoDiff<3,SCAL> p3 = Cross (uvw.u, uvw.v);
@@ -381,6 +424,21 @@ namespace ngfem
           uvw.w.Value() * p3.DValue(i);
     }
 
+    INLINE THDiv2ShapeNew (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+    { 
+      AutoDiff<3,SCAL> p1 = Cross (uvwz.v, uvwz.w);
+      AutoDiff<3,SCAL> p2 = Cross (uvwz.w, uvwz.u);
+      AutoDiff<3,SCAL> p3 = Cross (uvwz.u, uvwz.v);
+
+      for (int i = 0; i < 3; i++)
+        data[i] =
+          uvwz.z.Value() * uvwz.u.Value() * p1.DValue(i) + 
+          uvwz.z.Value() * uvwz.v.Value() * p2.DValue(i) + 
+          uvwz.z.Value() * uvwz.w.Value() * p3.DValue(i);
+    }
+
+
+    
     INLINE THDiv2ShapeNew (const Class_Du_Cross_Dv<3,SCAL> & uv) 
     { 
       AutoDiff<3,SCAL> hv = Cross (uv.u, uv.v);
@@ -426,10 +484,178 @@ namespace ngfem
     INLINE Vec<3,SCAL> Data() const { return data; }    
   };
 
+#endif
 
 
 
 
+
+  /////////////////////
+
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (Class_Du<2,SCAL> uv)
+  {
+    return Vec<2,SCAL> (-uv.u.DValue(0), -uv.u.DValue(1));  // signs to fit historic inconsistency
+  }
+
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (Class_uDv<2,SCAL> uv)
+  {
+    return Vec<2,SCAL> (uv.u.Value()*uv.v.DValue(0), 
+                        uv.u.Value()*uv.v.DValue(1));
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDv_minus_vDu<2,SCAL> & uv) 
+  {
+    Vec<2,SCAL> data;
+    data(0) = uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data(1) = uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    return data;
+  }
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+  {
+    Vec<2,SCAL> data;    
+    data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data[1] =  uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    data[0] *= uv.w.Value();
+    data[1] *= uv.w.Value();
+    return data;
+  }
+  
+  template <typename SCAL>  
+  INLINE auto HDiv2ShapeNew (Class_Du<3,SCAL> uv)
+  {
+    return Vec<3,SCAL> (-uv.u.DValue(0), -uv.u.DValue(1), -uv.u.DValue(2));
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (Class_uDv<3,SCAL> uv)
+  {
+    return Vec<3,SCAL> (uv.u.Value()*uv.v.DValue(0), 
+                        uv.u.Value()*uv.v.DValue(1), 
+                        uv.u.Value()*uv.v.DValue(2));
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDv_minus_vDu<3,SCAL> & uv) 
+  {
+    Vec<3,SCAL> data;
+    data(0) = uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data(1) = uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    data(2) = uv.u.Value() * uv.v.DValue(2) - uv.u.DValue(2) * uv.v.Value();
+    return data;
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<3,SCAL> & uv) 
+  {
+    Vec<3,SCAL> data;
+    data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    data[1] =  uv.u.Value() * uv.v.DValue(1) - uv.u.DValue(1) * uv.v.Value();
+    data[2] =  uv.u.Value() * uv.v.DValue(2) - uv.u.DValue(2) * uv.v.Value();
+    data[0] *= uv.w.Value();
+    data[1] *= uv.w.Value();
+    data[2] *= uv.w.Value();
+    return data;
+  }
+    
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDvDw_Cyclic<3,SCAL> & uvw) 
+    { 
+      AutoDiff<3,SCAL> p1 = Cross (uvw.v, uvw.w);
+      AutoDiff<3,SCAL> p2 = Cross (uvw.w, uvw.u);
+      AutoDiff<3,SCAL> p3 = Cross (uvw.u, uvw.v);
+
+      Vec<3,SCAL> data;
+      for (int i = 0; i < 3; i++)
+        data[i] =
+          uvw.u.Value() * p1.DValue(i) + 
+          uvw.v.Value() * p2.DValue(i) + 
+          uvw.w.Value() * p3.DValue(i);
+      return data;
+    }
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+    { 
+      AutoDiff<3,SCAL> p1 = Cross (uvwz.v, uvwz.w);
+      AutoDiff<3,SCAL> p2 = Cross (uvwz.w, uvwz.u);
+      AutoDiff<3,SCAL> p3 = Cross (uvwz.u, uvwz.v);
+
+      Vec<3,SCAL> data;
+      for (int i = 0; i < 3; i++)
+        data[i] =
+          uvwz.z.Value() * uvwz.u.Value() * p1.DValue(i) + 
+          uvwz.z.Value() * uvwz.v.Value() * p2.DValue(i) + 
+          uvwz.z.Value() *  uvwz.w.Value() * p3.DValue(i);
+      return data;
+    }
+
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_Du_Cross_Dv<3,SCAL> & uv) 
+  { 
+    AutoDiff<3,SCAL> hv = Cross (uv.u, uv.v);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = hv.DValue(i);
+    return data;
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_wDu_Cross_Dv<3,SCAL> & uvw) 
+  { 
+    AutoDiff<3,SCAL> hv = Cross (uvw.u, uvw.v);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = uvw.w.Value() * hv.DValue(i);
+    return data;
+  }
+  
+
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_uDvDw_minus_DuvDw<3,SCAL> & uvw) 
+  { 
+    /*
+      AutoDiff<3,SCAL> hv =
+      uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    */
+    AutoDiff<3,SCAL> p1 = Cross (uvw.v, uvw.w);
+    AutoDiff<3,SCAL> p2 = Cross (uvw.w, uvw.u);
+
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] =
+        uvw.u.Value() * p1.DValue(i) + 
+        uvw.v.Value() * p2.DValue(i);
+    return data;
+  }
+  
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const Class_curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
+  { 
+    AutoDiff<3,SCAL> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = hv.DValue(i);
+    return data;
+  }
+
+
+  //////////////////////////
+
+
+
+  
 
   
 
@@ -522,6 +748,14 @@ namespace ngfem
         Dot (uvw.u, Cross (uvw.v, uvw.w)) +
         Dot (uvw.v, Cross (uvw.w, uvw.u)) +
         Dot (uvw.w, Cross (uvw.u, uvw.v));
+    }
+
+    INLINE THDiv2DivShape (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+    { 
+      data = 
+        Dot (uvwz.z * uvwz.u, Cross (uvwz.v, uvwz.w)) +
+        Dot (uvwz.z * uvwz.v, Cross (uvwz.w, uvwz.u)) +
+        Dot (uvwz.z * uvwz.w, Cross (uvwz.u, uvwz.v));
     }
 
     INLINE THDiv2DivShape (const Class_Du_Cross_Dv<3,SCAL> & uv) 

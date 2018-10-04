@@ -106,7 +106,7 @@ namespace ngfem
     using ET_trait<ET>::DIM;    
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[DIM], TFA & shape) const;
+    void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
 
     template <typename MIP, typename TFA>
     inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
@@ -124,12 +124,12 @@ namespace ngfem
 
   
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_SEGM> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0];
+    Tx x = ip.x;
     Tx lam[2] = { x, 1-x };
 
-    ArrayMem<Tx,20> adpol1(order);
+    // ArrayMem<Tx,20> adpol1(order);
 	
     INT<2> e = GetEdgeSort (0, vnums);	  
     
@@ -141,13 +141,24 @@ namespace ngfem
     if(p > 0 && usegrad_cell)
       { 
         // LegendrePolynomial::
+        /*
         EdgeOrthoPol::
           EvalScaledMult (p-1, 
                           lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                           lam[e[0]]*lam[e[1]], adpol1);
-        
+
         for(int j = 0; j < p; j++) 	      
           shape[j+1] = Du (adpol1[j]);
+        */
+        size_t ii = 1;
+        EdgeOrthoPol::
+          EvalScaledMult (p-1, 
+                          lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                          lam[e[0]]*lam[e[1]], 
+                          SBLambda ([&](int nr, Tx val)
+                                    {
+                                      shape[ii++] = Du (val);
+                                    }));
       }
   }
   
@@ -159,12 +170,11 @@ namespace ngfem
   //------------------------------------------------------------------------
   
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  INLINE void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1];
+    Tx x = ip.x, y = ip.y;
     Tx lam[3] = { x, y, 1-x-y };
 
-    ArrayMem<Tx,20> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
     for (int i = 0; i < 3; i++)
@@ -200,18 +210,16 @@ namespace ngfem
 	Tx xi  = lam[fav[2]]-lam[fav[1]];
 	Tx eta = lam[fav[0]]; 
 
-        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
-	
 	// gradients:
 	if(usegrad_face[0])
           {
             int pg = p-2 - (type1 ? 1 : 0);
-            DubinerBasis3::EvalMult (pg, lam[fav[0]], lam[fav[1]], 
-                                     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                     SBLambda ([&](int nr, Tx val)
-                                               {
-                                                 shape[ii++] = Du (val);
-                                               }));
+            DubinerBasis::EvalMult (pg, lam[fav[0]], lam[fav[1]], 
+                                    lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+                                    SBLambda ([&](int nr, Tx val)
+                                              {
+                                                shape[ii++] = Du (val);
+                                              }));
             /*
             for (int j = 0; j < p-1; j++)
               for (int k = 0; k < p-1-j; k++, ii++)
@@ -219,41 +227,64 @@ namespace ngfem
             */
           }
 
-	// other combination
-	for (int j = 0; j < p-1; j++)
-	  for (int k = 0; k < p-1-j; k++, ii++)
-            shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);     
+        if (type1)
+          {
+            DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+                                    lam[fav[0]], 
+                                    SBLambda ([&](int nr, Tx val)
+                                              {
+                                                shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
+                                              }));
+            LegendrePolynomial::EvalMult 
+              (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
+               SBLambda([&] (int j, Tx val)
+                        {
+                          shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[0]], val);
+                        }));
+            
+          }
 
-        /*
-        Tx x = lam[fav[0]];
-        Tx y = lam[fav[1]];
-        LegendrePolynomial leg;
-        leg.EvalScaledMult1Assign 
-          (p-2, y-(1-x-y), 1-x, y*(1-x-y),
-           SBLambda ([&] (int i, Tx val1) LAMBDA_INLINE 
-                     {
-                       JacobiPolynomialAlpha jac(1+2*i);
-                       jac.EvalMult1Assign 
-                         (p-2-i, 2*x-1, x, 
-                          SBLambda([&](int j, Tx val2) 
-                                   {
-                                     shape[ii++] = uDv_minus_vDu<2> (val1,val2);
-                                   }));
-                     }));
-        */
-
-
-	// rec_pol * Nedelec0 
-	for (int j = 0; j < p-1; j++, ii++)
-          shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
-        /*
-        leg.EvalMult 
-          (p-2, 2*x-1, x, 
-           SBLambda([&] (int j, Tx val)
-                    {
-                      shape[ii++] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], val);
-                    }));
-        */
+        else
+          {
+            ArrayMem<Tx,20> adpol1(order),adpol2(order);	
+            TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
+	
+            // other combination
+            for (int j = 0; j < p-1; j++)
+              for (int k = 0; k < p-1-j; k++, ii++)
+                shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);     
+            
+            /*
+              Tx x = lam[fav[0]];
+              Tx y = lam[fav[1]];
+              LegendrePolynomial leg;
+              leg.EvalScaledMult1Assign 
+              (p-2, y-(1-x-y), 1-x, y*(1-x-y),
+              SBLambda ([&] (int i, Tx val1) LAMBDA_INLINE 
+              {
+              JacobiPolynomialAlpha jac(1+2*i);
+              jac.EvalMult1Assign 
+              (p-2-i, 2*x-1, x, 
+              SBLambda([&](int j, Tx val2) 
+              {
+              shape[ii++] = uDv_minus_vDu<2> (val1,val2);
+              }));
+              }));
+            */
+            
+            
+            // rec_pol * Nedelec0 
+            for (int j = 0; j < p-1; j++, ii++)
+              shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
+            /*
+              leg.EvalMult 
+              (p-2, 2*x-1, x, 
+              SBLambda([&] (int j, Tx val)
+              {
+              shape[ii++] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], val);
+              }));
+            */
+          }
       }
   }
 
@@ -264,10 +295,10 @@ namespace ngfem
   
 
   template<> template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1];
-
+    Tx x = ip.x, y = ip.y;
+    Tx hx[2] = { x, y };
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
@@ -378,9 +409,10 @@ namespace ngfem
  
 
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;    
     Tx lam[4] = { x, y, z, 1-x-y-z };
 
     ArrayMem<Tx,20> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
@@ -427,7 +459,7 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i])
             {
-              DubinerBasis3::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
+              DubinerBasis::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
                                              lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
                                              SBLambda ([&](int nr, Tx val)
                                                        {
@@ -480,12 +512,13 @@ namespace ngfem
   //------------------------------------------------------------------------
 
   template<> template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
     typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 
-    Tx x = hx[0], y = hx[1], z = hx[2];
-
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    
     Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
 
@@ -568,7 +601,7 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i])
             {
-              DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+              DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
                                        lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
                                        SBLambda ([&](int nr, Tx val)
                                                  {
@@ -701,7 +734,7 @@ namespace ngfem
             int nf = (p[0]-0)*(p[0]-1)/2;
             ArrayMem<Tx,20> pol_trig(nf);
             
-            DubinerBasis3::EvalMult (p[0]-2, x, y, x*y*(1-x-y),pol_trig);
+            DubinerBasis::EvalMult (p[0]-2, x, y, x*y*(1-x-y),pol_trig);
             LegendrePolynomial::EvalMult (p[2]-1, 2*z-1, z*(1-z), adpolz);
             
             for (int i = 0; i < nf; i++)
@@ -753,9 +786,10 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void HCurlHighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_HEX> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
 
     Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
                 (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
@@ -929,12 +963,13 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
     typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;  
 
-    Tx x = hx[0], y = hx[1], z = hx[2];
-
+    // Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    
     //if(z.Value()==1.) z.Value() -=1.e-8; 
     z.Value() = z.Value()*(1-1e-12);
 
@@ -1024,7 +1059,7 @@ namespace ngfem
 	  if(usegrad_face[i])
             {
               Tx bub = lam_face * bary[fav[0]]*bary[fav[1]]*bary[fav[2]];
-              DubinerBasis3::
+              DubinerBasis::
                 EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
                           SBLambda ([&](int nr, Tx val)
                                     {
@@ -1249,12 +1284,12 @@ namespace ngfem
 	
 	// auto xphys = mip.GetPoint()(0);
         // auto yphys = mip.GetPoint()(1);
-        DubinerBasis3::Eval(order-2, x, y,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
-                                       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
-                                     }));
+        DubinerBasis::Eval(order-2, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
+                                    }));
 	LegendrePolynomial::Eval(order-2,x,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
@@ -1335,12 +1370,12 @@ namespace ngfem
 		 Ftmp = Trans(F)*F;
 		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
 		 
-		 DubinerBasis3::Eval(order-2, xi, eta,
-				     SBLambda([&] (size_t nr, auto val)
-					      {
-						shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
-						shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
-					      }));
+		 DubinerBasis::Eval(order-2, xi, eta,
+                                    SBLambda([&] (size_t nr, auto val)
+                                             {
+                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
+                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
+                                             }));
 		 LegendrePolynomial::Eval(order-2,xi,
 					  SBLambda([&] (size_t nr, auto val)
 						   {
@@ -1392,11 +1427,11 @@ namespace ngfem
 		     }));
 
 
-        DubinerBasis3::Eval(order-3, x, y,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
-                                     }));
+        DubinerBasis::Eval(order-3, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
+                                    }));
       }
   }
 
