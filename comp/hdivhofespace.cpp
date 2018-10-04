@@ -99,6 +99,8 @@ namespace ngcomp
     DefineDefineFlag("noprint");
     DefineDefineFlag("variableorder"); 
     DefineDefineFlag("hodivfree"); 
+
+    DefineDefineFlag("RT");
     
     if(parseflags) CheckFlags(flags);
 
@@ -127,7 +129,7 @@ namespace ngcomp
       var_order = 1; 
     
     rel_order=int(flags.GetNumFlag("relorder",order-1)); 
-    
+
 
     if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder")) 
       {
@@ -170,6 +172,7 @@ namespace ngcomp
 
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
     fixed_order = flags.GetDefineFlag ("fixedorder");
+    RT = flags.GetDefineFlag ("RT");
 
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
@@ -219,9 +222,8 @@ namespace ngcomp
   DocInfo HDivHighOrderFESpace :: GetDocu ()
   {
     auto docu = FESpace::GetDocu();
-    docu.Arg("nograds") = "bool = False\n"
-      "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-    
+    docu.Arg("RT") = "bool = False\n"
+      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDiv space";
     docu.Arg("hodivfree") = "bool = False\n"
@@ -464,6 +466,8 @@ namespace ngcomp
                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
                 else
                   inci = pc[0]*(pc[0]-1)/2;
+                if (RT)
+                  inci += pc[0] + 1;
                 break;
               case ET_QUAD:
                 if (!ho_div_free)
@@ -570,6 +574,8 @@ namespace ngcomp
 		    for (int j = 0; j < fnums.Size(); j++)
 		      if (!boundary_facet[fnums[j]]) inci += p[0]+1;
 		  }
+		if (RT)
+		  inci += (p[0]+1) * (p[0]+2)/2;
 		// inci += 4*(p[0]+1);
                 break;
               case ET_PRISM:
@@ -768,7 +774,7 @@ namespace ngcomp
     hofe -> SetVertexNumbers (ngel.Vertices());
     hofe -> SetHODivFree (ho_div_free);
     hofe -> SetOnlyHODiv (onlyhdiv);
-
+    hofe -> SetRT(RT);
     hofe -> SetOrderInner (order_inner[elnr]);
         
     switch (int(ET_trait<ET>::DIM))
