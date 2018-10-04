@@ -88,6 +88,13 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   INLINE void  HDivHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
+
+    static bool first = true;
+    if (first)
+    {
+      first = false;
+    }
+
     if (only_ho_div && (order_inner[0] <= 1)) return;
 
     Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
@@ -124,12 +131,13 @@ namespace ngfem
 
     //Inner shapes (Face) 
     int p = order_inner[0];      
-    if(p > 1) 
+    if(p > 1 || RT) 
       {
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
  	// rotated gradients:
-	if(!only_ho_div)
+	//if(!only_ho_div)
+	if(p>1 && !only_ho_div)
           {
             DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
                                      lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
@@ -141,6 +149,8 @@ namespace ngfem
 
         if (!ho_div_free)
           {
+            if (RT) p += 1;
+            
             Tx x = lam[fav[0]];
             Tx y = lam[fav[1]];
             LegendrePolynomial leg;
@@ -168,6 +178,7 @@ namespace ngfem
           }
 
       }
+    if (ii != ndof) cout << "ndof = " << ndof << ", but ii = " << ii << endl;
   }
 
 
@@ -410,16 +421,16 @@ template <typename MIP, typename TFA>
     int p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl  
     int pp = max2(p,pc); 
-    if ( pp >= 2 )
+    if ( pp >= 2 || RT )
       {
         STACK_ARRAY(Tx, mem, 3*order);
         Tx * adpol1 = &mem[0];
         Tx * adpol2 = &mem[order];
         Tx * adpol3 = &mem[2*order];
 
-        T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
+        T_INNERSHAPES::CalcSplitted(pp+2+1, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
       
-        if (!only_ho_div){
+        if (pp >= 2 && !only_ho_div){
           // Curl-Fields 
           for (int i = 0; i <= pc-2; i++)
             for (int j = 0; j <= pc-2-i; j++)
@@ -441,7 +452,8 @@ template <typename MIP, typename TFA>
         }
 
         if (!ho_div_free)
-          { 
+          {
+	    if (RT) p+= 1;
             // Type 2:  
             // (grad u  x  grad v) w 
             for (int i = 0; i <= p-2; i++)

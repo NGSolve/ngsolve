@@ -318,6 +318,7 @@ namespace ngfem
 
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
+    using HDivFiniteElement<DIM>::RT;
 
     using VertexOrientedFE<ET>::vnums;
     
@@ -372,6 +373,12 @@ namespace ngfem
       ho_div_free = ho_div_free && !only_ho_div;
     };  
 
+    void SetRT (bool aRT) 
+    { 
+      RT = aRT; 
+    };  
+
+    
     virtual void ComputeNDof();
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
