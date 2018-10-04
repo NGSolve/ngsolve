@@ -21,6 +21,8 @@ namespace ngfem
     enum { DIM = D };
 
   public:
+    bool RT = false;
+    
     ///
     INLINE HDivFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; } 
