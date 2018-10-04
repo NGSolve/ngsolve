@@ -34,7 +34,7 @@ namespace ngcomp
     if( flags.GetDefineFlag("hcurl"))
       cerr << "WARNING: -hcurl flag is deprecated: use -type=hcurl instead" << endl;
     
-    SetDummyFE<HCurlDummyFE> ();
+    // SetDummyFE<HCurlDummyFE> ();
 
     prol = make_shared<EdgeProlongation> (*this);
     order = 1;

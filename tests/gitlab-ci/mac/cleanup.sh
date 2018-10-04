@@ -1,1 +1,1 @@
-rm -rf $BUILD_DIR
+rm -rf $ROOT_DIR

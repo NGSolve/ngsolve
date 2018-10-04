@@ -14,7 +14,7 @@
 namespace ngla
 {
 
-  class SparseFactorization : public BaseMatrix
+  class NGS_DLL_HEADER SparseFactorization : public BaseMatrix
   { 
   protected:
     weak_ptr<BaseSparseMatrix> matrix;
@@ -59,7 +59,7 @@ namespace ngla
   template<class TM>
 	   // class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   // class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SparseCholeskyTM : public SparseFactorization
+  class NGS_DLL_HEADER SparseCholeskyTM : public SparseFactorization
   {
   protected:
     // height of the matrix
@@ -130,9 +130,9 @@ namespace ngla
 
     ///
     SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
-                      shared_ptr<BitArray> ainner = nullptr,
-                      shared_ptr<const Array<int>> acluster = nullptr,
-                      bool allow_refactor = 0);
+                                     shared_ptr<BitArray> ainner = nullptr,
+                                     shared_ptr<const Array<int>> acluster = nullptr,
+                                     bool allow_refactor = 0);
     ///
     virtual ~SparseCholeskyTM ();
     ///
@@ -154,7 +154,9 @@ namespace ngla
     virtual bool SupportsUpdate() const { return true; }     
     virtual void Update()
     {
-      FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
+      // FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
+      auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
+      FactorNew (*castmatrix);
     }
     ///
     void FactorNew (const SparseMatrix<TM> & a);
@@ -205,7 +207,7 @@ namespace ngla
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SparseCholesky : public SparseCholeskyTM<TM>
+  class NGS_DLL_HEADER SparseCholesky : public SparseCholeskyTM<TM>
   {
     typedef SparseCholeskyTM<TM> BASE;
     using BASE::height;

@@ -124,8 +124,8 @@ ANY                  1 1 1 1 | 15
     Array<bool> dirichlet_vertex;
     Array<bool> dirichlet_edge;
     Array<bool> dirichlet_face;
-
-  
+    
+    /*
     /// Reference - element (low order only)
     FiniteElement * tet;  // = NULL;
     /// Reference - element (low order only)
@@ -142,8 +142,9 @@ ANY                  1 1 1 1 | 15
     FiniteElement * segm;// = NULL;
     /// Reference - element (low order only)
     FiniteElement * point;// = NULL;
-
-
+    */
+    
+    /*
     FiniteElement * dummy_tet; // = new <DummyFE<ET_TET>();
     FiniteElement * dummy_pyramid; // = new DummyFE<ET_PYRAMID>();
     FiniteElement * dummy_prism; // = new DummyFE<ET_PRISM>();
@@ -152,11 +153,15 @@ ANY                  1 1 1 1 | 15
     FiniteElement * dummy_quad; // = new DummyFE<ET_QUAD>();
     FiniteElement * dummy_segm; // = new DummyFE<ET_SEGM>();
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
-
+    */
+    
     /// Evaluator for visualization (new style)
     shared_ptr<DifferentialOperator> evaluator[4];
     /// Evaluator for flux
     shared_ptr<DifferentialOperator> flux_evaluator[4];
+
+    SymbolTable<shared_ptr<DifferentialOperator>> additional_evaluators;
+
     /// Evaluator for visualization (old style)
     shared_ptr<BilinearFormIntegrator> integrator[4];
 
@@ -189,36 +194,13 @@ ANY                  1 1 1 1 | 15
     typedef int8_t TORDER;
 
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
-    
-    /*
-      the function space H(curl) has high order basis functions which 
-      are gradients, and additional ones which span the domain of the curl.
-      In general, for function spaces of the de Rham sequence we refer to 
-      functions in the range of the differential operator from the left to 
-      the left sub-space, and functions spanning the domain of the right 
-      differential operator as the right sub-space. 
-      
-      We can give different polynomial orders to the left and the
-      right sub-space.  This allows to define Raviart-Thomas vs BDM
-      elements, or Nedelec-type 1 vs Nedelec-type 2 elements, and
-      more: We can skip all high order gradients in H(curl), or also
-      define a (high-order) div-free H(div) space.
-
-      We can give different orders for the left and right space for different
-      element-types (like trig or quad)
-     */
-    // int et_order_left[30];  // order for range of diff-op from the left 
-    // int et_order_right[30]; // order for domain of diff-op to the right
-
-    /*
-    Array<TORDER> order_edge; 
-    Array<INT<2,TORDER>> order_face_left;
-    Array<INT<2,TORDER>> order_face_right; 
-    Array<INT<3,TORDER>> order_cell_left;
-    Array<INT<3,TORDER>> order_cell_right;
-    */
-    size_t order_timestamp = 0;
+  
+    // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
+
+    // only a few spaces (lowest order Nedelec) need the transformation
+    // of element vectors
+    bool needs_transform_vec = true;
 
     
     // move ndof and ndof_level to FESpace base class
@@ -274,9 +256,10 @@ ANY                  1 1 1 1 | 15
     /// order of finite elements
     int GetOrder () const { return order; }
 
+    /*
     void SetBonusOrder (ELEMENT_TYPE et, int bonus) 
     { et_bonus_order[et] = bonus; }
-
+    */
     void SetOrderPolicy (ORDER_POLICY op)
     {
       order_policy = op;
@@ -289,46 +272,10 @@ ANY                  1 1 1 1 | 15
       et_bonus_order[et] = order - this->order;
       // et_order_left[et] = et_order_right[et] = order;
     }
-    /*
-    void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
-    {
-      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
-        order_policy = NODE_TYPE_ORDER;      
-      et_order_left[et] = order;
-    }
-    void SetOrderRight (ELEMENT_TYPE et, TORDER order)
-    {
-      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
-        order_policy = NODE_TYPE_ORDER;
-      et_order_right[et] = order;
-    }
-    */
-    virtual void SetOrder (NodeId ni, int order); //  { ; }
-    virtual int GetOrder (NodeId ni) const; //  { return 0; }
-    /*
-    {
-      switch (ni.GetType())
-        {
-        case NT_VERTEX:
-          break;
-        case NT_EDGE:
-          if (ni.GetNr() < order_edge.Size())
-            order_edge[ni.GetNr()] = order;
-          break;
-        case NT_FACE:
-          if (ni.GetNr() < order_face_left.Size())
-            order_face_left[ni.GetNr()] = order;
-          if (ni.GetNr() < order_face_right.Size())
-            order_face_right[ni.GetNr()] = order;
-          break;
-        case NT_CELL:
-          // not yet 
-          break;
-        case NT_ELEMENT: case NT_FACET:
-          break;
-        }
-    }
-    */
+
+    virtual void SetOrder (NodeId ni, int order); 
+    virtual int GetOrder (NodeId ni) const; 
+
     /// how many components
     int GetDimension () const { return dimension; }
 
@@ -342,7 +289,6 @@ ANY                  1 1 1 1 | 15
     /// number of dofs on the level
     virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
 
-    SymbolTable<shared_ptr<DifferentialOperator>> additional_evaluators;
        
     class Element : public Ngs_Element
     {
@@ -359,7 +305,6 @@ ANY                  1 1 1 1 | 15
 
       INLINE Element (const Element & el) = default;
       INLINE Element (Element && el) = default;
-      // ElementId operator() const { return ei; }
 
       INLINE FlatArray<DofId> GetDofs() const
       {
@@ -426,14 +371,12 @@ ANY                  1 1 1 1 | 15
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
         : IntRange(ar), fes(afes),
           definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
-          // FlatArray<bool>(fes.definedon) : FlatArray<bool>(fes.definedonbound)), 
           vb(avb), mylh(move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
         : IntRange(ar), fes(afes), 
           definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
-          // definedon( (avb==VOL) ? FlatArray<bool> (fes.definedon) : FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
 
@@ -464,13 +407,6 @@ ANY                  1 1 1 1 | 15
       }
     };
 
-    /*
-    ElementRange Elements (VorB vb = VOL, int heapsize = 10000) const
-    {
-      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), LocalHeap(heapsize));
-    }
-    */
-
     ElementRange Elements (VorB vb = VOL, LocalHeap && lh = 10000) const
     {
       // cout << "C++ FESpace::Elements with lh rvalue, name = " << lh.name << endl;
@@ -481,35 +417,18 @@ ANY                  1 1 1 1 | 15
     {
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), lh);
     }
-        
 
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
-      /*
-    [[deprecated("Use GetFE with element-id instead of elnr!")]]    
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
-    [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
-    [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
-*/
-    /// get dof-nrs of the element
-    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<DofId> & dnums) const
-      { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
-    
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
-    void SetIrregularDofNrs (Array<DofId> & dnums) const;
     
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (Region reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
 
-    // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
-    
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
@@ -525,9 +444,6 @@ ANY                  1 1 1 1 | 15
     virtual void SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const;
     
     void CheckCouplingTypes() const;
-
-    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
       
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
@@ -536,12 +452,6 @@ ANY                  1 1 1 1 | 15
     virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
 
-    /// get dofs on nr'th node of type nt.
-    [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
-    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
-    /// get number of low-order dofs for node of type nt
-    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
-    // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
     // [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]
@@ -556,32 +466,9 @@ ANY                  1 1 1 1 | 15
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
-    /// returns dofs of sourface element
-    [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
-    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
-      { GetDofNrs(ElementId(BND,selnr),dnums); }
-
     bool DefinedOn(VorB vb, int domnr) const
     { return !definedon[vb].Size() || definedon[vb][domnr]; }
 
-    /// is the FESpace defined for this sub-domain nr ?
-    [[deprecated("Use Definedon(VorB,int) instead")]]
-    bool DefinedOn (int domnr) const
-    { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
-    /// is the FESpace defined for this boundary nr ?
-    [[deprecated("Use Definedon(VorB,int) instead")]]
-    bool DefinedOnBoundary (int bnr) const
-    {return !definedon[BND].Size() || definedon[BND][bnr]; }
-
-    /// is the FESpace defined for this sub-domain / boundary nr ?
-    [[deprecated("Use DefinedOn(VorB, int) instead")]]
-    bool DefinedOn (int index, bool bound) const
-    {
-      if (bound)
-        return !definedon[BND].Size() || definedon[BND][index];
-      else
-        return !definedon[VOL].Size() || definedon[VOL][index];
-    }
 
     bool DefinedOn (ElementId id) const
     {
@@ -608,17 +495,13 @@ ANY                  1 1 1 1 | 15
     ///
     void SetDirichletBoundaries (const BitArray & dirbnds);
     /// Get reference element for tet, prism, trig, etc ..
-    const FiniteElement & GetFE (ELEMENT_TYPE type) const;
+    // const FiniteElement & GetFE (ELEMENT_TYPE type) const;
 
     /// according low-order FESpace (if available)
     FESpace & LowOrderFESpace () { return *low_order_space; }
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
-    ///
-    // void SetLowOrderSpace (bool los) { is_low_order_space = los; }
-    ///
-    // bool IsLowOrderSpace () const { return is_low_order_space; }
 
     /// non Dirichlet dofs
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
@@ -664,6 +547,178 @@ ANY                  1 1 1 1 | 15
 
     bool IsAtomicDof (size_t nr) const { return (is_atomic_dof.Size() != 0) && is_atomic_dof[nr]; }
     bool HasAtomicDofs () const { return is_atomic_dof.Size() != 0; }
+
+
+    bool NeedsTransformVec() const { return needs_transform_vec; }
+
+    void TransformMat (ElementId ei, 
+                       SliceMatrix<double> mat, TRANSFORM_TYPE type) const
+    {
+      if (needs_transform_vec)      
+        VTransformMR (ei, mat, type);
+    }
+    void TransformMat (ElementId ei, 
+		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
+    {
+      if (needs_transform_vec)      
+        VTransformMC (ei, mat, type);
+    }		
+    void TransformVec (ElementId ei, 
+		       SliceVector<double> vec, TRANSFORM_TYPE type) const
+    {
+      if (needs_transform_vec)
+        VTransformVR (ei, vec, type);
+    }
+    void TransformVec (ElementId ei, 
+		       SliceVector<Complex> vec, TRANSFORM_TYPE type) const
+    {
+      if (needs_transform_vec)
+        VTransformVC (ei, vec, type);
+    }
+
+    /*
+    template < int S, class T >
+    [[deprecated("Use TransformVec with element-id instead of elnr!")]]        
+    void TransformVec (int elnr, VorB vb,
+		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
+
+    template < class T >
+    void TransformVec (ElementId ei,
+		       const T & vec, TRANSFORM_TYPE type) const
+    {
+      TransformVec (ei, vec, type);
+    }
+    */
+
+    virtual void VTransformMR (ElementId ei,
+			       const SliceMatrix<double> mat, TRANSFORM_TYPE type) const
+    { ; }
+    virtual void VTransformMC (ElementId ei, 
+			       const SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
+    { ; }
+
+
+    virtual void VTransformVR (ElementId ei,
+			       const SliceVector<double> vec, TRANSFORM_TYPE type) const
+    { ; }
+    virtual void VTransformVC (ElementId ei, 
+			       const SliceVector<Complex> vec, TRANSFORM_TYPE type) const
+    { ; }
+  
+  
+    /// Returns multigrid-prolongation
+    virtual shared_ptr<Prolongation> GetProlongation () const { return prol; }
+    /// Set multigrid prolongation
+    // void SetProlongation (ngmg::Prolongation * aprol)
+    // { prol = aprol; }
+
+
+    /// returns function-evaluator
+    shared_ptr<DifferentialOperator> GetEvaluator (VorB vb = VOL) const
+    {
+      return evaluator[vb];
+    }
+
+
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (VorB vb = VOL) const
+    {
+      return flux_evaluator[vb];
+    }
+
+
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
+    { return additional_evaluators; } 
+
+
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const;
+    /*
+    {
+      return integrator[vb];
+    }
+    */
+    
+    /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
+    Array<SpecialElement*> specialelements;
+
+    void AppendSpecialElement (SpecialElement * spel)
+    { specialelements.Append (spel); }
+
+    const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
+
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+      
+    shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
+    virtual void UpdateParallelDofs ();
+
+    //// is FESpace mpi-distributed ?
+    bool IsParallel() const;
+
+    /// ndof over all mpi-partitions
+    size_t GetNDofGlobal() const;
+
+    virtual int GetRelOrder() const
+    { 
+      cout << "virtual GetRelOrder called for FiniteElementSpace, not available ! " << endl; 
+      return 0; 
+    } 
+
+    virtual bool VarOrder() const { return 0; }
+
+    bool timing;
+    std::list<std::tuple<std::string,double>> Timing () const;
+
+
+
+
+      /*
+    [[deprecated("Use GetFE with element-id instead of elnr!")]]    
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
+    [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
+    [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
+*/
+    /// get dof-nrs of the element
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<DofId> & dnums) const
+      { GetDofNrs(ElementId(VOL,elnr),dnums); }
+
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+
+    /// get dofs on nr'th node of type nt.
+    [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
+    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
+    /// get number of low-order dofs for node of type nt
+    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
+    // { return lodofs_per_node[nt]; }
+
+    /// returns dofs of sourface element
+    [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
+    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
+      { GetDofNrs(ElementId(BND,selnr),dnums); }
+
+    /// is the FESpace defined for this sub-domain nr ?
+    [[deprecated("Use Definedon(VorB,int) instead")]]
+    bool DefinedOn (int domnr) const
+    { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
+    /// is the FESpace defined for this boundary nr ?
+    [[deprecated("Use Definedon(VorB,int) instead")]]
+    bool DefinedOnBoundary (int bnr) const
+    {return !definedon[BND].Size() || definedon[BND][bnr]; }
+
+    /// is the FESpace defined for this sub-domain / boundary nr ?
+    [[deprecated("Use DefinedOn(VorB, int) instead")]]
+    bool DefinedOn (int index, bool bound) const
+    {
+      if (bound)
+        return !definedon[BND].Size() || definedon[BND][index];
+      else
+        return !definedon[VOL].Size() || definedon[VOL][index];
+    }
 
     [[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
@@ -727,71 +782,6 @@ ANY                  1 1 1 1 | 15
       VTransformVC (ElementId(vb, elnr), vec, type);                  
     }
 
-    
-    void TransformMat (ElementId ei, 
-                       SliceMatrix<double> mat, TRANSFORM_TYPE type) const
-    {
-      VTransformMR (ei, mat, type);
-    }
-    void TransformMat (ElementId ei, 
-		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
-    {
-      VTransformMC (ei, mat, type);
-    }		
-    void TransformVec (ElementId ei, 
-		       SliceVector<double> vec, TRANSFORM_TYPE type) const
-    {
-      VTransformVR (ei, vec, type);
-    }
-    void TransformVec (ElementId ei, 
-		       SliceVector<Complex> vec, TRANSFORM_TYPE type) const
-    {
-      VTransformVC (ei, vec, type);
-    }
-
-    
-    template < int S, class T >
-    void TransformVec (int elnr, VorB vb,
-		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
-
-    /*
-    template < class T >
-    void TransformVec (ElementId ei,
-		       const T & vec, TRANSFORM_TYPE type) const
-    {
-      TransformVec (ei, vec, type);
-    }
-    */
-
-    virtual void VTransformMR (ElementId ei,
-			       const SliceMatrix<double> mat, TRANSFORM_TYPE type) const
-    { ; }
-    virtual void VTransformMC (ElementId ei, 
-			       const SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
-    { ; }
-
-
-    virtual void VTransformVR (ElementId ei,
-			       const SliceVector<double> vec, TRANSFORM_TYPE type) const
-    { ; }
-    virtual void VTransformVC (ElementId ei, 
-			       const SliceVector<Complex> vec, TRANSFORM_TYPE type) const
-    { ; }
-  
-  
-    /// Returns multigrid-prolongation
-    virtual shared_ptr<Prolongation> GetProlongation () const { return prol; }
-    /// Set multigrid prolongation
-    // void SetProlongation (ngmg::Prolongation * aprol)
-    // { prol = aprol; }
-
-
-    /// returns function-evaluator
-    shared_ptr<DifferentialOperator> GetEvaluator (VorB vb = VOL) const
-    {
-      return evaluator[vb];
-    }
-
     [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
     shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
     {
@@ -799,11 +789,6 @@ ANY                  1 1 1 1 | 15
 	return evaluator[BND];
       else
 	return evaluator[VOL];
-    }
-
-    shared_ptr<DifferentialOperator> GetFluxEvaluator (VorB vb=VOL) const
-    {
-      return flux_evaluator[vb];
     }
 
     [[deprecated("Use GetFluxEvaluator(VorB) instead of GetFluxEvaluator(bool)!")]]
@@ -815,57 +800,15 @@ ANY                  1 1 1 1 | 15
 	return flux_evaluator[VOL];
     }
 
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
-    { return additional_evaluators; } 
-
     /// returns function-evaluator
     [[deprecated("Use GetIntegrator(VorB) instead of GetIntegrator(bool)!")]]    
     shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
     {
       return integrator[vb];
     }
-
-    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const;
-    /*
-    {
-      return integrator[vb];
-    }
-    */
     
-    /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
-    Array<SpecialElement*> specialelements;
-
-    void AppendSpecialElement (SpecialElement * spel)
-    { specialelements.Append (spel); }
-
-    const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
-
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
-                        LocalHeap & lh) const;
-    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
-                        LocalHeap & lh) const;
-      
-    shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
-    virtual void UpdateParallelDofs ();
-
-    //// is FESpace mpi-distributed ?
-    bool IsParallel() const;
-
-    /// ndof over all mpi-partitions
-    size_t GetNDofGlobal() const;
-
-    virtual int GetRelOrder() const
-    { 
-      cout << "virtual GetRelOrder called for FiniteElementSpace, not available ! " << endl; 
-      return 0; 
-    } 
-
-    virtual bool VarOrder() const { return 0; }
-
-    bool timing;
-    std::list<std::tuple<std::string,double>> Timing () const;
-
   protected:
+      /*
     template <template <ELEMENT_TYPE ET> class FE>
     void SetDummyFE ()
     {
@@ -886,6 +829,7 @@ ANY                  1 1 1 1 | 15
       dummy_segm = new FE<ET_SEGM>();
       dummy_point = new FE<ET_POINT>();
     }
+    */
   };
 
 
@@ -1160,6 +1104,7 @@ ANY                  1 1 1 1 | 15
     Array<int> cummulative_nd;
     /// dofs on each multigrid level
     /// Array<int> ndlevel;
+    bool all_the_same;
   public:
     /// generates a compound space.
     /// components will be added later

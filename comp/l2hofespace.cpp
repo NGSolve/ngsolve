@@ -171,6 +171,8 @@ namespace ngcomp
       default:
         ;
       }
+
+    needs_transform_vec = false;    
   }
 
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
@@ -825,11 +827,13 @@ global system.
     
     if(flags.NumFlagDefined("relorder"))
       throw Exception("Variable order not implemented for L2SurfaceHighOrderFESpace"); 
-    
+
+    /*
     segm = new L2HighOrderFE<ET_SEGM> (order);
     trig = new L2HighOrderFE<ET_TRIG> (order);
     quad = new L2HighOrderFE<ET_QUAD> (order);
-
+    */
+    
     if (ma->GetDimension() == 2)
       {
         integrator[BND] = 

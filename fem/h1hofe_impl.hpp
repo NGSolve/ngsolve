@@ -100,9 +100,9 @@ namespace ngfem
       {
         // INT<4> f = GetFaceSort (0, vnums);
         INT<4> f = GetVertexOrientedFace (0);
-	DubinerBasis3::EvalMult (order_face[0][0]-3, 
-				 lam[f[0]], lam[f[1]], 
-				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+	DubinerBasis::EvalMult (order_face[0][0]-3, 
+                                lam[f[0]], lam[f[1]], 
+                                lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
       }
   }
 
@@ -141,8 +141,8 @@ namespace ngfem
     if (ip.VB() == VOL && order_face[0][0] >= 3)
       {
 	INT<4> f = GetVertexOrientedFace (0);
-	DubinerBasis3::EvalMult(order_face[0][0]-3, 
-				lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
+	DubinerBasis::EvalMult(order_face[0][0]-3, 
+                               lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
       }
   }
 
@@ -256,8 +256,8 @@ namespace ngfem
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
 	  int p = order_face[i][0];
-	  DubinerBasis3::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
-					 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+	  DubinerBasis::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+                                        lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
 
@@ -303,7 +303,7 @@ namespace ngfem
 	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
 	  {
 	    INT<4> f = GetVertexOrientedFace (0);
-	    DubinerBasis3::EvalMult (order_face[0][0]-3, 
+	    DubinerBasis::EvalMult (order_face[0][0]-3, 
 				     lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
 	  }
 	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
@@ -400,7 +400,7 @@ namespace ngfem
 	  
 	  Tx bub = lam[0]*lam[1]*lam[2]*muz[f[2]];
 	  
-	  DubinerBasis3::
+	  DubinerBasis::
 	    EvalMult (p-3, lam[f[0]], lam[f[1]], bub, shape+ii);
 
 	  ii += (p-2)*(p-1)/2; 
@@ -439,7 +439,7 @@ namespace ngfem
 	int nf = (p[0]-1)*(p[0]-2)/2;
 	ArrayMem<Tx,20> pol_trig(nf);
 
-	DubinerBasis3::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
+	DubinerBasis::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
 	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < nf; i++)
@@ -607,7 +607,7 @@ namespace ngfem
           
 	  Tx bub = lam_face * bary[f[0]]*bary[f[1]]*bary[f[2]];
 
-	  DubinerBasis3::
+	  DubinerBasis::
 	    EvalMult (p-3, bary[f[0]], bary[f[1]], bub, shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
