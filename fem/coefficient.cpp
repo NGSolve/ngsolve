@@ -198,6 +198,13 @@ namespace ngfem
     ost << "ConstantCF, val = " << val << endl;
   }
 
+  /*
+  virtual string ConsantCoefficientFunction :: GetDescription() const 
+  {
+    return "Constant "+ToString(val);
+  }
+  */
+  
   void ConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
                                                 BareSliceMatrix<double> values) const
   {
@@ -948,6 +955,11 @@ public:
     ost << scal << "*(";
     c1->PrintReport(ost);
     ost << ")";
+  }
+
+  virtual string GetDescription() const override
+  {
+    return "Scale "+ToString(scal);
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
