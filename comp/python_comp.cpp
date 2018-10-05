@@ -2478,7 +2478,8 @@ integrator : ngsolve.fem.LFI
                 MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
                 region_sum = rs2;
 #endif
-                result = py::list(py::cast(region_sum));
+                // result = py::list(py::cast(region_sum));  // crashes ?!?!
+                result = py::cast(region_sum);
               }
               else if (element_wise)
                 result = py::cast(element_sum);
@@ -2564,7 +2565,8 @@ integrator : ngsolve.fem.LFI
                 MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
                 region_sum = rs2;
 #endif
-                result = py::list(py::cast(region_sum));
+                // result = py::list(py::cast(region_sum));
+                result = py::cast(region_sum);
               }
               else if (element_wise)
                 result = py::cast(element_sum);
