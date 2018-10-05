@@ -429,7 +429,7 @@ namespace ngcomp
     first_facet_dof.SetSize(nfa+1); 
     first_inner_dof.SetSize(nel+1); 
 
-    ndof = nfa;
+    size_t ndof = nfa;
     first_facet_dof = ndof; 
 
     if(dim==2)
@@ -665,11 +665,13 @@ namespace ngcomp
         (*testout) << "first_facet_dof (hdiv) = " << endl << first_facet_dof << endl;
         (*testout) << "first_inner_dof (hdiv) = " << endl << first_inner_dof << endl;
       }
-     
+
+    SetNDof (ndof);
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-
+    */
     //    prol->Update();
   }
 
@@ -678,7 +680,7 @@ namespace ngcomp
     auto wirebasket_ct = hide_all_dofs ? HIDDEN_DOF : WIREBASKET_DOF;
     auto interface_ct = hide_all_dofs ? HIDDEN_DOF : INTERFACE_DOF;
     auto local_ct = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
-    ctofdof.SetSize(ndof);
+    ctofdof.SetSize(GetNDof());
     if(discont) 
       {
         ctofdof = local_ct;
@@ -1085,7 +1087,8 @@ namespace ngcomp
     
 //     return *fe;
 //   }
-  
+
+  /*
   size_t HDivHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
@@ -1095,7 +1098,7 @@ namespace ngcomp
   {
     return ndlevel[level];
   }
-
+  */
 
 
   void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
@@ -1230,7 +1233,8 @@ namespace ngcomp
     int nfa = ma->GetNFaces();
     int nnv = ma->GetNV();
     int nel = ma->GetNE();
-  
+    size_t ndof = GetNDof();
+    
     cout << "SmoothingType " << SmoothingType << endl; 
     switch(SmoothingType) 
       {
@@ -1502,7 +1506,7 @@ namespace ngcomp
 
   shared_ptr<Array<int>> HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    auto spclusters = make_shared<Array<int>> (ndof);
+    auto spclusters = make_shared<Array<int>> (GetNDof());
     Array<int> & clusters = *spclusters;
 
     int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
