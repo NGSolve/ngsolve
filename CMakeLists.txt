@@ -520,6 +520,8 @@ configure_file(
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
+get_filename_component(NGS_CMAKE_DIR_ABS ${NGSOLVE_INSTALL_DIR_CMAKE} ABSOLUTE BASE_DIR ${CMAKE_INSTALL_PREFIX})
+file(RELATIVE_PATH CMAKE_TO_PREFIX_RELPATH ${NGS_CMAKE_DIR_ABS} ${CMAKE_INSTALL_PREFIX})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY ESCAPE_QUOTES)
 
