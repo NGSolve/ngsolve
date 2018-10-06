@@ -3,16 +3,48 @@
 namespace ngfem
 {
 
+  template <int DIM>
+  INLINE auto GetTIPHDiv (const IntegrationPoint & ip)
+  {
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
+    return tip;
+  }
+
   template<int DIMS, int DIMR>
-  INLINE auto GetTIPHDiv( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip)
-    -> TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>>
+  INLINE auto GetTIPHDiv (const MappedIntegrationPoint<DIMS,DIMR> & mip)
+  // -> TIP<DIMS,AutoDiffRec<DIMR>>
+  {
+    return GetTIP (mip);
+  }
+
+  template<int DIMS, int DIMR>
+  INLINE auto GetTIPHDiv (const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip)
+  // -> TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>>
   {
     return GetTIP (mip);
   }
 
   template <int DIMR>
-  INLINE auto GetTIPHDiv( const SIMD<MappedIntegrationPoint<2,DIMR>> & mip)
-    -> TIP<2,AutoDiffRec<DIMR,SIMD<double>>>
+  INLINE auto GetTIPHDiv (const MappedIntegrationPoint<2,DIMR> & mip)
+  // -> TIP<2,AutoDiffRec<DIMR>>
+  {
+    TIP<2,AutoDiffRec<DIMR>> adp;      
+    Mat<DIMR,2> jac = mip.GetJacobian();
+    jac *= 1/mip.GetJacobiDet();
+    const auto &ip = mip.IP();
+    adp.x.Value() = ip(0);
+    adp.y.Value() = ip(1);
+    for (int i = 0; i < DIMR; i++)
+      {
+        adp.x.DValue(i) = jac(i,1);
+        adp.y.DValue(i) = -jac(i,0);
+      }
+    return adp;
+  }
+  
+  template <int DIMR>
+  INLINE auto GetTIPHDiv (const SIMD<MappedIntegrationPoint<2,DIMR>> & mip)
+  // -> TIP<2,AutoDiffRec<DIMR,SIMD<double>>>
   {
     TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp;      
     Mat<DIMR,2,SIMD<double>> jac = mip.GetJacobian();
@@ -38,11 +70,12 @@ namespace ngfem
     // Vec<DIM,AutoDiff<DIM>> adp = ip;
     TIP<DIM,AutoDiff<DIM>> pt = ip;
     static_cast<const FEL*> (this) -> 
-      T_CalcShape (pt, SBLambda( [shape] (size_t nr, THDiv2Shape<DIM> val)  LAMBDA_INLINE
-                                 {
-                                   // shape.Row(nr) = Vec<DIM> (val);
-                                   FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);
-                                 }));
+      T_CalcShape (GetTIPHDiv<DIM> (ip),
+                   SBLambda( [shape] (size_t nr, THDiv2Shape<DIM> val)  LAMBDA_INLINE
+                             {
+                               // shape.Row(nr) = Vec<DIM> (val);
+                               FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);
+                             }));
     /*
     double * pshape = &shape(0,0);
     size_t dist = shape.Dist();
@@ -65,13 +98,13 @@ namespace ngfem
   CalcDivShape (const IntegrationPoint & ip, 
 		SliceVector<> divshape) const
   {  
-    // Vec<DIM,AutoDiff<DIM>> adp = ip;
-    TIP<DIM,AutoDiff<DIM>> pt = ip;    
+    // TIP<DIM,AutoDiff<DIM>> pt = ip;    
     static_cast<const FEL*> (this) -> 
-      T_CalcShape (pt, SBLambda( [divshape] (size_t nr, THDiv2DivShape<DIM> val) LAMBDA_INLINE
-                                 {
-                                   divshape(nr) = val;
-                                 }));
+      T_CalcShape (GetTIPHDiv<DIM>(ip),
+                   SBLambda( [divshape] (size_t nr, THDiv2DivShape<DIM> val) LAMBDA_INLINE
+                             {
+                               divshape(nr) = val;
+                             }));
   }
 
 #ifndef FASTCOMPILE
@@ -82,12 +115,20 @@ namespace ngfem
   {   
     // Vec<DIM,AutoDiff<DIM>> adp = mip;
     // TIP<DIM,AutoDiff<DIM>> pt(Vec<DIM, AutoDiff<DIM>> (mip));
-      
+
+    /*
     static_cast<const FEL*> (this) -> 
       T_CalcShape (TIP<DIM,AutoDiff<DIM>>(mip),
                    SBLambda([shape] (size_t nr, THDiv2Shape<DIM> val) LAMBDA_INLINE
                             {
                               FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);
+                            }));
+    */
+    static_cast<const FEL*> (this) -> 
+      T_CalcShape (GetTIPHDiv(mip),
+                   SBLambda([shape] (size_t nr, auto s) LAMBDA_INLINE
+                            {
+                              FlatVec<DIM> (&shape(nr,0)) = HDiv2ShapeNew(s);
                             }));
   }
 
@@ -106,14 +147,26 @@ namespace ngfem
                    BareSliceMatrix<SIMD<double>> shapes) const
   {
     //     Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mip;
+    /*
     TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mip);    
     static_cast<const FEL*> (this) ->                 
-      T_CalcShape (adp, SBLambda ([shapes] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
-                                      {
-                                        Vec<DIM,SIMD<double>> vshape = shape;                                          
-                                        for (size_t k = 0; k < DIM; k++)
-                                          shapes(j*DIM+k, 0) = vshape(k);
-                                      }));
+      T_CalcShape (adp,
+                   SBLambda ([shapes] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
+                             {
+                               Vec<DIM,SIMD<double>> vshape = shape;                                          
+                               for (size_t k = 0; k < DIM; k++)
+                                 shapes(j*DIM+k, 0) = vshape(k);
+                             }));
+    */
+    TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mip);    
+    static_cast<const FEL*> (this) ->                 
+      T_CalcShape (GetTIPHDiv(mip), 
+                   SBLambda ([shapes] (size_t j, auto s)
+                             {
+                               auto vshape = HDiv2ShapeNew (s);
+                               for (size_t k = 0; k < vshape.Size(); k++)
+                                 shapes(j*DIM+k, 0) = vshape(k);
+                             }));
   }
   
   template <class FEL, ELEMENT_TYPE ET>
@@ -147,15 +200,16 @@ namespace ngfem
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
                {
-                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIPHDiv(mir[i]);
+                 // TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIPHDiv(mir[i]);
                  auto shapesi = shapes.Col(i);
                  static_cast<const FEL*> (this) ->                 
-                   T_CalcShape (adp, SBLambda ([shapesi/*,DIMSPACE*/] (size_t j, auto s) // THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
-                                               {
-                                                 auto vshape = HDiv2ShapeNew (s); // shape.Data(); 
-                                                 for (size_t k = 0; k < vshape.Size(); k++)
-                                                   shapesi(j*vshape.Size()+k) = vshape(k);
-                                               }));
+                   T_CalcShape (GetTIPHDiv(mir[i]),
+                                SBLambda ([shapesi] (size_t j, auto s) 
+                                          {
+                                            auto vshape = HDiv2ShapeNew (s); 
+                                            for (size_t k = 0; k < vshape.Size(); k++)
+                                              shapesi(j*vshape.Size()+k) = vshape(k);
+                                          }));
                }
            }
        });
@@ -185,10 +239,6 @@ namespace ngfem
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
 	    FlatMatrixFixWidth<DIM> vals) const  
   {    
-    // static Timer t("HDivFE - evaluate IR");
-    // t.AddFlops (ir.GetNIP()* this->GetNDof());
-    // RegionTimer reg(t);
-
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
         Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
