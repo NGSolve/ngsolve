@@ -22,7 +22,9 @@ namespace ngcomp
     enum { DIM_ELEMENT = 0 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-  
+    
+    virtual bool SupportsVB (VorB checkvb) const { return true; }
+
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
