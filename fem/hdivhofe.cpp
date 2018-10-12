@@ -572,7 +572,9 @@ namespace ngfem
                 }
               break;
             case ET_HEX:
-              ndof += 3*(p+1)*(p+1)*p;              
+              ndof += 3*(p+1)*(p+1)*p;       
+              if (ho_div_free)     
+                ndof -= p*p*p+3*p*p+3*p;
               break; 
             }
         }
