@@ -202,6 +202,9 @@ namespace ngcomp
     bool covariant = false;
   public:
     VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
+
+    static DocInfo GetDocu ();
+    
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
