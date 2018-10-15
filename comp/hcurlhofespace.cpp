@@ -658,9 +658,11 @@ namespace ngcomp
           {
             ElementId ei(VOL, i);
             int index = ma->GetElIndex(ei);
+            auto et = ma->GetElType(ei);
             if (!DefinedOn (VOL, index)) continue;
-            
-            order_inner[i] = INT<3> (p,p,p); 	
+            auto pi = p + et_bonus_order[et];
+            if (type1 && et==ET_QUAD && pi >= 1) pi--;
+            order_inner[i] = INT<3> (pi,pi,pi);
             INT<3,TORDER> el_orders = ma->GetElOrders(i);
             
             ELEMENT_TYPE eltype=ma->GetElType(ei); 
@@ -777,7 +779,7 @@ namespace ngcomp
         for(int i=0;i<order_face.Size();i++) 
           if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
       }
-    
+
     UpdateDofTables(); 
     UpdateCouplingDofArray();
   }
