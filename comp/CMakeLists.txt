@@ -4,7 +4,12 @@ if (NETGEN_USE_GUI)
     add_definitions(-DTCL)
 endif (NETGEN_USE_GUI)
 
+if(NOT WIN32)
+    set(ngcomp_object_libs $<TARGET_OBJECTS:ngmg> )
+endif(NOT WIN32)
+
 add_library( ngcomp ${NGS_LIB_TYPE}
+        ${ngcomp_object_libs}
         bilinearform.cpp facetfespace.cpp fespace.cpp 
         gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp 
         hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp hierarchicalee.cpp l2hofespace.cpp     
@@ -24,7 +29,6 @@ target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
 if(NOT WIN32)
     target_link_libraries (ngcomp PUBLIC interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
     target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    target_link_libraries(ngcomp PRIVATE ngmg)
     install( TARGETS ngcomp ${ngs_install_dir} )
 endif(NOT WIN32)
 

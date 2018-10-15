@@ -1605,7 +1605,27 @@ global system.
   };*/
 
 
+  DocInfo VectorL2FESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu(); 
+    docu.short_docu = "A vector-valued L2-conforming finite element space.";
+    docu.long_docu =
+      R"raw_string(The Vector-L2 finite element space is a product-space of L2 spaces,
+where the number of components coincides with the mesh dimension.
 
+It is implemented by means of a CompoundFESpace, as one could do it at the
+user-level. Additionally, some operators are added for convenience and performance:
+One can evaluate the vector-valued function, and one can take the gradient.
+)raw_string";
+    docu.Arg("Piola") = "bool = False\n"
+      "  Use Piola transform to map to physical element\n"
+      "  allows to use the div-differential operator.";
+    docu.Arg("covariant") = "bool = False\n"
+      "  Use the covariant transform to map to physical element\n"
+      "  allows to use the curl-differential operator.";
+
+    return docu;
+  }
 
   VectorL2FESpace::VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                      bool checkflags)

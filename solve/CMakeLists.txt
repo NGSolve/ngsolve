@@ -1,11 +1,19 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(NOT WIN32)
+    set(solve_object_libs
+        $<TARGET_OBJECTS:ngmg> 
+        )
+    set(ngslib_object_libs
+        $<TARGET_OBJECTS:ngmg> 
+        )
 endif(NOT WIN32)
 
 add_library( solve ${NGS_LIB_TYPE}
         bvp.cpp generalizedEVP.cpp numproc.cpp evp.cpp 
-        hyperbolic.cpp numprocee.cpp python_solve.cpp python_mpi.cpp)
+        hyperbolic.cpp numprocee.cpp python_solve.cpp python_mpi.cpp
+        ${solve_object_libs}
+        )
 
 target_compile_definitions(solve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(solve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
@@ -18,7 +26,7 @@ add_library( ngslib SHARED ngspy.cpp )
 set_target_properties(ngslib PROPERTIES SUFFIX ".so")
 set_target_properties(ngslib PROPERTIES PREFIX "")
 target_link_libraries(ngslib PUBLIC ${NETGEN_PYTHON_LIBRARIES})
-target_link_libraries(ngslib PRIVATE ngmg ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries(ngslib ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 
 if(NETGEN_USE_GUI AND WIN32)
     target_link_libraries(ngslib PUBLIC ngsolve)
@@ -37,7 +45,6 @@ endif(NETGEN_USE_PYTHON)
 if(NOT WIN32)
     target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${VTUNE_LIB} ${PARDISO_LIB})
     target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    target_link_libraries( solve PRIVATE ngmg )
     install( TARGETS solve ${ngs_install_dir} )
 endif(NOT WIN32)
 # target_link_libraries(ngslib ngsolve)
@@ -56,9 +63,13 @@ if (NETGEN_USE_GUI)
 #             $<TARGET_OBJECTS:interface> 
             )
     endif(WIN32)
-    add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp shapetester.cpp )
+    add_library( ngsolve SHARED
+            $<TARGET_OBJECTS:ngmg>
+            ${ngsolve_object_libs}
+            ngsolve.cpp shapetester.cpp 
+            )
 
-    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ngmg)
+    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
     target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})

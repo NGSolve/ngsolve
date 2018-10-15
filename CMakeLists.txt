@@ -2,7 +2,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.3)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
@@ -182,15 +182,16 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP /Qopt-report-file:report.log)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++17> /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj /std:c++17)
     endif()
 
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 endif(WIN32)
 if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
@@ -233,7 +234,7 @@ endif (USE_VT)
 if (USE_CUDA)
     find_package(CUDA)
     set(CUDA_SEPARABLE_COMPILATION ON)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++17;-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
     set(CUDA_OPTIONS -Xcompiler -fPIC)
     SET (EXTRA_LIBS ${EXTRA_LIBS} cudart cublas cusparse)
 endif (USE_CUDA)
@@ -519,6 +520,8 @@ configure_file(
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
+get_filename_component(NGS_CMAKE_DIR_ABS ${NGSOLVE_INSTALL_DIR_CMAKE} ABSOLUTE BASE_DIR ${CMAKE_INSTALL_PREFIX})
+file(RELATIVE_PATH CMAKE_TO_PREFIX_RELPATH ${NGS_CMAKE_DIR_ABS} ${CMAKE_INSTALL_PREFIX})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY ESCAPE_QUOTES)
 

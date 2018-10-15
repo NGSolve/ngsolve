@@ -672,9 +672,10 @@ namespace ngcomp
              << time / steps
              << " seconds" << endl;
 
-        int nze = dynamic_cast<const BaseSparseMatrix &> (*mats.Last()) . NZE();
+        auto & lastmat = *mats.Last();
+        int nze = lastmat.NZE();
         cout << "NZE = " << nze << ", MFLOP = " << double (nze * steps) / time * 1e-6 << endl;
-        cout << "type = " << typeid(*mats.Last()).name() << endl;
+        cout << "type = " << typeid(lastmat).name() << endl;
       }
 
     if (galerkin)

@@ -471,6 +471,8 @@ namespace ngfem
 		    else
 		      ndof += order_inner[0]*order_inner[0]-1;
 		  }
+                if (RT && order_inner[0] > 0)
+		  ndof += order_inner[0] + 1;
 	      }
 	    else
 	      {  // quad
@@ -493,6 +495,8 @@ namespace ngfem
           if (order_inner[j] > order) 
             order = order_inner[0];
         order++;       // ????
+	if(RT)
+	  order ++;
       }
     else
       {
@@ -548,6 +552,8 @@ namespace ngfem
                 ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
               if(p > 1 && !ho_div_free) 
                 ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+	      if(RT && p >= 1)
+		ndof += (p+1)*(p+2)/2;
               break;
 
             case ET_PRISM:
@@ -583,6 +589,8 @@ namespace ngfem
         if (pi > order) order = pi;
 
 	if (ET != ET_TET) order++;
+	
+	if(RT) order ++;
       }
   }
 

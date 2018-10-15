@@ -123,20 +123,24 @@ namespace ngfem
       ii = 0;
 
     //Inner shapes (Face) 
-    int p = order_inner[0];      
-    if(p > 1) 
+    int p = order_inner[0];
+    int pd = p;
+    if (RT) pd++;
+    
+    if (pd > 1) 
       {
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
  	// rotated gradients:
-	if(!only_ho_div)
+	//if(!only_ho_div)
+	if(p>1 && !only_ho_div)
           {
-            DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
-                                     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                     SBLambda ([&](int nr, Tx val)
-                                               {
-                                                 shape[ii++] = Du(val);
-                                               }));
+            DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+                                    lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+                                    SBLambda ([&](int nr, Tx val)
+                                              {
+                                                shape[ii++] = Du(val);
+                                              }));
           }
 
         if (!ho_div_free)
@@ -145,13 +149,14 @@ namespace ngfem
             Tx y = lam[fav[1]];
             LegendrePolynomial leg;
             // IntLegNoBubble leg;
+            /*
             leg.EvalScaledMult1Assign 
-              (p-2, y-(1-x-y), 1-x, y*(1-x-y),
+              (pd-2, y-(1-x-y), 1-x, y*(1-x-y),
                SBLambda ([&] (int i, Tx val1) LAMBDA_INLINE 
                          {
                            JacobiPolynomialAlpha jac(1+2*i);
                            jac.EvalMult1Assign 
-                             (p-2-i, 2*x-1, x, 
+                             (pd-2-i, 2*x-1, x, 
                               SBLambda([&](int j, Tx val2) 
                                        {
                                          shape[ii++] = uDv_minus_vDu (val1,val2);
@@ -160,11 +165,26 @@ namespace ngfem
             
             // rec_pol * Nedelec0 
             leg.EvalMult 
-              (p-2, 2*x-1, x, 
+              (pd-2, 2*x-1, x, 
                SBLambda([&] (int j, Tx val)
                         {
                           shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
                         }));
+            */
+            // the correct RT !
+            DubinerBasis::EvalMult (pd-2, lam[0], lam[1], 
+                                    lam[0], 
+                                    SBLambda ([&](int nr, Tx val)
+                                               {
+                                                 shape[ii++] = wuDv_minus_wvDu (lam[1], lam[2], val);
+                                               }));
+            LegendrePolynomial::EvalMult 
+              (pd-2, lam[2]-lam[1], lam[2], 
+               SBLambda([&] (int j, Tx val)
+                        {
+                          shape[ii++] = wuDv_minus_wvDu (lam[1], lam[0], val);
+                        }));
+            
           }
 
       }
@@ -220,12 +240,12 @@ template <typename MIP, typename TFA>
       }
     if (ip.VB() == VOL)
       {
-	DubinerBasis3::Eval(order_inner[0]-2, x, y,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val, 0);
-                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val*y, -val*x);
-                                     }));
+	DubinerBasis::Eval(order_inner[0]-2, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val, 0);
+                                      shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val*y, -val*x);
+                                    }));
 	LegendrePolynomial::Eval(order_inner[0]-2,y,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
@@ -409,17 +429,19 @@ template <typename MIP, typename TFA>
     // cell-based shapes 
     int p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl  
-    int pp = max2(p,pc); 
-    if ( pp >= 2 )
+    // int pp = max2(p,pc);
+    int pd = p;
+    if (RT) pd++;
+    if ( order >= 2 )
       {
         STACK_ARRAY(Tx, mem, 3*order);
         Tx * adpol1 = &mem[0];
         Tx * adpol2 = &mem[order];
         Tx * adpol3 = &mem[2*order];
 
-        T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
+        T_INNERSHAPES::CalcSplitted(order+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
       
-        if (!only_ho_div){
+        if (pc >= 2 && !only_ho_div){
           // Curl-Fields 
           for (int i = 0; i <= pc-2; i++)
             for (int j = 0; j <= pc-2-i; j++)
@@ -441,23 +463,49 @@ template <typename MIP, typename TFA>
         }
 
         if (!ho_div_free)
-          { 
+          {
             // Type 2:  
-            // (grad u  x  grad v) w 
-            for (int i = 0; i <= p-2; i++)
-              for (int j = 0; j <= p-2-i; j++)
-                for (int k = 0; k <= p-2-i-j; k++)
+            // (grad u  x  grad v) w
+            /*
+            for (int i = 0; i <= pd-2; i++)
+              for (int j = 0; j <= pd-2-i; j++)
+                for (int k = 0; k <= pd-2-i-j; k++)
                   shape[ii++] = wDu_Cross_Dv<3> (adpol1[i], adpol2[j], adpol3[k]);
 
             // (ned0 x grad v) w    
-            for (int j = 0; j <= p-2; j++)
-              for (int k= 0; k <= p-2-j; k++)
+            for (int j = 0; j <= pd-2; j++)
+              for (int k= 0; k <= pd-2-j; k++)
                 shape[ii++] = wDu_Cross_Dv<3> (lami[0], adpol2[j], lami[3]*adpol3[k]);
             
             // Type 3: 
             // (ned0 x e_z) v = (N_y, -N_x,0)^T * v ) 
-            for (int j=0; j<=p-2; j++) 
+            for (int j=0; j<=pd-2; j++) 
               shape[ii++] = wDu_Cross_Dv<3> (lami[0], z, lami[3]*adpol2[j]);
+            */
+
+
+
+            DubinerBasis3D::EvalMult (pd-2, lami[0], lami[1], lami[2],
+                                      lami[0], 
+                                      SBLambda ([&](int nr, Tx val)
+                                                {
+                                                  shape[ii++] = z_times_uDvDw_Cyclic (lami[1], lami[2], lami[3], val);
+                                                }));
+
+
+            DubinerBasis::EvalScaledMult (pd-2, lami[1], lami[2], 1-lami[0], 
+                                          lami[1],
+                                          SBLambda ([&](int nr, Tx val)
+                                                    {
+                                                      shape[ii++] = z_times_uDvDw_Cyclic (lami[0], lami[2], lami[3], val);
+                                                    }));
+            
+            LegendrePolynomial::EvalScaledMult 
+              (pd-2, lami[2]-lami[3], lami[2]+lami[3], lami[2], 
+               SBLambda([&] (int j, Tx val)
+                        {
+                          shape[ii++] = z_times_uDvDw_Cyclic (lami[0], lami[1], lami[3], val);                          
+                        }));
           }
       }
   }
@@ -495,14 +543,14 @@ template <typename MIP, typename TFA>
 		Vec<3,T> nvref = Cross(tauref1,tauref2);
 		Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref;
 
-		DubinerBasis3::Eval(order_facet[i][0], xi, eta,
-				    SBLambda([&] (size_t nr, auto val)
-					     {
-					       Vec<3,T> vshape = val * nv;
-					       if (nr==0)
-						 shape[i] = vshape;
-					       else
-						 shape[ii+nr-1] = vshape;
+		DubinerBasis::Eval(order_facet[i][0], xi, eta,
+                                   SBLambda([&] (size_t nr, auto val)
+                                            {
+                                              Vec<3,T> vshape = val * nv;
+                                              if (nr==0)
+                                                shape[i] = vshape;
+                                              else
+                                                shape[ii+nr-1] = vshape;
 					     }));
               }
             ii += (p+1)*(p+2)/2-1;
@@ -543,18 +591,18 @@ template <typename MIP, typename TFA>
 		       jac1.IncAlpha2();
 		     }));
 
-	DubinerBasis3::Eval(order-2, x, y,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
-				     }));
-
-	DubinerBasis3::Eval(order-2, y, z,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
-				     }));
-
+	DubinerBasis::Eval(order-2, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
+                                    }));
+        
+	DubinerBasis::Eval(order-2, y, z,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
+                                    }));
+        
 	LegendrePolynomial::Eval(order-2,z,
 				 SBLambda([&] (size_t nr, auto val)
 					  {

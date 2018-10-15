@@ -911,6 +911,15 @@ order : int
 
 )raw_string")
          )
+
+    .def("GetOrder",
+         [](shared_ptr<FESpace> self, NodeId ni) -> int
+         {
+           return self->GetOrder(ni);
+         },
+         py::arg("nodeid"),
+         "return order of node.\n"
+         "by now, only isotropic order is supported here\n")
     
     .def("Elements", 
          [](shared_ptr<FESpace> self, VorB vb)
@@ -1051,13 +1060,12 @@ coupling : bool
          "Return prolongation operator for use in multi-grid")
 
     .def("Range",
-         [] (const shared_ptr<FESpace> self, int comp) -> py::slice
+         [] (const shared_ptr<FESpace> self, int comp) -> py::object
          {
            auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
            if (!compspace)
              throw py::type_error("'Range' is available only for product spaces");
-           IntRange r = compspace->GetRange(comp);
-           return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
+           return PyRange(compspace->GetRange(comp));
          },
          py::arg("component"), docu_string(R"raw_string(
          Return interval of dofs of a component of a product space.
@@ -2478,7 +2486,8 @@ integrator : ngsolve.fem.LFI
                 MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
                 region_sum = rs2;
 #endif
-                result = py::list(py::cast(region_sum));
+                // result = py::list(py::cast(region_sum));  // crashes ?!?!
+                result = py::cast(region_sum);
               }
               else if (element_wise)
                 result = py::cast(element_sum);
@@ -2564,7 +2573,8 @@ integrator : ngsolve.fem.LFI
                 MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
                 region_sum = rs2;
 #endif
-                result = py::list(py::cast(region_sum));
+                // result = py::list(py::cast(region_sum));
+                result = py::cast(region_sum);
               }
               else if (element_wise)
                 result = py::cast(element_sum);

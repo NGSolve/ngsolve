@@ -270,7 +270,8 @@ ANY                  1 1 1 1 | 15
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
         order_policy = NODE_TYPE_ORDER;
       et_bonus_order[et] = order - this->order;
-      // et_order_left[et] = et_order_right[et] = order;
+
+      timestamp = 0;  // rerun first_update
     }
 
     virtual void SetOrder (NodeId ni, int order); 

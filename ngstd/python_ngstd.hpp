@@ -226,6 +226,18 @@ struct PyNameTraits<shared_ptr<T>> {
 };
 
 
+template<typename ... Args>
+inline py::object PyRange(Args ... i)
+{
+  constexpr size_t n = sizeof...(Args);
+  static_assert(n>=1 && n<=3, "Wrong number of arguments");
+  return py::module::import("__main__").attr("__builtins__").attr("range")(i...);
+}
+
+inline py::object PyRange(IntRange i)
+{
+  return PyRange(i.First(), i.Next());
+}
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename TCLASS = py::class_<T> >

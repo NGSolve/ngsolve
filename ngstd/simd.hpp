@@ -293,7 +293,10 @@ namespace ngstd
 #ifdef __AVX__
         data = _mm_maskload_pd(p, mask.Data());
 #else
-        data = _mm_and_pd(_mm_castsi128_pd(mask.Data()), _mm_loadu_pd(p));
+        // this versions segfaults if p points to the last allowed element
+        // happened on Mac with the new SparseCholesky-factorization
+        // data = _mm_and_pd(_mm_castsi128_pd(mask.Data()), _mm_loadu_pd(p));
+        data = _mm_set_pd (mask[1] ? p[1] : 0.0, mask[0] ? p[0] : 0.0);        
 #endif
       }
     SIMD (__m128d _data) { data = _data; }
@@ -303,9 +306,13 @@ namespace ngstd
     {
 #ifdef __AVX__
       _mm_maskstore_pd(p, mask.Data(), data);
-#else      
+#else
+      /*
       _mm_storeu_pd (p, _mm_or_pd (_mm_and_pd(_mm_castsi128_pd(mask.Data()), data),
                                    _mm_andnot_pd(_mm_castsi128_pd(mask.Data()), _mm_loadu_pd(p))));
+      */
+      if (mask[0]) p[0] = (*this)[0];
+      if (mask[1]) p[1] = (*this)[1];
 #endif
     }    
     

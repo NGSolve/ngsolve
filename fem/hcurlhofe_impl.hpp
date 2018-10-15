@@ -214,12 +214,12 @@ namespace ngfem
 	if(usegrad_face[0])
           {
             int pg = p-2 - (type1 ? 1 : 0);
-            DubinerBasis3::EvalMult (pg, lam[fav[0]], lam[fav[1]], 
-                                     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                     SBLambda ([&](int nr, Tx val)
-                                               {
-                                                 shape[ii++] = Du (val);
-                                               }));
+            DubinerBasis::EvalMult (pg, lam[fav[0]], lam[fav[1]], 
+                                    lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+                                    SBLambda ([&](int nr, Tx val)
+                                              {
+                                                shape[ii++] = Du (val);
+                                              }));
             /*
             for (int j = 0; j < p-1; j++)
               for (int k = 0; k < p-1-j; k++, ii++)
@@ -229,12 +229,12 @@ namespace ngfem
 
         if (type1)
           {
-            DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
-                                     lam[fav[0]], 
-                                     SBLambda ([&](int nr, Tx val)
-                                               {
-                                                 shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
-                                               }));
+            DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+                                    lam[fav[0]], 
+                                    SBLambda ([&](int nr, Tx val)
+                                              {
+                                                shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
+                                              }));
             LegendrePolynomial::EvalMult 
               (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
                SBLambda([&] (int j, Tx val)
@@ -459,7 +459,7 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i])
             {
-              DubinerBasis3::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
+              DubinerBasis::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
                                              lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
                                              SBLambda ([&](int nr, Tx val)
                                                        {
@@ -601,7 +601,7 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i])
             {
-              DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+              DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
                                        lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
                                        SBLambda ([&](int nr, Tx val)
                                                  {
@@ -734,7 +734,7 @@ namespace ngfem
             int nf = (p[0]-0)*(p[0]-1)/2;
             ArrayMem<Tx,20> pol_trig(nf);
             
-            DubinerBasis3::EvalMult (p[0]-2, x, y, x*y*(1-x-y),pol_trig);
+            DubinerBasis::EvalMult (p[0]-2, x, y, x*y*(1-x-y),pol_trig);
             LegendrePolynomial::EvalMult (p[2]-1, 2*z-1, z*(1-z), adpolz);
             
             for (int i = 0; i < nf; i++)
@@ -1059,7 +1059,7 @@ namespace ngfem
 	  if(usegrad_face[i])
             {
               Tx bub = lam_face * bary[fav[0]]*bary[fav[1]]*bary[fav[2]];
-              DubinerBasis3::
+              DubinerBasis::
                 EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
                           SBLambda ([&](int nr, Tx val)
                                     {
@@ -1284,12 +1284,12 @@ namespace ngfem
 	
 	// auto xphys = mip.GetPoint()(0);
         // auto yphys = mip.GetPoint()(1);
-        DubinerBasis3::Eval(order-2, x, y,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
-                                       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
-                                     }));
+        DubinerBasis::Eval(order-2, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
+                                    }));
 	LegendrePolynomial::Eval(order-2,x,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
@@ -1370,12 +1370,12 @@ namespace ngfem
 		 Ftmp = Trans(F)*F;
 		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
 		 
-		 DubinerBasis3::Eval(order-2, xi, eta,
-				     SBLambda([&] (size_t nr, auto val)
-					      {
-						shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
-						shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
-					      }));
+		 DubinerBasis::Eval(order-2, xi, eta,
+                                    SBLambda([&] (size_t nr, auto val)
+                                             {
+                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
+                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
+                                             }));
 		 LegendrePolynomial::Eval(order-2,xi,
 					  SBLambda([&] (size_t nr, auto val)
 						   {
@@ -1427,11 +1427,11 @@ namespace ngfem
 		     }));
 
 
-        DubinerBasis3::Eval(order-3, x, y,
-                            SBLambda([&] (size_t nr, auto val)
-                                     {
-				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
-                                     }));
+        DubinerBasis::Eval(order-3, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
+                                    }));
       }
   }
 
