@@ -911,6 +911,15 @@ order : int
 
 )raw_string")
          )
+
+    .def("GetOrder",
+         [](shared_ptr<FESpace> self, NodeId ni) -> int
+         {
+           return self->GetOrder(ni);
+         },
+         py::arg("nodeid"),
+         "return order of node.\n"
+         "by now, only isotropic order is supported here\n")
     
     .def("Elements", 
          [](shared_ptr<FESpace> self, VorB vb)
