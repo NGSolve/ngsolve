@@ -99,6 +99,8 @@ namespace ngcomp
     DefineDefineFlag("noprint");
     DefineDefineFlag("variableorder"); 
     DefineDefineFlag("hodivfree"); 
+
+    DefineDefineFlag("RT");
     
     if(parseflags) CheckFlags(flags);
 
@@ -127,7 +129,7 @@ namespace ngcomp
       var_order = 1; 
     
     rel_order=int(flags.GetNumFlag("relorder",order-1)); 
-    
+
 
     if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder")) 
       {
@@ -170,6 +172,7 @@ namespace ngcomp
 
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
     fixed_order = flags.GetDefineFlag ("fixedorder");
+    RT = flags.GetDefineFlag ("RT");
 
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
@@ -219,9 +222,8 @@ namespace ngcomp
   DocInfo HDivHighOrderFESpace :: GetDocu ()
   {
     auto docu = FESpace::GetDocu();
-    docu.Arg("nograds") = "bool = False\n"
-      "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-    
+    docu.Arg("RT") = "bool = False\n"
+      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDiv space";
     docu.Arg("hodivfree") = "bool = False\n"
@@ -427,7 +429,7 @@ namespace ngcomp
     first_facet_dof.SetSize(nfa+1); 
     first_inner_dof.SetSize(nel+1); 
 
-    ndof = nfa;
+    size_t ndof = nfa;
     first_facet_dof = ndof; 
 
     if(dim==2)
@@ -464,6 +466,8 @@ namespace ngcomp
                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
                 else
                   inci = pc[0]*(pc[0]-1)/2;
+                if (RT)
+                  inci += pc[0] + 1;
                 break;
               case ET_QUAD:
                 if (!ho_div_free)
@@ -570,6 +574,8 @@ namespace ngcomp
 		    for (int j = 0; j < fnums.Size(); j++)
 		      if (!boundary_facet[fnums[j]]) inci += p[0]+1;
 		  }
+		if (RT)
+		  inci += (p[0]+1) * (p[0]+2)/2;
 		// inci += 4*(p[0]+1);
                 break;
               case ET_PRISM:
@@ -659,11 +665,13 @@ namespace ngcomp
         (*testout) << "first_facet_dof (hdiv) = " << endl << first_facet_dof << endl;
         (*testout) << "first_inner_dof (hdiv) = " << endl << first_inner_dof << endl;
       }
-     
+
+    SetNDof (ndof);
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-
+    */
     //    prol->Update();
   }
 
@@ -672,7 +680,7 @@ namespace ngcomp
     auto wirebasket_ct = hide_all_dofs ? HIDDEN_DOF : WIREBASKET_DOF;
     auto interface_ct = hide_all_dofs ? HIDDEN_DOF : INTERFACE_DOF;
     auto local_ct = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
-    ctofdof.SetSize(ndof);
+    ctofdof.SetSize(GetNDof());
     if(discont) 
       {
         ctofdof = local_ct;
@@ -768,7 +776,7 @@ namespace ngcomp
     hofe -> SetVertexNumbers (ngel.Vertices());
     hofe -> SetHODivFree (ho_div_free);
     hofe -> SetOnlyHODiv (onlyhdiv);
-
+    hofe -> SetRT(RT);
     hofe -> SetOrderInner (order_inner[elnr]);
         
     switch (int(ET_trait<ET>::DIM))
@@ -1079,7 +1087,8 @@ namespace ngcomp
     
 //     return *fe;
 //   }
-  
+
+  /*
   size_t HDivHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
@@ -1089,7 +1098,7 @@ namespace ngcomp
   {
     return ndlevel[level];
   }
-
+  */
 
 
   void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
@@ -1224,7 +1233,8 @@ namespace ngcomp
     int nfa = ma->GetNFaces();
     int nnv = ma->GetNV();
     int nel = ma->GetNE();
-  
+    size_t ndof = GetNDof();
+    
     cout << "SmoothingType " << SmoothingType << endl; 
     switch(SmoothingType) 
       {
@@ -1496,7 +1506,7 @@ namespace ngcomp
 
   shared_ptr<Array<int>> HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    auto spclusters = make_shared<Array<int>> (ndof);
+    auto spclusters = make_shared<Array<int>> (GetNDof());
     Array<int> & clusters = *spclusters;
 
     int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 

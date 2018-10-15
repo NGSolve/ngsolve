@@ -20,7 +20,7 @@ namespace ngcomp
     // Level
     int level;
     // Number Dofs 
-    int ndof;
+    // int ndof;
     // order of curl-fields 
     int curl_order; 
 
@@ -42,7 +42,7 @@ namespace ngcomp
     Array<bool> fine_facet; 
     Array<bool> boundary_facet; 
  
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     int uniform_order_inner; 
     int uniform_order_facet; 
 
@@ -50,6 +50,8 @@ namespace ngcomp
     bool ho_div_free; 
     ///
     bool fixed_order;
+
+    bool RT = false; 
 
     // highest-order facet dofs discontinuous ?
     bool highest_order_dc;
@@ -83,9 +85,9 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     ///

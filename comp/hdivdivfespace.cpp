@@ -562,8 +562,9 @@ namespace ngcomp
       case ET_QUAD:
         //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
         ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
-          + (oi[0]+2)*(oi[0])*2
+          + (oi[0]+1)*(oi[0])*2
           + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
+        if (plus) ndof += 2*oi[0];
         if(discontinuous)
         {
           for (auto f : ma->GetElFacets(ei))

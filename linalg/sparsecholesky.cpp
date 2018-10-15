@@ -662,8 +662,9 @@ namespace ngla
 
     
     int n = nused; // Height();
-    if (n > 2000)
+    if (n > 2000){
       cout << IM(4) << " factor " << flush;
+    }
 
     // to avoid aliasing:
     size_t * hfirstinrow = firstinrow.Addr(0);
@@ -954,8 +955,9 @@ namespace ngla
 	  }	
       }
 
-    if (n > 2000)
+    if (n > 2000){
       cout << IM(4) << endl;
+    }
   }
 
 
@@ -1018,8 +1020,9 @@ namespace ngla
     RegionTimer reg (factor_timer);
     
     size_t n = nused; // Height();
-    if (n > 20)
+    if (n > 2000){
       cout << IM(4) << " factor SPD " << flush;
+    }
 
     // to avoid aliasing:
     size_t * hfirstinrow = firstinrow.Addr(0);
@@ -1562,8 +1565,9 @@ namespace ngla
           lfact[j] = lfact[j] * ai;
       }, TasksPerThread(5));
 
-    if (n > 2000)
+    if (n > 2000){
       cout << IM(4) << endl;
+    }
 
     // task_manager -> StartWorkers();
   }

@@ -327,7 +327,7 @@ namespace ngfem
 
     bool ho_div_free;
     bool only_ho_div;
-
+    bool RT = false;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     /// minimal constructor, orders will be set later
@@ -372,6 +372,12 @@ namespace ngfem
       ho_div_free = ho_div_free && !only_ho_div;
     };  
 
+    void SetRT (bool aRT) 
+    { 
+      RT = aRT; 
+    };  
+
+    
     virtual void ComputeNDof();
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
