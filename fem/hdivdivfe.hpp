@@ -791,8 +791,9 @@ namespace ngfem
         order = max2(order, order_facet[i][0]);
       }
       int ninner = (order_inner[0]+1+incsg)*(order_inner[0]+1+incsg) + 
-        (order_inner[0]+2)*(order_inner[0]) *2 +
+        (order_inner[0]+1)*(order_inner[0]) *2 +
         2*(order_inner[0]+1+incsugv) +1;
+      if (plus) ninner += order_inner[0]*2;
       order = max2(order, order_inner[0]);
       order += 5;
       ndof += ninner;
@@ -834,29 +835,34 @@ namespace ngfem
       IntegratedLegendreMonomialExt::Calc(oi+3,ly[0]-ly[2],v);
       
       
-      for(int i = 0; i <= oi+incsg; i++)
-      {
-        for(int j = 0; j <= oi+incsg; j++)
-        {
+      for (int i = 0; i <= oi+incsg; i++)
+        for (int j = 0; j <= oi+incsg; j++)
           shape[ii++] = SigmaGrad(u[i]*v[j]);
-        }
-      }
-      for(int i = 0; i <= oi+1; i++)
-      {
-        for(int j = 0; j <= oi-1; j++)
-        {
-          shape[ii++] = vSigmaGradu(u[i],v[j]);
-          shape[ii++] = vSigmaGradu(v[i],u[j]);
-        }
-      }
+
+      for (int i = 0; i <= oi; i++)
+        for (int j = 0; j <= oi-1; j++)
+          {
+            shape[ii++] = vSigmaGradu(u[i],v[j]);
+            shape[ii++] = vSigmaGradu(v[i],u[j]);
+          }
+
+      if (plus)
+        for (int j = 0; j <= oi-1; j++)
+          {
+            // shape[ii++] = vSigmaGradu(u[oi+1],v[j]);
+            // shape[ii++] = vSigmaGradu(v[oi+1],u[j]);
+
+            shape[ii++] = Sigma_u_Gradv(v[j], u[oi]);
+            shape[ii++] = Sigma_u_Gradv(u[j], v[oi]);            
+          }
 
       shape[ii++] = Sigma_u_Gradv(lx[0], ly[0]);
 
-      for(int i = 0; i <= oi+incsugv; i++)
-      {
-        shape[ii++] = Sigma_u_Gradv(u[i], ly[0]);
-        shape[ii++] = Sigma_u_Gradv(v[i], lx[0]); //
-      }
+      for (int i = 0; i <= oi+incsugv; i++)
+        {
+          shape[ii++] = Sigma_u_Gradv(u[i], ly[0]);
+          shape[ii++] = Sigma_u_Gradv(v[i], lx[0]); //
+        }
     };
   };
 
