@@ -41,11 +41,11 @@ namespace ngfem
   CalcDShape (const IntegrationPoint & ip, 
               BareSliceMatrix<> dshape) const
   {
-    // Vec<DIM, AutoDiff<DIM> > adp = ip;
+    auto dshapes = dshape.AddSize(ndof, DIM);
     TIP<DIM,AutoDiff<DIM>> tip = ip;
-    T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
-                 SBLambda ([dshape] (auto i, AutoDiff<DIM> shape)
-                           { shape.StoreGradient (&dshape(i,0)) ; }));
+    T_CalcShape (tip,
+                 SBLambda ([dshapes] (int i, AD2Vec<DIM> shape)
+                           { dshapes.Row(i) = shape; }));
   }
 
 #ifndef FASTCOMPILE
@@ -868,8 +868,7 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
-                     GetTIP(mir[i], adp);
+                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      // Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
@@ -900,8 +899,7 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
-                     GetTIP(mir[i], adp);
+                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      Vec<DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);
@@ -978,10 +976,11 @@ namespace ngfem
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
     Vec<DIM, AutoDiff<DIM>> adp = mip;
+    auto dshapes = dshape.AddSize(ndof, DIM);
 
     T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ([&] (int i, AutoDiff<DIM> shape)
-                           { shape.StoreGradient (&dshape(i,0)) ; }));
+                 SBLambda ([dshapes] (int i, AD2Vec<DIM> shape)
+                           { dshapes.Row(i) = shape; }));
   }
 
 

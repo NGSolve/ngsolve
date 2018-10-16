@@ -1859,7 +1859,7 @@ public:
       throw Exception(string("Matrix dimensions don't fit: m1 is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) +
                       ", m2 is " + ToLiteral(dims_c2[0]) + " x " + ToLiteral(dims_c2[1]) );
-    SetDimensions( Array<int> ({ dims_c1[0], dims_c2[1] }));
+    SetDimensions( ngstd::INT<2> (dims_c1[0], dims_c2[1]) );
     inner_dim = dims_c1[1];
   }
   
@@ -2057,8 +2057,7 @@ public:
     if (dims_c1[1] != dims_c2[0])
       throw Exception(string ("Matrix dimensions don't fit: mat is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) + ", vec is " + ToLiteral(dims_c2[0]));
-    // dims = Array<int> ({ dims_c1[0] });
-    SetDimensions (Array<int> ({ dims_c1[0] }));
+    SetDimensions (ngstd::INT<1>(dims_c1[0]));
     inner_dim = dims_c1[1];
   }
   
@@ -2213,7 +2212,7 @@ public:
     if (dims_c1.Size() != 2)
       throw Exception("Transpose of non-matrix called");
 
-    SetDimensions (Array<int> ({ dims_c1[1], dims_c1[0] }));
+    SetDimensions (ngstd::INT<2> (dims_c1[1], dims_c1[0]) );
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override

@@ -693,7 +693,8 @@ namespace ngla
 
 	v = (*a) * p_tilde;
 	alpha = rho_new / S_InnerProduct<IPTYPE> (r_tilde, v);
-	s = r - alpha * v;
+	s = r;
+	s -= alpha * v;
 
 	err_i = L2Norm(s);
 	if (c)
@@ -705,7 +706,8 @@ namespace ngla
 
 	omega = S_InnerProduct<IPTYPE> (t, s) / S_InnerProduct<IPTYPE> (t, t);
 	u += alpha * p_tilde + omega * s_tilde;
-	r = s - omega * t;
+	r = s;
+	r -= omega * t;
 
 	err_i = L2Norm(r);
 	if (printrates) cout << IM(1) << "0 " << err_i << endl;
@@ -725,7 +727,9 @@ namespace ngla
 	    rho_old = rho_new;
 	    rho_new = S_InnerProduct<IPTYPE>(r_tilde, r);
 	    beta = (rho_new / rho_old ) * ( alpha / omega );
-	    p = r + beta * ( p - omega * v );
+	    p = r;
+	    p += beta * p;
+	    p -= beta*omega * v;
 
 	    if (c)
 	      p_tilde = (*c) * p;
@@ -734,7 +738,8 @@ namespace ngla
 	    
 	    v = (*a) * p_tilde;
 	    alpha = rho_new / S_InnerProduct<IPTYPE> (r_tilde, v);
-	    s = r - alpha * v;
+	    s = r;
+	    s -= alpha * v;
 
 	    err_i = L2Norm(s);
 	    u += alpha * p_tilde;
@@ -753,7 +758,8 @@ namespace ngla
 	    
 	    omega = S_InnerProduct<IPTYPE> (t, s) / S_InnerProduct<IPTYPE> (t, t);
 	    u +=  omega * s_tilde;
-	    r = s - omega * t;
+	    r = s;
+	    r -= omega * t;
 
 	    err_i = L2Norm(r);
 
