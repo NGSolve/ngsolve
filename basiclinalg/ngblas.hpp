@@ -114,38 +114,38 @@ namespace ngbla
 
 
   
-  extern void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
-  extern void MinusMultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
-  extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
-  extern void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
+  extern NGS_DLL_HEADER void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
+  extern NGS_DLL_HEADER void MinusMultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
+  extern NGS_DLL_HEADER void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
 
-  extern void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);  
-  extern void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);  
+  extern NGS_DLL_HEADER void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
 
 
   //  copied from symbolicintegrator, needs some rework 
-  extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);    
-  extern void AddABtSym (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);    
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
   
-  extern void AddABt (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
-  extern void AddABtSym (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
-  extern void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
-  extern void AddABtSym (FlatMatrix<SIMD<double>> a,
+  extern NGS_DLL_HEADER void AddABt (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<double>> a,
                          FlatMatrix<SIMD<Complex>> b,
                          SliceMatrix<Complex> c);
-  extern void AddABt (FlatMatrix<SIMD<double>> a,
+  extern NGS_DLL_HEADER void AddABt (FlatMatrix<SIMD<double>> a,
                       FlatMatrix<SIMD<double>> b,
                       SliceMatrix<Complex> c);
 
-  extern void AddABtSym (FlatMatrix<SIMD<double>> a,
+  extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<double>> a,
                          FlatMatrix<SIMD<double>> b,
                          SliceMatrix<Complex> c);
   
-  extern void AddABt (SliceMatrix<double> a,
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<double> a,
                       SliceMatrix<double> b,
                       SliceMatrix<Complex> c);
 
-  extern void AddABtSym (SliceMatrix<double> a,
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a,
                          SliceMatrix<double> b,
                          SliceMatrix<Complex> c);
   
