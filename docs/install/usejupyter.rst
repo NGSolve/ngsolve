@@ -4,7 +4,7 @@ Using Jupyter notebook
 
 `Jupyter notebooks <http://jupyter-notebook.readthedocs.io/en/latest/>`__ provide an interactive way to work with Netgen/NGSolve.
 
-If you are using Anaconda, Jupyter is already installed. Make sure to have Anaconda with Python 3.6 installed.
+If you are using Anaconda, Jupyter is already installed. Make sure to have Anaconda with Python 3.7 installed.
 
 Using the Python package manager pip you can install Jupyter via
 

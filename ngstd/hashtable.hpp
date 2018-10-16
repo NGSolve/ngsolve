@@ -947,7 +947,7 @@ namespace ngstd
     };
 
     Array<ClosedHT> hts;
-    class alignas(64) MyMutex64 : public MyMutex { };
+    class alignas(64) MyMutex64 : public MyMutex, public AlignedAlloc<MyMutex64> { };
     
     Array<MyMutex64> locks;
 
