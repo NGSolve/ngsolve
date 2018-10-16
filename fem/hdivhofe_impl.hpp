@@ -845,21 +845,29 @@ template <typename MIP, typename TFA>
         Tx xi  = sigma[f[0]]-sigma[f[1]];
         Tx eta = sigma[f[0]]-sigma[f[3]];
 
-        if (p[0] >= 1)
-          IntLegNoBubble::EvalMult(p[0]-1, xi, 1-xi*xi, pol_xi);
-        if (p[1] >= 1)
-          IntLegNoBubble::EvalMult(p[1]-1,eta, 1-eta*eta, pol_eta);
-        
-	shape[i] = wDu_Cross_Dv<3> (eta, xi, -0.25*lam_f);
+        shape[i] = wDu_Cross_Dv(eta, xi, -0.25*lam_f);
+
+        ArrayMem<Tx, 20> L_xi(order+2),L_eta(order+2);
+
+        IntegratedLegendrePolynomial::Eval(p[0]+1,xi,L_xi);
+        IntegratedLegendrePolynomial::Eval(p[1]+1,eta,L_eta);
+
+        //   if (p[0] >= 1)
+        //     IntLegNoBubble::EvalMult(p[0]-1, xi, 1-xi*xi, pol_xi);
+        //   if (p[1] >= 1)
+        //     IntLegNoBubble::EvalMult(p[1]-1,eta, 1-eta*eta, pol_eta);
 
         for (int k = 0; k < p[0]; k++)
           for (int l = 0; l < p[1]; l++, ii++)
-            shape[ii] = wDu_Cross_Dv<3> (pol_eta[l], pol_xi[k], 2*lam_f);
+            shape[ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],lam_f);
+            //shape[ii] = wDu_Cross_Dv<3> (pol_eta[l], pol_xi[k], 2*lam_f);
         
         for (int k = 0; k < p[0]; k++)
-          shape[ii++] = wDu_Cross_Dv<3> (-eta, pol_xi[k], lam_f);
+          //shape[ii++] = wDu_Cross_Dv<3> (-eta, pol_xi[k], lam_f);
+          shape[ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,-xi);
         for (int k = 0; k < p[1]; k++)
-          shape[ii++] = wDu_Cross_Dv<3> (-xi, pol_eta[k], lam_f);
+          //shape[ii++] = wDu_Cross_Dv<3> (-xi, pol_eta[k], lam_f);
+          shape[ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta);
       }
 
     auto p = order_inner;
@@ -867,24 +875,92 @@ template <typename MIP, typename TFA>
     LegendrePolynomial::Eval(p[0], 2*x-1, pol_xi);
     LegendrePolynomial::Eval(p[1], 2*y-1, pol_eta);
     LegendrePolynomial::Eval(p[2], 2*z-1, pol_zeta);
+   
+    // ----------------------- hodivfree-SZ-basis -----------------------
+    Tx xi  = 2*x-1;
+    Tx eta = 2*y-1;
+    Tx zeta = 2*z-1;
 
-    for (int i = 0; i <= p[0]; i++)
-      for (int j = 0; j <= p[1]; j++)
-        for (int k = 0; k < p[2]; k++)
-          shape[ii++] = wDu_Cross_Dv<3> (x, y, pol_xi[i]*pol_eta[j]*pol_zeta[k]*z*(1-z));
-    for (int i = 0; i <= p[0]; i++)
-      for (int j = 0; j < p[1]; j++)
-        for (int k = 0; k <= p[2]; k++)
-          shape[ii++] = wDu_Cross_Dv<3> (x, z, pol_xi[i]*pol_eta[j]*pol_zeta[k]*y*(1-y));
+    ArrayMem<Tx, 20> L_xi(order+2),L_eta(order+2),L_zeta(order+2);
+
+    IntegratedLegendrePolynomial::Eval(p[0]+1,xi,L_xi);
+    IntegratedLegendrePolynomial::Eval(p[1]+1,eta,L_eta);
+    IntegratedLegendrePolynomial::Eval(p[2]+1,zeta,L_zeta); 
+
+    // Type 1 (divergence-free):
     for (int i = 0; i < p[0]; i++)
-      for (int j = 0; j <= p[1]; j++)
-        for (int k = 0; k <= p[2]; k++)
-          shape[ii++] = wDu_Cross_Dv<3> (y, z, pol_xi[i]*pol_eta[j]*pol_zeta[k]*x*(1-x));
+      for (int j = 0; j < p[1]; j++)
+        for (int k = 0; k < p[2]; k++)
+          shape[ii++] = wDu_Cross_Dv (L_xi[i+2]*L_zeta[k+2], y, -4*pol_eta[j+1]);
+
+    for (int i = 0; i < p[0]; i++)
+      for (int j = 0; j < p[1]; j++)
+        for (int k = 0; k < p[2]; k++)
+          shape[ii++] = wDu_Cross_Dv (L_eta[j+2]*L_zeta[k+2], x, 4*pol_xi[i+1]);
+
+    for (int j = 0; j < p[1]; j++)
+      for (int k = 0; k < p[2]; k++)
+        shape[ii++] = Du_Cross_Dv (L_eta[j+2]*L_zeta[k+2], 2*xi);
+
+    for (int i = 0; i < p[0]; i++)
+      for (int k = 0; k < p[2]; k++)
+        shape[ii++] = Du_Cross_Dv (L_xi[i+2]*L_zeta[k+2], 2*eta);
+
+    for (int i = 0; i < p[0]; i++)
+      for (int j = 0; j < p[1]; j++)
+        shape[ii++] = Du_Cross_Dv (L_xi[i+2]*L_eta[j+2], 2*zeta);
+    
+
+    if (!ho_div_free)
+    // ----------------------- remaining-SZ-basis -----------------------
+    {
+      // Type 2:
+      for (int i = 0; i < p[0]; i++)
+        for (int j = 0; j < p[1]; j++)
+          for (int k = 0; k < p[2]; k++)
+            shape[ii++] = uDvDw_minus_DuvDw (L_xi[i+2], L_eta[j+2], L_zeta[k+2]);                                 
+
+      for (int j = 0; j < p[1]; j++)
+        for (int k = 0; k < p[2]; k++)
+          shape[ii++] = uDvDw_minus_DuvDw (L_eta[j+2], L_zeta[k+2], x);     
+
+      for (int i = 0; i < p[0]; i++)
+        for (int k = 0; k < p[2]; k++)
+          shape[ii++] = uDvDw_minus_DuvDw (L_zeta[k+2], L_xi[i+2], y);          
+
+      for (int i = 0; i < p[0]; i++)
+        for (int j = 0; j < p[1]; j++)
+          shape[ii++] = uDvDw_minus_DuvDw (L_xi[i+2], L_eta[j+2], z);  
+
+      // Type 3:
+      for (int i = 0; i < p[0]; i++)
+        shape[ii++] = wDu_Cross_Dv (y, z, L_xi[i+2]);
+
+      for (int j = 0; j < p[1]; j++)
+        shape[ii++] = wDu_Cross_Dv (x, -z, L_eta[j+2]); 
+        
+      for (int k = 0; k < p[2]; k++)
+        shape[ii++] = wDu_Cross_Dv (x, y, L_zeta[k+2]);        
+    }
+
+      /*// ----------------------- full-non-SZ-basis -----------------------
+
+      for (int i = 0; i <= p[0]; i++)
+        for (int j = 0; j <= p[1]; j++)
+          for (int k = 0; k < p[2]; k++)
+            shape[ii++] = wDu_Cross_Dv (x, y, pol_xi[i]*pol_eta[j]*pol_zeta[k]*z*(1-z));
+      for (int i = 0; i <= p[0]; i++)
+        for (int j = 0; j < p[1]; j++)
+          for (int k = 0; k <= p[2]; k++)
+            shape[ii++] = wDu_Cross_Dv (x, z, pol_xi[i]*pol_eta[j]*pol_zeta[k]*y*(1-y));
+      for (int i = 0; i < p[0]; i++)
+        for (int j = 0; j <= p[1]; j++)
+          for (int k = 0; k <= p[2]; k++)
+            shape[ii++] = wDu_Cross_Dv (y, z, pol_xi[i]*pol_eta[j]*pol_zeta[k]*x*(1-x));
+
+      */
+
   }
-
-
-
-
 
     
   template<>
