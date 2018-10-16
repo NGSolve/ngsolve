@@ -41,14 +41,11 @@ namespace ngfem
   CalcDShape (const IntegrationPoint & ip, 
               BareSliceMatrix<> dshape) const
   {
-    // Vec<DIM, AutoDiff<DIM> > adp = ip;
+    auto dshapes = dshape.AddSize(ndof, DIM);
     TIP<DIM,AutoDiff<DIM>> tip = ip;
-    T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
-                 SBLambda ([dshape] (int i, AutoDiff<DIM> shape)
-                           {
-			     for (int j = 0; j < DIM; j++)
-			       dshape(i, j) = shape.DValue(j);
-			   }));
+    T_CalcShape (tip,
+                 SBLambda ([dshapes] (int i, AD2Vec<DIM> shape)
+                           { dshapes.Row(i) = shape; }));
   }
 
 #ifndef FASTCOMPILE
@@ -979,13 +976,11 @@ namespace ngfem
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
     Vec<DIM, AutoDiff<DIM>> adp = mip;
+    auto dshapes = dshape.AddSize(ndof, DIM);
 
     T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ([dshape] (int i, AutoDiff<DIM> shape)
-                           {
-			     for (int j = 0; j < DIM; j++)
-			       dshape(i, j) = shape.DValue(j);
-		           }));
+                 SBLambda ([dshapes] (int i, AD2Vec<DIM> shape)
+                           { dshapes.Row(i) = shape; }));
   }
 
 
