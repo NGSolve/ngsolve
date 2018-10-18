@@ -48,6 +48,7 @@ namespace ngcomp
   
     bool level_adapted_order; 
     bool nodalp2;
+    bool highest_order_dc;
   public:
 
     H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
