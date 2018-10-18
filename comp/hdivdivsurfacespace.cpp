@@ -359,7 +359,7 @@ namespace ngcomp
                 ndof += 3 * order*(order + 1) / 2;
                 break;
               case ET_QUAD:
-                ndof += 3 * (order + 1) * (order + 1) - 2;
+                ndof += 3 * (order + 1) * (order + 1) - 2 - 2*order;
                 break;
               default:
                 break;
