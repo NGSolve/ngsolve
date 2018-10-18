@@ -3971,7 +3971,7 @@ namespace ngcomp
                                swap_elx.Range(dim*dnums2.Size(), dim*dnums.Size()) = elx.Range(0, dim*dnums1.Size());
                                bfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
                                                       fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
-                               y.AddIndirect(dnums1, ely.Range(dim*dnums1.Size(), dim*dnums.Size()));
+                               y.AddIndirect(dnums1, ely.Range(dim*dnums2.Size(), dim*dnums.Size()));
                              }
                          }
                      }
