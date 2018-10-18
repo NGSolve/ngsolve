@@ -448,6 +448,7 @@ namespace ngcomp
        
     fast_pfem = flags.GetDefineFlag ("fast");
     discontinuous = flags.GetDefineFlag ("discontinuous");
+    highest_order_dc = flags.GetDefineFlag ("highest_order_dc");    
     if (discontinuous)
       SetDefinedOn(BND, BitArray(ma->GetNRegions(BND)).Clear());      
 
@@ -883,8 +884,12 @@ namespace ngcomp
     for (int i = 0; i < ned; i++)
       {
 	first_edge_dof[i] = ndof;
-	if(order_edge[i] > 0)
-	  ndof += usegrad_edge[i]*order_edge[i];
+        if (usegrad_edge[i])
+          {
+            int oe = order_edge[i];
+            if (highest_order_dc) oe--;
+            if (oe > 0) ndof += oe;
+          }
       }
     first_edge_dof[ned] = ndof;
     
@@ -983,6 +988,8 @@ namespace ngcomp
           default:  // for the compiler
             break; 
 	  }
+        if (highest_order_dc)
+          ndof += ElementTopology::GetNEdges(ma->GetElType(ei));
       }
     first_inner_dof[ne] = ndof;    
 
@@ -1726,16 +1733,29 @@ namespace ngcomp
       for (auto edge : ngel.Edges())
         dnums.Append (edge);
     
-    //edges
-    for (auto edge : ngel.Edges())
-      dnums += GetEdgeDofs(edge);
-
     // new style
     if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
       {
+        for (auto edge : ngel.Edges())
+          dnums += GetEdgeDofs(edge);
         for (auto face : ngel.Faces())
           dnums += GetFaceDofs(face);
         return;
+      }
+
+
+    IntRange eldofs;
+    if (ei.IsVolume())
+      eldofs = GetElementDofs (ei.Nr());
+    
+    for (auto edge : ngel.Edges())
+      {
+        dnums += GetEdgeDofs(edge);
+        if (ei.IsVolume() && highest_order_dc)
+          {
+            dnums += eldofs.First();
+            eldofs.First()++;
+          }
       }
     
     // faces 
@@ -1743,8 +1763,8 @@ namespace ngcomp
       for (auto face : ngel.Faces())
         dnums += GetFaceDofs(face);
 
-    if(ei.VB()==VOL)
-      dnums += GetElementDofs (ei.Nr()); 
+    if (ei.IsVolume())
+      dnums += eldofs;
   }
  
 
