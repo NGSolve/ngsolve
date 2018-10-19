@@ -15,13 +15,13 @@ for a longer time, these paradigm allows to parallelize also very
 small functions, practically down to the range of 10 micro seconds.
 
 The task parallelization is also available in NGS-Py. By the *with
-Taskmanager* statement one creates the threads to be used in the
+TaskManager* statement one creates the threads to be used in the
 following code-block. At the end of the block, the threads are stopped.
 
 
 .. code-block:: python
 
-                with Taskmanager():
+                with TaskManager():
                     a = BilinearForm(fespace)
                     a += SymbolicBFI(u*v)
                     a.Assemble()
@@ -47,7 +47,7 @@ NGS-Py:
 
 .. code-block:: python
 
-                with Taskmanager():
+                with TaskManager():
 
                   ...
                   for it in range(maxsteps):
