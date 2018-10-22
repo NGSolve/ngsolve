@@ -223,6 +223,10 @@ namespace ngstd
       : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
                                      _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
     { ; }
+    SIMD (int i)
+      : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
+                                     _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
+    { ; }
     SIMD (__mmask8 _mask) : mask(_mask) { ; }        
     __mmask8 Data() const { return mask; }
     static constexpr int Size() { return 8; }    
@@ -245,7 +249,7 @@ namespace ngstd
     SIMD (int val)    { data = val; }
     SIMD (size_t val) { data = val; }
     SIMD (double const * p) { data = *p; }
-    SIMD (double const * p, SIMD<mask64,1> mask) { if (mask.Data()) data = *p; }
+    SIMD (double const * p, SIMD<mask64,1> mask) { data = mask.Data() ? *p : 0.0; }
     
     template <typename T, typename std::enable_if<std::is_convertible<T,std::function<double(int)>>::value,int>::type = 0>
     SIMD (const T & func)
@@ -425,7 +429,7 @@ namespace ngstd
     void Store (double * p, SIMD<mask64,4> mask)
     {
       data[0].Store(p, mask.Lo());
-      data[1].Store(p, mask.Hi());
+      data[1].Store(p+2, mask.Hi());
     }    
 
     /*
