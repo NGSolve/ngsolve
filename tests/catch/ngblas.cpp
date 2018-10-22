@@ -220,8 +220,9 @@ TEST_CASE ("SubAtDB", "[ngblas]") {
     }
 }
 
-TEST_CASE ("SIMD<double>", "[simd]") {
-    constexpr size_t N = SIMD<double>::Size();
+template <int N=SIMD<double>::Size()>
+void TestSIMD()
+{
     double src[N];
     double dst[N];
     for (auto i : Range(N)) {
@@ -231,7 +232,8 @@ TEST_CASE ("SIMD<double>", "[simd]") {
 
     SECTION ("Mask load") {
         for (auto k : Range(N+1)) {
-            SIMD<double> simd(src,k);
+            SIMD<mask64,N> mask(k);
+            SIMD<double,N> simd(src,mask);
             for (auto i : Range(N)) {
                 CHECK(simd[i] == ( i<k? src[i] : 0.0 ));
             }
@@ -240,14 +242,20 @@ TEST_CASE ("SIMD<double>", "[simd]") {
 
     SECTION ("Mask store") {
         for (auto k : Range(N+1)) {
-            SIMD<double> simd(src);
-            simd.Store(dst, k);
+            SIMD<mask64,N> mask(k);
+            SIMD<double,N> simd(src);
+            simd.Store(dst, mask);
             for (auto i : Range(N)) {
                 CHECK(dst[i] == ( i<k? src[i] : 0.0 ));
             }
         }
     }
 }
+
+TEST_CASE ("SIMD<double>", "[simd]") { TestSIMD<>(); }
+TEST_CASE ("SIMD<double,1>", "[simd]") { TestSIMD<1>(); }
+TEST_CASE ("SIMD<double,2>", "[simd]") { TestSIMD<2>(); }
+TEST_CASE ("SIMD<double,4>", "[simd]") { TestSIMD<4>(); }
 
 TEST_CASE ("SIMD<Complex>", "[simd]") {
     constexpr size_t N = SIMD<Complex>::Size();
