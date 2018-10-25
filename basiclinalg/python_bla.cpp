@@ -486,6 +486,7 @@ vals : tuple
                     result(j,i) = Conj(self(i,j));
             return result;
             } ), "Return conjugate and transposed matrix" )
+          .def_property_readonly("I", py::cpp_function([](FMC & self) { return Inv(self); }))
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 
