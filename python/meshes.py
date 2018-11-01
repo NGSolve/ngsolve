@@ -175,11 +175,11 @@ def MakeStructuredMesh(hexes = True, nx=10, ny=None, nz=None, periodic_x=False, 
 
     if cuboid_mapping:
         netmesh.SetBCName(0,"left")
-        netmesh.SetBCName(1,"front")
-        netmesh.SetBCName(2,"bottom")
+        netmesh.SetBCName(1,"bottom")
+        netmesh.SetBCName(2,"back")
         netmesh.SetBCName(3,"right")
-        netmesh.SetBCName(4,"top")
-        netmesh.SetBCName(5,"back")
+        netmesh.SetBCName(4,"front")
+        netmesh.SetBCName(5,"top")
     
     netmesh.Compress()
     ngsmesh = ngsolve.Mesh(netmesh)
