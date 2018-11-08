@@ -322,7 +322,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D*D };
     enum { DIFFORDER = 1 };
-    static Array<int> GetDimensions() { return Array<int> ( { D*D, D } ); };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D*D } ); };
     
     static constexpr double eps() { return 1e-4; } 
     ///
