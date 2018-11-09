@@ -852,22 +852,23 @@ template <typename MIP, typename TFA>
         IntegratedLegendrePolynomial::Eval(p[0]+1,xi,L_xi);
         IntegratedLegendrePolynomial::Eval(p[1]+1,eta,L_eta);
 
-        //   if (p[0] >= 1)
-        //     IntLegNoBubble::EvalMult(p[0]-1, xi, 1-xi*xi, pol_xi);
-        //   if (p[1] >= 1)
-        //     IntLegNoBubble::EvalMult(p[1]-1,eta, 1-eta*eta, pol_eta);
+          // if (p[0] >= 1)
+          //    IntLegNoBubble::EvalMult(p[0]-1, xi, 1-xi*xi, pol_xi);
+          // if (p[1] >= 1)
+          //    IntLegNoBubble::EvalMult(p[1]-1,eta, 1-eta*eta, pol_eta);
 
         for (int k = 0; k < p[0]; k++)
           for (int l = 0; l < p[1]; l++, ii++)
-            shape[ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],lam_f);
             //shape[ii] = wDu_Cross_Dv<3> (pol_eta[l], pol_xi[k], 2*lam_f);
+            shape[ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
         
         for (int k = 0; k < p[0]; k++)
           //shape[ii++] = wDu_Cross_Dv<3> (-eta, pol_xi[k], lam_f);
-          shape[ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,-xi);
+          shape[ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
+
         for (int k = 0; k < p[1]; k++)
           //shape[ii++] = wDu_Cross_Dv<3> (-xi, pol_eta[k], lam_f);
-          shape[ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta);
+          shape[ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,xi); //divfree
       }
 
     auto p = order_inner;
