@@ -449,7 +449,7 @@ namespace ngcomp
         ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
         if(discontinuous)
         {
-          throw Exception("Hcurlcurl disontinuous just copy paste...");
+          // throw Exception("Hcurlcurl disontinuous just copy paste...");
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
@@ -496,7 +496,7 @@ namespace ngcomp
     }
     if (discontinuous)
       {
-        throw Exception("Hcurlcurl disontinuous just copy paste...");
+        // throw Exception("Hcurlcurl disontinuous just copy paste...");
         return;
       }
     Array<int> innerdofs;
