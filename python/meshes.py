@@ -63,17 +63,21 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
     mesh.SetBCName(0, "bottom")        
     mesh.SetBCName(1, "right")        
     mesh.SetBCName(2, "top")        
-    mesh.SetBCName(3, "left")        
+    mesh.SetBCName(3, "left")  
 
-    return ngsolve.Mesh(mesh)
+    mesh.Compress()       
+    ngsmesh = ngsolve.Mesh(mesh)
+    return ngsmesh
 
+def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lambda x,y : (x,y)):
+    return MakeStructured2DMesh(quads=True, nx=nx, ny=ny, periodic_x=periodic_x, periodic_y=periodic_y, mapping=mapping)    
 
-def MakeStructuredMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y,z : (x,y,z), cuboid_mapping=True):
+def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y : (x,y), cuboid_mapping=True):
     if nz == None:
         if ny == None:
             nz = nx
         else:
-            raise("MakeStructuredMesh: No default value for nz if nx and ny are provided")
+            raise("MakeStructured3DMesh: No default value for nz if nx and ny are provided")
     if ny == None:
         ny = nx
         
@@ -195,14 +199,13 @@ def MakeStructuredMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, pe
     # ngsmesh = ngsolve.Mesh("tmp.vol.gz")
     return ngsmesh
 
-
 def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y,z : (x,y,z)):
-    return MakeStructuredMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping)
+    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping)
 
 from math import pi
 if __name__ == "__main__":
 
-    mesh = MakeStructured2DMesh(quads=True, nx=4, ny=4)
+    mesh = MakeQuadMesh(nx=4, ny=4)
     Draw(mesh)
     input("simple quad mesh -- press any key to continue -- ")
 
@@ -210,7 +213,7 @@ if __name__ == "__main__":
     Draw(mesh)
     input("simple trig mesh -- press any key to continue -- ")    
 
-    mesh = MakeStructured2DMesh(quads=True, nx=4, ny=4, periodic_x=True, periodic_y=False)
+    mesh = MakeQuadMesh(nx=4, ny=4, periodic_x=True, periodic_y=False)
     Draw(mesh)
     input("x-periodic quad mesh -- press any key to continue -- ") 
 
@@ -232,19 +235,19 @@ if __name__ == "__main__":
     Draw(mesh)
     input("periodic cube mesh -- press any key to continue -- ")    
     
-    mesh = MakeStructuredMesh(hexes=False, nx=3, ny=6, nz=10,
+    mesh = MakeStructured3DMesh(hexes=False, nx=3, ny=6, nz=10,
                             mapping = lambda x,y,z : (x,0.5*y*(y+x),exp(z)),
                             cuboid_mapping=False )
     Draw(mesh)
     input("mapped, anisotropic linear non-cuboid mesh -- press any key to continue -- ")
     
-    mesh = MakeStructuredMesh(hexes=True, nx=8, ny=16, nz=8,
+    mesh = MakeStructured3DMesh(hexes=True, nx=8, ny=16, nz=8,
                             mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
                             cuboid_mapping=True )
     Draw(mesh)
     input("mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")
 
-    mesh = MakeStructuredMesh(hexes=True, nx=8, ny=16, nz=8, periodic_x=True,
+    mesh = MakeStructured3DMesh(hexes=True, nx=8, ny=16, nz=8, periodic_x=True,
                             mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
                             cuboid_mapping=True )
     Draw(mesh)
