@@ -2,7 +2,7 @@ from netgen.meshing import *
 from netgen.csg import *
 import ngsolve
 
-def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lambda x,y : (x,y) ):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lambda x,y : (x,y) ):
     mesh = Mesh()
     mesh.dim=2
 
@@ -35,13 +35,21 @@ def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lam
             mesh.AddPointIdentification(masterj[j],slavej[j],identnr=2,type=2)                                       
 
     mesh.Add(FaceDescriptor(surfnr=1,domin=1,bc=1))
-            
+    
     for i in range(ny):
         for j in range(nx):
             base = i * (nx+1) + j
-            pnum = [base,base+1,base+nx+2,base+nx+1]
-            elpids = [pids[p] for p in pnum]
-            mesh.Add(Element2D(1,elpids))
+            if quads:
+                pnum = [base,base+1,base+nx+2,base+nx+1]
+                elpids = [pids[p] for p in pnum]
+                mesh.Add(Element2D(1,elpids))
+            else:
+                pnum1 = [base,base+1,base+nx+1]
+                pnum2 = [base+1,base+nx+2,base+nx+1]
+                elpids1 = [pids[p] for p in pnum1]
+                elpids2 = [pids[p] for p in pnum2]
+                mesh.Add(Element2D(1,elpids1)) 
+                mesh.Add(Element2D(1,elpids2))                          
 
     for i in range(nx):
         mesh.Add(Element1D([pids[i], pids[i+1]], index=1))
@@ -60,7 +68,7 @@ def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lam
     return ngsolve.Mesh(mesh)
 
 
-def MakeStructuredMesh(hexes = True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y,z : (x,y,z), cuboid_mapping = True):
+def MakeStructuredMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y,z : (x,y,z), cuboid_mapping=True):
     if nz == None:
         if ny == None:
             nz = nx
@@ -188,48 +196,56 @@ def MakeStructuredMesh(hexes = True, nx=10, ny=None, nz=None, periodic_x=False, 
     return ngsmesh
 
 
-def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x = False, periodic_y = False, periodic_z = False, mapping = lambda x,y,z : (x,y,z)):
-    return MakeStructuredMesh(hexes = True, nx=nx, ny=ny, nz=nz, periodic_x = periodic_x, periodic_y = periodic_y, periodic_z = periodic_z, mapping = mapping)
+def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y,z : (x,y,z)):
+    return MakeStructuredMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping)
 
 from math import pi
 if __name__ == "__main__":
 
-    mesh = MakeQuadMesh(nx = 4, ny = 4)
+    mesh = MakeStructured2DMesh(quads=True, nx=4, ny=4)
     Draw(mesh)
     input("simple quad mesh -- press any key to continue -- ")
 
-    mesh = MakeQuadMesh(nx = 4, ny = 4, periodic_x = True, periodic_y = False)
+    mesh = MakeStructured2DMesh(quads=False, nx=4, ny=4)
     Draw(mesh)
-    input("x-periodic quad mesh -- press any key to continue -- ")    
+    input("simple trig mesh -- press any key to continue -- ")    
+
+    mesh = MakeStructured2DMesh(quads=True, nx=4, ny=4, periodic_x=True, periodic_y=False)
+    Draw(mesh)
+    input("x-periodic quad mesh -- press any key to continue -- ") 
+
+    mesh = MakeStructured2DMesh(quads=False, nx=16, ny=4, periodic_x=False, periodic_y=True)
+    Draw(mesh)
+    input("y-periodic non-uniform trig mesh -- press any key to continue -- ")        
     
-    mesh = MakeQuadMesh(nx = 32, ny = 16,
-                        mapping = lambda x,y : ((1.1+sin(pi*(y-0.5)))*sin(pi*x),
+    mesh = MakeStructured2DMesh(quads=True, nx=32, ny=16,
+                            mapping = lambda x,y : ((1.1+sin(pi*(y-0.5)))*sin(pi*x),
                                                 (1.1+sin(pi*(y-0.5)))*cos(pi*x)))
     Draw(mesh)
-    input("structured half circle with a whole -- press any key to continue -- ")
+    input("structured quad half circle with a whole -- press any key to continue -- ")
     
     mesh = MakeHexMesh(nx=8)
     Draw(mesh)
     input("simple cube mesh -- press any key to continue -- ")
 
-    mesh = MakeHexMesh(nx=8, periodic_x = True, periodic_y = True, periodic_z = True)
+    mesh = MakeHexMesh(nx=8, periodic_x=True, periodic_y=True, periodic_z=True)
     Draw(mesh)
     input("periodic cube mesh -- press any key to continue -- ")    
     
-    mesh = MakeStructuredMesh(hexes = False, nx=3, ny=6, nz=10,
-                           mapping = lambda x,y,z : (x,0.5*y*(y+x),exp(z)),
-                           cuboid_mapping=False )
+    mesh = MakeStructuredMesh(hexes=False, nx=3, ny=6, nz=10,
+                            mapping = lambda x,y,z : (x,0.5*y*(y+x),exp(z)),
+                            cuboid_mapping=False )
     Draw(mesh)
     input("mapped, anisotropic linear non-cuboid mesh -- press any key to continue -- ")
     
-    mesh = MakeStructuredMesh(hexes = True, nx=8, ny=16, nz=8,
-                           mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
-                           cuboid_mapping=True )
+    mesh = MakeStructuredMesh(hexes=True, nx=8, ny=16, nz=8,
+                            mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
+                            cuboid_mapping=True )
     Draw(mesh)
     input("mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")
 
-    mesh = MakeStructuredMesh(hexes = True, nx=8, ny=16, nz=8, periodic_x=True,
-                           mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
-                           cuboid_mapping=True )
+    mesh = MakeStructuredMesh(hexes=True, nx=8, ny=16, nz=8, periodic_x=True,
+                            mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
+                            cuboid_mapping=True )
     Draw(mesh)
     print("x-periodic, mapped, anisotropic non-linear cuboid mesh -- finished.")    
