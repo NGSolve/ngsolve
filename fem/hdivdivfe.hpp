@@ -36,6 +36,7 @@ namespace ngfem
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+
     virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
@@ -46,6 +47,15 @@ namespace ngfem
     virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const = 0;
+
+    virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                      BareSliceMatrix<SIMD<double>> divshapes) const = 0;
+
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
+			      BareVector<SIMD<double>> values) const = 0;
+
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareVector<SIMD<double>> values,
+			      BareSliceVector<> coefs) const=0;
   };
 
   template <int D,typename VEC,typename MAT>
@@ -447,6 +457,73 @@ namespace ngfem
                                            }));
         }
     }
+
+
+    virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                      BareSliceMatrix<SIMD<double>> divshapes) const
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+
+
+      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      {
+	for (size_t i = 0; i < mir.Size(); i++)
+	{
+	  Cast() -> T_CalcShape (GetTIP(mir[i]),SBLambda([divshapes,i](int j,auto val)
+							 {
+							   divshapes(j,i) = val.DivShape();
+							 }));
+	}
+      }
+      else
+      {
+	//NoSimdException?!
+	throw Exception("CalcMappedDivShape SIMD only for noncurved elements");
+      }
+    }
+
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
+			      BareVector<SIMD<double>> values) const
+    {
+      for (size_t i = 0; i < bmir.Size(); i++)
+        {
+          double *pcoefs = &coefs(0);
+          const size_t dist = coefs.Dist();
+          
+          Vec<DIM_STRESS,SIMD<double>> sum(0.0);
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          
+          Cast() -> T_CalcShape (addp,
+                                 SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
+                                           {
+                                             sum += (*pcoefs)*val.Shape();
+                                             pcoefs += dist;
+                                           }));
+
+          Mat<DIM,DIM,SIMD<double>> summat;
+          VecToSymMat<DIM> (sum, summat);
+          
+          Iterate<4-DIM>
+            ([values,&bmir,i,summat](auto CODIM)
+             {
+               constexpr auto DIMSPACE = DIM+CODIM.value;
+               if (bmir.DimSpace() == DIMSPACE)
+                 {
+                   auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+                   auto jac = mir[i].GetJacobian();
+                   auto d2 = sqr(mir[i].GetJacobiDet());
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2 * (jac * summat * Trans(jac));
+                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                     values(k,i) = physmat(k);
+                 }
+             });
+        }
+    }
+
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareVector<SIMD<double>> values,
+			      BareSliceVector<> coefs) const=0;
+
   };
 
 
