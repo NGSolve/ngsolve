@@ -194,16 +194,11 @@ namespace ngfem
                                      BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM>> addp;
-      for (int i=0; i<DIM; i++)
-      {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
+      TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
       if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
       {
-        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
+        Cast() -> T_CalcShape (addp,SBLambda([&](int nr,auto val)
         {
           shape.Row(nr).AddSize(DIM) = val.DivShape();
         }));
@@ -240,7 +235,7 @@ namespace ngfem
                   finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
         }
 
-        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
+        Cast() -> T_CalcShape (addp,SBLambda([&](int nr,auto val)
                                   {
                                     shape.Row(nr).AddSize(DIM) = val.DivShape();
                                     BareVector<double> divshape = shape.Row(nr);
@@ -522,7 +517,6 @@ namespace ngfem
                                              sum += (*pcoefs)*val.DivShape();
                                              pcoefs += dist;
                                            }));
-          
           Iterate<4-DIM>
             ([values,&bmir,i,sum](auto CODIM)
              {
@@ -568,7 +562,7 @@ namespace ngfem
 
                    Vec<DIMSPACE,SIMD<double>> physvec{};
                    for (size_t k = 0; k < DIMSPACE; k++)
-                     physvec(k) = values(k);
+                     physvec(k) = values(DIMSPACE*i+k);
                    vec = 1/d2 * Trans(jac) * physvec;
                  }
              });
