@@ -322,7 +322,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D*D };
     enum { DIFFORDER = 1 };
-    static Array<int> GetDimensions() { return Array<int> ( { D*D, D } ); };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D*D } ); };
     
     static constexpr double eps() { return 1e-4; } 
     ///
@@ -699,7 +699,7 @@ namespace ngcomp
         ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
         if(discontinuous)
         {
-          throw Exception("Hcurlcurl disontinuous just copy paste...");
+          // throw Exception("Hcurlcurl disontinuous just copy paste...");
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
@@ -746,7 +746,7 @@ namespace ngcomp
     }
     if (discontinuous)
       {
-        throw Exception("Hcurlcurl disontinuous just copy paste...");
+        // throw Exception("Hcurlcurl disontinuous just copy paste...");
         return;
       }
     Array<int> innerdofs;

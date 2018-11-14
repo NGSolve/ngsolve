@@ -175,8 +175,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   
   std::string nested_name = "ngstd";
 
-  m.def("TestFlags", [] (py::dict const &d) { cout << py::extract<Flags>(d)() << endl; } );
-
   py::class_<DummyArgument>(m, "DummyArgument")
     .def("__bool__", []( DummyArgument &self ) { return false; } )
     .def("__repr__", [] ( DummyArgument & self) { return "<ngsolve.ngstd.DummyArgument>"; })
@@ -344,25 +342,21 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           SetFlag (flags, "", d);
           return flags;
         }), py::arg("obj"), "Create Flags by given object")
-    /*
-    .def("__init__", [] (Flags &f, py::object & obj) {
-         py::dict d(obj);
-         new (&f) Flags();
-         SetFlag(f, "", d);
-     })
-    */
-    .def("__getstate__", [] (py::object self_object) {
-        auto self = self_object.cast<Flags>();
-        stringstream str;
-        self.SaveFlags(str);
-        return py::make_tuple(py::cast(str.str())); 
-      }, "Return state of the flags")
-    .def("__setstate__", [] (Flags & self, py::tuple state) {
-        string s = state[0].cast<string>();
-        stringstream str(s);
-        new (&self) Flags();
-        self.LoadFlags(str);
-      }, py::arg("state"), "Set the state of the flags" )
+    .def(py::pickle([] (const Flags& self)
+        {
+          stringstream str;
+          self.SaveFlags(str);
+          return py::make_tuple(py::cast(str.str()));
+        },
+        [] (py::tuple state)
+        {
+          string s = state[0].cast<string>();
+          stringstream str(s);
+          Flags flags;
+          flags.LoadFlags(str);
+          return flags;
+        }
+    ))
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
