@@ -292,7 +292,7 @@ namespace ngcomp
         fel_u.CalcMappedShape_Matrix (siprr, shape_urr);
 
         dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-        //cout << "dshape_u_ref = " << dshape_u_ref << endl;
+
         for (int l = 0; l < D*D; l++)
           bmatu.Col(j*D*D+l) = dshape_u_ref.Col(l);
       }
@@ -359,7 +359,6 @@ namespace ngcomp
 
       LocalHeapMem<10000> lh("diffopgrad-lh");
 
-      cout << "start genmatsimd" << endl;
       auto & ir = mir.IR();
       for (size_t i = 0; i < mir.Size(); i++)
         {
@@ -380,18 +379,23 @@ namespace ngcomp
               ipts[3] = ip;
               ipts[3](j) += 2*eps();
 
-              SIMD_IntegrationRule ir(4, ipts);
-              SIMD_MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl[2], shape_u_tmp);
-              dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
-              fel.CalcMappedShape_Matrix (mirl[3], shape_u_tmp);
-              dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
-              fel.CalcMappedShape_Matrix (mirl[0], shape_u_tmp);
-              dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
-              fel.CalcMappedShape_Matrix (mirl[1], shape_u_tmp);
-              dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
 
-              //cout << "shape_u_ref = " << dshape_u_ref << endl;
+              SIMD_IntegrationRule ir1(1, &ipts[2]);
+              SIMD_MappedIntegrationRule<D,D> mirl1(ir1, eltrans, lh);
+              fel.CalcMappedShape_Matrix (mirl1, shape_u_tmp);
+              dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
+              SIMD_IntegrationRule ir2(1, &ipts[3]);
+              SIMD_MappedIntegrationRule<D,D> mirl2(ir2, eltrans, lh);
+              fel.CalcMappedShape_Matrix (mirl2, shape_u_tmp);
+              dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
+              SIMD_IntegrationRule ir3(1, &ipts[0]);
+              SIMD_MappedIntegrationRule<D,D> mirl3(ir3, eltrans, lh);
+              fel.CalcMappedShape_Matrix (mirl3, shape_u_tmp);
+              dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
+              SIMD_IntegrationRule ir4(1, &ipts[1]);
+              SIMD_MappedIntegrationRule<D,D> mirl4(ir4, eltrans, lh);
+              fel.CalcMappedShape_Matrix (mirl4, shape_u_tmp);
+              dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
               
               for (size_t l = 0; l < D*D; l++)
                 for (size_t k = 0; k < nd_u; k++)
@@ -519,10 +523,10 @@ namespace ngcomp
           for (size_t k = 0; k < mir.Size(); k++)
             {
               auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D; l++)
+              for (int l = 0; l < D*D; l++)
                 {
                   SIMD<double> sum = 0;
-                  for (int m = 0; m < D*D; m++)
+                  for (int m = 0; m < D; m++)
                     sum += jacinv(j,m) * x(m*D*D+l, k);
                   hx1(l,k) = (-(8/(12*eps())) * sum).Data();
                   hx2(l,k) = ( (1/(12*eps())) * sum).Data();
