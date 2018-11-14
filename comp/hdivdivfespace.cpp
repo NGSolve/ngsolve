@@ -158,17 +158,17 @@ namespace ngcomp
     }
 
     using DiffOp<DiffOpDivHDivDiv<D> >::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceVector<SIMD<double>> y)
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).EvaluateDiv (mir, x, y);
+      dynamic_cast<const HDivDivFiniteElement<D>&> (fel).EvaluateDiv (mir, x, y.Row(0));
     }
 
     using DiffOp<DiffOpDivHDivDiv<D> >::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceVector<SIMD<double>> y, BareSliceVector<double> x)
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                              BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddDivTrans (mir, y, x);
+      dynamic_cast<const HDivDivFiniteElement<D>&> (fel).AddDivTrans (mir, y.Row(0), x);
     }
 
   };

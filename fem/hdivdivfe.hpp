@@ -469,19 +469,35 @@ namespace ngfem
       {
 	for (size_t i = 0; i < mir.Size(); i++)
 	{
+          auto jac = mir[i].GetJacobian();
+          auto d2 = sqr(mir[i].GetJacobiDet());
+          
+          Vec<DIM,SIMD<double>> vec;
+          SIMD<double> mem[DIM*DIM_STRESS];
+          FlatMatrix<SIMD<double>> trans(DIM,DIM,&mem[0]);
+          for (int k = 0; k < DIM; k++)
+            {
+              vec = SIMD<double>(0.0);
+              vec(k) = SIMD<double>(1.0);
+              Vec<DIM,SIMD<double>> physvec = 1/d2 * (jac * vec);
+              for (int j = 0; j < DIM; j++)
+                trans(j,k) = physvec(j);
+            }
+          
           Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
           TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-	  Cast() -> T_CalcShape (addp,SBLambda([divshapes,i](int j,auto val)
+	  Cast() -> T_CalcShape (addp,SBLambda([divshapes,i,trans](int j,auto val)
 							 {
+                                                           Vec<DIM,SIMD<double>> transvec;
+                                                           transvec = trans * val.DivShape();
                                                            for (size_t k = 0; k < DIM; k++)
-                                                             divshapes(DIM*j+k,i) = val.DivShape()(k);
+                                                             divshapes(DIM*j+k,i) = transvec(k);
 							 }));
 	}
       }
       else
       {
-	//NoSimdException?!
-	throw Exception("CalcMappedDivShape SIMD only for noncurved elements");
+        throw ExceptionNOSIMD(string("HDivDiv - CalcMappedDivShape SIMD only for noncurved elements"));
       }
     }
 
@@ -525,8 +541,7 @@ namespace ngfem
       }
       else
       {
-        //NoSimdException?!
-        throw Exception("EvaluateDiv SIMD only for noncurved elements");
+        throw ExceptionNOSIMD(string("HDivDiv - EvaluateDiv SIMD only for noncurved elements"));
       }
     }
 
@@ -579,8 +594,8 @@ namespace ngfem
       }
       else
       {
-        //NoSimdException?!
-        throw Exception("AddDivTrans SIMD only for noncurved elements");
+        throw ExceptionNOSIMD(string("HDivDiv - AddTrans SIMD only for noncurved elements"));
+
       }
     }
 
