@@ -2404,22 +2404,11 @@ integrator : ngsolve.fem.LFI
           static Timer t("Integrate CF"); RegionTimer reg(t);
           // static mutex addcomplex_mutex;
           BitArray mask;
-          {
-            py::gil_scoped_acquire aquire;
-            /*
-            py::extract<Region> defon_region(definedon);
-            if (defon_region.check())
-              {
-                vb = VorB(defon_region());
-                mask = BitArray(defon_region().Mask());
-              }
-            */
-            if (definedon)
-              {
-                vb = VorB(*definedon);
-                mask = BitArray((*definedon).Mask());
-              }
-          }
+          if (definedon)
+            {
+              vb = VorB(*definedon);
+              mask = BitArray((*definedon).Mask());
+            }
           if(!mask.Size()){
             mask = BitArray(ma->GetNRegions(vb));
             mask.Set();

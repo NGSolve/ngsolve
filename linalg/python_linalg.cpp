@@ -626,31 +626,33 @@ inverse : string
     (m, "BaseSparseMatrix", "sparse matrix of any type")
     
     .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba) 
-         { return m.CreateJacobiPrecond(ba); },
+         { return m.CreateJacobiPrecond(ba); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("freedofs") = shared_ptr<BitArray>())
     
     .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks)
          {
-           size_t size = py::len(blocks);
+           shared_ptr<Table<int>> blocktable;
+           {
+             py::gil_scoped_acquire aq;
+             size_t size = py::len(blocks);
            
-           Array<int> cnt(size);
-           size_t i = 0;
-           for (auto block : blocks)
-             cnt[i++] = py::len(block);
+             Array<int> cnt(size);
+             size_t i = 0;
+             for (auto block : blocks)
+               cnt[i++] = py::len(block);
            
-           i = 0;
-           Table<int> blocktable(cnt);
-           for (auto block : blocks)
-             {
-               auto row = blocktable[i++];
-               size_t j = 0;
-               for (auto val : block)
-                 row[j++] = val.cast<int>();
-             }
-
-           auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
-           return pre;
-         }, py::arg("blocks"))
+             i = 0;
+             blocktable = make_shared<Table<int>>(cnt);
+             for (auto block : blocks)
+               {
+                 auto row = (*blocktable)[i++];
+                 size_t j = 0;
+                 for (auto val : block)
+                   row[j++] = val.cast<int>();
+               }
+           }
+           return m.CreateBlockJacobiPrecond (blocktable);
+         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"))
      ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
@@ -721,11 +723,11 @@ inverse : string
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
      "block Jacobi and block Gauss-Seidel smoothing")
-    .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth,
+    .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b")
     .def("SmoothBack", &BaseBlockJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"), py::arg("steps")=1,
+         py::arg("x"), py::arg("b"), py::arg("steps")=1, py::call_guard<py::gil_scoped_release>(),
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
@@ -733,11 +735,11 @@ inverse : string
     (m, "Smoother",
      "Jacobi and Gauss-Seidel smoothing")
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
-         { jac.GSSmooth (x, b); },
+         { jac.GSSmooth (x, b); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"),
          "performs one step Gauss-Seidel iteration for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"),
+         py::arg("x"), py::arg("b"), py::call_guard<py::gil_scoped_release>(),
          "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
@@ -746,7 +748,8 @@ inverse : string
     .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
          {
            self.Smooth (u, y /* this is not needed */, y);
-         }, "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
+         }, py::call_guard<py::gil_scoped_release>(),
+         "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
     ;
 
   py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d");
