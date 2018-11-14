@@ -528,11 +528,16 @@ namespace ngbla
     if (wb < 3*SIMD<double>::Size())
       MultMatMat_intern2_SlimB<BBH,SETNEG> (ha, wa, wb, a, b, c);
     else
-      for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
-        {
-          size_t hbi = min2(BBH, wa-i);        
-          MultMatMat_intern2<BBH,SETNEG> (ha, hbi, wb, a, b, c);
-        }
+      {
+        for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
+          {
+            size_t hbi = min2(BBH, wa-i);
+            if (i == 0)
+              MultMatMat_intern2<BBH,SETNEG> (ha, hbi, wb, a, b, c);
+            else
+              MultMatMat_intern2<BBH,SUB> (ha, hbi, wb, a, b, c);              
+          }
+      }
   }
 
   

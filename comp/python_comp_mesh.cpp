@@ -448,6 +448,18 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           (&MeshAccess::GetTrafo), 
           py::return_value_policy::reference)
     */
+
+    .def("GetPeriodicNodePairs", [](MeshAccess& self, NODE_TYPE type)
+         {
+           py::list pairs;
+           for(auto idnr : Range(self.GetNPeriodicIdentifications()))
+             {
+               const auto& periodic_nodes = self.GetPeriodicNodes(type, idnr);
+               for(auto pair : periodic_nodes)
+                 pairs.append(py::make_tuple(py::make_tuple(pair[0], pair[1]),idnr));
+             }
+           return pairs;
+         }, "returns list of periodic nodes with their identification number as [((master_nr, slave_nr),idnr),...]")
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
