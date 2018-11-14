@@ -2087,7 +2087,7 @@ namespace ngfem
               HeapReset hr(lh);
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
               // NgProfiler::StartThreadTimer(tir, tid);
-              const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+              const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
               SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
               SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure(eltype, k);
@@ -2228,7 +2228,7 @@ namespace ngfem
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
         
-          const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+          const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
           mir.ComputeNormalsAndMeasure(eltype, k);
@@ -2524,7 +2524,7 @@ namespace ngfem
               HeapReset hr(lh);
               NgProfiler::StartThreadTimer(tir, tid);                              
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-              const SIMD_IntegrationRule & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+              const SIMD_IntegrationRule & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
               auto & ir_facet_vol = transform(k, ir_facet, lh);
               auto & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure (eltype, k);
@@ -2589,7 +2589,7 @@ namespace ngfem
       {
         HeapReset hr(lh);
         ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
         mir.ComputeNormalsAndMeasure (eltype, k);
