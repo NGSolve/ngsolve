@@ -2398,7 +2398,7 @@ integrator : ngsolve.fem.LFI
   m.def("Integrate", 
         [](spCF cf,
            shared_ptr<MeshAccess> ma, 
-           VorB vb, int order, py::object definedon,
+           VorB vb, int order, std::optional<Region> definedon,
 	   bool region_wise, bool element_wise)
         {
           static Timer t("Integrate CF"); RegionTimer reg(t);
@@ -2406,11 +2406,18 @@ integrator : ngsolve.fem.LFI
           BitArray mask;
           {
             py::gil_scoped_acquire aquire;
+            /*
             py::extract<Region> defon_region(definedon);
             if (defon_region.check())
               {
                 vb = VorB(defon_region());
                 mask = BitArray(defon_region().Mask());
+              }
+            */
+            if (definedon)
+              {
+                vb = VorB(*definedon);
+                mask = BitArray((*definedon).Mask());
               }
           }
           if(!mask.Size()){
@@ -2595,7 +2602,7 @@ integrator : ngsolve.fem.LFI
         },
 	py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
 	py::arg("order")=5,
-	py::arg("definedon")=DummyArgument(),
+	py::arg("definedon") = nullopt, // =DummyArgument(),
         py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
         R"raw(
