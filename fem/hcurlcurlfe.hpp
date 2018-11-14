@@ -39,6 +39,9 @@ namespace ngfem
 
     virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
+
+    virtual void CalcMappedShape_Matrix (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+                                         BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
     virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceVector<> coefs,
@@ -311,6 +314,39 @@ namespace ngfem
 #endif
              }
          });
+    }
+
+    virtual void CalcMappedShape_Matrix (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+                   BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      auto jacI = mip.GetJacobianInverse();
+          
+      Vec<DIM_STRESS,SIMD<double>> hv;
+      Mat<DIM,DIM,SIMD<double>> mat;
+      SIMD<double> mem[DIM*DIM*DIM_STRESS];
+      FlatMatrix<SIMD<double>> trans(DIM*DIM,DIM_STRESS,&mem[0]);
+      for (int i = 0; i < DIM_STRESS; i++)
+        {
+          hv = SIMD<double>(0.0);
+          hv(i) = SIMD<double>(1.0);
+          VecToSymMat<DIM> (hv, mat);
+          Mat<DIM,DIM,SIMD<double>> physmat = (Trans(jacI) * mat * jacI);
+          for (int j = 0; j < DIM*DIM; j++)
+            trans(j,i) = physmat(j);
+        }
+      Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mip;
+      TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+      this->Cast() -> T_CalcShape(addp, 
+                                  SBLambda ([shapes,trans] (size_t j, auto val)
+                             {
+                               //auto vshape = s.Shape();
+                               //for (size_t k = 0; k < vshape.Size(); k++)
+                               //  shapes(j*DIM*DIM+k, 0) = vshape(k);
+                               Vec<DIM*DIM,SIMD<double>> transvec;
+                               transvec = trans * val.Shape();
+                               for (size_t k = 0; k < DIM*DIM; k++)
+                                 shapes(j*DIM*DIM+k,0) = transvec(k);
+                             }));
     }
 
 

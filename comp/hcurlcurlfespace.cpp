@@ -292,7 +292,7 @@ namespace ngcomp
         fel_u.CalcMappedShape_Matrix (siprr, shape_urr);
 
         dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-        
+        //cout << "dshape_u_ref = " << dshape_u_ref << endl;
         for (int l = 0; l < D*D; l++)
           bmatu.Col(j*D*D+l) = dshape_u_ref.Col(l);
       }
@@ -352,13 +352,14 @@ namespace ngcomp
       
       size_t nd_u = fel.GetNDof();
 
-      STACK_ARRAY(SIMD<double>, mem1, 2*D*nd_u);
+      STACK_ARRAY(SIMD<double>, mem1, 2*D*D*nd_u);
       FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*D*D, 1, &mem1[0]);
 
-      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D*D, 1, &mem1[D*nd_u]);
+      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D*D, 1, &mem1[D*D*nd_u]);
 
       LocalHeapMem<10000> lh("diffopgrad-lh");
 
+      cout << "start genmatsimd" << endl;
       auto & ir = mir.IR();
       for (size_t i = 0; i < mir.Size(); i++)
         {
@@ -379,9 +380,8 @@ namespace ngcomp
               ipts[3] = ip;
               ipts[3](j) += 2*eps();
 
-              /*SIMD_IntegrationRule ir(4, ipts);
+              SIMD_IntegrationRule ir(4, ipts);
               SIMD_MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
-
               fel.CalcMappedShape_Matrix (mirl[2], shape_u_tmp);
               dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
               fel.CalcMappedShape_Matrix (mirl[3], shape_u_tmp);
@@ -390,29 +390,14 @@ namespace ngcomp
               dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
               fel.CalcMappedShape_Matrix (mirl[1], shape_u_tmp);
               dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
-              */
 
-              SIMD_IntegrationRule ir1(1,&ipts[0]);
-              SIMD_MappedIntegrationRule<D,D> mirl1(ir1, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl1, shape_u_tmp);
-              dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
-              SIMD_IntegrationRule ir2(1,&ipts[1]);
-              SIMD_MappedIntegrationRule<D,D> mirl2(ir2, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl2, shape_u_tmp);
-              dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
-              SIMD_IntegrationRule ir3(1,&ipts[2]);
-              SIMD_MappedIntegrationRule<D,D> mirl3(ir3, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl3, shape_u_tmp);
-              dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
-              SIMD_IntegrationRule ir4(1,&ipts[3]);
-              SIMD_MappedIntegrationRule<D,D> mirl4(ir4, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl4, shape_u_tmp);
-              dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
+              //cout << "shape_u_ref = " << dshape_u_ref << endl;
               
               for (size_t l = 0; l < D*D; l++)
                 for (size_t k = 0; k < nd_u; k++)
-                mat(k*D*D*D+j*D*D+l, i) = dshape_u_ref(k*D*D+l, 0);
+                  mat(k*D*D*D+j*D*D+l, i) = dshape_u_ref(k*D*D+l, 0);
             }
+          
           
           for (size_t j = 0; j < D*D; j++)
             for (size_t k = 0; k < nd_u; k++)
