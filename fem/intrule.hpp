@@ -1770,6 +1770,13 @@ namespace ngstd
     }
 
 
+    void CalcHesse (Mat<1,1,SIMD<double>> & ddx1, Mat<1,1,SIMD<double>> & ddx2) const;
+    void CalcHesse (Mat<2,2,SIMD<double>> & ddx1, Mat<2,2,SIMD<double>> & ddx2) const;
+    void CalcHesse (Mat<1,1,SIMD<double>> & ddx1, Mat<1,1,SIMD<double>> & ddx2, Mat<1,1,SIMD<double>> & ddx3) const;
+    void CalcHesse (Mat<2,2,SIMD<double>> & ddx1, Mat<2,2,SIMD<double>> & ddx2, Mat<2,2,SIMD<double>> & ddx3) const; 
+    void CalcHesse (Mat<3,3,SIMD<double>> & ddx1, Mat<3,3,SIMD<double>> & ddx2, Mat<3,3,SIMD<double>> & ddx3) const;
+
+
     
     void Print (ostream & ost) const
     {
@@ -2131,6 +2138,7 @@ namespace ngfem
 
     virtual void TransformGradient (BareSliceMatrix<SIMD<double>> grad) const override;
     virtual void TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const override;
+
   };
 }
 
