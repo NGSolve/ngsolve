@@ -517,6 +517,7 @@ namespace ngfem
                                              sum += (*pcoefs)*val.DivShape();
                                              pcoefs += dist;
                                            }));
+
           Iterate<4-DIM>
             ([values,&bmir,i,sum](auto CODIM)
              {
@@ -528,7 +529,7 @@ namespace ngfem
                    auto d2 = sqr(mir[i].GetJacobiDet());
                    Vec<DIMSPACE,SIMD<double>> physvec = 1/d2 * (jac * sum);
                    for (size_t k=0; k < DIMSPACE; k++)
-                     values(DIMSPACE*i+k) = physvec(k);
+                     values(i+bmir.Size()*k) = physvec(k);
                  }
              });
         }
@@ -562,7 +563,8 @@ namespace ngfem
 
                    Vec<DIMSPACE,SIMD<double>> physvec{};
                    for (size_t k = 0; k < DIMSPACE; k++)
-                     physvec(k) = values(DIMSPACE*i+k);
+                     physvec(k) = values(i+bmir.Size()*k);
+                     //physvec(k) = values(DIMSPACE*i+k);
                    vec = 1/d2 * Trans(jac) * physvec;
                  }
              });
