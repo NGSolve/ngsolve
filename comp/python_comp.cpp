@@ -2632,7 +2632,8 @@ element_wise: bool = False
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate, VorB element_vb) 
+             bool simd_evaluate, VorB element_vb,
+             shared_ptr<GridFunction> deformation) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2654,6 +2655,7 @@ element_wise: bool = False
                }
 
              lfi->SetSimdEvaluate (simd_evaluate);
+             lfi->SetDeformation (deformation);
              // lfi -> SetDefinedOn (makeCArray<int> (definedon));
 
              if (defon_region.check())
@@ -2681,6 +2683,7 @@ element_wise: bool = False
            py::arg("definedonelements")=DummyArgument(),
            py::arg("simd_evaluate")=true,
            py::arg("element_vb")=VOL,
+           py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic linear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate right hand sides in a symbolic way.
 
@@ -2715,6 +2718,9 @@ simd_evaluate : bool
 
 element_vb : ngsolve.fem.VorB
   input element VorB
+
+deformation : ngsolve.comp.GridFunction
+  input GridFunction to transform/deform the linear form with
 
 )raw_string")
           );
@@ -2821,6 +2827,9 @@ simd_evaluate : bool
 element_vb : ngsolve.comp.VorB
   input element_vb. Used for skeleton formulation. VOL -> interior faces, BND -> boundary faces
 
+deformation : ngsolve.comp.GridFunction
+  input GridFunction to transform/deform the bilinear form with
+
 )raw_string")
         );
           
@@ -2869,7 +2878,7 @@ element_vb : ngsolve.comp.VorB
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
            int bonus_intorder, py::object definedonelem, bool simd_evaluate,
-           VorB element_vb)
+           VorB element_vb, shared_ptr<GridFunction> deformation)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
@@ -2888,6 +2897,7 @@ element_vb : ngsolve.comp.VorB
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              bfi->SetSimdEvaluate (simd_evaluate);
+             bfi->SetDeformation (deformation);
              return bfi;
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
@@ -2896,6 +2906,7 @@ element_vb : ngsolve.comp.VorB
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
+        py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
@@ -2924,6 +2935,9 @@ simd_evaluate : bool
 
 element_vb : ngsolve.fem.VorB
   input eleemnt VorB
+
+deformation : ngsolve.comp.GridFunction
+  input GridFunction to transform/deform the bilinear form with
 
 )raw_string")
           );
