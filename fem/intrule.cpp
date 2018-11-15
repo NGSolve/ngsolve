@@ -3353,6 +3353,8 @@ namespace ngfem
   }
 
   
+
+  
   
   template class SIMD_MappedIntegrationRule<0,0>;
   template class SIMD_MappedIntegrationRule<0,1>;
@@ -3688,13 +3690,162 @@ namespace ngfem
     return irvol;
   }
 
-  
-  
 }
 
 
 namespace ngstd
 {
+  template <int S, int R>
+  void SIMD<ngfem::MappedIntegrationPoint<S,R>>::
+  CalcHesse (Mat<1,1,SIMD<double>> & ddx1, Mat<1,1,SIMD<double>> & ddx2) const
+  {
+    double eps = 1e-6;
+
+    Mat<2,1,SIMD<double>> jacr, jacl;
+    for (int dir = 0; dir < 1; dir++)
+      {
+        SIMD<ngfem::IntegrationPoint> ipts[2];
+        ipts[0] = this->ip;
+        ipts[0](dir) += eps;
+        ipts[1] = this->ip;
+        ipts[1](dir) -= eps;
+        
+	SIMD<ngfem::MappedIntegrationPoint<2,1>> mipr(ipts[0],this->eltrans);
+        SIMD<ngfem::MappedIntegrationPoint<2,1>> mipl(ipts[1],this->eltrans);
+        jacr = mipr.GetJacobian();
+        jacl = mipl.GetJacobian();
+
+	for (int j = 0; j < 1; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+	  }
+      }
+  }
+  
+  template <int S, int R>
+  void SIMD<ngfem::MappedIntegrationPoint<S,R>>::
+  CalcHesse (Mat<2,2,SIMD<double>> & ddx1, Mat<2,2,SIMD<double>> & ddx2) const
+  {
+    double eps = 1e-6;
+
+    Mat<2,2,SIMD<double>> jacr, jacl;
+    for (int dir = 0; dir < 2; dir++)
+      {        
+        SIMD<ngfem::IntegrationPoint> ipts[2];
+        ipts[0] = this->ip;
+        ipts[0](dir) += eps;
+        ipts[1] = this->ip;
+        ipts[1](dir) -= eps;
+        SIMD<ngfem::MappedIntegrationPoint<2,2>> mipr(ipts[0],this->eltrans);
+        SIMD<ngfem::MappedIntegrationPoint<2,2>> mipl(ipts[1],this->eltrans);
+        jacr = mipr.GetJacobian();
+        jacl = mipl.GetJacobian();
+          
+        for (int j = 0; j < 2; j++)
+          {
+            ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+            ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+          }
+      }
+  }
+
+  
+  template <int S, int R>
+  void SIMD<ngfem::MappedIntegrationPoint<S,R>>::
+  CalcHesse (Mat<1,1,SIMD<double>> & ddx1, Mat<1,1,SIMD<double>> & ddx2, Mat<1,1,SIMD<double>> & ddx3) const
+  {
+    double eps = 1e-6;
+
+    Mat<3,1,SIMD<double>> jacr, jacl;
+    for (int dir = 0; dir < 1; dir++)
+      {
+	SIMD<ngfem::IntegrationPoint> ipts[2];
+        ipts[0] = this->ip;
+        ipts[0](dir) += eps;
+        ipts[1] = this->ip;
+        ipts[1](dir) -= eps;
+
+        SIMD<ngfem::MappedIntegrationPoint<3,1>> mipr(ipts[0],this->eltrans);
+        SIMD<ngfem::MappedIntegrationPoint<3,1>> mipl(ipts[1],this->eltrans);
+        jacr = mipr.GetJacobian();
+        jacl = mipl.GetJacobian();
+
+	for (int j = 0; j < 1; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+            ddx3(dir,j) = (jacr(2,j) - jacl(2,j) ) / (2*eps);
+	  }
+      }
+  }
+
+  template <int S, int R>
+  void SIMD<ngfem::MappedIntegrationPoint<S,R>>::
+  CalcHesse (Mat<2,2,SIMD<double>> & ddx1, Mat<2,2,SIMD<double>> & ddx2, Mat<2,2,SIMD<double>> & ddx3) const
+  {
+    if (S == R)
+      {
+        this -> CalcHesse(ddx1, ddx2);
+        return;
+      }
+
+    // for 2D -> 3D
+        
+    double eps = 1e-6;
+
+    Mat<3,2,SIMD<double>> jacr, jacl;
+    for (int dir = 0; dir < 2; dir++)
+      {
+	SIMD<ngfem::IntegrationPoint> ipts[2];
+        ipts[0] = this->ip;
+        ipts[0](dir) += eps;
+        ipts[1] = this->ip;
+        ipts[1](dir) -= eps;
+
+        SIMD<ngfem::MappedIntegrationPoint<3,2>> mipr(ipts[0],this->eltrans);
+        SIMD<ngfem::MappedIntegrationPoint<3,2>> mipl(ipts[1],this->eltrans);
+        jacr = mipr.GetJacobian();
+        jacl = mipl.GetJacobian();
+
+	for (int j = 0; j < 2; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+            ddx3(dir,j) = (jacr(2,j) - jacl(2,j) ) / (2*eps);
+	  }
+      }
+  }
+  
+  template <int S, int R>
+  void SIMD<ngfem::MappedIntegrationPoint<S,R>>::CalcHesse (Mat<3,3,SIMD<double>> & ddx1, Mat<3,3,SIMD<double>> & ddx2, Mat<3,3,SIMD<double>> & ddx3) const
+  {
+    double eps = 1e-6;
+
+    Mat<3,3,SIMD<double>> jacr, jacl;
+    for (int dir = 0; dir < 3; dir++)
+      {
+	SIMD<ngfem::IntegrationPoint> ipts[2];
+        ipts[0] = this->ip;
+        ipts[0](dir) += eps;
+        ipts[1] = this->ip;
+        ipts[1](dir) -= eps;
+        
+        SIMD<ngfem::MappedIntegrationPoint<3,3>> mipr(ipts[0],this->eltrans);
+        SIMD<ngfem::MappedIntegrationPoint<3,3>> mipl(ipts[1],this->eltrans);
+        jacr = mipr.GetJacobian();
+        jacl = mipl.GetJacobian();
+	
+	for (int j = 0; j < 3; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+	    ddx3(dir,j) = (jacr(2,j) - jacl(2,j) ) / (2*eps);
+	  }
+      }
+  }
+  
+
 
   FlatVector<SIMD<double>>
   SIMD<ngfem::BaseMappedIntegrationPoint> :: GetPoint() const
