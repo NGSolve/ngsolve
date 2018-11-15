@@ -9,9 +9,6 @@
 #include "../fem/hcurlcurlfe.hpp"
 #include "hcurlcurlfespace.hpp"
 
-#if defined(WIN32) && defined(__AVX__)
-
-#else
 
 
 namespace ngcomp
@@ -953,4 +950,3 @@ namespace ngcomp
   static RegisterFESpace<HCurlCurlFESpace> init ("hcurlcurl");
 }
 
-#endif

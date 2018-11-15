@@ -7,9 +7,6 @@
 /* Date:   June 2018                                                 */
 /*********************************************************************/
 
-#if defined(WIN32) && defined(__AVX__)
-
-#else
 
 namespace ngfem
 {
@@ -1745,5 +1742,4 @@ namespace ngfem
 
 #endif
 
-#endif
   
