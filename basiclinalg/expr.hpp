@@ -1484,10 +1484,10 @@ namespace ngbla
   INLINE auto InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
     -> decltype (InnerProduct(a.Spec()(0), b.Spec()(0)))
   {
-    if (a.Height() == 0) return 0; 
+    if (a.Height()*a.Width() == 0) return 0; 
 
     auto sum = InnerProduct (a.Spec()(0), b.Spec()(0));
-    for (size_t i = 1; i < a.Height(); i++)
+    for (size_t i = 1; i < a.Height()*a.Width(); i++)
       sum += InnerProduct (a.Spec()(i), b.Spec()(i));
     return sum;
   }
