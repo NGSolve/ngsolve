@@ -1977,13 +1977,9 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
-      for (int i=0; i<DIM+1; i++)
-      {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([&] (int nr, auto val)
+      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp);
+   
+      Cast() -> T_CalcShape (addp, SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
@@ -1994,13 +1990,9 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
-      for (int i=0; i<DIM+1; i++)
-      {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
+      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp);
+      
+      Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
       {
         Vec<DIM_STRESS> vecshape = val.Shape();
         BareVector<double> matshape = shape.Row(nr);
