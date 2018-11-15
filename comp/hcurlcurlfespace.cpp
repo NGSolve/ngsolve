@@ -292,7 +292,7 @@ namespace ngcomp
         fel_u.CalcMappedShape_Matrix (siprr, shape_urr);
 
         dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-
+        
         for (int l = 0; l < D*D; l++)
           bmatu.Col(j*D*D+l) = dshape_u_ref.Col(l);
       }
