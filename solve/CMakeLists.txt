@@ -70,7 +70,7 @@ if (NETGEN_USE_GUI)
             ngsolve.cpp shapetester.cpp 
             )
 
-    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES} ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
+    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES} ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY})
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
     target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
