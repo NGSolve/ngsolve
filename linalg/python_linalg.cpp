@@ -274,6 +274,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");
           return shared_ptr<BaseVector>(self.Range(start, start+n));
       }, py::arg("inds"), "Return values at given position" )
+    .def("__getitem__", [](BaseVector& self, IntRange range)
+         {
+           return shared_ptr<BaseVector>(self.Range(range));
+         })
     .def("__setitem__", [](BaseVector & self,  int ind, double d )
       {
           self.Range(ind,ind+1) = d;
@@ -302,14 +306,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
       }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
-    .def("__setitem__", [](BaseVector & self, py::slice inds, shared_ptr<BaseVector> v )
+    .def("__setitem__", [](BaseVector & self,  IntRange range, double d )
       {
-        size_t start, step, n;
-        InitSlice( inds, self.Size(), start, step, n );
-        if (step != 1)
-          throw Exception ("slices with non-unit distance not allowed");        
-        self.Range(start, start+n) = *v;
-      }, py::arg("inds"), py::arg("vec") )
+        self.Range(range) = d;
+      }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
+    .def("__setitem__", [](BaseVector & self,  IntRange range, Complex z )
+      {
+        self.Range(range) = z;
+      }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
+    .def("__setitem__", [](BaseVector & self, IntRange range, shared_ptr<BaseVector> v )
+      {
+        self.Range(range) = *v;
+      }, py::arg("range"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<double> & v )
       {
           if( self.IsComplex() )
