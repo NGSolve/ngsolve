@@ -685,7 +685,6 @@ namespace ngcomp
         ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
         if(discontinuous)
         {
-          // throw Exception("Hcurlcurl disontinuous just copy paste...");
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
@@ -702,6 +701,13 @@ namespace ngcomp
       case ET_TET:
        if(oi[0] > 1)
           ndof += 6*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
+       if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];
+          for (auto ed : ma->GetElEdges(ei))
+            ndof += first_edge_dof[ed+1] - first_edge_dof[ed];
+        }
         break;
       default:
         throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
@@ -710,8 +716,10 @@ namespace ngcomp
    
     first_element_dof.Last() = ndof;
     if(discontinuous)
-      first_facet_dof = 0;
-
+      {
+        first_facet_dof = 0;
+        first_edge_dof = 0;
+      }
     UpdateCouplingDofArray();
     if (print)
     {
@@ -724,28 +732,20 @@ namespace ngcomp
   void  HCurlCurlFESpace :: UpdateCouplingDofArray ()
   {
     // coupling dof array
-
     ctofdof.SetSize(ndof);
     for(int i = 0; i<ndof; i++)
-    {
       ctofdof[i] = discontinuous ? LOCAL_DOF : INTERFACE_DOF;
-    }
+
     if (discontinuous)
-      {
-        // throw Exception("Hcurlcurl disontinuous just copy paste...");
         return;
-      }
+    
     Array<int> innerdofs;
     for(auto e: ma->Elements())
     {
       GetInnerDofNrs(e.Nr(), innerdofs);
       for (int dof: innerdofs)
-      {
         ctofdof[dof] = LOCAL_DOF;
-      }
     }
-
-
   }
 
 
@@ -759,119 +759,118 @@ namespace ngcomp
         auto feseg = new (alloc) HCurlCurlSurfaceFE<ET_SEGM> (order);
         auto fetr = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
         //auto fequ = new (alloc) HCurlCurlSurfaceFE<ET_QUAD> (order);
+        switch(ma->GetElType(ei))
+          {
+          case ET_SEGM:
+            feseg->SetVertexNumbers (ngel.Vertices());
+            feseg->SetOrderInner(order_facet[ei.Nr()][0]);
+            feseg->ComputeNDof();
+            return *feseg;
+            
+          case ET_TRIG:
+            fetr->SetVertexNumbers (ngel.Vertices());
+            fetr->SetOrderInner(order_facet[ei.Nr()]);
+            fetr->ComputeNDof();
+            return *fetr;
+            
+            /*case ET_QUAD:          
+              fequ->SetVertexNumbers (ngel.Vertices());
+              fequ->SetOrderInner(order_facet[ei.Nr()]);
+              fequ->ComputeNDof();
+              return *fequ;*/
+            
+          default:
+            stringstream str;
+            str << "FESpace " << GetClassName()
+                << ", undefined surface eltype " << ma->GetElType(ei)
+                << ", order = " << order << endl;
+            throw Exception (str.str());
+          }
+      }
       switch(ma->GetElType(ei))
-      {
-      case ET_SEGM:
-        feseg->SetVertexNumbers (ngel.Vertices());
-        feseg->SetOrderInner(order_facet[ei.Nr()][0]);
-        feseg->ComputeNDof();
-        return *feseg;
-
-      case ET_TRIG:
-        fetr->SetVertexNumbers (ngel.Vertices());
-        fetr->SetOrderInner(order_facet[ei.Nr()]);
-        fetr->ComputeNDof();
-        return *fetr;
-
-        /*case ET_QUAD:          
-        fequ->SetVertexNumbers (ngel.Vertices());
-        fequ->SetOrderInner(order_facet[ei.Nr()]);
-        fequ->ComputeNDof();
-        return *fequ;*/
-
-      default:
-        stringstream str;
-        str << "FESpace " << GetClassName()
-          << ", undefined surface eltype " << ma->GetElType(ei)
-          << ", order = " << order << endl;
-        throw Exception (str.str());
-      }
-      }
-      switch(ma->GetElType(ei))
-      {
-      case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
-      case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-      case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-      case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
-
-      default:
-        stringstream str;
-        str << "FESpace " << GetClassName()
-          << ", undefined surface eltype " << ma->GetElType(ei)
-          << ", order = " << order << endl;
-        throw Exception (str.str());
-      }
-    }
-
-    switch(ngel.GetType())
-    {
-    case ET_TRIG:
-    {
-      auto fe = new (alloc) HCurlCurlFE<ET_TRIG> (order);
-      fe->SetVertexNumbers (ngel.Vertices());
-      int ii = 0;
-      for(auto e : ngel.Edges())
-        fe->SetOrderEdge(ii++,order_edge[e]);
-      ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
-    /*case ET_QUAD:
-    {
-      auto fe = new (alloc) HCurlCurlFE<ET_QUAD> (order);
-      fe->SetVertexNumbers (ngel.Vertices());
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
-    case ET_PRISM:
-    {
-      auto fe = new (alloc) HCurlCurlFE<ET_PRISM> (order);
-      fe->SetVertexNumbers (ngel.vertices);
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
-    case ET_HEX:
-    {
-      auto fe = new (alloc) HCurlCurlFE<ET_HEX> (order);
-      fe->SetVertexNumbers (ngel.vertices);
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-      }*/
-    case ET_TET:
-    {
-      auto fe = new (alloc) HCurlCurlFE<ET_TET> (order);
-      fe->SetVertexNumbers (ngel.vertices);
-      int ii = 0;
-      for(auto e : ngel.Edges())
-        fe->SetOrderEdge(ii++,order_edge[e]);
-      ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-      }
-    default:
-      throw Exception(string("HCurlCurlFESpace::GetFE: element-type ") +
-        ToString(ngel.GetType()) + " not supported");
+        {
+        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
+        case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
+        case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
+        case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+          
+        default:
+          stringstream str;
+          str << "FESpace " << GetClassName()
+              << ", undefined surface eltype " << ma->GetElType(ei)
+              << ", order = " << order << endl;
+          throw Exception (str.str());
+        }
     }
     
+    switch(ngel.GetType())
+      {
+      case ET_TRIG:
+        {
+          auto fe = new (alloc) HCurlCurlFE<ET_TRIG> (order);
+          fe->SetVertexNumbers (ngel.Vertices());
+          int ii = 0;
+          for(auto e : ngel.Edges())
+            fe->SetOrderEdge(ii++,order_edge[e]);
+          ii = 0;
+          for(auto f : ngel.Facets())
+            fe->SetOrderFacet(ii++,order_facet[f]);
+          
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+        }
+        /*case ET_QUAD:
+          {
+          auto fe = new (alloc) HCurlCurlFE<ET_QUAD> (order);
+          fe->SetVertexNumbers (ngel.Vertices());
+          int ii = 0;
+          for(auto f : ngel.Facets())
+          fe->SetOrderFacet(ii++,order_facet[f]);
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+          }
+          case ET_PRISM:
+          {
+          auto fe = new (alloc) HCurlCurlFE<ET_PRISM> (order);
+          fe->SetVertexNumbers (ngel.vertices);
+          int ii = 0;
+          for(auto f : ngel.Facets())
+          fe->SetOrderFacet(ii++,order_facet[f]);
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+          }
+          case ET_HEX:
+          {
+          auto fe = new (alloc) HCurlCurlFE<ET_HEX> (order);
+          fe->SetVertexNumbers (ngel.vertices);
+          int ii = 0;
+          for(auto f : ngel.Facets())
+          fe->SetOrderFacet(ii++,order_facet[f]);
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+          }*/
+      case ET_TET:
+        {
+          auto fe = new (alloc) HCurlCurlFE<ET_TET> (order);
+          fe->SetVertexNumbers (ngel.vertices);
+          int ii = 0;
+          for(auto e : ngel.Edges())
+            fe->SetOrderEdge(ii++,order_edge[e]);
+          ii = 0;
+          for(auto f : ngel.Facets())
+            fe->SetOrderFacet(ii++,order_facet[f]);
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+        }
+      default:
+        throw Exception(string("HCurlCurlFESpace::GetFE: element-type ") +
+                        ToString(ngel.GetType()) + " not supported");
+      } 
   }
 
   void HCurlCurlFESpace ::  GetEdgeDofNrs (int ednr,Array<int> & dnums) const
@@ -883,30 +882,24 @@ namespace ngcomp
     else
       dnums += IntRange (first_edge_dof[ednr],
         first_edge_dof[ednr+1]);
-    
   }
 
   void HCurlCurlFESpace :: GetFaceDofNrs (int fanr,Array<int> & dnums) const
   {
-    
     dnums.SetSize0();
     if(ma->GetDimension() == 3)
       dnums += IntRange (first_facet_dof[fanr],
         first_facet_dof[fanr+1]);
-    
   }
   void HCurlCurlFESpace :: GetInnerDofNrs (int elnr,Array<int> & dnums) const
   {
-    
     dnums.SetSize0();
     dnums += IntRange (first_element_dof[elnr],
       first_element_dof[elnr+1]);
-    
   }
 
   void HCurlCurlFESpace :: GetDofNrs (ElementId ei,Array<int> & dnums) const
   {
-    
     Ngs_Element ngel = ma->GetElement(ei);
     
     dnums.SetSize0();
@@ -921,8 +914,6 @@ namespace ngcomp
     if(ei.VB() == VOL)
       dnums += IntRange (first_element_dof[ei.Nr()],
                          first_element_dof[ei.Nr()+1]);
-
-    
   }
   
 
@@ -949,4 +940,3 @@ namespace ngcomp
 
   static RegisterFESpace<HCurlCurlFESpace> init ("hcurlcurl");
 }
-
