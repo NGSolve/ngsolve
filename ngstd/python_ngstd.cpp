@@ -293,6 +293,17 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                                    self.Clear(start);
                                              }
                                          }, py::arg("inds"), py::arg("value"), "Clear/Set bit at given positions")
+    
+    .def("__setitem__", [](BitArray & self,  IntRange range, bool b)
+      {
+        if (b)
+          for (size_t i : range)
+            self.Set(i);
+        else
+          for (size_t i : range)
+            self.Clear(i);
+      }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
+    
     .def("NumSet", [] (BitArray & self) { return self.NumSet(); })
     .def("Set", [] (BitArray & self, py::object in)
                                    {
