@@ -1060,12 +1060,12 @@ coupling : bool
          "Return prolongation operator for use in multi-grid")
 
     .def("Range",
-         [] (const shared_ptr<FESpace> self, int comp) -> py::object
+         [] (const shared_ptr<FESpace> self, int comp)
          {
            auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
            if (!compspace)
              throw py::type_error("'Range' is available only for product spaces");
-           return PyRange(compspace->GetRange(comp));
+           return compspace->GetRange(comp);
          },
          py::arg("component"), docu_string(R"raw_string(
          Return interval of dofs of a component of a product space.
