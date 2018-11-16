@@ -37,6 +37,7 @@ namespace ngcomp
     {
       return "HCurlCurlFESpace";
     }
+    static DocInfo GetDocu ();
 
     virtual void Update(LocalHeap & lh) override;
 
