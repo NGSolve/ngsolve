@@ -611,6 +611,14 @@ namespace ngcomp
     }
   }
 
+  DocInfo HCurlCurlFESpace :: GetDocu ()
+  {
+    auto docu = FESpace::GetDocu();
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Create discontinuous HCurlCurl space";
+    return docu;
+  }
+
   void HCurlCurlFESpace :: Update(LocalHeap & lh)
   {
     int dim = ma->GetDimension();
