@@ -813,29 +813,31 @@ namespace ngfem
   };
 
   
-
-
   
-  template <ELEMENT_TYPE ET>
-  class L2HighOrderFETP : public T_ScalarFiniteElementTP<L2HighOrderFETP<ET>, L2HighOrderFE_Shape<ET>, ET, DGFiniteElement<ET_trait<ET>::DIM>>,
-                          public ET_trait<ET>
+
+  template <ELEMENT_TYPE ET> class L2HighOrderFETP;
+  
+  template <> // ELEMENT_TYPE ET>
+  class L2HighOrderFETP <ET_TET> :
+    public T_ScalarFiniteElementTP<L2HighOrderFETP<ET_TET>, L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_trait<ET_TET>::DIM>>,
+    public ET_trait<ET_TET>
   {
-    enum { DIM = ET_trait<ET>::DIM };
+    enum { DIM = ET_trait<ET_TET>::DIM };
   public:
     template <typename TA> 
     L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)
     {
       this->order = aorder;
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) this->vnums[i] = avnums[i];
-      this->ndof = ET_trait<ET>::PolDimension (aorder);
+      for (int i = 0; i < ET_trait<ET_TET>::N_VERTEX; i++) this->vnums[i] = avnums[i];
+      this->ndof = ET_trait<ET_TET>::PolDimension (aorder);
       if (this->vnums[0] >= this->vnums[1] ||
           this->vnums[1] >= this->vnums[2] ||
           this->vnums[1] >= this->vnums[3])
         cerr << "tensor-tet: wrong orientation" << endl;
     }
-
-    template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const;
+    
+    // template<typename Tx, typename TFA>  
+    // INLINE void T_CalcShape (TIP<ET_trait<ET_TET>::DIM,Tx> ip, TFA & shape) const;
 
     virtual void ComputeNDof() override { ; } 
     virtual void SetOrder (INT<DIM> p) override { ; } 
@@ -849,7 +851,7 @@ namespace ngfem
       for (int ix = 0, ii = 0; ix <= order; ix++)
         for (int iy = 0; iy <= order - ix; iy++)
           for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
-          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+            mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
     }
     
     int GetNDof1d () const { return this->order+1; }
