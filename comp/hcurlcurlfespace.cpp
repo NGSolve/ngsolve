@@ -692,118 +692,126 @@ namespace ngcomp
   {
     int dim = ma->GetDimension();
 
-    first_edge_dof.SetSize (ma->GetNEdges()+1);
-    first_facet_dof.SetSize (ma->GetNFacets()+1);
-    first_element_dof.SetSize (ma->GetNE()+1);
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
 
-    order_facet.SetSize(ma->GetNFacets());
-    order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
-    order_edge.SetSize(ma->GetNEdges());
-    order_edge = INT<1>(uniform_order_edge);
-
-    order_inner.SetSize(ma->GetNE());
-    order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
-
-    Array<bool> fine_facet(ma->GetNFacets());
-    Array<bool> fine_edges(ma->GetNEdges());
-    fine_facet = false;
-    fine_edges = false;
-    for(auto el : ma->Elements(VOL))
+    if (first_update)
       {
-        fine_facet[el.Facets()] = true;
-        fine_edges[el.Edges()] = true;
-      }
-    ndof = 0;
+        first_edge_dof.SetSize (ma->GetNEdges()+1);
+        first_facet_dof.SetSize (ma->GetNFacets()+1);
+        first_element_dof.SetSize (ma->GetNE()+1);
+        
+        order_facet.SetSize(ma->GetNFacets());
+        order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
+        order_edge.SetSize(ma->GetNEdges());
+        order_edge = INT<1>(uniform_order_edge);
 
-    if (dim == 3)
-      {
-        for(auto i : Range(ma->GetNEdges()))
+        order_inner.SetSize(ma->GetNE());
+        order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
+
+        fine_facet.SetSize(ma->GetNFacets());
+        fine_edges.SetSize(ma->GetNEdges());
+        fine_facet = false;
+        fine_edges = false;
+        for(auto el : ma->Elements(VOL))
           {
-            first_edge_dof[i] = ndof;
-            if(!fine_edges[i]) continue;
-            
-            int oe = order_edge[i][0];
-            ndof += oe + 1;
-            
+            fine_facet[el.Facets()] = true;
+            fine_edges[el.Edges()] = true;
           }
-        first_edge_dof.Last() = ndof;
-      }
-    for(auto i : Range(ma->GetNFacets()))
-    {
-      first_facet_dof[i] = ndof;
-      if(!fine_facet[i]) continue;
+        ndof = 0;
 
-      INT<2> of = order_facet[i];
-      switch(ma->GetFacetType(i))
-      {
-      case ET_SEGM:
-        ndof += of[0] + 1; break;
-      case ET_TRIG:
-        ndof += 3*(of[0]*(of[0]+1)/2);
-        break;
-      case ET_QUAD:
-        throw Exception("HCurlcurl not implemented for quad face");
-        break;
-      default:
-        throw Exception("illegal facet type");
-      }
-    }
-    first_facet_dof.Last() = ndof;
-    if(discontinuous) ndof = 0;
+        if (dim == 3)
+          {
+            for(auto i : Range(ma->GetNEdges()))
+              {
+                first_edge_dof[i] = ndof;
+                if(!fine_edges[i]) continue;
+            
+                int oe = order_edge[i][0];
+                ndof += oe + 1;
+            
+              }
+            first_edge_dof.Last() = ndof;
+          }
+        for(auto i : Range(ma->GetNFacets()))
+          {
+            first_facet_dof[i] = ndof;
+            if(!fine_facet[i]) continue;
 
-    for(auto i : Range(ma->GetNE()))
-    {
-      ElementId ei(VOL, i);
-      first_element_dof[i] = ndof;
-      INT<3> oi = order_inner[i];
-      switch(ma->GetElType(ei))
-      {
-      case ET_TRIG:
-        ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
-        if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
-        break;
-      case ET_QUAD:
-        throw Exception("Hcurlcurl Quad not implemented yet");
-        break;
-      case ET_PRISM:
-        throw Exception("Hcurlcurl Prism not implemented yet");
-        break;
-      case ET_HEX:
-        throw Exception("Hcurlcurl Hex not implemented yet");
-        break;
-      case ET_TET:
-       if(oi[0] > 1)
-          ndof += 6*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
-       if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];
-          for (auto ed : ma->GetElEdges(ei))
-            ndof += first_edge_dof[ed+1] - first_edge_dof[ed];
-        }
-        break;
-      default:
-        throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
-      }
-    }
+            INT<2> of = order_facet[i];
+            switch(ma->GetFacetType(i))
+              {
+              case ET_SEGM:
+                ndof += of[0] + 1; break;
+              case ET_TRIG:
+                ndof += 3*(of[0]*(of[0]+1)/2);
+                break;
+              case ET_QUAD:
+                throw Exception("HCurlcurl not implemented for quad face");
+                break;
+              default:
+                throw Exception("illegal facet type");
+              }
+          }
+        first_facet_dof.Last() = ndof;
+        if(discontinuous) ndof = 0;
+
+        for(auto i : Range(ma->GetNE()))
+          {
+            ElementId ei(VOL, i);
+            first_element_dof[i] = ndof;
+            INT<3> oi = order_inner[i];
+            switch(ma->GetElType(ei))
+              {
+              case ET_TRIG:
+                ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                  }
+                break;
+              case ET_QUAD:
+                throw Exception("Hcurlcurl Quad not implemented yet");
+                break;
+              case ET_PRISM:
+                throw Exception("Hcurlcurl Prism not implemented yet");
+                break;
+              case ET_HEX:
+                throw Exception("Hcurlcurl Hex not implemented yet");
+                break;
+              case ET_TET:
+                if(oi[0] > 1)
+                  ndof += 6*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];
+                    for (auto ed : ma->GetElEdges(ei))
+                      ndof += first_edge_dof[ed+1] - first_edge_dof[ed];
+                  }
+                break;
+              default:
+                throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
+              }
+          }
    
-    first_element_dof.Last() = ndof;
-    if(discontinuous)
-      {
-        first_facet_dof = 0;
-        first_edge_dof = 0;
+        first_element_dof.Last() = ndof;
+        if(discontinuous)
+          {
+            first_facet_dof = 0;
+            first_edge_dof = 0;
+          }
+
+        if (print)
+          {
+            *testout << "Hcurlcurl firstedgedof = " << first_edge_dof << endl;
+            *testout << "Hcurlcurl firstfacetdof = " << first_facet_dof << endl;
+            *testout << "Hcurlcurl firsteldof = " << first_element_dof << endl;
+          }
       }
+    
     UpdateCouplingDofArray();
-    if (print)
-    {
-      *testout << "Hcurlcurl firstedgedof = " << first_edge_dof << endl;
-      *testout << "Hcurlcurl firstfacetdof = " << first_facet_dof << endl;
-      *testout << "Hcurlcurl firsteldof = " << first_element_dof << endl;
-    }
   }
 
   void  HCurlCurlFESpace :: UpdateCouplingDofArray ()
@@ -823,6 +831,74 @@ namespace ngcomp
       for (int dof: innerdofs)
         ctofdof[dof] = LOCAL_DOF;
     }
+  }
+
+  void HCurlCurlFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In HCurlCurlFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+
+    switch( CoDimension(ni.GetType(), ma->GetDimension()) )
+      {
+      case 2:
+        if (ma->GetDimension() == 3 )
+          if (ni.GetNr() < order_edge.Size())
+            order_edge[ni.GetNr()] = fine_edges[ni.GetNr()] ? order : 0;
+        break;
+      case 1:
+	if (ni.GetNr() < order_facet.Size())
+	  order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+	break;
+      case 0:
+        if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+		order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+	    order_inner[ni.GetNr()] = order;
+	break;
+      default:
+	break;
+      }
+    
+  }
+  
+  int HCurlCurlFESpace :: GetOrder (NodeId ni) const
+  {
+    switch( CoDimension(ni.GetType(), ma->GetDimension()) )
+      {
+      case 2:
+        if (ma->GetDimension() == 3 )
+          if (ni.GetNr() < order_edge.Size())
+            return order_edge[ni.GetNr()][0];
+        break;
+      case 1:
+	if (ni.GetNr() < order_facet.Size())
+	  return order_facet[ni.GetNr()][0];
+	break;
+      case 0:
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+	  return order_inner[ni.GetNr()][0];
+	break;
+      default:
+	break;
+      }
+    return 0;
   }
 
 
