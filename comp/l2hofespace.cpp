@@ -374,9 +374,12 @@ global system.
           return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
         if (tensorproduct)
-          if (eltype == ET_TET)
-            return * new (alloc) L2HighOrderFETP<ET_TET> (order, ngel.Vertices(), alloc);
-        
+          {
+            if (eltype == ET_QUAD)
+              return * new (alloc) L2HighOrderFETP<ET_QUAD> (order, ngel.Vertices(), alloc);
+            if (eltype == ET_TET)
+              return * new (alloc) L2HighOrderFETP<ET_TET> (order, ngel.Vertices(), alloc);
+          }
         if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
 

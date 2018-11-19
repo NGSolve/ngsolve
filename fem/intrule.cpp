@@ -3544,51 +3544,98 @@ namespace ngfem
               ;
             }
           break;
+        }
 
-        case ET_HEX:
-          {
-            FlatVec<3> p0 = points(faces[fnr][0]);
-	    FlatVec<3> p1 = points(faces[fnr][1]);
-	    FlatVec<3> p2 = points(faces[fnr][3]);
-            Vec<3> delta1 = p1-p0;
-            Vec<3> delta2 = p2-p0;
 
-            const SIMD_IntegrationRule * ir1d = nullptr;
-            for (int dir = 0; dir < 3; dir++)
-              {
-                if (delta1(dir) == 0 && delta2(dir) == 0)
-                  {
-                    if (p0(dir) < 0.5)
-                      ir1d = intrules.simd_intrule0;
-                    else
-                      ir1d = intrules.simd_intrule1;
-                  }
-                else
-                  {
-                    if (delta1(dir) > 0 || delta2(dir) > 0)
-                      ir1d = &irfacet.GetIRX();
-                    else
-                      {
-                        int order = 2*irfacet.GetIRX().GetNIP()-1;
-                        ir1d = intrules.simd_segmentrules_inv[order];
-                      }
-                  }
-                switch (dir)
-                  {
-                  case 0:
-                    irvol.SetIRX (ir1d); break;
-                  case 1:
-                    irvol.SetIRY (ir1d); break;
-                  case 2:
-                    irvol.SetIRZ (ir1d); break;
-                  }
-              }
-            /*
+      case ET_QUAD:
+        {
+          FlatVec<3> p0 = points(edges[fnr][0]);
+          FlatVec<3> p1 = points(edges[fnr][1]);
+          Vec<3> delta1 = p1-p0;
+          
+          const SIMD_IntegrationRule * ir1d = nullptr;
+          for (int dir = 0; dir < 2; dir++)
+            {
+              if (delta1(dir) == 0)
+                {
+                  if (p0(dir) < 0.5)
+                    ir1d = intrules.simd_intrule0;
+                  else
+                    ir1d = intrules.simd_intrule1;
+                }
+              else
+                {
+                  if (delta1(dir) < 0)
+                    ir1d = &irfacet; // .GetIRX();
+                  else
+                    {
+                      int order = 2*irfacet.GetNIP()-1;
+                      ir1d = intrules.simd_segmentrules_inv[order];
+                    }
+                  
+                  // ir1d = &irfacet; // .GetIRX();
+                }
+              switch (dir)
+                {
+                case 0:
+                  irvol.SetIRX (ir1d); break;
+                case 1:
+                  irvol.SetIRY (ir1d); break;
+                }
+            }
+          /*
             irvol.SetIRX(nullptr);
             irvol.SetIRY(nullptr);
             irvol.SetIRZ(nullptr);
-            */
-          }
+          */
+          break;
+        }
+        
+          
+      case ET_HEX:
+        {
+          FlatVec<3> p0 = points(faces[fnr][0]);
+          FlatVec<3> p1 = points(faces[fnr][1]);
+          FlatVec<3> p2 = points(faces[fnr][3]);
+          Vec<3> delta1 = p1-p0;
+          Vec<3> delta2 = p2-p0;
+          
+          const SIMD_IntegrationRule * ir1d = nullptr;
+          for (int dir = 0; dir < 3; dir++)
+            {
+              if (delta1(dir) == 0 && delta2(dir) == 0)
+                {
+                  if (p0(dir) < 0.5)
+                    ir1d = intrules.simd_intrule0;
+                  else
+                    ir1d = intrules.simd_intrule1;
+                }
+              else
+                {
+                  if (delta1(dir) > 0 || delta2(dir) > 0)
+                    ir1d = &irfacet.GetIRX();
+                  else
+                    {
+                      int order = 2*irfacet.GetIRX().GetNIP()-1;
+                        ir1d = intrules.simd_segmentrules_inv[order];
+                    }
+                }
+              switch (dir)
+                {
+                case 0:
+                  irvol.SetIRX (ir1d); break;
+                case 1:
+                  irvol.SetIRY (ir1d); break;
+                case 2:
+                  irvol.SetIRZ (ir1d); break;
+                }
+            }
+          /*
+            irvol.SetIRX(nullptr);
+            irvol.SetIRY(nullptr);
+            irvol.SetIRZ(nullptr);
+          */
+          break;
         }
       default:
         ;
