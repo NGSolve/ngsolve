@@ -1769,6 +1769,7 @@ namespace ngstd
       return adp;
     }
 
+
     
     void Print (ostream & ost) const
     {
@@ -2130,7 +2131,6 @@ namespace ngfem
 
     virtual void TransformGradient (BareSliceMatrix<SIMD<double>> grad) const override;
     virtual void TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const override;
-
   };
 }
 
