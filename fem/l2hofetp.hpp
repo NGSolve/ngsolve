@@ -1037,4 +1037,74 @@ namespace ngfem
 
     
   };
+
+
+  
+  template <> 
+  class L2HighOrderFETP <ET_QUAD> :
+    public T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>,
+    public ET_trait<ET_QUAD>
+  {
+    enum { DIM = ET_trait<ET_QUAD>::DIM };
+    typedef T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>> TBASE;
+  public:
+    template <typename TA> 
+    L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)
+    {
+      this->order = aorder;
+      for (int i = 0; i < ET_trait<ET_QUAD>::N_VERTEX; i++) this->vnums[i] = avnums[i];
+      this->ndof = ET_trait<ET_QUAD>::PolDimension (aorder);
+    }
+    virtual ~L2HighOrderFETP();
+    virtual void ComputeNDof() override { ; } 
+    virtual void SetOrder (INT<DIM> p) override { ; } 
+    virtual void PrecomputeTrace () override { ; } 
+    virtual void PrecomputeGrad () override { ; }
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      Tx x = ip.x, y = ip.y;
+      Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+      
+      INT<4> f = GetFaceSort (0, vnums);  
+      
+      Tx xi = sigma[f[0]]-sigma[f[1]]; 
+      Tx eta = sigma[f[0]]-sigma[f[3]]; 
+      
+      // int p=order_inner[0];
+      // int q=order_inner[1];
+      int p = order, q = order;
+      
+      STACK_ARRAY(Tx, mem, p+q+2);
+      Tx * polx = &mem[0];
+      Tx * poly = &mem[p+1];
+      
+      LegendrePolynomial (p, xi, polx);
+      LegendrePolynomial (q, eta, poly);
+      
+      for (size_t i = 0, ii = 0; i <= p; i++)
+        for (size_t j = 0; j <= q; j++)
+          shape[ii++] = polx[i] * poly[j];
+    }
+    
+    virtual void GetDiagMassMatrix(FlatVector<> mass) const override
+    {
+      for (int ix = 0, ii = 0; ix <= order; ix++)
+        for (int iy = 0; iy <= order; iy++, ii++)
+          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * iy + 1));
+    }
+    
+    virtual void Evaluate (const SIMD_IntegrationRule & ir,
+                           BareSliceVector<> bcoefs,
+                           BareVector<SIMD<double>> values) const override;
+
+    virtual void AddTrans (const SIMD_IntegrationRule & ir,
+                           BareVector<SIMD<double>> values,
+                           BareSliceVector<> coefs) const override;
+  };
+  
+
+  // extern template class L2HighOrderFETP<ET_QUAD>;
+  extern template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
 }
