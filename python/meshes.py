@@ -2,7 +2,7 @@ from netgen.meshing import *
 from netgen.csg import *
 import ngsolve
 
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lambda x,y : (x,y) ):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
     mesh = Mesh()
     mesh.dim=2
 
@@ -15,7 +15,9 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
         masterj = []
     for i in range(ny+1):
         for j in range(nx+1):
-            x,y = mapping (j/nx, i/ny)
+            x,y = j/nx, i/ny
+            if mapping:
+                x,y = mapping(x,y)
             pids.append(mesh.Add (MeshPoint(Pnt(x,y,0))))
             if periodic_y:
                 if i == 0:
@@ -42,7 +44,10 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
             if quads:
                 pnum = [base,base+1,base+nx+2,base+nx+1]
                 elpids = [pids[p] for p in pnum]
-                mesh.Add(Element2D(1,elpids))
+                el = Element2D(1,elpids)
+                if not mapping:
+                    el.curved=False
+                mesh.Add(el)
             else:
                 pnum1 = [base,base+1,base+nx+1]
                 pnum2 = [base+1,base+nx+2,base+nx+1]
@@ -69,7 +74,7 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
-def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = lambda x,y : (x,y)):
+def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
     return MakeStructured2DMesh(quads=True, nx=nx, ny=ny, periodic_x=periodic_x, periodic_y=periodic_y, mapping=mapping)    
 
 def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y : (x,y), cuboid_mapping=True):
