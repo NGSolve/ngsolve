@@ -3353,8 +3353,6 @@ namespace ngfem
   }
 
   
-
-  
   
   template class SIMD_MappedIntegrationRule<0,0>;
   template class SIMD_MappedIntegrationRule<0,1>;
@@ -3690,6 +3688,8 @@ namespace ngfem
     return irvol;
   }
 
+  
+  
 }
 
 
