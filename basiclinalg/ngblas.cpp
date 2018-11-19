@@ -358,7 +358,7 @@ namespace ngbla
 
   template <size_t BBH, OPERATION OP>
   void REGCALL MultMatMat_intern2_SlimB (size_t ha, size_t wa, size_t wb,
-                                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+                                         BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
     double * pa0 = &a(0);
     size_t dista = a.Dist();
@@ -495,7 +495,6 @@ namespace ngbla
     };
 
   
-  
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
@@ -525,6 +524,33 @@ namespace ngbla
                            BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
     constexpr size_t BBH = 128;
+    if (wa <= BBH)
+      {
+        if (wb < 3*SIMD<double>::Size())
+          MultMatMat_intern2_SlimB<BBH,SETNEG> (ha, wa, wb, a, b, c);
+        else
+          MultMatMat_intern2<BBH,SETNEG> (ha, wa, wb, a, b, c);
+      }
+    else
+      {
+        MultMatMat_intern2<BBH,SETNEG> (ha, BBH, wb, a, b, c);    
+
+        for (size_t i = BBH; i < wa; i += BBH)
+          {
+            a.IncPtr(BBH);
+            b.IncPtr(BBH*b.Dist());
+            size_t hbi = min2(BBH, wa-i);        
+            MultMatMat_intern2<BBH,SUB> (ha, hbi, wb, a, b, c);
+          }
+      }
+  }
+
+  
+  /*
+  void MinusMultAB_intern (size_t ha, size_t wa, size_t wb,
+                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    constexpr size_t BBH = 128;
     if (wb < 3*SIMD<double>::Size())
       MultMatMat_intern2_SlimB<BBH,SETNEG> (ha, wa, wb, a, b, c);
     else
@@ -539,7 +565,7 @@ namespace ngbla
           }
       }
   }
-
+  */
   
   void AddAB_intern (size_t ha, size_t wa, size_t wb,
                      BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
@@ -558,7 +584,7 @@ namespace ngbla
       }
     
     constexpr size_t BBH = 128;
-    if (wb < 3*SIMD<double>::Size())
+    if (wa <= BBH && wb < 3*SIMD<double>::Size())
       MultMatMat_intern2_SlimB<BBH,ADD> (ha, wa, wb, a, b, c);
     else
       for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
@@ -572,7 +598,7 @@ namespace ngbla
                      BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
     constexpr size_t BBH = 128;
-    if (wb < 3*SIMD<double>::Size())
+    if (wa <= BBH && wb < 3*SIMD<double>::Size())
       MultMatMat_intern2_SlimB<BBH,SUB> (ha, wa, wb, a, b, c);
     else
       for (size_t i = 0; i < wa; i += BBH, a.IncPtr(BBH), b.IncPtr(BBH*b.Dist()))
