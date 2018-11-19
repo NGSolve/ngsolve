@@ -8,9 +8,6 @@
 /* Date:   2018                                                      */
 /*********************************************************************/
 
-#if defined(WIN32) && defined(__AVX__)
-
-#else
 
 namespace ngcomp
 {
@@ -40,6 +37,7 @@ namespace ngcomp
     {
       return "HCurlCurlFESpace";
     }
+    static DocInfo GetDocu ();
 
     virtual void Update(LocalHeap & lh) override;
 
@@ -67,5 +65,4 @@ namespace ngcomp
 
 }
 
-#endif
 #endif

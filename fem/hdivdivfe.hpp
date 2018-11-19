@@ -263,21 +263,17 @@ namespace ngfem
         {
           auto jac = mir[i].GetJacobian();
           auto d2 = sqr(mir[i].GetJacobiDet());
-          
           Vec<DIM_STRESS,SIMD<double>> hv;
           Mat<DIM,DIM,SIMD<double>> mat;
-          // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
           SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
           FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
-          for (int i = 0; i < DIM_STRESS; i++)
+          for (int k = 0; k < DIM_STRESS; k++)
             {
               hv = SIMD<double>(0.0);
-              hv(i) = SIMD<double>(1.0);
+              hv(k) = SIMD<double>(1.0);
               VecToSymMat<DIM> (hv, mat);
-              Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
-                1/d2 * (jac * mat * Trans(jac));
-              for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
-                trans(j,i) = physmat(j);
+              Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2*(jac * mat * Trans(jac));
+              trans.Col(k) = physmat;
             }
           
           
@@ -287,18 +283,7 @@ namespace ngfem
           this->Cast() -> T_CalcShape (addp,
                                        SBLambda ([i,shapes,trans] (size_t j, auto val) 
                                                  {
-                                                   /*
-                                                     Mat<DIM,DIM,SIMD<double>> mat;
-                                                     VecToSymMat<DIM> (val.Shape(), mat);
-                                                     Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
-                                                     1/d2 * (jac * mat * Trans(jac));
-                                                     for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                                                     shapes(j*sqr(DIMSPACE)+k,i) = physmat(k);
-                                                   */
-                                                   Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
-                                                   transvec = trans * val.Shape();
-                                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                                                     shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
+                                                   shapes.Rows(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)).Col(i).AddSize(sqr(DIMSPACE)) = trans * val.Shape();
                                                  }));
         }
     }
@@ -329,15 +314,15 @@ namespace ngfem
                    // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
                    SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
                    FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
-                   for (int i = 0; i < DIM_STRESS; i++)
+                   for (int k = 0; k < DIM_STRESS; k++)
                      {
                        hv = SIMD<double>(0.0);
-                       hv(i) = SIMD<double>(1.0);
+                       hv(k) = SIMD<double>(1.0);
                        VecToSymMat<DIM> (hv, mat);
                        Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
                          1/d2 * (jac * mat * Trans(jac));
                        for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
-                         trans(j,i) = physmat(j);
+                         trans(j,k) = physmat(j);
                      }
                    
           
@@ -426,8 +411,7 @@ namespace ngfem
                    auto d2 = sqr(mir[i].GetJacobiDet());
 
                    Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
-                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                     physmat(k) = values(k,i);
+                   physmat = values.Col(i);
                    mat = 1/d2 * Trans(jac) * physmat * jac;
                  }
              });
@@ -443,11 +427,7 @@ namespace ngfem
                                              Mat<DIM,DIM,SIMD<double>> mat2;
                                              VecToSymMat<DIM> (val.Shape(), mat2);
                                              
-                                             SIMD<double> sum = 0.0;
-                                             for (size_t k = 0; k < DIM*DIM; k++)
-                                               sum += mat(k) * mat2(k);
-                                             
-                                             *pcoefs += HSum(sum);
+                                             *pcoefs += HSum(InnerProduct(mat,mat2));
                                              pcoefs += dist;
                                            }));
         }
@@ -475,24 +455,72 @@ namespace ngfem
               vec = SIMD<double>(0.0);
               vec(k) = SIMD<double>(1.0);
               Vec<DIM,SIMD<double>> physvec = 1/d2 * (jac * vec);
-              for (int j = 0; j < DIM; j++)
-                trans(j,k) = physvec(j);
+              trans.Col(k) = physvec;
             }
           
           Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
           TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
 	  Cast() -> T_CalcShape (addp,SBLambda([divshapes,i,trans](int j,auto val)
 							 {
-                                                           Vec<DIM,SIMD<double>> transvec;
-                                                           transvec = trans * val.DivShape();
-                                                           for (size_t k = 0; k < DIM; k++)
-                                                             divshapes(DIM*j+k,i) = transvec(k);
+                                                           divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).AddSize(DIM) = trans * val.DivShape();
 							 }));
 	}
       }
       else
       {
         throw ExceptionNOSIMD(string("HDivDiv - CalcMappedDivShape SIMD only for noncurved elements"));
+        /*for (size_t i = 0; i < mir.Size(); i++)
+	{
+          Mat<DIM,DIM,SIMD<double>> jac = mir[i].GetJacobian();
+          Mat<DIM,DIM,SIMD<double>> inv_jac = mir[i].GetJacobianInverse();
+          Mat<DIM,DIM,SIMD<double>> hesse[3],finvT_h_tilde_finv[3];
+          mir[i].CalcHesse (hesse[0],hesse[1],hesse[2]);
+
+          Mat<DIM,DIM,AutoDiff<DIM,SIMD<double>> > f_tilde;
+          for(int i = 0; i < DIM; i++)
+            {
+              for(int j = 0; j < DIM; j++)
+                {
+                  f_tilde(i,j).Value() = jac(i,j);
+                  for(int k = 0; k < DIM; k++)
+                    f_tilde(i,j).DValue(k) = hesse[i](j,k);
+                }
+            }
+
+          AutoDiff<DIM,SIMD<double>> ad_det = Det (f_tilde);
+          AutoDiff<DIM, SIMD<double>> iad_det = 1.0 / ad_det;
+          f_tilde *= iad_det;
+
+          for(int i=0; i<DIM; i++)
+            {
+              finvT_h_tilde_finv[i] = 0;
+              for(int alpha=0; alpha<DIM; alpha++)
+                for(int beta=0; beta<DIM; beta++)
+                  for(int gamma=0; gamma<DIM; gamma++)
+                    for(int delta=0; delta<DIM; delta++)
+                      finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
+            }
+
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          Cast() -> T_CalcShape (addp,SBLambda([&](int nr,auto val)
+                                               {
+                                                 divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i).AddSize(DIM) = val.DivShape();
+                                                 BareSliceVector<SIMD<double>> divshape = divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i);
+                                                 Vec<DIM_STRESS,SIMD<double>> vecshape = val.Shape();
+                                                 Vec<DIM*DIM,SIMD<double>> matshape;
+                                                 VecToSymMat<DIM> (vecshape, matshape);
+                                                 
+                                                 for(int k=0; k<DIM; k++)
+                                                   {
+                                                     for(int j=0; j<DIM*DIM; j++)
+                                                       {
+                                                         divshape(k) += mir[i].GetJacobiDet() * finvT_h_tilde_finv[k](j) * matshape(j);
+                                                       }
+                                                   }
+                                                 
+                                               }));
+                                               }*/
       }
     }
 
@@ -564,7 +592,6 @@ namespace ngfem
                    Vec<DIMSPACE,SIMD<double>> physvec{};
                    for (size_t k = 0; k < DIMSPACE; k++)
                      physvec(k) = values(i+bmir.Size()*k);
-                     //physvec(k) = values(DIMSPACE*i+k);
                    vec = 1/d2 * Trans(jac) * physvec;
                  }
              });
@@ -577,13 +604,7 @@ namespace ngfem
           Cast() -> T_CalcShape (addp,
                                  SBLambda ([vec,&pcoefs,dist] (size_t j, auto val)
                                            {
-                                             Vec<DIM,SIMD<double>> vec2 = val.DivShape();
-                                             
-                                             SIMD<double> sum = 0.0;
-                                             for (size_t k = 0; k < DIM; k++)
-                                               sum += vec(k) * vec2(k);
-                                             
-                                             *pcoefs += HSum(sum);
+                                             *pcoefs += HSum(InnerProduct(vec,val.DivShape()));
                                              pcoefs += dist;
                                            }));
         }
