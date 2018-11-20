@@ -218,18 +218,15 @@ namespace ngfem
           
           Vec<DIM_STRESS,SIMD<double>> hv;
           Mat<DIM,DIM,SIMD<double>> mat;
-          // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
           SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
           FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
-          for (int i = 0; i < DIM_STRESS; i++)
+          for (int k = 0; k < DIM_STRESS; k++)
             {
               hv = SIMD<double>(0.0);
-              hv(i) = SIMD<double>(1.0);
+              hv(k) = SIMD<double>(1.0);
               VecToSymMat<DIM> (hv, mat);
-              Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
-                (Trans(jacI) * mat * jacI);
-              for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
-                trans(j,i) = physmat(j);
+              Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * mat * jacI;
+              trans.Col(k) = physmat;
             }
           
           
@@ -239,11 +236,7 @@ namespace ngfem
           this->Cast() -> T_CalcShape (addp,
                                        SBLambda ([i,shapes,trans] (size_t j, auto val) 
                                                  {
-                                                 
-                                                   Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
-                                                   transvec = trans * val.Shape();
-                                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                                                     shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
+                                                   shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).AddSize(sqr(DIMSPACE)) = trans * val.Shape();
                                                  }));
         }
     }
@@ -268,21 +261,17 @@ namespace ngfem
                  {
                    auto jacI = mir[i].GetJacobianInverse();
            
-
                    Vec<DIM_STRESS,SIMD<double>> hv;
                    Mat<DIM,DIM,SIMD<double>> mat;
-                   // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
                    SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
                    FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
-                   for (int i = 0; i < DIM_STRESS; i++)
+                   for (int k = 0; k < DIM_STRESS; k++)
                      {
                        hv = SIMD<double>(0.0);
-                       hv(i) = SIMD<double>(1.0);
+                       hv(k) = SIMD<double>(1.0);
                        VecToSymMat<DIM> (hv, mat);
-                       Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
-                         (Trans(jacI) * mat * jacI);
-                       for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
-                         trans(j,i) = physmat(j);
+                       Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * mat * jacI;
+                       trans.Col(k) = physmat;
                      }
                    
           
@@ -336,7 +325,7 @@ namespace ngfem
                  {
                    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
                    auto jacI = mir[i].GetJacobianInverse();
-                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =  (Trans(jacI) * summat * jacI);
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * summat * jacI;
                    for (size_t k = 0; k < sqr(DIMSPACE); k++)
                      values(k,i) = physmat(k);
                  }
@@ -362,10 +351,8 @@ namespace ngfem
 
                    auto jacI = mir[i].GetJacobianInverse();
 
-                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
-                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                     physmat(k) = values(k,i);
-                   mat =  jacI * physmat * Trans(jacI);
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = values.Col(i);
+                   mat = jacI * physmat * Trans(jacI);
                  }
              });
           
@@ -380,11 +367,7 @@ namespace ngfem
                                              Mat<DIM,DIM,SIMD<double>> mat2;
                                              VecToSymMat<DIM> (val.Shape(), mat2);
                                              
-                                             SIMD<double> sum = 0.0;
-                                             for (size_t k = 0; k < DIM*DIM; k++)
-                                               sum += mat(k) * mat2(k);
-                                             
-                                             *pcoefs += HSum(sum);
+                                             *pcoefs += HSum(InnerProduct(mat,mat2));
                                              pcoefs += dist;
                                            }));
         }
