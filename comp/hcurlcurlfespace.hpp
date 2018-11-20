@@ -12,8 +12,6 @@
 namespace ngcomp
 {
 
-  typedef size_t index_edge;
-
   class HCurlCurlFESpace : public FESpace
   {
     size_t ndof;

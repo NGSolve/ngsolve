@@ -581,7 +581,7 @@ namespace ngcomp
     }
   };
 
-  /// Gradient operator for HCurlCurl
+  /// Christoffel Symbol of first kind for HCurlCurl
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
   {
@@ -634,6 +634,91 @@ namespace ngcomp
       STACK_ARRAY(SIMD<double>, mem1, mir.Size()*D*D*D*nd_u);
       FlatMatrix<SIMD<double>> bmat(mir.Size()*nd_u*D*D*D, 1, &mem1[0]);
       DiffOpGradientHCurlCurl<D>::GenerateMatrixSIMDIR(bfel,bmr, bmat);
+    }
+    
+    using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      
+    }
+
+    using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    {
+    }*/
+  };
+
+
+  /// Christoffel Symbol of second kind for HCurlCurl
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D,D*D } ); };
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      
+      int nd_u = bfel.GetNDof();
+      FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
+      FlatMatrixFixWidth<D*D*D> bgradmat(nd_u, lh);
+      
+      CalcDShapeOfHCurlCurlFE<D>(bfel, mip, bgradmat, lh);
+      bfel.CalcMappedShape_Matrix (mip, bmat);
+
+      for (int l=0; l<nd_u; l++)
+        {
+          //SliceMatrix<double> C(D,D,1,&bmat(l,0));//.Row(l));
+          Mat<D,D> C;
+          for (int i=0; i<D; i++)
+            for (int j=0; j<D; j++)
+              C(i,j) = bmat(l,2*i+j);
+          //cout << "Det(C) = "<< C(0,0)*C(1,1)-C(1,0)*C(0,1) <<endl;
+          Mat<D,D> Cinv;
+          CalcInverse(C,Cinv);
+          for (int i=0; i<D; i++)
+            for (int j=0; j<D; j++)
+              for (int p=0; p<D; p++)
+                {
+                  mat(p*D*D+j*D+i,l) = 0;
+                  for (int k=0; k<D; k++)
+                    {
+                      //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
+                      //Gamma_ij^p = Gamma_ijk C^{-1}_pk
+                      mat(p*D*D+j*D+i,l) += Cinv(p,k)*0.5*(bgradmat(l,i*D*D+(D*k+j))+bgradmat(l,j*D*D+(D*i+k))-bgradmat(l,k*D*D+(D*i+j)));
+                    }
+                }
+        }
+    }
+
+    /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
     }
     
     using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
@@ -1082,10 +1167,12 @@ namespace ngcomp
       case 2:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
+        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
 	break;
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
+        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
 	break;
       default:
         ;
