@@ -406,13 +406,16 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("flags") );
   py::implicitly_convertible<py::dict, Flags>();
 
-  py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
-  py_intrange.def( py::init<size_t,size_t>());
-  py_intrange.def("__str__", &ToString<IntRange>);
-  py_intrange.def("__iter__", [] (ngstd::IntRange & i)
-      { return py::make_iterator(i.begin(), i.end()); },
-      py::keep_alive<0,1>()
-    );
+  py::class_<ngstd::IntRange> (m, "IntRange")
+    .def( py::init<size_t,size_t>())
+    .def("__str__", &ToString<IntRange>)
+    .def("__iter__", [] (ngstd::IntRange & i)
+         { return py::make_iterator(i.begin(), i.end()); },
+         py::keep_alive<0,1>())
+    .def_property_readonly("start", [](IntRange& self) { return self.First();})
+    .def_property_readonly("stop", [](IntRange& self) { return self.Next();})
+    .def_property_readonly("step", [](IntRange& self) { return 1; })
+    ;
 
   py::class_<Timer> (m, "Timer")
     .def(py::init<const string&>())
