@@ -1101,10 +1101,42 @@ namespace ngfem
 
     virtual void AddTrans (const SIMD_IntegrationRule & ir,
                            BareVector<SIMD<double>> values,
-                           BareSliceVector<> coefs) const override;
+                           BareSliceVector<> coefs) const override;    
   };
   
 
   // extern template class L2HighOrderFETP<ET_QUAD>;
-  extern template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
+  // extern template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
+
+
+
+  template <> 
+  class L2HighOrderFETP <ET_HEX> : public L2HighOrderFE<ET_HEX>
+  {
+    typedef L2HighOrderFE<ET_HEX> TBASE;
+
+  public:
+    template <typename TA> 
+    L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)
+      : L2HighOrderFE<ET_HEX>(aorder)
+    {
+      SetVertexNumbers (avnums);
+    }
+    virtual ~L2HighOrderFETP();
+    
+    virtual void Evaluate (const SIMD_IntegrationRule & ir,
+                           BareSliceVector<> bcoefs,
+                           BareVector<SIMD<double>> values) const override;
+
+    virtual void AddTrans (const SIMD_IntegrationRule & ir,
+                           BareVector<SIMD<double>> values,
+                           BareSliceVector<> coefs) const override;
+
+    virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & mir,
+                               BareSliceMatrix<SIMD<double>> values,
+                               BareSliceVector<> bcoefs) const override;
+  };
+  
+
+  
 }

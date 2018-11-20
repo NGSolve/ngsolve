@@ -5,7 +5,9 @@
 namespace ngfem
 {
 
-  L2HighOrderFETP<ET_QUAD> :: ~L2HighOrderFETP() { ; } 
+  L2HighOrderFETP<ET_QUAD> :: ~L2HighOrderFETP() { ; }
+
+  
 
 
   
@@ -16,7 +18,7 @@ namespace ngfem
   {
     static Timer t("quad evaluate");
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-      
+
     if (ir.IsTP())
       {
         static Timer tcopy("quad mult copy");
@@ -335,6 +337,208 @@ namespace ngfem
   
   // template class L2HighOrderFETP<ET_QUAD>;
   template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
+
+
+  // ********************************** HEX ****************
+  
+  void L2HighOrderFETP<ET_HEX> ::
+  Evaluate (const SIMD_IntegrationRule & ir,
+            BareSliceVector<> bcoefs,
+            BareVector<SIMD<double>> values) const
+  {
+    static Timer t("hex evaluate");
+    static Timer tmult("hex mult");
+    static Timer ttrans("hex trans");                  
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+
+    if (ir.IsTP())
+      {
+        auto & irx = ir.GetIRX();
+        auto & iry = ir.GetIRY();
+        auto & irz = ir.GetIRZ();
+        size_t nipx = irx.GetNIP();
+        size_t nipy = iry.GetNIP();
+        size_t nipz = irz.GetNIP();
+        size_t nip = nipx*nipy*nipz;
+        size_t ndof = (order+1)*(order+1)*(order+1);
+        bool needs_copy = bcoefs.Dist() != 1;
+        STACK_ARRAY(double, mem_coefs, needs_copy ? ndof : 0);
+        if (needs_copy)
+          {
+            FlatVector<> coefs(ndof, mem_coefs);
+            coefs = bcoefs;
+          }
+        FlatMatrix<> mat_coefs(sqr(order+1), order+1, needs_copy ? mem_coefs : &bcoefs(0));
+
+        STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
+        FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
+        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+        for (size_t i = 0; i < irx.Size(); i++)
+          LegendrePolynomial (order, (2*irx[i](0)-1), simd_shapex.Col(i));
+              
+        STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
+        FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
+        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);          
+        for (size_t i = 0; i < iry.Size(); i++)
+          LegendrePolynomial (order, (2*iry[i](0)-1), simd_shapey.Col(i));
+
+        STACK_ARRAY(SIMD<double>, mem_shapez, (order+1)*irz.Size());
+        FlatMatrix<SIMD<double>> simd_shapez(order+1, irz.Size(), mem_shapez);
+        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_shapez[0][0]);          
+        for (size_t i = 0; i < irz.Size(); i++)
+          LegendrePolynomial (order, (2*irz[i](0)-1), simd_shapez.Col(i));
+
+        NgProfiler::StartThreadTimer (ttrans, TaskManager::GetThreadId());
+        STACK_ARRAY(double, memtshapez, nipz*(order+1));
+        FlatMatrix<> tshapez(nipz, order+1, memtshapez);
+        STACK_ARRAY(double, memtshapey, nipy*(order+1));
+        FlatMatrix<> tshapey(nipy, order+1, memtshapey);
+        STACK_ARRAY(double, memtshapex, nipx*(order+1));
+        FlatMatrix<> tshapex(nipx, order+1, memtshapex);
+        
+        tshapez = Trans(shapez);
+        tshapey = Trans(shapey);
+        tshapex = Trans(shapex);
+        NgProfiler::StopThreadTimer (ttrans, TaskManager::GetThreadId());        
+
+        NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(),
+                                    nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
+        NgProfiler::StartThreadTimer (tmult, TaskManager::GetThreadId());                
+        
+        STACK_ARRAY(double, mem1, nipz*sqr(order+1));
+        FlatMatrix<> temp1(nipz, sqr(order+1), mem1);
+        // temp1 = Trans(shapez)*Trans(mat_coefs);
+        temp1 = tshapez*Trans(mat_coefs);
+
+        FlatMatrix<> temp1reshape(nipz*(order+1), order+1, &temp1(0,0));
+        STACK_ARRAY(double, mem2, nipy*nipz*(order+1));
+        FlatMatrix<> temp2(nipy, nipz*(order+1), mem2);
+        // temp2 = Trans(shapey)*Trans(temp1reshape);
+        temp2 = tshapey*Trans(temp1reshape);
+        
+        FlatMatrix<> temp2reshape(nipz*nipy, order+1, &temp2(0,0));
+        STACK_ARRAY(double, mem3, nipx*nipy*nipz);
+        FlatMatrix<> temp3(nipx, nipz*nipy, mem3);
+        // temp3 = Trans(shapex)*Trans(temp2reshape);
+        temp3 = tshapex*Trans(temp2reshape);
+
+        NgProfiler::StopThreadTimer (tmult, TaskManager::GetThreadId());
+        
+        FlatVector<> vals(nip, &values(0)[0]);
+        FlatVector<> vectemp3(nip, &temp3(0,0));
+        values(ir.Size()-1) = 0.0; // clear overhead
+        vals = vectemp3;
+        return;
+      }
+
+    TBASE::Evaluate(ir, bcoefs, values);
+  }
+
+  void L2HighOrderFETP<ET_HEX> ::
+  AddTrans (const SIMD_IntegrationRule & ir,
+            BareVector<SIMD<double>> values,
+            BareSliceVector<> bcoefs) const 
+  {
+    static Timer t("hex AddTrans");
+    static Timer tmult("hex addtrans mult");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+
+    if (ir.IsTP())
+      {
+        auto & irx = ir.GetIRX();
+        auto & iry = ir.GetIRY();
+        auto & irz = ir.GetIRZ();
+        size_t nipx = irx.GetNIP();
+        size_t nipy = iry.GetNIP();
+        size_t nipz = irz.GetNIP();
+        size_t nip = nipx*nipy*nipz;
+        size_t ndof = (order+1)*(order+1)*(order+1);
+        
+        /*
+        bool needs_copy = bcoefs.Dist() != 1;
+        STACK_ARRAY(double, mem_coefs, needs_copy ? ndof : 0);
+        if (needs_copy)
+          {
+            FlatVector<> coefs(ndof, mem_coefs);
+            coefs = bcoefs;
+          }
+        FlatMatrix<> mat_coefs(sqr(order+1), order+1, needs_copy ? mem_coefs : &bcoefs(0));
+        */
+        
+        STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
+        FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
+        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+        for (size_t i = 0; i < irx.Size(); i++)
+          LegendrePolynomial (order, (2*irx[i](0)-1), simd_shapex.Col(i));
+              
+        STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
+        FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
+        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);          
+        for (size_t i = 0; i < iry.Size(); i++)
+          LegendrePolynomial (order, (2*iry[i](0)-1), simd_shapey.Col(i));
+
+        STACK_ARRAY(SIMD<double>, mem_shapez, (order+1)*irz.Size());
+        FlatMatrix<SIMD<double>> simd_shapez(order+1, irz.Size(), mem_shapez);
+        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_shapez[0][0]);          
+        for (size_t i = 0; i < irz.Size(); i++)
+          LegendrePolynomial (order, (2*irz[i](0)-1), simd_shapez.Col(i));
+
+        STACK_ARRAY(double, memtshapez, nipz*(order+1));
+        FlatMatrix<> tshapez(nipz, order+1, memtshapez);
+        STACK_ARRAY(double, memtshapey, nipy*(order+1));
+        FlatMatrix<> tshapey(nipy, order+1, memtshapey);
+        STACK_ARRAY(double, memtshapex, nipx*(order+1));
+        FlatMatrix<> tshapex(nipx, order+1, memtshapex);
+        
+        tshapez = Trans(shapez);
+        tshapey = Trans(shapey);
+        tshapex = Trans(shapex);
+
+        NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(),
+                                    nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
+        NgProfiler::StartThreadTimer (tmult, TaskManager::GetThreadId());                
+
+        STACK_ARRAY(double, mem0, (order+1)*sqr(order+1));
+        FlatMatrix<> temp0(sqr(order+1), order+1, mem0);
+        STACK_ARRAY(double, mem1, nipz*sqr(order+1));
+        FlatMatrix<> temp1(nipz, sqr(order+1), mem1);
+        STACK_ARRAY(double, mem2, nipy*nipz*(order+1));
+        FlatMatrix<> temp2(nipy, nipz*(order+1), mem2);
+        // STACK_ARRAY(double, mem3, nipx*nipy*nipz);
+        FlatMatrix<> temp3(nipx, nipz*nipy, &values(0)[0]);
+        
+        FlatMatrix<> temp2reshape(nipz*nipy, order+1, &temp2(0,0));
+        temp2reshape = Trans(temp3)*tshapex;
+
+        FlatMatrix<> temp1reshape(nipz*(order+1), order+1, &temp1(0,0));
+        temp1reshape = Trans(temp2)*tshapey;
+
+        temp0 = Trans(temp1)*tshapez;
+        NgProfiler::StopThreadTimer (tmult, TaskManager::GetThreadId());
+
+        FlatVector<> vec_coefs(sqr(order+1)*(order+1), &temp0(0));
+        bcoefs.AddSize(ndof) += vec_coefs;
+        
+        return;
+      }
+
+    TBASE::AddTrans(ir, values, bcoefs);
+  }
+
+
+  void L2HighOrderFETP<ET_HEX> ::  
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & mir,
+                BareSliceMatrix<SIMD<double>> values,
+                BareSliceVector<> bcoefs) const
+  {
+    static Timer t("hex AddGradTrans");
+    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+   
+    TBASE::AddGradTrans(mir, values, bcoefs);
+  }
+  
+
+  L2HighOrderFETP<ET_HEX> :: ~L2HighOrderFETP() { ; }   
 }
 
 

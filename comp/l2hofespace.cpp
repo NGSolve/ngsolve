@@ -379,6 +379,8 @@ global system.
               return * new (alloc) L2HighOrderFETP<ET_QUAD> (order, ngel.Vertices(), alloc);
             if (eltype == ET_TET)
               return * new (alloc) L2HighOrderFETP<ET_TET> (order, ngel.Vertices(), alloc);
+            if (eltype == ET_HEX)
+              return * new (alloc) L2HighOrderFETP<ET_HEX> (order, ngel.Vertices(), alloc);
           }
         if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
