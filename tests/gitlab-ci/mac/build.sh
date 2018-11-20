@@ -14,6 +14,7 @@ cmake $SRC_DIR \
       -DUSE_UMFPACK=ON \
       -DENABLE_UNIT_TESTS=ON \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
+      -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk \
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX} \
 
 make -j5 install
