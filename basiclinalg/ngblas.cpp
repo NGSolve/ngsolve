@@ -845,6 +845,26 @@ namespace ngbla
   
   /* ***************************** A * B^T *************************************** */
 
+  template <int SX>
+  void REGCALL MultABtSmallWA (size_t ah, size_t bh, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    double * pa = &a(0);
+    double * pc = &c(0);
+    for (size_t i = 0; i < ah; i++, pa += a.Dist(), pc += c.Dist())
+      KernelMatVec<SX,SET> (bh, &b(0), b.Dist(), pa, pc);
+  }
+  
+  pfunc_abt dispatch_abt[25] =
+    { &MultABtSmallWA<0>, &MultABtSmallWA<1>, &MultABtSmallWA<2>, &MultABtSmallWA<3>,
+      &MultABtSmallWA<4>, &MultABtSmallWA<5>, &MultABtSmallWA<6>, &MultABtSmallWA<7>,
+      &MultABtSmallWA<8>, &MultABtSmallWA<9>, &MultABtSmallWA<10>, &MultABtSmallWA<11>,
+      &MultABtSmallWA<12>, &MultABtSmallWA<13>, &MultABtSmallWA<14>, &MultABtSmallWA<15>,
+      &MultABtSmallWA<16>, &MultABtSmallWA<17>, &MultABtSmallWA<18>, &MultABtSmallWA<19>,
+      &MultABtSmallWA<20>, &MultABtSmallWA<21>, &MultABtSmallWA<22>, &MultABtSmallWA<23>,
+      &MultABtSmallWA<24>
+    };
+
+  
   template <typename TAB, typename FUNC>
   INLINE void TAddABt4 (size_t wa, size_t hc, size_t wc,
                         TAB * pa, size_t da, TAB * pb, size_t db, double * pc, size_t dc,
@@ -944,7 +964,7 @@ namespace ngbla
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
   }
 
-  void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  void MultABt_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c = a * Trans(b);
 
@@ -1975,6 +1995,7 @@ namespace ngbla
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
+          "52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag\n"
           "61 .. C = A^t B,  A=n*k, B=n*m, C = k*m\n"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
@@ -2182,6 +2203,26 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 52)
+      {
+        // C=A*B^t
+        Matrix<> a(n,k), b(m,k), c(n,m);
+        a = 1; b = 2;
+        c = 0.0;        
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            c = a * Trans(b);
+          t.Stop();
+          cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    
     if (what == 0 || what == 60)
       {
         // C=A*B^t

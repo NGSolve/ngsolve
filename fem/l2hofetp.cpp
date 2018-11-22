@@ -348,7 +348,7 @@ namespace ngfem
   {
     static Timer t("hex evaluate");
     static Timer tmult("hex mult");
-    static Timer ttrans("hex trans");                  
+    static Timer ttrans("hex transpose");                  
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
 
     if (ir.IsTP())
@@ -533,7 +533,127 @@ namespace ngfem
   {
     static Timer t("hex AddGradTrans");
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-   
+    auto & ir = mir.IR();
+    if (ir.IsTP())
+      // if (false)
+      {
+        mir.TransformGradientTrans (values);
+        
+        auto & irx = ir.GetIRX();
+        auto & iry = ir.GetIRY();
+        auto & irz = ir.GetIRZ();
+        size_t nipx = irx.GetNIP();
+        size_t nipy = iry.GetNIP();
+        size_t nipz = irz.GetNIP();
+        size_t nip = nipx*nipy*nipz;
+        size_t ndof = (order+1)*(order+1)*(order+1);
+        
+        
+        STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
+        FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
+        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+        STACK_ARRAY(SIMD<double>, mem_dshapex, (order+1)*irx.Size());
+        FlatMatrix<SIMD<double>> simd_dshapex(order+1, irx.Size(), mem_dshapex);
+        SliceMatrix<double> dshapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_dshapex[0][0]);
+        
+        for (size_t i = 0; i < irx.Size(); i++)
+          {
+            AutoDiff<1,SIMD<double>> adx(irx[i](0), 0);
+            LegendrePolynomial (order, (2*adx-1),
+                                SBLambda([&] (size_t nr, auto val)
+                                         {
+                                           simd_shapex(nr, i) = val.Value();
+                                           simd_dshapex(nr, i) = val.DValue(0);
+                                         }));
+          }
+
+        STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
+        FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
+        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);
+        STACK_ARRAY(SIMD<double>, mem_dshapey, (order+1)*iry.Size());
+        FlatMatrix<SIMD<double>> simd_dshapey(order+1, iry.Size(), mem_dshapey);
+        SliceMatrix<double> dshapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_dshapey[0][0]);
+        
+        for (size_t i = 0; i < iry.Size(); i++)
+          {
+            AutoDiff<1,SIMD<double>> ady(iry[i](0), 0);
+            LegendrePolynomial (order, (2*ady-1),
+                                SBLambda([&] (size_t nr, auto val)
+                                         {
+                                           simd_shapey(nr, i) = val.Value();
+                                           simd_dshapey(nr, i) = val.DValue(0);
+                                         }));
+          }
+
+        STACK_ARRAY(SIMD<double>, mem_shapez, (order+1)*irz.Size());
+        FlatMatrix<SIMD<double>> simd_shapez(order+1, irz.Size(), mem_shapez);
+        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_shapez[0][0]);
+        STACK_ARRAY(SIMD<double>, mem_dshapez, (order+1)*irz.Size());
+        FlatMatrix<SIMD<double>> simd_dshapez(order+1, irz.Size(), mem_dshapez);
+        SliceMatrix<double> dshapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_dshapez[0][0]);
+        
+        for (size_t i = 0; i < irz.Size(); i++)
+          {
+            AutoDiff<1,SIMD<double>> adz(irz[i](0), 0);
+            LegendrePolynomial (order, (2*adz-1),
+                                SBLambda([&] (size_t nr, auto val)
+                                         {
+                                           simd_shapez(nr, i) = val.Value();
+                                           simd_dshapez(nr, i) = val.DValue(0);
+                                         }));
+          }
+        
+
+        for (size_t j = 0; j < 3; j++)
+          {
+            STACK_ARRAY(double, memtshapez, nipz*(order+1));
+            FlatMatrix<> tshapez(nipz, order+1, memtshapez);
+            STACK_ARRAY(double, memtshapey, nipy*(order+1));
+            FlatMatrix<> tshapey(nipy, order+1, memtshapey);
+            STACK_ARRAY(double, memtshapex, nipx*(order+1));
+            FlatMatrix<> tshapex(nipx, order+1, memtshapex);
+
+            if (j == 2)
+              tshapez = Trans(dshapez);
+            else
+              tshapez = Trans(shapez);
+
+            if (j == 1)
+              tshapey = Trans(dshapey);
+            else
+              tshapey = Trans(shapey);
+
+            if (j == 0)
+              tshapex = Trans(dshapex);
+            else
+              tshapex = Trans(shapex);
+            
+            
+            STACK_ARRAY(double, mem0, (order+1)*sqr(order+1));
+            FlatMatrix<> temp0(sqr(order+1), order+1, mem0);
+            STACK_ARRAY(double, mem1, nipz*sqr(order+1));
+            FlatMatrix<> temp1(nipz, sqr(order+1), mem1);
+            STACK_ARRAY(double, mem2, nipy*nipz*(order+1));
+            FlatMatrix<> temp2(nipy, nipz*(order+1), mem2);
+            
+            FlatMatrix<> temp3(nipx, nipz*nipy, &values(j,0)[0]);
+            
+            FlatMatrix<> temp2reshape(nipz*nipy, order+1, &temp2(0,0));
+            temp2reshape = Trans(temp3)*tshapex;
+            
+            FlatMatrix<> temp1reshape(nipz*(order+1), order+1, &temp1(0,0));
+            temp1reshape = Trans(temp2)*tshapey;
+            
+            temp0 = Trans(temp1)*tshapez;
+            
+            FlatVector<> vec_coefs(sqr(order+1)*(order+1), &temp0(0));
+            bcoefs.AddSize(ndof) += vec_coefs;
+          }
+        
+        return;
+      }
+
+    
     TBASE::AddGradTrans(mir, values, bcoefs);
   }
   
