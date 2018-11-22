@@ -1972,7 +1972,7 @@ namespace ngcomp
               hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
               for (int k = 0; k < num; k++)
                 {
-                  auto jacinv = mir[k].GetJacobianInverse();
+                  auto jacinv = mir[base+k].GetJacobianInverse();
                   for (int l = 0; l < D; l++)
                     {
                       for (int m = 0; m < D; m++)
