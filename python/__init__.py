@@ -93,14 +93,16 @@ fem.__doc__ = \
 finite element shape functions, and element-matrix/vector integrators
 """
 
+# Uncomment this to use patched version of pickle (to regain data pickled somewhere between ~ Feb-Dez 2018)
+
 # register our own memory pickler
-import pickle
-import ngsolve
-pickle._Pickler.dispatch[ngsolve.ngstd._MemoryView] = ngsolve.ngstd._PickleMemory
-pickle._Unpickler.dispatch[b"\xf0"[0]] = ngsolve.ngstd._UnpickleMemory
-# use the python pickler and not cPickle one (cause we can't patch it)
-pickle.Pickler, pickle.Unpickler = pickle._Pickler, pickle._Unpickler
-pickle.dump, pickle.dumps, pickle.load, pickle.loads = pickle._dump, pickle._dumps, pickle._load, pickle._loads
+# import pickle
+# import ngsolve
+# pickle._Pickler.dispatch[ngsolve.ngstd._MemoryView] = ngsolve.ngstd._PickleMemory
+# pickle._Unpickler.dispatch[b"\xf0"[0]] = ngsolve.ngstd._UnpickleMemory
+# # use the python pickler and not cPickle one (cause we can't patch it)
+# pickle.Pickler, pickle.Unpickler = pickle._Pickler, pickle._Unpickler
+# pickle.dump, pickle.dumps, pickle.load, pickle.loads = pickle._dump, pickle._dumps, pickle._load, pickle._loads
 
 
 __all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing", "solvers"]
