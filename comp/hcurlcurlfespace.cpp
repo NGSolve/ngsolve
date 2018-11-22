@@ -625,6 +625,8 @@ namespace ngcomp
               }
     }
 
+    
+
     /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
@@ -679,7 +681,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
+      /*HeapReset hr(lh);
 
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
       
@@ -713,7 +715,40 @@ namespace ngcomp
                       mat(p*D*D+j*D+i,l) += Cinv(p,k)*0.5*(bgradmat(l,i*D*D+(D*k+j))+bgradmat(l,j*D*D+(D*i+k))-bgradmat(l,k*D*D+(D*i+j)));
                     }
                 }
-        }
+                }*/
+      throw Exception("Christoffel symbol of second art is a nonlinear operator! Use only apply!");
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      HeapReset hr(lh);
+      typedef typename TVX::TSCAL TSCAL;
+      int nd_u = bfel.GetNDof();
+      FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
+      bfel.CalcShape (mip.IP(), bmat);
+      
+      Vec<D*D,TSCAL> hv = Trans (bmat) * x;
+      SliceMatrix<TSCAL> matshape(D,D,1,&hv[0]);
+      auto jac = mip.GetJacobian();
+      auto d2  = sqr(mip.GetJacobiDet());
+      Mat<D,D,TSCAL> defmat = 1/d2*jac*matshape*Trans(jac);
+      Mat<D,D,TSCAL> invmat = Inv(defmat);
+
+      
+      FlatMatrix<double> mat(nd_u,D*D*D, lh);
+      DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mip, Trans(mat), lh);
+      Vec<D*D*D,TSCAL> hdv = Trans(mat)*x;
+      
+      for (int i=0; i<D; i++)
+        for (int j=0; j<D; j++)
+          for (int k=0; k<D; k++)
+            for (int p=0; p<D; p++)
+              y(i*D*D+j*D+k) = invmat(i,p)*hdv(p*D*D+j*D+k);
     }
 
     /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
