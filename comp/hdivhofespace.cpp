@@ -1802,6 +1802,7 @@ namespace ngcomp
     static void ApplySIMDIR (const AFEL & fel, const MIR & bmir,
                              const TVX & x, TVY & y)
     */
+    /*
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -1883,8 +1884,107 @@ namespace ngcomp
                 }
             }
         }
+      cout << "done" << endl;
     }
+    */
 
+
+
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      constexpr size_t BS = 64; // number of simd-points
+      size_t maxnp = min2(BS, bmir.Size());
+      int size = (maxnp+1)*SIMD<double>::Size()*500;
+      STACK_ARRAY(char, data, size);
+      LocalHeap lh(data, size);
+
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      auto & ir = mir.IR();
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto & fel_u = static_cast<const FEL&>(fel);
+
+      for (int k = 0; k < mir.Size(); k++)
+        for (int m = 0; m < D*D; m++)
+          y(m, k) = SIMD<double> (0.0);
+      
+      for (size_t base = 0; base < ir.Size(); base += BS)
+        {
+          HeapReset hr(lh);
+          size_t num = min2(BS, ir.Size()-base);
+      
+          FlatMatrix<SIMD<double>> hxl(D, num, lh);
+          FlatMatrix<SIMD<double>> hxr(D, num, lh);
+          FlatMatrix<SIMD<double>> hxll(D, num, lh);
+          FlatMatrix<SIMD<double>> hxrr(D, num, lh);
+          FlatMatrix<SIMD<double>> hx(D, num, lh);
+
+          for (int j = 0; j < D; j++)
+            {
+              // hx = (F^-1 * x).Row(j)
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irl(num, lh);
+                for (int k = 0; k < irl.Size(); k++)
+                  {
+                    irl[k] = ir[base+k];
+                    irl[k](j) -= eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+                fel_u.Evaluate (mirl, x, hxl);
+              }
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irr(num, lh);
+                for (int k = 0; k < irr.Size(); k++)
+                  {
+                    irr[k] = ir[base+k];              
+                    irr[k](j) += eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+                fel_u.Evaluate (mirr, x, hxr);
+              }
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irll(num, lh);
+                for (int k = 0; k < irll.Size(); k++)
+                  {
+                    irll[k] = ir[base+k];
+                    irll[k](j) -= 2*eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirll(irll, trafo, lh);
+                fel_u.Evaluate (mirll, x, hxll);
+              }
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irrr(num, lh);
+                for (int k = 0; k < irrr.Size(); k++)
+                  {
+                    irrr[k] = ir[base+k];              
+                    irrr[k](j) += 2*eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirrr(irrr, trafo, lh);
+                fel_u.Evaluate (mirrr, x, hxrr);
+              }
+              // hx = 1.0/(2*eps()) * (hxr-hxl);
+              // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
+              for (int k = 0; k < num; k++)
+                {
+                  auto jacinv = mir[k].GetJacobianInverse();
+                  for (int l = 0; l < D; l++)
+                    {
+                      for (int m = 0; m < D; m++)
+                        y(m*D+l, base+k) += jacinv(j,m) * hx(l, k);
+                    }
+                }
+            }
+        }
+    }
+      
+
+    
     using DiffOp<DiffOpGradientHdiv<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
