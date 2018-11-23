@@ -395,7 +395,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
         ResNorm = abs(s_new) * ResNorm_old
         if (printrates):        
             print("it = ", k, " err = ", ResNorm)   
-
+        if ResNorm < tol: break
         k += 1
 
         # shift vectors by renaming
