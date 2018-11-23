@@ -1108,10 +1108,10 @@ wait : bool
                            cf = childs[0] / childs[1];
                            break;
                          case CF_Type_domainconst:
-                           DomainConstantCoefficientFunction(Array<double>{});
+                           throw Exception("pickling of DomainconstantCF not supported yet");
                            break;
                          case CF_Type_domainwise:
-                           MakeDomainWiseCoefficientFunction(move(childs));
+                           cf = MakeDomainWiseCoefficientFunction(move(childs));
                            break;
                          case CF_Type_unary_op:
                            name = py::cast<string>(pylist[0]);
