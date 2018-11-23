@@ -1,32 +1,8 @@
-from netgen.meshing import *
-from netgen.csg import *
-
-
-# generate a 1D mesh
-
-m = Mesh()
-m.dim = 1
-
-nel = 10
-
-pnums = []
-for i in range(0, nel+1):
-    pnums.append (m.Add (MeshPoint (Pnt(i/nel, 0, 0))))
-
-for i in range(0,nel):
-    m.Add (Element1D ([pnums[i],pnums[i+1]], index=1))
-
-m.Add (Element0D (pnums[0], index=1))
-m.Add (Element0D (pnums[nel], index=2))    
-# m.Save("test.vol")
-
-
-
-
 from ngsolve import *
-ngsmesh = Mesh(m)
+from ngsolve.meshes import Make1DMesh
+ngsmesh = Make1DMesh(10)
 
-V = H1(ngsmesh, order=2, dirichlet=[1])
+V = H1(ngsmesh, order=2, dirichlet="left")
 print ("freedofs:\n", V.FreeDofs())
 
 
@@ -66,4 +42,5 @@ plt.plot(pnts,vals, "-*")
 
 plt.ion()
 plt.show()
+
 

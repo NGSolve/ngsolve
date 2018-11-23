@@ -2,6 +2,28 @@ from netgen.meshing import *
 from netgen.csg import *
 import ngsolve
 
+def Make1DMesh(n, mapping = None, periodic=False):
+    """
+        generate an equidistant 1D mesh with N cells
+    """
+    mesh = Mesh(dim=1)
+    pids = []
+    for i in range(n+1):
+        x = i/n
+        if mapping:
+            x = mapping(x)
+        pids.append (mesh.Add (MeshPoint(Pnt(x, 0, 0))))
+    for i in range(n):
+        mesh.Add(Element1D([pids[i],pids[i+1]],index=1))
+    mesh.Add (Element0D( pids[0], index=1))
+    mesh.Add (Element0D( pids[n], index=2))
+    mesh.SetBCName(0,"left")
+    mesh.SetBCName(1,"right")
+    if periodic:
+        mesh.AddPointIdentification(pids[0],pids[n],1,2)
+    ngsmesh = ngsolve.Mesh(mesh)
+    return ngsmesh
+
 def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
     mesh = Mesh()
     mesh.dim=2
@@ -218,6 +240,9 @@ def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodi
 
 from math import pi
 if __name__ == "__main__":
+
+    mesh = Make1DMesh(n=4)
+    print("simple 1D mesh -- no visualization -- ")
 
     mesh = MakeQuadMesh(nx=4, ny=4)
     Draw(mesh)
