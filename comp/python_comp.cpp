@@ -2734,7 +2734,7 @@ deformation : ngsolve.comp.GridFunction
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate, VorB element_vb,
+             bool simd_evaluate, VorB element_vb, bool geom_free,
              shared_ptr<GridFunction> deformation)
            {
              py::extract<Region> defon_region(definedon);
@@ -2759,7 +2759,7 @@ deformation : ngsolve.comp.GridFunction
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_vb);
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);
-             
+             bfi->geom_free = geom_free;
              if (py::extract<py::list> (definedon).check())
                {
                  Array<int> defon = makeCArray<int> (definedon);
@@ -2796,6 +2796,7 @@ deformation : ngsolve.comp.GridFunction
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
+        py::arg("geom_free")=false,        
         py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic bilinear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.

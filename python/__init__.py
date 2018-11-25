@@ -82,7 +82,7 @@ BaseMatrix.data = property(__expr.Expr, __expr.expr_data)
 # BaseMatrix.T = property(__expr.TransExpr)
 BaseMatrix.__mul__ = __expr.expr_mul
 # BaseMatrix.__rmul__ = __expr.expr_rmul
-BaseMatrix.__neg__ = __expr.expr_neg
+# BaseMatrix.__neg__ = __expr.expr_neg
 
 Timing = timing.Timing
 

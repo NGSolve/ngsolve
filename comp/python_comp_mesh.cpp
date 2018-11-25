@@ -413,6 +413,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
     .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "number of edges")
     .def_property_readonly ("nface", &MeshAccess::GetNFaces, "number of faces")
+    .def_property_readonly ("nfacet", &MeshAccess::GetNFacets, "number of facets")
     .def ("nnodes", &MeshAccess::GetNNodes, "number of nodes given type")
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "the Netgen mesh")
@@ -435,6 +436,13 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
                                       MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh));
           }, "iterable of mesh faces")
+
+    .def_property_readonly ("facets", [] (shared_ptr<MeshAccess> mesh)
+          {
+            auto nt = StdNodeType(NT_FACET, mesh->GetDimension());
+            return T_Range<MeshNode> (MeshNode(NodeId(nt, 0), *mesh),
+                                      MeshNode(NodeId(nt, mesh->GetNNodes(nt)), *mesh));
+          }, "iterable of mesh facets")
 
     .def("nodes", [] (shared_ptr<MeshAccess> mesh, NODE_TYPE type)
          {

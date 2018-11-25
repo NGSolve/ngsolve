@@ -440,6 +440,11 @@ namespace ngfem
             BareSliceVector<> bcoefs) const 
   {
     static Timer t("hex AddTrans");
+    static Timer tx("hex AddTrans x");
+    static Timer ty("hex AddTrans y");
+    static Timer tz("hex AddTrans z");
+    static Timer txyz("hex AddTrans xyz");
+    
     static Timer tmult("hex addtrans mult");
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
 
@@ -453,7 +458,7 @@ namespace ngfem
         size_t nipz = irz.GetNIP();
         size_t nip = nipx*nipy*nipz;
         size_t ndof = (order+1)*(order+1)*(order+1);
-        
+
         /*
         bool needs_copy = bcoefs.Dist() != 1;
         STACK_ARRAY(double, mem_coefs, needs_copy ? ndof : 0);
@@ -498,6 +503,13 @@ namespace ngfem
                                     nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
         NgProfiler::StartThreadTimer (tmult, TaskManager::GetThreadId());                
 
+        int nr = txyz;
+        if (nipx == 1) nr = tx;
+        if (nipy == 1) nr = ty;
+        if (nipz == 1) nr = tz;
+        ThreadRegionTimer reg(nr, TaskManager::GetThreadId());        
+
+        
         STACK_ARRAY(double, mem0, (order+1)*sqr(order+1));
         FlatMatrix<> temp0(sqr(order+1), order+1, mem0);
         STACK_ARRAY(double, mem1, nipz*sqr(order+1));

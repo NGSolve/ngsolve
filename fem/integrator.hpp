@@ -659,6 +659,7 @@ namespace ngfem
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,
 							const bool use_higher_integration_order = false) const;
     */
+    bool geom_free = false;
   };
 
   

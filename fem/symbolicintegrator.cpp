@@ -2430,6 +2430,10 @@ namespace ngfem
     Facet2ElementTrafo transform(eltype, element_vb); 
     int nfacet = transform.GetNFacets();
 
+    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+    
     if (simd_evaluate)
       try
         {
@@ -2438,7 +2442,8 @@ namespace ngfem
               HeapReset hr(lh);
               NgProfiler::StartThreadTimer(tir, tid);                              
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-              const SIMD_IntegrationRule & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
+              const SIMD_IntegrationRule & ir_facet =
+                GetSIMDIntegrationRule(etfacet,fel_trial.Order()+fel_test.Order()+bonus_intorder);
               auto & ir_facet_vol = transform(k, ir_facet, lh);
               auto & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure (eltype, k);
@@ -2447,7 +2452,7 @@ namespace ngfem
               NgProfiler::StartThreadTimer(teval, tid);                                            
               ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);              
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
-              ud.fel = &fel;
+              ud.fel = &fel_trial;
           
               for (ProxyFunction * proxy : trial_proxies)
                 ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -2455,7 +2460,7 @@ namespace ngfem
                 ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
           
               for (ProxyFunction * proxy : trial_proxies)
-                proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy)); 
+                proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetAMemory(proxy)); 
           
               NgProfiler::StopThreadTimer(teval, tid);
               for (auto proxy : test_proxies)
@@ -2479,7 +2484,7 @@ namespace ngfem
                   NgProfiler::StopThreadTimer(td, tid);
                   
                   NgProfiler::StartThreadTimer(ttrans, tid);
-                  proxy->Evaluator()->AddTrans(fel, mir, simd_proxyvalues, ely);
+                  proxy->Evaluator()->AddTrans(fel_test, mir, simd_proxyvalues, ely);
                   NgProfiler::StopThreadTimer(ttrans, tid);                                                  
                 }
             }
@@ -2500,7 +2505,7 @@ namespace ngfem
       {
         HeapReset hr(lh);
         ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
+        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
         mir.ComputeNormalsAndMeasure (eltype, k);
@@ -2508,13 +2513,13 @@ namespace ngfem
 
         ProxyUserData ud(trial_proxies.Size(), lh);    
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
-        ud.fel = &fel;
+        ud.fel = &fel_trial;
     
         for (ProxyFunction * proxy : trial_proxies)
           ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
         
         for (ProxyFunction * proxy : trial_proxies)
-          proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
+          proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetMemory(proxy), lh);
         
         FlatVector<> ely1(ely.Size(), lh);
         FlatMatrix<> val(mir.Size(), 1,lh);
@@ -2533,7 +2538,7 @@ namespace ngfem
             for (size_t i = 0; i < mir.Size(); i++)
               proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
             
-            proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
+            proxy->Evaluator()->ApplyTrans(fel_test, mir, proxyvalues, ely1, lh);
             ely += ely1;
           }
       }
@@ -3527,7 +3532,7 @@ namespace ngfem
               if (proxy->IsOther() && proxy->BoundaryValues())
                 proxy->BoundaryValues()->Evaluate (smir, ud.GetAMemory(proxy));
             
-            RegionTimer reg(t);
+            // RegionTimer reg(t);
             
             
             for (auto proxy : test_proxies)
