@@ -204,6 +204,12 @@ namespace ngcomp
 
     parts.Append (bfi);
 
+    if (bfi->geom_free)
+      {
+        geom_free_parts += bfi;
+        return *this;
+      }
+    
     if(bfi->SkeletonForm())
       {
         auto dgform = bfi -> GetDGFormulation();
@@ -3559,6 +3565,9 @@ namespace ngcomp
                                            const BaseVector & x,
                                            BaseVector & y, LocalHeap & clh) const
   {
+    if (geom_free_parts.Size())
+      AddMatrixGF(val, x, y, clh);
+    
     static Timer timer ("Apply Matrix");
     static Timer timervb[4] = { string("Apply Matrix - volume"),
                                 string("Apply Matrix - boundary"),
@@ -3636,69 +3645,24 @@ namespace ngcomp
             } 
         
 
-        // if (hasskeletonbound||hasskeletoninner)
         {
           RegionTimer reg(timerDG);                    
           
-                    /*
-                    bool needs_facet_loop = false;
-                    bool needs_element_boundary_loop = false;
-                    
-                    for (int j = 0; j < NumIntegrators(); j++)
-                      if (parts[j] -> SkeletonForm())
-                        {
-                          auto dgform = parts[j] -> GetDGFormulation();
-                          if (!dgform.element_boundary)   //  && !parts[j]->BoundaryForm())  // too much !!!!
-                            needs_facet_loop = true;
-                          if (dgform.element_boundary)
-                            needs_element_boundary_loop = true;
-                            // throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
-                        }
-                    */
-
-                    
-                    /*
-                    // do we need locks for neighbor - testfunctions ?
-                    bool neighbor_testfunction = false;
-                    for (int j = 0; j < NumIntegrators(); j++)
-                      if (parts[j] -> SkeletonForm())
-                        {
-                          auto dgform = parts[j] -> GetDGFormulation();
-                          if (dgform.neighbor_testfunction)
-                            neighbor_testfunction = true;
-                        }
-                    */
-
-                    // if (needs_facet_loop && !fespace->UsesDGCoupling())
-                    // throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
-
-                    // facet-loop
           if ( (facetwise_skeleton_parts[VOL].Size() > 0) ||
                (facetwise_skeleton_parts[BND].Size() > 0) )
             
             for (auto colfacets : fespace->FacetColoring())
               {
-              /*
-              ParallelForRange
-                (colfacets.Size(), [&] (IntRange r)
-                 {
-                   RegionTimer reg(timerDGpar);
-                   LocalHeap lh = clh.Split();
-                   Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
-                   
-                   for (int i : r)
-              */
                 SharedLoop2 sl(colfacets.Size());
 
-                // task_manager -> CreateJob
                 ParallelJob
                   ( [&] (const TaskInfo & ti) 
                     {
                       LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-                      // ArrayMem<int,100> temp_dnums;
                       RegionTimer reg(timerDGpar);
-                      // LocalHeap lh = clh.Split();
-                      Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
+
+                      Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh),
+                        vnums1(8, lh), vnums2(8, lh);
 
                   for (int i : sl)                
                      {
@@ -3771,12 +3735,14 @@ namespace ngcomp
                        
                        // timerDG2.Start();
                        // timerDG2a.Start();
-                       int el2 = elnums[1];
-                       ElementId ei2(VOL, el2);
+                       // int el2 = elnums[1];
+                       // ElementId ei2(VOL, el2);
+                       ElementId ei2(VOL, elnums[1]);
                        
-                       fnums2 = ma->GetElFacets(ei2);
-                       int facnr2 = fnums2.Pos(facet2);
-                       
+                       // fnums2 = ma->GetElFacets(ei2);
+                       // int facnr2 = fnums2.Pos(facet2);
+                       int facnr2 = ma->GetElFacets(ei2).Pos(facet2);
+
                        ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                        ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
                        
@@ -4195,8 +4161,100 @@ namespace ngcomp
   }
 
 
+  template <class SCAL>
+  void S_BilinearForm<SCAL> :: AddMatrixGF (SCAL val,
+                                            const BaseVector & x,
+                                            BaseVector & y, LocalHeap & lh) const
+  {
+    static Timer t("BilinearForm::Apply - geomfree");
+    static Timer tx("BilinearForm::Apply - geomfree x");
+    static Timer ty("BilinearForm::Apply - geomfree y");
+    static Timer tm("BilinearForm::Apply - geomfree mult");
+    RegionTimer reg(t);
 
+    // classify:
+    if (!fespace2) throw Exception("geom-free needs trial and test-spaces");
+    auto fesx = fespace;  // trialspace
+    auto fesy = fespace2; // testspace
+    auto ma = GetMeshAccess();
+    
+    Array<short> classnr(ma->GetNE());
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+    
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+    
+    for (auto elclass_inds : table)
+      {
+        if (elclass_inds.Size() == 0) continue;
+        
+        ElementId ei(VOL,elclass_inds[0]);
+        auto & felx = fesx->GetFE (ei, lh);
+        auto & fely = fesy->GetFE (ei, lh);
+        auto & trafo = fesx->GetMeshAccess()->GetTrafo(ei, lh);
+        MixedFiniteElement fel(felx, fely);
+        Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
 
+        if (geom_free_parts.Size() != 1) throw Exception("expect 1 geomfree part");
+        auto & bfi = geom_free_parts[0];
+        bfi->CalcElementMatrix(fel, trafo, elmat, lh);
+        elmat *= ConvertTo<double> (val); // only real factor supported by now
+      
+        Matrix<> temp_x(elclass_inds.Size(), elmat.Width());
+        Matrix<> temp_y(elclass_inds.Size(), elmat.Height());
+        
+        ParallelForRange
+          (Range(elclass_inds),
+           [&] (IntRange myrange)
+           {
+             Array<DofId> dofs;
+             
+             int tid = TaskManager::GetThreadId();
+             {
+               ThreadRegionTimer r(tx, tid);
+               auto fvx = x.FVDouble();
+               for (auto i : myrange)
+                 {
+                   fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                   x.GetIndirect(dofs, temp_x.Row(i));
+                 }
+             }
+
+             /*
+             temp_y.Rows(myrange) = 0;      
+             // temp_y = temp_x * Trans(elmat); //  | Lapack;
+             AddABt(temp_x.Rows(myrange), elmat, temp_y.Rows(myrange));
+             */
+             {
+               ThreadRegionTimer r(tm,tid);
+               NgProfiler::AddThreadFlops(tm, tid, elmat.Height()*elmat.Width()*myrange.Size());
+               temp_y.Rows(myrange) = temp_x.Rows(myrange) * Trans(elmat);
+             }
+             {
+               ThreadRegionTimer r(ty,tid);
+               for (auto i : myrange)
+                 {
+                   fesy->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                   y.AddIndirect(dofs, temp_y.Row(i), true);
+                   // todo: check if atomic is actually needed for space
+                 }
+             }
+           });
+      }
+  }
+  
+  
+  
 
 
   template <class SCAL>
@@ -4548,9 +4606,22 @@ namespace ngcomp
 
   template <class TM, class TV>
   shared_ptr<BaseVector> T_BilinearForm<TM, TV>::
-  CreateVector() const
+  CreateRowVector() const
   {
-    auto afespace = this->fespace;
+    auto afespace = this->GetTrialSpace();
+#ifdef PARALLEL
+    if ( afespace->IsParallel() )
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    else
+#endif
+      return make_shared<VVector<TV>> (afespace->GetNDof());
+  }
+  
+  template <class TM, class TV>
+  shared_ptr<BaseVector> T_BilinearForm<TM, TV>::
+  CreateColVector() const
+  {
+    auto afespace = this->GetTestSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
       return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
@@ -4688,9 +4759,9 @@ namespace ngcomp
 
   template <class TM, class TV>
   shared_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
-  CreateVector() const
+  CreateRowVector() const
   {
-    auto afespace = this->fespace;
+    auto afespace = this->GetTrialSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
       return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
@@ -4700,6 +4771,20 @@ namespace ngcomp
       return make_shared<VVector<TV>> (afespace->GetNDof());
   }
 
+  template <class TM, class TV>
+  shared_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
+  CreateColVector() const
+  {
+    auto afespace = this->GetTestSpace();
+#ifdef PARALLEL
+    if ( afespace->IsParallel() )
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    else
+#endif
+      // return new VVector<TV> (afespace->GetNDof());
+      return make_shared<VVector<TV>> (afespace->GetNDof());
+  }
+  
 
 
   template <class TM, class TV>
@@ -4797,9 +4882,9 @@ namespace ngcomp
 
   template <class TM>
   shared_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
-  CreateVector() const
+  CreateRowVector() const
   {
-    auto afespace = this->fespace;
+    auto afespace = this->GetTrialSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
       return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
@@ -4808,6 +4893,21 @@ namespace ngcomp
       // return new VVector<TV_COL> (afespace->GetNDof());
       return make_shared<VVector<TV_COL>> (afespace->GetNDof());
   }
+  
+  template <class TM>
+  shared_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
+  CreateColVector() const
+  {
+    auto afespace = this->GetTestSpace();
+#ifdef PARALLEL
+    if ( afespace->IsParallel() )
+      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    else
+#endif
+      // return new VVector<TV_COL> (afespace->GetNDof());
+      return make_shared<VVector<TV_COL>> (afespace->GetNDof());
+  }
+
 
   ///
   template <class TM>
@@ -5399,13 +5499,25 @@ namespace ngcomp
     }
   */
 
-
   AutoVector BilinearFormApplication :: 
   CreateVector () const
   {
-    return bf -> CreateVector();
+    return bf -> CreateRowVector();
   }
 
+  AutoVector BilinearFormApplication :: 
+  CreateRowVector () const
+  {
+    return bf -> CreateRowVector();
+  }
+  
+  AutoVector BilinearFormApplication :: 
+  CreateColVector () const
+  {
+    return bf -> CreateColVector();
+  }
+  
+  
   LinearizedBilinearFormApplication ::
   LinearizedBilinearFormApplication (shared_ptr<BilinearForm> abf,
                                      const BaseVector * aveclin)
@@ -5448,6 +5560,27 @@ namespace ngcomp
   { ; }
 
   template <class SCAL>
+  shared_ptr<BaseVector> S_BilinearFormNonAssemble<SCAL> :: 
+  CreateRowVector() const
+  {
+    auto afespace = this->GetTrialSpace();
+    if (afespace->IsParallel())
+      throw Exception("S_BilinearFormNonAssemble::CreateRowVector in parallel is missing");
+    return make_shared<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
+  }
+  
+  template <class SCAL>
+  shared_ptr<BaseVector> S_BilinearFormNonAssemble<SCAL> :: 
+  CreateColVector() const
+  {
+    auto afespace = this->GetTestSpace();
+    if (afespace->IsParallel())
+      throw Exception("S_BilinearFormNonAssemble::CreateRowVector in parallel is missing");
+    return make_shared<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
+  }
+  
+  
+  template <class SCAL>
   ElementByElement_BilinearForm<SCAL> :: 
   ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
                                  const Flags & flags)
@@ -5470,9 +5603,14 @@ namespace ngcomp
 
 
   template<class SCAL>
-  shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateVector() const
+  shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateRowVector() const
   {
-    return make_shared<VVector<SCAL>> (this->fespace->GetNDof());
+    return make_shared<VVector<SCAL>> (this->GetTrialSpace()->GetNDof());
+  }
+  template<class SCAL>
+  shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateColVector() const
+  {
+    return make_shared<VVector<SCAL>> (this->GetTestSpace()->GetNDof());
   }
 
   template<class SCAL>

@@ -421,6 +421,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def(py::init<const string&>())
     .def("Start", &Timer::Start, "start timer")
     .def("Stop", &Timer::Stop, "stop timer")
+    .def_property_readonly("time", &Timer::GetTime, "returns time")
     ;
   
   m.def("Timers",

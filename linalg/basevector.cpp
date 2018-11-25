@@ -784,6 +784,16 @@ namespace ngla
     if (comm == MPI_COMM_NULL) return ps;
     return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
   }
+
+
+  double BlockVector :: L2Norm () const
+  {
+    double sum = 0;
+    for (size_t k = 0; k < vecs.Size(); k++)
+      sum += sqr(vecs[k]->L2Norm());
+    return sqrt(sum);
+  }
+
   
   BaseVector & BlockVector :: Scale (double scal)
   {

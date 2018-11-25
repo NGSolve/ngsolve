@@ -195,6 +195,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
+    .def_property_readonly("is_complex", &BaseVector::IsComplex)
+
     .def("CreateVector", [] (BaseVector & self)
          { return shared_ptr<BaseVector>(self.CreateVector()); },
          "creates a new vector of same type, contents is undefined")
@@ -627,6 +629,8 @@ inverse : string
          { return make_shared<VScaleMatrix<double>> (ma, a); }, py::arg("value"))
     .def("__rmul__", [](shared_ptr<BM> ma, Complex a)->shared_ptr<BaseMatrix>
          { return make_shared<VScaleMatrix<Complex>> (ma, a); }, py::arg("value"))
+    .def("__neg__", [](shared_ptr<BM> ma)->shared_ptr<BaseMatrix>
+         { return make_shared<VScaleMatrix<double>> (ma, -1); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
 

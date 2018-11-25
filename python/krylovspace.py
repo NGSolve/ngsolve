@@ -541,7 +541,8 @@ printrates : bool = True
         norm = ngsolve.Norm
     else:
         norm = lambda x: ngsolve.sqrt(innerproduct(x,x).real)
-    is_complex = isinstance(b.FV(), ngsolve.bla.FlatVectorC)
+    # is_complex = isinstance(b.FV(), ngsolve.bla.FlatVectorC)
+    is_complex = b.is_complex
     if not pre:
         assert freedofs
         pre = ngsolve.Projector(freedofs, True)
