@@ -516,7 +516,7 @@ namespace ngcomp
     {
       constexpr size_t BS = 64; // number of simd-points
       size_t maxnp = min2(BS, bmir.Size());
-      int size = (maxnp+1)*SIMD<double>::Size()*500;
+      size_t size = (maxnp+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -543,7 +543,7 @@ namespace ngcomp
                     {
                       SIMD<double> sum = 0;
                       for (int m = 0; m < D; m++)
-                        sum += jacinv(j,m) * x(m*D*D+l, base+k);
+                        sum += jacinv(j,m) * x(m*D*D+l, k);
                       hx1(l,k) = (-(8/(12*eps())) * sum).Data();
                       hx2(l,k) = ( (1/(12*eps())) * sum).Data();
                     }
@@ -551,50 +551,50 @@ namespace ngcomp
               
               {
                 HeapReset hr(lh);
-                SIMD_IntegrationRule irl(num, lh);
+                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
                 for (size_t k = 0; k < irl.Size(); k++)
                   {
                     irl[k] = ir[base+k];
                     irl[k](j) -= eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-                fel_u.AddTrans_Matrix (mirl, hx1, y.Range(D*D*base,D*D*(base+num)));//Slice(D*D*base,D*D*num));
+                fel_u.AddTrans_Matrix (mirl, hx1, y);
                 irl.NothingToDelete();
               }
               {
                 HeapReset hr(lh);
                 hx1 *= -1;
-                SIMD_IntegrationRule irr(num, lh);
+                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irr.Size(); k++)
                   {
                     irr[k] = ir[base+k];              
                     irr[k](j) += eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-                fel_u.AddTrans_Matrix (mirr, hx1, y.Range(D*D*base,D*D*(base+num)));//.Slice(D*D*base,D*D*num));
+                fel_u.AddTrans_Matrix (mirr, hx1, y);
               }
               {
                 HeapReset hr(lh);
-                SIMD_IntegrationRule irl(num, lh);
+                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irl.Size(); k++)
                   {
                     irl[k] = ir[base+k];
                     irl[k](j) -= 2*eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-                fel_u.AddTrans_Matrix (mirl, hx2, y.Range(D*D*base,D*D*(base+num)));// y.Slice(D*D*base,D*D*num));
+                fel_u.AddTrans_Matrix (mirl, hx2, y);
               }
               {
                 HeapReset hr(lh);
                 hx2 *= -1;
-                SIMD_IntegrationRule irr(num, lh);
+                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irr.Size(); k++)
                   {
                     irr[k] = ir[base+k];              
                     irr[k](j) += 2*eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-                fel_u.AddTrans_Matrix (mirr, hx2, y.Range(D*D*base,D*D*(base+num)));// y.Slice(D*D*base,D*D*num));
+                fel_u.AddTrans_Matrix (mirr, hx2, y);
               }
             }
         }
