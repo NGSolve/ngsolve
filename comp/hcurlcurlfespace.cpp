@@ -419,7 +419,9 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      int size = (bmir.Size()+1)*2000;
+      constexpr size_t BS = 64; // number of simd-points
+      size_t maxnp = min2(BS, bmir.Size());
+      size_t size = (maxnp+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -427,73 +429,80 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      FlatMatrix<SIMD<double>> hxl(D*D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hxr(D*D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hxll(D*D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hxrr(D*D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hx(D*D, mir.IR().Size(), lh);
 
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D*D; m++)
           y(m, k) = SIMD<double> (0.0);
-      
-      for (int j = 0; j < D; j++)
+
+      for (size_t base = 0; base < ir.Size(); base += BS)
         {
-          // hx = (F^-1 * x).Row(j)
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irl.Size(); k++)
-              {
-                irl[k] = ir[k];
-                irl[k](j) -= eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.Evaluate_Matrix(mirl, x, hxl);
-          }
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
-              {
-                irr[k] = ir[k];              
-                irr[k](j) += eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.Evaluate_Matrix (mirr, x, hxr);
-          }
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irll(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irll.Size(); k++)
-              {
-                irll[k] = ir[k];
-                irll[k](j) -= 2*eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirll(irll, trafo, lh);
-            fel_u.Evaluate_Matrix (mirll, x, hxll);
-          }
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irrr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irrr.Size(); k++)
-              {
-                irrr[k] = ir[k];              
-                irrr[k](j) += 2*eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirrr(irrr, trafo, lh);
-            fel_u.Evaluate_Matrix (mirrr, x, hxrr);
-          }
-          // hx = 1.0/(2*eps()) * (hxr-hxl);
-          // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-          hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
-          for (int k = 0; k < mir.Size(); k++)
+          HeapReset hr(lh);
+          size_t num = min2(BS, ir.Size()-base);
+
+          FlatMatrix<SIMD<double>> hxl(D*D, num, lh);
+          FlatMatrix<SIMD<double>> hxr(D*D, num, lh);
+          FlatMatrix<SIMD<double>> hxll(D*D, num, lh);
+          FlatMatrix<SIMD<double>> hxrr(D*D, num, lh);
+          FlatMatrix<SIMD<double>> hx(D*D, num, lh);
+          
+          for (int j = 0; j < D; j++)
             {
-              auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D*D; l++)
+              // hx = (F^-1 * x).Row(j)
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irl.Size(); k++)
+                  {
+                    irl[k] = ir[base+k];
+                    irl[k](j) -= eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+                fel_u.Evaluate_Matrix(mirl, x, hxl);
+              }
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irr.Size(); k++)
+                  {
+                    irr[k] = ir[base+k];              
+                    irr[k](j) += eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+                fel_u.Evaluate_Matrix (mirr, x, hxr);
+              }
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irll(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irll.Size(); k++)
+                  {
+                    irll[k] = ir[base+k];
+                    irll[k](j) -= 2*eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirll(irll, trafo, lh);
+                fel_u.Evaluate_Matrix (mirll, x, hxll);
+              }
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irrr(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irrr.Size(); k++)
+                  {
+                    irrr[k] = ir[base+k];              
+                    irrr[k](j) += 2*eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirrr(irrr, trafo, lh);
+                fel_u.Evaluate_Matrix (mirrr, x, hxrr);
+              }
+              // hx = 1.0/(2*eps()) * (hxr-hxl);
+              // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
+              for (int k = 0; k < num; k++)
                 {
-                  for (int m = 0; m < D; m++)
-                    y(m*D*D+l, k) += jacinv(j,m) * hx(l, k);
+                  auto jacinv = mir[base+k].GetJacobianInverse();
+                  for (int l = 0; l < D*D; l++)
+                    {
+                      for (int m = 0; m < D; m++)
+                        y(m*D*D+l, base+k) += jacinv(j,m) * hx(l, k);
+                    }
                 }
             }
         }
@@ -503,7 +512,10 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      size_t size = (bmir.Size()+1)*2000;
+      constexpr size_t BS = 64; // number of simd-points
+      size_t maxnp = min2(BS, bmir.Size());
+      size_t size = (maxnp+1)*SIMD<double>::Size()*500;
+      
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -511,75 +523,242 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      FlatMatrix<SIMD<double>> hx1(D*D, mir.Size(), lh);
-      FlatMatrix<SIMD<double>> hx2(D*D, mir.Size(), lh);
-
-      for (size_t j = 0; j < D; j++)
+      
+      for (size_t base = 0; base < ir.Size(); base += BS)
         {
-          // hx = (F^-1 * x).Row(j)
-          for (size_t k = 0; k < mir.Size(); k++)
-            {
-              auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D*D; l++)
-                {
-                  SIMD<double> sum = 0;
-                  for (int m = 0; m < D; m++)
-                    sum += jacinv(j,m) * x(m*D*D+l, k);
-                  hx1(l,k) = (-(8/(12*eps())) * sum).Data();
-                  hx2(l,k) = ( (1/(12*eps())) * sum).Data();
-                }
-            }
+          HeapReset hr(lh);
+          size_t num = min2(BS, ir.Size()-base);
           
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (size_t k = 0; k < irl.Size(); k++)
+          FlatMatrix<SIMD<double>> hx1(D*D, num, lh);
+          FlatMatrix<SIMD<double>> hx2(D*D, num, lh);
+          
+          for (size_t j = 0; j < D; j++)
+            {
+              // hx = (F^-1 * x).Row(j)
+              for (size_t k = 0; k < num; k++)
+                {
+                  auto jacinv = mir[base+k].GetJacobianInverse();
+                  for (int l = 0; l < D*D; l++)
+                    {
+                      SIMD<double> sum = 0;
+                      for (int m = 0; m < D; m++)
+                        sum += jacinv(j,m) * x(m*D*D+l, k);
+                      hx1(l,k) = (-(8/(12*eps())) * sum).Data();
+                      hx2(l,k) = ( (1/(12*eps())) * sum).Data();
+                    }
+                }
+              
               {
-                irl[k] = ir[k];
-                irl[k](j) -= eps();
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
+                for (size_t k = 0; k < irl.Size(); k++)
+                  {
+                    irl[k] = ir[base+k];
+                    irl[k](j) -= eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+                fel_u.AddTrans_Matrix (mirl, hx1, y);
+                irl.NothingToDelete();
               }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.AddTrans_Matrix (mirl, hx1, y);
-            irl.NothingToDelete();
-          }
-          {
-            HeapReset hr(lh);
-            hx1 *= -1;
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
               {
-                irr[k] = ir[k];              
-                irr[k](j) += eps();
+                HeapReset hr(lh);
+                hx1 *= -1;
+                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irr.Size(); k++)
+                  {
+                    irr[k] = ir[base+k];              
+                    irr[k](j) += eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+                fel_u.AddTrans_Matrix (mirr, hx1, y);
               }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.AddTrans_Matrix (mirr, hx1, y);
-          }
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irl.Size(); k++)
               {
-                irl[k] = ir[k];
-                irl[k](j) -= 2*eps();
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irl.Size(); k++)
+                  {
+                    irl[k] = ir[base+k];
+                    irl[k](j) -= 2*eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+                fel_u.AddTrans_Matrix (mirl, hx2, y);
               }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.AddTrans_Matrix (mirl, hx2, y);
-          }
-          {
-            HeapReset hr(lh);
-            hx2 *= -1;
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
               {
-                irr[k] = ir[k];              
-                irr[k](j) += 2*eps();
+                HeapReset hr(lh);
+                hx2 *= -1;
+                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
+                for (int k = 0; k < irr.Size(); k++)
+                  {
+                    irr[k] = ir[base+k];              
+                    irr[k](j) += 2*eps();
+                  }
+                SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+                fel_u.AddTrans_Matrix (mirr, hx2, y);
               }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.AddTrans_Matrix (mirr, hx2, y);
-          }
+            }
         }
     }
   };
+
+  /// Christoffel Symbol of first kind for HCurlCurl
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D,D*D } ); };
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      int nd_u = static_cast<const FEL&>(fel).GetNDof();
+      FlatMatrixFixWidth<D*D*D> bmat(nd_u, lh);
+      
+      CalcDShapeOfHCurlCurlFE<D>(static_cast<const FEL&>(fel), mip, bmat, lh);
+
+      for (int i=0; i<D; i++)
+        for (int j=0; j<D; j++)
+          for (int k=0; k<D; k++)
+            for (int l=0; l<nd_u; l++)
+              {
+                //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
+                mat(k*D*D+j*D+i,l) = 0.5*(bmat(l,i*D*D+(D*k+j))+bmat(l,j*D*D+(D*i+k))-bmat(l,k*D*D+(D*i+j)));
+              }
+    }
+
+    
+
+    /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      size_t nd_u = static_cast<const FEL&>(fel).GetNDof();
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      
+      STACK_ARRAY(SIMD<double>, mem1, mir.Size()*D*D*D*nd_u);
+      FlatMatrix<SIMD<double>> bmat(mir.Size()*nd_u*D*D*D, 1, &mem1[0]);
+      DiffOpGradientHCurlCurl<D>::GenerateMatrixSIMDIR(bfel,bmr, bmat);
+    }
+    
+    using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      
+    }
+
+    using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    {
+    }*/
+  };
+
+
+  /// Christoffel Symbol of second kind for HCurlCurl
+  /*
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D,D*D } ); };
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      throw Exception("Christoffel symbol of second art is a nonlinear operator! Use only apply!");
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      throw Exception("Christoffel symbol of second art apply is not working yet!");
+      
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      HeapReset hr(lh);
+      typedef typename TVX::TSCAL TSCAL;
+      int nd_u = bfel.GetNDof();
+      FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
+      bfel.CalcShape (mip.IP(), bmat);
+      
+      Vec<D*D,TSCAL> hv = Trans (bmat) * x;
+      SliceMatrix<TSCAL> matshape(D,D,1,&hv[0]);
+      auto jac = mip.GetJacobian();
+      auto d2  = sqr(mip.GetJacobiDet());
+      Mat<D,D,TSCAL> defmat = 1/d2*jac*matshape*Trans(jac);
+      Mat<D,D,TSCAL> invmat = Inv(defmat);
+
+      
+      FlatMatrix<double> mat(nd_u,D*D*D, lh);
+      DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mip, Trans(mat), lh);
+      Vec<D*D*D,TSCAL> hdv = Trans(mat)*x;
+      
+      for (int i=0; i<D; i++)
+        for (int j=0; j<D; j++)
+          for (int k=0; k<D; k++)
+            {
+              y(i*D*D+j*D+k) = 0;
+                for (int p=0; p<D; p++)
+                  y(i*D*D+j*D+k) += invmat(i,p)*hdv(p*D*D+j+D*k);
+            }
+    }
+
+    //static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    //                                  const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    //{
+    //}
+    //
+    //using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
+    //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    //                         BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    //{
+    //  
+    //}
+    //
+    //using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
+    //static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    //                            BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    //{
+    //}
+    };*/
   
   
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
@@ -623,118 +802,126 @@ namespace ngcomp
   {
     int dim = ma->GetDimension();
 
-    first_edge_dof.SetSize (ma->GetNEdges()+1);
-    first_facet_dof.SetSize (ma->GetNFacets()+1);
-    first_element_dof.SetSize (ma->GetNE()+1);
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
 
-    order_facet.SetSize(ma->GetNFacets());
-    order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
-    order_edge.SetSize(ma->GetNEdges());
-    order_edge = INT<1>(uniform_order_edge);
-
-    order_inner.SetSize(ma->GetNE());
-    order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
-
-    Array<bool> fine_facet(ma->GetNFacets());
-    Array<bool> fine_edges(ma->GetNEdges());
-    fine_facet = false;
-    fine_edges = false;
-    for(auto el : ma->Elements(VOL))
+    if (first_update)
       {
-        fine_facet[el.Facets()] = true;
-        fine_edges[el.Edges()] = true;
-      }
-    ndof = 0;
+        first_edge_dof.SetSize (ma->GetNEdges()+1);
+        first_facet_dof.SetSize (ma->GetNFacets()+1);
+        first_element_dof.SetSize (ma->GetNE()+1);
+        
+        order_facet.SetSize(ma->GetNFacets());
+        order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
+        order_edge.SetSize(ma->GetNEdges());
+        order_edge = INT<1>(uniform_order_edge);
 
-    if (dim == 3)
-      {
-        for(auto i : Range(ma->GetNEdges()))
+        order_inner.SetSize(ma->GetNE());
+        order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
+
+        fine_facet.SetSize(ma->GetNFacets());
+        fine_edges.SetSize(ma->GetNEdges());
+        fine_facet = false;
+        fine_edges = false;
+        for(auto el : ma->Elements(VOL))
           {
-            first_edge_dof[i] = ndof;
-            if(!fine_edges[i]) continue;
-            
-            int oe = order_edge[i][0];
-            ndof += oe + 1;
-            
+            fine_facet[el.Facets()] = true;
+            fine_edges[el.Edges()] = true;
           }
-        first_edge_dof.Last() = ndof;
-      }
-    for(auto i : Range(ma->GetNFacets()))
-    {
-      first_facet_dof[i] = ndof;
-      if(!fine_facet[i]) continue;
+        ndof = 0;
 
-      INT<2> of = order_facet[i];
-      switch(ma->GetFacetType(i))
-      {
-      case ET_SEGM:
-        ndof += of[0] + 1; break;
-      case ET_TRIG:
-        ndof += 3*(of[0]*(of[0]+1)/2);
-        break;
-      case ET_QUAD:
-        throw Exception("HCurlcurl not implemented for quad face");
-        break;
-      default:
-        throw Exception("illegal facet type");
-      }
-    }
-    first_facet_dof.Last() = ndof;
-    if(discontinuous) ndof = 0;
+        if (dim == 3)
+          {
+            for(auto i : Range(ma->GetNEdges()))
+              {
+                first_edge_dof[i] = ndof;
+                if(!fine_edges[i]) continue;
+            
+                int oe = order_edge[i][0];
+                ndof += oe + 1;
+            
+              }
+            first_edge_dof.Last() = ndof;
+          }
+        for(auto i : Range(ma->GetNFacets()))
+          {
+            first_facet_dof[i] = ndof;
+            if(!fine_facet[i]) continue;
 
-    for(auto i : Range(ma->GetNE()))
-    {
-      ElementId ei(VOL, i);
-      first_element_dof[i] = ndof;
-      INT<3> oi = order_inner[i];
-      switch(ma->GetElType(ei))
-      {
-      case ET_TRIG:
-        ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
-        if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
-        break;
-      case ET_QUAD:
-        throw Exception("Hcurlcurl Quad not implemented yet");
-        break;
-      case ET_PRISM:
-        throw Exception("Hcurlcurl Prism not implemented yet");
-        break;
-      case ET_HEX:
-        throw Exception("Hcurlcurl Hex not implemented yet");
-        break;
-      case ET_TET:
-       if(oi[0] > 1)
-          ndof += 6*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
-       if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];
-          for (auto ed : ma->GetElEdges(ei))
-            ndof += first_edge_dof[ed+1] - first_edge_dof[ed];
-        }
-        break;
-      default:
-        throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
-      }
-    }
+            INT<2> of = order_facet[i];
+            switch(ma->GetFacetType(i))
+              {
+              case ET_SEGM:
+                ndof += of[0] + 1; break;
+              case ET_TRIG:
+                ndof += 3*(of[0]*(of[0]+1)/2);
+                break;
+              case ET_QUAD:
+                throw Exception("HCurlcurl not implemented for quad face");
+                break;
+              default:
+                throw Exception("illegal facet type");
+              }
+          }
+        first_facet_dof.Last() = ndof;
+        if(discontinuous) ndof = 0;
+
+        for(auto i : Range(ma->GetNE()))
+          {
+            ElementId ei(VOL, i);
+            first_element_dof[i] = ndof;
+            INT<3> oi = order_inner[i];
+            switch(ma->GetElType(ei))
+              {
+              case ET_TRIG:
+                ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                  }
+                break;
+              case ET_QUAD:
+                throw Exception("Hcurlcurl Quad not implemented yet");
+                break;
+              case ET_PRISM:
+                throw Exception("Hcurlcurl Prism not implemented yet");
+                break;
+              case ET_HEX:
+                throw Exception("Hcurlcurl Hex not implemented yet");
+                break;
+              case ET_TET:
+                if(oi[0] > 1)
+                  ndof += 6*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];
+                    for (auto ed : ma->GetElEdges(ei))
+                      ndof += first_edge_dof[ed+1] - first_edge_dof[ed];
+                  }
+                break;
+              default:
+                throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
+              }
+          }
    
-    first_element_dof.Last() = ndof;
-    if(discontinuous)
-      {
-        first_facet_dof = 0;
-        first_edge_dof = 0;
+        first_element_dof.Last() = ndof;
+        if(discontinuous)
+          {
+            first_facet_dof = 0;
+            first_edge_dof = 0;
+          }
+
+        if (print)
+          {
+            *testout << "Hcurlcurl firstedgedof = " << first_edge_dof << endl;
+            *testout << "Hcurlcurl firstfacetdof = " << first_facet_dof << endl;
+            *testout << "Hcurlcurl firsteldof = " << first_element_dof << endl;
+          }
       }
+    
     UpdateCouplingDofArray();
-    if (print)
-    {
-      *testout << "Hcurlcurl firstedgedof = " << first_edge_dof << endl;
-      *testout << "Hcurlcurl firstfacetdof = " << first_facet_dof << endl;
-      *testout << "Hcurlcurl firsteldof = " << first_element_dof << endl;
-    }
   }
 
   void  HCurlCurlFESpace :: UpdateCouplingDofArray ()
@@ -754,6 +941,74 @@ namespace ngcomp
       for (int dof: innerdofs)
         ctofdof[dof] = LOCAL_DOF;
     }
+  }
+
+  void HCurlCurlFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
+      throw Exception("In HCurlCurlFESpace::SetOrder. Order policy is constant or node-type!");
+    else if (order_policy == OLDSTYLE_ORDER)
+      order_policy = VARIABLE_ORDER;
+      
+    if (order < 0)
+      order = 0;
+
+    switch( CoDimension(ni.GetType(), ma->GetDimension()) )
+      {
+      case 2:
+        if (ma->GetDimension() == 3 )
+          if (ni.GetNr() < order_edge.Size())
+            order_edge[ni.GetNr()] = fine_edges[ni.GetNr()] ? order : 0;
+        break;
+      case 1:
+	if (ni.GetNr() < order_facet.Size())
+	  order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+	break;
+      case 0:
+        if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+		order_inner[elnr[0]] = order;
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+	    order_inner[ni.GetNr()] = order;
+	break;
+      default:
+	break;
+      }
+    
+  }
+  
+  int HCurlCurlFESpace :: GetOrder (NodeId ni) const
+  {
+    switch( CoDimension(ni.GetType(), ma->GetDimension()) )
+      {
+      case 2:
+        if (ma->GetDimension() == 3 )
+          if (ni.GetNr() < order_edge.Size())
+            return order_edge[ni.GetNr()][0];
+        break;
+      case 1:
+	if (ni.GetNr() < order_facet.Size())
+	  return order_facet[ni.GetNr()][0];
+	break;
+      case 0:
+	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
+	  {
+	    Array<int> elnr;
+	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (elnr[0] < order_inner.Size())
+	      return order_inner[elnr[0]][0];
+	  }
+        else if (ni.GetNr() < order_inner.Size())
+	  return order_inner[ni.GetNr()][0];
+	break;
+      default:
+	break;
+      }
+    return 0;
   }
 
 
@@ -776,10 +1031,15 @@ namespace ngcomp
             return *feseg;
             
           case ET_TRIG:
-            fetr->SetVertexNumbers (ngel.Vertices());
-            fetr->SetOrderInner(order_facet[ei.Nr()]);
-            fetr->ComputeNDof();
-            return *fetr;
+            {
+              fetr->SetVertexNumbers (ngel.Vertices());
+              int ii = 0;
+              for(auto e : ngel.Edges())
+                fetr->SetOrderEdge(ii++,order_edge[e][0]);
+              fetr->SetOrderInner(order_facet[ei.Nr()]);
+              fetr->ComputeNDof();
+              return *fetr;
+            }
             
             /*case ET_QUAD:          
               fequ->SetVertexNumbers (ngel.Vertices());
@@ -819,7 +1079,7 @@ namespace ngcomp
           fe->SetVertexNumbers (ngel.Vertices());
           int ii = 0;
           for(auto e : ngel.Edges())
-            fe->SetOrderEdge(ii++,order_edge[e]);
+            fe->SetOrderEdge(ii++,order_edge[e][0]);
           ii = 0;
           for(auto f : ngel.Facets())
             fe->SetOrderFacet(ii++,order_facet[f]);
@@ -867,7 +1127,7 @@ namespace ngcomp
           fe->SetVertexNumbers (ngel.vertices);
           int ii = 0;
           for(auto e : ngel.Edges())
-            fe->SetOrderEdge(ii++,order_edge[e]);
+            fe->SetOrderEdge(ii++,order_edge[e][0]);
           ii = 0;
           for(auto f : ngel.Facets())
             fe->SetOrderFacet(ii++,order_facet[f]);
@@ -936,9 +1196,13 @@ namespace ngcomp
 	break;
       case 2:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
+        additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
+        //additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
 	break;
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
+        additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
+        //additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
 	break;
       default:
         ;
