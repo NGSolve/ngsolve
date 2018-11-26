@@ -2085,6 +2085,7 @@ namespace ngcomp
 
       for (size_t base = 0; base < ir.Size(); base += BS)
         {
+          HeapReset hr(lh);
           size_t num = min2(BS, ir.Size()-base);
           
           FlatMatrix<SIMD<double>> hx1(D, num, lh);
