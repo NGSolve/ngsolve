@@ -2,6 +2,28 @@ from netgen.meshing import *
 from netgen.csg import *
 import ngsolve
 
+def Make1DMesh(n, mapping = None, periodic=False):
+    """
+        generate an equidistant 1D mesh with N cells
+    """
+    mesh = Mesh(dim=1)
+    pids = []
+    for i in range(n+1):
+        x = i/n
+        if mapping:
+            x = mapping(x)
+        pids.append (mesh.Add (MeshPoint(Pnt(x, 0, 0))))
+    for i in range(n):
+        mesh.Add(Element1D([pids[i],pids[i+1]],index=1))
+    mesh.Add (Element0D( pids[0], index=1))
+    mesh.Add (Element0D( pids[n], index=2))
+    mesh.SetBCName(0,"left")
+    mesh.SetBCName(1,"right")
+    if periodic:
+        mesh.AddPointIdentification(pids[0],pids[n],1,2)
+    ngsmesh = ngsolve.Mesh(mesh)
+    return ngsmesh
+
 def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
     mesh = Mesh()
     mesh.dim=2
@@ -77,7 +99,7 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
 def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
     return MakeStructured2DMesh(quads=True, nx=nx, ny=ny, periodic_x=periodic_x, periodic_y=periodic_y, mapping=mapping)    
 
-def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y : (x,y), cuboid_mapping=True):
+def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=True):
     if nz == None:
         if ny == None:
             nz = nx
@@ -90,8 +112,11 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
     netmesh.dim = 3
 
     if cuboid_mapping:
-        P1 = mapping(0,0,0)
-        P2 = mapping(1,1,1)
+        P1 = (0,0,0)
+        P2 = (1,1,1)
+        if mapping:
+            P1 = mapping(*P1)
+            P2 = mapping(*P2)
         cube = OrthoBrick(Pnt(P1[0], P1[1], P1[2]), Pnt(P2[0], P2[1], P2[2])).bc(1)
         geom = CSGeometry()
         geom.Add(cube)
@@ -110,7 +135,10 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
     for i in range(nx+1):
         for j in range(ny+1):
             for k in range(nz+1):
-                x,y,z = mapping(i / nx, j / ny, k / nz)
+                # x,y,z = mapping(i / nx, j / ny, k / nz)
+                x,y,z = i / nx, j / ny, k / nz
+                if mapping:
+                    x,y,z = mapping(x,y,z)
                 pids.append(netmesh.Add(MeshPoint(Pnt( x,y,z ))))
                 if periodic_x:
                     if i == 0:
@@ -146,7 +174,10 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
                         baseup, baseup+1, baseup+(nz+1)+1, baseup+(nz+1)]
                 if hexes:
                     elpids = [pids[p] for p in pnum]
-                    netmesh.Add(Element3D(1, elpids))
+                    el = Element3D(1, elpids)
+                    if not mapping:
+                        el.curved = False
+                    netmesh.Add(el)
                 else:
                     #  a poor mans kuhn triangulation of a cube
                     for qarr in [[0, 4, 5, 6],
@@ -204,11 +235,14 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
     # ngsmesh = ngsolve.Mesh("tmp.vol.gz")
     return ngsmesh
 
-def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = lambda x,y,z : (x,y,z)):
+def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None):
     return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping)
 
 from math import pi
 if __name__ == "__main__":
+
+    mesh = Make1DMesh(n=4)
+    print("simple 1D mesh -- no visualization -- ")
 
     mesh = MakeQuadMesh(nx=4, ny=4)
     Draw(mesh)
