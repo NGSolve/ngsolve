@@ -695,6 +695,8 @@ namespace ngla
     virtual AutoVector CreateVector () const;
 
     virtual double InnerProductD (const BaseVector & v2) const;
+    virtual double L2Norm () const;
+    
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & SetScalar (double scal);
 

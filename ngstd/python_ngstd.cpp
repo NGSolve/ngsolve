@@ -421,6 +421,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def(py::init<const string&>())
     .def("Start", &Timer::Start, "start timer")
     .def("Stop", &Timer::Stop, "stop timer")
+    .def_property_readonly("time", &Timer::GetTime, "returns time")
     ;
   
   m.def("Timers",
@@ -553,7 +554,43 @@ threads : int
           memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), size-n);
           unpickler.attr("append")(MemoryView(mem,size));
         }, py::arg("unpickler"));
-  py::class_<MemoryView>(m, "_MemoryView");
+
+  py::class_<MemoryView>(m, "_MemoryView")
+    .def(py::pickle([](MemoryView& mv)
+                    {
+                      if(have_numpy)
+                          return py::make_tuple(true,
+                                                py::array_t<char> (py::buffer_info((char*) mv.Ptr(),
+                                                                                   mv.Size())));
+                      else
+                          return py::make_tuple(false,
+                                                py::bytes((char*) mv.Ptr(),
+                                                          mv.Size()));
+                    },
+                    [](py::tuple state)
+                    {
+                      if(py::cast<bool>(state[0]))
+                        {
+                          if(!have_numpy)
+                            throw Exception("Data was pickled using numpy, need numpy to unpickle it!");
+                          auto array = py::cast<py::array_t<char>>(state[1]);
+                          auto size = array.size();
+                          char* mem = new char[size];
+                          memcpy(mem, array.data(0), size);
+                          return MemoryView (mem, size);
+                        }
+                      else
+                        {
+                          auto bytes = py::cast<py::bytes>(state[1]);
+                          char* buffer;
+                          py::ssize_t size;
+                          PYBIND11_BYTES_AS_STRING_AND_SIZE(bytes.ptr(), &buffer, &size);
+                          char *mem = new char[size];
+                          memcpy(mem, buffer, size);
+                          return MemoryView(mem, (size_t) size);
+                        }
+                    }))
+    ;
 
   
   py::class_<PyMPI_Comm> (m, "MPI_Comm")
