@@ -124,7 +124,7 @@ namespace ngfem
     using HCurlCurlFiniteElement<ET_trait<ET>::DIM>::order;
     
 
-    INT<1> order_edge[ET_trait<ET>::N_EDGE];
+    int order_edge[ET_trait<ET>::N_EDGE];
     INT<DIM-1> order_facet[ET_trait<ET>::N_FACET];
     INT<DIM> order_inner;
 
@@ -144,7 +144,7 @@ namespace ngfem
     const HCurlCurlFE<ET> * Cast() const { return static_cast<const HCurlCurlFE<ET>*> (this); } 
     
     INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
-    INLINE void SetOrderEdge (int nr, INT<1,int> order) { order_edge[nr] = order; }
+    INLINE void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
 
     virtual void ComputeNDof()
@@ -427,14 +427,14 @@ namespace ngfem
 	  
           Vec<3,AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
 
-          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+          LegendrePolynomial::EvalScaled(order_facet[i][0], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
                               shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
                             }));
         }
 
 
-      if (order > 0)
+      if (order_inner[0] > 0)
         {
 	  INT<4> f = ET_trait<ET_TRIG>::GetFaceSort(0, vnums); 
 	  AutoDiff<2,T> ls = ddlami[f[0]], le = ddlami[f[1]], lt = ddlami[f[2]];
@@ -443,7 +443,7 @@ namespace ngfem
 	  Vec<3,AutoDiff<2,T>> symdyadic2 = ls*SymDyadProd(lt,le);
 	  Vec<3,AutoDiff<2,T>> symdyadic3 = le*SymDyadProd(ls,lt);
           
-	  DubinerBasis3::Eval(order-1, ls,le,
+	  DubinerBasis3::Eval(order_inner[0]-1, ls,le,
 			      SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
 				       {
 					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic1);
@@ -1171,8 +1171,8 @@ namespace ngfem
 
       for (int i=0; i<6; i++)
       {
-        ndof += order_edge[i][0]+1;
-        order = max2(order, order_edge[i][0]);
+        ndof += order_edge[i]+1;
+        order = max2(order, order_edge[i]);
       }
       
       for (int i=0; i<4; i++)
@@ -1207,15 +1207,16 @@ namespace ngfem
 
           Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(ls,le);
 
-          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
                               shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
                             }));
         }
 
-      if (order > 0)
+      
+      for(int fa = 0; fa < 4; fa++)
         {
-          for(int fa = 0; fa < 4; fa++)
+          if (order_facet[fa][0] > 0)
             {
               INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
               AutoDiff<3,T> ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
@@ -1224,7 +1225,7 @@ namespace ngfem
               Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
               Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
               
-              DubinerBasis3::Eval(order-1, ls,le,
+              DubinerBasis3::Eval(order_facet[fa][0]-1, ls,le,
                                   SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
                                            {
                                              shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
@@ -1234,8 +1235,9 @@ namespace ngfem
             }
         }
 
-      if (order > 1)
+      if (order_inner[0] > 1)
         {
+          int p = order_inner[0];
           AutoDiff<3,T> li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
 
           Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
@@ -1245,23 +1247,22 @@ namespace ngfem
           Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
           Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
 
-          int order_inner = order;
 
           LegendrePolynomial leg;
           JacobiPolynomialAlpha jac1(1);    
           leg.EvalScaled1Assign 
-            (order_inner-2, lam[2]-lam[3], lam[2]+lam[3],
-             SBLambda ([&lam,order_inner,&jac1, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
+            (p-2, lam[2]-lam[3], lam[2]+lam[3],
+             SBLambda ([&lam,&p,&jac1, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
                        {
                          // JacobiPolynomialAlpha jac(2*k+1);
                          JacobiPolynomialAlpha jac2(2*k+2);
                          
                          jac1.EvalScaledMult1Assign
-                           (order_inner-2-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-                            SBLambda ([k,order_inner,&lam,&jac2, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
+                           (p-2-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+                            SBLambda ([k,&p,&lam,&jac2, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
                                       {
                                         // JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                        jac2.EvalMult(order_inner-2 - k - j, 2 * lam[0] - 1, polsy, 
+                                        jac2.EvalMult(p-2 - k - j, 2 * lam[0] - 1, polsy, 
                                                       SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val) LAMBDA_INLINE
                                                                {
                                                                  shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
@@ -1461,6 +1462,7 @@ namespace ngfem
     using HCurlCurlSurfaceFiniteElement<ET_trait<ET>::DIM>::order;
 
     INT<DIM> order_inner;
+    int order_edge[ET_trait<ET>::N_EDGE];
 
 
   public:
@@ -1476,6 +1478,7 @@ namespace ngfem
     const HCurlCurlSurfaceFE<ET> * Cast() const { return static_cast<const HCurlCurlSurfaceFE<ET>*> (this); } 
     
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+    INLINE void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
 
     virtual void ComputeNDof()
     {
@@ -1560,7 +1563,7 @@ namespace ngfem
    
       Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
           
-      LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+      LegendrePolynomial::EvalScaled(order_inner[0], ls-le,ls+le,
                                      SBLambda([shape, &ii,symdyadic] (size_t nr, auto val)
                                               {
                                                 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
@@ -1580,7 +1583,12 @@ namespace ngfem
     {
       order = 0;
       ndof = 0;
-      ndof += 3*(order_inner[0]+1)*(order_inner[0]+2)/2;
+      for (int i=0; i<3; i++)
+      {
+        ndof += order_edge[i]+1;
+        order = max2(order, order_edge[i]);
+      }
+      ndof += 3*order_inner[0]*(order_inner[0]+1)/2;
       order = max2(order, order_inner[0]);
     }
 
@@ -1622,7 +1630,7 @@ namespace ngfem
           AutoDiff<3,T> ls = lx[e[0]], le = lx[e[1]];
           Vec<6, AutoDiff<3,T>> symdyadic =  SymDyadProd(ls,le);
               
-          LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le,
                                          SBLambda([shape,symdyadic, &ii] (size_t nr, auto val)
                                                   {
                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
@@ -1630,7 +1638,7 @@ namespace ngfem
         }
 
 
-      if (order > 0)
+      if (order_inner[0] > 0)
         {
           INT<4> f =  ET_trait<ET_TRIG>::GetFaceSort(0, vnums);
           
@@ -1639,7 +1647,7 @@ namespace ngfem
           Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
           Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
           
-          DubinerBasis3::Eval(order-1, ls,le,
+          DubinerBasis3::Eval(order_inner[0]-1, ls,le,
                               SBLambda([shape, &ii, symdyadic1, symdyadic2, symdyadic3] (size_t nr, auto val)
                                        {
                                          shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);

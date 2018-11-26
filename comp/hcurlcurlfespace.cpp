@@ -1061,10 +1061,15 @@ namespace ngcomp
             return *feseg;
             
           case ET_TRIG:
-            fetr->SetVertexNumbers (ngel.Vertices());
-            fetr->SetOrderInner(order_facet[ei.Nr()]);
-            fetr->ComputeNDof();
-            return *fetr;
+            {
+              fetr->SetVertexNumbers (ngel.Vertices());
+              int ii = 0;
+              for(auto e : ngel.Edges())
+                fetr->SetOrderEdge(ii++,order_edge[e][0]);
+              fetr->SetOrderInner(order_facet[ei.Nr()]);
+              fetr->ComputeNDof();
+              return *fetr;
+            }
             
             /*case ET_QUAD:          
               fequ->SetVertexNumbers (ngel.Vertices());
@@ -1104,7 +1109,7 @@ namespace ngcomp
           fe->SetVertexNumbers (ngel.Vertices());
           int ii = 0;
           for(auto e : ngel.Edges())
-            fe->SetOrderEdge(ii++,order_edge[e]);
+            fe->SetOrderEdge(ii++,order_edge[e][0]);
           ii = 0;
           for(auto f : ngel.Facets())
             fe->SetOrderFacet(ii++,order_facet[f]);
@@ -1152,7 +1157,7 @@ namespace ngcomp
           fe->SetVertexNumbers (ngel.vertices);
           int ii = 0;
           for(auto e : ngel.Edges())
-            fe->SetOrderEdge(ii++,order_edge[e]);
+            fe->SetOrderEdge(ii++,order_edge[e][0]);
           ii = 0;
           for(auto f : ngel.Facets())
             fe->SetOrderFacet(ii++,order_facet[f]);
