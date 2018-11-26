@@ -673,6 +673,7 @@ namespace ngcomp
 
 
   /// Christoffel Symbol of second kind for HCurlCurl
+  /*
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
   {
@@ -700,41 +701,6 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
-      /*HeapReset hr(lh);
-
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      
-      
-      int nd_u = bfel.GetNDof();
-      FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
-      FlatMatrixFixWidth<D*D*D> bgradmat(nd_u, lh);
-      
-      CalcDShapeOfHCurlCurlFE<D>(bfel, mip, bgradmat, lh);
-      bfel.CalcMappedShape_Matrix (mip, bmat);
-
-      for (int l=0; l<nd_u; l++)
-        {
-          //SliceMatrix<double> C(D,D,1,&bmat(l,0));//.Row(l));
-          Mat<D,D> C;
-          for (int i=0; i<D; i++)
-            for (int j=0; j<D; j++)
-              C(i,j) = bmat(l,2*i+j);
-          //cout << "Det(C) = "<< C(0,0)*C(1,1)-C(1,0)*C(0,1) <<endl;
-          Mat<D,D> Cinv;
-          CalcInverse(C,Cinv);
-          for (int i=0; i<D; i++)
-            for (int j=0; j<D; j++)
-              for (int p=0; p<D; p++)
-                {
-                  mat(p*D*D+j*D+i,l) = 0;
-                  for (int k=0; k<D; k++)
-                    {
-                      //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-                      //Gamma_ij^p = Gamma_ijk C^{-1}_pk
-                      mat(p*D*D+j*D+i,l) += Cinv(p,k)*0.5*(bgradmat(l,i*D*D+(D*k+j))+bgradmat(l,j*D*D+(D*i+k))-bgradmat(l,k*D*D+(D*i+j)));
-                    }
-                }
-                }*/
       throw Exception("Christoffel symbol of second art is a nonlinear operator! Use only apply!");
     }
 
@@ -743,6 +709,8 @@ namespace ngcomp
                        const TVX & x, TVY & y,
                        LocalHeap & lh) 
     {
+      throw Exception("Christoffel symbol of second art apply is not working yet!");
+      
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
       
       HeapReset hr(lh);
@@ -766,28 +734,31 @@ namespace ngcomp
       for (int i=0; i<D; i++)
         for (int j=0; j<D; j++)
           for (int k=0; k<D; k++)
-            for (int p=0; p<D; p++)
-              y(i*D*D+j*D+k) = invmat(i,p)*hdv(p*D*D+j*D+k);
+            {
+              y(i*D*D+j*D+k) = 0;
+                for (int p=0; p<D; p++)
+                  y(i*D*D+j*D+k) += invmat(i,p)*hdv(p*D*D+j+D*k);
+            }
     }
 
-    /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
-    {
-    }
-    
-    using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
-    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      
-    }
-
-    using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
-    {
-    }*/
-  };
+    //static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    //                                  const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    //{
+    //}
+    //
+    //using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
+    //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    //                         BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    //{
+    //  
+    //}
+    //
+    //using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
+    //static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    //                            BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    //{
+    //}
+    };*/
   
   
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
@@ -1226,12 +1197,12 @@ namespace ngcomp
       case 2:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
-        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
+        //additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
 	break;
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
-        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
+        //additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
 	break;
       default:
         ;
