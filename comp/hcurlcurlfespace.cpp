@@ -421,7 +421,7 @@ namespace ngcomp
     {
       constexpr size_t BS = 64; // number of simd-points
       size_t maxnp = min2(BS, bmir.Size());
-      int size = (maxnp+1)*SIMD<double>::Size()*500;
+      size_t size = (maxnp+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -429,8 +429,6 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      
-      
 
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D*D; m++)
@@ -452,7 +450,7 @@ namespace ngcomp
               // hx = (F^-1 * x).Row(j)
               {
                 HeapReset hr(lh);
-                SIMD_IntegrationRule irl(num, lh);
+                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irl.Size(); k++)
                   {
                     irl[k] = ir[base+k];
@@ -463,7 +461,7 @@ namespace ngcomp
               }
               {
                 HeapReset hr(lh);
-                SIMD_IntegrationRule irr(num, lh);
+                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irr.Size(); k++)
                   {
                     irr[k] = ir[base+k];              
@@ -474,7 +472,7 @@ namespace ngcomp
               }
               {
                 HeapReset hr(lh);
-                SIMD_IntegrationRule irll(num, lh);
+                SIMD_IntegrationRule irll(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irll.Size(); k++)
                   {
                     irll[k] = ir[base+k];
@@ -485,7 +483,7 @@ namespace ngcomp
               }
               {
                 HeapReset hr(lh);
-                SIMD_IntegrationRule irrr(num, lh);
+                SIMD_IntegrationRule irrr(num*SIMD<double>::Size(), lh);
                 for (int k = 0; k < irrr.Size(); k++)
                   {
                     irrr[k] = ir[base+k];              
@@ -497,7 +495,7 @@ namespace ngcomp
               // hx = 1.0/(2*eps()) * (hxr-hxl);
               // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
               hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
-              for (int k = 0; k < mir.Size(); k++)
+              for (int k = 0; k < num; k++)
                 {
                   auto jacinv = mir[base+k].GetJacobianInverse();
                   for (int l = 0; l < D*D; l++)
@@ -517,6 +515,7 @@ namespace ngcomp
       constexpr size_t BS = 64; // number of simd-points
       size_t maxnp = min2(BS, bmir.Size());
       size_t size = (maxnp+1)*SIMD<double>::Size()*500;
+      
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -525,11 +524,11 @@ namespace ngcomp
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
       
-
       for (size_t base = 0; base < ir.Size(); base += BS)
         {
           HeapReset hr(lh);
           size_t num = min2(BS, ir.Size()-base);
+          
           FlatMatrix<SIMD<double>> hx1(D*D, num, lh);
           FlatMatrix<SIMD<double>> hx2(D*D, num, lh);
           
