@@ -12,8 +12,6 @@
 namespace ngcomp
 {
 
-  typedef size_t index_edge;
-
   class HCurlCurlFESpace : public FESpace
   {
     size_t ndof;
@@ -23,6 +21,9 @@ namespace ngcomp
     Array<INT<1,int> > order_edge;
     Array<INT<2,int> > order_facet;
     Array<INT<3,int> > order_inner;
+
+    Array<bool> fine_facet;
+    Array<bool> fine_edges;
     
 
     bool discontinuous;
@@ -43,6 +44,9 @@ namespace ngcomp
 
     virtual size_t GetNDof () const throw() override { return ndof; }
 
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     
 
