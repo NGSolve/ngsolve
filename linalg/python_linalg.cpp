@@ -365,6 +365,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                   else
                                     return py::cast(self.FVComplex());
                                 })
+    .def("Reshape", [] (BaseVector & self, size_t w)
+         {
+           size_t h = self.Size()/w;
+           return FlatMatrix<> (h, w, &self.FVDouble()(0));
+         }, py::arg("width"))
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
@@ -773,13 +778,20 @@ inverse : string
          "Linear operator projecting to true/false bits of BitArray mask, depending on argument range")
     .def("Project", &Projector::Project, "project vector inline")
     ;
-
-    py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
-      .def(py::init<>())
-      .def(py::init<size_t, bool>(),
-           py::arg("size"), py::arg("complex")=false)
-      ;
-
+  
+  py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
+    .def(py::init<>())
+    .def(py::init<size_t, bool>(),
+         py::arg("size"), py::arg("complex")=false)
+    ;
+  
+  py::class_<Embedding, shared_ptr<Embedding>, BaseMatrix> (m, "Embedding")
+    .def(py::init<size_t, IntRange>(),
+         py::arg("height"), py::arg("range"),
+         "Linear operator embedding a shorter vector into a longer vector")
+    ;
+  
+    
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
     ;

@@ -29,6 +29,35 @@ namespace ngla
     virtual void Project (BaseVector & x) const;    
   };
 
+  class Embedding : public BaseMatrix
+  {
+    size_t height;
+    IntRange range;
+  public:
+    Embedding (size_t aheight, IntRange arange)
+      : height(aheight), range(arange) { ; }
+
+    virtual bool IsComplex() const override { return false; } 
+
+    virtual int VHeight() const override { return height; }
+    virtual int VWidth() const override { return range.Size(); }
+
+    virtual AutoVector CreateRowVector () const override
+    {
+      return CreateBaseVector(range.Size(), false, 1);
+    }
+    
+    virtual AutoVector CreateColVector () const override
+    {
+      return CreateBaseVector(height, false, 1);
+    }
+    
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+  };
+
+
+  
   template <class TVR, class TVC>
   class Real2ComplexMatrix : public BaseMatrix
   {

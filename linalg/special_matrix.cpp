@@ -52,7 +52,18 @@ namespace ngla
       }
   }
 
+  void Embedding :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.Range(range) += s*x;
+  }
+  
+  void Embedding :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y += s*x.Range(range);
+  }
 
+
+  
   template <class TVR, class TVC>
   Real2ComplexMatrix<TVR,TVC> :: 
   Real2ComplexMatrix (const BaseMatrix * arealmatrix)
