@@ -195,18 +195,27 @@ void PyMatAccess( TCLASS &c )
           static void SetTuple( TMAT & self, py::tuple t, const TMAT & rmat) {
             py::object rows = t[0];
             py::object cols = t[1];
-
             // Both elements have to be slices
             try {
               auto row_slice = rows.cast<py::slice> ();
               auto col_slice = cols.cast<py::slice> ();
+              /*
               size_t start, step, n;
               InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 py::object f = row.attr("__setitem__");
-                f(self, cols, rmat.Row(i));
+                f(row, cols, rmat.Row(i));
               }
+              */
+              size_t rstart, rstep, rn;              
+              size_t cstart, cstep, cn;
+              InitSlice( row_slice, self.Height(), rstart, rstep, rn );
+              InitSlice( col_slice, self.Width(), cstart, cstep, cn );
+              for (int i = 0, ii=rstart; i < rn; i++, ii+=rstep)
+                for (int j = 0, jj = cstart; j < cn; j++, jj+=cstep)
+                  self(ii,jj) = rmat(i,j);
+
             } catch (py::error_already_set const &) {
               PyErr_Print();
             }
