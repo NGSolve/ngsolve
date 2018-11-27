@@ -204,7 +204,7 @@ namespace ngcomp
 
     parts.Append (bfi);
 
-    if (bfi->geom_free)
+    if (bfi->geom_free && nonassemble)
       {
         geom_free_parts += bfi;
         return *this;
@@ -4173,9 +4173,8 @@ namespace ngcomp
     RegionTimer reg(t);
 
     // classify:
-    if (!fespace2) throw Exception("geom-free needs trial and test-spaces");
-    auto fesx = fespace;  // trialspace
-    auto fesy = fespace2; // testspace
+    auto fesx = GetTrialSpace();
+    auto fesy = GetTestSpace(); 
     auto ma = GetMeshAccess();
     
     Array<short> classnr(ma->GetNE());
@@ -4205,9 +4204,14 @@ namespace ngcomp
         MixedFiniteElement fel(felx, fely);
         Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
 
+        /*
         if (geom_free_parts.Size() != 1) throw Exception("expect 1 geomfree part");
         auto & bfi = geom_free_parts[0];
         bfi->CalcElementMatrix(fel, trafo, elmat, lh);
+        */
+        elmat = 0.0;
+        for (auto bfi : geom_free_parts)
+          bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);          
         elmat *= ConvertTo<double> (val); // only real factor supported by now
       
         Matrix<> temp_x(elclass_inds.Size(), elmat.Width());
