@@ -1995,9 +1995,9 @@ intrule : ngsolve.fem.Integrationrule
                          {
                            while (true)
                              {
+                               LocalHeap lh(heapsize);
                                try
                                  {
-                                   LocalHeap lh(heapsize);
                                    if (complex)
                                      {
                                        Matrix<Complex> mat(fe.GetNDof() * self->GetDimension());

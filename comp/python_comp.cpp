@@ -1004,9 +1004,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
-            Allocator alloc;
-            
-            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); 
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
