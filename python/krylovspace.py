@@ -557,7 +557,6 @@ printrates : bool = True
         xstart.data = x
     else:
         xstart = None
-    r = b.CreateVector()
     sn = ngsolve.Vector(m, is_complex)
     cs = ngsolve.Vector(m, is_complex)
     sn[:] = 0
