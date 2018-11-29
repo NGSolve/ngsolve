@@ -212,12 +212,18 @@ namespace ngcomp
                          LocalHeap & lh) const override;
 
     template <int DIM>
+    void SolveM_Dim (CoefficientFunction * rho, BaseVector & vec,
+                     LocalHeap & lh) const;
+
+    /*
+    template <int DIM>
     void SolveMPiola (CoefficientFunction * rho, BaseVector & vec,
                       LocalHeap & lh) const;
     template <int DIM>
     void SolveMCovariant (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const;
-
+    */
+    
 
     template <int DIM>
     void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
