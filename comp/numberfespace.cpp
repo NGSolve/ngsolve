@@ -32,6 +32,13 @@ namespace ngcomp
       mat(0,0) = 1;
     }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      mat(0,0) = SIMD<double>(1);      
+    }
+
     using DiffOp<NumberDiffOp>::ApplySIMDIR;
     /*
     template <typename FEL, class MIR, class TVX, class TVY>
