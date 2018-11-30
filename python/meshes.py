@@ -264,6 +264,17 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
                         netmesh.Add(Element3D(1, elpids))
 
     def AddSurfEls(p1, dxi, nxi, deta, neta, facenr):
+        def add_seg(p1, dxi, deta, i, j):
+                base = p1 + i*dxi + j*deta
+                pnum = [base, base+dxi]
+                elpids = [pids[p] for p in pnum]
+                netmesh.Add(Element1D(elpids, index=facenr))
+        for i in range(nxi):
+            for j in [0, neta]:
+                add_seg(i,j)
+        for i in [0,nxi]:
+            for j in range(neta):
+                add_seg(i,j)
         for i in range(nxi):
             for j in range(neta):
                 base = p1 + i*dxi+j*deta

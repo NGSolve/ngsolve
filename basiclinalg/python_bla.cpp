@@ -336,6 +336,15 @@ auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
     return c;
   }
 
+template <typename T, typename TSCAL, typename TPYCLASS>
+void ExportImmediateOperators(TPYCLASS &c)
+  {
+      // "return self;" is important here!
+      c.def("__iadd__", [] (T &self, T &rhs) { self+=rhs; return self; });
+      c.def("__isub__", [] (T &self, T &rhs) { self-=rhs; return self; });
+      c.def("__imul__", [] (T &self, TSCAL &rhs) { self*=rhs; return self; });
+  }
+
 void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -368,10 +377,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
     cvd.def(py::init( [] (int n) { return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
+    ExportImmediateOperators<VD, double>(cvd);
 
     py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
     cvc.def(py::init( [] (int n) { return new VC(n); }));
     PyDefVecBuffer<VC>(cvc);
+    ExportImmediateOperators<VC, Complex>(cvc);
 
     m.def("Vector",
             [] (int n, bool is_complex) {
@@ -503,11 +514,13 @@ vals : tuple
       .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
+    ExportImmediateOperators<Matrix<double>, double>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
       .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
+    ExportImmediateOperators<Matrix<Complex>, Complex>(class_MC);
 
     auto class_Mat2D = py::class_<Mat<2,2,double>>(m,"Mat2D", py::buffer_protocol());
     PyDefMatBuffer<Mat<2,2,double>>(class_Mat2D);

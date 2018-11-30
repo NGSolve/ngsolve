@@ -215,7 +215,11 @@ namespace ngcomp
     /// y += val * Mat * x
     virtual void AddMatrix (Complex val, const BaseVector & x,
 			    BaseVector & y, LocalHeap & lh) const = 0;
-  
+
+    /// y += val * Mat^T * x
+    virtual void AddMatrixTrans (double val, const BaseVector & x,
+                                 BaseVector & y, LocalHeap & lh) const = 0;
+    
     /// y += val * lin.mat * x
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
@@ -465,7 +469,7 @@ namespace ngcomp
                     BaseVector & y, LocalHeap & lh) const;
 
     void AddMatrixGF (SCAL val, const BaseVector & x,
-                      BaseVector & y, LocalHeap & lh) const;
+                      BaseVector & y, bool transpose, LocalHeap & lh) const;
 
     virtual void AddMatrix (double val, const BaseVector & x,
                            BaseVector & y, LocalHeap & lh) const
@@ -482,7 +486,8 @@ namespace ngcomp
       AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }
 
-
+    virtual void AddMatrixTrans (double val, const BaseVector & x,
+                                 BaseVector & y, LocalHeap & lh) const;
 
     virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const 
     {
@@ -806,6 +811,10 @@ namespace ngcomp
 			    BaseVector & y, LocalHeap & lh) const
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
+    virtual void AddMatrixTrans (double val, const BaseVector & x,
+                                 BaseVector & y, LocalHeap & lh) const
+    { throw Exception ("comp-bf - AddMatrixTrans is illegal"); }
+    
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
@@ -900,6 +909,8 @@ namespace ngcomp
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
     ///
+    virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
+    
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;

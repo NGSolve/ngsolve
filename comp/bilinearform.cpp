@@ -3557,7 +3557,17 @@ namespace ngcomp
     timerfac2.Stop();
   } 
 
-
+  template <class SCAL>
+  void S_BilinearForm<SCAL> :: AddMatrixTrans (double val,
+                                               const BaseVector & x,
+                                               BaseVector & y, LocalHeap & clh) const
+  {
+    if (geom_free_parts.Size())
+      AddMatrixGF(val, x, y, true, clh);
+    if (geom_free_parts.Size() == parts.Size()) return;
+    
+    throw Exception ("AddMatrixTrans only supported for geom-free");
+  }
 
 
   template <class SCAL>
@@ -3566,7 +3576,7 @@ namespace ngcomp
                                            BaseVector & y, LocalHeap & clh) const
   {
     if (geom_free_parts.Size())
-      AddMatrixGF(val, x, y, clh);
+      AddMatrixGF(val, x, y, false, clh);
     
     static Timer timer ("Apply Matrix");
     static Timer timervb[4] = { string("Apply Matrix - volume"),
@@ -4164,7 +4174,9 @@ namespace ngcomp
   template <class SCAL>
   void S_BilinearForm<SCAL> :: AddMatrixGF (SCAL val,
                                             const BaseVector & x,
-                                            BaseVector & y, LocalHeap & lh) const
+                                            BaseVector & y,
+                                            bool transpose,
+                                            LocalHeap & lh) const
   {
     static Timer t("BilinearForm::Apply - geomfree");
     static Timer tx("BilinearForm::Apply - geomfree x");
@@ -4204,11 +4216,6 @@ namespace ngcomp
         MixedFiniteElement fel(felx, fely);
         Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
 
-        /*
-        if (geom_free_parts.Size() != 1) throw Exception("expect 1 geomfree part");
-        auto & bfi = geom_free_parts[0];
-        bfi->CalcElementMatrix(fel, trafo, elmat, lh);
-        */
         elmat = 0.0;
         for (auto bfi : geom_free_parts)
           bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);          
@@ -4216,44 +4223,71 @@ namespace ngcomp
       
         Matrix<> temp_x(elclass_inds.Size(), elmat.Width());
         Matrix<> temp_y(elclass_inds.Size(), elmat.Height());
-        
-        ParallelForRange
-          (Range(elclass_inds),
-           [&] (IntRange myrange)
-           {
-             Array<DofId> dofs;
-             
-             int tid = TaskManager::GetThreadId();
-             {
-               ThreadRegionTimer r(tx, tid);
-               auto fvx = x.FVDouble();
-               for (auto i : myrange)
-                 {
-                   fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
-                   x.GetIndirect(dofs, temp_x.Row(i));
-                 }
-             }
 
-             /*
-             temp_y.Rows(myrange) = 0;      
-             // temp_y = temp_x * Trans(elmat); //  | Lapack;
-             AddABt(temp_x.Rows(myrange), elmat, temp_y.Rows(myrange));
-             */
-             {
-               ThreadRegionTimer r(tm,tid);
-               NgProfiler::AddThreadFlops(tm, tid, elmat.Height()*elmat.Width()*myrange.Size());
-               temp_y.Rows(myrange) = temp_x.Rows(myrange) * Trans(elmat);
-             }
-             {
-               ThreadRegionTimer r(ty,tid);
-               for (auto i : myrange)
+        if (!transpose)
+          {
+            ParallelForRange
+              (Range(elclass_inds),
+               [&] (IntRange myrange)
+               {
+                 Array<DofId> dofs;
+                 
+                 int tid = TaskManager::GetThreadId();
                  {
-                   fesy->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
-                   y.AddIndirect(dofs, temp_y.Row(i), true);
-                   // todo: check if atomic is actually needed for space
+                   ThreadRegionTimer r(tx, tid);
+                   auto fvx = x.FVDouble();
+                   for (auto i : myrange)
+                     {
+                       fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                       x.GetIndirect(dofs, temp_x.Row(i));
+                     }
                  }
-             }
-           });
+                 
+                 {
+                   ThreadRegionTimer r(tm,tid);
+                   NgProfiler::AddThreadFlops(tm, tid, elmat.Height()*elmat.Width()*myrange.Size());
+                   temp_y.Rows(myrange) = temp_x.Rows(myrange) * Trans(elmat);
+                 }
+                 {
+                   ThreadRegionTimer r(ty,tid);
+                   for (auto i : myrange)
+                     {
+                       fesy->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                       y.AddIndirect(dofs, temp_y.Row(i), true);
+                       // todo: check if atomic is actually needed for space
+                     }
+                 }
+               });
+          }
+        else
+          {
+            ParallelForRange
+              (Range(elclass_inds),
+               [&] (IntRange myrange)
+               {
+                 Array<DofId> dofs;
+                 
+                 {
+                   auto fvy = y.FVDouble();
+                   for (auto i : myrange)
+                     {
+                       fesy->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                       x.GetIndirect(dofs, temp_y.Row(i));
+                     }
+                 }
+                 
+                 {
+                   temp_x.Rows(myrange) = temp_y.Rows(myrange) * elmat;
+                 }
+                 {
+                   for (auto i : myrange)
+                     {
+                       fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                       y.AddIndirect(dofs, temp_x.Row(i), true);
+                     }
+                 }
+               });
+          }
       }
   }
   
@@ -5472,6 +5506,33 @@ namespace ngcomp
     
   }
 
+  void BilinearFormApplication :: 
+  MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const
+  {
+    v.Cumulate();
+    prod.Distribute();
+
+    // bf -> AddMatrix (val, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrixTrans (val, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
+    
+  }
 
   shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
                                                shared_ptr<FESpace> space2,

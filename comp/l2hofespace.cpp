@@ -705,7 +705,8 @@ global system.
                                      LocalHeap & lh) const
   {
     static Timer t("SolveM"); RegionTimer reg(t);
-    
+    if (rho && rho->Dimension() != 1)
+      throw Exception("L2HighOrderFESpace::SolveM needs a scalar density");
     IterateElements (*this, VOL, lh,
                      [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
                      {
@@ -1716,6 +1717,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
   void VectorL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                                   LocalHeap & lh) const
   {
+    /*
     if (piola)
       {
         switch (ma->GetDimension())
@@ -1739,6 +1741,19 @@ One can evaluate the vector-valued function, and one can take the gradient.
           }
         return;
       }
+    */
+    
+    if (covariant || piola || (rho && rho->Dimension() > 1) )
+      {
+        switch (ma->GetDimension())
+          {
+          case 1: SolveM_Dim<1>(rho, vec, lh); break;
+          case 2: SolveM_Dim<2>(rho, vec, lh); break;
+          case 3: SolveM_Dim<3>(rho, vec, lh); break;
+          default: throw Exception("VectorL2FESpace::SolveM: illegal dimension");
+          }
+        return;
+      }
     
     for (size_t i = 0; i < spaces.Size(); i++)
       {
@@ -1748,7 +1763,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
   }
 
 
-
+  
   
   void VectorL2FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
                                   LocalHeap & lh) const
@@ -1783,12 +1798,102 @@ One can evaluate the vector-valued function, and one can take the gradient.
         spaces[i] -> ApplyM (rho, veci, lh);
       }
   }
-
-
+    
+    
   
+  template <int DIM>
+  void VectorL2FESpace ::
+  SolveM_Dim (CoefficientFunction * rho, BaseVector & vec,
+              LocalHeap & lh) const
+  {
+    static Timer t("SolveM - Vec"); RegionTimer reg(t);
+    
+    IterateElements
+      (*this, VOL, lh,
+       [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
+       {
+         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
+         const ElementTransformation & trafo = el.GetTrafo();
+         
+         Array<int> dnums(fel.GetNDof(), lh);
+         GetDofNrs (el.Nr(), dnums);
+         
+         FlatVector<double> elx(feli.GetNDof()*DIM, lh);
+         vec.GetIndirect(dnums, elx);
+         auto melx = elx.AsMatrix(DIM, feli.GetNDof());
+         
+         FlatVector<double> diag_mass(feli.GetNDof(), lh);
+         feli.GetDiagMassMatrix (diag_mass);
+         
+         bool curved = trafo.IsCurvedElement();
+         if (rho && !rho->ElementwiseConstant()) curved = true;
+         curved = false;  // curved not implemented
+         
+         if (!curved)
+           {
+             IntegrationRule ir(fel.ElementType(), 0);
+             MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
 
+             Mat<DIM,DIM> rhoi;
+             if (!rho)
+               rhoi = Identity(DIM);
+             else if (rho->Dimension() == 1)
+               rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
+             else
+               rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+             
+             Mat<DIM> trans;
+             if (piola)
+               trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
+             else if (covariant)
+               trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());               
+             else
+               trans = mir[0].GetMeasure() * rhoi;
 
+             Mat<DIM> invtrans = Inv(trans);
+             
+             for (int i = 0; i < melx.Width(); i++)
+               {
+                 Vec<DIM> hv = melx.Col(i);
+                 hv /=  diag_mass(i);
+                 melx.Col(i) = invtrans * hv;
+               }
+           }
+         /*
+           else
+           {
+           SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+           auto & mir = trafo(ir, lh);
+           FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
+           FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
+           if (rho) rho->Evaluate (mir, rhovals);
+                 
+           for (int i = 0; i < melx.Height(); i++)
+           melx.Row(i) /= diag_mass(i);
+           for (int comp = 0; comp < dimension; comp++)
+           {
+           fel.Evaluate (ir, melx.Col(comp), pntvals);
+           if (rho)
+           for (size_t i = 0; i < ir.Size(); i++)
+           pntvals(i) *= ir[i].Weight() / (mir[i].GetMeasure() * rhovals(0,i));
+           else
+           for (size_t i = 0; i < ir.Size(); i++)
+           pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
+           
+           melx.Col(comp) = 0.0;
+           fel.AddTrans (ir, pntvals, melx.Col(comp));
+           }
+           for (int i = 0; i < melx.Height(); i++)
+           melx.Row(i) /= diag_mass(i);
+           }
+         */
+         vec.SetIndirect(dnums, elx);
+       });
+    }
 
+    
+#ifdef OLD
   template <int DIM>
   void VectorL2FESpace ::
   SolveMPiola (CoefficientFunction * rho, BaseVector & vec,
@@ -1904,9 +2009,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
              
              Mat<DIM,DIM> rhoi;
              if (!rho)
-               rhoi = Identity(3);
+               rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
-               rhoi = rho->Evaluate(mir[0]) * Identity(3);
+               rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
              
@@ -1956,7 +2061,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
          vec.SetIndirect(dnums, elx);
        });
   }
-
+#endif
+  
 
   
 
