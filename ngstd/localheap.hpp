@@ -15,9 +15,18 @@ namespace ngstd
   class Allocator
   {
   public:
+    virtual ~Allocator() {}
     virtual void * Alloc (size_t size)
     {
       return new char[size];
+    }
+    virtual void Delete(void* p)
+    {
+      delete (char*) p;
+    }
+    virtual void ArrayDelete(void* p)
+    {
+        delete [] (char*) p;
     }
   };
   static Allocator global_alloc;
@@ -185,6 +194,9 @@ namespace ngstd
       return reinterpret_cast<T*> (oldp);
     }
 
+    virtual void Delete(void* p) {}
+
+    virtual void ArrayDelete(void* p) {}
   private: 
     ///
 #ifndef __CUDA_ARCH__
@@ -287,36 +299,14 @@ INLINE void * operator new [] (size_t size, ngstd::Allocator & alloc)
 }
 
 
-
-INLINE void * operator new (size_t size, ngstd::LocalHeap & lh)  
-{
-  return lh.Alloc(size);
-}
-
-INLINE void * operator new [] (size_t size, ngstd::LocalHeap & lh)  
-{
-  return lh.Alloc(size);
-}
-
-INLINE void operator delete (void * p, ngstd::LocalHeap & lh)  
-{
-  ; 
-}
-
-INLINE void operator delete [] (void * p, ngstd::LocalHeap & lh)  
-{
-  ; 
-}
-
-
 INLINE void operator delete (void * p, ngstd::Allocator & lh)  
 {
-  ::delete (char*) p;
+  lh.Delete(p);
 }
 
 INLINE void operator delete [] (void * p, ngstd::Allocator & lh)  
 {
-  ::delete [] (char*) p;
+  lh.ArrayDelete(p);
 }
 
 
