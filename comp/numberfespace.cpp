@@ -36,7 +36,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      mat(0,0) = SIMD<double>(1);      
+      mat.Row(0).AddSize(mir.Size()) = SIMD<double>(1);
     }
 
     using DiffOp<NumberDiffOp>::ApplySIMDIR;
