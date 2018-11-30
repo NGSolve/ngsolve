@@ -315,7 +315,7 @@ template<> void ExtractRealImag(const SIMD<double> val, int i, float &real, floa
 template<> void ExtractRealImag(const double val, int i, float &real, float &imag) { real = val; }
 
 template<typename TSCAL, typename TMIR>
-static void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR &mir, FlatArray<float> values_real, FlatArray<float> values_imag , FlatArray<float> min, FlatArray<float> max) {
+static void GetValues( const CoefficientFunction &cf, LocalHeap &lh, TMIR &mir, FlatArray<float> values_real, FlatArray<float> values_imag , FlatArray<float> min, FlatArray<float> max, bool covariant=false) {
     static_assert( is_same<TSCAL, SIMD<double>>::value || is_same<TSCAL, SIMD<Complex>>::value || is_same<TSCAL, double>::value || is_same<TSCAL, Complex>::value, "Unsupported type in GetValues");
 
     HeapReset hr(lh);
@@ -323,12 +323,19 @@ static void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR 
     auto ncomps = cf.Dimension();
     int nip = mir.IR().GetNIP();
     auto getIndex = [=] ( int p, int comp ) { return p*ncomps + comp; };
-    bool is_complex = is_same<TSCAL, SIMD<Complex>>::value || is_same<TSCAL, Complex>::value;
+    constexpr bool is_complex = is_same<TSCAL, SIMD<Complex>>::value || is_same<TSCAL, Complex>::value;
+    constexpr bool is_simd = is_same<TSCAL, SIMD<double>>::value || is_same<TSCAL, SIMD<Complex>>::value;
 
-    if(is_same<TSCAL, SIMD<double>>::value || is_same<TSCAL, SIMD<Complex>>::value)
+
+    if constexpr(is_simd)
     {
         FlatMatrix<TSCAL> values(ncomps, mir.Size(), lh);
         cf.Evaluate(mir, values);
+
+        if constexpr(!is_complex)
+            if(covariant) {
+                mir.TransformGradientTrans(values);
+            }
 
         constexpr int n = SIMD<double>::Size();
         for (auto k : Range(nip)) {
@@ -354,6 +361,17 @@ static void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR 
     {
         FlatMatrix<TSCAL> values(mir.Size(), ncomps, lh);
         cf.Evaluate(mir, values);
+
+        if(covariant) {
+            VectorMem<4,TSCAL> val(ncomps);
+            for (auto k : Range(nip)) {
+                val = values.Row(k);
+                Mat<3,3,double> m = mir[k].GetJacobian();
+                CalcInverse(m);
+                values.Row(k) = m*val;
+            }
+        }
+
         for (auto k : Range(nip)) {
             for (auto i : Range(ncomps)) {
                 float vreal = 0.0;
@@ -570,6 +588,7 @@ void ExportVisFunctions(py::module &m) {
                 ElementInformation pyramids[2] = { {ET_PYRAMID}, {ET_PYRAMID, true } };
                 ElementInformation prisms[2] = { {ET_PRISM}, {ET_PRISM, true } };
                 ElementInformation hexes[2] = { {ET_HEX}, {ET_HEX, true } };
+                Array<int> types_and_numbering;
 
                 for (auto el : ma->Elements(VOL)) {
                     auto verts = el.Vertices();
@@ -586,6 +605,10 @@ void ExportVisFunctions(py::module &m) {
                         throw Exception("GetMeshData(): unknown element");
                     }
                     ElementInformation &ei = pei[el.is_curved];
+
+                    types_and_numbering.Append(2*nverts+el.is_curved);
+                    types_and_numbering.Append(ei.nelements);
+
                     ei.nelements++;
                     ei.data.Append(el.Nr());
                     ei.data.Append(el.GetIndex());
@@ -618,6 +641,7 @@ void ExportVisFunctions(py::module &m) {
                         }
                     }
                 }
+                element_data[VOL].append(types_and_numbering);
                 for (auto i : Range(2)) {
                     if(tets[i].data.Size()) element_data[VOL].append(toDict(tets[i]));
                     if(pyramids[i].data.Size()) element_data[VOL].append(toDict(pyramids[i]));
@@ -796,7 +820,7 @@ void ExportVisFunctions(py::module &m) {
             task_manager=tm;
             return result;
           }, py::call_guard<py::gil_scoped_release>());
-    m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
+    m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs, bool covariant) {
               auto tm = task_manager;
               task_manager = nullptr;
               LocalHeap lh(10000000, "GetValues");
@@ -855,9 +879,9 @@ void ExportVisFunctions(py::module &m) {
                         {
                           auto & mir = GetMappedIR(ma, el, simd_ir, mlh);
                           if(cf->IsComplex())
-                            GetValues<SIMD<Complex>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
+                            GetValues<SIMD<Complex>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local, covariant);
                           else
-                            GetValues<SIMD<double>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag, min_local, max_local);
+                            GetValues<SIMD<double>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag, min_local, max_local, covariant);
                         }
                       catch(ExceptionNOSIMD e)
                         {
@@ -868,9 +892,9 @@ void ExportVisFunctions(py::module &m) {
                     {
                       auto & mir = GetMappedIR(ma, el, ir, mlh);
                       if(cf->IsComplex())
-                        GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
+                        GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local, covariant);
                       else
-                        GetValues<double>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag, min_local, max_local);
+                        GetValues<double>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag, min_local, max_local, covariant);
                     }
                   for (auto i : Range(ncomps)) {
                       float expected = min[i];
