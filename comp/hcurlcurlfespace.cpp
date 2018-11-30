@@ -673,7 +673,7 @@ namespace ngcomp
 
 
   /// Christoffel Symbol of second kind for HCurlCurl
-  /*
+  
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
   {
@@ -709,27 +709,21 @@ namespace ngcomp
                        const TVX & x, TVY & y,
                        LocalHeap & lh) 
     {
-      throw Exception("Christoffel symbol of second art apply is not working yet!");
-      
+      HeapReset hr(lh);
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
       
-      HeapReset hr(lh);
       typedef typename TVX::TSCAL TSCAL;
       int nd_u = bfel.GetNDof();
       FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
-      bfel.CalcShape (mip.IP(), bmat);
+      bfel.CalcMappedShape_Matrix (mip, bmat);
       
-      Vec<D*D,TSCAL> hv = Trans (bmat) * x;
-      SliceMatrix<TSCAL> matshape(D,D,1,&hv[0]);
-      auto jac = mip.GetJacobian();
-      auto d2  = sqr(mip.GetJacobiDet());
-      Mat<D,D,TSCAL> defmat = 1/d2*jac*matshape*Trans(jac);
+      Vec<D*D,TSCAL> hv = Trans(bmat) * x;
+      Mat<D,D,TSCAL> defmat = hv;
       Mat<D,D,TSCAL> invmat = Inv(defmat);
 
-      
       FlatMatrix<double> mat(nd_u,D*D*D, lh);
       DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mip, Trans(mat), lh);
-      Vec<D*D*D,TSCAL> hdv = Trans(mat)*x;
+      Vec<D*D*D,TSCAL> hdv = Trans(mat) * x;
       
       for (int i=0; i<D; i++)
         for (int j=0; j<D; j++)
@@ -758,7 +752,7 @@ namespace ngcomp
     //                            BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     //{
     //}
-    };*/
+  };
   
   
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
@@ -1197,12 +1191,12 @@ namespace ngcomp
       case 2:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
-        //additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
+        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
 	break;
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
-        //additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
+        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
 	break;
       default:
         ;
