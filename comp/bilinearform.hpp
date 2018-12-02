@@ -106,7 +106,8 @@ namespace ngcomp
     Array<void*> precomputed_data;
     /// output of norm of matrix entries
     bool checksum;
-
+    
+    mutable std::map<size_t, Matrix<>> precomputed;
   public:
     /// generate a bilinear-form
     BilinearForm (shared_ptr<FESpace> afespace,
@@ -892,10 +893,10 @@ namespace ngcomp
   protected:
     ///
     shared_ptr<BilinearForm> bf;
-
+    LocalHeap & lh;
   public:
     ///
-    BilinearFormApplication (shared_ptr<BilinearForm> abf);
+    BilinearFormApplication (shared_ptr<BilinearForm> abf, LocalHeap & alh);
 
     virtual bool IsComplex() const override
     {
@@ -941,7 +942,8 @@ namespace ngcomp
   public:
     ///
     LinearizedBilinearFormApplication (shared_ptr<BilinearForm> abf,
-				       const BaseVector * aveclin);
+				       const BaseVector * aveclin,
+                                       LocalHeap & alh);
 
     ///
       using BilinearFormApplication::Mult;
