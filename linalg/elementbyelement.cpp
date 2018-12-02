@@ -670,5 +670,36 @@ namespace ngla
   
   template class ElementByElementMatrix<double>;
   template class ElementByElementMatrix<Complex>;  
+
+  
+  void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+    Vector<> hx(matrix.Width());
+    Vector<> hy(matrix.Height());
+    for (size_t i = 0; i < row_dnums.Size(); i++)
+      {
+        hx = fx(row_dnums[i]);
+        hy = matrix * hx;
+        fy(col_dnums[i]) += s * hy;
+      }
+  }
+  
+  void ConstantElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+    Vector<> hx(matrix.Height());
+    Vector<> hy(matrix.Width());
+    for (size_t i = 0; i < row_dnums.Size(); i++)
+      {
+        hx = fx(col_dnums[i]);
+        hy = Trans(matrix) * hx;
+        fy(row_dnums[i]) += s * hy;
+      }
+  }
+
+
   
 }
