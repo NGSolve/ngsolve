@@ -543,6 +543,7 @@ namespace ngbla
     /// fill matrix with scalar
     Matrix & operator= (const Matrix & m2) 
     {
+      SetSize (m2.Height(), m2.Width());
       FlatMatrix<T,ORD>::operator= (m2);
       return *this;
     }

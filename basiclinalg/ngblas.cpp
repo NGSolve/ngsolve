@@ -1979,7 +1979,7 @@ namespace ngbla
   /**************** timings *********************** */
 
   
-  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k)
+  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack)
   {
     if (what < 0)
       {
@@ -2142,7 +2142,8 @@ namespace ngbla
         
         double tot = n*m*k;
         int its = 1e10 / tot + 1;
-        MultMatMat(a,b,c);
+        // MultMatMat(a,b,c);
+        c = a * b;
         double err = L2Norm(a*b-c);
         if (err > 1e-8)
           throw Exception("MultMatMat is faulty");
@@ -2150,8 +2151,13 @@ namespace ngbla
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
-            MultMatMat(a,b,c);
+          if (!lapack)
+            for (int j = 0; j < its; j++)
+              // MultMatMat(a,b,c);
+              c = a*b;
+          else
+            for (int j = 0; j < its; j++)
+              c = a*b | Lapack;
           t.Stop();
           cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
@@ -2170,7 +2176,8 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (int j = 0; j < its; j++)
-            AddABt(a,b,c);
+            // AddABt(a,b,c);
+            c += a * Trans(b);
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
@@ -2214,8 +2221,12 @@ namespace ngbla
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
-            c = a * Trans(b);
+          if (!lapack)
+            for (int j = 0; j < its; j++)
+              c = a * Trans(b);
+          else
+            for (int j = 0; j < its; j++)
+              c = a * Trans(b) | Lapack;
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
