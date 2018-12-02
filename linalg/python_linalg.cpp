@@ -677,7 +677,37 @@ inverse : string
   py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
     (m, "S_BaseMatrixC", "base sparse matrix");
 
+  py::class_<ConstantElementByElementMatrix, shared_ptr<ConstantElementByElementMatrix>, BaseMatrix>
+    (m, "ConstEBEMatrix")
+    .def(py::init<> ([] (size_t h, size_t w, Matrix<> mat,
+                         py::list pycdofs, py::list pyrdofs)
+                     {
+                       size_t n = py::len(pyrdofs);
+                       Array<int> entrysize(n);
+                       
+                       for (size_t i = 0; i < n; i++)
+                         entrysize[i] = py::len(pyrdofs[i]);
+                       Table<int> rdofs(entrysize);
+                       for (size_t i = 0; i < n; i++)
+                         {
+                           const py::object & obj = pyrdofs[i];
+                           rdofs[i] = makeCArray<int> (obj);
+                         }
 
+                       for (size_t i = 0; i < n; i++)
+                         entrysize[i] = py::len(pycdofs[i]);
+                       Table<int> cdofs(entrysize);
+                       for (size_t i = 0; i < n; i++)
+                         {
+                           const py::object & obj = pycdofs[i];
+                           cdofs[i] = makeCArray<int> (obj);
+                         }
+
+                       return make_shared<ConstantElementByElementMatrix> (h, w, mat,
+                                                                           std::move(cdofs), std::move(rdofs));
+                     }))
+    ;
+  
   py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
     .def(py::init<> ([] (vector<vector<shared_ptr<BaseMatrix>>> mats)
                      {

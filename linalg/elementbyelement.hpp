@@ -120,6 +120,23 @@ namespace ngla
     virtual size_t NZE () const { return GetNZE(); }
   };  
 
+
+  class NGS_DLL_HEADER ConstantElementByElementMatrix : public BaseMatrix
+  {
+    size_t h, w;
+    Matrix<> matrix;
+    Table<int> col_dnums;
+    Table<int> row_dnums;
+  public:
+    ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
+                                    Table<int> acol_dnums, Table<int> arow_dnums)
+      : h(ah), w(aw), matrix(amatrix), col_dnums(move(acol_dnums)), row_dnums(move(arow_dnums))
+    { ; }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+  };
+  
 }
 
 #endif
