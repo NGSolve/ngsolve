@@ -549,7 +549,8 @@ namespace ngcomp
 
     if (nonassemble)
       {
-        mats.Append (make_shared<BilinearFormApplication> (shared_ptr<BilinearForm>(this, NOOP_Deleter))); 
+        // mats.Append (make_shared<BilinearFormApplication> (shared_ptr<BilinearForm>(this, NOOP_Deleter)), lh);
+        mats.Append (make_shared<BilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), lh)); 
       
         if (precompute)
           {
@@ -4216,9 +4217,21 @@ namespace ngcomp
         MixedFiniteElement fel(felx, fely);
         Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
 
-        elmat = 0.0;
-        for (auto bfi : geom_free_parts)
-          bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);          
+        size_t nr = classnr[elclass_inds[0]];
+        if (precomputed.count(nr))
+          {
+            elmat = precomputed[nr];
+          }
+        else
+          {
+            elmat = 0.0;
+            for (auto bfi : geom_free_parts)
+              bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
+
+            precomputed[nr] = Matrix<>(fely.GetNDof(), felx.GetNDof());
+            precomputed[nr] = elmat;
+          }
+        
         elmat *= ConvertTo<double> (val); // only real factor supported by now
       
         Matrix<> temp_x(elclass_inds.Size(), elmat.Width());
@@ -4245,6 +4258,7 @@ namespace ngcomp
                  
                  {
                    ThreadRegionTimer r(tm,tid);
+                   RegionTracer rt(tid, tm);
                    NgProfiler::AddThreadFlops(tm, tid, elmat.Height()*elmat.Width()*myrange.Size());
                    temp_y.Rows(myrange) = temp_x.Rows(myrange) * Trans(elmat);
                  }
@@ -5416,8 +5430,9 @@ namespace ngcomp
 
   
   BilinearFormApplication :: 
-  BilinearFormApplication (shared_ptr<BilinearForm> abf)
-    : bf (abf)
+  BilinearFormApplication (shared_ptr<BilinearForm> abf,
+                           LocalHeap & alh)
+    : bf (abf), lh(alh)
   {
     ;
   }
@@ -5425,6 +5440,7 @@ namespace ngcomp
   void BilinearFormApplication :: 
   Mult (const BaseVector & v, BaseVector & prod) const
   {
+    static Timer t("BilinearFormApplication"); RegionTimer r(t);
     v.Cumulate();
 
     prod = 0;
@@ -5436,7 +5452,7 @@ namespace ngcomp
       {
         try
           {
-            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
             bf -> AddMatrix (1, v, prod, lh);
             done = true;
           }            
@@ -5465,7 +5481,8 @@ namespace ngcomp
       {
         try
           {
-            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            static Timer t("BilinearFormApplication"); RegionTimer r(t);
+            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
             bf -> AddMatrix (val, v, prod, lh);
             done = true;
           }            
@@ -5493,7 +5510,7 @@ namespace ngcomp
       {
         try
           {
-            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
             bf -> AddMatrix (val, v, prod, lh);
             done = true;
           }            
@@ -5521,7 +5538,7 @@ namespace ngcomp
       {
         try
           {
-            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
             bf -> AddMatrixTrans (val, v, prod, lh);
             done = true;
           }            
@@ -5585,8 +5602,9 @@ namespace ngcomp
   
   LinearizedBilinearFormApplication ::
   LinearizedBilinearFormApplication (shared_ptr<BilinearForm> abf,
-                                     const BaseVector * aveclin)
-    : BilinearFormApplication (abf), veclin(aveclin)
+                                     const BaseVector * aveclin,
+                                     LocalHeap & alh)
+    : BilinearFormApplication (abf, alh), veclin(aveclin)
   {
     ;
   }
