@@ -315,18 +315,21 @@ namespace ngla
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ProductMatrix::MultAdd"); RegionTimer reg(t);      
       bmb.Mult (x, tempvec);
       bma.MultAdd (s, tempvec, y);
     }
     ///
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ProductMatrix::MultAdd complex"); RegionTimer reg(t);            
       bmb.Mult (x, tempvec);
       bma.MultAdd (s, tempvec, y);
     }
     ///
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ProductMatrix::MultTransAdd"); RegionTimer reg(t);            
       tempvec = 0.0;
       bma.MultTransAdd (1, x, tempvec);
       bmb.MultTransAdd (s, tempvec, y);
@@ -334,6 +337,7 @@ namespace ngla
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ProductMatrix::MultTransAdd complex"); RegionTimer reg(t);
       tempvec = 0.0;      
       bma.MultTransAdd (1, x, tempvec);
       bmb.MultTransAdd (s, tempvec, y);
@@ -401,24 +405,28 @@ namespace ngla
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("SumMatrix::MultAdd"); RegionTimer reg(t);
       bma.MultAdd (a*s, x, y);
       bmb.MultAdd (b*s, x, y);
     }
     ///
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("SumMatrix::MultAdd complex"); RegionTimer reg(t);      
       bma.MultAdd (a*s, x, y);
       bmb.MultAdd (b*s, x, y);
     }
     ///
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("SumMatrix::MultTransAdd"); RegionTimer reg(t);      
       bma.MultTransAdd (a*s, x, y);
       bmb.MultTransAdd (b*s, x, y);
     }
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("SumMatrix::MultAdd complex"); RegionTimer reg(t);      
       bma.MultTransAdd (a*s, x, y);
       bmb.MultTransAdd (b*s, x, y);
     }  
@@ -456,21 +464,25 @@ namespace ngla
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ScaleMatrix::MultAdd"); RegionTimer reg(t);
       bm.MultAdd (s*scale, x, y);
     }
     ///
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ScaleMatrix::MultAdd complex"); RegionTimer reg(t);      
       bm.MultAdd (s*scale, x, y);
     }
     ///
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ScaleMatrix::MultTransAdd"); RegionTimer reg(t);      
       bm.MultTransAdd (s*scale, x, y);
     }
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
+      static Timer t("ScaleMatrix::MultTransAdd complex"); RegionTimer reg(t);      
       bm.MultTransAdd (s*scale, x, y);
     }  
 

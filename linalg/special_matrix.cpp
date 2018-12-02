@@ -54,11 +54,13 @@ namespace ngla
 
   void Embedding :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("Embedding::MultAdd"); RegionTimer reg(t);
     y.Range(range) += s*x;
   }
   
   void Embedding :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("Embedding::MultAddTrans"); RegionTimer reg(t);
     y += s*x.Range(range);
   }
 
