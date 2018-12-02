@@ -4,7 +4,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
-// #define FILE_L2HOFE_CPP
+// #define FILE_L2HOFE_TET_CPP
 
 #include <fem.hpp>
 #include <tscalarfe_impl.hpp>
@@ -14,6 +14,17 @@
 
 namespace ngfem
 {
+  /*
+  template <> inline void L2HighOrderFE<ET_TET> ::
+  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+    for (int ix = 0, ii = 0; ix <= order; ix++)
+      for (int iy = 0; iy <= order - ix; iy++)
+        for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
+          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+  }
+  */
+  
   template class L2HighOrderFE<ET_TET>;  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
 
