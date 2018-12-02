@@ -2001,6 +2001,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else
       {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+        
 	integrator[VOL].reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
 	integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
@@ -2019,17 +2023,40 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & NonconformingFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
+    if (ei.IsVolume())
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_TRIG: return *(new (lh) FE_NcTrig1);
+          case ET_TET: return *(new (lh) FE_NcTet1);
+          default: throw Exception ("Element type not available in NonconformingFESpace::GetFE, vol");
+          }
+      }
+        
+    if (ei.IsBoundary())
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_SEGM: return *(new (lh) FE_Segm0);
+          case ET_TRIG: return *(new (lh) FE_Trig0);
+          default: throw Exception ("Element type not available in NonconformingFESpace::GetFE, bnd");
+          }
+      }
+    throw Exception ("NonconormingFE: only vol or bnd");
+    /*
     switch (ma->GetElType(ei))
       {
       case ET_TRIG: return *(new (lh) FE_NcTrig1);
       case ET_SEGM: return *(new (lh) FE_Segm0);
       default: throw Exception ("Element type not available in NonconformingFESpace::GetFE");
       }
+    */
   }
   
   size_t NonconformingFESpace :: GetNDof () const throw()
   {
-    return ma->GetNEdges();
+    // return ma->GetNEdges();
+    return ma->GetNFacets();
   }
 
 
@@ -2089,7 +2116,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NonconformingFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums = ma->GetElEdges(ei);
+    // dnums = ma->GetElEdges(ei);
+    dnums = ma->GetElFacets(ei);
     if (!DefinedOn(ei))
       dnums = -1;
   }
