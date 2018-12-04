@@ -821,6 +821,29 @@ namespace ngfem
 
       LegendrePolynomial leg;
       JacobiPolynomialAlpha jac1(1);
+
+      //############ type 1 ############
+      if (ot>-1)
+	{
+	  leg.EvalScaled1Assign 
+	    (ot, lt-lo, lt+lo,
+	     SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
+		       {
+			 JacobiPolynomialAlpha jac2(2*k+2);
+ 
+			 jac1.EvalScaledMult1Assign
+			   (ot-k, le-lt-lo, 1-ls, polz, 
+			    SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
+				      {				    
+					jac2.EvalMult(ot - k - j, 2 * ls - 1, polsy, 
+						      SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
+							       {
+								 shape[ii++] =  Id_v(val);	      							     					     							   }));
+					jac2.IncAlpha2();
+				      }));
+			 jac1.IncAlpha2();
+		       }));
+	}
       
       //############ type 2 ############
             
@@ -850,29 +873,6 @@ namespace ngfem
 				  }));
 		     jac1.IncAlpha2();
 		   }));
-
-      //############ type 1 ############
-      if (ot>-1)
-	{
-	  leg.EvalScaled1Assign 
-	    (ot, lt-lo, lt+lo,
-	     SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-		       {
-			 JacobiPolynomialAlpha jac2(2*k+2);
- 
-			 jac1.EvalScaledMult1Assign
-			   (ot-k, le-lt-lo, 1-ls, polz, 
-			    SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-				      {				    
-					jac2.EvalMult(ot - k - j, 2 * ls - 1, polsy, 
-						      SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
-							       {
-								 shape[ii++] =  Id_v(val);	      							     					     							   }));
-					jac2.IncAlpha2();
-				      }));
-			 jac1.IncAlpha2();
-		       }));
-	}
 
       if(GGbubbles)
 	{

@@ -466,6 +466,7 @@ namespace ngcomp
     order = int (flags.GetNumFlag ("order",1));
 
     hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
+    alllocaldofs = flags.GetDefineFlag("all_local_dofs");
 
     if(flags.GetDefineFlag("curlbubbles"))
       throw Exception ("curlbubbles depricated, use GGbubbles instead");
@@ -509,7 +510,8 @@ namespace ngcomp
     order_trace.SetSize(ma->GetNE());
     order_trace = uniform_order_trace;
 
-    Array<bool> fine_facet(ma->GetNFacets());
+    //Array<bool>
+    fine_facet.SetSize(ma->GetNFacets());
     fine_facet = false;
     for(auto el : ma->Elements(VOL))
       fine_facet[el.Facets()] = true;
@@ -606,11 +608,31 @@ namespace ngcomp
     // coupling dof array
 
     ctofdof.SetSize(ndof);
-    for(int i = 0; i<ndof; i++)
-    {
-      ctofdof[i] = discontinuous ? LOCAL_DOF : INTERFACE_DOF;
-    }
-    if (discontinuous) return;    
+    //for(int i = 0; i<ndof; i++)
+    //{    
+    //  ctofdof[i] = discontinuous ? LOCAL_DOF : INTERFACE_DOF;
+    //}
+    //
+    //if (discontinuous) return;
+    
+    if(discontinuous || alllocaldofs) 
+      {
+        ctofdof = LOCAL_DOF;
+        return;
+      }
+    
+    ctofdof = INTERFACE_DOF;
+    
+    Array<int> dnums;
+    for (auto facet : Range(ma->GetNFacets()))
+      {
+	GetLoDofNrs(facet,dnums);
+	for( auto dnum : dnums)
+	  {
+	    ctofdof[dnum] = fine_facet[facet] ?  WIREBASKET_DOF : UNUSED_DOF;
+	  }
+      }
+    
     Array<int> innerdofs;
     for(auto e: ma->Elements())
     {            
@@ -620,9 +642,10 @@ namespace ngcomp
       switch(ma->GetElType(e))
 	{
 	case ET_TRIG:
+	  // if diagonal is addded set lowest order basisfunction  
 	  if(order_trace[e.Nr()]>-1)
 	    {
-	      ctofdof[innerdofs[0]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[0]] = INTERFACE_DOF;	      
 	      offset = 1;
 	    }
 	  break;
@@ -635,9 +658,12 @@ namespace ngcomp
 	      offset += 1;
 	    }
 	  break;
-	case ET_TET:
-	  ctofdof[innerdofs[0]] = INTERFACE_DOF; 
-	  offset = 1;
+	case ET_TET: 
+	  if(order_trace[e.Nr()]>-1)
+	    {
+	      ctofdof[innerdofs[0]] = INTERFACE_DOF; 
+	      offset = 1;
+	    }
 	  break;
 	}
       
@@ -764,6 +790,19 @@ namespace ngcomp
     dnums.SetSize0();
     dnums += IntRange (first_element_dof[elnr],
       first_element_dof[elnr+1]);
+  }
+
+  void HCurlDivFESpace :: GetLoDofNrs(int fanr,Array<int> & dnums) const
+  {
+    dnums.SetSize0();
+    if (ma->GetDimension() == 2)
+      {
+	dnums += IntRange (first_facet_dof[fanr], first_facet_dof[fanr]+1);
+      }
+    else if (ma->GetDimension() == 3)
+      {
+	dnums += IntRange (first_facet_dof[fanr], first_facet_dof[fanr]+2);
+      }   
   }
 
   void HCurlDivFESpace :: GetDofNrs (ElementId ei,Array<int> & dnums) const
