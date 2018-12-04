@@ -20,9 +20,10 @@ namespace ngcomp
     Array<int> order_inner;
     Array<int> order_trace;
 
+    Array<bool> fine_facet;
+
     bool hiddeneldofs;
-    
-    
+    bool alllocaldofs;
     bool discontinuous;
 
     // add curl of Nedelec bubbles
@@ -57,6 +58,14 @@ namespace ngcomp
 
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
+    
+    virtual void GetLoDofNrs (int elnr, Array<int> & dnums) const;
+
+    virtual void GetFacetDofNrs(int fanr, Array<DofId> & dnums) const
+    { 
+      if (ma->GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
+      else if (ma->GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
+    } 
 
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     
