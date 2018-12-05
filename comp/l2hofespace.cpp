@@ -1423,7 +1423,7 @@ global system.
       for (auto i_ip : Range(mir))
         {
           auto col = mat.Col(i_ip);
-          auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_SPC,DIM_SPC>>&>(mir[i_ip]);
+          auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_ELEMENT,DIM_SPC>>&>(mir[i_ip]);
           auto trafo = mip.GetJacobianInverse();
           
           for (int k = 0; k < DIM_SPACE; k++)
@@ -1440,11 +1440,11 @@ global system.
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-
+      
       STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
       FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
       for (size_t k = 0; k < DIM_SPACE; k++)
@@ -1465,7 +1465,7 @@ global system.
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
@@ -2110,9 +2110,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
              
              Mat<DIM,DIM> rhoi;
              if (!rho)
-               rhoi = Identity(3);
+               rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
-               rhoi = rho->Evaluate(mir[0]) * Identity(3);
+               rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
              
