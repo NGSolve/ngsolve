@@ -2962,7 +2962,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
         cf_if(acf_if), cf_then(acf_then), cf_else(acf_else)
     {
       if (acf_then->Dimension() != acf_else->Dimension())
-        throw Exception("In IfPosCoefficientFunction: cf_then and cf_else must have same dimensions!");
+        throw Exception(string("In IfPosCoefficientFunction: dim(cf_then) == ") + ToLiteral(acf_then->Dimension()) + string(" != dim(cf_else) == ") + ToLiteral(acf_else->Dimension()));
       SetDimensions(cf_then->Dimensions());
     }
 
