@@ -2961,6 +2961,8 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
              acf_then->IsComplex() || acf_else->IsComplex()),
         cf_if(acf_if), cf_then(acf_then), cf_else(acf_else)
     {
+      if (acf_then->Dimension() != acf_else->Dimension())
+        throw Exception("In IfPosCoefficientFunction: cf_then and cf_else must have same dimensions!");
       SetDimensions(cf_then->Dimensions());
     }
 
