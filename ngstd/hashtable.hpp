@@ -69,6 +69,11 @@ namespace ngstd
     INLINE INT (T ai1, T ai2, T ai3, T ai4, T ai5, T ai6, T ai7, T ai8, T ai9)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; i[3] = ai4; i[4] = ai5; i[5] = ai6; i[6] = ai7; i[7] = ai8; i[8] = ai9; }
 
+    void DoArchive(Archive& ar)
+    {
+      ar.Do(i, N);
+    }
+
     template <int N2, typename T2>
     INLINE INT (const INT<N2,T2> & in2)
     {

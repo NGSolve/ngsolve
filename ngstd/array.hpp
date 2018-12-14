@@ -679,6 +679,21 @@ namespace ngstd
       delete [] mem_to_delete;
     }
 
+    // Only provide this function if T is archivable
+    template<typename T2=T>
+    auto DoArchive(Archive& archive) -> typename std::enable_if_t<is_archivable<T2>, void>
+    {
+      if(archive.Output())
+        archive << size;
+      else
+        {
+          size_t s;
+          archive & s;
+          SetSize(s);
+        }
+      archive.Do(data, size);
+    }
+
     /// we tell the compiler that there is no need for deleting the array ..
     INLINE void NothingToDelete () 
     { 
@@ -1410,27 +1425,6 @@ namespace ngstd
   T * operator+ (HTArray<S,T> & ar, size_t i)
   {
     return ar.Ptr()+i;
-  }
-  
-
-  template <typename T> 
-  Archive & operator & (Archive & archive, Array<T> & a)
-  {
-    if (archive.Output())
-      archive << a.Size();
-    else
-      {
-        size_t size;
-        archive & size;
-        a.SetSize (size);
-      }
-
-    /*
-    for (auto & ai : a)
-      archive & ai;
-    */
-    archive.Do (&a[0], a.Size());
-    return archive;
   }
 }
 
