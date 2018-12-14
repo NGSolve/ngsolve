@@ -250,6 +250,30 @@ void TestSIMD()
             }
         }
     }
+
+    SECTION ("IfPos") {
+        dst[0] = 1;
+        for (auto i : Range(1,N)) {
+          dst[i] = -dst[i-1];
+        }
+        SIMD<double,N> srcsimd(src);
+        SIMD<double,N> simd = IfPos(dst, srcsimd,-srcsimd);
+        for (auto i : Range(N)) {
+          CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
+        }
+    }
+
+    SECTION ("IfZero") {
+        for (auto i : Range(N)) {
+          dst[i] = i%2;
+        }
+        SIMD<double,N> srcsimd(src);
+        SIMD<double,N> simd = IfZero(dst, srcsimd,-srcsimd);
+        for (auto i : Range(N)) {
+          CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
+        }
+    }
+
 }
 
 TEST_CASE ("SIMD<double>", "[simd]") { TestSIMD<>(); }
