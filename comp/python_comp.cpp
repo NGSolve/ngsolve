@@ -2882,7 +2882,7 @@ deformation : ngsolve.comp.GridFunction
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
            int bonus_intorder, py::object definedonelem, bool simd_evaluate,
-           VorB element_vb, shared_ptr<GridFunction> deformation)
+           VorB element_vb, shared_ptr<GridFunction> deformation, IntegrationRule ir)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
@@ -2898,6 +2898,15 @@ deformation : ngsolve.comp.GridFunction
                  cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
                  bfi->SetDefinedOn(defon_region().Mask());
                }
+             if (ir.Size())
+               {
+                 cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
+                 /*
+                   dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
+                   ->SetIntegrationRule(ir);
+                 */
+                 bfi->SetIntegrationRule(ir);
+               }
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              bfi->SetSimdEvaluate (simd_evaluate);
@@ -2911,6 +2920,7 @@ deformation : ngsolve.comp.GridFunction
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
         py::arg("deformation")=shared_ptr<GridFunction>(),
+        py::arg("intrule")=IntegrationRule(),
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
@@ -2943,6 +2953,8 @@ element_vb : ngsolve.fem.VorB
 deformation : ngsolve.comp.GridFunction
   input GridFunction to transform/deform the bilinear form with
 
+intrule : ngsolve.fem.IntegrationRule
+  input integration rule
 )raw_string")
           );
 
