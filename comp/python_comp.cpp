@@ -480,6 +480,7 @@ when building the system matrices.
             auto op = self->GetAdditionalProxy(name);
             if (op)
               return py::cast(op);
+            cout << "Warning: Operator \"" + name + "\" does not exist for " + self->GetFESpace()->GetClassName() + "! Returning None object!" << endl;
             return py::none();
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
@@ -1534,7 +1535,8 @@ parallel : bool
               reg = &py::extract<Region&>(definedon)();
             
             py::gil_scoped_release release;
-            
+            if (!cf)
+               throw Exception("In GridFunction.Set: Invalid CoefficientFunction!");
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -1630,6 +1632,7 @@ definedon : object
                 coef->generated_from_operator = name;
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
+            cout << "Warning: Operator \"" + name + "\" does not exist for " + self->GetFESpace()->GetClassName() + "! Returning None object!" << endl;
             return py::none(); 
           }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
@@ -2416,6 +2419,8 @@ integrator : ngsolve.fem.LFI
             mask = BitArray(ma->GetNRegions(vb));
             mask.Set();
           }
+          if (!cf)
+               throw Exception("In Integrate: Invalid CoefficientFunction!");
           int dim = cf->Dimension();
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
@@ -2643,7 +2648,8 @@ element_wise: bool = False
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             
+             if (!cf)
+               throw Exception("In SymbolicLFI: Invalid CoefficientFunction!");
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
                lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
@@ -2742,6 +2748,8 @@ deformation : ngsolve.comp.GridFunction
              if (element_boundary) element_vb = BND;
              // check for DG terms
              bool has_other = false;
+             if (!cf)
+               throw Exception("In SymbolicBFI: Invalid CoefficientFunction!");
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2847,6 +2855,8 @@ deformation : ngsolve.comp.GridFunction
 
              // check for DG terms
              bool has_other = false;
+             if (!cf)
+               throw Exception("In SymbolicTPBFI: Invalid CoefficientFunction!");
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2890,7 +2900,9 @@ deformation : ngsolve.comp.GridFunction
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             
+
+             if (!cf)
+               throw Exception("In SymbolicEnergy: Invalid CoefficientFunction!");
              auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
