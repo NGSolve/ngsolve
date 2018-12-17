@@ -475,12 +475,12 @@ when building the system matrices.
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
-         [] (const spProxy self, string name) -> py::object
+         [] (const spProxy self, string name)
           {
             auto op = self->GetAdditionalProxy(name);
             if (!op)
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
-            return py::cast(op);
+            return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
          [] (const spProxy self)
@@ -1541,8 +1541,7 @@ parallel : bool
               reg = &py::extract<Region&>(definedon)();
             
             py::gil_scoped_release release;
-            if (!cf)
-               throw Exception("In GridFunction.Set: Invalid CoefficientFunction!");
+
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -1614,7 +1613,7 @@ definedon : object
          "returns list of available differential operators")
     
     .def("Operator",
-         [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
+         [](shared_ptr<GF> self, string name, VorB vb)
           {
             if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
@@ -1636,7 +1635,7 @@ definedon : object
               }
             coef->SetDimensions(diffop->Dimensions());
             coef->generated_from_operator = name;
-            return py::cast(shared_ptr<CoefficientFunction>(coef));
+            return coef;
           }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
 
@@ -2422,8 +2421,7 @@ integrator : ngsolve.fem.LFI
             mask = BitArray(ma->GetNRegions(vb));
             mask.Set();
           }
-          if (!cf)
-               throw Exception("In Integrate: Invalid CoefficientFunction!");
+ 
           int dim = cf->Dimension();
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
@@ -2651,8 +2649,7 @@ element_wise: bool = False
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             if (!cf)
-               throw Exception("In SymbolicLFI: Invalid CoefficientFunction!");
+
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
                lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
@@ -2751,8 +2748,7 @@ deformation : ngsolve.comp.GridFunction
              if (element_boundary) element_vb = BND;
              // check for DG terms
              bool has_other = false;
-             if (!cf)
-               throw Exception("In SymbolicBFI: Invalid CoefficientFunction!");
+
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2858,8 +2854,7 @@ deformation : ngsolve.comp.GridFunction
 
              // check for DG terms
              bool has_other = false;
-             if (!cf)
-               throw Exception("In SymbolicTPBFI: Invalid CoefficientFunction!");
+
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2895,7 +2890,7 @@ deformation : ngsolve.comp.GridFunction
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
            int bonus_intorder, py::object definedonelem, bool simd_evaluate,
-           VorB element_vb, shared_ptr<GridFunction> deformation, IntegrationRule ir)
+           VorB element_vb, shared_ptr<GridFunction> deformation)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
@@ -2904,23 +2899,13 @@ deformation : ngsolve.comp.GridFunction
 
              if (element_boundary) element_vb = BND;
 
-             if (!cf)
-               throw Exception("In SymbolicEnergy: Invalid CoefficientFunction!");
+
              auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                {
                  cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
                  bfi->SetDefinedOn(defon_region().Mask());
-               }
-             if (ir.Size())
-               {
-                 cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
-                 /*
-                   dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
-                   ->SetIntegrationRule(ir);
-                 */
-                 bfi->SetIntegrationRule(ir);
                }
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
@@ -2935,7 +2920,6 @@ deformation : ngsolve.comp.GridFunction
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
         py::arg("deformation")=shared_ptr<GridFunction>(),
-        py::arg("intrule")=IntegrationRule(),
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
@@ -2968,8 +2952,6 @@ element_vb : ngsolve.fem.VorB
 deformation : ngsolve.comp.GridFunction
   input GridFunction to transform/deform the bilinear form with
 
-intrule : ngsolve.fem.IntegrationRule
-  input integration rule
 )raw_string")
           );
 
