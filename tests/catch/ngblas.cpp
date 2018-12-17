@@ -279,7 +279,9 @@ void TestSIMD()
 TEST_CASE ("SIMD<double>", "[simd]") { TestSIMD<>(); }
 TEST_CASE ("SIMD<double,1>", "[simd]") { TestSIMD<1>(); }
 TEST_CASE ("SIMD<double,2>", "[simd]") { TestSIMD<2>(); }
+#ifdef __AVX__
 TEST_CASE ("SIMD<double,4>", "[simd]") { TestSIMD<4>(); }
+#endif
 
 TEST_CASE ("SIMD<Complex>", "[simd]") {
     constexpr size_t N = SIMD<Complex>::Size();
