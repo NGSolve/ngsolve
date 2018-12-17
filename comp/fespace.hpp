@@ -1193,6 +1193,43 @@ ANY                  1 1 1 1 | 15
   };
 
 
+  class NGS_DLL_HEADER InverseMass : public BaseMatrix
+  {
+  protected:
+    shared_ptr<FESpace> fes;
+    shared_ptr<CoefficientFunction> rho;
+    LocalHeap & lh;
+  public:
+    ///
+    InverseMass (shared_ptr<FESpace> afes,
+                 shared_ptr<CoefficientFunction> arho,
+                 LocalHeap & alh);
+    virtual ~InverseMass();
+
+    virtual bool IsComplex() const override
+    {
+      return fes->IsComplex();
+    }
+    
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
+    virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
+    
+    virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+    
+    virtual int VHeight() const override
+    {
+      return fes->GetNDof(); 
+    }
+    ///
+    virtual int VWidth() const override
+    {
+      return fes->GetNDof();       
+    }
+  };
 
 
 

@@ -127,11 +127,10 @@ namespace ngla
     Matrix<> matrix;
     Table<int> col_dnums;
     Table<int> row_dnums;
+    bool disjoint_rows, disjoint_cols;
   public:
     ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
-                                    Table<int> acol_dnums, Table<int> arow_dnums)
-      : h(ah), w(aw), matrix(amatrix), col_dnums(move(acol_dnums)), row_dnums(move(arow_dnums))
-    { ; }
+                                    Table<int> acol_dnums, Table<int> arow_dnums);
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;

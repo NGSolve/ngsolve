@@ -669,25 +669,103 @@ namespace ngla
 
   
   template class ElementByElementMatrix<double>;
-  template class ElementByElementMatrix<Complex>;  
+  template class ElementByElementMatrix<Complex>;
+
+  
+  ConstantElementByElementMatrix ::
+  ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
+                                  Table<int> acol_dnums, Table<int> arow_dnums)
+  : h(ah), w(aw), matrix(amatrix), col_dnums(move(acol_dnums)), row_dnums(move(arow_dnums))
+  {
+    disjoint_cols = true;
+    disjoint_rows = true;
+
+    BitArray used_col(h);
+    used_col.Clear();
+    for (auto col : col_dnums)
+      for (auto d : col)
+        {
+          if (used_col.Test(d)) disjoint_cols = false;
+          used_col.Set(d);
+        }
+
+    BitArray used_row(w);
+    used_row.Clear();
+    for (auto row : row_dnums)
+      for (auto d : row)
+        {
+          if (used_row.Test(d)) disjoint_rows = false;
+          used_row.Set(d);
+        }
+    
+    cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
+  }
 
   
   void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer ts("ConstantEBE mult sequential");
+    static Timer tp("ConstantEBE mult parallel");
+    static Timer tpmult("ConstantEBE mult parallel mult");
+
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
-    Vector<> hx(matrix.Width());
-    Vector<> hy(matrix.Height());
-    for (size_t i = 0; i < row_dnums.Size(); i++)
+
+    if (!disjoint_cols)
       {
-        hx = fx(row_dnums[i]);
-        hy = matrix * hx;
-        fy(col_dnums[i]) += s * hy;
+        RegionTimer reg(ts);
+        Vector<> hx(matrix.Width());
+        Vector<> hy(matrix.Height());
+        for (size_t i = 0; i < row_dnums.Size(); i++)
+          {
+            hx = fx(row_dnums[i]);
+            hy = matrix * hx;
+            fy(col_dnums[i]) += s * hy;
+          }
+      }
+    else
+      {
+        RegionTimer reg(tp);
+        ParallelForRange
+          (row_dnums.Size(), [&] (IntRange r)
+           {
+             /*
+             Vector<> hx(matrix.Width());
+             Vector<> hy(matrix.Height());
+             for (auto i : r)
+               {
+                 hx = fx(row_dnums[i]);
+                 hy = matrix * hx;
+                 fy(col_dnums[i]) += s * hy;
+               }
+             */
+             constexpr size_t BS = 128;
+             Matrix<> hx(BS, matrix.Width());
+             Matrix<> hy(BS, matrix.Height());
+
+             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+               {
+                 size_t li = min2(bi+BS, r.Next());
+                 size_t num = li-bi;
+                 
+                 for (size_t i = 0; i < num; i++)
+                   hx.Row(i) = fx(row_dnums[bi+i]);
+                 {
+                   RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
+                 }
+                 for (size_t i = 0; i < num; i++)
+                   fy(col_dnums[bi+i]) += s * hy.Row(i);
+               }
+           });
       }
   }
   
   void ConstantElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer ts("ConstantEBE mult trans");
+    RegionTimer reg(ts);
+    
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
     Vector<> hx(matrix.Height());

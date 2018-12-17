@@ -2941,6 +2941,69 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+  
+  InverseMass :: InverseMass (shared_ptr<FESpace> afes,
+                              shared_ptr<CoefficientFunction> arho,
+                              LocalHeap & alh)
+    : fes(afes), rho(arho), lh(alh) { ; }
+  
+  InverseMass :: ~InverseMass()
+  { ; } 
+
+
+
+  void InverseMass :: Mult (const BaseVector & v, BaseVector & prod) const 
+  {
+    prod = v;
+    fes->SolveM(rho.get(), prod, lh);
+  }
+
+  void InverseMass :: MultAdd (double val, const BaseVector & v, BaseVector & prod) const 
+  {
+    auto hv = prod.CreateVector();
+    hv = v;
+    fes->SolveM(rho.get(), hv, lh);
+    prod += val * hv;
+  }
+  
+  void InverseMass :: MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
+  {
+    auto hv = prod.CreateVector();
+    hv = v;
+    fes->SolveM(rho.get(), hv, lh);
+    prod += val * hv;
+  }
+  
+  void InverseMass :: MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const
+  {
+    MultAdd (val, v, prod);
+  }
+    
+  AutoVector InverseMass :: CreateVector () const
+  {
+    // should go to fespace
+    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());
+  }
+  
+  AutoVector InverseMass :: CreateRowVector () const
+  {
+    // should go to fespace    
+    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
+  }
+  
+  AutoVector InverseMass :: CreateColVector () const
+  {
+    // should go to fespace
+    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
+  }
+
+
+
+
+
+  
+
+
   Table<int> Nodes2Table (const MeshAccess & ma,
                           const Array<NodeId> & dofnodes)
   {

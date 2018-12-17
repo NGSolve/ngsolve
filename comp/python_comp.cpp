@@ -1111,9 +1111,16 @@ component : int
          },
          docu_string("Return a tuple of trial and testfunction"))
 
+    .def("InvM",
+         [] (const shared_ptr<FESpace> self,
+             shared_ptr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
+         {
+           return make_shared<InverseMass> (self, rho, glh); 
+         }, py::arg("rho") = nullptr)
+    
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho)
+             BaseVector& vec, spCF rho) 
          { self->SolveM(rho.get(), vec, glh); },
          py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
