@@ -1623,7 +1623,7 @@ It is implemented by means of a CompoundFESpace, as one could do it at the
 user-level. Additionally, some operators are added for convenience and performance:
 One can evaluate the vector-valued function, and one can take the gradient.
 )raw_string";
-    docu.Arg("Piola") = "bool = False\n"
+    docu.Arg("piola") = "bool = False\n"
       "  Use Piola transform to map to physical element\n"
       "  allows to use the div-differential operator.";
     docu.Arg("covariant") = "bool = False\n"

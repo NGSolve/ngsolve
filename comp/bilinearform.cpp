@@ -4191,7 +4191,8 @@ namespace ngcomp
 
     // classify:
     auto fesx = GetTrialSpace();
-    auto fesy = GetTestSpace(); 
+    auto fesy = GetTestSpace();
+    if (transpose) Swap (fesx, fesy);
     auto ma = GetMeshAccess();
     
     Array<short> classnr(ma->GetNE());
@@ -4213,11 +4214,12 @@ namespace ngcomp
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
-        
+
+        /*
         ElementId ei(VOL,elclass_inds[0]);
-        auto & felx = fesx->GetFE (ei, lh);
-        auto & fely = fesy->GetFE (ei, lh);
-        auto & trafo = fesx->GetMeshAccess()->GetTrafo(ei, lh);
+        auto & felx = GetTrialSpace()->GetFE (ei, lh);
+        auto & fely = GetTestSpace()->GetFE (ei, lh);
+        auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
         MixedFiniteElement fel(felx, fely);
         Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
 
@@ -4235,9 +4237,74 @@ namespace ngcomp
             precomputed[nr] = Matrix<>(fely.GetNDof(), felx.GetNDof());
             precomputed[nr] = elmat;
           }
+        */
+
+
+        size_t nr = classnr[elclass_inds[0]];
+        if (precomputed.count(nr) == 0)
+          {
+            ElementId ei(VOL,elclass_inds[0]);
+            auto & felx = GetTrialSpace()->GetFE (ei, lh);
+            auto & fely = GetTestSpace()->GetFE (ei, lh);
+            auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
+            MixedFiniteElement fel(felx, fely);
+            
+            Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
+            elmat = 0.0;
+            
+            for (auto bfi : geom_free_parts)
+              bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
+
+            // precomputed[nr] = Matrix<>(fely.GetNDof(), felx.GetNDof());
+            precomputed[nr] = move(elmat);
+          }
+        Matrix<> elmat = precomputed[nr];
         
         elmat *= ConvertTo<double> (val); // only real factor supported by now
-      
+
+        Matrix<> temp_x(elclass_inds.Size(), !transpose ? elmat.Width() : elmat.Height());
+        Matrix<> temp_y(elclass_inds.Size(), !transpose ? elmat.Height() : elmat.Width());
+
+        ParallelForRange
+          (Range(elclass_inds),
+           [&] (IntRange myrange)
+           {
+             Array<DofId> dofs;
+             
+             int tid = TaskManager::GetThreadId();
+             {
+               ThreadRegionTimer r(tx, tid);
+               auto fvx = x.FVDouble();
+               for (auto i : myrange)
+                 {
+                   fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                   x.GetIndirect(dofs, temp_x.Row(i));
+                 }
+             }
+             
+             {
+               ThreadRegionTimer r(tm,tid);
+               RegionTracer rt(tid, tm);
+               NgProfiler::AddThreadFlops(tm, tid, elmat.Height()*elmat.Width()*myrange.Size());
+               if (!transpose)
+                 temp_y.Rows(myrange) = temp_x.Rows(myrange) * Trans(elmat);
+               else
+                 temp_y.Rows(myrange) = temp_x.Rows(myrange) * elmat;
+             }
+             {
+               ThreadRegionTimer r(ty,tid);
+               for (auto i : myrange)
+                 {
+                   fesy->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
+                   y.AddIndirect(dofs, temp_y.Row(i), true);
+                   // todo: check if atomic is actually needed for space
+                 }
+             }
+           });
+
+
+        
+        /*
         Matrix<> temp_x(elclass_inds.Size(), elmat.Width());
         Matrix<> temp_y(elclass_inds.Size(), elmat.Height());
 
@@ -4306,6 +4373,7 @@ namespace ngcomp
                  }
                });
           }
+        */
       }
   }
   

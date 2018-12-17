@@ -705,7 +705,9 @@ inverse : string
 
                        return make_shared<ConstantElementByElementMatrix> (h, w, mat,
                                                                            std::move(cdofs), std::move(rdofs));
-                     }))
+                     }),
+         py::arg("h"), py::arg("w"), py::arg("matrix"),
+         py::arg("col_ind"), py::arg("row_ind"))
     ;
   
   py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
