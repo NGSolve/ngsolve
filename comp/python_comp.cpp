@@ -478,10 +478,9 @@ when building the system matrices.
          [] (const spProxy self, string name) -> py::object
           {
             auto op = self->GetAdditionalProxy(name);
-            if (op)
-              return py::cast(op);
-            cout << "Warning: Operator \"" + name + "\" does not exist for " + self->GetFESpace()->GetClassName() + "! Returning None object!" << endl;
-            return py::none();
+            if (!op)
+              throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            return py::cast(op);
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
          [] (const spProxy self)
@@ -1617,30 +1616,27 @@ definedon : object
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
-            if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+            if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+              throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+            shared_ptr<GridFunctionCoefficientFunction> coef;
+            switch(vb)
               {
-                auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                shared_ptr<GridFunctionCoefficientFunction> coef;
-                switch(vb)
-                  {
-                  case VOL:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
-                    break;
-                  case BND:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
-                    break;
-                  case BBND:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
-                    break;
-                  case BBBND:
-                    throw Exception ("there are no Operators with BBBND");
-                  }
-                coef->SetDimensions(diffop->Dimensions());
-                coef->generated_from_operator = name;
-                return py::cast(shared_ptr<CoefficientFunction>(coef));
+              case VOL:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                break;
+              case BND:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+                break;
+              case BBND:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+                break;
+              case BBBND:
+                throw Exception ("there are no Operators with BBBND");
               }
-            cout << "Warning: Operator \"" + name + "\" does not exist for " + self->GetFESpace()->GetClassName() + "! Returning None object!" << endl;
-            return py::none(); 
+            coef->SetDimensions(diffop->Dimensions());
+            coef->generated_from_operator = name;
+            return py::cast(shared_ptr<CoefficientFunction>(coef));
           }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
 
