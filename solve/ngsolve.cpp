@@ -208,11 +208,12 @@ static shared_ptr<PDE> pde;
   {
     Socket & sock;
   public:
-    SocketOutArchive (Socket & asock) : Archive(true), sock(asock) { ; }
+    SocketOutArchive (Socket & asock) : Archive(true), sock(asock)
+    { (*this) & GetLibraryVersions(); }
+    const VersionInfo& GetVersion(const std::string& library)
+    { return GetLibraryVersions()[library]; }
 
-    virtual bool Output () { return true; }
-    virtual bool Input () { return false; }
-
+    using Archive::operator&;
     virtual Archive & operator & (double & d) 
     {
       sock.Tsend(d);
@@ -263,10 +264,15 @@ static shared_ptr<PDE> pde;
 
   class SocketInArchive : public Archive
   {
+    std::map<std::string, VersionInfo> vinfo{};
     Socket & sock;
   public:
-    SocketInArchive (Socket & asock) : Archive(false), sock(asock) { ; }
+    SocketInArchive (Socket & asock) : Archive(false), sock(asock)
+    { (*this) & vinfo; }
+    const VersionInfo& GetVersion(const std::string& library)
+    { return vinfo[library]; }
 
+    using Archive::operator&;
     virtual Archive & operator & (double & d) 
     {
       sock.Trecv (d);

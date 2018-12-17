@@ -668,6 +668,10 @@ namespace ngbla
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
     }
 
+    void DoArchive(Archive& ar)
+    {
+      ar.Do(&data[0], H*W);
+    }
   };
 
   template <int H, int W, typename T>
