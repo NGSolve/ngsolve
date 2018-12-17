@@ -489,8 +489,12 @@ class PyOutArchive : public Archive
 {
   py::list list;
 public:
-  PyOutArchive () : Archive(true) { ; }
+  PyOutArchive () : Archive(true) { (*this) & GetLibraryVersions(); }
   py::list GetList() const { return list; }
+  const VersionInfo& GetVersion(const std::string& library)
+  { return GetLibraryVersions()[library]; }
+
+  using Archive::operator&;
   virtual Archive & operator & (double & d) { list.append(py::cast(d)); return *this; }
   virtual Archive & operator & (int & i) { list.append(py::cast(i)); return *this; }
   virtual Archive & operator & (short & i) { list.append(py::cast(i)); return *this; }
@@ -508,9 +512,15 @@ class PyInArchive : public Archive
     py::list list;
     // decltype(list.begin())auto iter;
     size_t iter;
+    std::map<std::string, VersionInfo> vinfo{};
   public:
-    PyInArchive (py::list alist) : Archive(false), list(alist), iter(0) { ; }
+    PyInArchive (py::list alist) : Archive(false), list(alist), iter(0)
+    {
+      (*this) & vinfo;
+    }
+    const VersionInfo& GetVersion(const std::string& library) { return vinfo[library]; }
 
+    using Archive::operator&;
     virtual Archive & operator & (double & d) { d = py::cast<double> (list[iter]); iter++; return *this; }
     virtual Archive & operator & (int & d) { d = py::cast<int> (list[iter]); iter++; return *this; }
     virtual Archive & operator & (short & d) { d = py::cast<short> (list[iter]); iter++; return *this; }
