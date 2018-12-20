@@ -2721,7 +2721,7 @@ bonus_intorder : int
   input additional integration order
 
 definedonelements : object
-  input definedonelements
+  input BitArray that marks all elements or facets (for skeleton-integrators) that the integrator is applied on
 
 simd_evaluate : bool
   input simd_evaluate. True -> tries to use SIMD for faster evaluation
