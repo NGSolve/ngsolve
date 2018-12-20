@@ -489,7 +489,7 @@ class PyOutArchive : public Archive
 {
   py::list list;
 public:
-  PyOutArchive () : Archive(true) { (*this) & GetLibraryVersions(); }
+  PyOutArchive () : Archive(true) {  }
   py::list GetList() const { return list; }
   const VersionInfo& GetVersion(const std::string& library)
   { return GetLibraryVersions()[library]; }
@@ -512,13 +512,11 @@ class PyInArchive : public Archive
     py::list list;
     // decltype(list.begin())auto iter;
     size_t iter;
-    std::map<std::string, VersionInfo> vinfo{};
   public:
     PyInArchive (py::list alist) : Archive(false), list(alist), iter(0)
     {
-      (*this) & vinfo;
     }
-    const VersionInfo& GetVersion(const std::string& library) { return vinfo[library]; }
+    const VersionInfo& GetVersion(const std::string& library) { return GetLibraryVersions()[library]; }
 
     using Archive::operator&;
     virtual Archive & operator & (double & d) { d = py::cast<double> (list[iter]); iter++; return *this; }
