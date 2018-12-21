@@ -23,7 +23,7 @@ variables:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%
     - call tests\gitlab-ci\win\set_vars.bat
 
-win_build:
+.win_build:
   <<: *win
   stage: build
   script:
@@ -31,13 +31,13 @@ win_build:
     - cd %CI_PROJECT_DIR%
     - call tests\gitlab-ci\win\upload.bat
 
-win_test:
+.win_test:
   <<: *win
   stage: test
   script:
     - call tests\gitlab-ci\win\test.bat
 
-win_cleanup:
+.win_cleanup:
   <<: *win
   stage: cleanup
   script:
@@ -54,19 +54,19 @@ win_cleanup:
     - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/W0 /EHsc /arch:AVX -DWIN32=1"
     - call tests\gitlab-ci\win\set_vars.bat
 
-win_avx_build:
+.win_avx_build:
   <<: *win_avx
   stage: build
   script:
     - call tests\gitlab-ci\win\build.bat
 
-win_avx_test:
+.win_avx_test:
   <<: *win_avx
   stage: test
   script:
     - call tests\gitlab-ci\win\test.bat
 
-win_avx_cleanup:
+.win_avx_cleanup:
   <<: *win_avx
   stage: cleanup
   script:
