@@ -543,8 +543,8 @@ namespace ngla
   void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
   {
-    static int timer = NgProfiler::CreateTimer ("BlockJacobi::MultTransAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("BlockJacobi::MultTransAdd");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
