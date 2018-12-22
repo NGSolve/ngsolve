@@ -1629,7 +1629,11 @@ One can evaluate the vector-valued function, and one can take the gradient.
     docu.Arg("covariant") = "bool = False\n"
       "  Use the covariant transform to map to physical element\n"
       "  allows to use the curl-differential operator.";
-
+    docu.Arg("all_dofs_together") = "bool = True\n"
+      "  dofs within one scalar component are together.";
+    docu.Arg("hide_all_dofs") = "bool = False\n"
+      "  all dofs are condensed without a global dofnr";
+    
     return docu;
   }
 
@@ -1639,7 +1643,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
     {
       type = "VectorL2";
       Flags compflags = flags;
-      compflags.SetFlag("all_dofs_together");
+      if (!flags.GetDefineFlagX("all_dofs_together").IsFalse())
+        compflags.SetFlag("all_dofs_together");
       for (int i = 0; i <  ma->GetDimension(); i++)
         AddSpace (make_shared<L2HighOrderFESpace> (ama, compflags));
 
