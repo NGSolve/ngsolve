@@ -1,8 +1,8 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ngstd_sources
-        exception.cpp table.cpp bitarray.cpp flags.cpp 
-        symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp  
+        table.cpp bitarray.cpp flags.cpp
+        blockalloc.cpp evalfunc.cpp templates.cpp
         localheap.cpp stringops.cpp profiler.cpp
         cuda_ngstd.cpp python_ngstd.cpp taskmanager.cpp
         paje_interface.cpp bspline.cpp
@@ -20,6 +20,8 @@ target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${NETGEN
 
 add_dependencies( ngstd generate_version_file )
 
+target_link_libraries(ngstd PUBLIC ngcore)
+
 if(NOT WIN32)
     target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
     target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} ${MKL_MINIMAL_LIBRARY})
@@ -28,9 +30,9 @@ endif(NOT WIN32)
 
 install( FILES
         array.hpp autodiffdiff.hpp autodiff.hpp autoptr.hpp    
-        bessel.hpp bitarray.hpp blockalloc.hpp evalfunc.hpp exception.hpp     
+        bessel.hpp bitarray.hpp blockalloc.hpp evalfunc.hpp
         flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp	      
-        profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    
+        profiler.hpp stringops.hpp table.hpp templates.hpp
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp sockets.hpp cuda_ngstd.hpp
         mycomplex.hpp tuple.hpp paje_interface.hpp python_ngstd.hpp ngs_utils.hpp

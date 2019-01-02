@@ -452,17 +452,19 @@ namespace ngstd
       }
   }
 
-  Archive & operator & (Archive & archive, Flags & flags)
+  void Flags :: DoArchive(Archive & archive)
   {
-    cout << "Archive Flags" << endl;
-    cout << flags << endl;
-    archive & flags.strflags;
-    archive & flags.numflags;
-    archive & flags.defflags;
-    archive & flags.numlistflags;
-    archive & flags.strlistflags;
-    archive & flags.flaglistflags;
-    return archive;
+    archive & strflags & numflags & defflags & numlistflags & strlistflags & flaglistflags;
+  }
+
+  void Flags :: Update(const Flags& other)
+  {
+    strflags.Update(other.strflags);
+    numflags.Update(other.numflags);
+    defflags.Update(other.defflags);
+    numlistflags.Update(other.numlistflags);
+    strlistflags.Update(other.strlistflags);
+    flaglistflags.Update(other.flaglistflags);
   }
 
   void Flags :: SetCommandLineFlag (const char * st, SymbolTable<Flags> * sf )
