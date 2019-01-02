@@ -134,7 +134,6 @@ namespace ngstd { using namespace ngcore; }
 #include "ngs_utils.hpp"
 #include "ngsstream.hpp"  
 #include "templates.hpp"
-#include "exception.hpp"
 #include "localheap.hpp"
 #include "profiler.hpp"
 
@@ -147,7 +146,6 @@ namespace ngstd { using namespace ngcore; }
 #include "xbool.hpp"
 
 #include "table.hpp"
-#include "symboltable.hpp"
 #include "hashtable.hpp"
 #include "bitarray.hpp"
 

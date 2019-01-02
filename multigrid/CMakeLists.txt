@@ -4,6 +4,10 @@ add_library(ngmg OBJECT
         mgpre.cpp  prolongation.cpp  smoother.cpp
         )
 
+if(NOT WIN32)
+  target_link_libraries(ngmg PUBLIC ngcore)
+endif(NOT WIN32)
+
 set_target_properties( ngmg PROPERTIES POSITION_INDEPENDENT_CODE ON )
 target_compile_definitions(ngmg PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngmg PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})

@@ -282,7 +282,7 @@ endif (USE_MUMPS)
 
 #######################################################################
 if (NETGEN_USE_PYTHON)
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON NG_PYTHON)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
