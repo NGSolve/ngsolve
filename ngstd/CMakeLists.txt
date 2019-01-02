@@ -3,7 +3,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 set(ngstd_sources
         exception.cpp table.cpp bitarray.cpp flags.cpp 
         symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp  
-        localheap.cpp stringops.cpp profiler.cpp archive.cpp
+        localheap.cpp stringops.cpp profiler.cpp
         cuda_ngstd.cpp python_ngstd.cpp taskmanager.cpp
         paje_interface.cpp bspline.cpp
         )
@@ -32,7 +32,7 @@ install( FILES
         flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp	      
         profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
-        polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  
+        polorder.hpp sockets.hpp cuda_ngstd.hpp
         mycomplex.hpp tuple.hpp paje_interface.hpp python_ngstd.hpp ngs_utils.hpp
         taskmanager.hpp bspline.hpp xbool.hpp simd.hpp
         simd_complex.hpp sample_sort.hpp
