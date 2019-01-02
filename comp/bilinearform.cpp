@@ -865,7 +865,7 @@ namespace ngcomp
 	    IterateElements
 	      (*fespace,vb,clh, [&] (FESpace::Element el, LocalHeap & lh)
 	       {
-		 if(bfi->DefinedOn(el.GetIndex()))
+		 if(bfi->DefinedOn(el.GetIndex()) && bfi->DefinedOnElement(el.Nr()))
 		   bfi->CheckElement(el.GetFE());
 	       });
 	    if(bfi->VB()==VOL && bfi->SkeletonForm())
@@ -2319,6 +2319,9 @@ namespace ngcomp
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
                    for (auto & bfi : VB_parts[VOL])
                      {
+                       if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
+                       if (!bfi->DefinedOnElement (ei.Nr())) continue;
+                       
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
                        /*
@@ -4143,6 +4146,7 @@ namespace ngcomp
                    for (auto & bfi : VB_parts[vb])
                      {
                        if (!bfi->DefinedOn (this->ma->GetElIndex (ei))) continue;
+                       if (!bfi->DefinedOnElement (ei.Nr())) continue;                        
 
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
@@ -4417,7 +4421,7 @@ namespace ngcomp
 
                   if (bfi.BoundaryForm()) continue;
                   if (!bfi.DefinedOn (ma->GetElIndex (ei))) continue;
-
+                  if (!bfi.DefinedOnElement(ei.Nr())) continue;
 
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);
 
@@ -4454,6 +4458,7 @@ namespace ngcomp
                 
                   if (!bfi.BoundaryForm()) continue;
                   if (!bfi.DefinedOn (eltrans.GetElementIndex())) continue;
+                  if (!bfi.DefinedOnElement(sei.Nr())) continue;
               
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);
                   fespace->TransformVec (sei, elvecy, TRANSFORM_RHS);
@@ -4522,6 +4527,7 @@ namespace ngcomp
                  for (auto & bfi : VB_parts[vb])
                    {
                      if (!bfi->DefinedOn (ei.GetIndex())) continue;
+                     if (!bfi->DefinedOnElement(ei.Nr())) continue;
                      energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
                    }
                  

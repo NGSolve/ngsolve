@@ -128,9 +128,10 @@ namespace ngstd
 #include <ngs_defines.hpp>
 
 // #include "mycomplex.hpp"  
+#include <core/ngcore.hpp>
+namespace ngstd { using namespace ngcore; }
 
 #include "ngs_utils.hpp"
-#include "archive_base.hpp"    
 #include "ngsstream.hpp"  
 #include "templates.hpp"
 #include "exception.hpp"
@@ -168,7 +169,6 @@ namespace ngstd
 #ifndef WIN32
 #include "sockets.hpp"
 #endif
-#include "archive.hpp"
 
 namespace ngstd
 {
