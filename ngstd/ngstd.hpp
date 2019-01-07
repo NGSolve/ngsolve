@@ -135,7 +135,6 @@ namespace ngstd { using namespace ngcore; }
 #include "ngsstream.hpp"  
 #include "templates.hpp"
 #include "localheap.hpp"
-#include "profiler.hpp"
 
 #include "simd.hpp"
 #include "simd_complex.hpp"
