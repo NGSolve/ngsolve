@@ -839,6 +839,9 @@ global system.
     trig = new L2HighOrderFE<ET_TRIG> (order);
     quad = new L2HighOrderFE<ET_QUAD> (order);
     */
+
+    lowest_order_ct =
+      flags.GetDefineFlagX ("lowest_order_wb").IsTrue() ? WIREBASKET_DOF : LOCAL_DOF;
     
     if (ma->GetDimension() == 2)
       {
@@ -873,6 +876,31 @@ global system.
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
   {
     ;
+  }
+
+  DocInfo L2SurfaceHighOrderFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu(); 
+    docu.short_docu = "An L2-conforming finite element space.";
+    docu.long_docu =
+      R"raw_string(The L2 finite element space on surfaces consists of element-wise polynomials,
+which are discontinuous from element to element. It uses an
+L2-orthogonal hierarchical basis which leads to orthogonal
+mass-matrices on non-curved elements.
+
+The L2 space supports element-wise variable order, which can be set
+for ELEMENT-nodes.
+
+Per default, all dofs are local dofs and are condensed if static
+condensation is performed. The lowest order can be kept in the
+WIRE_BASKET via the flag 'lowest_order_wb=True'.
+
+)raw_string";
+
+    docu.Arg("lowest_order_wb") = "bool = False\n"
+      "  Keep lowest order dof in WIRE_BASKET";
+
+    return docu;
   }
 
   shared_ptr<FESpace> L2SurfaceHighOrderFESpace :: 
@@ -941,7 +969,13 @@ global system.
     ctofdof.SetSize(ndof);
     for (auto i : Range(ma->GetNSE()))
       {
-        ctofdof[GetElementDofs(i)] = DefinedOn(ElementId(BND,i)) ? WIREBASKET_DOF : UNUSED_DOF;
+        bool definedon = DefinedOn(ElementId(BND,i));
+        auto r = GetElementDofs(i);
+        
+        ctofdof[r] =  definedon ? LOCAL_DOF : UNUSED_DOF;
+
+        if (r.Size() != 0)
+            ctofdof[r.First()] = definedon ? lowest_order_ct : UNUSED_DOF;
       }
   }
 
