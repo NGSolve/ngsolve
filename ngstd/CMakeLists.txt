@@ -1,6 +1,6 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(ngstd_sources
+add_library( ngstd ${NGS_LIB_TYPE}
         table.cpp bitarray.cpp flags.cpp
         blockalloc.cpp evalfunc.cpp templates.cpp
         localheap.cpp stringops.cpp
@@ -9,10 +9,9 @@ set(ngstd_sources
         )
 
 if(NOT WIN32)
-    set(ngstd_sources ${ngstd_sources} sockets.cpp)
+    target_sources(ngstd PRIVATE sockets.cpp)
 endif(NOT WIN32)
 
-add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngstd PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
@@ -22,11 +21,9 @@ add_dependencies( ngstd generate_version_file )
 
 target_link_libraries(ngstd PUBLIC ngcore)
 
-if(NOT WIN32)
-    target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
-    target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} ${MKL_MINIMAL_LIBRARY})
-    install( TARGETS ngstd ${ngs_install_dir} )
-endif(NOT WIN32)
+target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
+target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} ${MKL_MINIMAL_LIBRARY})
+install( TARGETS ngstd ${ngs_install_dir} )
 
 install( FILES
         array.hpp autodiffdiff.hpp autodiff.hpp autoptr.hpp    
