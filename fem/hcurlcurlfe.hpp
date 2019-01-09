@@ -44,6 +44,8 @@ namespace ngfem
     virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const = 0;
+
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const = 0;
   };
 
   template <int D,typename VEC,typename MAT>
@@ -65,6 +67,18 @@ namespace ngfem
       mat(5) = mat(7) = vec(3);
       break;
     }
+  }
+
+  template <typename T>
+  Mat<2> DyadProd(Vec<2,T> a, Vec<2,T> b)
+  {
+    return Matrix<>( {{a(0)*b(0), a(0)*b(1)}, {a(1)*b(0), a(1)*b(1)}} );
+  }
+
+  template <typename T>
+  Mat<3> DyadProd(Vec<3,T> a, Vec<3,T> b)
+  {
+    return Matrix<>( {{a(0)*b(0), a(0)*b(1), a(0)*b(2)}, {a(1)*b(0), a(1)*b(1), a(1)*b(2)}, {a(2)*b(0), a(2)*b(1), a(2)*b(2)}} );
   }
 
   template <typename T>
@@ -186,6 +200,12 @@ namespace ngfem
       {
         VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
       }));
+    }
+
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override
+    {
+      shape = 0.0;
+      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t i, Mat<DIM,DIM> val) { shape.Row(i)=val; }));
     }
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
@@ -408,7 +428,7 @@ namespace ngfem
       
       ndof += ninner;
 
-
+      cout << "order = " << order << endl;
     }
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
@@ -453,6 +473,71 @@ namespace ngfem
 	}
       
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+      T x = ip(0), y = ip(1);
+      cout << "In HCURLCURL CALCDUALSHAPE: x = " << x << ", y = " << y << endl;
+      T lam[3] = { x, y, 1-x-y };
+      Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          cout << "facetnr = " << facetnr << endl;
+          for (int i = 0; i < 3; i++)
+            {
+              int p = order_facet[i][0];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  
+                  T xi = lam[e[0]]-lam[e[1]];
+                  Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
+                  
+                  
+                  Vec<2,T> tv = mip.GetJacobian()*tauref;
+
+                  cout << " tau =" << tv  << endl;
+                  Mat<2> tt = DyadProd(tv,tv);
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 3; i++)
+            ii += order_facet[i][0]+1;
+        }
+      if (ip.VB() == VOL)
+        {
+          auto p = order_inner[0]-1;
+          if( p >= 0 )
+            {
+              DubinerBasis3::Eval (p, lam[0], lam[1],
+                                   SBLambda([&] (size_t nr, T val)
+                                            {
+                                              shape[ii++] = val*Matrix<>({{1,0},{0,0}});
+                                              shape[ii++] = val*Matrix<>({{0,0},{0,1}});
+                                              shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+                                            }));
+            }
+        }
+    }
 
     
   };
@@ -1281,6 +1366,126 @@ namespace ngfem
 
     };
 
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+      T x = ip(0), y = ip(1), z = ip(2);
+      T lam[4] = { x, y, z, 1-x-y-z };
+      Vec<3,T> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } , { 0, 0, 0 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+
+      const EDGE * edges = ElementTopology::GetEdges(ET_TET);
+
+      if (ip.VB() == BBND)
+        { // facet shapes
+          for (int i = 0; i < 6; i++)
+            {
+              int p = order_edge[i];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+                  
+                  T xi = lam[e[1]]-lam[e[0]];
+                  Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
+                  Vec<3,T> tau = mip.GetJacobian()*tauref;
+                  Mat<3> tt = DyadProd(tau,tau);
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 6; i++)
+            ii += order_edge[i]+1;
+        }
+      if (ip.VB() == BND)
+        {
+          for (int i = 0; i < 4; i++)
+            {
+              auto p = order_facet[i][0]-1;
+              if( p >= 0 && i == facetnr )
+                {
+                  INT<4> fav = ET_trait<ET_TET>:: GetFaceSort(facetnr, vnums);
+                  Vec<3,T> adxi = pnts[fav[0]] - pnts[fav[2]];
+                  Vec<3,T> adeta = pnts[fav[1]] - pnts[fav[2]];
+                  T xi = lam[fav[0]];
+                  T eta = lam[fav[1]];
+                  
+                  Matrix<> F(3,2);
+                  F.Cols(0,1) = adxi;
+                  F.Cols(1,2) = adeta;
+		 
+                  Mat<2> Ftmp;
+                  Ftmp = Trans(F)*F;
+                  auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
+                                              
+                  DubinerBasis3::Eval (p, xi, eta,
+                                       SBLambda([&] (size_t nr, T val)
+                                                {
+                                                  shape[ii++] = 1/det*val*F*Matrix<>({{1,0},{0,0}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*F*Matrix<>({{0,0},{0,1}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*F*Matrix<>({{0,1},{1,0}})*Trans(F);
+                                                }));
+                }
+              else
+                ii += 3*(order_facet[i][0])*(order_facet[i][0]+1)/2;
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 4; i++)
+            ii += 3*(order_facet[i][0])*(order_facet[i][0]+1)/2;
+        }
+      
+      if (ip.VB() == VOL)
+        {
+          auto p = order_inner[0]-2;
+          if( p >= 0 )
+            {
+              LegendrePolynomial leg;
+              JacobiPolynomialAlpha jac1(1);    
+              leg.EvalScaled1Assign 
+                (p, lam[2]-lam[3], lam[2]+lam[3],
+                 SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
+                           {
+                             // JacobiPolynomialAlpha jac(2*k+1);
+                             JacobiPolynomialAlpha jac2(2*k+2);
+                             
+                             jac1.EvalScaledMult1Assign
+                               (p-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+                                SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
+                                          {
+                                            // JacobiPolynomialAlpha jac(2*(j+k)+2);
+                                            jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
+                                                          SBLambda([&](size_t j, T val) LAMBDA_INLINE
+                                                                   {
+                                                                     shape[ii++] = val*Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
+                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
+                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
+                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
+                                                                     shape[ii++] = val*Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
+                                                                     shape[ii++] = val*Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
+                                                                   }));
+                                            jac2.IncAlpha2();
+                                          }));
+		       jac1.IncAlpha2();
+                           }));
+            
+            }
+        }
+    }
+      
   };
   
 
@@ -1442,6 +1647,8 @@ namespace ngfem
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
       BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM+1> & mip, SliceMatrix<> shape) const = 0;
   };
 
 
@@ -1531,6 +1738,12 @@ namespace ngfem
       }
     }
 
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM+1> & mip, SliceMatrix<> shape) const override
+    {
+      shape = 0.0;      
+      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t i, Mat<DIM+1,DIM+1> val) { shape.Row(i)=val; }));
+    }
+
 
   };
 
@@ -1570,6 +1783,12 @@ namespace ngfem
                                               }));
       
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type");
+    }
   };
 
 
@@ -1590,39 +1809,21 @@ namespace ngfem
       }
       ndof += 3*order_inner[0]*(order_inner[0]+1)/2;
       order = max2(order, order_inner[0]);
+
+      cout << "order = " << order << endl;
     }
 
 
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
+      cout << "IN SURFACE TRIG" << endl;
       Tx x = ip.x, y = ip.y;
       typedef decltype(x.Value()+x.Value()) T;                  
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
-      AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy};
+      AutoDiff<3,T> lx[3] ={ xx, yy, 1-xx-yy};
       int ii = 0;
-
-      /*const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
-      for (int i = 0; i < 3; i++)
-        {
-          int es = edges[i][0], ee = edges[i][1];
-          if (vnums[es] > vnums[ee]) swap (es,ee);
-          auto ls = lx[es], le = lx[ee];
-          Vec<6> symdyadic =  SymDyadProd(ls,le);
-          LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
-                                         SBLambda([&] (size_t nr, auto val)
-                                                  {
-                                                    shape[ii++] = val.Value()*symdyadic;
-                                                  }));
-                                                  }*/
-      //const FACE * faces = ElementTopology::GetFaces(ET_TET);
-      //int fav[3] ={0,1,2};
-      //Sort vertices  first edge op minimal vertex
-      //if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-      //if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-      //if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        
 
       for( int i = 0; i < 3; i++)
         {
@@ -1656,6 +1857,142 @@ namespace ngfem
                                        }));
         }
      
+    }
+
+    /*template <typename Tx, typename TFA>
+    void CalcDualShape2 (TIP<2,Tx> ip, int facetnr, VorB vb, TFA & shape) const
+    {
+      cout << "IN SURFACE Dual TRIG" << endl;
+      Tx x = ip.x, y = ip.y;
+      typedef decltype(x.Value()+x.Value()) T;                  
+      AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3,T> lx[3] ={ xx, yy, 1-xx-yy};
+      int ii = 0;
+
+      if (vb == BBND)
+        { // facet shapes
+          for (int i = 0; i < 3; i++)
+            {
+              int p = order_edge[i];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  
+                  AutoDiff<3,T> xi = lx[e[1]]-lx[e[0]];
+                  Vec<3,T> tau = {lx[e[1]].DValue(0)-lx[e[0]].DValue(0), lx[e[1]].DValue(1)-lx[e[0]].DValue(1), lx[e[1]].DValue(2)-lx[e[0]].DValue(2)};
+                  
+                  
+                  Matrix<T> tt = DyadProd(tau,tau);
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, auto val)
+                              {
+                                shape[nr+ii] = val.Value()*tt;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+        else
+        {
+          for (int i = 0; i < 3; i++)
+            ii += order_edge[i]+1;
+        }
+      if (vb == BND)
+        {
+          auto p = order_inner[0]-1;
+          if( p >= 0 )
+            {
+              cout << "In vb==BND" << endl;
+              INT<4> fav = ET_trait<ET_TET>:: GetFaceSort(facetnr, vnums);
+
+              Vec<3,T> adxi  = {lx[fav[0]].DValue(0)-lx[fav[2]].DValue(0), lx[fav[0]].DValue(1)-lx[fav[2]].DValue(1), lx[fav[0]].DValue(2)-lx[fav[2]].DValue(2)};
+              Vec<3,T> adeta = {lx[fav[1]].DValue(0)-lx[fav[2]].DValue(0), lx[fav[1]].DValue(1)-lx[fav[2]].DValue(1), lx[fav[1]].DValue(2)-lx[fav[2]].DValue(2)};
+              AutoDiff<3,T> xi = lx[fav[0]];
+              AutoDiff<3,T> eta = lx[fav[1]];
+          
+              Matrix<T> tt1 = DyadProd(adxi,adxi);
+              Matrix<T> tt2 = DyadProd(adeta,adeta);
+              Matrix<T> tt3 = DyadProd(adxi,adeta)+DyadProd(adeta,adxi);
+              DubinerBasis3::Eval(p, xi,eta,
+                                  SBLambda([&] (size_t nr, auto val)
+                                           {
+                                             shape[ii++] = val.Value()*tt1;
+                                             shape[ii++] = val.Value()*tt2;
+                                             shape[ii++] = val.Value()*tt3;
+                                           }));     
+            }
+        }
+        }*/
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      cout << "IN SURFACE Dual TRIG" << endl;
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+      T x = ip(0), y = ip(1);
+      cout << "In HCURLCURL SURFACE CALCDUALSHAPE: x = " << x << ", y = " << y << endl;
+      T lam[3] = { x, y, 1-x-y };
+      Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          cout << "facetnr = " << facetnr << endl;
+          for (int i = 0; i < 3; i++)
+            {
+              int p = order_edge[i];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  T xi = lam[e[0]]-lam[e[1]];
+                  Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
+                  
+                  Vec<3,T> tau = mip.GetJacobian()*tauref;
+                  cout << " tau =" << tau  << endl;
+                  Mat<3> tt = DyadProd(tau,tau);
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+        else
+        {
+          for (int i = 0; i < 3; i++)
+            ii += order_edge[i]+1;
+        }
+      if (ip.VB() == VOL)
+        {
+          auto p = order_inner[0]-1;
+          if( p >= 0 )
+            {
+              cout << "In vb==BND" << endl;
+              INT<4> f = ET_trait<ET_TRIG>:: GetFaceSort(0, vnums);
+                  
+              auto F = mip.GetJacobian();
+              auto det = mip.GetMeasure();
+              DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]],
+                                   SBLambda([&] (size_t nr, T val)
+                                            {
+                                              shape[ii++] = 1/det*val*F*Matrix<>({{1,0},{0,0}})*Trans(F);
+                                              shape[ii++] = 1/det*val*F*Matrix<>({{0,0},{0,1}})*Trans(F);
+                                              shape[ii++] = 1/det*val*F*Matrix<>({{0,1},{1,0}})*Trans(F);
+                                            }));
+              
+            }
+        }
+          
     }
   };
 

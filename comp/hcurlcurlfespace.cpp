@@ -14,6 +14,76 @@
 namespace ngcomp
 {
 
+  template <int D>
+  class DiffOpHCurlCurlDual : public DiffOp<DiffOpHCurlCurlDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlCurlDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlCurlFiniteElement<D>&> (fel); }
+    
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
+    }
+   
+  };
+
+  template <int D>
+  class DiffOpHCurlCurlDualBoundary : public DiffOp<DiffOpHCurlCurlDualBoundary<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlCurlDualBoundary<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlCurlSurfaceFiniteElement<D-1>&> (fel); }
+    
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
+    }
+   
+  };
+
   template<int D>
   class DiffOpIdHCurlCurl: public DiffOp<DiffOpIdHCurlCurl<D> >
   {
@@ -212,27 +282,26 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
 
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlCurlSurfaceFiniteElement<D>&> (fel); }
+
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      const HCurlCurlSurfaceFiniteElement<D> & fel =
-        dynamic_cast<const HCurlCurlSurfaceFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+      
+      Cast(bfel).CalcMappedShape_Matrix (mip,Trans(mat));
     }
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      const HCurlCurlSurfaceFiniteElement<D> & fel =
-        dynamic_cast<const HCurlCurlSurfaceFiniteElement<D>&> (bfel);
+      auto & fel = Cast(bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,DIM_DMAT,lh);
       fel.CalcMappedShape_Matrix(sip,shape);
-      for(int i=0; i<nd; i++)
-        for(int j = 0; j <DIM_DMAT; j++)
-          mat(j,i) = shape(i,j);
+      mat = Trans(shape);
 
     }
   };
@@ -822,6 +891,15 @@ namespace ngcomp
             fine_facet[el.Facets()] = true;
             fine_edges[el.Edges()] = true;
           }
+        for (int i = 0; i < ma->GetNSE(); i++)
+          {
+            ElementId sei(BND, i);
+            if (!DefinedOn (sei)) continue;
+            
+            fine_edges[ma->GetElEdges(sei)] = true;
+            if(dim==3) 
+              fine_facet[ma->GetSElFace(i)] = true; 
+          }
         ndof = 0;
 
         if (dim == 3)
@@ -829,8 +907,8 @@ namespace ngcomp
             for(auto i : Range(ma->GetNEdges()))
               {
                 first_edge_dof[i] = ndof;
-                if(!fine_edges[i]) continue;
-            
+                if(!fine_edges[i])   continue;
+                  
                 int oe = order_edge[i][0];
                 ndof += oe + 1;
             
@@ -1132,7 +1210,8 @@ namespace ngcomp
       default:
         throw Exception(string("HCurlCurlFESpace::GetFE: element-type ") +
                         ToString(ngel.GetType()) + " not supported");
-      } 
+      }
+
   }
 
   void HCurlCurlFESpace ::  GetEdgeDofNrs (int ednr,Array<int> & dnums) const
@@ -1162,17 +1241,25 @@ namespace ngcomp
 
   void HCurlCurlFESpace :: GetDofNrs (ElementId ei,Array<int> & dnums) const
   {
-    Ngs_Element ngel = ma->GetElement(ei);
-    
     dnums.SetSize0();
+    if (!DefinedOn (ei)) return;
+
+    Ngs_Element ngel = ma->GetElement(ei);
 
     if (ma->GetDimension() == 3)
+      {
       for(auto e : ngel.Edges())
         dnums += IntRange (first_edge_dof[e],
                            first_edge_dof[e+1]);
-    for(auto f : ngel.Facets())
-      dnums += IntRange (first_facet_dof[f],
+      for(auto f : ngel.Faces())
+        dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);
+      }
+    else if (ma->GetDimension() == 2)
+      for(auto f : ngel.Facets())
+        dnums += IntRange (first_facet_dof[f],
+                         first_facet_dof[f+1]);
+      
     if(ei.VB() == VOL)
       dnums += IntRange (first_element_dof[ei.Nr()],
                          first_element_dof[ei.Nr()+1]);
@@ -1192,11 +1279,15 @@ namespace ngcomp
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
         additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<2>>> ());
 	break;
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
         additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
         additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<3>>> ());
+        additional.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDualBoundary<3>>> ());
+        
 	break;
       default:
         ;
