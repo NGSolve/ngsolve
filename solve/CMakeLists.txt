@@ -5,10 +5,7 @@ add_library( solve ${NGS_LIB_TYPE}
         hyperbolic.cpp numprocee.cpp python_solve.cpp python_mpi.cpp
         )
 
-target_compile_definitions(solve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(solve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(solve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(solve PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_include_directories(solve PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
 
 if(NETGEN_USE_PYTHON)
 add_library( ngslib SHARED ngspy.cpp )
@@ -43,17 +40,6 @@ endif(NOT WIN32)
 
 
 if (NETGEN_USE_GUI)
-    if(WIN32)
-        set(ngsolve_object_libs
-            $<TARGET_OBJECTS:solve> 
-            $<TARGET_OBJECTS:ngcomp> 
-            $<TARGET_OBJECTS:ngstd> 
-            $<TARGET_OBJECTS:ngfem> 
-            $<TARGET_OBJECTS:ngla> 
-            $<TARGET_OBJECTS:ngbla> 
-#             $<TARGET_OBJECTS:interface> 
-            )
-    endif(WIN32)
     add_library( ngsolve SHARED
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
@@ -61,16 +47,11 @@ if (NETGEN_USE_GUI)
 
     target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE ngmg ${NETGEN_PYTHON_LIBRARIES} ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY})
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-    target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-    target_compile_options(ngsolve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-    target_include_directories(ngsolve PUBLIC ${NGSOLVE_INCLUDE_DIRS})
     target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS})
 
-    if(NOT WIN32)
-        target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
-    endif(NOT WIN32)
+    target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
     install( TARGETS ngsolve ${ngs_install_dir} )
+
     if(NOT APPLE)
         target_link_libraries( ngsolve PUBLIC gui)
     endif()

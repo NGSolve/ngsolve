@@ -10,28 +10,24 @@ add_library(ngla ${NGS_LIB_TYPE}
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
         )
 
-target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(ngla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngla PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+
 if(WIN32 AND USE_UMFPACK)
     target_include_directories(ngla PUBLIC $<TARGET_PROPERTY:${UMFPACK_LIBRARIES},INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 
-if(NOT WIN32)
-    target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE ${NETGEN_PYTHON_LIBRARIES}
-PRIVATE ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
-    target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    install( TARGETS ngla ${ngs_install_dir} )
-    if(USE_MUMPS)
-        # Create dummy fortran lib
-        # This forces cmake to link fortran runtime libraries to ngla
-        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.f "")
-        add_library(dummy_fortran ${CMAKE_CURRENT_BINARY_DIR}/dummy.f)
-        target_link_libraries(ngla PUBLIC dummy_fortran )
-        install( TARGETS dummy_fortran ${ngs_install_dir} )
-    endif()
-endif(NOT WIN32)
+target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE ${NETGEN_PYTHON_LIBRARIES}
+${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
+target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+install( TARGETS ngla ${ngs_install_dir} )
+if(USE_MUMPS)
+    # Create dummy fortran lib
+    # This forces cmake to link fortran runtime libraries to ngla
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.f "")
+    add_library(dummy_fortran ${CMAKE_CURRENT_BINARY_DIR}/dummy.f)
+    target_link_libraries(ngla PUBLIC dummy_fortran )
+    install( TARGETS dummy_fortran ${ngs_install_dir} )
+endif()
 
 if(USE_CUDA)
     cuda_add_library (linalg_kernels linalg_kernels.cu cuda_linalg.cpp )
