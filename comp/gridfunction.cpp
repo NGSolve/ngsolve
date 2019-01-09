@@ -311,13 +311,21 @@ namespace ngcomp
   }
 
 
-  shared_ptr<GridFunction> GridFunction :: 
-  GetComponent (int compound_comp) const
+  shared_ptr<GridFunction> GridFunction ::
+  GetComponent (int compound_comp)
   {
-    if (!compgfs.Size() || compgfs.Size() < compound_comp)
-      throw Exception("GetComponent: compound_comp does not exist!");
-    else
-      return compgfs[compound_comp];
+    auto compfes = dynamic_pointer_cast<CompoundFESpace>(fespace);
+    if(compfes)
+      {
+        if (compound_comp >= compfes->GetNSpaces())
+          throw Exception("GetComponent: compound_comp does not exist!");
+        auto sptr = make_shared<ComponentGridFunction>(dynamic_pointer_cast<GridFunction>(this->shared_from_this()),
+                                                       compound_comp);
+        compgfs.push_back(sptr);
+        sptr->Update();
+        return sptr;
+      }
+    throw Exception("GetComponent: Not a GridFunction on a Compound FESpace!");
   }
 
 
@@ -780,65 +788,59 @@ namespace ngcomp
 
 
 
-  template <class SCAL>
-  S_ComponentGridFunction<SCAL> :: 
-  S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp)
-    : S_GridFunction<SCAL> (dynamic_cast<const CompoundFESpace&> (*agf_parent.GetFESpace())[acomp], 
-			    agf_parent.GetName()+"."+ToString (acomp+1), Flags()), 
+  ComponentGridFunction ::
+  ComponentGridFunction (shared_ptr<GridFunction> agf_parent, int acomp)
+    : GridFunction (dynamic_cast<const CompoundFESpace&> (*agf_parent->GetFESpace())[acomp],
+                    agf_parent->GetName()+"."+ToString (acomp+1), Flags()),
       gf_parent(agf_parent), comp(acomp)
   { 
-    this->SetVisual(agf_parent.GetVisual());
-    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(this->GetFESpace().get());
-    if (cfe)
-      {
-	int nsp = cfe->GetNSpaces();
-	this->compgfs.SetSize(nsp);
-	for (int i = 0; i < nsp; i++)
-	  this->compgfs[i] = make_shared<S_ComponentGridFunction<SCAL>> (*this, i);
-      }
-    
-    // this->Visualize (this->name);
+    this->SetVisual(agf_parent->GetVisual());
     if (this->visual)
       Visualize (this, this->name);
   }
 
-  template <class SCAL>
-  S_ComponentGridFunction<SCAL> :: 
-  ~S_ComponentGridFunction ()
+  ComponentGridFunction ::
+  ~ComponentGridFunction ()
   {
     this -> vec = NULL;  // base-class destructor must not delete the vector
   }
 
 
-  template <class SCAL>
-  void S_ComponentGridFunction<SCAL> :: Update()
+  void ComponentGridFunction :: Update()
   {
-    const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (*gf_parent.GetFESpace().get());
+    const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (*gf_parent->GetFESpace().get());
 
-    this -> vec.SetSize (gf_parent.GetMultiDim());
-    GridFunction::multidim = gf_parent.GetMultiDim();
+    this -> vec.SetSize (gf_parent->GetMultiDim());
+    GridFunction::multidim = gf_parent->GetMultiDim();
 
 #ifdef PARALLEL
     if (MyMPI_GetNTasks()>1)
       {
 	auto pds = cfes[comp]->GetParallelDofs();
-	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
+	for (int i = 0; i < gf_parent->GetMultiDim(); i++)
 	  {
-	    auto fvec = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
-	    (this->vec)[i] = make_shared<ParallelVFlatVector<SCAL>> (fvec.Size(), (SCAL*)fvec.Memory(), pds, CUMULATED);
+	    auto fvec = gf_parent->GetVector(i).Range (cfes.GetRange(comp));
+            if(IsComplex())
+              (this->vec)[i] = make_shared<ParallelVFlatVector<Complex>> (fvec.Size(), (Complex*)fvec.Memory(), pds, CUMULATED);
+            else
+              (this->vec)[i] = make_shared<ParallelVFlatVector<double>> (fvec.Size(), (double*)fvec.Memory(), pds, CUMULATED);
 	  }
       }
     else
 #endif
       {
-	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
-	  (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
+	for (int i = 0; i < gf_parent->GetMultiDim(); i++)
+	  (this->vec)[i] = gf_parent->GetVector(i).Range (cfes.GetRange(comp));
       }
 
     this -> level_updated = this -> ma->GetNLevels();
-
-    for (int i = 0; i < this->compgfs.Size(); i++)
-      this->compgfs[i]->Update();
+    compgfs.remove_if([](auto& wptr)
+                      {
+                        if(wptr.expired())
+                          return true;
+                        wptr.lock()->Update();
+                        return false;
+                      });
   }
 
 
@@ -878,20 +880,6 @@ namespace ngcomp
     vec.SetSize (this->multidim);
     vec = 0;
 
-    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(this->GetFESpace().get());
-    if (cfe)
-      {
-	int nsp = cfe->GetNSpaces();
-	compgfs.SetSize(nsp);
-	for (int i = 0; i < nsp; i++)
-	  compgfs[i] = make_shared<S_ComponentGridFunction<TSCAL>> (*this, i);
-      }    
-
-    // this->Visualize (this->name);
-    /*
-    if (this->visual)
-      Visualize(shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
-    */
     if (this->visual)
       Visualize(this, this->name);
   }
@@ -957,10 +945,13 @@ namespace ngcomp
 	
 	this -> level_updated = this -> ma->GetNLevels();
 
-	// const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
-	// if (cfe)
-	for (int i = 0; i < compgfs.Size(); i++)
-	  compgfs[i]->Update();
+        this->compgfs.remove_if([](auto& wptr)
+                                {
+                                  if(wptr.expired())
+                                    return true;
+                                  wptr.lock()->Update();
+                                  return false;
+                                });
       }
     catch (Exception & e)
       {
