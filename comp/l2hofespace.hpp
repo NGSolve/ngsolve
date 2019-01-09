@@ -145,11 +145,15 @@ namespace ngcomp
     // order of elements 
     Array<INT<3> > order_inner;
 
+    COUPLING_TYPE lowest_order_ct;
+
   public:
 
     L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~L2SurfaceHighOrderFESpace ();
+
+    static DocInfo GetDocu ();
 
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
