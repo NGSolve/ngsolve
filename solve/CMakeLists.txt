@@ -1,18 +1,8 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(NOT WIN32)
-    set(solve_object_libs
-        $<TARGET_OBJECTS:ngmg> 
-        )
-    set(ngslib_object_libs
-        $<TARGET_OBJECTS:ngmg> 
-        )
-endif(NOT WIN32)
-
 add_library( solve ${NGS_LIB_TYPE}
         bvp.cpp generalizedEVP.cpp numproc.cpp evp.cpp 
         hyperbolic.cpp numprocee.cpp python_solve.cpp python_mpi.cpp
-        ${solve_object_libs}
         )
 
 target_compile_definitions(solve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
@@ -65,12 +55,11 @@ if (NETGEN_USE_GUI)
             )
     endif(WIN32)
     add_library( ngsolve SHARED
-            $<TARGET_OBJECTS:ngmg>
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )
 
-    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES} ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY})
+    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE ngmg ${NETGEN_PYTHON_LIBRARIES} ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY})
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
     target_compile_definitions(ngsolve PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
