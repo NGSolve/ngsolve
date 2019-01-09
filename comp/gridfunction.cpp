@@ -808,6 +808,8 @@ namespace ngcomp
 
   void ComponentGridFunction :: Update()
   {
+    if(!gf_parent->IsUpdated())
+      gf_parent->Update();
     const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (*gf_parent->GetFESpace().get());
 
     this -> vec.SetSize (gf_parent->GetMultiDim());
