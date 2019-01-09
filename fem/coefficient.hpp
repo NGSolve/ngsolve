@@ -7,8 +7,6 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-namespace pybind11 { class module; };
-
 namespace ngfem
 {
   /** 
