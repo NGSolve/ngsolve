@@ -27,6 +27,7 @@ namespace ngcomp
     
 
     bool discontinuous;
+    bool surfacespace;
     int uniform_order_facet;
     int uniform_order_inner;
     int uniform_order_edge;
