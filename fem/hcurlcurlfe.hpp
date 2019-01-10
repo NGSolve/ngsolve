@@ -428,7 +428,6 @@ namespace ngfem
       
       ndof += ninner;
 
-      cout << "order = " << order << endl;
     }
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
@@ -481,7 +480,6 @@ namespace ngfem
       auto & ip = mip.IP();
       typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
       T x = ip(0), y = ip(1);
-      cout << "In HCURLCURL CALCDUALSHAPE: x = " << x << ", y = " << y << endl;
       T lam[3] = { x, y, 1-x-y };
       Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
       int facetnr = ip.FacetNr();
@@ -491,7 +489,6 @@ namespace ngfem
 
       if (ip.VB() == BND)
         { // facet shapes
-          cout << "facetnr = " << facetnr << endl;
           for (int i = 0; i < 3; i++)
             {
               int p = order_facet[i][0];
@@ -506,7 +503,6 @@ namespace ngfem
                   
                   Vec<2,T> tv = mip.GetJacobian()*tauref;
 
-                  cout << " tau =" << tv  << endl;
                   Mat<2> tt = DyadProd(tv,tv);
                   LegendrePolynomial::Eval
                     (p, xi,
@@ -1810,14 +1806,12 @@ namespace ngfem
       ndof += 3*order_inner[0]*(order_inner[0]+1)/2;
       order = max2(order, order_inner[0]);
 
-      cout << "order = " << order << endl;
     }
 
 
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      cout << "IN SURFACE TRIG" << endl;
       Tx x = ip.x, y = ip.y;
       typedef decltype(x.Value()+x.Value()) T;                  
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
@@ -1930,11 +1924,9 @@ namespace ngfem
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      cout << "IN SURFACE Dual TRIG" << endl;
       auto & ip = mip.IP();
       typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
       T x = ip(0), y = ip(1);
-      cout << "In HCURLCURL SURFACE CALCDUALSHAPE: x = " << x << ", y = " << y << endl;
       T lam[3] = { x, y, 1-x-y };
       Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
       int facetnr = ip.FacetNr();
@@ -1943,7 +1935,6 @@ namespace ngfem
 
       if (ip.VB() == BND)
         { // facet shapes
-          cout << "facetnr = " << facetnr << endl;
           for (int i = 0; i < 3; i++)
             {
               int p = order_edge[i];
@@ -1955,7 +1946,6 @@ namespace ngfem
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
                   
                   Vec<3,T> tau = mip.GetJacobian()*tauref;
-                  cout << " tau =" << tau  << endl;
                   Mat<3> tt = DyadProd(tau,tau);
                   LegendrePolynomial::Eval
                     (p, xi,
@@ -1977,7 +1967,6 @@ namespace ngfem
           auto p = order_inner[0]-1;
           if( p >= 0 )
             {
-              cout << "In vb==BND" << endl;
               INT<4> f = ET_trait<ET_TRIG>:: GetFaceSort(0, vnums);
                   
               auto F = mip.GetJacobian();
