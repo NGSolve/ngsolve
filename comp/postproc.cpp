@@ -380,15 +380,13 @@ namespace ngcomp
 
   template <class SCAL>
   void SetValues (shared_ptr<CoefficientFunction> coef,
-		  GridFunction & bu,
+		  GridFunction & u,
 		  VorB vb,
                   const Region * reg, 
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh)
   {
     static Timer sv("timer setvalues"); RegionTimer r(sv);
-
-    S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
 
     auto fes = u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 

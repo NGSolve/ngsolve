@@ -1576,7 +1576,7 @@ namespace ngcomp
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace()->IsComplex()),
-      ma(ama), gf(dynamic_pointer_cast<S_GridFunction<SCAL>> (agf)), 
+      ma(ama), gf(agf),
       applyd(aapplyd) // , lh(10000013, "VisualizedGridFunction 2")
   { 
     if(abfi2d)
@@ -1599,7 +1599,7 @@ namespace ngcomp
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace()->IsComplex()),
-      ma(ama), gf(dynamic_pointer_cast<S_GridFunction<SCAL>> (agf)), 
+      ma(ama), gf(agf),
       applyd(aapplyd) // , lh(10000002, "VisualizeGridFunction")
   { 
     for(int i=0; i<abfi2d.Size(); i++)
