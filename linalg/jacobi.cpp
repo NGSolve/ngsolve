@@ -61,12 +61,30 @@ namespace ngla
     FlatVector<TV_ROW> fy = y.FV<TV_ROW> ();
 
     if (!inner)
+      /*
       for (int i = 0; i < height; i++)
 	fy(i) += s * (invdiag[i] * fx(i));
-    else
+      */
+      ParallelForRange (height,
+                        [fx, fy, s, this] (IntRange r)
+                        {
+                          for (auto i : r)
+                            fy(i) += s * (this->invdiag[i] * fx(i));
+                        });
+      else
+        /*
       for (int i = 0; i < height; i++)
 	if (inner->Test(i))
 	  fy(i) += s * (invdiag[i] * fx(i));
+        */
+        ParallelForRange (height,
+                          [fx, fy, s, this] (IntRange r)
+                          {
+                            for (auto i : r)
+                              if (this->inner->Test(i))
+                                fy(i) += s * (this->invdiag[i] * fx(i));
+                          });
+          
   }
 
 

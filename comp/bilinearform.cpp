@@ -1042,15 +1042,12 @@ namespace ngcomp
                          
                          if (fel.GetNDof() != dnums.Size())
                            {
-                             cout << "fel:GetNDof() = " << fel.GetNDof() << endl;
-                             cout << "dnums.Size() = " << dnums.Size() << endl;
-                             
                              *testout << "Info from finite element: " << endl;
                              fel.Print (*testout);
-                             (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                             (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
                              (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                              (*testout) << "dnums = " << dnums << endl;
-                             throw Exception ( "Inconsistent number of degrees of freedom " );
+                             throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                            }
                          
                          int elmat_size = dnums.Size()*fespace->GetDimension();
@@ -1822,13 +1819,10 @@ namespace ngcomp
                                  fespace->GetDofNrs (ei1, dnums);
                                  if(fel.GetNDof() != dnums.Size())
                                    {
-                                     cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                                     cout << "dnums.Size() = " << dnums.Size() << endl;
-                                     
-                                     (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                                     (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
                                      (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                                      (*testout) << "dnums = " << dnums << endl;
-                                     throw Exception ( "Inconsistent number of degrees of freedom " );
+                                     throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                                    }
 
                                  /*
@@ -2094,13 +2088,10 @@ namespace ngcomp
                           fespace->GetDofNrs (ei, dnums);
                           if(fel.GetNDof() != dnums.Size())
                             {
-                              cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                              cout << "dnums.Size() = " << dnums.Size() << endl;
-				  
-                              (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                              (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
                               (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                               (*testout) << "dnums = " << dnums << endl;
-                              throw Exception ( "Inconsistent number of degrees of freedom " );
+                              throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                             }
 
                           /*
@@ -2690,10 +2681,11 @@ namespace ngcomp
                  
                  if(fel.GetNDof() != dnums.Size())
                    {
-                     cout << "fel::GetNDof() = " << fel.GetNDof() << endl;
-                     cout << "dnums.Size() = " << dnums.Size() << endl;
+                     (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
+                     (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                     (*testout) << "dnums = " << dnums << endl;
+                     throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                    }
-
                  for (auto d : dnums) 
                    if (IsRegularDof(d)) useddof[d] = true;
                  
@@ -3007,13 +2999,10 @@ namespace ngcomp
                       fespace->GetDofNrs (ei, dnums);
                       if(fel.GetNDof() != dnums.Size())
                         {
-                          cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                          cout << "dnums.Size() = " << dnums.Size() << endl;
-                          
-                          (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                          (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
                           (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                           (*testout) << "dnums = " << dnums << endl;
-                          throw Exception ( "Inconsistent number of degrees of freedom " );
+                          throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                         }
                       
                       /*
@@ -3854,13 +3843,11 @@ namespace ngcomp
                            fespace->GetDofNrs (ei1, dnums);
                            if(fel.GetNDof() != dnums.Size())
                              {
-                               cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                               cout << "dnums.Size() = " << dnums.Size() << endl;
-                               
-                               (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+
+                               (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
                                (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                                (*testout) << "dnums = " << dnums << endl;
-                               throw Exception ( "Inconsistent number of degrees of freedom " );
+                               throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                              }
                            
                            

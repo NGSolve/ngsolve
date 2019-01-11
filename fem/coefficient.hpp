@@ -1257,7 +1257,7 @@ public:
     c1->NonZeroPattern(ud, v1, d1, dd1);
     for (int i = 0; i < nonzero.Size(); i++)
       {
-        if (name == "-") // actually not used that way
+        if (name == "-" || name == " ") // "-" actually not used that way
           {
             nonzero(i) = v1(i);
             nonzero_deriv(i) = d1(i);
@@ -1277,7 +1277,7 @@ public:
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     auto v1 = input[0];
-    if (name == "-") // actually not used that way
+    if (name == "-"  || name == " ") // "-" actually not used that way
       {
         values = v1;
       }

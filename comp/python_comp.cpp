@@ -475,12 +475,12 @@ when building the system matrices.
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
-         [] (const spProxy self, string name) -> py::object
+         [] (const spProxy self, string name)
           {
             auto op = self->GetAdditionalProxy(name);
-            if (op)
-              return py::cast(op);
-            return py::none();
+            if (!op)
+              throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
          [] (const spProxy self)
@@ -1541,7 +1541,7 @@ parallel : bool
               reg = &py::extract<Region&>(definedon)();
             
             py::gil_scoped_release release;
-            
+
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -1613,31 +1613,29 @@ definedon : object
          "returns list of available differential operators")
     
     .def("Operator",
-         [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
+         [](shared_ptr<GF> self, string name, VorB vb)
           {
-            if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+            if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+              throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+            shared_ptr<GridFunctionCoefficientFunction> coef;
+            switch(vb)
               {
-                auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                shared_ptr<GridFunctionCoefficientFunction> coef;
-                switch(vb)
-                  {
-                  case VOL:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
-                    break;
-                  case BND:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
-                    break;
-                  case BBND:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
-                    break;
-                  case BBBND:
-                    throw Exception ("there are no Operators with BBBND");
-                  }
-                coef->SetDimensions(diffop->Dimensions());
-                coef->generated_from_operator = name;
-                return py::cast(shared_ptr<CoefficientFunction>(coef));
+              case VOL:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                break;
+              case BND:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+                break;
+              case BBND:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+                break;
+              case BBBND:
+                throw Exception ("there are no Operators with BBBND");
               }
-            return py::none(); 
+            coef->SetDimensions(diffop->Dimensions());
+            coef->generated_from_operator = name;
+            return coef;
           }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
 
@@ -2425,6 +2423,7 @@ integrator : ngsolve.fem.LFI
             mask = BitArray(ma->GetNRegions(vb));
             mask.Set();
           }
+ 
           int dim = cf->Dimension();
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
@@ -2652,7 +2651,7 @@ element_wise: bool = False
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             
+
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
                lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
@@ -2751,6 +2750,7 @@ deformation : ngsolve.comp.GridFunction
              if (element_boundary) element_vb = BND;
              // check for DG terms
              bool has_other = false;
+
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2856,6 +2856,7 @@ deformation : ngsolve.comp.GridFunction
 
              // check for DG terms
              bool has_other = false;
+
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2899,7 +2900,8 @@ deformation : ngsolve.comp.GridFunction
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             
+
+
              auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
