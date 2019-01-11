@@ -30,6 +30,23 @@ namespace ngmg
   {
     if (ma->GetNLevels() > nvlevel.Size())
       nvlevel.Append (ma->GetNV());
+
+    if (nvlevel.Size() > 1)
+      {
+        // if we have a transitive dependency within one level
+        // we cannot trivially prolongate in parallel
+        int finelevel = nvlevel.Size()-1;
+        size_t nc = nvlevel[finelevel-1];
+        size_t nf = nvlevel[finelevel];
+        auto & mesh = *ma;        
+        ParallelFor (IntRange(nc, nf), [&mesh, nc, this] (size_t i)
+                     {
+                       auto parents = mesh.GetParentNodes (i);
+                       if (parents[0] >= nc || parents[1] >= nc)
+                         this->allow_parallel = false;
+                     });
+        
+      }
   }
 
   
@@ -43,11 +60,21 @@ namespace ngmg
       {
         FlatVector<> fv = v.FV<double>();        
         fv.Range (nf, fv.Size()) = 0;
-        for (size_t i = nc; i < nf; i++)
+        if (allow_parallel)
           {
-            auto parents = ma->GetParentNodes (i);
-            fv(i) = 0.5 * (fv(parents[0]) + fv(parents[1]));
+            auto & mesh = *ma;
+            ParallelFor (IntRange(nc, nf), [fv, &mesh] (size_t i)
+                         {
+                           auto parents = mesh.GetParentNodes (i);
+                           fv(i) = 0.5 * (fv(parents[0]) + fv(parents[1]));
+                         });
           }
+        else
+          for (size_t i = nc; i < nf; i++)
+            {
+              auto parents = ma->GetParentNodes (i);
+              fv(i) = 0.5 * (fv(parents[0]) + fv(parents[1]));
+            }
       }
     else
       {
@@ -69,17 +96,33 @@ namespace ngmg
       size_t nc = nvlevel[finelevel-1];
       size_t nf = nvlevel[finelevel];
 
-      FlatSysVector<> fv = v.SV<double>();
-    
-      for (size_t i = nf; i-- > nc; )
-	{
-	  auto parents = ma->GetParentNodes (i);
-	  fv(parents[0]) += 0.5 * fv(i);
-	  fv(parents[1]) += 0.5 * fv(i);
-	}
 
+      if (v.EntrySize() == 1)
+        {
+          FlatVector<> fv = v.FV<double>();
+          for (size_t i = nf; i-- > nc; )
+            {
+              auto parents = ma->GetParentNodes (i);
+              fv(parents[0]) += 0.5 * fv(i);
+              fv(parents[1]) += 0.5 * fv(i);
+            }
+          fv.Range(nf, fv.Size()) = 0;          
+        }
+      else
+        {
+          FlatSysVector<> fv = v.SV<double>();
+          for (size_t i = nf; i-- > nc; )
+            {
+              auto parents = ma->GetParentNodes (i);
+              fv(parents[0]) += 0.5 * fv(i);
+              fv(parents[1]) += 0.5 * fv(i);
+            }
+          fv.Range(nf, fv.Size()) = 0;
+        }
+      /*
       for (size_t i = nf; i < fv.Size(); i++)
 	fv(i) = 0;  
+      */
     }
 
 
