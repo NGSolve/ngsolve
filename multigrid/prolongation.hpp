@@ -43,6 +43,7 @@ namespace ngmg
   {
     shared_ptr<MeshAccess> ma;
     Array<size_t> nvlevel;
+    bool allow_parallel = true;
   public:
     LinearProlongation(shared_ptr<MeshAccess> ama)
       : ma(ama) { ; }
