@@ -12,6 +12,41 @@
 
 namespace ngcomp
 {
+
+  template <int D>
+  class DiffOpHDivDivDual : public DiffOp<DiffOpHDivDivDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHDivDivDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HDivDivFiniteElement<D>&> (fel); }
+    
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHDivDivDual not available for mat ")+typeid(mat).name());
+    }
+   
+  };
   
   template<int D>
   class DiffOpVecIdHDivDiv: public DiffOp<DiffOpVecIdHDivDiv<D> >
@@ -899,6 +934,7 @@ namespace ngcomp
       additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<2>>> ());
       additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<2>>> ());
       additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<2>>> ());
+      additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDivDual<2>>> ());
       break;
     case 3:
       additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ());
