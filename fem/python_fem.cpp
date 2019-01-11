@@ -1426,6 +1426,11 @@ et : ngsolve.fem.ET
     .def("__timing__", &FiniteElement::Timing)
     ;
 
+  py::class_<MixedFiniteElement, shared_ptr<MixedFiniteElement>, FiniteElement>
+    (m, "MixedFE", "pair of finite elements for trial and test-functions")
+    .def(py::init<const FiniteElement&, const FiniteElement&>())
+    ;
+  
   py::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
     FiniteElement>
       (m, "ScalarFE", "a scalar-valued finite element")
@@ -1999,14 +2004,19 @@ intrule : ngsolve.fem.Integrationrule
                                try
                                  {
                                    if (complex)
-                                     {
+                                     {                                       
                                        Matrix<Complex> mat(fe.GetNDof() * self->GetDimension());
                                        self->CalcElementMatrix(fe,trafo,mat,lh);
                                        return py::cast(mat);
                                      }
                                    else
                                      {
-                                       Matrix<> mat(fe.GetNDof() * self->GetDimension());
+                                       const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                                       const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
+                                       const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
+                                       
+                                       Matrix<> mat(fe_test.GetNDof() * self->GetDimension(),
+                                                    fe_trial.GetNDof() * self->GetDimension());
                                        self->CalcElementMatrix (fe, trafo, mat, lh);
                                        return py::cast(mat);
                                      }
