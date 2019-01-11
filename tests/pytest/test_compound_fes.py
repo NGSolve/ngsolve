@@ -48,6 +48,9 @@ def test_component_keeps_alive():
     del gf
     # check if vec is still alive
     assert len(gf1.vec) == 9
+    gf1.Set(0)
+    for val in gf1.vec:
+        assert val == 0.0
 
 if __name__ == "__main__":
     test_component_keeps_alive()

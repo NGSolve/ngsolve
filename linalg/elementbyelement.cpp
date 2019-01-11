@@ -784,6 +784,16 @@ namespace ngla
       }
   }
 
+  AutoVector ConstantElementByElementMatrix :: CreateRowVector () const
+  {
+    return make_shared<VVector<>> (w);
+  }
+  
+  AutoVector ConstantElementByElementMatrix :: CreateColVector () const 
+  {
+    return make_shared<VVector<>> (h);
+  }
+
   
   void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
