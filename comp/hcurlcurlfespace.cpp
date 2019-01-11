@@ -825,8 +825,9 @@ namespace ngcomp
   
   
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
-    : FESpace(ama,flags), surfacespace(false), type("hcurlcurl")
+    : FESpace(ama,flags), issurfacespace(false)
   {
+    type = "hcurlcurl";
     order = int (flags.GetNumFlag ("order",1));
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_edge = int(flags.GetNumFlag("orderedge",order));
@@ -870,7 +871,7 @@ namespace ngcomp
     if (first_update)
       {
         if (!ma->GetNE() && ma->GetNSE())
-            surfacespace = true;
+            issurfacespace = true;
         first_edge_dof.SetSize (ma->GetNEdges()+1);
         first_facet_dof.SetSize (ma->GetNFacets()+1);
         first_element_dof.SetSize (ma->GetNE()+1);
@@ -916,7 +917,7 @@ namespace ngcomp
               }
             first_edge_dof.Last() = ndof;
 
-            if (surfacespace && discontinuous)
+            if (issurfacespace && discontinuous)
               ndof = 0;
           }
         for(auto i : Range(ma->GetNFacets()))
@@ -932,7 +933,7 @@ namespace ngcomp
                 ndof += of[0] + 1; break;
               case ET_TRIG:
                 ndof += 3*(of[0]*(of[0]+1)/2);
-                if(surfacespace && discontinuous)
+                if(issurfacespace && discontinuous)
                   {
                     for (auto e : ma->GetElEdges(ei))
                       ndof += first_edge_dof[e+1] - first_edge_dof[e];            
@@ -946,7 +947,7 @@ namespace ngcomp
               }
           }
         first_facet_dof.Last() = ndof;
-        if (discontinuous && !surfacespace)
+        if (discontinuous && !issurfacespace)
           ndof = 0;
 
         for(auto i : Range(ma->GetNE()))
@@ -992,7 +993,7 @@ namespace ngcomp
         first_element_dof.Last() = ndof;
         if(discontinuous)
           {
-            if (!surfacespace)
+            if (!issurfacespace)
               first_facet_dof = 0;
             first_edge_dof = 0;
           }
@@ -1101,7 +1102,7 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     if (!ei.IsVolume())
     {
-      if(!discontinuous || surfacespace)
+      if(!discontinuous || issurfacespace)
       {
         auto feseg = new (alloc) HCurlCurlSurfaceFE<ET_SEGM> (order);
         auto fetr = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
