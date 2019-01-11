@@ -359,7 +359,7 @@ namespace ngcomp
   class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {
     shared_ptr<MeshAccess> ma;
-    shared_ptr<S_GridFunction<SCAL>> gf;
+    shared_ptr<GridFunction> gf;
     Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
     Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
     bool applyd;

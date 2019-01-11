@@ -1,9 +1,9 @@
-from ngsolve import Projector, solvers
-
 def BVP(bf, lf, gf, pre=None, maxsteps=200, tol=1e-8, print=True, inverse="umfpack"):
     """
     Solve a linear boundary value problem
     """
+    from ngsolve import Projector
+    from ngsolve.krylovspace import CG
     
     r = lf.vec.CreateVector()
     r.data = lf.vec
@@ -16,7 +16,7 @@ def BVP(bf, lf, gf, pre=None, maxsteps=200, tol=1e-8, print=True, inverse="umfpa
         Projector(innerbits, False).Project(gf.vec)
         
     if pre:
-        solvers.CG(mat = bf.mat, rhs = r, pre=pre, sol=gf.vec, tol=tol, initialize=False, printrates=print)
+        CG(mat = bf.mat, rhs = r, pre=pre, sol=gf.vec, tol=tol, initialize=False, printrates=print)
     else:
         inv = bf.mat.Inverse(gf.space.FreeDofs(bf.condense), inverse=inverse)
         r.data -= bf.mat * gf.vec
