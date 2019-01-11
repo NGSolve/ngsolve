@@ -1900,9 +1900,11 @@ reallocate : bool
 
 )raw_string"))
 
-    .def_property_readonly("mat", [](BF & self)
+    .def_property_readonly("mat", [](shared_ptr<BF> self) -> shared_ptr<BaseMatrix>
                                          {
-                                           auto mat = self.GetMatrixPtr();
+                                           if (self->NonAssemble())
+                                             return make_shared<BilinearFormApplication> (self, glh);
+                                           auto mat = self->GetMatrixPtr();
                                            if (!mat)
                                              throw py::type_error("matrix not ready - assemble bilinearform first");
                                            return mat;

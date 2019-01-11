@@ -724,7 +724,13 @@ namespace ngcomp
       GalerkinProjection();
   }
 
-
+  shared_ptr<BaseMatrix> BilinearForm :: GetMatrixPtr () const
+  {
+    if (!mats.Size())
+      return nullptr;
+    return mats.Last(); 
+  }
+  
 
   void BilinearForm :: PrintReport (ostream & ost) const
   {
@@ -4245,10 +4251,10 @@ namespace ngcomp
             // precomputed[nr] = Matrix<>(fely.GetNDof(), felx.GetNDof());
             precomputed[nr] = move(elmat);
           }
-        Matrix<> elmat = precomputed[nr];
-        
-        elmat *= ConvertTo<double> (val); // only real factor supported by now
 
+        Matrix<> elmat = precomputed[nr];
+        elmat *= ConvertTo<double> (val); // only real factor supported by now
+        
         Matrix<> temp_x(elclass_inds.Size(), !transpose ? elmat.Width() : elmat.Height());
         Matrix<> temp_y(elclass_inds.Size(), !transpose ? elmat.Height() : elmat.Width());
 
@@ -5505,7 +5511,9 @@ namespace ngcomp
     v.Cumulate();
 
     prod = 0;
+    bf -> AddMatrix (1, v, prod, lh);
 
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5523,7 +5531,8 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-
+    */
+    
     prod.SetParallelStatus (DISTRIBUTED);
   }
 
@@ -5533,8 +5542,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrix (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5553,6 +5562,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
+    */
     
   }
 
@@ -5562,8 +5572,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrix (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5581,7 +5591,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-    
+    */
   }
 
   void BilinearFormApplication :: 
@@ -5590,8 +5600,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrixTrans (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5609,7 +5619,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-    
+    */
   }
 
   shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,

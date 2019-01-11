@@ -118,10 +118,11 @@ namespace ngcomp
 
     /// used for many right-hand-sides
     int cacheblocksize = 1;
+    /// Component gridfunctions living somewhere - need to call update on them
+    std::list<weak_ptr<GridFunction>> compgfs;
     /// the actual data, array for multi-dim 
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
-    Array<shared_ptr<GridFunction>> compgfs;
     shared_ptr<GridFunctionCoefficientFunction> derivcf;
   public:
     /// 
@@ -185,8 +186,14 @@ namespace ngcomp
     virtual bool IsUpdated () const; 
 
     
-    int GetNComponents () const { return compgfs.Size(); }
-    shared_ptr<GridFunction> GetComponent (int compound_comp) const;
+    int GetNComponents () const
+    {
+      auto compfes = dynamic_pointer_cast<CompoundFESpace>(fespace);
+      if(compfes)
+        return compfes->GetNSpaces();
+      return 0;
+    }
+    shared_ptr<GridFunction> GetComponent (int compound_comp);
 
     shared_ptr<GridFunctionCoefficientFunction> GetDeriv()
     {
@@ -295,7 +302,6 @@ namespace ngcomp
   class NGS_DLL_HEADER T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
     using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
-    using S_GridFunction<typename mat_traits<TV>::TSCAL>::compgfs;
 
   public:
     typedef typename mat_traits<TV>::TSCAL TSCAL;
@@ -332,15 +338,16 @@ namespace ngcomp
 
 
 
-  template <class SCAL>
-  class NGS_DLL_HEADER S_ComponentGridFunction : public S_GridFunction<SCAL>
+  class NGS_DLL_HEADER ComponentGridFunction : public GridFunction
   {
-    const S_GridFunction<SCAL> & gf_parent;
+    shared_ptr<GridFunction> gf_parent;
     int comp;
   public:
-    S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp);
-    virtual ~S_ComponentGridFunction ();
-    virtual void Update ();
+    ComponentGridFunction (shared_ptr<GridFunction> agf_parent, int acomp);
+    ~ComponentGridFunction () override;
+    void Update () override;
+    void Load(istream& ist) override { throw Exception("Load not implemented for ComponentGF"); }
+    void Save(ostream& ost) const override { throw Exception("Save not implemented for ComponentGF"); }
   };
   
 
@@ -352,7 +359,7 @@ namespace ngcomp
   class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {
     shared_ptr<MeshAccess> ma;
-    shared_ptr<S_GridFunction<SCAL>> gf;
+    shared_ptr<GridFunction> gf;
     Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
     Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
     bool applyd;
