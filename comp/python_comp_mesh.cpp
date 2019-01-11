@@ -153,6 +153,16 @@ nr : int
     .def_property_readonly("faces", [](MeshNode & node) -> py::tuple
                            {
                              auto & mesh = node.Mesh();
+                             if (node.GetType() == NT_VERTEX)  
+                               {
+                                 Array<int> fnums;
+                                 for (auto el : mesh.GetVertexElements(node.GetNr()))
+                                   for (auto face : mesh.GetElement(ElementId(VOL,el)).Faces())
+                                     if (!fnums.Contains(face))
+                                       fnums.Append(face);
+                                 QuickSort (fnums);
+                                 return MakePyTuple(Substitute(fnums, Nr2Face));
+                               }
                              if (node.GetType() == NT_CELL)
                                return MakePyTuple(Substitute(mesh.GetElFacets(ElementId(VOL, node.GetNr())),
                                                              Nr2Face));
@@ -262,6 +272,21 @@ nr : int
                                }
                            },
                            "tuple of global face, edge or vertex numbers")
+    .def_property_readonly("elementnode", [](Ngs_Element &el)
+                           {
+                             switch (ElementTopology::GetSpaceDim(el.GetType()))
+                               {
+                               case 1:
+                                 return Nr2Edge (el.Edges()[0]);
+                               case 2:
+                                 return Nr2Face (el.Faces()[0]);
+                               case 3:
+                                 return NodeId(NT_CELL, el.Nr());
+                               default:
+                                 throw Exception ("Illegal dimension in Ngs_Element.elementnode");
+                               }
+                           },
+                           "inner node, i.e. cell, face or edge node for 3D/2D/1D")
     .def_property_readonly("type", [](Ngs_Element &self)
         { return self.GetType(); },
         "geometric shape of element")
