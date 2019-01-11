@@ -29,3 +29,28 @@ def test_mass_l2():
 
         assert Norm(m.AsVector())/fes.ndof<1e-15
 
+# check if component gf keeps gf alive
+def test_component_keeps_alive():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=2))
+    assert mesh.ne == 2
+    fes1 = H1(mesh)
+    fes = FESpace([fes1,fes1])
+    gf = GridFunction(fes)
+    gf.vec[:] = 1
+    gf1, gf2 = gf.components
+    assert len(gf.vec) == 8
+    assert len(gf1.vec) == 4
+    mesh.Refine()
+    gf.Update()
+    # check if gf update calls gf1 update as well
+    assert len(gf.vec) == 18
+    assert len(gf1.vec) == 9
+    del gf
+    # check if vec is still alive
+    assert len(gf1.vec) == 9
+    gf1.Set(0)
+    for val in gf1.vec:
+        assert val == 0.0
+
+if __name__ == "__main__":
+    test_component_keeps_alive()
