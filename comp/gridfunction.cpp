@@ -658,12 +658,13 @@ namespace ngcomp
 
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
-  void  S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
+  void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
   {
 #ifdef PARALLEL
-    int id = MyMPI_GetId();
-    int ntasks = MyMPI_GetNTasks();
-    
+    auto comm = ma->GetCommunicator();
+    int id = MyMPI_GetId(comm);
+    int ntasks = MyMPI_GetNTasks(comm);
+
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
     
@@ -677,9 +678,8 @@ namespace ngcomp
 	Array<DofId> dnums;
         Array<int> pnums;
     
-	for (int i = 0; i < nnodes; i++)
+	for (size_t i = 0; i < nnodes; i++)
 	  {
-	    // fes.GetNodeDofNrs (NTYPE, i,  dnums);
             fes.GetDofNrs (NodeId(NTYPE,i),  dnums);
 	    
 	    if (dnums.Size() == 0) continue;
@@ -687,18 +687,15 @@ namespace ngcomp
 
 	    switch (NTYPE)
 	      {
-	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-                // case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
+              case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
               case NT_EDGE: pnums = ma->GetEdgePNums (i); break;
-                // case NT_FACE: ma->GetFacePNums (i, pnums); break;
               case NT_FACE: pnums = ma->GetFacePNums (i); break;
-                // case NT_CELL: ma->GetElVertices (i, pnums); break;
               case NT_CELL: pnums = ma->GetElVertices (ElementId(VOL,i)); break;
 	      }
 
 	    Vec<N+1, int> points;
 	    points = -1;
-	    for( int j = 0; j < pnums.Size(); j++)
+	    for (int j = 0; j < pnums.Size(); j++)
 	      points[j] = ma->GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
 	    points[N] = dnums.Size();
 	    
@@ -707,13 +704,13 @@ namespace ngcomp
 	    Vector<SCAL> elvec(dnums.Size());
 	    GetElementVector (dnums, elvec);
 	    
-	    for( int j = 0; j < dnums.Size(); j++)
+	    for (int j = 0; j < dnums.Size(); j++)
 	      data.Append(elvec(j));
 	  }    
-	
+
 	MyMPI_Gather (nodenums.Size());
 	MyMPI_Gather (data.Size());
-
+        
 	MyMPI_Send(nodenums,0,22);
 	MyMPI_Send(data,0,23);
       }
@@ -721,9 +718,8 @@ namespace ngcomp
       {
 	Array<Vec<N,int> > points(0);
 	Array<Vec<2,int> > positions(0);
-	
 
-	Array<int> size_nodes(ntasks), size_data(ntasks);
+	Array<size_t> size_nodes(ntasks), size_data(ntasks);
 	MyMPI_GatherRoot (size_nodes);
 	MyMPI_GatherRoot (size_data);
 
@@ -740,29 +736,28 @@ namespace ngcomp
 
 	FlatArray<SCAL> data = table_data.AsArray();
 
-
 	int size = 0;
-	for( int proc = 1; proc < ntasks; proc++)
+	for (int proc = 1; proc < ntasks; proc++)
 	  {
 	    FlatArray<Vec<N+1,int> > locpoints = table_nodes[proc];
 	    Vec<N,int>  temp;
 	    
-	    for( int j = 0; j < locpoints.Size(); j++ )
+	    for (int j = 0; j < locpoints.Size(); j++ )
 	      {
 		int nodesize = locpoints[j][N];
 		
 		positions.Append (Vec<2,int> (size, nodesize));
 		
-		for( int k = 0; k < N; k++)
+		for (int k = 0; k < N; k++)
 		  temp[k] = locpoints[j][k];
 		
-		points.Append( temp );
+		points.Append (temp);
 		size += nodesize;
 	      }
 	  }    
 	
 	Array<int> index(points.Size());
-	for( int i = 0; i < index.Size(); i++) index[i] = i;
+	for (int i = 0; i < index.Size(); i++) index[i] = i;
 	
 	static Timer ts ("Save Gridfunction, sort");
 	static Timer tw ("Save Gridfunction, write");
@@ -771,12 +766,12 @@ namespace ngcomp
 	ts.Stop();
 
 	tw.Start();
-	for( int i = 0; i < points.Size(); i++)
+	for (int i = 0; i < points.Size(); i++)
 	  {
 	    int start = positions[index[i]][0];
 	    int end = positions[index[i]][1];
 	    
-	    for( int j = 0; j < end; j++)
+	    for (int j = 0; j < end; j++)
 	      SaveBin<SCAL>(ost, data[start++]);
 	  }
 	tw.Stop();	
