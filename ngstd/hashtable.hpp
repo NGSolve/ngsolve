@@ -1080,7 +1080,7 @@ namespace std
   // structured binding support
   template <size_t N, typename T>
   struct tuple_size<ngstd::INT<N,T>> : std::integral_constant<std::size_t, N> {};
-  template<int N, int M, typename T> struct tuple_element<N,ngstd::INT<M,T>> { using type = T; };
+  template<size_t N, int M, typename T> struct tuple_element<N,ngstd::INT<M,T>> { using type = T; };
 }
 
 #endif
