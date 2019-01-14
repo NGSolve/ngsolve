@@ -238,7 +238,7 @@ namespace ngstd
   xbool Flags :: GetDefineFlagX (const string & name) const throw()
   {
     if (!defflags.Used (name)) return maybe;
-    return defflags[name];
+    return bool(defflags[name]);
   }
 
 
