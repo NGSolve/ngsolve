@@ -2,6 +2,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kernel_generator generate_mat_kernels.cpp)
 target_link_libraries(kernel_generator PUBLIC ngstd)
+target_link_libraries(kernel_generator ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
   COMMAND kernel_generator
