@@ -2,7 +2,12 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 3.3)
+if(WIN32)
+  # we are linking to object libraries on Windows
+  cmake_minimum_required(VERSION 3.12)
+else(WIN32)
+  cmake_minimum_required(VERSION 3.3)
+endif(WIN32)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
@@ -260,7 +265,7 @@ endif (USE_MKL)
 
 if(MKL_STATIC)
   set(LAPACK_CMAKE_LINK_INTERFACE PRIVATE)
-  list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE LAPACK)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 else()
   set(LAPACK_CMAKE_LINK_INTERFACE PUBLIC)
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
@@ -283,7 +288,7 @@ endif (USE_MUMPS)
 #######################################################################
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
-    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR})
+    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
     "${CMAKE_CURRENT_BINARY_DIR}/python/config.py"
@@ -429,7 +434,7 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
-    set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib libngsolve.lib" )
+    set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib ngcore.lib libngsolve.lib" )
 else()
     set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
     set(ngscxx_header
