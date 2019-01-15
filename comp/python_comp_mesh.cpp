@@ -163,6 +163,12 @@ nr : int
                                  QuickSort (fnums);
                                  return MakePyTuple(Substitute(fnums, Nr2Face));
                                }
+                             if (node.GetType() == NT_EDGE)
+                               {
+                                 Array<int> faces;
+                                 mesh.GetEdgeFaces(node.GetNr(), faces);
+                                 return MakePyTuple(Substitute(faces, Nr2Face));
+                               }
                              if (node.GetType() == NT_CELL)
                                return MakePyTuple(Substitute(mesh.GetElFacets(ElementId(VOL, node.GetNr())),
                                                              Nr2Face));
@@ -608,8 +614,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("RefineHP",
          [](MeshAccess & ma, int levels, double factor)
           {
-            Ng_HPRefinement(levels, factor);
-            ma.UpdateBuffers();
+            ma.HPRefinement(levels, factor);
+            // Ng_HPRefinement(levels, factor);
+            // ma.UpdateBuffers();
           },
          py::arg("levels"), py::arg("factor")=0.125,
 	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points")

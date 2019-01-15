@@ -1561,13 +1561,9 @@ into the wirebasket.
 		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
 		}
 	      
-	      Array<int> f2ed;
-	      for (int i = 0; i < nfa; i++)
-		{
-		  ma->GetFaceEdges (i, f2ed);
-		  for (int k = 0; k < f2ed.Size(); k++)
-		    creator.Add (nv+f2ed[k], GetFaceDofs(i));
-		}
+	      for (auto face : Range(nfa))
+                for (auto edge : ma->GetFaceEdges(face))
+                  creator.Add (nv+edge, GetFaceDofs(face));
 	      
 	      for (int i = 0; i < ni; i++)
 		creator.Add (nv+ned+i, GetElementDofs(i));

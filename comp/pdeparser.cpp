@@ -1,3 +1,6 @@
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <solve.hpp>
 #include <parallelngs.hpp>
 

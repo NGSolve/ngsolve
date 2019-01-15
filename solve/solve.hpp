@@ -13,6 +13,9 @@
 */
 
 
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <comp.hpp>
 #include <multigrid.hpp>
 
