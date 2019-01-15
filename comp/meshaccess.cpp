@@ -1181,7 +1181,9 @@ namespace ngcomp
   void MeshAccess :: GetEdgeFaces (int enr, Array<int> & faces) const
   {
     faces.SetSize0();
-    auto [v0,v1] = GetEdgePNums(enr);
+    // auto [v0,v1] = GetEdgePNums(enr);
+    auto v01 = GetEdgePNums(enr);
+    auto v0 = v01[0], v1 = v01[1];
 
     for (auto elnr : GetVertexElements(v0))
       {
