@@ -25,7 +25,6 @@ using namespace ngsolve;
 
 
 #include <nginterface.h>
-#include <ngexception.hpp>
 
 namespace netgen
 {
@@ -506,19 +505,6 @@ int NGS_LoadPDE (ClientData clientData,
 	  Tcl_SetResult (interp, (char*)ost.str().c_str(), TCL_VOLATILE);
 	  return TCL_ERROR;
 	}
-
-      catch (netgen::NgException & e)
-	{
-          pde->SetGood (false);
-	  cerr << "\n\nCaught Exception in NGS_LoadPDE:\n"
-	       << e.What() << endl;
-
-	  ostringstream ost;
-	  ost << "Exception in NGS_LoadPDE: \n " << e.What() << endl;
-	  Tcl_SetResult (interp, (char*)ost.str().c_str(), TCL_VOLATILE);
-	  return TCL_ERROR;
-	}
-
       catch (exception & e)
 	{
 	  cerr << "\n\nCaught exception in NGS_LoadPDE:\n"
@@ -596,7 +582,7 @@ int NGS_LoadPy (ClientData clientData,
 	  
 	  return TCL_OK;
 	}
-      catch (netgen::NgException & e)
+      catch (Exception & e)
 	{
 	  cerr << "\n\nCaught Exception in NGS_LoadPy:\n"
 	       << e.What() << endl;
@@ -642,12 +628,6 @@ void * SolveBVP(void *)
     }
 # endif // MSVC_EXPRESS
 #endif
-  catch (netgen::NgException & e)
-    {
-      cerr << "\n\ncaught Exception in SolveBVP:\n"
-	   << e.What() << "\n\n";
-      pde->SetGood (false);
-    }
   catch (exception & e)
     {
       cerr << "\n\ncaught exception in SolveBVP:\n "
@@ -1004,7 +984,7 @@ int NGS_GetData (ClientData clientData,
 
       if (strcmp (argv[1], "numcoefficients") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetCoefficientTable().Size());
+	  sprintf (buf, "%zu", pde->GetCoefficientTable().Size());
 	}
       else if (strcmp (argv[1], "coefficientname") == 0)
 	{
@@ -1016,7 +996,7 @@ int NGS_GetData (ClientData clientData,
 
       if (strcmp (argv[1], "numspaces") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetSpaceTable().Size());
+	  sprintf (buf, "%zu", pde->GetSpaceTable().Size());
 	}
       else if (strcmp (argv[1], "spacename") == 0)
 	{
@@ -1056,7 +1036,7 @@ int NGS_GetData (ClientData clientData,
 
       else if (strcmp (argv[1], "numgridfunctions") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetGridFunctionTable().Size());
+	  sprintf (buf, "%zu", pde->GetGridFunctionTable().Size());
 	}
       else if (strcmp (argv[1], "gridfunctionname") == 0)
 	{
@@ -1075,7 +1055,7 @@ int NGS_GetData (ClientData clientData,
 
       else if (strcmp (argv[1], "numbilinearforms") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetBilinearFormTable().Size());
+	  sprintf (buf, "%zu", pde->GetBilinearFormTable().Size());
 	}
       else if (strcmp (argv[1], "bilinearformname") == 0)
 	{
@@ -1085,7 +1065,7 @@ int NGS_GetData (ClientData clientData,
 
       else if (strcmp (argv[1], "numlinearforms") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetLinearFormTable().Size());
+	  sprintf (buf, "%zu", pde->GetLinearFormTable().Size());
 	}
       else if (strcmp (argv[1], "linearformname") == 0)
 	{

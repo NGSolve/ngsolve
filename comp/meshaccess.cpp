@@ -770,12 +770,6 @@ namespace ngcomp
     mesh.SaveMesh (str);
   }
 
-  void MeshAccess :: ArchiveMesh (Archive & archive) 
-  {
-    mesh.DoArchive (archive);
-    if (archive.Input()) UpdateBuffers();
-  }
-
   void MeshAccess :: SelectMesh() const
   {
     mesh.SelectMesh();
