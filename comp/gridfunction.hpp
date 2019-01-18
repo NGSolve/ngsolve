@@ -119,7 +119,7 @@ namespace ngcomp
     /// used for many right-hand-sides
     int cacheblocksize = 1;
     /// Component gridfunctions living somewhere - need to call update on them
-    std::list<weak_ptr<GridFunction>> compgfs;
+    Array<weak_ptr<GridFunction>> compgfs;
     /// the actual data, array for multi-dim 
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace

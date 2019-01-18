@@ -83,6 +83,10 @@ namespace ngcomp
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
+    auto comp_space = dynamic_pointer_cast<CompoundFESpace>(fespace);
+    if(comp_space)
+      for(auto i : Range(comp_space->GetNSpaces()))
+        compgfs.Append(shared_ptr<GridFunction>(nullptr));
     // level_updated = -1;
     // cacheblocksize = 1;
   }
@@ -322,10 +326,16 @@ namespace ngcomp
       {
         if (compound_comp >= compfes->GetNSpaces())
           throw Exception("GetComponent: compound_comp does not exist!");
-        auto sptr = make_shared<ComponentGridFunction>(dynamic_pointer_cast<GridFunction>(this->shared_from_this()),
-                                                       compound_comp);
-        compgfs.push_back(sptr);
-        sptr->Update();
+        shared_ptr<GridFunction> sptr;
+        if(compgfs[compound_comp].expired())
+          {
+            sptr = make_shared<ComponentGridFunction>(dynamic_pointer_cast<GridFunction>(this->shared_from_this()),
+                                                      compound_comp);
+            compgfs[compound_comp] = sptr;
+            sptr->Update();
+          }
+        else
+          sptr = compgfs[compound_comp].lock();
         return sptr;
       }
     throw Exception("GetComponent: Not a GridFunction on a Compound FESpace!");
@@ -834,13 +844,9 @@ namespace ngcomp
       }
 
     this -> level_updated = this -> ma->GetNLevels();
-    compgfs.remove_if([](auto& wptr)
-                      {
-                        if(wptr.expired())
-                          return true;
-                        wptr.lock()->Update();
-                        return false;
-                      });
+    for(auto comp : compgfs)
+      if(!comp.expired())
+        comp.lock()->Update();
   }
 
 
@@ -945,13 +951,9 @@ namespace ngcomp
 	
 	this -> level_updated = this -> ma->GetNLevels();
 
-        this->compgfs.remove_if([](auto& wptr)
-                                {
-                                  if(wptr.expired())
-                                    return true;
-                                  wptr.lock()->Update();
-                                  return false;
-                                });
+        for(auto comp : this->compgfs)
+          if(!comp.expired())
+            comp.lock()->Update();
       }
     catch (Exception & e)
       {
