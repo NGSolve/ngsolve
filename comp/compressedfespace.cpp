@@ -26,7 +26,7 @@ namespace ngcomp
     comp2all.SetSize(ndofall);
 
     if (active_dofs && active_dofs->Size() != ndofall)
-      throw Exception("active_dofs size doesn't match FESpace (anymore?).");
+      throw Exception("active_dofs size doesn't match FESpace (anymore?).\n[active_dofs->Size() = "+to_string(active_dofs->Size())+", ndofall = "+to_string(ndofall)+"]");
 
     int ndof = 0;
     for (int i : Range(ndofall))
