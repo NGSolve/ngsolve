@@ -38,6 +38,8 @@ def test_component_keeps_alive():
     gf = GridFunction(fes)
     gf.vec[:] = 1
     gf1, gf2 = gf.components
+    gf11 = gf.components[0]
+    assert gf1 == gf11 # should return the same object
     assert len(gf.vec) == 8
     assert len(gf1.vec) == 4
     mesh.Refine()
