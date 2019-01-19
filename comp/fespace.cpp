@@ -1840,13 +1840,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
           {
             switch (ma->GetElType(ei))
               {
-              case ET_TET:     return *(new (lh) FE_Tet2);
-              case ET_PRISM:   return *(new (lh) FE_Prism1);
-              case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
-              case ET_TRIG:    return *(new (lh) FE_Trig2);
-              case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
-              case ET_SEGM:    return *(new (lh) FE_Segm2);
-              case ET_POINT:   return *(new (lh) FE_Point);
+              case ET_TET:     return * new (lh) FE_Tet2;
+              case ET_PRISM:   return * new (lh) FE_Prism1;
+              case ET_PYRAMID: return * new (lh) FE_Pyramid1;
+              case ET_HEX:     return * new (lh) FE_Hex20;                
+              case ET_TRIG:    return * new (lh) FE_Trig2;
+                // case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>;
+              case ET_QUAD:    return * new (lh) FE_Quad2Serendipity;
+              case ET_SEGM:    return * new (lh) FE_Segm2;
+              case ET_POINT:   return * new (lh) FE_Point;
               default:
                 throw Exception ("Inconsistent element type in NodalFESpace::GetFE, no hb defined");
               }
