@@ -1114,8 +1114,17 @@ component : int
          [] (const shared_ptr<FESpace> self,
              shared_ptr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
          {
-           return make_shared<InverseMass> (self, rho, glh); 
+           return make_shared<ApplyMass> (self, rho, true, nullptr, glh); 
          }, py::arg("rho") = nullptr)
+    .def("Mass",
+         [] (const shared_ptr<FESpace> self,
+             shared_ptr<CoefficientFunction> rho,
+             optional<Region> definedon) -> shared_ptr<BaseMatrix>
+         {
+           shared_ptr<Region> spdefon;
+           if (definedon) spdefon = make_shared<Region> (*definedon);
+           return make_shared<ApplyMass> (self, rho, false, spdefon, glh); 
+         }, py::arg("rho") = nullptr, py::arg("definedon") = nullptr)
     
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
@@ -1136,10 +1145,25 @@ rho : ngsolve.fem.CoefficientFunction
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
-         { self->ApplyM(rho.get(), vec, glh); },
+         { self->ApplyM(rho.get(), vec, nullptr, glh); },
          py::arg("vec"), py::arg("rho")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
-        
+    .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
+                               bool avg) -> shared_ptr<BaseMatrix>
+          {
+            return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
+          }, py::arg("tracespace"), py::arg("average"))
+    .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
+                          BaseVector & in, BaseVector & out, bool avg)
+          {
+            self->GetTrace(tracespace, in, out, avg, glh);
+          })
+    .def ("GetTraceTrans", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
+                               BaseVector & in, BaseVector & out, bool avg)
+          {
+            self->GetTraceTrans(tracespace, in, out, avg, glh);
+          })
+    
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
          {
