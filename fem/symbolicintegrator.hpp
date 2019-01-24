@@ -428,7 +428,7 @@ public:
   {
     // mat = 0;   // take care: unused elements not zerod !!!!
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = Dim() * fel.GetRange(comp);
+    IntRange r = Dim() * BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mir, mat.Rows(r));
   }
   
