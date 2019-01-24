@@ -2676,7 +2676,7 @@ public:
   bool ElementwiseConstant() const override
   {
     for(auto cf : ci)
-      if(!cf->ElementwiseConstant())
+      if(cf && !cf->ElementwiseConstant())
         return false;
     return true;
   }
