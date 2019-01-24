@@ -328,43 +328,35 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
                         elpids = [pids[p] for p in [pnum[q] for q in qarr]]
                         netmesh.Add(Element2D(facenr, elpids))
 
-    # x-y-plane, smallest z-coord: ("bottom")
-    netmesh.Add(FaceDescriptor(surfnr=0, domin=1, bc=1))
-    AddSurfEls(0, nz+1, ny, (ny+1)*(nz+1), nx,facenr=1) 
-
-    # x-y-plane, largest z-coord: ("top")
-    netmesh.Add(FaceDescriptor(surfnr=1, domin=1, bc=2))
-    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(ny+1)*(nz+1), nx, -(nz+1), ny, facenr=2) 
+    for i in range(6):
+        netmesh.Add(FaceDescriptor(surfnr=i, domin=1, bc=i+1))
     
-    # x-z-plane, smallest y-coord: ("front")
-    netmesh.Add(FaceDescriptor(surfnr=2, domin=1, bc=3))
-    AddSurfEls(0, (ny+1)*(nz+1), nx, 1, nz,facenr=3)
-    
-    # x-z-plane, largest y-coord: ("back")
-    netmesh.Add(FaceDescriptor(surfnr=3, domin=1, bc=4))
+    # y-z-plane, smallest x-coord: ("back")
+    AddSurfEls(0, 1, nz,  nz+1, ny, facenr=1) # y-z-plane
+    # x-z-plane, smallest y-coord: ("left")
+    AddSurfEls(0, (ny+1)*(nz+1), nx, 1, nz,facenr=2)
+    # y-z-plane, largest x-coord: ("front")
+    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(nz+1), ny, -1, nz, facenr=3) 
+    # x-z-plane, largest y-coord: ("right")
     AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -1, nz, -(ny+1)*(nz+1), nx, facenr=4)
-    
-    # y-z-plane, smallest x-coord: ("left")
-    netmesh.Add(FaceDescriptor(surfnr=4, domin=1, bc=5))
-    AddSurfEls(0, 1, nz,  nz+1, ny, facenr=5) # y-z-plane
-    
-    # y-z-plane, largest x-coord: ("right")
-    netmesh.Add(FaceDescriptor(surfnr=5, domin=1, bc=6))
-    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(nz+1), ny, -1, nz, facenr=6) 
+    # x-y-plane, smallest z-coord: ("bottom")
+    AddSurfEls(0, nz+1, ny, (ny+1)*(nz+1), nx,facenr=5) 
+    # x-y-plane, largest z-coord: ("top")
+    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(ny+1)*(nz+1), nx, -(nz+1), ny, facenr=6) 
 
     if cuboid_mapping:
-        netmesh.SetBCName(0,"bottom")
-        netmesh.SetBCName(1,"top")
+        netmesh.SetBCName(0,"back")
+        netmesh.SetBCName(1,"left")
         netmesh.SetBCName(2,"front")
-        netmesh.SetBCName(3,"back")
-        netmesh.SetBCName(4,"left")
-        netmesh.SetBCName(5,"right")
-    
+        netmesh.SetBCName(3,"right")
+        netmesh.SetBCName(4,"bottom")
+        netmesh.SetBCName(5,"top")
+
     netmesh.Compress()
     ngsmesh = ngsolve.Mesh(netmesh)
     return ngsmesh
 
-def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None):
+def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
     """
     Generate a structured quadrilateral 2D mesh
 
@@ -401,7 +393,7 @@ def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodi
       Returns generated 3D NGSolve mesh consisting of only hexahedra
 
     """
-    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping)
+    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping, cuboid_mapping=cuboid_mapping)
 
 from math import pi
 from ngsolve import Draw, sin, cos
