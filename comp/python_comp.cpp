@@ -1381,6 +1381,10 @@ active_dofs : BitArray or None
            self.SetActiveDofs(active_dofs);
          },
          py::arg("dofs"))
+    .def("GetBaseSpace", [](CompressedFESpace & self)
+         {
+           return self.GetBaseSpace();
+         })
     .def(py::pickle([](const CompressedFESpace* compr_fes)
                     {
                       return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());
