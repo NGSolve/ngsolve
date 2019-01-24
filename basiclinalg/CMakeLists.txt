@@ -1,7 +1,7 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kernel_generator generate_mat_kernels.cpp)
-target_include_directories(kernel_generator PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+
 target_compile_definitions(kernel_generator PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(kernel_generator PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
@@ -18,21 +18,16 @@ add_library(ngbla ${NGS_LIB_TYPE}
         eigensystem.cpp vecmat.cpp LapackGEP.cpp
         python_bla.cpp avector.cpp ngblas.cpp
         )
+
 add_dependencies(ngbla kernel_generated)
 
-target_compile_definitions(ngbla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(ngbla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngbla PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
+target_link_libraries(ngbla PUBLIC ngstd ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES})
+target_link_libraries(ngbla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 
-if(NOT WIN32)
-    target_link_libraries(ngbla PUBLIC ngstd ${MPI_CXX_LIBRARIES} PRIVATE ${NETGEN_PYTHON_LIBRARIES})
-    target_link_libraries(ngbla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-
-    install( TARGETS ngbla ${ngs_install_dir} )
-endif(NOT WIN32)
+install( TARGETS ngbla ${ngs_install_dir} )
 
 install( FILES
         bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp 

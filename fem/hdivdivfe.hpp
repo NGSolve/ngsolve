@@ -48,6 +48,9 @@ namespace ngfem
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const = 0;
 
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const = 0;
+
+
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                       BareSliceMatrix<SIMD<double>> divshapes) const = 0;
 
@@ -142,6 +145,13 @@ namespace ngfem
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
     }
+
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override
+    {
+      shape = 0.0;
+      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t i, Vec<DIM+1> val) { VecToSymMat<DIM>(val, shape.Row(i)); }));
+    }
+
 
     virtual void CalcDivShape (const IntegrationPoint & ip,
                                BareSliceMatrix<double> shape) const override
@@ -834,6 +844,12 @@ namespace ngfem
     {
       throw Exception ("Hdivdivfe not implementend for element type");
     }
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hdivdivfe not implementend for element type");
+    }
   };
 
   
@@ -939,6 +955,69 @@ namespace ngfem
             shape[ii++] = Sigma_u_Gradv(bubble, y);
           }
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+      T x = ip(0), y = ip(1);
+      T lam[3] = { x, y, 1-x-y };
+      Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+
+      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          for (int i = 0; i < 3; i++)
+            {
+              int p = order_facet[i][0];
+              
+              if (i == facetnr)
+                {             
+                  int es = edges[i][0], ee = edges[i][1];
+                  if (vnums[es] < vnums[ee]) swap (es,ee);
+                  
+                  T xi = lam[ee]-lam[es];
+                  Vec<2,T> tauref = pnts[ee] - pnts[es];
+                  
+                  Vec<2,T> nvref =Vec<2,T>(tauref[1],-tauref[0]);
+                  Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref;
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                Vec<3,T> nn = mip.GetMeasure()*Vec<3,T>(nv[0]*nv[0],nv[1]*nv[1],nv[0]*nv[1]);
+                                shape[nr+ii] = val*nn;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 3; i++)
+            ii += order_facet[i][0]+1;
+        }
+      if (ip.VB() == VOL)
+        {
+          auto p = order_inner[0]-1;
+          if( p >= 0 )
+            {
+              DubinerBasis3::Eval (p, lam[0], lam[1],
+                                   SBLambda([&] (size_t nr, T val)
+                                            {
+                                              shape[ii++] = val*Vec<3,T>(1,0,0);
+                                              shape[ii++] = val*Vec<3,T>(0,1,0);
+                                              shape[ii++] = val*Vec<3,T>(0,0,1);
+                                            }));
+            }
+        }
+    }
+    
   };
   
   template <> class HDivDivFE<ET_QUAD> : public T_HDivDivFE<ET_QUAD> 
@@ -1077,6 +1156,13 @@ namespace ngfem
           shape[ii++] = Sigma_u_Gradv(v[i], lx[0]); //
         }
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hdivdivfe not implementend for element type");
+    }
+
   };
 
   // ***************** S_zz(uvw) ****************************** */
@@ -1688,6 +1774,13 @@ namespace ngfem
 
     };
 
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hdivdivfe not implementend for element type");
+    }
+
+
   };
 
 
@@ -1796,6 +1889,12 @@ namespace ngfem
       }
 
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hdivdivfe not implementend for element type");
+    }
 
   };
 
@@ -1933,6 +2032,13 @@ namespace ngfem
 
 
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hdivdivfe not implementend for element type");
+    }
+
 
   };
 

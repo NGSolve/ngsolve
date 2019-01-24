@@ -8,6 +8,9 @@
    Access to fe mesh
 */
 
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <comp.hpp>
 #include "../fem/h1lofe.hpp"
 #include <regex>
@@ -770,12 +773,6 @@ namespace ngcomp
     mesh.SaveMesh (str);
   }
 
-  void MeshAccess :: ArchiveMesh (Archive & archive) 
-  {
-    mesh.DoArchive (archive);
-    if (archive.Input()) UpdateBuffers();
-  }
-
   void MeshAccess :: SelectMesh() const
   {
     mesh.SelectMesh();
@@ -1172,12 +1169,34 @@ namespace ngcomp
  
   void MeshAccess :: GetFaceEdges (int fnr, Array<int> & edges) const
   {
+    /*
     edges.SetSize(4);
     int ned = Ng_GetFace_Edges (fnr+1, &edges[0]);
     edges.SetSize(ned);
     for (int i = 0; i < ned; i++) edges[i]--;
+    */
+    edges = ArrayObject(mesh.GetFaceEdges(fnr));
   }
- 
+  
+  void MeshAccess :: GetEdgeFaces (int enr, Array<int> & faces) const
+  {
+    faces.SetSize0();
+    // auto [v0,v1] = GetEdgePNums(enr);
+    auto v01 = GetEdgePNums(enr);
+    auto v0 = v01[0], v1 = v01[1];
+
+    for (auto elnr : GetVertexElements(v0))
+      {
+        auto el = GetElement(ElementId(VOL,elnr));
+        if (el.Vertices().Contains(v1))
+          for (auto fa : el.Faces())
+            {
+              auto vnums = GetFacePNums(fa);
+              if (vnums.Contains(v0) && vnums.Contains(v1) && !faces.Contains(fa))
+                faces.Append(fa);
+            }
+      }
+  }
 
   void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
   {

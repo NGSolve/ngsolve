@@ -724,7 +724,13 @@ namespace ngcomp
       GalerkinProjection();
   }
 
-
+  shared_ptr<BaseMatrix> BilinearForm :: GetMatrixPtr () const
+  {
+    if (!mats.Size())
+      return nullptr;
+    return mats.Last(); 
+  }
+  
 
   void BilinearForm :: PrintReport (ostream & ost) const
   {
@@ -865,7 +871,7 @@ namespace ngcomp
 	    IterateElements
 	      (*fespace,vb,clh, [&] (FESpace::Element el, LocalHeap & lh)
 	       {
-		 if(bfi->DefinedOn(el.GetIndex()))
+		 if(bfi->DefinedOn(el.GetIndex()) && bfi->DefinedOnElement(el.Nr()))
 		   bfi->CheckElement(el.GetFE());
 	       });
 	    if(bfi->VB()==VOL && bfi->SkeletonForm())
@@ -1036,15 +1042,12 @@ namespace ngcomp
                          
                          if (fel.GetNDof() != dnums.Size())
                            {
-                             cout << "fel:GetNDof() = " << fel.GetNDof() << endl;
-                             cout << "dnums.Size() = " << dnums.Size() << endl;
-                             
                              *testout << "Info from finite element: " << endl;
                              fel.Print (*testout);
-                             (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                             (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
                              (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                              (*testout) << "dnums = " << dnums << endl;
-                             throw Exception ( "Inconsistent number of degrees of freedom " );
+                             throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                            }
                          
                          int elmat_size = dnums.Size()*fespace->GetDimension();
@@ -1816,13 +1819,10 @@ namespace ngcomp
                                  fespace->GetDofNrs (ei1, dnums);
                                  if(fel.GetNDof() != dnums.Size())
                                    {
-                                     cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                                     cout << "dnums.Size() = " << dnums.Size() << endl;
-                                     
-                                     (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                                     (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
                                      (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                                      (*testout) << "dnums = " << dnums << endl;
-                                     throw Exception ( "Inconsistent number of degrees of freedom " );
+                                     throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                                    }
 
                                  /*
@@ -2088,13 +2088,10 @@ namespace ngcomp
                           fespace->GetDofNrs (ei, dnums);
                           if(fel.GetNDof() != dnums.Size())
                             {
-                              cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                              cout << "dnums.Size() = " << dnums.Size() << endl;
-				  
-                              (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                              (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
                               (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                               (*testout) << "dnums = " << dnums << endl;
-                              throw Exception ( "Inconsistent number of degrees of freedom " );
+                              throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                             }
 
                           /*
@@ -2328,6 +2325,9 @@ namespace ngcomp
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
                    for (auto & bfi : VB_parts[VOL])
                      {
+                       if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
+                       if (!bfi->DefinedOnElement (ei.Nr())) continue;
+                       
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
                        /*
@@ -2681,10 +2681,11 @@ namespace ngcomp
                  
                  if(fel.GetNDof() != dnums.Size())
                    {
-                     cout << "fel::GetNDof() = " << fel.GetNDof() << endl;
-                     cout << "dnums.Size() = " << dnums.Size() << endl;
+                     (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
+                     (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                     (*testout) << "dnums = " << dnums << endl;
+                     throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                    }
-
                  for (auto d : dnums) 
                    if (IsRegularDof(d)) useddof[d] = true;
                  
@@ -2998,13 +2999,10 @@ namespace ngcomp
                       fespace->GetDofNrs (ei, dnums);
                       if(fel.GetNDof() != dnums.Size())
                         {
-                          cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                          cout << "dnums.Size() = " << dnums.Size() << endl;
-                          
-                          (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                          (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
                           (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                           (*testout) << "dnums = " << dnums << endl;
-                          throw Exception ( "Inconsistent number of degrees of freedom " );
+                          throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                         }
                       
                       /*
@@ -3845,13 +3843,11 @@ namespace ngcomp
                            fespace->GetDofNrs (ei1, dnums);
                            if(fel.GetNDof() != dnums.Size())
                              {
-                               cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                               cout << "dnums.Size() = " << dnums.Size() << endl;
-                               
-                               (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+
+                               (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
                                (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                                (*testout) << "dnums = " << dnums << endl;
-                               throw Exception ( "Inconsistent number of degrees of freedom " );
+                               throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                              }
                            
                            
@@ -4156,6 +4152,7 @@ namespace ngcomp
                    for (auto & bfi : VB_parts[vb])
                      {
                        if (!bfi->DefinedOn (this->ma->GetElIndex (ei))) continue;
+                       if (!bfi->DefinedOnElement (ei.Nr())) continue;                        
 
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
@@ -4254,10 +4251,10 @@ namespace ngcomp
             // precomputed[nr] = Matrix<>(fely.GetNDof(), felx.GetNDof());
             precomputed[nr] = move(elmat);
           }
-        Matrix<> elmat = precomputed[nr];
-        
-        elmat *= ConvertTo<double> (val); // only real factor supported by now
 
+        Matrix<> elmat = precomputed[nr];
+        elmat *= ConvertTo<double> (val); // only real factor supported by now
+        
         Matrix<> temp_x(elclass_inds.Size(), !transpose ? elmat.Width() : elmat.Height());
         Matrix<> temp_y(elclass_inds.Size(), !transpose ? elmat.Height() : elmat.Width());
 
@@ -4430,7 +4427,7 @@ namespace ngcomp
 
                   if (bfi.BoundaryForm()) continue;
                   if (!bfi.DefinedOn (ma->GetElIndex (ei))) continue;
-
+                  if (!bfi.DefinedOnElement(ei.Nr())) continue;
 
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);
 
@@ -4467,6 +4464,7 @@ namespace ngcomp
                 
                   if (!bfi.BoundaryForm()) continue;
                   if (!bfi.DefinedOn (eltrans.GetElementIndex())) continue;
+                  if (!bfi.DefinedOnElement(sei.Nr())) continue;
               
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);
                   fespace->TransformVec (sei, elvecy, TRANSFORM_RHS);
@@ -4535,6 +4533,7 @@ namespace ngcomp
                  for (auto & bfi : VB_parts[vb])
                    {
                      if (!bfi->DefinedOn (ei.GetIndex())) continue;
+                     if (!bfi->DefinedOnElement(ei.Nr())) continue;
                      energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
                    }
                  
@@ -5512,7 +5511,9 @@ namespace ngcomp
     v.Cumulate();
 
     prod = 0;
+    bf -> AddMatrix (1, v, prod, lh);
 
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5530,7 +5531,8 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-
+    */
+    
     prod.SetParallelStatus (DISTRIBUTED);
   }
 
@@ -5540,8 +5542,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrix (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5560,6 +5562,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
+    */
     
   }
 
@@ -5569,8 +5572,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrix (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5588,7 +5591,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-    
+    */
   }
 
   void BilinearFormApplication :: 
@@ -5597,8 +5600,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrixTrans (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5616,7 +5619,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-    
+    */
   }
 
   shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,

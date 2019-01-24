@@ -16,13 +16,6 @@ namespace ngfem
   SymbolTable<double> pmlpar;
 }
 
-
-shared_ptr<CoefficientFunction>
-MakeCoefficientFunction (CF_Type type,
-                         const Array<shared_ptr<CoefficientFunction>> & childs,
-                         py::list data);
-
-
 struct PythonCoefficientFunction : public CoefficientFunction {
   PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
@@ -131,6 +124,7 @@ std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> 
 template <typename FUNC>
 void ExportStdMathFunction(py::module &m, string name, string description)
 {
+  static RegisterClassForArchive<cl_UnaryOpCF<FUNC>, CoefficientFunction> reguopcf;
   auto f = [name] (shared_ptr<CF> coef) -> shared_ptr<CF>
             {
                 FUNC func;
@@ -160,11 +154,12 @@ void ExportStdMathFunction(py::module &m, string name, string description)
 template <typename FUNC>
 void ExportStdMathFunction2(py::module &m, string name, string description)
 {
+  static RegisterClassForArchive<cl_BinaryOpCF<FUNC>, CoefficientFunction> regbinopcf;
+
   auto f = [name] (shared_ptr<CF> cx, shared_ptr<CF> cy) -> shared_ptr<CF>
             {
                 FUNC func;
-                return BinaryOpCF(cx, cy, func,
-                                          [](bool a, bool b) { return a||b; }, FUNC::Name());
+                return BinaryOpCF(cx, cy, func, FUNC::Name());
             };
 
   binary_math_functions[name] = f;
@@ -202,35 +197,43 @@ struct GenericBSpline {
   SIMD<Complex> operator() (SIMD<Complex> x) const
   { return SIMD<double>([&](int i)->double { return (*sp)(x.real()[i]); } );}
   AutoDiff<1,SIMD<double>> operator() (AutoDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiff for bspline not supported"); }
-  AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiffDiff for bspline not supported"); }  
+  AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiffDiff for bspline not supported"); }
+  void DoArchive(Archive& ar) { ar & sp; }
 };
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
   static string Name() { return "sin"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericIdentity {
   template <typename T> T operator() (T x) const { return x; }
   static string Name() { return  " "; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
   static string Name() { return "cos"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericTan {
   template <typename T> T operator() (T x) const { return tan(x); }
   static string Name() { return "tan"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericExp {
   template <typename T> T operator() (T x) const { return exp(x); }
   static string Name() { return "exp"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
   static string Name() { return "log"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericATan {
   template <typename T> T operator() (T x) const { return atan(x); }
   static string Name() { return "atan"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericACos {
   template <typename T> T operator() (T x) const { return acos(x); }
@@ -238,6 +241,7 @@ struct GenericACos {
   // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
   SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("acos not available for SIMD<complex>"); }
   static string Name() { return "acos"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericASin {
   template <typename T> T operator() (T x) const { return asin(x); }
@@ -245,10 +249,12 @@ struct GenericASin {
   // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
   SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("asin not available for SIMD<complex>"); }
   static string Name() { return "asin"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
   static string Name() { return "sqrt"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericFloor {
   template <typename T> T operator() (T x) const { return floor(x); }
@@ -258,6 +264,7 @@ struct GenericFloor {
   // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no floor for AD"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no floor for ADD"); }
   static string Name() { return "floor"; }
+  void DoArchive(Archive& ar) {}
 };
 struct GenericCeil {
   template <typename T> T operator() (T x) const { return ceil(x); }
@@ -267,6 +274,7 @@ struct GenericCeil {
   // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no ceil for AD"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no ceil for ADD"); }
   static string Name() { return "ceil"; }
+  void DoArchive(Archive& ar) {}
 };
 
 struct GenericConj {
@@ -277,6 +285,7 @@ struct GenericConj {
   AutoDiff<1,T> operator() (AutoDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   template<typename T>
   AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+  void DoArchive(Archive& ar) {}
 };
 
 struct GenericATan2 {
@@ -284,6 +293,7 @@ struct GenericATan2 {
   template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
   { throw Exception (string("atan2 not available for type ")+typeid(T1).name());  }
   static string Name() { return "atan2"; }
+  void DoArchive(Archive& ar) {}
 };
 
 struct GenericPow {
@@ -294,6 +304,7 @@ struct GenericPow {
       return exp (log(x)*y);
   }    
   static string Name() { return "pow"; }
+  void DoArchive(Archive& ar) {}
 };
 
 
@@ -424,15 +435,6 @@ struct GenericPow {
       deriv = 0.0;
     }
     */
-    
-    virtual CF_Type GetType() const override { return CF_Type_normal_vector; }
-    virtual void DoArchive (Archive & archive) override
-    {
-      int dim = D;
-      archive & dim;
-      CoefficientFunction::DoArchive(archive);
-    }
-    
   };
 
   template <int D>
@@ -471,14 +473,6 @@ struct GenericPow {
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
-    }
-
-    virtual CF_Type GetType() const { return CF_Type_tangential_vector; }
-    virtual void DoArchive (Archive & archive)
-    {
-      int dim = D;
-      archive & dim;
-      CoefficientFunction::DoArchive(archive);
     }
   };
 
@@ -613,8 +607,6 @@ direction : int
         )CODE_" + Var(index).S() + " = tmp_res;\n}\n;";
       }
     }
-
-    virtual CF_Type GetType() const override { return CF_Type_mesh_size; }
   };
 
 
@@ -691,36 +683,6 @@ direction : int
   
   m.attr("specialcf") = py::cast(&specialcf);
 
-  py::enum_<CF_Type>(m, "CFtype")
-    .value("undefined", CF_Type_undefined)
-    .value("constant", CF_Type_constant)
-    .value("vectorial", CF_Type_vectorial)
-    .value("coordinate", CF_Type_coordinate)
-    .value("norm", CF_Type_norm)
-    .value("trans", CF_Type_trans)
-    .value("component", CF_Type_component)
-    .value("real", CF_Type_real)
-    .value("imag", CF_Type_imag)
-    .value("ifpos", CF_Type_ifpos)
-    .value("normal_vector", CF_Type_normal_vector)
-    .value("tangential_vector", CF_Type_tangential_vector)
-    .value("mesh_size", CF_Type_mesh_size)
-    .value("scale", CF_Type_scale)
-    .value("scale_complex", CF_Type_scale_complex)
-    .value("add", CF_Type_add)
-    .value("sub", CF_Type_sub)
-    .value("mult", CF_Type_mult)
-    .value("div", CF_Type_div)
-    .value("domainconst", CF_Type_domainconst)
-    .value("domainwise", CF_Type_domainwise)
-    .value("unary_op", CF_Type_unary_op)
-    .value("binary_op", CF_Type_binary_op)
-    .value("usertype", CF_Type_usertype)
-    .value("eig", CF_Type_eig)
-    ;
-
-  
-  
   auto cf_class = py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
 R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
@@ -746,7 +708,7 @@ val : can be one of the following:
           
           py::extract<shared_ptr<CF>> ecf(val);
           if (ecf.check())
-            coef = UnaryOpCF (ecf(), [](auto x) { return x; }, " ");
+            coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
           else
             coef = MakeCoefficient(val);
           if(dims)
@@ -766,15 +728,6 @@ val : can be one of the following:
          "     use dims=(h,w) to define matrix-valued CF\n"
          "  a list of scalars and or CFs to define a domain-wise CF"
         )
-
-    .def(py::init([] (CF_Type type, py::list childs, py::list data)
-                  {
-                    auto cchilds = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (childs);
-                    return MakeCoefficientFunction (type, cchilds, data);
-                  }),
-         py::arg("type"), py::arg("childs"), py::arg("data")
-         )
-    
     .def("__str__",  [](CF& self) { return ToString<>(self);})
 
     .def("__call__", [] (CF& self, BaseMappedIntegrationPoint & mip) -> py::object
@@ -998,8 +951,6 @@ wait : bool
 )raw_string"))
 
 
-    .def_property_readonly ("type", [](shared_ptr<CF> cf) { return cf->GetType(); })
-    
     .def_property("data",
                   [] (shared_ptr<CF> cf)
                   {
@@ -1021,117 +972,7 @@ wait : bool
                   })
                   
     
-    .def (py::pickle([] (CoefficientFunction & cf)
-                     {
-                       PyOutArchive ar;
-                       cf.DoArchive(ar);
-                       Array<shared_ptr<CoefficientFunction>> childs = cf.InputCoefficientFunctions();
-                       py::list pychilds;
-                       for (auto child : childs)
-                         {
-                           auto gfchild = dynamic_pointer_cast<ngcomp::GridFunction> (child);
-                           if (gfchild)
-                             pychilds.append (py::cast(gfchild));
-                           else
-                             pychilds.append (py::cast(child));
-                         }
-                       return py::make_tuple(int(cf.GetType()), pychilds, ar.GetList());
-                     },
-                     [] (py::tuple state)
-                     {
-                       CF_Type type = CF_Type(py::cast<int>(state[0]));
-                       auto childs = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (py::cast<py::list>(state[1]));
-                       py::list pylist = py::cast<py::list>(state[2]);;
-                       PyInArchive ar(pylist);
-                       shared_ptr<CoefficientFunction> cf;
-                       string name;
-                       int dim;
-                       switch (type)
-                         {
-                         case CF_Type_undefined:
-                           cout << "undefined CF" << endl;
-                           break;
-                         case CF_Type_constant:
-                           cf = make_shared<ConstantCoefficientFunction>(1);
-                           break;
-                         case CF_Type_vectorial:
-                           cf = MakeVectorialCoefficientFunction(move(childs));
-                           break;
-                         case CF_Type_coordinate:
-                           cf = MakeCoordinateCoefficientFunction(-1);
-                           break;
-                         case CF_Type_norm:
-                           cf = NormCF(childs[0]);
-                           break;
-                         case CF_Type_trans:
-                           cf = TransposeCF(childs[0]);
-                           break;
-                         case CF_Type_component:
-                           cf = MakeComponentCoefficientFunction (childs[0], 0);
-                           break;
-                         case CF_Type_real:
-                           cf = Real(childs[0]);
-                           break;
-                         case CF_Type_imag:
-                           cf = Imag(childs[0]);
-                           break;
-                         case CF_Type_ifpos:
-                           cf = IfPos(childs[0], childs[1], childs[2]);
-                           break;
-                         case CF_Type_normal_vector:
-                           dim = py::cast<int>(pylist[0]);
-                           cf = specialcf.GetNormalVectorCF(dim);
-                           break;
-                         case CF_Type_tangential_vector:
-                           dim = py::cast<int>(pylist[0]);
-                           cf = specialcf.GetTangentialVectorCF(dim);
-                           break;
-                         case CF_Type_mesh_size:
-                           cf = specialcf.GetMeshSizeCF();
-                           break;
-                         case CF_Type_scale:
-                           cf = 1.0 * childs[0];
-                           break;
-                         case CF_Type_scale_complex:
-                           cf = Complex(1.0) * childs[0];
-                           break;
-                         case CF_Type_add:
-                           cf = childs[0] + childs[1];
-                           break;
-                         case CF_Type_sub:
-                           cf = childs[0] - childs[1];
-                           break;
-                         case CF_Type_mult:
-                           cf = childs[0] * childs[1];
-                           break;
-                         case CF_Type_div:
-                           cf = childs[0] / childs[1];
-                           break;
-                         case CF_Type_domainconst:
-                           throw Exception("pickling of DomainconstantCF not supported yet");
-                           break;
-                         case CF_Type_domainwise:
-                           cf = MakeDomainWiseCoefficientFunction(move(childs));
-                           break;
-                         case CF_Type_unary_op:
-                           name = py::cast<string>(pylist[0]);
-                           cf = unary_math_functions[name](childs[0]);
-                           break;
-                         case CF_Type_binary_op:
-                           name = py::cast<string>(pylist[0]);
-                           cf = binary_math_functions[name](childs[0], childs[1]);
-                           break;
-                           /*
-                         case CF_Type_usertype:
-                           break;
-                           */
-                         default:
-                           cout << "undefined cftype" << endl;
-                         }
-                       if (cf)
-                         cf->DoArchive(ar);
-                       return cf;
-                     }))
+    .def (NGSPickle<CoefficientFunction>())
     ;
 
 
@@ -1195,6 +1036,7 @@ value : float
 )raw_string"))
     .def (py::init ([] (double val)
                     { return make_shared<ParameterCoefficientFunction>(val); }), py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def(NGSPickle<ParameterCoefficientFunction>())
     .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
           docu_string(R"raw_string(
 Modify parameter value.
@@ -1207,15 +1049,6 @@ value : double
 )raw_string"))
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
-    .def (py::pickle([] (shared_ptr<ParameterCoefficientFunction> self)
-                     {
-                       return py::make_tuple(self->GetValue());
-                     },
-                     [] (py::tuple state)
-                     {
-                       double val = py::cast<double>(state[0]);
-                       return make_shared<ParameterCoefficientFunction>(val);
-                     }))
     ;
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
@@ -1253,113 +1086,6 @@ vals : list
          [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); }, "Differentiate the BSpline")
     ;
 }
-
-
-  shared_ptr<CoefficientFunction>
-    MakeCoefficientFunction (CF_Type type,
-                             const Array<shared_ptr<CoefficientFunction>> & childs,
-                             py::list data)
-  {
-    PyInArchive ar(data);
-    shared_ptr<CoefficientFunction> cf;
-    switch (type)
-      {
-      case CF_Type_undefined:
-        cout << "undefined CF" << endl;
-        break;
-      case CF_Type_constant:
-        cf = make_shared<ConstantCoefficientFunction>(1);
-        break;
-      case CF_Type_vectorial:
-        cf = MakeVectorialCoefficientFunction(Array<shared_ptr<CoefficientFunction>>(childs));
-        break;
-      case CF_Type_coordinate:
-        cf = MakeCoordinateCoefficientFunction(-1);
-        break;
-      case CF_Type_norm:
-        cf = NormCF(childs[0]);
-        break;
-      case CF_Type_trans:
-        cf = TransposeCF(childs[0]);
-        break;
-      case CF_Type_component:
-        cf = MakeComponentCoefficientFunction (childs[0], 0);
-        break;
-      case CF_Type_real:
-        cf = Real(childs[0]);
-        break;
-      case CF_Type_imag:
-        cf = Imag(childs[0]);
-        break;
-      case CF_Type_ifpos:
-        cf = IfPos(childs[0], childs[1], childs[2]);
-        break;
-        /*
-      case CF_Type_normal_vector:
-        {
-          int dim = py::cast<int>(data[0]);
-          cf = specialcf.GetNormalVectorCF(dim);
-          break;
-        }
-      case CF_Type_tangential_vector:
-        {
-          int dim = py::cast<int>(data[0]);
-          cf = specialcf.GetTangentialVectorCF(dim);
-          break;
-        }
-      case CF_Type_mesh_size:
-        cf = specialcf.GetMeshSizeCF();
-        break;
-        */
-      case CF_Type_scale:
-        cf = 1.0 * childs[0];
-        break;
-      case CF_Type_scale_complex:
-        cf = Complex(1.0) * childs[0];
-        break;
-      case CF_Type_add:
-        cf = childs[0] + childs[1];
-        break;
-      case CF_Type_sub:
-        cf = childs[0] - childs[1];
-        break;
-      case CF_Type_mult:
-        cf = childs[0] * childs[1];
-        break;
-      case CF_Type_div:
-        cf = childs[0] / childs[1];
-        break;
-      case CF_Type_domainconst:
-        DomainConstantCoefficientFunction(Array<double>{});
-        break;
-      case CF_Type_domainwise:
-        MakeDomainWiseCoefficientFunction(Array<shared_ptr<CoefficientFunction>>(childs));
-        break;
-      case CF_Type_unary_op:
-        {
-          string name = py::cast<string>(data[0]);
-          cf = unary_math_functions[name](childs[0]);
-          break;
-        }
-      case CF_Type_binary_op:
-        {
-          string name = py::cast<string>(data[0]);
-          cf = binary_math_functions[name](childs[0], childs[1]);
-          break;
-        }
-        /*
-          case CF_Type_usertype:
-          break;
-        */
-      default:
-        cout << "undefined cftype" << endl;
-      }
-    if (cf)
-      cf->DoArchive(ar);
-    return cf;
-    
-  }
-
 
 
 // *************************************** Export FEM ********************************
@@ -1426,6 +1152,11 @@ et : ngsolve.fem.ET
     .def("__timing__", &FiniteElement::Timing)
     ;
 
+  py::class_<MixedFiniteElement, shared_ptr<MixedFiniteElement>, FiniteElement>
+    (m, "MixedFE", "pair of finite elements for trial and test-functions")
+    .def(py::init<const FiniteElement&, const FiniteElement&>())
+    ;
+  
   py::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
     FiniteElement>
       (m, "ScalarFE", "a scalar-valued finite element")
@@ -1999,14 +1730,19 @@ intrule : ngsolve.fem.Integrationrule
                                try
                                  {
                                    if (complex)
-                                     {
+                                     {                                       
                                        Matrix<Complex> mat(fe.GetNDof() * self->GetDimension());
                                        self->CalcElementMatrix(fe,trafo,mat,lh);
                                        return py::cast(mat);
                                      }
                                    else
                                      {
-                                       Matrix<> mat(fe.GetNDof() * self->GetDimension());
+                                       const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                                       const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
+                                       const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
+                                       
+                                       Matrix<> mat(fe_test.GetNDof() * self->GetDimension(),
+                                                    fe_trial.GetNDof() * self->GetDimension());
                                        self->CalcElementMatrix (fe, trafo, mat, lh);
                                        return py::cast(mat);
                                      }
