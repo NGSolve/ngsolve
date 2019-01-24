@@ -75,7 +75,7 @@ namespace ngbla
 
     if (i+1 <= h)
       {
-        auto scal = MatKernelScalAB<2,1> (w, pa, a.Dist(), &x(0), 0);
+        auto scal = MatKernelScalAB<1,1> (w, pa, a.Dist(), &x(0), 0);
         y(i) = get<0>(scal);
       }
 

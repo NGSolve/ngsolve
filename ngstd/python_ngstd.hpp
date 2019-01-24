@@ -358,6 +358,24 @@ Array<T> makeCArray(const py::object & obj)
   throw py::type_error("Cannot convert Python object to C Array");
 }
 
+template <typename T>
+Table<T> makeCTable (py::list obj)
+{
+  size_t n = py::len(obj);
+  Array<int> entrysize(n);
+                       
+  for (size_t i = 0; i < n; i++)
+    entrysize[i] = py::len(obj[i]);
+  
+  Table<T> tab(entrysize);
+  for (size_t i = 0; i < n; i++)
+    {
+      const py::object & obji = obj[i];
+      tab[i] = makeCArray<T> (obji);
+    }
+  return tab;
+}
+
 template<typename T>
 Array<T> makeCArraySharedPtr(const py::list & obj)
 {

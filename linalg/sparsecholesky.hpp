@@ -247,6 +247,10 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     virtual void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
+    {
+      MultAdd (s, x, y);
+    }
 
     virtual AutoVector CreateVector () const
     {

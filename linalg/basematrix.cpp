@@ -97,6 +97,12 @@ namespace ngla
     MultAdd (1, x, y);
   }
 
+  void BaseMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    y = 0;
+    MultTransAdd (1, x, y);
+  }
+
   void BaseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     //    cout << "Warning: BaseMatrix::MultAdd(double), this = " << typeid(*this).name() << endl;

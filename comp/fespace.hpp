@@ -648,9 +648,16 @@ ANY                  1 1 1 1 | 15
 
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
-    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
-      
+    
+    virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                           LocalHeap & lh) const
+    { throw Exception("GetTrace not overloaded"); }
+    virtual void GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                                LocalHeap & lh) const
+    { throw Exception("GetTrace not overloaded"); }
+    
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
     virtual void UpdateParallelDofs ();
 
@@ -1168,7 +1175,7 @@ ANY                  1 1 1 1 | 15
 
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
-    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     
     template <class T> NGS_DLL_HEADER
@@ -1193,18 +1200,22 @@ ANY                  1 1 1 1 | 15
   };
 
 
-  class NGS_DLL_HEADER InverseMass : public BaseMatrix
+  class NGS_DLL_HEADER ApplyMass : public BaseMatrix
   {
   protected:
     shared_ptr<FESpace> fes;
     shared_ptr<CoefficientFunction> rho;
+    bool inverse;
+    shared_ptr<Region> definedon;
     LocalHeap & lh;
   public:
     ///
-    InverseMass (shared_ptr<FESpace> afes,
-                 shared_ptr<CoefficientFunction> arho,
-                 LocalHeap & alh);
-    virtual ~InverseMass();
+    ApplyMass (shared_ptr<FESpace> afes,
+               shared_ptr<CoefficientFunction> arho,
+               bool ainverse,
+               shared_ptr<Region> adefinedon,
+               LocalHeap & alh);
+    virtual ~ApplyMass();
 
     virtual bool IsComplex() const override
     {
@@ -1232,6 +1243,36 @@ ANY                  1 1 1 1 | 15
   };
 
 
+
+  class NGS_DLL_HEADER ApplyTrace : public BaseMatrix
+  {
+  protected:
+    shared_ptr<FESpace> fes;
+    shared_ptr<FESpace> festrace;
+    bool average;
+    LocalHeap & lh;
+  public:
+    ApplyTrace (shared_ptr<FESpace> afes,
+                shared_ptr<FESpace> afestrace,
+                bool aaverage,
+                LocalHeap & alh);
+    virtual ~ApplyTrace();
+
+    virtual int VHeight() const override { return festrace->GetNDof(); }
+    virtual int VWidth() const override { return fes->GetNDof(); }
+    virtual bool IsComplex() const override { return fes->IsComplex(); }
+    
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
+    virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
+    
+    virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+  
 
   /// Registered FESpace classes
   class NGS_DLL_HEADER FESpaceClasses

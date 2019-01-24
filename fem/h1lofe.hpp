@@ -439,6 +439,28 @@ namespace ngfem
 	for (int j = 0; j < 3; j++)
 	  shape[ii++] = px(i) * py(j);
     }
+  };
+  
+  /// quad or order 2
+  class FE_Quad2Serendipity : public T_ScalarFiniteElementFO<FE_Quad2Serendipity,ET_QUAD,8,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
+    {
+      Tx x = ip.x;
+      Tx y = ip.y;
+      
+      shape[0] = (1-x)*(1-y) - 2 * x*(1-x) * (1-y) - 2 * y*(1-y)*(1-x);
+      shape[1] =     x*(1-y) - 2 * x*(1-x) * (1-y) - 2 * y*(1-y)*x;
+      shape[2] =     x*    y - 2 * x*(1-x) * y     - 2 * y*(1-y)*x;
+      shape[3] = (1-x)*    y - 2 * x*(1-x) * y     - 2 * y*(1-y)*(1-x);
+
+      shape[4] = 4 * x*(1-x) * (1-y);
+      shape[5] = 4 * x*(1-x) * y;
+      shape[6] = 4 * y*(1-y) * (1-x);
+      shape[7] = 4 * y*(1-y) * x;
+    }
   }; 
 
 
@@ -791,6 +813,50 @@ namespace ngfem
   };
   using FE_Hex1 = ScalarFE<ET_HEX,1>;
 
+
+  class FE_Hex20 : public T_ScalarFiniteElementFO<FE_Hex20,ET_HEX,20,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
+    {
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
+
+      Tx lam[8] = {(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
+                   (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
+      Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+                   (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
+      
+      Tx shapee[12];
+
+      static const int e[12][2] =
+        {
+          { 0, 1 }, { 2, 3 }, { 3, 0 }, { 1, 2 },
+          { 4, 5 }, { 6, 7 }, { 7, 4 }, { 5, 6 },
+          { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 },
+        };
+      
+      for (int i = 0; i < 12; i++)
+        {
+          auto lame = lam[e[i][0]]+lam[e[i][1]];
+          auto xi = sigma[e[i][1]]-sigma[e[i][0]];
+          shapee[i] = (1-xi*xi)*lame;
+        }
+      for (int i = 0; i < 12; i++)
+        {
+          lam[e[i][0]] -= 0.5 * shapee[i];
+          lam[e[i][1]] -= 0.5 * shapee[i];
+        }
+      for (int i = 0; i < 8; i++)
+        shape[i] = lam[i];
+      for (int i = 0; i < 12; i++)
+        shape[i+8] = shapee[i];
+    }
+  }; 
+
+  
   /* ***************************** Pyramid *********************************** */
 
   ///
@@ -881,6 +947,7 @@ namespace ngfem
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_QUAD,1>,ET_QUAD>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Quad2,ET_QUAD>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Quad2aniso,ET_QUAD>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Quad2Serendipity,ET_QUAD>;
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,0>,ET_TET>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,1>,ET_TET>;
@@ -900,7 +967,8 @@ namespace ngfem
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex0,ET_HEX>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex1,ET_HEX>;
-
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex20,ET_HEX>;
+  
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Pyramid0,ET_PYRAMID>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Pyramid1,ET_PYRAMID>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_PYRAMID,1>,ET_PYRAMID>;    
@@ -947,6 +1015,7 @@ namespace ngfem
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_QUAD,1>,ET_QUAD,4,1>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Quad2,ET_QUAD,9,2>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Quad2aniso,ET_QUAD,6,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Quad2Serendipity,ET_QUAD,8,2>;
 
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TET,0>,ET_TET,1,0>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TET,1>,ET_TET,4,1>;
@@ -965,7 +1034,8 @@ namespace ngfem
 
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Hex0,ET_HEX,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Hex1,ET_HEX,8,1>;
-
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Hex20,ET_HEX,20,2>;
+  
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Pyramid0,ET_PYRAMID,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>;
 

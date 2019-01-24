@@ -1,3 +1,6 @@
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <solve.hpp>
 
 #ifdef TCL
@@ -830,12 +833,12 @@ namespace ngcomp
 
     if (archive.Output())
       {
-        mas[0] -> ArchiveMesh (archive);
+        archive & mas[0];
       }
     else
       {
         auto ma = make_shared<MeshAccess>();
-        ma -> ArchiveMesh (archive);
+        archive & ma;
         AddMeshAccess(ma);
       }
     

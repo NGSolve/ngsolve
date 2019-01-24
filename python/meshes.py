@@ -41,7 +41,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None):
     """
     Generate a structured 2D mesh
 
@@ -85,8 +85,8 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
     for i in range(ny+1):
         for j in range(nx+1):
             x,y = j/nx, i/ny
-            if mapping:
-                x,y = mapping(x,y)
+            # if mapping:
+            #    x,y = mapping(x,y)
             pids.append(mesh.Add (MeshPoint(Pnt(x,y,0))))
             if periodic_y:
                 if i == 0:
@@ -140,6 +140,17 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
     mesh.SetBCName(3, "left")  
 
     mesh.Compress()       
+    
+    if secondorder:
+        mesh.SecondOrder()
+    
+    if mapping:
+        for p in mesh.Points():
+            x,y,z = p.p
+            x,y = mapping(x,y)
+            p[0] = x
+            p[1] = y
+            
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
@@ -173,7 +184,7 @@ def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = Non
     """
     return MakeStructured2DMesh(quads=True, nx=nx, ny=ny, periodic_x=periodic_x, periodic_y=periodic_y, mapping=mapping)    
 
-def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=True):
+def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
     """
     Generate a structured quadrilateral 2D mesh
 
@@ -231,7 +242,6 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
             P1 = mapping(*P1)
             P2 = mapping(*P2)
         cube = OrthoBrick(Pnt(P1[0], P1[1], P1[2]), Pnt(P2[0], P2[1], P2[2])).bc(1)
-
         geom = CSGeometry()
         geom.Add(cube)
         netmesh.SetGeometry(geom)
@@ -251,8 +261,8 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
             for k in range(nz+1):
                 # x,y,z = mapping(i / nx, j / ny, k / nz)
                 x,y,z = i / nx, j / ny, k / nz
-                if mapping:
-                    x,y,z = mapping(x,y,z)
+                # if mapping:
+                #   x,y,z = mapping(x,y,z)
                 pids.append(netmesh.Add(MeshPoint(Pnt( x,y,z ))))
                 if periodic_x:
                     if i == 0:
@@ -330,7 +340,7 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
 
     for i in range(6):
         netmesh.Add(FaceDescriptor(surfnr=i, domin=1, bc=i+1))
-    
+
     # y-z-plane, smallest x-coord: ("back")
     AddSurfEls(0, 1, nz,  nz+1, ny, facenr=1) # y-z-plane
     # x-z-plane, smallest y-coord: ("left")
@@ -351,12 +361,26 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
         netmesh.SetBCName(3,"right")
         netmesh.SetBCName(4,"bottom")
         netmesh.SetBCName(5,"top")
-
+    
     netmesh.Compress()
+
+    if secondorder:
+        netmesh.SecondOrder()
+    
+    if mapping:
+        for p in netmesh.Points():
+            x,y,z = p.p
+            x,y,z = mapping(x,y,z)
+            p[0] = x
+            p[1] = y
+            p[2] = z
+            
     ngsmesh = ngsolve.Mesh(netmesh)
+    # ngsmesh.ngmesh.Save("tmp.vol.gz")
+    # ngsmesh = ngsolve.Mesh("tmp.vol.gz")
     return ngsmesh
 
-def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
+def MakeHexMesh(nx=10, ny=10, nz=10, secondorder=secondorder, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
     """
     Generate a structured quadrilateral 2D mesh
 
@@ -393,7 +417,7 @@ def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodi
       Returns generated 3D NGSolve mesh consisting of only hexahedra
 
     """
-    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping, cuboid_mapping=cuboid_mapping)
+    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, secondorder=secondorder, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping, cuboid_mapping=cuboid_mapping)
 
 from math import pi
 from ngsolve import Draw, sin, cos

@@ -72,6 +72,25 @@ void ExportSparseMatrix(py::module m)
                   auto cvalues = makeCArray<double>(values);
                   return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
                 }, py::arg("indi"), py::arg("indj"), py::arg("values"), py::arg("h"), py::arg("w"))
+
+    .def_static("CreateFromElmat",
+                [] (py::list coldnums, py::list rowdnums, py::list elmats, size_t h, size_t w)
+                {
+                  auto cdnums1 = makeCTable<int>(coldnums);
+                  auto rdnums1 = makeCTable<int>(rowdnums);
+                  auto sparsemat = make_shared<SparseMatrix<double>>(h, w, cdnums1, rdnums1, false);
+                  sparsemat->SetZero();
+                  auto cdnums = makeCTable<int>(coldnums);
+                  auto rdnums = makeCTable<int>(rowdnums);
+                  for (int i = 0; i < py::len(elmats); i++)
+                    {
+                      const Matrix<double> & m = py::cast<const Matrix<double>&> (elmats[i]);
+                      sparsemat -> AddElementMatrix(cdnums[i], rdnums[i], m, false);
+                    }
+                  return sparsemat;
+                  // auto cvalues = makeCArray<double>(values);
+                  // return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
+                }, py::arg("col_ind"), py::arg("row_ind"), py::arg("matrices"), py::arg("h"), py::arg("w"))
     
     .def("CreateTranspose", [] (const SparseMatrix<double> & sp)
          { return TransposeMatrix (sp); }, "Return transposed matrix")
@@ -682,9 +701,9 @@ inverse : string
     .def(py::init<> ([] (size_t h, size_t w, Matrix<> mat,
                          py::list pycdofs, py::list pyrdofs)
                      {
+                       /*
                        size_t n = py::len(pyrdofs);
                        Array<int> entrysize(n);
-                       
                        for (size_t i = 0; i < n; i++)
                          entrysize[i] = py::len(pyrdofs[i]);
                        Table<int> rdofs(entrysize);
@@ -702,7 +721,10 @@ inverse : string
                            const py::object & obj = pycdofs[i];
                            cdofs[i] = makeCArray<int> (obj);
                          }
-
+                       */
+                       auto rdofs = makeCTable<int> (pyrdofs);
+                       auto cdofs = makeCTable<int> (pycdofs);
+                       
                        return make_shared<ConstantElementByElementMatrix> (h, w, mat,
                                                                            std::move(cdofs), std::move(rdofs));
                      }),
@@ -909,15 +931,16 @@ maxsteps : int
 )raw_string"))
     ;
 
-  m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre) {
+  m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre, double tol) {
       EigenSystem eigen(mat, pre);
+      eigen.SetPrecision(tol);
       eigen.Calc();
       Vector<double> ev(eigen.NumEigenValues());
       for (size_t i = 0; i < ev.Size(); i++)
         ev[i] = eigen.EigenValue(i+1);
       return ev;
     },
-    py::arg("mat"), py::arg("pre"),
+    py::arg("mat"), py::arg("pre"), py::arg("tol")=1e-10,
     "Calculate eigenvalues of pre * mat, where pre and mat are positive definite matrices.\n"
     "The typical usecase of this function is to calculate the condition number of a preconditioner."
     "It uses the Lanczos algorithm and bisection for the tridiagonal matrix"

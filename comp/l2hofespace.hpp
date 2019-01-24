@@ -103,9 +103,13 @@ namespace ngcomp
 
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
-    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
 
+    virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                           LocalHeap & lh) const override;
+    virtual void GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                                LocalHeap & lh) const override;
 
   protected:
 
@@ -145,11 +149,15 @@ namespace ngcomp
     // order of elements 
     Array<INT<3> > order_inner;
 
+    COUPLING_TYPE lowest_order_ct;
+
   public:
 
     L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~L2SurfaceHighOrderFESpace ();
+
+    static DocInfo GetDocu ();
 
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
@@ -208,7 +216,7 @@ namespace ngcomp
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
-    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * defindon,
                          LocalHeap & lh) const override;
 
     template <int DIM>
@@ -226,10 +234,10 @@ namespace ngcomp
     
 
     template <int DIM>
-    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
+    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                       LocalHeap & lh) const;
     template <int DIM>
-    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
+    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const;
 
     virtual string GetClassName () const override
