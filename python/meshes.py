@@ -338,7 +338,7 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
                         elpids = [pids[p] for p in [pnum[q] for q in qarr]]
                         netmesh.Add(Element2D(facenr, elpids))
 
-
+    #order is important!
     netmesh.Add(FaceDescriptor(surfnr=4, domin=1, bc=1))
     netmesh.Add(FaceDescriptor(surfnr=2, domin=1, bc=2))
     netmesh.Add(FaceDescriptor(surfnr=5, domin=1, bc=3))
@@ -467,20 +467,14 @@ if __name__ == "__main__":
     Draw(mesh)
     input("mapped, anisotropic linear non-cuboid mesh -- press any key to continue -- ")
     
-    mesh = MakeStructured3DMesh(hexes=True, nx=8, ny=16, nz=8,
-                            mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
-                            cuboid_mapping=True )
-    Draw(mesh)
-    input("mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")
-
     mesh = MakeStructured3DMesh(hexes=True, nx=8, ny=16, nz=8, periodic_x=True,
                             mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
                             cuboid_mapping=True )
     Draw(mesh)
-    input("x-periodic, mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")    
-
-    mesh = MakeStructured3DMesh(hexes=False, nx=8, ny=8, nz=8, periodic_x=False,
+    input("x-periodic, mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")
+    
+    mesh = MakeStructured3DMesh(hexes=False, nx=8, ny=8, nz=8, periodic_x=True,
                             cuboid_mapping=True )
     mesh.Refine()
     Draw(mesh)
-    input("structured tet mesh, refined -- finished.")
+    input("structured tet mesh (periodic in x-dir.), refined -- finished.")
