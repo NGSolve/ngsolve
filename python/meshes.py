@@ -338,9 +338,14 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
                         elpids = [pids[p] for p in [pnum[q] for q in qarr]]
                         netmesh.Add(Element2D(facenr, elpids))
 
-    for i in range(6):
-        netmesh.Add(FaceDescriptor(surfnr=i, domin=1, bc=i+1))
 
+    netmesh.Add(FaceDescriptor(surfnr=4, domin=1, bc=1))
+    netmesh.Add(FaceDescriptor(surfnr=2, domin=1, bc=2))
+    netmesh.Add(FaceDescriptor(surfnr=5, domin=1, bc=3))
+    netmesh.Add(FaceDescriptor(surfnr=3, domin=1, bc=4))
+    netmesh.Add(FaceDescriptor(surfnr=0, domin=1, bc=5))
+    netmesh.Add(FaceDescriptor(surfnr=1, domin=1, bc=6))
+        
     # y-z-plane, smallest x-coord: ("back")
     AddSurfEls(0, 1, nz,  nz+1, ny, facenr=1) # y-z-plane
     # x-z-plane, smallest y-coord: ("left")
@@ -380,7 +385,7 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
     # ngsmesh = ngsolve.Mesh("tmp.vol.gz")
     return ngsmesh
 
-def MakeHexMesh(nx=10, ny=10, nz=10, secondorder=secondorder, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
+def MakeHexMesh(nx=10, ny=10, nz=10, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
     """
     Generate a structured quadrilateral 2D mesh
 
@@ -472,4 +477,10 @@ if __name__ == "__main__":
                             mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
                             cuboid_mapping=True )
     Draw(mesh)
-    print("x-periodic, mapped, anisotropic non-linear cuboid mesh -- finished.")    
+    input("x-periodic, mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")    
+
+    mesh = MakeStructured3DMesh(hexes=False, nx=8, ny=8, nz=8, periodic_x=False,
+                            cuboid_mapping=True )
+    mesh.Refine()
+    Draw(mesh)
+    input("structured tet mesh, refined -- finished.")
