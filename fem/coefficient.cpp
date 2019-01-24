@@ -2673,6 +2673,14 @@ public:
     return (matindex < ci.Size() && ci[matindex]);
   }
 
+  bool ElementwiseConstant() const override
+  {
+    for(auto cf : ci)
+      if(!cf->ElementwiseConstant())
+        return false;
+    return true;
+  }
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     code.body += "// DomainWiseCoefficientFunction:\n";
