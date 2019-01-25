@@ -702,6 +702,17 @@ val : can be one of the following:
     Creates a domain-wise CF, use with generator expressions and mesh.GetMaterials()
     and mesh.GetBoundaries()
 )raw", py::dynamic_attr())
+    .def(py::init([] (py::dict data)
+                  {
+                    CoefficientFunction* cf;
+                    py::list lst = py::cast<py::list>(data["childs"]);
+                    lst.append(data["data"]);
+                    lst.append(data["version_stored"]);
+                    lst.append(data["version_needed"]);
+                    PyArchive<BinaryInArchive> ar(lst);
+                    ar & cf;
+                    return cf;
+                  }))
     .def(py::init([] (py::object val, py::object dims)
         {
           shared_ptr<CoefficientFunction> coef;
@@ -951,26 +962,19 @@ wait : bool
 )raw_string"))
 
 
-    .def_property("data",
-                  [] (shared_ptr<CF> cf)
-                  {
-                    PyOutArchive ar;
-                    cf->DoArchive(ar);
-                    return ar.GetList();
-                  },
-                  [] (shared_ptr<CF> cf, py::list data)
-                  {
-                    PyInArchive ar(data);
-                    cf->DoArchive(ar);
-                  })
-    .def_property_readonly("childs", [](shared_ptr<CF> cf)
-                  {
-                    py::list pychilds;
-                    for (auto child : cf->InputCoefficientFunctions())
-                      pychilds.append (child);
-                    return pychilds;
-                  })
-                  
+    .def_property_readonly("data",
+                           [] (shared_ptr<CF> cf)
+                           {
+                             PyArchive<BinaryOutArchive> ar;
+                             ar << cf.get();
+                             auto list = ar.WriteOut();
+                             py::dict ret;
+                             ret["version_needed"] = list.attr("pop")();
+                             ret["version_stored"] = list.attr("pop")();
+                             ret["data"] = list.attr("pop")();
+                             ret["childs"] = list;
+                             return ret;
+                           })
     
     .def (NGSPickle<CoefficientFunction>())
     ;
