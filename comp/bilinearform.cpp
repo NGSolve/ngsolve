@@ -154,7 +154,8 @@ namespace ngcomp
     SetKeepInternal (eliminate_internal && 
                      !flags.GetDefineFlag ("nokeep_internal"));
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
-
+    geom_free = flags.GetDefineFlag("geom_free");
+    
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());    
@@ -204,7 +205,7 @@ namespace ngcomp
 
     parts.Append (bfi);
 
-    if (bfi->geom_free && nonassemble)
+    if ((bfi->geom_free && nonassemble) || geom_free)
       {
         geom_free_parts += bfi;
         return *this;
@@ -620,6 +621,80 @@ namespace ngcomp
       }
     
 
+    if (geom_free)
+      {
+        auto fesx = GetTrialSpace();
+        auto fesy = GetTestSpace();
+        auto ma = GetMeshAccess();
+    
+        Array<short> classnr(ma->GetNE());
+        ma->IterateElements
+          (VOL, lh, [&] (auto el, LocalHeap & llh)
+           {
+             classnr[el.Nr()] = 
+               SwitchET<ET_TRIG,ET_TET>
+               (el.GetType(),
+                [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+           });
+        
+        TableCreator<size_t> creator;
+        for ( ; !creator.Done(); creator++)
+          for (auto i : Range(classnr))
+            creator.Add (classnr[i], i);
+        Table<size_t> table = creator.MoveTable();
+
+        shared_ptr<BaseMatrix> sum;
+        
+        for (auto elclass_inds : table)
+          {
+            if (elclass_inds.Size() == 0) continue;
+            
+            size_t nr = classnr[elclass_inds[0]];
+            ElementId ei(VOL,elclass_inds[0]);
+            auto & felx = GetTrialSpace()->GetFE (ei, lh);
+            auto & fely = GetTestSpace()->GetFE (ei, lh);
+            auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
+            MixedFiniteElement fel(felx, fely);
+            
+            Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
+            elmat = 0.0;
+
+            cout << "geomfreeparts: " << geom_free_parts.Size() << endl;
+            for (auto bfi : geom_free_parts)
+              bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
+            
+            Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
+              ydofs(elclass_inds.Size(), fely.GetNDof());
+
+            Array<DofId> dnumsx, dnumsy;
+            for (auto i : Range(elclass_inds))
+              {
+                ElementId ei(VOL, elclass_inds[i]);
+                fesx->GetDofNrs(ei, dnumsx);
+                fesy->GetDofNrs(ei, dnumsy);
+                xdofs[i] = dnumsx;
+                ydofs[i] = dnumsy;
+              }
+
+            cout << "elmat = " << elmat << endl;
+            // cout << "xdofs = " << xdofs << endl;
+            // cout << "ydofs = " << ydofs << endl;
+            auto mat = make_shared<ConstantElementByElementMatrix>
+              (fesy->GetNDof(), fesx->GetNDof(),
+               elmat, std::move(ydofs), std::move(xdofs));
+            cout << "mat = " << endl << *mat << endl;
+
+            if (sum)
+              sum = make_shared<SumMatrix>(sum, mat);
+            else
+              sum = mat;
+          }
+
+        mats.Append(sum);
+        return;
+      }
+
+    
     try
       {
 

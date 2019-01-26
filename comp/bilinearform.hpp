@@ -32,6 +32,8 @@ namespace ngcomp
     bool nonassemble;
     /// store only diagonal of matrix
     bool diagonal;
+    /// element-matrix for ref-elements
+    bool geom_free;
     /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
@@ -522,6 +524,7 @@ namespace ngcomp
 
     ///
     virtual void DoAssemble (LocalHeap & lh);
+    void AssembleGF (LocalHeap & lh);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///

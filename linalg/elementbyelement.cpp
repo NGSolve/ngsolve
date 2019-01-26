@@ -892,6 +892,7 @@ namespace ngla
       }
     else
       {
+        /*
         Vector<> hx(matrix.Height());
         Vector<> hy(matrix.Width());
         for (size_t i = 0; i < row_dnums.Size(); i++)
@@ -900,6 +901,30 @@ namespace ngla
             hy = Trans(matrix) * hx;
             fy(row_dnums[i]) += s * hy;
           }
+        */
+
+        RegionTimer reg(tp);
+        ParallelForRange
+          (row_dnums.Size(), [&] (IntRange r)
+           {
+             constexpr size_t BS = 128;
+             Matrix<> hx(BS, matrix.Height());
+             Matrix<> hy(BS, matrix.Width());
+
+             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+               {
+                 size_t li = min2(bi+BS, r.Next());
+                 size_t num = li-bi;
+                 
+                 for (size_t i = 0; i < num; i++)
+                   hx.Row(i) = fx(col_dnums[bi+i]);
+                 
+                 hy.Rows(0, num) = hx.Rows(0, num) * matrix;
+
+                 for (size_t i = 0; i < num; i++)
+                   fy(row_dnums[bi+i]) += s * hy.Row(i);
+               }
+           });
       }
   }
 
