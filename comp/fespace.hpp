@@ -650,6 +650,9 @@ ANY                  1 1 1 1 | 15
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
+
+    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace) const
+    { throw Exception("GetTraceOperator not overloaded"); }
     
     virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
                            LocalHeap & lh) const

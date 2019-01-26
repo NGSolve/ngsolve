@@ -771,41 +771,98 @@ global system.
                                      LocalHeap & lh) const
   {
     static Timer t("ApplyM"); RegionTimer reg(t);
+    static Timer tall("ApplyM - all");
+    static Timer tel("ApplyM - el");    
+    static Timer ttrafo("ApplyM - trafo");    
+    static Timer tdofs("ApplyM - getdofs");
+    static Timer tgetx("ApplyM - getx");
+    static Timer tsety("ApplyM - sety");
+    static Timer tcalc("ApplyM - calc");
+    static Timer tcalc1("ApplyM - calc1");
+    static Timer tcalc2("ApplyM - calc2");
+    static Timer tsetup("ApplyM - setup");
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
+
+    auto fv = vec.FV<double>();
     
     IterateElements (*this, VOL, lh,
-                     [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
+                     [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
+                       auto tid = TaskManager::GetThreadId();
+                       NgProfiler::StartThreadTimer(tall, tid);                       
+                       NgProfiler::StartThreadTimer(tel, tid);
+                       
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
+                       NgProfiler::StopThreadTimer(tel, tid);
+                       NgProfiler::AddThreadFlops(tel, tid, 1);                       
+                       NgProfiler::StartThreadTimer(ttrafo, tid);                       
                        const ElementTransformation & trafo = el.GetTrafo();
+                       NgProfiler::StopThreadTimer(ttrafo, tid);
+                       NgProfiler::StartThreadTimer(tdofs, tid);
                        
                        Array<int> dnums(fel.GetNDof(), lh);
-                       GetDofNrs (el.Nr(), dnums);
-                       
+                       auto dofrange = GetElementDofs(el.Nr());
                        FlatVector<double> elx(fel.GetNDof()*dimension, lh);
-                       vec.GetIndirect(dnums, elx);
-		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
 
+                       bool lindofs = all_dofs_together && dimension==1;
+
+                       if (def && !def->Mask()[ma->GetElIndex(el)])
+                         {
+                           if (lindofs)
+                             fv.Range(dofrange) = 0.0;
+                           else
+                             {
+                               elx = 0.0;
+                               GetDofNrs (el, dnums);                               
+                               vec.SetIndirect(dnums, elx);
+                             }
+                           return;
+                         }
+                       
+                       if (!lindofs)
+                         {
+                           GetDofNrs (el, dnums);
+                           vec.GetIndirect(dnums, elx);
+                         }
+                       else
+                         elx = fv.Range(dofrange);
+                       
+                       NgProfiler::StopThreadTimer(tdofs, tid);
+                       NgProfiler::StartThreadTimer(tgetx, tid);
+                       
+		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
+                       
+                       NgProfiler::StopThreadTimer(tgetx, tid);
+                       
+                       NgProfiler::StartThreadTimer(tsetup, tid);                       
                        FlatVector<double> diag_mass(fel.GetNDof(), lh);
                        fel.GetDiagMassMatrix (diag_mass);
 
                        bool curved = trafo.IsCurvedElement();
                        if (rho && !rho->ElementwiseConstant()) curved = true;
-                       
+                       NgProfiler::StopThreadTimer(tsetup, tid);
+
+                       NgProfiler::StartThreadTimer(tcalc, tid);                       
                        if (!curved)
                          {
+                           NgProfiler::StartThreadTimer(tcalc1, tid);                                                  
                            IntegrationRule ir(fel.ElementType(), 0);
                            BaseMappedIntegrationRule & mir = trafo(ir, lh);
                            double jac = mir[0].GetMeasure();
                            if (rho) jac *= rho->Evaluate(mir[0]);
-                           diag_mass *= jac;
                            
-                           if (def && !def->Mask()[ma->GetElIndex(el)])
-                             diag_mass = 0.0;
                            
-                           for (int i = 0; i < melx.Height(); i++)
-                             melx.Row(i) *= diag_mass(i);
+                           NgProfiler::StopThreadTimer(tcalc1, tid);
+                           NgProfiler::StartThreadTimer(tcalc2, tid);
+
+                           if (dimension == 1)
+                             for (size_t i = 0; i < elx.Size(); i++)
+                               elx(i) *= jac*diag_mass(i);
+                           else
+                             for (size_t i = 0; i < melx.Height(); i++)
+                               melx.Row(i) *= jac*diag_mass(i);
+                           NgProfiler::StopThreadTimer(tcalc2, tid);                           
                          }
                        else
                          {
@@ -835,7 +892,17 @@ global system.
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
                          }
-                       vec.SetIndirect(dnums, elx);
+                       NgProfiler::StopThreadTimer(tcalc, tid);
+                       
+                       NgProfiler::StartThreadTimer(tsety, tid);
+                       
+                       if (!lindofs)
+                         vec.SetIndirect(dnums, elx);
+                       else
+                         fv.Range(dofrange) = elx;
+                       
+                       NgProfiler::StopThreadTimer(tsety, tid);
+                       NgProfiler::StopThreadTimer(tall, tid);                                              
                      });
   }
 
@@ -862,6 +929,67 @@ global system.
         return trace;
       }
     throw Exception("no trace");
+  }
+
+
+  shared_ptr<BaseMatrix> L2HighOrderFESpace ::
+  GetTraceOperator (shared_ptr<FESpace> tracespace) const
+  {
+    LocalHeap lh(1000000);
+    Array<short> classnr(ma->GetNE());
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+    
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+
+    shared_ptr<BaseMatrix> sum;
+  
+    size_t ne = ma->GetNE();
+  
+    for (auto elclass_inds : table)
+      {
+        if (elclass_inds.Size() == 0) continue;
+        
+        ElementId ei(VOL,elclass_inds[0]);
+        auto & felx = GetFE (ei, lh);
+        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        
+        Matrix<> trace_op_x = GetTraceMatrix (felx);
+
+
+        Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
+          ydofs(elclass_inds.Size(), trace_op_x.Height());
+
+        Array<DofId> dnumsx, dnumsy;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            GetDofNrs(ei, dnumsx);
+            tracespace->GetDofNrs(ei, dnumsy);
+            xdofs[i] = dnumsx;
+            ydofs[i] = dnumsy;
+          }
+
+        auto mat = make_shared<ConstantElementByElementMatrix>
+          (tracespace->GetNDof(), this->GetNDof(),
+           trace_op_x, std::move(ydofs), std::move(xdofs));
+
+        if (sum)
+          sum = make_shared<SumMatrix>(sum, mat);
+        else
+          sum = mat;
+      }
+    return sum;
   }
 
   
