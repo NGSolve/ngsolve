@@ -104,6 +104,7 @@ namespace ngcomp
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
     spd = flags.GetDefineFlag ("spd");
+    geom_free = flags.GetDefineFlag("geom_free");    
     if (spd) symmetric = true;
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
   }
@@ -659,7 +660,6 @@ namespace ngcomp
             Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
             elmat = 0.0;
 
-            cout << "geomfreeparts: " << geom_free_parts.Size() << endl;
             for (auto bfi : geom_free_parts)
               bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
             
