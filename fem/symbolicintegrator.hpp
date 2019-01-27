@@ -215,7 +215,7 @@ public:
   }
   */
   
-  virtual bool ElementwiseConstant () const  override{ return true; }
+  // virtual bool ElementwiseConstant () const  override{ return true; }
 
   NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
                                               FlatVector<bool> nonzero,

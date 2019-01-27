@@ -725,7 +725,7 @@ global system.
 
                        bool curved = trafo.IsCurvedElement();
                        if (rho && !rho->ElementwiseConstant()) curved = true;
-                       
+
                        if (!curved)
                          {
                            IntegrationRule ir(fel.ElementType(), 0);
