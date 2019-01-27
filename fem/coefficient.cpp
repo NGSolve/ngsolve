@@ -1434,7 +1434,7 @@ public:
                                    shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
   {
-    elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
+    this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     if (DIM != c1->Dimension() || DIM != c2->Dimension())
       throw Exception("T_MultVecVec : dimensions don't fit");
   }
