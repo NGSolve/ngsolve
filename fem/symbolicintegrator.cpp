@@ -52,6 +52,7 @@ namespace ngfem
       SetDimensions (trace_evaluator->Dimensions());
     else
       SetDimensions (ttrace_evaluator->Dimensions());
+    elementwise_constant = true;
   }
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const

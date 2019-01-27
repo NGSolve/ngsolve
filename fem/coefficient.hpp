@@ -18,6 +18,7 @@ namespace ngfem
   private:
     int dimension;
     Array<int> dims;
+    bool elementwise_constant = false;
   protected:
     bool is_complex;
   public:
@@ -302,7 +303,7 @@ namespace ngfem
     }
     */
 
-    virtual bool ElementwiseConstant () const { return false; }
+    bool ElementwiseConstant () const { return elementwise_constant; }
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
@@ -597,7 +598,7 @@ namespace ngfem
     }
 
     using BASE::Evaluate;
-    virtual bool ElementwiseConstant () const override { return true; }
+    // virtual bool ElementwiseConstant () const override { return true; }
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
@@ -1135,6 +1136,7 @@ public:
       c1(ac1), lam(alam), name(aname)
   {
     this->SetDimensions (c1->Dimensions());
+    this->elementwise_constant = c1->ElementwiseConstant();
   }
 
   virtual void DoArchive (Archive & archive) override
@@ -1148,7 +1150,7 @@ public:
     return string("unary operation '")+name+"'";
   }
 
-  virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
+  // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {

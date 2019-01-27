@@ -187,7 +187,9 @@ namespace ngfem
   ConstantCoefficientFunction ::   
   ConstantCoefficientFunction (double aval) 
     : BASE(1, false), val(aval) 
-  { ; }
+  {
+    elementwise_constant = true;
+  }
 
   ConstantCoefficientFunction ::
   ~ConstantCoefficientFunction ()
@@ -1291,6 +1293,7 @@ public:
                                  shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction<MultVecVecCoefficientFunction>(1, ac1->IsComplex() || ac2->IsComplex()), c1(ac1), c2(ac2)
   {
+    elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     dim1 = c1->Dimension();
     if (dim1 != c2->Dimension())
       throw Exception("MultVecVec : dimensions don't fit");
@@ -1396,9 +1399,10 @@ public:
       }    
   }  
 
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
-  
+  */
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1430,6 +1434,7 @@ public:
                                    shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
   {
+    elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     if (DIM != c1->Dimension() || DIM != c2->Dimension())
       throw Exception("T_MultVecVec : dimensions don't fit");
   }
@@ -1541,9 +1546,10 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
-  
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
+  */
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
@@ -1635,6 +1641,7 @@ public:
     : T_CoefficientFunction<NormCoefficientFunction> (1, false), c1(ac1)
   {
     dim1 = c1->Dimension();
+    elementwise_constant = c1->ElementwiseConstant();
   }
 
   void DoArchive(Archive& ar) override
@@ -1676,10 +1683,11 @@ public:
     result(0) = res(0);
   }
 
-  
+
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant(); }
-
+  */
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -1769,6 +1777,7 @@ public:
     : CoefficientFunction (1, false), c1(ac1)
   {
     dim1 = c1->Dimension();
+    elementwise_constant = c1->ElementwiseConstant(); 
   }
 
   void DoArchive(Archive& ar) override
@@ -1809,10 +1818,11 @@ public:
     result(0) = res(0);
   }
 
-  
+
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant(); }
-
+  */
   
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         BareSliceMatrix<> result) const override
@@ -2655,6 +2665,11 @@ public:
       if (cf && cf->IsComplex()) is_complex = true;
     for (auto & cf : ci)
       if (cf) SetDimensions(cf->Dimensions());
+
+    elementwise_constant = true;
+    for (auto cf : ci)
+      if (cf && !cf->ElementwiseConstant())
+        elementwise_constant = false;
   }
 
   void DoArchive(Archive& ar) override
@@ -2673,6 +2688,7 @@ public:
     return (matindex < ci.Size() && ci[matindex]);
   }
 
+  /*
   bool ElementwiseConstant() const override
   {
     for(auto cf : ci)
@@ -2680,7 +2696,8 @@ public:
         return false;
     return true;
   }
-
+  */
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     code.body += "// DomainWiseCoefficientFunction:\n";
@@ -3958,7 +3975,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     // virtual Array<int> Dimensions() const  { return cf->Dimensions(); } 
     
     
-    bool ElementwiseConstant () const override { return false; }
+    // bool ElementwiseConstant () const override { return false; }
     /*
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
