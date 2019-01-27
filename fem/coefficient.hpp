@@ -18,8 +18,8 @@ namespace ngfem
   private:
     int dimension;
     Array<int> dims;
-    bool elementwise_constant = false;
   protected:
+    bool elementwise_constant = false;
     bool is_complex;
   public:
     // default constructor for archive
