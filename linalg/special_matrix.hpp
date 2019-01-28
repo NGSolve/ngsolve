@@ -52,6 +52,8 @@ namespace ngla
       return CreateBaseVector(height, false, 1);
     }
 
+    auto GetRange() const { return range; }
+    
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
 
@@ -60,6 +62,40 @@ namespace ngla
   };
 
 
+  class EmbeddedMatrix : public BaseMatrix
+  {
+    size_t height;
+    IntRange range;
+    shared_ptr<BaseMatrix> mat;
+  public:
+    EmbeddedMatrix (size_t aheight, IntRange arange, shared_ptr<BaseMatrix> amat)
+      : height(aheight), range(arange), mat(amat) { ; }
+
+    virtual bool IsComplex() const override { return mat->IsComplex(); } 
+
+    virtual int VHeight() const override { return height; }
+    virtual int VWidth() const override { return mat->VWidth(); }
+
+    virtual AutoVector CreateRowVector () const override
+    {
+      return CreateBaseVector(range.Size(), false, 1);
+    }
+    
+    virtual AutoVector CreateColVector () const override
+    {
+      return mat->CreateColVector();
+    }
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+  };
+
+
+
+  
   
   template <class TVR, class TVC>
   class Real2ComplexMatrix : public BaseMatrix

@@ -843,6 +843,8 @@ inverse : string
     .def(py::init<size_t, IntRange>(),
          py::arg("height"), py::arg("range"),
          "Linear operator embedding a shorter vector into a longer vector")
+    .def("__matmul__", [](shared_ptr<Embedding> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         { return make_shared<EmbeddedMatrix> (ma->Height(), ma->GetRange(), mb); }, py::arg("mat"))
     ;
   
     
