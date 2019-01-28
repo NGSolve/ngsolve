@@ -98,6 +98,66 @@ namespace ngla
     mat->MultTransAdd(s, x.Range(range), y);
   }
 
+
+
+
+
+  void EmbeddingTranspose :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::Mult"); RegionTimer reg(t);
+    y = x.Range(range);    
+  }
+  
+  void EmbeddingTranspose :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::MultTrans"); RegionTimer reg(t);
+    y = 0.0;
+    y.Range(range) = x;
+  }
+    
+  void EmbeddingTranspose :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::MultAdd"); RegionTimer reg(t);
+    y += s*x.Range(range);
+  }
+  
+  void EmbeddingTranspose :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::MultAddTrans"); RegionTimer reg(t);
+    y.Range(range) += s*x;
+  }
+
+
+
+  void EmbeddedTransposeMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    mat->Mult(x.Range(range), y);
+  }
+  
+  void EmbeddedTransposeMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    y = 0;
+    auto ry = y.Range(range);
+    mat->MultTrans(x, ry);
+  }
+
+  void EmbeddedTransposeMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    mat->MultAdd (s, x.Range(range), y);
+  }
+  
+  void EmbeddedTransposeMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    auto ry = y.Range(range);    
+    mat->MultTransAdd(s, x, ry);
+  }
+
+
+
+
+
+
+
   
   template <class TVR, class TVC>
   Real2ComplexMatrix<TVR,TVC> :: 
