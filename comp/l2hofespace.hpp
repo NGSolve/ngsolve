@@ -101,6 +101,10 @@ namespace ngcomp
       return Range (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
+    virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                    shared_ptr<Region> defon,
+                                                    LocalHeap & lh) const override;
+    
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
@@ -215,6 +219,11 @@ namespace ngcomp
     static DocInfo GetDocu ();
     
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+
+    virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                    shared_ptr<Region> defon,
+                                                    LocalHeap & lh) const override;
+    
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * defindon,

@@ -1649,6 +1649,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ost;
   }
 
+
+  shared_ptr<BaseMatrix> FESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const
+  {
+    return make_shared<ApplyMass> (dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                   rho, false, defon, lh);    
+  }
+
+
+  
   void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const
   {
@@ -2955,8 +2967,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
   ApplyMass :: ~ApplyMass()
   { ; } 
 
+  shared_ptr<BaseMatrix> ApplyMass :: InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    return make_shared<ApplyMass> (fes, rho, !inverse, definedon, lh);
+  }
 
-
+ 
   void ApplyMass :: Mult (const BaseVector & v, BaseVector & prod) const 
   {
     prod = v;
