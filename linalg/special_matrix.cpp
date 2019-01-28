@@ -77,6 +77,26 @@ namespace ngla
     y += s*x.Range(range);
   }
 
+  
+  void EmbeddedMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y = 0;
+    y.Range(range) = *mat * x;
+  }
+  void EmbeddedMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultTrans(x.Range(range), y);
+  }
+
+  void EmbeddedMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    y.Range(range) += s * (*mat) * x;
+  }
+  
+  void EmbeddedMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    mat->MultTransAdd(s, x.Range(range), y);
+  }
 
   
   template <class TVR, class TVC>
