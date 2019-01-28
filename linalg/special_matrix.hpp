@@ -51,7 +51,10 @@ namespace ngla
     {
       return CreateBaseVector(height, false, 1);
     }
-    
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
+
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
   };

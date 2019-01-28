@@ -356,16 +356,14 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::MultTransAdd"); RegionTimer reg(t);            
-      tempvec = 0.0;
-      bma.MultTransAdd (1, x, tempvec);
+      bma.MultTrans (x, tempvec);
       bmb.MultTransAdd (s, tempvec, y);
     }
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::MultTransAdd complex"); RegionTimer reg(t);
-      tempvec = 0.0;      
-      bma.MultTransAdd (1, x, tempvec);
+      bma.MultTrans (x, tempvec);
       bmb.MultTransAdd (s, tempvec, y);
     }  
 

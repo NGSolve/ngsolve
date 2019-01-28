@@ -52,6 +52,19 @@ namespace ngla
       }
   }
 
+  void Embedding :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("Embedding::Mult"); RegionTimer reg(t);
+    y = 0.0;
+    y.Range(range) = x;
+  }
+  
+  void Embedding :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("Embedding::MultTrans"); RegionTimer reg(t);
+    y = x.Range(range);    
+  }
+    
   void Embedding :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("Embedding::MultAdd"); RegionTimer reg(t);
