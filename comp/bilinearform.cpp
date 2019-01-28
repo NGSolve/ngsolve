@@ -676,13 +676,12 @@ namespace ngcomp
                 ydofs[i] = dnumsy;
               }
 
-            cout << "elmat = " << elmat << endl;
+            // cout << "elmat = " << elmat << endl;
             // cout << "xdofs = " << xdofs << endl;
             // cout << "ydofs = " << ydofs << endl;
             auto mat = make_shared<ConstantElementByElementMatrix>
               (fesy->GetNDof(), fesx->GetNDof(),
                elmat, std::move(ydofs), std::move(xdofs));
-            cout << "mat = " << endl << *mat << endl;
 
             if (sum)
               sum = make_shared<SumMatrix>(sum, mat);
