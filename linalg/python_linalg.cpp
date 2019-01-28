@@ -843,10 +843,18 @@ inverse : string
     .def(py::init<size_t, IntRange>(),
          py::arg("height"), py::arg("range"),
          "Linear operator embedding a shorter vector into a longer vector")
+    .def_property_readonly("T", [](shared_ptr<Embedding> m)->shared_ptr<EmbeddingTranspose>
+                           { return make_shared<EmbeddingTranspose> (m->Height(), m->GetRange()); }, "Return transpose of matrix")
     .def("__matmul__", [](shared_ptr<Embedding> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<EmbeddedMatrix> (ma->Height(), ma->GetRange(), mb); }, py::arg("mat"))
     ;
   
+  py::class_<EmbeddingTranspose, shared_ptr<EmbeddingTranspose>, BaseMatrix> (m, "EmbeddingTranspose")
+    .def("__rmatmul__", [](shared_ptr<EmbeddingTranspose> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         {
+           return make_shared<EmbeddedTransposeMatrix> (ma->Width(), ma->GetRange(), mb);
+         }, py::arg("mat"))
+    ;
     
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
