@@ -951,6 +951,7 @@ public:
       scal(ascal), c1(ac1)
   {
     SetDimensions(c1->Dimensions());
+    elementwise_constant = c1->ElementwiseConstant();
   }
   
   void DoArchive (Archive & archive) override
@@ -2541,6 +2542,7 @@ public:
     : BASE(1, ac1->IsComplex()), c1(ac1), comp(acomp)
   {
     dim1 = c1->Dimension();
+    elementwise_constant = c1->ElementwiseConstant();
   }
 
   void DoArchive(Archive& ar) override
@@ -3417,6 +3419,11 @@ public:
         is_complex = true;
 
     SetDimension(hdim);
+
+    elementwise_constant = true;
+    for (auto cf : ci)
+      if (!cf->ElementwiseConstant())
+        elementwise_constant = false;
     // dims = Array<int> ( { dimension } ); 
   }
 

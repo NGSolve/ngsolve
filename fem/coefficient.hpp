@@ -1330,6 +1330,7 @@ public:
     int dim2 = c2->Dimension();
     if (dim1 != dim2) throw Exception ("Dimensions don't match");
     is_complex = c1->IsComplex() || c2->IsComplex();
+    this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     SetDimensions (c1->Dimensions());
   }
 
