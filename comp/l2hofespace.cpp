@@ -701,6 +701,19 @@ global system.
     GetDofNrs (elnr, dnums); 
   }
 
+#if __has_include("applymassl2.hpp")
+#include "applymassl2.hpp"
+#else
+  shared_ptr<BaseMatrix> L2HighOrderFESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const
+  {
+    return FESpace::GetMassOperator(rho, defon, lh);
+  }
+#endif
+  
+  
   void L2HighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                                      LocalHeap & lh) const
   {
@@ -2111,7 +2124,16 @@ One can evaluate the vector-valued function, and one can take the gradient.
   }
 
 
-
+#ifndef FASTDG  
+  shared_ptr<BaseMatrix> VectorL2FESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const
+  {
+    return FESpace::GetMassOperator(rho, defon, lh);
+  }
+#endif
+  
   
   void VectorL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                                   LocalHeap & lh) const

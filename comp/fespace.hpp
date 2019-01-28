@@ -646,6 +646,10 @@ ANY                  1 1 1 1 | 15
 
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
+    virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                    shared_ptr<Region> defon,
+                                                    LocalHeap & lh) const;
+    
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
@@ -1219,6 +1223,7 @@ ANY                  1 1 1 1 | 15
                shared_ptr<Region> adefinedon,
                LocalHeap & alh);
     virtual ~ApplyMass();
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
 
     virtual bool IsComplex() const override
     {

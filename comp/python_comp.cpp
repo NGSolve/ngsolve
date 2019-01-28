@@ -1123,7 +1123,8 @@ component : int
          {
            shared_ptr<Region> spdefon;
            if (definedon) spdefon = make_shared<Region> (*definedon);
-           return make_shared<ApplyMass> (self, rho, false, spdefon, glh); 
+           // return make_shared<ApplyMass> (self, rho, false, spdefon, glh);
+           return self->GetMassOperator(rho, spdefon, glh);
          }, py::arg("rho") = nullptr, py::arg("definedon") = nullptr)
     
     .def("SolveM",
