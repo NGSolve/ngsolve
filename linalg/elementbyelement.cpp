@@ -698,7 +698,7 @@ namespace ngla
           used_row.Set(d);
         }
     
-    cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
+    // cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
 
 
 
@@ -775,7 +775,7 @@ namespace ngla
         
         for (auto nr : Range(nblocks))
           cntcol[col[nr]]++;
-        cout << "cntcol = " << cntcol << endl;
+        // cout << "cntcol = " << cntcol << endl;
         row_coloring = Table<int> (cntcol);
 
 	cntcol = 0;
