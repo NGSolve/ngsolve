@@ -23,6 +23,13 @@
 
 #endif
 
+namespace netgen
+{
+#ifndef PARALLEL
+  typedef int MPI_Comm;
+#endif
+  extern MPI_Comm ng_comm;
+}
 
 namespace ngstd
 {
@@ -134,6 +141,17 @@ namespace ngstd
     return id;
   }
 
+  INLINE MPI_Comm MyMPI_SubCommunicator(MPI_Comm comm, Array<int> & procs)
+  {
+    MPI_Comm subcomm;
+    MPI_Group gcomm, gsubcomm;
+    MPI_Comm_group(comm, &gcomm);
+    MPI_Group_incl(gcomm, procs.Size(), &(procs[0]), &gsubcomm);
+    MPI_Comm_create_group(comm, gsubcomm, 6969, &subcomm);
+    return subcomm;
+  }
+  
+  
   INLINE void MyMPI_Barrier (MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - barrier");
@@ -343,6 +361,7 @@ public:
       
     // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     ngs_comm = MPI_COMM_WORLD;
+    netgen::ng_comm = ngs_comm;
     NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
     
     if (MyMPI_GetNTasks (ngs_comm) > 1)
@@ -405,14 +424,32 @@ public:
 
 #endif
 
+#ifdef PARALLEL
   // for Python wrapping ...
   struct PyMPI_Comm {
     MPI_Comm comm;
-    PyMPI_Comm (MPI_Comm _comm) : comm(_comm) { ; }
-    auto Rank() const { return MyMPI_GetId(comm); }
-    auto Size() const { return MyMPI_GetNTasks(comm); }
+    bool owns_comm;
+    PyMPI_Comm (MPI_Comm _comm, bool _owns_comm = false) : comm(_comm), owns_comm(_owns_comm) { }
+    ~PyMPI_Comm () {
+      if (owns_comm)
+	MPI_Comm_free(&comm);
+    }
+    INLINE int Rank() const { return MyMPI_GetId(comm); }
+    INLINE int Size() const { return MyMPI_GetNTasks(comm); }
   };
-
+#else
+  // for Python wrapping ...
+  struct PyMPI_Comm {
+    MPI_Comm comm = 0;
+    PyMPI_Comm (MPI_Comm _comm, bool _owns_comm = false) { }
+    ~PyMPI_Comm () { }
+    INLINE int Rank() const { return 0; }
+    INLINE int Size() const { return 1; }
+  };
+  INLINE MPI_Comm MyMPI_SubCommunicator(MPI_Comm comm, Array<int> & procs)
+  { return 0; }
+#endif
+  
 }
 
 #endif

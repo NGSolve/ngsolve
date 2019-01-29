@@ -32,26 +32,9 @@ namespace ngcomp
     Ng_ElementTransformation (const MeshAccess * amesh,
                               ELEMENT_TYPE aet, ElementId ei, int elindex) 
       : ElementTransformation(aet, ei, elindex), 
-        mesh(amesh), mesh_comm(ngs_comm) 
+        mesh(amesh) 
     {
-      mesh_comm = (amesh!=nullptr) ? amesh->GetCommunicator() : ngs_comm;
-      mesh.SetCommunicator(mesh_comm);
       iscurved = true;
-      if(mesh.Valid())
-	{
-	  mesh.UpdateTopology();  // for netgen/ngsolve stand alone
-	  UpdateBuffers();
-	}
-    }
-
-    void MeshAccess :: SetCommunicator (MPI_Comm acomm)
-    {
-#ifdef PARALLEL
-      mesh.SetCommunicator(acomm);
-      mesh_comm = mesh.GetCommunicator();
-#else
-      mesh_comm = acomm;
-#endif
     }
     
     virtual int SpaceDim () const override
@@ -753,12 +736,15 @@ namespace ngcomp
     ngstd::printmessage_importance = netgen::printmessage_importance;
 #ifdef PARALLEL
     // best we can do at the moment to get py-mpi running
-    mesh_comm = MPI_COMM_WORLD;
-    ngs_comm =  MPI_COMM_WORLD;
+    mesh_comm = (amesh!=nullptr) ? amesh->GetCommunicator() : ngs_comm;
+    mesh.SetCommunicator(mesh_comm);
 #endif
     mesh.SelectMesh();
-    mesh.UpdateTopology();  // for netgen/ngsolve stand alone
-    UpdateBuffers();
+    if(mesh.Valid())
+      {
+	mesh.UpdateTopology();  // for netgen/ngsolve stand alone
+	UpdateBuffers();
+      }
   }
 
 
@@ -766,6 +752,17 @@ namespace ngcomp
   {
     // delete mesh;
     // Ng_LoadGeometry("");
+  }
+
+  
+  void MeshAccess :: SetCommunicator (MPI_Comm acomm)
+  {
+#ifdef PARALLEL
+    mesh.SetCommunicator(acomm);
+    mesh_comm = mesh.GetCommunicator();
+#else
+    mesh_comm = acomm;
+#endif
   }
 
 
@@ -2017,8 +2014,14 @@ namespace ngcomp
   
   void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
-    procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
-    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );
+    // procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
+    // NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );
+    cout << "get dist-procs for " << node << endl;
+    auto tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
+    cout << "got: " << get<0>(tup) << " " << get<1>(tup) << endl;
+    procs.SetSize(get<0>(tup));
+    auto* ptr = get<1>(tup);
+    for(auto k:Range(procs.Size())) procs[k] = ptr[k];
   }
 
 
@@ -2130,7 +2133,8 @@ namespace ngcomp
 	    computed = 0;
 	    while (1)
 	      {
-		int flag, data, num_working = 0, got_flag = false;
+		int flag, num_working = 0, got_flag = false;
+		size_t data;
 		for (int source = 1; source < ntasks; source++)
 		  {
 		    if (!working[source]) continue;
@@ -2139,7 +2143,7 @@ namespace ngcomp
 		    if (flag)
 		      {
 			got_flag = true;
-			MyMPI_Recv (data, source, MPI_TAG_SOLVE, comm, MPI_STATUS_IGNORE);
+			MyMPI_Recv (data, source, MPI_TAG_SOLVE, comm);
 			if (data == -1) 
 			  working[source] = 0;
 			else
