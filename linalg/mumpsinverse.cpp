@@ -39,7 +39,6 @@ namespace ngla
     static Timer timer_factor ("Mumps Inverse - factor");
     RegionTimer reg (timer);
 
-    VT_OFF();
 
     symmetric = asymmetric;
     inner = ainner;
@@ -335,7 +334,6 @@ namespace ngla
     delete [] col_indices;
     delete [] row_indices;
     delete [] matrix;
-    VT_ON();
   }
   
   
@@ -349,7 +347,6 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
     NgProfiler::RegionTimer reg (timer);
 
-    VT_OFF();
 
     if (id == 0)
       {
@@ -386,7 +383,6 @@ namespace ngla
 	ncid.job = JOB_SOLVE;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
       }
-    VT_ON();
   }
   
 
@@ -740,7 +736,6 @@ namespace ngla
       mumps_id.icntl[i] = 0;
     */
 
-    VT_OFF();
 
     /*
     *testout << "mumps matrix: n = " << num_globdofs << ", nz = " << nze << endl;
@@ -842,7 +837,6 @@ namespace ngla
 
     cout << IM(1) << " done " << endl;
     
-    VT_ON();
   }
   
   
@@ -857,7 +851,6 @@ namespace ngla
     x.Distribute();
     y.SetParallelStatus (CUMULATED);
 
-    VT_OFF();
 
     int ntasks = MyMPI_GetNTasks();
     int id = MyMPI_GetId();
@@ -924,7 +917,6 @@ namespace ngla
 	  }
       }
 
-    VT_ON();
   }
   
 
