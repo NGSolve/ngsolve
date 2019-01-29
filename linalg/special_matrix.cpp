@@ -80,6 +80,11 @@ namespace ngla
   
   void EmbeddedMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
+    if (Height() != y.Size()) throw Exception("Embedded matrix, h = "+ToString(Height())
+                                              + " != y.size = " + ToString(y.Size()));
+    if (range.Size() != mat->Height()) throw Exception("range mismatch");
+    if (Width() != x.Size()) throw Exception("Embedded matrix, w = "+ToString(Width())
+                                             + " != x.Size() = " + ToString(x.Size()));
     y = 0;
     y.Range(range) = *mat * x;
   }

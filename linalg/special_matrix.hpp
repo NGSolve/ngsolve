@@ -143,12 +143,12 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override
     {
-      return mat->CreateColVector();
+      return CreateBaseVector(width, false, 1);
     }
     
     virtual AutoVector CreateColVector () const override
     {
-      return CreateBaseVector(range.Size(), false, 1);
+      return mat->CreateColVector();
     }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
