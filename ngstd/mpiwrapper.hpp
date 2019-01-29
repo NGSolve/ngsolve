@@ -430,6 +430,7 @@ public:
     MPI_Comm comm;
     bool owns_comm;
     PyMPI_Comm (MPI_Comm _comm, bool _owns_comm = false) : comm(_comm), owns_comm(_owns_comm) { }
+    PyMPI_Comm (const PyMPI_Comm & c) = delete;
     ~PyMPI_Comm () {
       if (owns_comm)
 	MPI_Comm_free(&comm);

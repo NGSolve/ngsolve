@@ -327,7 +327,7 @@ nr : int
   
   
   typedef PML_Transformation PML;
-  
+
   py::class_<MeshAccess, shared_ptr<MeshAccess>> mesh_access(m, "Mesh", docu_string(R"raw_string(
 NGSolve interface to the Netgen mesh. Provides access and functionality
 to use the mesh for finite element calculations.
@@ -344,20 +344,23 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("ngmesh"),
          "Make an NGSolve-mesh from a Netgen-mesh")
 
-    .def(py::init([](const string & filename, PyMPI_Comm c)
+    .def(py::init([](const string & filename, shared_ptr<PyMPI_Comm> c)
                   {
-                    ngs_comm = c.comm;
-                    NGSOStream::SetGlobalActive (c.Rank()==0);
-                    return make_shared<MeshAccess>(filename, c.comm);
+		    MPI_Comm comm = c ? c->comm : ngs_comm;
+                    NGSOStream::SetGlobalActive (MyMPI_GetId(comm)==0);
+                    return make_shared<MeshAccess>(filename, comm);
                   }),
-         py::arg("filename"), py::arg("comm")=PyMPI_Comm(MPI_COMM_WORLD),
+         py::arg("filename"), py::arg("comm")=nullptr,
          "Load a mesh from file.\n"
          "In MPI-parallel mode the mesh is distributed over the MPI-group given by the communicator (WIP!)")
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
          { return self == other; }, py::arg("mesh"))
-    
+     .def_property_readonly("comm", [](const MeshAccess& ma)
+                           { return make_shared<PyMPI_Comm>(ma.GetCommunicator()); },
+                           "MPI-communicator the Mesh lives in")
+   
     .def(NGSPickle<MeshAccess>())
     /*
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
