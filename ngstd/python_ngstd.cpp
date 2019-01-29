@@ -593,25 +593,25 @@ threads : int
     ;
 
   
-  py::class_<PyMPI_Comm> (m, "MPI_Comm")
+  py::class_<PyMPI_Comm, shared_ptr<PyMPI_Comm>> (m, "MPI_Comm")
     // .def_property_readonly ("rank", &PyMPI_Comm::Rank)
     // .def_property_readonly ("size", &PyMPI_Comm::Size)
-    .def_property_readonly ("rank", [](PyMPI_Comm c) { cout << "rank for " << c.comm << endl; return c.Rank(); })
-    .def_property_readonly ("size", [](PyMPI_Comm c) { cout << "size for " << c.comm << endl;return c.Size(); })
-    .def("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
+    .def_property_readonly ("rank", [](PyMPI_Comm & c) { cout << "rank for " << c.comm << endl; return c.Rank(); })
+    .def_property_readonly ("size", [](PyMPI_Comm & c) { cout << "size for " << c.comm << endl;return c.Size(); })
+    .def("Barrier", [](PyMPI_Comm & c) { MyMPI_Barrier(c.comm); })
 #ifdef PARALLEL
-    .def("WTime", [](PyMPI_Comm c) { return MPI_Wtime(); })
+    .def("WTime", [](PyMPI_Comm  & c) { return MPI_Wtime(); })
 #endif
-    .def("Sum", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("SubComm", [](PyMPI_Comm c, py::object proc_list) {
+    .def("Sum", [](PyMPI_Comm  & c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
+    .def("Min", [](PyMPI_Comm  & c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
+    .def("Max", [](PyMPI_Comm  & c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
+    .def("Sum", [](PyMPI_Comm  & c, int x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
+    .def("Min", [](PyMPI_Comm  & c, int x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
+    .def("Max", [](PyMPI_Comm  & c, int x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
+    .def("Sum", [](PyMPI_Comm  & c, size_t x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
+    .def("Min", [](PyMPI_Comm  & c, size_t x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
+    .def("Max", [](PyMPI_Comm  & c, size_t x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
+    .def("SubComm", [](PyMPI_Comm  & c, py::object proc_list) -> shared_ptr<PyMPI_Comm> {
 	Array<int> procs;
 	if (py::extract<py::list> (proc_list).check())
 	  procs = makeCArray<int> (proc_list);
@@ -620,16 +620,16 @@ threads : int
 	}
 	if(!procs.Size()) {
 	  cout << "warning, tried to construct empty communicator, returning MPI_COMM_NULL" << endl;
-	  return PyMPI_Comm(MPI_COMM_NULL);
+	  return make_shared<PyMPI_Comm>(MPI_COMM_NULL);
 	}
 	MPI_Comm subcomm = MyMPI_SubCommunicator(c.comm, procs);
-	return PyMPI_Comm(subcomm, true);
+	return make_shared<PyMPI_Comm>(subcomm, true);
       }, py::arg("procs"));
     ;
 
     using namespace netgen;
     
-  m.def("SetNGSComm", [&](PyMPI_Comm c)
+  m.def("SetNGSComm", [&](PyMPI_Comm & c)
 	{
 	  netgen::ng_comm = c.comm;
 	  ngs_comm = c.comm;
@@ -644,7 +644,7 @@ threads : int
           
           static MyMPI mympi(1, (char**)pptr);
 	  netgen::ng_comm = ngs_comm;
-	  return PyMPI_Comm(ngs_comm);
+	  return make_shared<PyMPI_Comm>(ngs_comm);
         });
 
 }

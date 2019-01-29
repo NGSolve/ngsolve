@@ -118,7 +118,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #ifdef PARALLEL
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
         return self.SubSet(take_dofs); }, py::arg("dofs"))
-    .def(py::init([](py::object procs, PyMPI_Comm comm) {
+    .def(py::init([](py::object procs, shared_ptr<PyMPI_Comm> comm) {
 	  size_t n = py::len(procs);
 	  TableCreator<int> ct(n);
 	  while (!ct.Done()) {
@@ -130,8 +130,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	    }
 	    ct++;
 	  }
-	  return new ParallelDofs(comm.comm, ct.MoveTable());
-	}), "dist_procs"_a, "comm"_a)
+	  return new ParallelDofs(comm->comm, ct.MoveTable());
+	}), py::arg("dist_procs"), py::arg("comm"))
 #endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
