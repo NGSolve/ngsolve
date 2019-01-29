@@ -734,11 +734,11 @@ namespace ngcomp
     // the connection to netgen global variables
     ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
-#ifdef PARALLEL
-    // best we can do at the moment to get py-mpi running
+
+    // if there is a mesh, we take it's communicator
     mesh_comm = (amesh!=nullptr) ? amesh->GetCommunicator() : ngs_comm;
-    mesh.SetCommunicator(mesh_comm);
-#endif
+
+    // if there is a mesh, use set the global mesh-ptr accordingly
     mesh.SelectMesh();
     if(mesh.Valid())
       {
@@ -747,7 +747,10 @@ namespace ngcomp
       }
   }
 
-
+  MeshAccess :: MeshAccess (string filename, MPI_Comm amesh_comm)
+    : mesh(filename, amesh_comm), mesh_comm(amesh_comm)
+  { }
+  
   MeshAccess :: ~MeshAccess ()
   {
     // delete mesh;
@@ -755,24 +758,10 @@ namespace ngcomp
   }
 
   
-  void MeshAccess :: SetCommunicator (MPI_Comm acomm)
-  {
-#ifdef PARALLEL
-    mesh.SetCommunicator(acomm);
-    mesh_comm = mesh.GetCommunicator();
-#else
-    mesh_comm = acomm;
-#endif
-  }
-
-
   void MeshAccess :: LoadMesh (const string & filename)
   {
     static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);
-#ifdef PARALLEL
-    mesh.SetCommunicator(this->mesh_comm);
-#endif
-    mesh.LoadMesh (filename);
+    mesh.LoadMesh (filename, this->mesh_comm);
     UpdateBuffers();
     if (!mesh.Valid())
       throw Exception ("could not load mesh from '" + filename + "'");
@@ -781,10 +770,7 @@ namespace ngcomp
   void MeshAccess :: LoadMesh (istream & str)
   {
     static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);    
-#ifdef PARALLEL
-    mesh.SetCommunicator(this->mesh_comm);
-#endif
-    mesh.LoadMesh (str);
+    mesh.LoadMesh (str, this->mesh_comm);
     UpdateBuffers();
   }
 
