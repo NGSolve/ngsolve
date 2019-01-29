@@ -1233,7 +1233,7 @@ namespace ngcomp
   class ProgressOutput
   {
     shared_ptr<MeshAccess> ma;
-    MPI_comm comm;
+    MPI_Comm comm;
     string task;
     size_t total;
     double prevtime;
