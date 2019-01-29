@@ -1135,6 +1135,7 @@ namespace ngcomp
     template <int DIMS, int DIMR> friend class Ng_ConstElementTransformation;
 
 
+    void SetCommunicator (MPI_Comm acomm);
     MPI_Comm GetCommunicator () const { return mesh_comm; }
 
     /**
@@ -1232,6 +1233,7 @@ namespace ngcomp
   class ProgressOutput
   {
     shared_ptr<MeshAccess> ma;
+    MPI_comm comm;
     string task;
     size_t total;
     double prevtime;
