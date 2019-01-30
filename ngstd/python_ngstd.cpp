@@ -622,6 +622,9 @@ threads : int
 	  cout << "warning, tried to construct empty communicator, returning MPI_COMM_NULL" << endl;
 	  return make_shared<PyMPI_Comm>(MPI_COMM_NULL);
 	}
+	else if(procs.Size()==2) {
+	  throw Exception("Sorry, NGSolve cannot handle NP=2.");
+	}
 	MPI_Comm subcomm = MyMPI_SubCommunicator(c.comm, procs);
 	return make_shared<PyMPI_Comm>(subcomm, true);
       }, py::arg("procs"));
@@ -631,7 +634,12 @@ threads : int
     
   m.def("SetNGSComm", [&](PyMPI_Comm & c)
 	{
+	  if(MyMPI_GetNTasks(c.comm)==2) {
+	    throw Exception("Sorry, NGSolve cannot handle NP=2.");
+	  }
 	  netgen::ng_comm = c.comm;
+	  ngcore::id = MyMPI_GetId(c.comm);
+	  ngcore::ntasks = MyMPI_GetNTasks(c.comm);
 	  ngs_comm = c.comm;
 	});  
 
@@ -644,6 +652,8 @@ threads : int
           
           static MyMPI mympi(1, (char**)pptr);
 	  netgen::ng_comm = ngs_comm;
+	  ngcore::id = MyMPI_GetId(ngs_comm);
+	  ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
 	  return make_shared<PyMPI_Comm>(ngs_comm);
         });
 
