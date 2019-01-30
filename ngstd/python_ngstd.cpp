@@ -4,6 +4,8 @@
 #include <Python.h>
 #include <pybind11/numpy.h>
 
+// include netgen-header to get access to PyMPI
+#include <myadt.hpp>
 
 
 PythonEnvironment pyenv;
@@ -592,46 +594,6 @@ threads : int
                     }))
     ;
 
-  
-  py::class_<PyMPI_Comm, shared_ptr<PyMPI_Comm>> (m, "MPI_Comm")
-    // .def_property_readonly ("rank", &PyMPI_Comm::Rank)
-    // .def_property_readonly ("size", &PyMPI_Comm::Size)
-    .def_property_readonly ("rank", [](PyMPI_Comm & c) { cout << "rank for " << c.comm << endl; return c.Rank(); })
-    .def_property_readonly ("size", [](PyMPI_Comm & c) { cout << "size for " << c.comm << endl;return c.Size(); })
-    .def("Barrier", [](PyMPI_Comm & c) { MyMPI_Barrier(c.comm); })
-#ifdef PARALLEL
-    .def("WTime", [](PyMPI_Comm  & c) { return MPI_Wtime(); })
-#endif
-    .def("Sum", [](PyMPI_Comm  & c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm  & c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm  & c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm  & c, int x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm  & c, int x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm  & c, int x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm  & c, size_t x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm  & c, size_t x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm  & c, size_t x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("SubComm", [](PyMPI_Comm  & c, py::object proc_list) -> shared_ptr<PyMPI_Comm> {
-	Array<int> procs;
-	if (py::extract<py::list> (proc_list).check())
-	  procs = makeCArray<int> (proc_list);
-	else {
-	  throw Exception("SubComm needs a list or None");
-	}
-	if(!procs.Size()) {
-	  cout << "warning, tried to construct empty communicator, returning MPI_COMM_NULL" << endl;
-	  return make_shared<PyMPI_Comm>(MPI_COMM_NULL);
-	}
-	else if(procs.Size()==2) {
-	  throw Exception("Sorry, NGSolve cannot handle NP=2.");
-	}
-	MPI_Comm subcomm = MyMPI_SubCommunicator(c.comm, procs);
-	return make_shared<PyMPI_Comm>(subcomm, true);
-      }, py::arg("procs"));
-    ;
-
-    using namespace netgen;
-    
   m.def("SetNGSComm", [&](PyMPI_Comm & c)
 	{
 	  if(MyMPI_GetNTasks(c.comm)==2) {
