@@ -7,6 +7,7 @@
 /*********************************************************************/
 
 #include <solve.hpp>
+#include "hypre_ams_precond.hpp"
 
 namespace ngcomp
 {
