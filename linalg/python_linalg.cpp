@@ -3,6 +3,8 @@
 #include <parallelngs.hpp>
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
+// include netgen-header to get access to PyMPI
+#include <myadt.hpp>
 
 
 template<typename T>
