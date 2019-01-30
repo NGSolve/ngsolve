@@ -749,7 +749,9 @@ namespace ngcomp
 
   MeshAccess :: MeshAccess (string filename, MPI_Comm amesh_comm)
     : mesh(filename, amesh_comm), mesh_comm(amesh_comm)
-  { }
+  {
+    UpdateBuffers();
+  }
   
   MeshAccess :: ~MeshAccess ()
   {
