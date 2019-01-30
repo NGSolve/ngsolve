@@ -8,7 +8,8 @@ namespace ngcomp
       : FESpace (bfes->GetMeshAccess(), bfes->GetFlags()), space(bfes)
   {
     type = "wrapped-" + space->type;
-    for (auto vb : {VOL, BND, BBND, BBBND})
+    auto vbs = {VOL, BND, BBND, BBBND};
+    for (auto vb : vbs)
     {
       evaluator[vb] = space->GetEvaluator(vb);
       flux_evaluator[vb] = space->GetFluxEvaluator(vb);
