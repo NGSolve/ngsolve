@@ -105,8 +105,6 @@ namespace ngcomp
     ScatterDofData (global_nums, pardofs);
     cout << IM(3) << "num glob dofs = " << num_glob_dofs << endl;
 	
-    VT_OFF();
-	
     // range of my master dofs ...
     ilower = first_master_dof[id];
     iupper = first_master_dof[id+1]-1;
@@ -162,7 +160,6 @@ namespace ngcomp
     cout << IM(2) << "Call BoomerAMGSetup" << endl;
     HYPRE_BoomerAMGSetup (precond, parcsr_A, par_b, par_x);
 	
-    VT_ON();
   }
 
 
@@ -230,9 +227,7 @@ namespace ngcomp
    
     // HYPRE_IJVectorPrint(b, "IJ.out.b");
 
-    VT_OFF();
     HYPRE_BoomerAMGSolve(precond, parcsr_A, par_b, par_x);
-    VT_ON();
 
     // HYPRE_IJVectorPrint(x, "IJ.out.x");
     
