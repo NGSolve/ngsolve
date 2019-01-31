@@ -881,8 +881,8 @@ namespace ngla
   
   void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer ts("ConstantEBE mult sequential");
-    static Timer tp("ConstantEBE mult parallel");
+    static Timer t("ConstantEBE mult");
+    static Timer tcol("ConstantEBE mult coloring");
     static Timer tpmult("ConstantEBE mult parallel mult");
 
     auto fx = x.FV<double>();
@@ -901,7 +901,7 @@ namespace ngla
             fy(col_dnums[i]) += s * hy;
           }
         */
-        RegionTimer reg(tp);
+        RegionTimer reg(tcol);
 
         for (auto col : col_coloring)
           ParallelForRange
@@ -919,8 +919,11 @@ namespace ngla
                    for (size_t i = 0; i < num; i++)
                      hx.Row(i) = fx(row_dnums[col[bi+i]]);
                    
-                   hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
-
+                   {
+                     RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
+                   }
+                   
                    for (size_t i = 0; i < num; i++)
                      fy(col_dnums[col[bi+i]]) += s * hy.Row(i);
                  }
@@ -928,7 +931,7 @@ namespace ngla
       }
     else
       {
-        RegionTimer reg(tp);
+        RegionTimer reg(t);
         ParallelForRange
           (row_dnums.Size(), [&] (IntRange r)
            {
@@ -966,16 +969,16 @@ namespace ngla
   
   void ConstantElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer ts("ConstantEBE mult trans");
-    static Timer tp("ConstantEBE mult trans parallel");
-    RegionTimer reg(ts);
+    static Timer t("ConstantEBE mult trans");
+    static Timer tcol("ConstantEBE mult trans coloring");
+    static Timer tpmult("ConstantEBE mult trans mult");    
 
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
     
     if (!disjoint_rows)
       { // use coloring
-        RegionTimer reg(tp);
+        RegionTimer reg(tcol);
 
         for (auto col : row_coloring)
           ParallelForRange
@@ -993,8 +996,11 @@ namespace ngla
                    for (size_t i = 0; i < num; i++)
                      hx.Row(i) = fx(col_dnums[col[bi+i]]);
                    
-                   hy.Rows(0, num) = hx.Rows(0, num) * matrix;
-
+                   {
+                     RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     hy.Rows(0, num) = hx.Rows(0, num) * matrix;
+                   }
+                   
                    for (size_t i = 0; i < num; i++)
                      fy(row_dnums[col[bi+i]]) += s * hy.Row(i);
                  }
@@ -1002,7 +1008,7 @@ namespace ngla
       }
     else
       {
-        RegionTimer reg(tp);
+        RegionTimer reg(t);
         ParallelForRange
           (row_dnums.Size(), [&] (IntRange r)
            {
@@ -1018,8 +1024,11 @@ namespace ngla
                  for (size_t i = 0; i < num; i++)
                    hx.Row(i) = fx(col_dnums[bi+i]);
                  
-                 hy.Rows(0, num) = hx.Rows(0, num) * matrix;
-
+                 {
+                   RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   hy.Rows(0, num) = hx.Rows(0, num) * matrix;
+                 }
+                 
                  for (size_t i = 0; i < num; i++)
                    fy(row_dnums[bi+i]) += s * hy.Row(i);
                }
