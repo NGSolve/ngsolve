@@ -14,7 +14,7 @@ namespace ngcomp {
     : FESpace(aspace->GetMeshAccess(), flags), space(aspace), used_idnrs(aused_idnrs)
     {
       type = "Periodic" + space->type;
-      for(auto vb : {VOL,BND,BBND})
+      for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
         {
           evaluator[vb] = space->GetEvaluator(vb);
           flux_evaluator[vb] = space->GetFluxEvaluator(vb);
