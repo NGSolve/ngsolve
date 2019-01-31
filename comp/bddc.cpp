@@ -1,5 +1,6 @@
 #include <comp.hpp>
 // #include <solve.hpp>
+#include "hypre_precond.hpp"
 
 
 namespace ngcomp
