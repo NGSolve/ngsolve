@@ -211,8 +211,7 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        auto vbs = { VOL,BND, BBND, BBBND };
-        for (auto vb : vbs)
+        for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
           {
             if (evaluator[vb])
               evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);

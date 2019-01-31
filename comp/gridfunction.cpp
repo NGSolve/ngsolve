@@ -927,8 +927,8 @@ namespace ngcomp
 	      vec[i] = make_shared<ParallelVVector<TV>> (ndof, this->GetFESpace()->GetParallelDofs(), CUMULATED);
 	    else
 #endif
- 	      vec[i] = make_shared<VVector<TV>> (ndof);
-	    
+ 	      // vec[i] = make_shared<VVector<TV>> (ndof);
+              vec[i] = make_shared<S_BaseVectorPtr<TSCAL>> (ndof, this->GetFESpace()->GetDimension()*this->cacheblocksize);
             
 	    *vec[i] = TSCAL(0);
 
