@@ -899,8 +899,8 @@ namespace ngcomp
   }
 
 
-  template <class TV>
-  void T_GridFunction<TV> :: Update () 
+  template <class TSCAL>
+  void S_GridFunction<TSCAL> :: Update () 
   {
     try
       {
