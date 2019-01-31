@@ -10,11 +10,11 @@ namespace ngcomp
     type = "wrapped-" + space->type;
     // gcc 8 workaround
     for (auto vb : std::array{VOL, BND, BBND, BBBND})
-      {
-	evaluator[vb] = space->GetEvaluator(vb);
-	flux_evaluator[vb] = space->GetFluxEvaluator(vb);
-	integrator[vb] = space->GetIntegrator(vb);
-      }
+    {
+      evaluator[vb] = space->GetEvaluator(vb);
+      flux_evaluator[vb] = space->GetFluxEvaluator(vb);
+      integrator[vb] = space->GetIntegrator(vb);
+    }
     iscomplex = space->IsComplex();
   }
 
