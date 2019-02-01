@@ -1308,7 +1308,7 @@ namespace ngla
     for (auto i : indi) cnt[i]++;
 
     auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
-    for (auto k : ::Range(indi))
+    for (auto k : ngstd::Range(indi))
       (*matrix)(indi[k], indj[k]) = val[k];
     return matrix;
   }
