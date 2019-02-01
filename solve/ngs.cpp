@@ -45,7 +45,7 @@ int main(int argc, char ** argv)
   char filename[100];
   sprintf (filename, "ngs.prof.%d", id);
   FILE *prof = fopen(filename,"w");
-  NgProfiler::Print (prof);
+  netgen::NgProfiler::Print (prof);
   fclose(prof);
 #endif
 

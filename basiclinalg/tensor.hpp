@@ -1,5 +1,5 @@
 #include <bla.hpp>
-using namespace ngbla;
+// using namespace ngbla;
 
 
 
@@ -35,7 +35,8 @@ int main ()
 */
 
 
-
+namespace ngbla
+{
 
 
 enum typestar { STAR };
@@ -367,3 +368,4 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
 
 
 
+}
