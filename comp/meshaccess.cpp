@@ -2002,11 +2002,7 @@ namespace ngcomp
   
   void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
-    // procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
-    // NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );
-    cout << "get dist-procs for " << node << endl;
     auto tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
-    cout << "got: " << get<0>(tup) << " " << get<1>(tup) << endl;
     procs.SetSize(get<0>(tup));
     auto* ptr = get<1>(tup);
     for(auto k:Range(procs.Size())) procs[k] = ptr[k];
