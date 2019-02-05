@@ -899,8 +899,8 @@ namespace ngcomp
   }
 
 
-  template <class TV>
-  void T_GridFunction<TV> :: Update () 
+  template <class TSCAL>
+  void S_GridFunction<TSCAL> :: Update () 
   {
     try
       {
@@ -924,7 +924,8 @@ namespace ngcomp
 	
 #ifdef PARALLEL
 	    if ( this->GetFESpace()->GetParallelDofs() )
-	      vec[i] = make_shared<ParallelVVector<TV>> (ndof, this->GetFESpace()->GetParallelDofs(), CUMULATED);
+	      vec[i] = make_shared<S_ParallelBaseVectorPtr<TSCAL>> (ndof, this->GetFESpace()->GetDimension()*this->cacheblocksize,
+								    this->GetFESpace()->GetParallelDofs(), CUMULATED);
 	    else
 #endif
  	      // vec[i] = make_shared<VVector<TV>> (ndof);
