@@ -624,6 +624,10 @@ namespace ngfem
          if (proxy && !proxies.Contains(proxy))
            proxies.Append (proxy);
        });
+
+    for (auto proxy : proxies)
+      if (!proxy->Evaluator()->SupportsVB(vb))
+        throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
   }
 
   /*
@@ -879,10 +883,10 @@ namespace ngfem
 
     for (auto proxy : trial_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is misssing");
+        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
     for (auto proxy : test_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is misssing");
+        throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
     
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
