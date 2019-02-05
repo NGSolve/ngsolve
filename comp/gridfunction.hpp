@@ -290,6 +290,8 @@ namespace ngcomp
     virtual void Load (istream & ist);
     virtual void Save (ostream & ost) const;
 
+    virtual void Update ();
+
   private:
     template <int N, NODE_TYPE NT> void LoadNodeType (istream & ist);
 
@@ -316,7 +318,6 @@ namespace ngcomp
 
     virtual ~T_GridFunction ();
 
-    virtual void Update ();
   };
 
 
