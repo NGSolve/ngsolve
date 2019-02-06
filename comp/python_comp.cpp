@@ -3262,6 +3262,32 @@ deformation : ngsolve.comp.GridFunction
           py::call_guard<py::gil_scoped_release>())
      ;
 
+   
+   m.def("SetNGSComm", [&](PyMPI_Comm & c)
+	 {
+	   if(MyMPI_GetNTasks(c.comm)==2) {
+	     throw Exception("Sorry, NGSolve cannot handle NP=2.");
+	   }
+	   netgen::ng_comm = c.comm;
+	   ngcore::id = MyMPI_GetId(c.comm);
+	   ngcore::ntasks = MyMPI_GetNTasks(c.comm);
+	   ngs_comm = c.comm;
+	 });  
+
+   m.def("MPI_Init", [&]()
+	 {
+	   const char * progname = "ngslib";
+	   typedef const char * pchar;
+	   pchar ptrs[2] = { progname, nullptr };
+	   pchar * pptr = &ptrs[0];
+          
+	   static MyMPI mympi(1, (char**)pptr);
+	   netgen::ng_comm = ngs_comm;
+	   ngcore::id = MyMPI_GetId(ngs_comm);
+	   ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
+	   return make_shared<PyMPI_Comm>(ngs_comm);
+	 });
+
   /////////////////////////////////////////////////////////////////////////////////////
 }
 

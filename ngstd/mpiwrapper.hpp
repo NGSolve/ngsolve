@@ -23,6 +23,14 @@
 
 #endif
 
+namespace netgen
+{
+#ifndef PARALLEL
+  typedef int MPI_Comm;
+#endif
+  extern DLL_HEADER MPI_Comm ng_comm;
+  class PyMPI_Comm;
+}
 
 namespace ngstd
 {
@@ -343,6 +351,7 @@ public:
       
     // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     ngs_comm = MPI_COMM_WORLD;
+    netgen::ng_comm = ngs_comm;
     NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
     
     if (MyMPI_GetNTasks (ngs_comm) > 1)
@@ -405,14 +414,8 @@ public:
 
 #endif
 
-  // for Python wrapping ...
-  struct PyMPI_Comm {
-    MPI_Comm comm;
-    PyMPI_Comm (MPI_Comm _comm) : comm(_comm) { ; }
-    auto Rank() const { return MyMPI_GetId(comm); }
-    auto Size() const { return MyMPI_GetNTasks(comm); }
-  };
-
+  using netgen::PyMPI_Comm;
+  
 }
 
 #endif
