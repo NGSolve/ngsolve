@@ -242,6 +242,9 @@ namespace ngcomp
                           LocalHeap & lh) const;
     */
     
+    template <int DIM>
+    void ApplyM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                     LocalHeap & lh) const;
 
     template <int DIM>
     void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec, Region * definedon,

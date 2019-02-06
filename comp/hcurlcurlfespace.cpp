@@ -1102,7 +1102,7 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     if (!ei.IsVolume())
     {
-      if(!discontinuous || issurfacespace)
+      if(!discontinuous || (issurfacespace && ei.VB() == BND))
       {
         auto feseg = new (alloc) HCurlCurlSurfaceFE<ET_SEGM> (order);
         auto fetr = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
