@@ -98,6 +98,10 @@ namespace ngla
       : S_BaseVectorPtr<TSCAL> (as, ES, (void*)adata)
     { ; }
 
+    VFlatVector (FlatVector<T> fv) 
+      : S_BaseVectorPtr<TSCAL> (fv.Size(), ES, fv.Data())
+    { ; }
+    
     VFlatVector & operator= (TSCAL s1)
     {
       BaseVector::operator= (s1);
@@ -110,6 +114,17 @@ namespace ngla
       BaseVector::operator= (v);
       return *this;
     }
+
+    FlatVector<T> FV () const throw()
+    {
+      return FlatVector<T> (this->size, this->pdata);
+    }
+    
+    T & operator() (size_t i) const
+    {
+      return static_cast<T*> (static_cast<void*> (this->pdata))[i];
+    }
+
   };
 
 
