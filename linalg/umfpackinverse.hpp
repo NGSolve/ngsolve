@@ -69,6 +69,9 @@ namespace ngla
     ///
     virtual ostream & Print (ostream & ost) const;
 
+    virtual bool SupportsUpdate() const { return true; }     
+    virtual void Update();
+
     virtual Array<MemoryUsage> GetMemoryUsage () const
     {
       return { MemoryUsage ("Umfpack", nze*sizeof(TM), 1) };

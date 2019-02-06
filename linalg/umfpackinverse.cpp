@@ -129,8 +129,6 @@ namespace ngla
             status = umfpack_zl_numeric (&rowstart[0], &indices[0], data, nullptr, Symbolic, &Numeric, nullptr, nullptr );
             umfpack_zl_report_status( nullptr, status );
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
-
-            umfpack_zl_free_symbolic ( &Symbolic );
           }
         else
           {
@@ -141,8 +139,6 @@ namespace ngla
             status = umfpack_dl_numeric (&rowstart[0], &indices[0], data, Symbolic, &Numeric, nullptr, nullptr );
             umfpack_dl_report_status( nullptr, status );
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
-
-            umfpack_dl_free_symbolic ( &Symbolic );
           }
       }
     catch(Exception e)
@@ -417,9 +413,15 @@ namespace ngla
   UmfpackInverseTM<TM> :: ~UmfpackInverseTM()
   {
     if(is_complex)
-      umfpack_zl_free_numeric ( &Numeric );
+      {
+        umfpack_zl_free_symbolic ( &Symbolic );
+        umfpack_zl_free_numeric ( &Numeric );
+      }
     else
-      umfpack_dl_free_numeric ( &Numeric );
+      {
+        umfpack_dl_free_symbolic ( &Symbolic );
+        umfpack_dl_free_numeric ( &Numeric );
+      }
 
 #ifdef USE_MKL
     mkl_free_buffers();
@@ -439,6 +441,45 @@ namespace ngla
     if (print)
       cout << ", sym = " << int(symmetric)
 	   << ", complex = " << is_complex << endl;
+  }
+
+  template<class TM>
+  void UmfpackInverseTM<TM> :: Update()
+  {
+    cout << IM(3) << "call umfpack update..." << flush;
+
+    if (task_manager) task_manager -> StopWorkers();
+
+    int status;
+    double *data = reinterpret_cast<double *>(&values[0]);
+    try
+      {
+        if(is_complex)
+          {
+            umfpack_zl_free_numeric ( &Numeric );
+
+            status = umfpack_zl_numeric (&rowstart[0], &indices[0], data, nullptr, Symbolic, &Numeric, nullptr, nullptr );
+            umfpack_zl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+          }
+        else
+          {
+            umfpack_dl_free_numeric ( &Numeric );
+
+            status = umfpack_dl_numeric (&rowstart[0], &indices[0], data, Symbolic, &Numeric, nullptr, nullptr );
+            umfpack_dl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+          }
+      }
+    catch(Exception e)
+      {
+        if (task_manager) task_manager -> StartWorkers();
+        throw e;
+      }
+
+    if (task_manager) task_manager -> StartWorkers();
+
+    cout << IM(3) << " done" << endl;
   }
 
 
