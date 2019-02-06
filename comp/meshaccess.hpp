@@ -248,13 +248,8 @@ namespace ngcomp
   public:
     /// connects to Netgen - mesh
     MeshAccess (shared_ptr<netgen::Mesh> amesh = NULL);
-    /// loads mesh from file
-    MeshAccess (string filename, MPI_Comm amesh_comm = ngs_comm)
-      : MeshAccess()
-    {
-      mesh_comm = amesh_comm;
-      LoadMesh (filename);
-    }
+    /// loads new mesh from file
+    MeshAccess (string filename, MPI_Comm amesh_comm = ngs_comm);
     /// select this mesh in netgen visuaization
     void SelectMesh() const;
     /// not much to do 
@@ -1232,6 +1227,7 @@ namespace ngcomp
   class ProgressOutput
   {
     shared_ptr<MeshAccess> ma;
+    MPI_Comm comm;
     string task;
     size_t total;
     double prevtime;
