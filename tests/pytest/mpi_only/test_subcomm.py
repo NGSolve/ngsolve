@@ -38,7 +38,7 @@ def test_load_ngs_sub2():
     assert comm.size>=5
     groups = [[1,2,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
-    from ngsolve.ngstd import SetNGSComm
+    from ngsolve.comp import SetNGSComm
     SetNGSComm(sub_comm)
     newcomm = MPI_Init()
     assert newcomm.size == sub_comm.size
@@ -85,7 +85,7 @@ def test_load_ng_sub2():
     assert comm.size>=5
     groups = [[0,2,3,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
-    from ngsolve.ngstd import SetNGSComm
+    from ngsolve.comp import SetNGSComm
     SetNGSComm(sub_comm)
     import netgen
     ngmesh = netgen.meshing.Mesh(dim=2)
@@ -183,7 +183,7 @@ def test_mesh_dist_sub2():
     groups = [[1,2,3]]
     assert comm.size>=5
     sub_comm = comm.SubComm(find_group(comm, groups))
-    from ngsolve.ngstd import SetNGSComm
+    from ngsolve.comp import SetNGSComm
     SetNGSComm(sub_comm)
     import netgen
     ngmesh2d = netgen.meshing.Mesh(dim=2)
