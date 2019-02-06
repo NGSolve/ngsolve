@@ -4,8 +4,6 @@
 #include <Python.h>
 #include <pybind11/numpy.h>
 
-// include netgen-header to get access to PyMPI
-#include <myadt.hpp>
 
 
 PythonEnvironment pyenv;
