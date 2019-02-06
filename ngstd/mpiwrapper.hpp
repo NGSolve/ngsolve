@@ -142,7 +142,6 @@ namespace ngstd
     return id;
   }
 
-  
   INLINE void MyMPI_Barrier (MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - barrier");

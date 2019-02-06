@@ -36,7 +36,7 @@ namespace ngcomp
     {
       iscurved = true;
     }
-    
+
     virtual int SpaceDim () const override
     {
       return DIMR;
@@ -759,7 +759,7 @@ namespace ngcomp
     // Ng_LoadGeometry("");
   }
 
-  
+
   void MeshAccess :: LoadMesh (const string & filename)
   {
     static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);
