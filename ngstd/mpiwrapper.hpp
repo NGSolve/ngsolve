@@ -28,7 +28,7 @@ namespace netgen
 #ifndef PARALLEL
   typedef int MPI_Comm;
 #endif
-  extern MPI_Comm ng_comm;
+  extern DLL_HEADER MPI_Comm ng_comm;
   class PyMPI_Comm;
 }
 
