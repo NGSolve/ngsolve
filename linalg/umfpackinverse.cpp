@@ -448,6 +448,15 @@ namespace ngla
   {
     cout << IM(3) << "call umfpack update..." << flush;
 
+    auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
+
+    if (inner)
+      GetUmfpackMatrix (*castmatrix, SubsetFree (*inner));
+    else if (cluster)
+      GetUmfpackMatrix (*castmatrix, SubsetCluster (*cluster));
+    else
+      GetUmfpackMatrix (*castmatrix, SubsetAll());
+    
     if (task_manager) task_manager -> StopWorkers();
 
     int status;
