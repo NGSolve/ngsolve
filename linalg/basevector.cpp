@@ -20,6 +20,8 @@
 namespace ngla
 {
 
+  using namespace ngbla;
+  
 #ifdef PARALLEL
   class ParallelBaseVector;
 #endif
@@ -44,7 +46,7 @@ namespace ngla
     double parts[16];
     ParallelJob ([me,&parts] (TaskInfo ti)
                  {
-                   auto r = ::Range(me).Split (ti.task_nr, ti.ntasks);
+                   auto r = ngstd::Range(me).Split (ti.task_nr, ti.ntasks);
                    parts[ti.task_nr] = ngbla::L2Norm2 (me.Range(r));
                  }, 16);
     double sum = 0;
@@ -229,7 +231,7 @@ namespace ngla
   {
     size_t sum = 0;
     auto fv = FVDouble();
-    for (auto i : ::Range(fv))
+    for (auto i : ngstd::Range(fv))
       {
         double val = fv(i);
         sum += *reinterpret_cast<size_t*> (&val);
@@ -673,7 +675,7 @@ namespace ngla
     double parts[16];
     ParallelJob ([me,you,&parts] (TaskInfo ti)
                  {
-                   auto r = ::Range(me).Split (ti.task_nr, ti.ntasks);
+                   auto r = ngstd::Range(me).Split (ti.task_nr, ti.ntasks);
                    parts[ti.task_nr] =  ngbla::InnerProduct (me.Range(r), you.Range(r));
                  }, 16);
     double scal = 0;
@@ -797,21 +799,21 @@ namespace ngla
   
   BaseVector & BlockVector :: Scale (double scal)
   {
-    for (auto i : ::Range(vecs))
+    for (auto i : ngstd::Range(vecs))
       *vecs[i] *= scal;
     return *this;
   }
   
   BaseVector & BlockVector :: SetScalar (double scal)
   {
-    for (auto i : ::Range(vecs))
+    for (auto i : ngstd::Range(vecs))
       vecs[i]->SetScalar(scal);
     return *this;
   }
   
   ostream & BlockVector :: Print (ostream & ost) const
   {
-    for (auto i : ::Range(vecs))
+    for (auto i : ngstd::Range(vecs))
       vecs[i] -> Print(ost);
     return ost;
   }
@@ -819,7 +821,7 @@ namespace ngla
   BaseVector & BlockVector :: Set (double scal, const BaseVector & v)
   {
     auto & bv = dynamic_cast_BlockVector(v);
-    for (size_t i : ::Range(vecs))
+    for (size_t i : ngstd::Range(vecs))
       vecs[i] -> Set(scal, *bv[i]);
     return *this;
   }
@@ -827,7 +829,7 @@ namespace ngla
   BaseVector & BlockVector :: Add (double scal, const BaseVector & v)
   {
     auto & bv = dynamic_cast_BlockVector(v);
-    for (size_t i : ::Range(vecs))
+    for (size_t i : ngstd::Range(vecs))
       vecs[i] -> Add(scal, *bv[i]);
     return *this;
   }
