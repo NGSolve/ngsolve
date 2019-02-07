@@ -1,7 +1,7 @@
 if(NETGEN_USE_PYTHON)
   if(NETGEN_USE_MPI)
   add_test(NAME pytest COMMAND ngspy -m pytest  --ignore=${CMAKE_CURRENT_SOURCE_DIR}/mpi_only WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  add_test(NAME mpi_pytest COMMAND mpirun -np 5 ngspy -m pytest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mpi_only )
+  add_test(NAME mpi_pytest COMMAND mpirun -np 5 --allow-run-as-root ngspy -m pytest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mpi_only )
 else()
   add_test(NAME pytest COMMAND ${NETGEN_PYTHON_EXECUTABLE} -m pytest  --ignore=${CMAKE_CURRENT_SOURCE_DIR}/mpi_only WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
