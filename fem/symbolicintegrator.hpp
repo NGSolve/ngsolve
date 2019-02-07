@@ -215,7 +215,7 @@ public:
   }
   */
   
-  virtual bool ElementwiseConstant () const  override{ return true; }
+  // virtual bool ElementwiseConstant () const  override{ return true; }
 
   NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
                                               FlatVector<bool> nonzero,
@@ -428,7 +428,7 @@ public:
   {
     // mat = 0;   // take care: unused elements not zerod !!!!
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = Dim() * fel.GetRange(comp);
+    IntRange r = Dim() * BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mir, mat.Rows(r));
   }
   

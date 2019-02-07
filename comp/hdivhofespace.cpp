@@ -1426,9 +1426,9 @@ namespace ngcomp
 	    for (int i = 0; i < nfa; i++)
 	      {
 		if ( ! fine_facet[i] ) continue;
-		Array<int> faces;
-		ma->GetFaceEdges (i,faces);	      
-		
+		// Array<int> faces;
+		// ma->GetFaceEdges (i,faces);	      
+		auto faces = ma->GetFaceEdges(i);
 	
 		for ( int j = 0; j < faces.Size(); j++ )
 		  {

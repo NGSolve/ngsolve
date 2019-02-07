@@ -101,11 +101,20 @@ namespace ngcomp
       return Range (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
+    virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                    shared_ptr<Region> defon,
+                                                    LocalHeap & lh) const override;
+    
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
-    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
 
+    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace) const override;
+    virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                           LocalHeap & lh) const override;
+    virtual void GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                                LocalHeap & lh) const override;
 
   protected:
 
@@ -211,9 +220,14 @@ namespace ngcomp
     static DocInfo GetDocu ();
     
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+
+    virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                    shared_ptr<Region> defon,
+                                                    LocalHeap & lh) const override;
+    
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
-    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * defindon,
                          LocalHeap & lh) const override;
 
     template <int DIM>
@@ -229,12 +243,15 @@ namespace ngcomp
                           LocalHeap & lh) const;
     */
     
+    template <int DIM>
+    void ApplyM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                     LocalHeap & lh) const;
 
     template <int DIM>
-    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
+    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                       LocalHeap & lh) const;
     template <int DIM>
-    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
+    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const;
 
     virtual string GetClassName () const override

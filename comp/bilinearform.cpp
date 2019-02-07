@@ -104,6 +104,7 @@ namespace ngcomp
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
     spd = flags.GetDefineFlag ("spd");
+    geom_free = flags.GetDefineFlag("geom_free");    
     if (spd) symmetric = true;
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
   }
@@ -154,7 +155,8 @@ namespace ngcomp
     SetKeepInternal (eliminate_internal && 
                      !flags.GetDefineFlag ("nokeep_internal"));
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
-
+    geom_free = flags.GetDefineFlag("geom_free");
+    
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());    
@@ -204,7 +206,7 @@ namespace ngcomp
 
     parts.Append (bfi);
 
-    if (bfi->geom_free && nonassemble)
+    if ((bfi->geom_free && nonassemble) || geom_free)
       {
         geom_free_parts += bfi;
         return *this;
@@ -620,6 +622,78 @@ namespace ngcomp
       }
     
 
+    if (geom_free)
+      {
+        auto fesx = GetTrialSpace();
+        auto fesy = GetTestSpace();
+        auto ma = GetMeshAccess();
+    
+        Array<short> classnr(ma->GetNE());
+        ma->IterateElements
+          (VOL, lh, [&] (auto el, LocalHeap & llh)
+           {
+             classnr[el.Nr()] = 
+               SwitchET<ET_TRIG,ET_TET>
+               (el.GetType(),
+                [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+           });
+        
+        TableCreator<size_t> creator;
+        for ( ; !creator.Done(); creator++)
+          for (auto i : Range(classnr))
+            creator.Add (classnr[i], i);
+        Table<size_t> table = creator.MoveTable();
+
+        shared_ptr<BaseMatrix> sum;
+        
+        for (auto elclass_inds : table)
+          {
+            if (elclass_inds.Size() == 0) continue;
+            
+            size_t nr = classnr[elclass_inds[0]];
+            ElementId ei(VOL,elclass_inds[0]);
+            auto & felx = GetTrialSpace()->GetFE (ei, lh);
+            auto & fely = GetTestSpace()->GetFE (ei, lh);
+            auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
+            MixedFiniteElement fel(felx, fely);
+            
+            Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
+            elmat = 0.0;
+
+            for (auto bfi : geom_free_parts)
+              bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
+            
+            Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
+              ydofs(elclass_inds.Size(), fely.GetNDof());
+
+            Array<DofId> dnumsx, dnumsy;
+            for (auto i : Range(elclass_inds))
+              {
+                ElementId ei(VOL, elclass_inds[i]);
+                fesx->GetDofNrs(ei, dnumsx);
+                fesy->GetDofNrs(ei, dnumsy);
+                xdofs[i] = dnumsx;
+                ydofs[i] = dnumsy;
+              }
+
+            // cout << "elmat = " << elmat << endl;
+            // cout << "xdofs = " << xdofs << endl;
+            // cout << "ydofs = " << ydofs << endl;
+            auto mat = make_shared<ConstantElementByElementMatrix>
+              (fesy->GetNDof(), fesx->GetNDof(),
+               elmat, std::move(ydofs), std::move(xdofs));
+
+            if (sum)
+              sum = make_shared<SumMatrix>(sum, mat);
+            else
+              sum = mat;
+          }
+
+        mats.Append(sum);
+        return;
+      }
+
+    
     try
       {
 
@@ -724,7 +798,13 @@ namespace ngcomp
       GalerkinProjection();
   }
 
-
+  shared_ptr<BaseMatrix> BilinearForm :: GetMatrixPtr () const
+  {
+    if (!mats.Size())
+      return nullptr;
+    return mats.Last(); 
+  }
+  
 
   void BilinearForm :: PrintReport (ostream & ost) const
   {
@@ -4245,10 +4325,10 @@ namespace ngcomp
             // precomputed[nr] = Matrix<>(fely.GetNDof(), felx.GetNDof());
             precomputed[nr] = move(elmat);
           }
-        Matrix<> elmat = precomputed[nr];
-        
-        elmat *= ConvertTo<double> (val); // only real factor supported by now
 
+        Matrix<> elmat = precomputed[nr];
+        elmat *= ConvertTo<double> (val); // only real factor supported by now
+        
         Matrix<> temp_x(elclass_inds.Size(), !transpose ? elmat.Width() : elmat.Height());
         Matrix<> temp_y(elclass_inds.Size(), !transpose ? elmat.Height() : elmat.Width());
 
@@ -5505,7 +5585,9 @@ namespace ngcomp
     v.Cumulate();
 
     prod = 0;
+    bf -> AddMatrix (1, v, prod, lh);
 
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5523,7 +5605,8 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-
+    */
+    
     prod.SetParallelStatus (DISTRIBUTED);
   }
 
@@ -5533,8 +5616,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrix (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5553,6 +5636,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
+    */
     
   }
 
@@ -5562,8 +5646,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrix (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5581,7 +5665,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-    
+    */
   }
 
   void BilinearFormApplication :: 
@@ -5590,8 +5674,8 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    // bf -> AddMatrix (val, v, prod);
-
+    bf -> AddMatrixTrans (val, v, prod, lh);
+    /*
     bool done = false;
     static int lh_size = 10*1000*1000;
     
@@ -5609,7 +5693,7 @@ namespace ngcomp
             cerr << "Trying automatic heapsize increase to " << lh_size << endl;
           }
       }    
-    
+    */
   }
 
   shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,

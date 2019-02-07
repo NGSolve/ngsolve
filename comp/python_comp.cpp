@@ -1114,8 +1114,18 @@ component : int
          [] (const shared_ptr<FESpace> self,
              shared_ptr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
          {
-           return make_shared<InverseMass> (self, rho, glh); 
+           return make_shared<ApplyMass> (self, rho, true, nullptr, glh); 
          }, py::arg("rho") = nullptr)
+    .def("Mass",
+         [] (const shared_ptr<FESpace> self,
+             shared_ptr<CoefficientFunction> rho,
+             optional<Region> definedon) -> shared_ptr<BaseMatrix>
+         {
+           shared_ptr<Region> spdefon;
+           if (definedon) spdefon = make_shared<Region> (*definedon);
+           // return make_shared<ApplyMass> (self, rho, false, spdefon, glh);
+           return self->GetMassOperator(rho, spdefon, glh);
+         }, py::arg("rho") = nullptr, py::arg("definedon") = nullptr)
     
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
@@ -1136,10 +1146,26 @@ rho : ngsolve.fem.CoefficientFunction
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
-         { self->ApplyM(rho.get(), vec, glh); },
+         { self->ApplyM(rho.get(), vec, nullptr, glh); },
          py::arg("vec"), py::arg("rho")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
-        
+    .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
+                               bool avg) -> shared_ptr<BaseMatrix>
+          {
+            return self->GetTraceOperator(tracespace);
+            // return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
+          }, py::arg("tracespace"), py::arg("average"))
+    .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
+                          BaseVector & in, BaseVector & out, bool avg)
+          {
+            self->GetTrace(tracespace, in, out, avg, glh);
+          })
+    .def ("GetTraceTrans", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
+                               BaseVector & in, BaseVector & out, bool avg)
+          {
+            self->GetTraceTrans(tracespace, in, out, avg, glh);
+          })
+    
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
          {
@@ -1357,6 +1383,10 @@ active_dofs : BitArray or None
            self.SetActiveDofs(active_dofs);
          },
          py::arg("dofs"))
+    .def("GetBaseSpace", [](CompressedFESpace & self)
+         {
+           return self.GetBaseSpace();
+         })
     .def(py::pickle([](const CompressedFESpace* compr_fes)
                     {
                       return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());
@@ -1900,9 +1930,11 @@ reallocate : bool
 
 )raw_string"))
 
-    .def_property_readonly("mat", [](BF & self)
+    .def_property_readonly("mat", [](shared_ptr<BF> self) -> shared_ptr<BaseMatrix>
                                          {
-                                           auto mat = self.GetMatrixPtr();
+                                           if (self->NonAssemble())
+                                             return make_shared<BilinearFormApplication> (self, glh);
+                                           auto mat = self->GetMatrixPtr();
                                            if (!mat)
                                              throw py::type_error("matrix not ready - assemble bilinearform first");
                                            return mat;
@@ -3229,6 +3261,32 @@ deformation : ngsolve.comp.GridFunction
           py::arg("drawelems"),
           py::call_guard<py::gil_scoped_release>())
      ;
+
+   
+   m.def("SetNGSComm", [&](PyMPI_Comm & c)
+	 {
+	   if(MyMPI_GetNTasks(c.comm)==2) {
+	     throw Exception("Sorry, NGSolve cannot handle NP=2.");
+	   }
+	   netgen::ng_comm = c.comm;
+	   ngcore::id = MyMPI_GetId(c.comm);
+	   ngcore::ntasks = MyMPI_GetNTasks(c.comm);
+	   ngs_comm = c.comm;
+	 });  
+
+   m.def("MPI_Init", [&]()
+	 {
+	   const char * progname = "ngslib";
+	   typedef const char * pchar;
+	   pchar ptrs[2] = { progname, nullptr };
+	   pchar * pptr = &ptrs[0];
+          
+	   static MyMPI mympi(1, (char**)pptr);
+	   netgen::ng_comm = ngs_comm;
+	   ngcore::id = MyMPI_GetId(ngs_comm);
+	   ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
+	   return make_shared<PyMPI_Comm>(ngs_comm);
+	 });
 
   /////////////////////////////////////////////////////////////////////////////////////
 }

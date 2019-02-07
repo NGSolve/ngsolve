@@ -41,7 +41,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None):
     """
     Generate a structured 2D mesh
 
@@ -85,8 +85,8 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
     for i in range(ny+1):
         for j in range(nx+1):
             x,y = j/nx, i/ny
-            if mapping:
-                x,y = mapping(x,y)
+            # if mapping:
+            #    x,y = mapping(x,y)
             pids.append(mesh.Add (MeshPoint(Pnt(x,y,0))))
             if periodic_y:
                 if i == 0:
@@ -140,6 +140,17 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, periodic_x=False, periodic_y=
     mesh.SetBCName(3, "left")  
 
     mesh.Compress()       
+    
+    if secondorder:
+        mesh.SecondOrder()
+    
+    if mapping:
+        for p in mesh.Points():
+            x,y,z = p.p
+            x,y = mapping(x,y)
+            p[0] = x
+            p[1] = y
+            
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
@@ -161,7 +172,7 @@ def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = Non
     periodic_y: bool
       If True, the top and bottom boundaries are identified to generate a periodic mesh in y-direction.
 
-    mapping: lamda
+    mapping: lambda
       Mapping to transform the generated points. If None, the identity mapping is used.
     
 
@@ -173,7 +184,46 @@ def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = Non
     """
     return MakeStructured2DMesh(quads=True, nx=nx, ny=ny, periodic_x=periodic_x, periodic_y=periodic_y, mapping=mapping)    
 
-def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=True):
+def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
+    """
+    Generate a structured quadrilateral 2D mesh
+
+    Parameters
+    ----------
+    hexes: bool
+      If True, a mesh consisting of hexahedra is generated.
+
+    nx : int
+      Number of cells in x-direction.
+
+    ny : int
+      Number of cells in y-direction.
+
+    nz : int
+      Number of cells in z-direction.
+
+    periodic_x: bool
+      If True, the left and right boundaries are identified to generate a periodic mesh in x-direction.
+
+    periodic_y: bool
+      If True, the top and bottom boundaries are identified to generate a periodic mesh in y-direction.
+
+    periodic_z: bool
+      If True, the top and bottom boundaries are identified to generate a periodic mesh in z-direction.
+
+    mapping: lambda
+      Mapping to transform the generated points. If None, the identity mapping is used.
+    
+    cuboid_mapping: bool
+      If True, a straight geometry is assumed.
+
+
+    Returns
+    -------
+    (ngsolve.mesh)
+      Returns generated 3D NGSolve mesh
+
+    """
     if nz == None:
         if ny == None:
             nz = nx
@@ -211,8 +261,8 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
             for k in range(nz+1):
                 # x,y,z = mapping(i / nx, j / ny, k / nz)
                 x,y,z = i / nx, j / ny, k / nz
-                if mapping:
-                    x,y,z = mapping(x,y,z)
+                # if mapping:
+                #   x,y,z = mapping(x,y,z)
                 pids.append(netmesh.Add(MeshPoint(Pnt( x,y,z ))))
                 if periodic_x:
                     if i == 0:
@@ -288,42 +338,94 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, periodic_x=False, 
                         elpids = [pids[p] for p in [pnum[q] for q in qarr]]
                         netmesh.Add(Element2D(facenr, elpids))
 
-    netmesh.Add(FaceDescriptor(surfnr=1, domin=1, bc=1))
-    AddSurfEls(0, 1, nz,  nz+1, ny, facenr=1)
-
+    #order is important!
+    netmesh.Add(FaceDescriptor(surfnr=4, domin=1, bc=1))
     netmesh.Add(FaceDescriptor(surfnr=2, domin=1, bc=2))
+    netmesh.Add(FaceDescriptor(surfnr=5, domin=1, bc=3))
+    netmesh.Add(FaceDescriptor(surfnr=3, domin=1, bc=4))
+    netmesh.Add(FaceDescriptor(surfnr=0, domin=1, bc=5))
+    netmesh.Add(FaceDescriptor(surfnr=1, domin=1, bc=6))
+        
+    # y-z-plane, smallest x-coord: ("back")
+    AddSurfEls(0, 1, nz,  nz+1, ny, facenr=1) # y-z-plane
+    # x-z-plane, smallest y-coord: ("left")
     AddSurfEls(0, (ny+1)*(nz+1), nx, 1, nz,facenr=2)
-
-    netmesh.Add(FaceDescriptor(surfnr=3, domin=1, bc=3))
-    AddSurfEls(0, nz+1, ny, (ny+1)*(nz+1), nx,facenr=3)
-
-    netmesh.Add(FaceDescriptor(surfnr=4, domin=1, bc=4))
-    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(nz+1), ny, -1, nz, facenr=4)
-
-    netmesh.Add(FaceDescriptor(surfnr=5, domin=1, bc=5))
-    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(ny+1)*(nz+1), nx, -(nz+1), ny, facenr=5)
-
-    netmesh.Add(FaceDescriptor(surfnr=6, domin=1, bc=6))
-    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -1, nz, -(ny+1)*(nz+1), nx, facenr=6)
+    # y-z-plane, largest x-coord: ("front")
+    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(nz+1), ny, -1, nz, facenr=3) 
+    # x-z-plane, largest y-coord: ("right")
+    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -1, nz, -(ny+1)*(nz+1), nx, facenr=4)
+    # x-y-plane, smallest z-coord: ("bottom")
+    AddSurfEls(0, nz+1, ny, (ny+1)*(nz+1), nx,facenr=5) 
+    # x-y-plane, largest z-coord: ("top")
+    AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(ny+1)*(nz+1), nx, -(nz+1), ny, facenr=6) 
 
     if cuboid_mapping:
-        netmesh.SetBCName(0,"left")
-        netmesh.SetBCName(1,"bottom")
-        netmesh.SetBCName(2,"back")
+        netmesh.SetBCName(0,"back")
+        netmesh.SetBCName(1,"left")
+        netmesh.SetBCName(2,"front")
         netmesh.SetBCName(3,"right")
-        netmesh.SetBCName(4,"front")
+        netmesh.SetBCName(4,"bottom")
         netmesh.SetBCName(5,"top")
     
     netmesh.Compress()
+
+    if secondorder:
+        netmesh.SecondOrder()
+    
+    if mapping:
+        for p in netmesh.Points():
+            x,y,z = p.p
+            x,y,z = mapping(x,y,z)
+            p[0] = x
+            p[1] = y
+            p[2] = z
+            
     ngsmesh = ngsolve.Mesh(netmesh)
     # ngsmesh.ngmesh.Save("tmp.vol.gz")
     # ngsmesh = ngsolve.Mesh("tmp.vol.gz")
     return ngsmesh
 
-def MakeHexMesh(nx=10, ny=10, nz=10, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None):
-    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping)
+def MakeHexMesh(nx=10, ny=10, nz=10, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
+    """
+    Generate a structured quadrilateral 2D mesh
+
+    Parameters
+    ----------
+    nx : int
+      Number of cells in x-direction.
+
+    ny : int
+      Number of cells in y-direction.
+
+    nz : int
+      Number of cells in z-direction.
+
+    periodic_x: bool
+      If True, the left and right boundaries are identified to generate a periodic mesh in x-direction.
+
+    periodic_y: bool
+      If True, the top and bottom boundaries are identified to generate a periodic mesh in y-direction.
+
+    periodic_z: bool
+      If True, the top and bottom boundaries are identified to generate a periodic mesh in z-direction.
+
+    mapping: lambda
+      Mapping to transform the generated points. If None, the identity mapping is used.
+    
+    cuboid_mapping: bool
+      If True, a straight geometry is assumed.
+
+
+    Returns
+    -------
+    (ngsolve.mesh)
+      Returns generated 3D NGSolve mesh consisting of only hexahedra
+
+    """
+    return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, secondorder=secondorder, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping, cuboid_mapping=cuboid_mapping)
 
 from math import pi
+from ngsolve import Draw, sin, cos
 if __name__ == "__main__":
 
     mesh = Make1DMesh(n=4)
@@ -365,14 +467,14 @@ if __name__ == "__main__":
     Draw(mesh)
     input("mapped, anisotropic linear non-cuboid mesh -- press any key to continue -- ")
     
-    mesh = MakeStructured3DMesh(hexes=True, nx=8, ny=16, nz=8,
-                            mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
-                            cuboid_mapping=True )
-    Draw(mesh)
-    input("mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")
-
     mesh = MakeStructured3DMesh(hexes=True, nx=8, ny=16, nz=8, periodic_x=True,
                             mapping = lambda x,y,z : (5*x*x*(0.5-x/3),10*y*y*(0.5-y/3),5*z*z*(0.5-z/3)),
                             cuboid_mapping=True )
     Draw(mesh)
-    print("x-periodic, mapped, anisotropic non-linear cuboid mesh -- finished.")    
+    input("x-periodic, mapped, anisotropic non-linear cuboid mesh -- press any key to continue --")
+    
+    mesh = MakeStructured3DMesh(hexes=False, nx=8, ny=8, nz=8, periodic_x=True,
+                            cuboid_mapping=True )
+    mesh.Refine()
+    Draw(mesh)
+    input("structured tet mesh (periodic in x-dir.), refined -- finished.")

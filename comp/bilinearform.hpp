@@ -32,6 +32,8 @@ namespace ngcomp
     bool nonassemble;
     /// store only diagonal of matrix
     bool diagonal;
+    /// element-matrix for ref-elements
+    bool geom_free;
     /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
@@ -239,11 +241,7 @@ namespace ngcomp
     const BaseMatrix & GetMatrix () const { return *mats.Last(); }
     const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
     /// returns the assembled matrix
-    shared_ptr<BaseMatrix> GetMatrixPtr () const 
-    {
-      if (!mats.Size()) return nullptr;
-      return mats.Last(); 
-    }
+    shared_ptr<BaseMatrix> GetMatrixPtr () const;
 
     // operator const BaseMatrix& () const { return GetMatrix(); }
 
@@ -322,6 +320,7 @@ namespace ngcomp
 
     /// don't assemble the matrix
     void SetNonAssemble (bool na = true) { nonassemble = na; }
+    bool NonAssemble() const { return nonassemble; }
 
     ///
     void SetGalerkin (bool agalerkin = true) { galerkin = agalerkin; }
@@ -525,6 +524,7 @@ namespace ngcomp
 
     ///
     virtual void DoAssemble (LocalHeap & lh);
+    void AssembleGF (LocalHeap & lh);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///

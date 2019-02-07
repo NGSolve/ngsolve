@@ -698,7 +698,7 @@ namespace ngla
           used_row.Set(d);
         }
     
-    cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
+    // cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
 
 
 
@@ -775,20 +775,114 @@ namespace ngla
         
         for (auto nr : Range(nblocks))
           cntcol[col[nr]]++;
-        cout << "cntcol = " << cntcol << endl;
+        // cout << "cntcol = " << cntcol << endl;
         row_coloring = Table<int> (cntcol);
 
 	cntcol = 0;
         for (auto nr : Range(nblocks))        
           row_coloring[col[nr]][cntcol[col[nr]]++] = nr;
       }
+
+
+
+    if (!disjoint_cols)
+      {
+        Array<MyMutex> locks(w);
+        size_t nblocks = row_dnums.Size();
+        Array<int> col(nblocks);
+        col = -1;
+
+        int maxcolor = 0;
+        int basecol = 0;
+        Array<unsigned int> mask(w);
+
+        atomic<int> found(0);
+        size_t cnt = row_dnums.Size();
+
+        while (found < cnt)
+          {
+            ParallelForRange
+              (mask.Size(),
+               [&] (IntRange myrange) { mask[myrange] = 0; });
+
+            ParallelForRange
+              (nblocks, [&] (IntRange myrange)
+               {
+                 Array<size_t> dofs;
+                 size_t myfound = 0;
+                 
+                 for (size_t nr : myrange)
+                   {
+                     if (col[nr] >= 0) continue;
+                     
+                     unsigned check = 0;
+                     dofs = col_dnums[nr];
+                     
+                     QuickSort (dofs);   // sort to avoid dead-locks
+                     
+                     for (auto d : dofs) 
+                       locks[d].lock();
+                     
+                     for (auto d : dofs) 
+                       check |= mask[d];
+                     
+                     if (check != UINT_MAX) // 0xFFFFFFFF)
+                       {
+                         myfound++;
+                         unsigned checkbit = 1;
+                         int color = basecol;
+                         while (check & checkbit)
+                           {
+                             color++;
+                             checkbit *= 2;
+                           }
+                         
+                         col[nr] = color;
+                         if (color > maxcolor) maxcolor = color;
+                         
+                         for (auto d : dofs) 
+                           mask[d] |= checkbit;
+                       }
+                     
+                     for (auto d : dofs) 
+                       locks[d].unlock();
+                   }
+                 found += myfound;
+               });
+            
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
+
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
+        
+        for (auto nr : Range(nblocks))
+          cntcol[col[nr]]++;
+        col_coloring = Table<int> (cntcol);
+
+	cntcol = 0;
+        for (auto nr : Range(nblocks))        
+          col_coloring[col[nr]][cntcol[col[nr]]++] = nr;
+      }
+
+    
+  }
+
+  AutoVector ConstantElementByElementMatrix :: CreateRowVector () const
+  {
+    return make_shared<VVector<>> (w);
+  }
+  
+  AutoVector ConstantElementByElementMatrix :: CreateColVector () const 
+  {
+    return make_shared<VVector<>> (h);
   }
 
   
   void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer ts("ConstantEBE mult sequential");
-    static Timer tp("ConstantEBE mult parallel");
+    static Timer t("ConstantEBE mult");
+    static Timer tcol("ConstantEBE mult coloring");
     static Timer tpmult("ConstantEBE mult parallel mult");
 
     auto fx = x.FV<double>();
@@ -796,6 +890,7 @@ namespace ngla
 
     if (!disjoint_cols)
       {
+        /*
         RegionTimer reg(ts);
         Vector<> hx(matrix.Width());
         Vector<> hy(matrix.Height());
@@ -805,10 +900,38 @@ namespace ngla
             hy = matrix * hx;
             fy(col_dnums[i]) += s * hy;
           }
+        */
+        RegionTimer reg(tcol);
+
+        for (auto col : col_coloring)
+          ParallelForRange
+            (col.Size(), [&] (IntRange r)
+             {
+               constexpr size_t BS = 128;
+               Matrix<> hx(BS, matrix.Width());
+               Matrix<> hy(BS, matrix.Height());
+               
+               for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+                 {
+                   size_t li = min2(bi+BS, r.Next());
+                   size_t num = li-bi;
+                   
+                   for (size_t i = 0; i < num; i++)
+                     hx.Row(i) = fx(row_dnums[col[bi+i]]);
+                   
+                   {
+                     RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
+                   }
+                   
+                   for (size_t i = 0; i < num; i++)
+                     fy(col_dnums[col[bi+i]]) += s * hy.Row(i);
+                 }
+             });
       }
     else
       {
-        RegionTimer reg(tp);
+        RegionTimer reg(t);
         ParallelForRange
           (row_dnums.Size(), [&] (IntRange r)
            {
@@ -846,16 +969,16 @@ namespace ngla
   
   void ConstantElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer ts("ConstantEBE mult trans");
-    static Timer tp("ConstantEBE mult trans parallel");
-    RegionTimer reg(ts);
+    static Timer t("ConstantEBE mult trans");
+    static Timer tcol("ConstantEBE mult trans coloring");
+    static Timer tpmult("ConstantEBE mult trans mult");    
 
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
     
     if (!disjoint_rows)
       { // use coloring
-        RegionTimer reg(tp);
+        RegionTimer reg(tcol);
 
         for (auto col : row_coloring)
           ParallelForRange
@@ -873,8 +996,11 @@ namespace ngla
                    for (size_t i = 0; i < num; i++)
                      hx.Row(i) = fx(col_dnums[col[bi+i]]);
                    
-                   hy.Rows(0, num) = hx.Rows(0, num) * matrix;
-
+                   {
+                     RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     hy.Rows(0, num) = hx.Rows(0, num) * matrix;
+                   }
+                   
                    for (size_t i = 0; i < num; i++)
                      fy(row_dnums[col[bi+i]]) += s * hy.Row(i);
                  }
@@ -882,14 +1008,31 @@ namespace ngla
       }
     else
       {
-        Vector<> hx(matrix.Height());
-        Vector<> hy(matrix.Width());
-        for (size_t i = 0; i < row_dnums.Size(); i++)
-          {
-            hx = fx(col_dnums[i]);
-            hy = Trans(matrix) * hx;
-            fy(row_dnums[i]) += s * hy;
-          }
+        RegionTimer reg(t);
+        ParallelForRange
+          (row_dnums.Size(), [&] (IntRange r)
+           {
+             constexpr size_t BS = 128;
+             Matrix<> hx(BS, matrix.Height());
+             Matrix<> hy(BS, matrix.Width());
+
+             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+               {
+                 size_t li = min2(bi+BS, r.Next());
+                 size_t num = li-bi;
+                 
+                 for (size_t i = 0; i < num; i++)
+                   hx.Row(i) = fx(col_dnums[bi+i]);
+                 
+                 {
+                   RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   hy.Rows(0, num) = hx.Rows(0, num) * matrix;
+                 }
+                 
+                 for (size_t i = 0; i < num; i++)
+                   fy(row_dnums[bi+i]) += s * hy.Row(i);
+               }
+           });
       }
   }
 
