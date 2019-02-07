@@ -640,7 +640,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           },
          py::arg("vnum"),
          "Return parent vertex numbers on refined mesh")
-
+    .def("GetHPElementLevel", &MeshAccess::GetHPElementLevel,
+         py::arg("ei"),
+         "THIS FUNCTION IS WIP!\n Return HP-refinement level of element")
     .def("SetElementOrder",
          [](MeshAccess & ma, ElementId id, int order)
          {
