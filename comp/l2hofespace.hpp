@@ -145,7 +145,8 @@ namespace ngcomp
     // order of elements 
     Array<INT<3> > order_inner;
 
-    COUPLING_TYPE lowest_order_ct;
+    bool lowest_order_wb;
+    bool discontinuous;
 
   public:
 
