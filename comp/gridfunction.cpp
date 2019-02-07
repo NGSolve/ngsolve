@@ -2989,6 +2989,9 @@ namespace ngcomp
   template class T_GridFunction<Vec<4> >;
   */
 
+  template class S_GridFunction<double>;
+  template class S_GridFunction<Complex>;
+
   template class  VisualizeGridFunction<double>;
   template class  VisualizeGridFunction<Complex>;
 
