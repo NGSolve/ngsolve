@@ -872,16 +872,18 @@ namespace ngcomp
   }
   */
 
+  /*
   template <class TV>
   T_GridFunction<TV> ::
   T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
     : T_GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), aname, flags)
   { ; }
-
-  template <class TV>
-  T_GridFunction<TV> ::
-  T_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
-    : S_GridFunction<TSCAL> (afespace, aname, flags)
+  */
+  
+  template <class SCAL>
+  S_GridFunction<SCAL> ::
+  S_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
+    : GridFunction (afespace, aname, flags)
   {
     vec.SetSize (this->multidim);
     vec = 0;
@@ -891,13 +893,13 @@ namespace ngcomp
   }
 
 
-
+  /*
   template <class TV>
   T_GridFunction<TV> :: ~T_GridFunction()
   {
     ;
   }
-
+  */
 
   template <class TSCAL>
   void S_GridFunction<TSCAL> :: Update () 
@@ -980,11 +982,18 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags)
   {
+    /*
     shared_ptr<GridFunction> gf =
       CreateSharedVecObject<T_GridFunction, GridFunction> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), space, name, flags);
-  
+    */
+    shared_ptr<GridFunction> gf;
+    if (space->IsComplex())
+      gf = make_shared<S_GridFunction<Complex>> (space, name, flags);
+    else
+      gf = make_shared<S_GridFunction<double>> (space, name, flags);
+    
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
     
     return gf;
@@ -2973,12 +2982,12 @@ namespace ngcomp
     
 
 
-
+  /*
   template class T_GridFunction<double>;
   template class T_GridFunction<Vec<2> >;
   template class T_GridFunction<Vec<3> >;
   template class T_GridFunction<Vec<4> >;
-  
+  */
 
   template class  VisualizeGridFunction<double>;
   template class  VisualizeGridFunction<Complex>;

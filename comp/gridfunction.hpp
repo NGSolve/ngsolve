@@ -283,9 +283,12 @@ namespace ngcomp
     S_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
       : GridFunction (afespace, aname, flags) { ; }
     */
-    using GridFunction::GridFunction;
+    // using GridFunction::GridFunction;
 
-
+    S_GridFunction (shared_ptr<FESpace> afespace, 
+		    const string & aname = "gfu", 
+		    const Flags & flags = Flags());
+      
     // parallel Load/Save by Martin Huber and Lothar Nannen 
     virtual void Load (istream & ist);
     virtual void Save (ostream & ost) const;
@@ -303,21 +306,23 @@ namespace ngcomp
   template <class TV>
   class NGS_DLL_HEADER T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
-    using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
-
   public:
     typedef typename mat_traits<TV>::TSCAL TSCAL;
-    enum { VDIM = mat_traits<TV>::HEIGHT };
 
+    [[deprecated("Use T_GridFunction(shared_ptr<FESpace> ... instead!")]] 
     T_GridFunction (const FESpace & afespace, 
 		    const string & aname = "gfu", 
-		    const Flags & flags = Flags());
+		    const Flags & flags = Flags())
+      : T_GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), aname, flags)
+      { ; } 
+
     T_GridFunction (shared_ptr<FESpace> afespace, 
 		    const string & aname = "gfu", 
-		    const Flags & flags = Flags());
+		    const Flags & flags = Flags())
+      : S_GridFunction<TSCAL> (afespace, aname, flags)
+      { ; }
 
-    virtual ~T_GridFunction ();
-
+    virtual ~T_GridFunction () { ; } 
   };
 
 
@@ -327,7 +332,7 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags);
 
-  /// compatibility with old codes
+  [[deprecated("Use CreateGridFunction(shared_ptr<FESpace> ... instead!")]]   
   inline 
   shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
                                                const string & name, const Flags & flags)
