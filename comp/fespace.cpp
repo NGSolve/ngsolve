@@ -1649,13 +1649,25 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ost;
   }
 
+
+  shared_ptr<BaseMatrix> FESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const
+  {
+    return make_shared<ApplyMass> (dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                   rho, false, defon, lh);    
+  }
+
+
+  
   void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
-  void FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
+  void FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
   {
     cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
@@ -1840,13 +1852,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
           {
             switch (ma->GetElType(ei))
               {
-              case ET_TET:     return *(new (lh) FE_Tet2);
-              case ET_PRISM:   return *(new (lh) FE_Prism1);
-              case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
-              case ET_TRIG:    return *(new (lh) FE_Trig2);
-              case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
-              case ET_SEGM:    return *(new (lh) FE_Segm2);
-              case ET_POINT:   return *(new (lh) FE_Point);
+              case ET_TET:     return * new (lh) FE_Tet2;
+              case ET_PRISM:   return * new (lh) FE_Prism1;
+              case ET_PYRAMID: return * new (lh) FE_Pyramid1;
+              case ET_HEX:     return * new (lh) FE_Hex20;                
+              case ET_TRIG:    return * new (lh) FE_Trig2;
+                // case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>;
+              case ET_QUAD:    return * new (lh) FE_Quad2Serendipity;
+              case ET_SEGM:    return * new (lh) FE_Segm2;
+              case ET_POINT:   return * new (lh) FE_Point;
               default:
                 throw Exception ("Inconsistent element type in NodalFESpace::GetFE, no hb defined");
               }
@@ -2846,12 +2860,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
     
   void CompoundFESpace :: ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                                 Region * definedon,
                                  LocalHeap & lh) const
   {
     for (size_t i = 0; i < spaces.Size(); i++)
       {
         auto veci = vec.Range (GetRange(i));
-        spaces[i] -> ApplyM (rho, veci, lh);
+        spaces[i] -> ApplyM (rho, veci, definedon, lh);
       }
   }
     
@@ -2942,59 +2957,130 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   
-  InverseMass :: InverseMass (shared_ptr<FESpace> afes,
-                              shared_ptr<CoefficientFunction> arho,
-                              LocalHeap & alh)
-    : fes(afes), rho(arho), lh(alh) { ; }
+  ApplyMass :: ApplyMass (shared_ptr<FESpace> afes,
+                          shared_ptr<CoefficientFunction> arho,
+                          bool ainverse,
+                          shared_ptr<Region> adefinedon,
+                          LocalHeap & alh)
+    : fes(afes), rho(arho), inverse(ainverse), definedon(adefinedon), lh(alh) { ; }
   
-  InverseMass :: ~InverseMass()
+  ApplyMass :: ~ApplyMass()
   { ; } 
 
+  shared_ptr<BaseMatrix> ApplyMass :: InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    return make_shared<ApplyMass> (fes, rho, !inverse, definedon, lh);
+  }
 
-
-  void InverseMass :: Mult (const BaseVector & v, BaseVector & prod) const 
+ 
+  void ApplyMass :: Mult (const BaseVector & v, BaseVector & prod) const 
   {
     prod = v;
-    fes->SolveM(rho.get(), prod, lh);
+    if (inverse)
+      fes->SolveM(rho.get(), prod, lh);
+    else
+      fes->ApplyM(rho.get(), prod, definedon.get(), lh);
   }
 
-  void InverseMass :: MultAdd (double val, const BaseVector & v, BaseVector & prod) const 
+  void ApplyMass :: MultAdd (double val, const BaseVector & v, BaseVector & prod) const 
   {
     auto hv = prod.CreateVector();
     hv = v;
-    fes->SolveM(rho.get(), hv, lh);
+    if (inverse)    
+      fes->SolveM(rho.get(), hv, lh);
+    else
+      fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;
   }
   
-  void InverseMass :: MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
+  void ApplyMass :: MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
   {
     auto hv = prod.CreateVector();
     hv = v;
-    fes->SolveM(rho.get(), hv, lh);
+    if (inverse)
+      fes->SolveM(rho.get(), hv, lh);
+    else
+      fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;
   }
   
-  void InverseMass :: MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const
+  void ApplyMass :: MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const
   {
     MultAdd (val, v, prod);
   }
     
-  AutoVector InverseMass :: CreateVector () const
+  AutoVector ApplyMass :: CreateVector () const
   {
     // should go to fespace
     return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());
   }
   
-  AutoVector InverseMass :: CreateRowVector () const
+  AutoVector ApplyMass :: CreateRowVector () const
   {
     // should go to fespace    
     return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
   }
   
-  AutoVector InverseMass :: CreateColVector () const
+  AutoVector ApplyMass :: CreateColVector () const
   {
     // should go to fespace
     return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
+  }
+
+
+
+  
+  ApplyTrace :: ApplyTrace (shared_ptr<FESpace> afes,
+                            shared_ptr<FESpace> afestrace,
+                            bool aaverage,
+                            LocalHeap & alh)
+    : fes(afes), festrace(afestrace), average(aaverage), lh(alh) { ; }
+  
+  ApplyTrace :: ~ApplyTrace() { ; } 
+
+
+  void ApplyTrace :: Mult (const BaseVector & v, BaseVector & prod) const 
+  {
+    fes->GetTrace(*festrace, v, prod, average, lh);
+  }
+
+  void ApplyTrace :: MultAdd (double val, const BaseVector & v, BaseVector & prod) const 
+  {
+    auto hv = prod.CreateVector();
+    fes->GetTrace(*festrace, v, hv, average, lh);
+    prod += val * hv;
+  }
+  
+  void ApplyTrace :: MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
+  {
+    auto hv = prod.CreateVector();
+    fes->GetTrace(*festrace, v, hv, average, lh);
+    prod += val * hv;
+  }
+  
+  void ApplyTrace :: MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const
+  {
+    auto hv = prod.CreateVector();
+    fes->GetTraceTrans(*festrace, v, hv, average, lh);
+    prod += val * hv;
+  }
+    
+  AutoVector ApplyTrace :: CreateVector () const
+  {
+    // should go to fespace
+    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());
+  }
+  
+  AutoVector ApplyTrace :: CreateRowVector () const
+  {
+    // should go to fespace    
+    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
+  }
+  
+  AutoVector ApplyTrace :: CreateColVector () const
+  {
+    // should go to fespace
+    return CreateBaseVector(festrace->GetNDof(), fes->IsComplex(), fes->GetDimension());    
   }
 
 

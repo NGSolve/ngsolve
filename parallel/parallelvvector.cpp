@@ -247,7 +247,7 @@ namespace ngla
 	paralleldofs = 0;
 	status = NOT_PARALLEL;
       }
-    local_vec = make_shared<VFlatVector<SCAL>>(as, (SCAL*)pdata);
+    local_vec = make_shared<S_BaseVectorPtr<SCAL>>(as, aes, (void*)pdata);
   }
 
   template <class SCAL>

@@ -429,13 +429,13 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 	   {
 	     py::list timers;
 	     for (int i = 0; i < NgProfiler::SIZE; i++)
-	       if (!NgProfiler::names[i].empty())
+	       if (!NgProfiler::timers[i].name.empty())
                {
                  py::dict timer;
-                 timer["name"] = py::str(NgProfiler::names[i]);
+                 timer["name"] = py::str(NgProfiler::timers[i].name);
                  timer["time"] = py::float_(NgProfiler::GetTime(i));
                  timer["counts"] = py::int_(NgProfiler::GetCounts(i));
-                 timer["flops"] = py::int_(NgProfiler::GetFlops(i));
+                 timer["flops"] = py::float_(NgProfiler::GetFlops(i));
                  timer["Gflop/s"] = py::float_(NgProfiler::GetFlops(i)/NgProfiler::GetTime(i)*1e-9);
                  timers.append(timer);
                }
@@ -591,38 +591,6 @@ threads : int
                         }
                     }))
     ;
-
-  
-  py::class_<PyMPI_Comm> (m, "MPI_Comm")
-    .def_property_readonly ("rank", &PyMPI_Comm::Rank)
-    .def_property_readonly ("size", &PyMPI_Comm::Size)
-    .def("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
-#ifdef PARALLEL
-    .def("WTime", [](PyMPI_Comm c) { return MPI_Wtime(); })
-#endif
-    .def("Sum", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    ;
-
-  
-  
-  m.def("MPI_Init", [&]()
-        {
-          const char * progname = "ngslib";
-          typedef const char * pchar;
-          pchar ptrs[2] = { progname, nullptr };
-          pchar * pptr = &ptrs[0];
-          
-          static MyMPI mympi(1, (char**)pptr);
-          return PyMPI_Comm(ngs_comm);
-        });
 
 }
 

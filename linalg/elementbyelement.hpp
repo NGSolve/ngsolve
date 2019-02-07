@@ -133,8 +133,14 @@ namespace ngla
     ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
                                     Table<int> acol_dnums, Table<int> arow_dnums);
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual int VHeight() const override { return h; }
+    virtual int VWidth() const override { return w; }
+    
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
   };
   
 }

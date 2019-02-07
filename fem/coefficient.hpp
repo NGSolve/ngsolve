@@ -7,41 +7,11 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-namespace pybind11 { class module; };
-
 namespace ngfem
 {
   /** 
       coefficient functions
   */
-
-  typedef enum {
-    CF_Type_undefined,
-    CF_Type_constant,
-    CF_Type_vectorial,
-    CF_Type_coordinate,
-    CF_Type_norm,
-    CF_Type_trans,
-    CF_Type_component,
-    CF_Type_real,
-    CF_Type_imag,
-    CF_Type_ifpos,
-    CF_Type_normal_vector,
-    CF_Type_tangential_vector,
-    CF_Type_mesh_size,
-    CF_Type_scale,
-    CF_Type_scale_complex,
-    CF_Type_add,    
-    CF_Type_sub,    
-    CF_Type_mult,    
-    CF_Type_div,    
-    CF_Type_domainconst,    
-    CF_Type_domainwise,    
-    CF_Type_unary_op,
-    CF_Type_binary_op,
-    CF_Type_usertype,
-    CF_Type_eig,
-  } CF_Type;
   
   class NGS_DLL_HEADER CoefficientFunction
   {
@@ -49,9 +19,11 @@ namespace ngfem
     int dimension;
     Array<int> dims;
   protected:
+    bool elementwise_constant = false;
     bool is_complex;
   public:
-    ///
+    // default constructor for archive
+    CoefficientFunction() = default;
     CoefficientFunction (int adimension, bool ais_complex = false)
       : is_complex(ais_complex)
     {
@@ -70,6 +42,7 @@ namespace ngfem
     ///
     virtual ~CoefficientFunction ();
 
+    virtual void DoArchive(Archive& ar) { ar & dimension & dims & is_complex; }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     ///
     virtual int NumRegions () { return INT_MAX; }
@@ -330,7 +303,7 @@ namespace ngfem
     }
     */
 
-    virtual bool ElementwiseConstant () const { return false; }
+    bool ElementwiseConstant () const { return elementwise_constant; }
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
@@ -361,11 +334,6 @@ namespace ngfem
     { return Array<shared_ptr<CoefficientFunction>>(); }
     virtual bool StoreUserData() const { return false; }
 
-    virtual CF_Type GetType() const { return CF_Type_undefined; } 
-    virtual void DoArchive (Archive & archive)
-    {
-      archive & dimension & dims & is_complex;
-    } 
   };
 
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
@@ -617,12 +585,20 @@ namespace ngfem
     typedef T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     ///
+    ConstantCoefficientFunction() = default;
     ConstantCoefficientFunction (double aval);
     ///
     virtual ~ConstantCoefficientFunction ();
     ///
+
+    void DoArchive (Archive & archive) override
+    {
+      BASE::DoArchive(archive);
+      archive & val;
+    }
+
     using BASE::Evaluate;
-    virtual bool ElementwiseConstant () const override { return true; }
+    // virtual bool ElementwiseConstant () const override { return true; }
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
@@ -703,16 +679,6 @@ namespace ngfem
     {
       values = AutoDiffDiff<1,bool> (val != 0.0);
     }
-    
-
-
-    
-    virtual CF_Type GetType() const override { return CF_Type_constant; } 
-    virtual void DoArchive (Archive & archive) override
-    {
-      CoefficientFunction::DoArchive(archive);
-      archive & val;
-    } 
   };
 
 
@@ -723,18 +689,26 @@ namespace ngfem
     ///
     Complex val;
   public:
+    ConstantCoefficientFunctionC() = default;
     ConstantCoefficientFunctionC (Complex aval);
     virtual ~ConstantCoefficientFunctionC ();
 
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
-    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunction::DoArchive(ar);
+      ar & val;
+    }
 
-    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const;
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
+    Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override;
+
+    void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const override;
+    void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override;
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceMatrix<SIMD<Complex>> values) const override;
     
-    virtual void PrintReport (ostream & ost) const;
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+    void PrintReport (ostream & ost) const override;
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   };
 
 
@@ -745,10 +719,16 @@ namespace ngfem
     double val;
   public:
     ///
+    ParameterCoefficientFunction() = default;
     ParameterCoefficientFunction (double aval);
     ///
     virtual ~ParameterCoefficientFunction ();
     ///
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunctionNoDerivative::DoArchive(ar);
+      ar & val;
+    }
     using CoefficientFunction::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
@@ -809,7 +789,6 @@ namespace ngfem
     double operator[] (int i) const { return val[i]; }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
-    virtual CF_Type GetType() const override { return CF_Type_domainconst; }
     virtual void DoArchive (Archive & archive) override
     {
         CoefficientFunction::DoArchive(archive);
@@ -939,6 +918,7 @@ namespace ngfem
     ///
     Array<double> values;
   public:
+    IntegrationPointCoefficientFunction() = default;
     ///
     IntegrationPointCoefficientFunction (int aelems, int size)
       : CoefficientFunction(1, false), elems(aelems), ips_per_elem(size), values(aelems*size) { ; }
@@ -961,6 +941,11 @@ namespace ngfem
 
     ///
     virtual ~IntegrationPointCoefficientFunction () { ; }
+
+    void DoArchive(Archive& ar) override
+    {
+      ar & elems & ips_per_elem & values;
+    }
     ///
     /*
       template <int S, int R>
@@ -981,7 +966,7 @@ namespace ngfem
       return values[elnr*ips_per_elem+ipnr];
       }
     */
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       int ipnr = ip.GetIPNr();
       int elnr = ip.GetTransformation().GetElementNr();
@@ -1143,6 +1128,7 @@ namespace ngfem
   string name;
   typedef  T_CoefficientFunction<cl_UnaryOpCF<OP>> BASE;
 public:
+  cl_UnaryOpCF() = default;
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                 OP alam, string aname="undefined")
     : BASE(ac1->Dimension(),
@@ -1150,6 +1136,13 @@ public:
       c1(ac1), lam(alam), name(aname)
   {
     this->SetDimensions (c1->Dimensions());
+    this->elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  virtual void DoArchive (Archive & archive) override
+  {
+    BASE::DoArchive(archive);
+    archive.Shallow(c1) & name & lam;
   }
 
   virtual string GetDescription () const override
@@ -1157,7 +1150,7 @@ public:
     return string("unary operation '")+name+"'";
   }
 
-  virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
+  // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -1300,17 +1293,6 @@ public:
           }
       }
   }
-    
-
-
-  
-
-  virtual CF_Type GetType() const override { return CF_Type_unary_op; }
-  virtual void DoArchive (Archive & archive) override
-  {
-      archive & name;
-      CoefficientFunction::DoArchive(archive);
-  }
 };
 
   template <typename OP /* , typename OPC */> 
@@ -1323,13 +1305,12 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 
 
   
-  template <typename OP, typename NONZERO> 
-  class cl_BinaryOpCF : public T_CoefficientFunction<cl_BinaryOpCF<OP,NONZERO>>
+  template <typename OP>
+  class cl_BinaryOpCF : public T_CoefficientFunction<cl_BinaryOpCF<OP>>
 {
-  typedef T_CoefficientFunction<cl_BinaryOpCF<OP,NONZERO>> BASE;
+  typedef T_CoefficientFunction<cl_BinaryOpCF<OP>> BASE;
   shared_ptr<CoefficientFunction> c1, c2;
   OP lam;
-  NONZERO lam_nonzero;
   string opname;
   using BASE::is_complex;
   using BASE::Dimension;
@@ -1337,20 +1318,28 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
   using BASE::SetDimensions;
   using BASE::Evaluate;  
 public:
+  cl_BinaryOpCF() = default;
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam, NONZERO alam_nonzero, string aopname)
+                 OP alam, string aopname)
     : BASE(ac1->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
       c1(ac1), c2(ac2), lam(alam),
-      lam_nonzero(alam_nonzero),
       opname(aopname)
   {
     int dim1 = c1->Dimension();
     int dim2 = c2->Dimension();
     if (dim1 != dim2) throw Exception ("Dimensions don't match");
     is_complex = c1->IsComplex() || c2->IsComplex();
+    this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     SetDimensions (c1->Dimensions());
   }
+
+  virtual void DoArchive (Archive & archive) override
+  {
+      BASE::DoArchive(archive);
+      archive.Shallow(c1).Shallow(c2) & opname;
+  }
+
   virtual string GetDescription () const override
   {
     return string("binary operation '")+opname+"'";
@@ -1558,32 +1547,15 @@ public:
           }
       }
   }
-
-  
-  virtual CF_Type GetType() const override {
-      if(opname =="+") return CF_Type_add;
-      if(opname =="-") return CF_Type_sub;
-      if(opname =="*") return CF_Type_mult;
-      if(opname =="/") return CF_Type_div;
-      return CF_Type_binary_op;
-  }
-  virtual void DoArchive (Archive & archive) override 
-  {
-      archive & opname;
-      CoefficientFunction::DoArchive(archive);
-  }
-
 };
 
-  template <typename OP, typename NONZERO> 
+  template <typename OP>
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                                   shared_ptr<CoefficientFunction> c2, 
                                                   OP lam,
-                                                  NONZERO lam_nonzero,
                                                   string opname)
 {
-  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,NONZERO> 
-                                          (c1, c2, lam, lam_nonzero, opname));
+  return make_shared<cl_BinaryOpCF<OP>>(c1, c2, lam, opname);
 }
 
 

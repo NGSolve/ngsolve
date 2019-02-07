@@ -182,6 +182,93 @@ def test_pickle_periodic():
 
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
 
+def test_pickle_CoefficientFunctions():
+    import netgen.csg as csg
+    import numpy as np
+    import numpy.testing as npt
+    mesh = Mesh(csg.unit_cube.GenerateMesh(maxh=1000))
+    cfs = []
+    cfs.append(CoefficientFunction(1)) # ConstantCF
+    cfs.append(CoefficientFunction(1J)) # ConstantCFC
+    cfs.append(Parameter(3)) # ParameterCF
+    cfs.append(CoefficientFunction([cfs[2]])) # Domainwise with parameter inside
+    # coordinate
+    cfs.append(x)
+    cfs.append(y)
+    cfs.append(z)
+    # unary
+    cfs.append(sin(x))
+    cfs.append(cos(y))
+    cfs.append(floor(z))
+    # binary
+    cfs.append(x**y)
+    cfs.append(y*z)
+    cfs.append(x/y)
+    cfs.append(x+cfs[2])
+    cfs.append(cfs[2]-y)
+    vec = CoefficientFunction((cfs[2],1,2))
+    mat = CoefficientFunction((5,cfs[2],0,2),dims=(2,2))
+    cfs.append(vec) # Vectorial
+    cfs.append(vec[0]) # Component
+    cfs.append(2 * vec) # scale
+    cfs.append(vec * vec) # MultVecVec
+    cfs.append(Norm(vec)) # Norm
+    cfs.append(mat) # Mat
+    cfs.append(mat.trans)
+    cfs.append(mat.Eig())
+    cfs.append(IfPos(x-cfs[2], y, z)) # Ifpos
+    imagcf = x * 1J + y
+    cfs.append(imagcf)
+    cfs.append(imagcf.real)
+    cfs.append(imagcf.imag)
+    cfs.append(Norm(imagcf))
+    to_compile = Inv(Cof(mat))
+    cfs.append(to_compile.Compile())
+    cfs.append(to_compile.Compile(realcompile=True, wait=True))
+    cfs.append(to_compile.Compile(realcompile=True, wait=False))
+    mp = mesh(0.3,0.4,0.5)
+    compiled_vals = to_compile(mp)
+    dump = pickle.dumps(cfs)
+    lcfs = pickle.loads(dump)
+    assert lcfs[0](mp) == 1
+    assert lcfs[1](mp) == 1J
+    assert lcfs[2].Get() == 3
+    assert lcfs[3](mp) == 3, lcfs[3](mp)
+    lcfs[2].Set(5)
+    assert lcfs[2](mp) == 5
+    assert lcfs[3](mp) == 5
+    npt.assert_approx_equal(lcfs[4](mp),0.3)
+    npt.assert_approx_equal(lcfs[5](mp),0.4)
+    npt.assert_approx_equal(lcfs[6](mp),0.5)
+    npt.assert_approx_equal(lcfs[7](mp),sin(0.3))
+    npt.assert_approx_equal(lcfs[8](mp),cos(0.4))
+    assert lcfs[9](mp) == 0
+    npt.assert_approx_equal(lcfs[10](mp), 0.3**0.4)
+    npt.assert_approx_equal(lcfs[11](mp), 0.4*0.5)
+    npt.assert_approx_equal(lcfs[12](mp), 0.3/0.4)
+    npt.assert_approx_equal(lcfs[13](mp), 5.3)
+    npt.assert_approx_equal(lcfs[14](mp), 4.6)
+    assert lcfs[15](mp) == (5,1,2)
+    lcfs[2].Set(8)
+    assert lcfs[16](mp) == 8
+    assert lcfs[17](mp) == (16,2,4)
+    assert lcfs[18](mp) == 69
+    assert lcfs[19](mp) == sqrt(69)
+    assert lcfs[20](mp) == (5,8,0,2), lcfs[20](mp)
+    assert lcfs[21](mp) == (5,0,8,2)
+    lcfs[2].Set(0)
+    assert lcfs[22](mp) == (1,0,0,1,5,2)
+    lcfs[2].Set(0.5)
+    npt.assert_approx_equal(lcfs[23](mp),0.5)
+    npt.assert_approx_equal(lcfs[23](mesh(0.7,0.1,0.5)),0.1)
+    npt.assert_approx_equal(lcfs[24](mp).real,0.4)
+    npt.assert_approx_equal(lcfs[24](mp).imag,0.3)
+    npt.assert_approx_equal(lcfs[25](mp),0.4)
+    npt.assert_approx_equal(lcfs[26](mp),0.3)
+    npt.assert_approx_equal(lcfs[27](mp),sqrt(0.3*0.3+0.4*0.4))
+    np.allclose(lcfs[28](mp), compiled_vals)
+    np.allclose(lcfs[29](mp), compiled_vals)
+    np.allclose(lcfs[30](mp), compiled_vals)
 
 if __name__ == "__main__":
     test_pickle_volume_fespaces()
@@ -191,3 +278,4 @@ if __name__ == "__main__":
     test_pickle_compoundfespace()
     test_pickle_hcurl()
     test_pickle_periodic()
+    test_pickle_CoefficientFunctions()

@@ -10,12 +10,10 @@
 #include <atomic>
 #include <thread>
 
-
+#include <core/paje_trace.hpp>
 
 namespace ngstd
 {
-  class PajeTrace;
-
   class TaskInfo
   {
   public:

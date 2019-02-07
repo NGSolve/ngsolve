@@ -8,6 +8,9 @@
    Access to fe mesh
 */
 
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <comp.hpp>
 #include "../fem/h1lofe.hpp"
 #include <regex>
@@ -731,17 +734,25 @@ namespace ngcomp
     // the connection to netgen global variables
     ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
-#ifdef PARALLEL
-    // best we can do at the moment to get py-mpi running
-    mesh_comm = MPI_COMM_WORLD;
-    ngs_comm =  MPI_COMM_WORLD;
-#endif
+
+    // if there is a mesh, we take it's communicator
+    mesh_comm = (amesh!=nullptr) ? amesh->GetCommunicator() : ngs_comm;
+
+    // if there is a mesh, use set the global mesh-ptr accordingly
     mesh.SelectMesh();
-    mesh.UpdateTopology();  // for netgen/ngsolve stand alone
-    UpdateBuffers();
+    if(mesh.Valid())
+      {
+	mesh.UpdateTopology();  // for netgen/ngsolve stand alone
+	UpdateBuffers();
+      }
   }
 
-
+  MeshAccess :: MeshAccess (string filename, MPI_Comm amesh_comm)
+    : mesh(filename, amesh_comm), mesh_comm(amesh_comm)
+  {
+    UpdateBuffers();
+  }
+  
   MeshAccess :: ~MeshAccess ()
   {
     // delete mesh;
@@ -752,7 +763,7 @@ namespace ngcomp
   void MeshAccess :: LoadMesh (const string & filename)
   {
     static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);
-    mesh.LoadMesh (filename);
+    mesh.LoadMesh (filename, this->mesh_comm);
     UpdateBuffers();
     if (!mesh.Valid())
       throw Exception ("could not load mesh from '" + filename + "'");
@@ -761,19 +772,13 @@ namespace ngcomp
   void MeshAccess :: LoadMesh (istream & str)
   {
     static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);    
-    mesh.LoadMesh (str);
+    mesh.LoadMesh (str, this->mesh_comm);
     UpdateBuffers();
   }
 
   void MeshAccess :: SaveMesh (ostream & str) const
   {
     mesh.SaveMesh (str);
-  }
-
-  void MeshAccess :: ArchiveMesh (Archive & archive) 
-  {
-    mesh.DoArchive (archive);
-    if (archive.Input()) UpdateBuffers();
   }
 
   void MeshAccess :: SelectMesh() const
@@ -845,7 +850,7 @@ namespace ngcomp
     dim = mesh.GetDimension();
     nlevels = mesh.GetNLevels(); 
 
-    if (MyMPI_GetNTasks() > 1 && MyMPI_GetId() == 0)
+    if (MyMPI_GetNTasks(mesh_comm) > 1 && MyMPI_GetId(mesh_comm) == 0)
       {
         for (int i = 0; i < 4; i++)  
           {
@@ -908,7 +913,7 @@ namespace ngcomp
     */
 
     ndomains++;
-    ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
+    ndomains = MyMPI_AllReduce (ndomains, MPI_MAX, mesh_comm);
     pml_trafos.SetSize(ndomains);
     
     int nboundaries = -1;
@@ -919,7 +924,7 @@ namespace ngcomp
         nboundaries = max2(nboundaries, elindex);
       }
     nboundaries++;
-    nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
+    nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX, mesh_comm);
     nregions[1] = nboundaries;
 
 
@@ -943,7 +948,7 @@ namespace ngcomp
               nbboundaries = max2(nbboundaries, elindex);
           }
         nbboundaries++;
-        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
+        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX, mesh_comm);
       }
 
     int & nbbboundaries = nregions[BBBND];
@@ -961,7 +966,7 @@ namespace ngcomp
               nbbboundaries = max2(nbbboundaries, elindex);
           }
         nbbboundaries++;
-        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX);
+        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX, mesh_comm);
       }
     
     // update periodic mappings
@@ -970,7 +975,7 @@ namespace ngcomp
     periodic_node_pairs[NT_EDGE]->SetSize(0);
     periodic_node_pairs[NT_FACE]->SetSize(0);
 #ifdef PARALLEL
-    if(MyMPI_GetNTasks()>1 && MyMPI_GetId()==0)
+    if(MyMPI_GetNTasks(mesh_comm)>1 && MyMPI_GetId(mesh_comm)==0)
       nid = 0; //hopefully this is enough...
       //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
 #endif
@@ -1172,12 +1177,34 @@ namespace ngcomp
  
   void MeshAccess :: GetFaceEdges (int fnr, Array<int> & edges) const
   {
+    /*
     edges.SetSize(4);
     int ned = Ng_GetFace_Edges (fnr+1, &edges[0]);
     edges.SetSize(ned);
     for (int i = 0; i < ned; i++) edges[i]--;
+    */
+    edges = ArrayObject(mesh.GetFaceEdges(fnr));
   }
- 
+  
+  void MeshAccess :: GetEdgeFaces (int enr, Array<int> & faces) const
+  {
+    faces.SetSize0();
+    // auto [v0,v1] = GetEdgePNums(enr);
+    auto v01 = GetEdgePNums(enr);
+    auto v0 = v01[0], v1 = v01[1];
+
+    for (auto elnr : GetVertexElements(v0))
+      {
+        auto el = GetElement(ElementId(VOL,elnr));
+        if (el.Vertices().Contains(v1))
+          for (auto fa : el.Faces())
+            {
+              auto vnums = GetFacePNums(fa);
+              if (vnums.Contains(v0) && vnums.Contains(v1) && !faces.Contains(fa))
+                faces.Append(fa);
+            }
+      }
+  }
 
   void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
   {
@@ -1975,8 +2002,10 @@ namespace ngcomp
   
   void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
-    procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
-    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );
+    auto tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
+    procs.SetSize(get<0>(tup));
+    auto* ptr = get<1>(tup);
+    for(auto k:Range(procs.Size())) procs[k] = ptr[k];
   }
 
 
@@ -1997,11 +2026,11 @@ namespace ngcomp
   function<void()> cleanup_func;
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
 				    string atask, size_t atotal)
-    : ma(ama), task(atask), total(atotal)
+    : ma(ama), task(atask), total(atotal), comm(ama->GetCommunicator())
   {
-    is_root = (MyMPI_GetId() == 0);
+    is_root = (MyMPI_GetId(comm) == 0);
     prevtime = WallTime();
-    size_t glob_total = MyMPI_Reduce (total);
+    size_t glob_total = MyMPI_Reduce (total, MPI_SUM, comm);
     if (is_root) total = glob_total;
 
     done_called = false;
@@ -2061,7 +2090,7 @@ namespace ngcomp
 	  else
 	    {
 	      static Timer t("dummy - progressreport"); RegionTimer r(t);
-	      MPI_Send (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	      MyMPI_Send (nr, 0, MPI_TAG_SOLVE, comm);
               // changed from BSend (VSC-problem)
 	    }
 #endif
@@ -2080,7 +2109,7 @@ namespace ngcomp
     if (is_root)
       {
 #ifdef PARALLEL	  
-	int ntasks = MyMPI_GetNTasks();
+	int ntasks = MyMPI_GetNTasks(comm);
 	if (ntasks > 1)
 	  {
 	    Array<int> working(ntasks), computed(ntasks);
@@ -2088,16 +2117,17 @@ namespace ngcomp
 	    computed = 0;
 	    while (1)
 	      {
-		int flag, data, num_working = 0, got_flag = false;
+		int flag, num_working = 0, got_flag = false;
+		size_t data;
 		for (int source = 1; source < ntasks; source++)
 		  {
 		    if (!working[source]) continue;
 		    num_working++;
-		    MPI_Iprobe (source, MPI_TAG_SOLVE, ngs_comm, &flag, MPI_STATUS_IGNORE);
+		    MPI_Iprobe (source, MPI_TAG_SOLVE, comm, &flag, MPI_STATUS_IGNORE);
 		    if (flag)
 		      {
 			got_flag = true;
-			MPI_Recv (&data, 1, MPI_INT, source, MPI_TAG_SOLVE, ngs_comm, MPI_STATUS_IGNORE);
+			MyMPI_Recv (data, source, MPI_TAG_SOLVE, comm);
 			if (data == -1) 
 			  working[source] = 0;
 			else
@@ -2122,9 +2152,9 @@ namespace ngcomp
     else
       {
 #ifdef PARALLEL
-	MPI_Send (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
-	int final = -1;
-	MPI_Send (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	MyMPI_Send (total, 0, MPI_TAG_SOLVE, comm);
+	size_t final = -1;
+	MyMPI_Send (final, 0, MPI_TAG_SOLVE, comm);
 #endif
       }
   }

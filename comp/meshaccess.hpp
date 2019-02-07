@@ -8,7 +8,7 @@
 /*********************************************************************/
 
 
-#include <nginterface.h>
+// #include <nginterface.h>
 #include <nginterface_v2.hpp>
 
 namespace ngfem
@@ -54,11 +54,11 @@ namespace ngcomp
         case NG_PNT:                    return ET_POINT;
         case NG_SEGM: case NG_SEGM3:    return ET_SEGM;
         case NG_TRIG: case NG_TRIG6:    return ET_TRIG;
-        case NG_QUAD: case NG_QUAD6:    return ET_QUAD;
+        case NG_QUAD: case NG_QUAD6: case NG_QUAD8: return ET_QUAD;
         case NG_TET:  case NG_TET10:     return ET_TET;
         case NG_PRISM: case NG_PRISM12: return ET_PRISM;
         case NG_PYRAMID:                return ET_PYRAMID;
-        case NG_HEX:                    return ET_HEX;
+        case NG_HEX: case NG_HEX20:     return ET_HEX;
         default:
           __assume (false);
 #ifndef __CUDA_ARCH__
@@ -248,13 +248,8 @@ namespace ngcomp
   public:
     /// connects to Netgen - mesh
     MeshAccess (shared_ptr<netgen::Mesh> amesh = NULL);
-    /// loads mesh from file
-    MeshAccess (string filename, MPI_Comm amesh_comm = ngs_comm)
-      : MeshAccess()
-    {
-      mesh_comm = amesh_comm;
-      LoadMesh (filename);
-    }
+    /// loads new mesh from file
+    MeshAccess (string filename, MPI_Comm amesh_comm = ngs_comm);
     /// select this mesh in netgen visuaization
     void SelectMesh() const;
     /// not much to do 
@@ -264,7 +259,7 @@ namespace ngcomp
     int GetDimension() const { return dim; }  
 
     /// number of points. needed for isoparametric nodal elements
-    size_t GetNP() const  { return Ng_GetNP(); }
+    size_t GetNP() const  { return mesh.GetNP(); }
 
     /// number of vertices
     size_t GetNV() const  { return nnodes[0]; }  
@@ -500,11 +495,11 @@ namespace ngcomp
 
     /// not sure who needs that
     int GetSElSurfaceNumber (const int elnr) const
-    { return Ng_GetSurfaceElementSurfaceNumber (elnr+1)-1; }
+    { return mesh.GetSurfaceElementSurfaceNumber (elnr+1)-1; }
 
     /// not sure who needs that
     int GetSElFDNumber (const int elnr) const
-    { return Ng_GetSurfaceElementFDNumber (elnr+1)-1; }
+    { return mesh.GetSurfaceElementFDNumber (elnr+1)-1; }
 
 
 
@@ -626,16 +621,31 @@ namespace ngcomp
 
     auto GetTimeStamp() const { return timestamp; }
     
-    void SetRefinementFlag (ElementId id, bool ref)
+    void SetRefinementFlag (ElementId ei, bool ref)
     {
+      switch (dim-int(ei.VB()))
+        {
+        case 2: mesh.SetRefinementFlag<2>(ei.Nr(), ref); break;
+        case 3: mesh.SetRefinementFlag<3>(ei.Nr(), ref); break;
+        default: ; 
+        }
+      /*      
       if (id.IsVolume())
         Ng_SetRefinementFlag (id.Nr()+1, ref);
       else
         Ng_SetSurfaceRefinementFlag (id.Nr()+1, ref);
+      */
     }
 
     void Refine ();
     void Curve (int order);
+
+    void HPRefinement (int levels, double factor = 0.125)
+    {
+      mesh.HPRefinement(levels, factor);
+      UpdateBuffers();
+    }
+    
     void SetDeformation (shared_ptr<GridFunction> def = nullptr)
     {
       deformation = def;
@@ -809,15 +819,20 @@ namespace ngcomp
     /// returns all elements connected to an edge
     void GetEdgeSurfaceElements (int enr, Array<int> & elnums) const;
     /// returns all edges of a face
-    // [[deprecated("Use GetFaceEdges(fnr) -> edges instead!")]]                
+    [[deprecated("Use GetFaceEdges(fnr) -> edges instead!")]]                
     void GetFaceEdges (int fnr, Array<int> & edges) const;
-    INLINE ArrayMem<int,4> GetFaceEdges (size_t fnr) const
+    INLINE auto GetFaceEdges (size_t fnr) const
+    { return ArrayObject(mesh.GetFaceEdges(fnr)); }
+    /*
     {
       ArrayMem<int,4> f2ed;
       GetFaceEdges (fnr, f2ed);
       f2ed.NothingToDelete(); // dynamic allocation never needed
       return f2ed;
     }
+    */
+    
+    void GetEdgeFaces (int enr, Array<int> & faces) const;
     /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
     /// returns surface elements connected to a face
@@ -892,36 +907,36 @@ namespace ngcomp
     // void GetVertexElements (int vnr, Array<int> & elnrs) const;
     /// element order stored in Netgen
     int GetElOrder (int enr) const
-    { return Ng_GetElementOrder (enr+1); } 
+    { return mesh.GetElementOrder (enr+1); } 
     /// anisotropic order stored in Netgen
     INT<3> GetElOrders (int enr) const
     { 
       INT<3> eo; 
-      Ng_GetElementOrders(enr+1,&eo[0],&eo[1],&eo[2]); 
+      mesh.GetElementOrders(enr+1,&eo[0],&eo[1],&eo[2]); 
       return eo; 
     } 
     /// set element order in Netgen
-    void SetElOrder (int enr, int order) const
-    { Ng_SetElementOrder (enr+1,order); }
+    void SetElOrder (int enr, int order) 
+    { mesh.SetElementOrder (enr+1,order); }
     /// set anisotropic element order in Netgen
-    void SetElOrders (int enr, int ox, int oy, int oz) const
-    { Ng_SetElementOrders (enr+1, ox,oy,oz); }
+    void SetElOrders (int enr, int ox, int oy, int oz) 
+    { mesh.SetElementOrders (enr+1, ox,oy,oz); }
     /// order of suface element
     int GetSElOrder (int enr) const
-    { return Ng_GetSurfaceElementOrder (enr+1); } 
+    { return mesh.GetSurfaceElementOrder (enr+1); } 
     /// anisotropic order of suface element
     INT<2> GetSElOrders (int enr) const
     { 
       INT<2> eo; 
-      Ng_GetSurfaceElementOrders(enr+1,&eo[0],&eo[1]); 
+      mesh.GetSurfaceElementOrders(enr+1,&eo[0],&eo[1]); 
       return eo; 
     }
     /// set surface element order
-    void SetSElOrder (int enr, int order) const
-    { Ng_SetSurfaceElementOrder (enr+1,order); }
+    void SetSElOrder (int enr, int order) 
+    { mesh.SetSurfaceElementOrder (enr+1,order); }
     /// set anisotropic surface element order
-    void SetSElOrders (int enr, int ox, int oy) const
-    { Ng_SetSurfaceElementOrders (enr+1, ox,oy); }
+    void SetSElOrders (int enr, int ox, int oy) 
+    { mesh.SetSurfaceElementOrders (enr+1, ox,oy); }
     
 
     /// the volume of an element (mid-point rule)
@@ -965,16 +980,16 @@ namespace ngcomp
     
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
-    { return Ng_GetClusterRepVertex (pi+1)-1; }
+    { return mesh.GetClusterRepVertex (pi+1)-1; }
     /// representant of edge for anisotropic meshes
     int GetClusterRepEdge (int pi) const
-    { return Ng_GetClusterRepEdge (pi+1)-1; }
+    { return mesh.GetClusterRepEdge (pi+1)-1; }
     /// representant of face for anisotropic meshes
     int GetClusterRepFace (int pi) const
-    { return Ng_GetClusterRepFace (pi+1)-1; }
+    { return mesh.GetClusterRepFace (pi+1)-1; }
     /// representant of element for anisotropic meshes
     int GetClusterRepElement (int pi) const
-    { return Ng_GetClusterRepElement (pi+1)-1; }
+    { return mesh.GetClusterRepElement (pi+1)-1; }
     
     
     /// returns the transformation from the reference element to physical element.
@@ -1091,7 +1106,17 @@ namespace ngcomp
     void LoadMesh (const string & filename);
     void LoadMesh (istream & str);
     void SaveMesh (ostream & str) const;
-    void ArchiveMesh (Archive & archive);
+    void DoArchive(Archive& ar)
+    {
+      auto mshptr = mesh.GetMesh();
+      ar.Shallow(mshptr);
+      if(ar.Input())
+        {
+          // Create the Ngx_Mesh interface
+          mesh = {mshptr};
+          UpdateBuffers();
+        }
+    }
     // void LoadMeshFromString(const string & str);
 
     // void PrecomputeGeometryData(int intorder);
@@ -1202,6 +1227,7 @@ namespace ngcomp
   class ProgressOutput
   {
     shared_ptr<MeshAccess> ma;
+    MPI_Comm comm;
     string task;
     size_t total;
     double prevtime;

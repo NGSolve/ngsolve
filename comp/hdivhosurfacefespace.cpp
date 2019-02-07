@@ -299,7 +299,7 @@ public:
 
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
 
-    cout << "uniform_order_inner = " << uniform_order_inner << endl;
+    *testout << "uniform_order_inner = " << uniform_order_inner << endl;
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
            
     auto one = make_shared<ConstantCoefficientFunction> (1);

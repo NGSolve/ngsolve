@@ -61,9 +61,9 @@ namespace ngstd
   {
     program = eval2.program;
     res_type = eval2.res_type;
-    constants = eval2.constants;
-    globvariables = eval2.globvariables;
-    arguments = eval2.arguments;
+    constants.Update(eval2.constants);
+    globvariables.Update(eval2.globvariables);
+    arguments.Update(eval2.arguments);
     num_arguments = eval2.num_arguments;
   }
 

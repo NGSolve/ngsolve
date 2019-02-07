@@ -22,12 +22,6 @@ add_library(ngfem ${NGS_LIB_TYPE}
         h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         tensorproductintegrator.cpp code_generation.cpp
         )
-# python_fem.cpp
-
-target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(ngfem PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(ngfem PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngfem PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
 
 if(USE_CUDA)
     cuda_add_library( cuda_fem STATIC
@@ -38,11 +32,9 @@ if(USE_CUDA)
     target_link_libraries(ngfem ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
 endif(USE_CUDA)
 
-if(NOT WIN32)
-    target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE ${NETGEN_PYTHON_LIBRARIES})
-    target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    install( TARGETS ngfem ${ngs_install_dir} )
-endif(NOT WIN32)
+target_link_libraries(ngfem PUBLIC ngbla ngstd)
+target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+install( TARGETS ngfem ${ngs_install_dir} )
 
 install( FILES
         bdbequations.hpp hcurl_equations.hpp		
