@@ -346,11 +346,11 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def(py::init([](const string & filename, shared_ptr<PyMPI_Comm> c)
                   {
-		    MPI_Comm comm = c ? c->comm : ngs_comm;
-                    NGSOStream::SetGlobalActive (MyMPI_GetId(comm)==0);
-                    return make_shared<MeshAccess>(filename, comm);
+		    // MPI_Comm comm = c ? c->comm : ngs_comm;
+                    NGSOStream::SetGlobalActive (MyMPI_GetId(c->comm)==0);
+                    return make_shared<MeshAccess>(filename, c->comm);
                   }),
-         py::arg("filename"), py::arg("comm")=nullptr,
+         py::arg("filename"), py::arg("comm")=make_shared<PyMPI_Comm>(MPI_COMM_WORLD),
          "Load a mesh from file.\n"
          "In MPI-parallel mode the mesh is distributed over the MPI-group given by the communicator (WIP!)")
     

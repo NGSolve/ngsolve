@@ -140,8 +140,10 @@ namespace ngla
 	      for (int j = 0; j < rcols.Size(); j++)
 		if (!subset || subset->Test(rcols[j]))
 		  {
+                    /*
 		    *testout << "send (" << row << "," << rcols[j] 
 			     << "), global = (" <<  global_nums[row] << "," << global_nums[rcols[j]] << ")" << endl;
+                    */
 		    rows.Append (global_nums[row]);
 		    cols.Append (global_nums[rcols[j]]);
 		    vals.Append (rvals[j]);
@@ -187,10 +189,12 @@ namespace ngla
 	    MyMPI_Recv (hvals, src, MPI_TAG_SOLVE, comm);
 	    MyMPI_Recv (hglobid, src, MPI_TAG_SOLVE, comm);
 
+            /*
 	    *testout << "got from P" << src << ":" << endl
 		     << "rows " << endl << hrows << endl
 		     << "cols " << endl << hcols << endl;
-
+            */
+            
 	    for (int i = 0; i < hglobid.Size(); i ++)
 	      {
 		if (hglobid[i] == -1) continue;

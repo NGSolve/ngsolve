@@ -243,13 +243,13 @@ namespace ngcomp
                                                                make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>()};
 
-    ///
-    MPI_Comm mesh_comm;
   public:
+    /// for achiving ...
+    MeshAccess ();
     /// connects to Netgen - mesh
-    MeshAccess (shared_ptr<netgen::Mesh> amesh = NULL);
+    MeshAccess (shared_ptr<netgen::Mesh> amesh);
     /// loads new mesh from file
-    MeshAccess (string filename, MPI_Comm amesh_comm = ngs_comm);
+    MeshAccess (string filename, MPI_Comm amesh_comm = MPI_COMM_WORLD);
     /// select this mesh in netgen visuaization
     void SelectMesh() const;
     /// not much to do 
@@ -1106,8 +1106,8 @@ namespace ngcomp
     void SetHigherIntegrationOrder(int elnr);
     void UnSetHigherIntegrationOrder(int elnr);
 
-    void LoadMesh (const string & filename);
-    void LoadMesh (istream & str);
+    // void LoadMesh (const string & filename);
+    // void LoadMesh (istream & str);
     void SaveMesh (ostream & str) const;
     void DoArchive(Archive& ar)
     {
@@ -1133,7 +1133,7 @@ namespace ngcomp
     template <int DIMS, int DIMR> friend class Ng_ConstElementTransformation;
 
 
-    MPI_Comm GetCommunicator () const { return mesh_comm; }
+    MPI_Comm GetCommunicator () const { return mesh.GetCommunicator(); }
 
     /**
        Returns the list of other MPI - processes where node is present.

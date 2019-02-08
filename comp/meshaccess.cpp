@@ -725,41 +725,38 @@ namespace ngcomp
 
 
 
-
+  MeshAccess :: MeshAccess ()
+    : mesh(shared_ptr<netgen::Mesh>())
+  {
+    ;
+  }
 
 
   MeshAccess :: MeshAccess (shared_ptr<netgen::Mesh> amesh)
-    : mesh(amesh), mesh_comm(ngs_comm)
+    : mesh(amesh)
   {
     // the connection to netgen global variables
     ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
 
-    // if there is a mesh, we take it's communicator
-    mesh_comm = (amesh!=nullptr) ? amesh->GetCommunicator() : ngs_comm;
-
-    // if there is a mesh, use set the global mesh-ptr accordingly
     mesh.SelectMesh();
-    if(mesh.Valid())
-      {
-	mesh.UpdateTopology();  // for netgen/ngsolve stand alone
-	UpdateBuffers();
-      }
+
+    mesh.UpdateTopology();  
+    UpdateBuffers();
   }
 
   MeshAccess :: MeshAccess (string filename, MPI_Comm amesh_comm)
-    : mesh(filename, amesh_comm), mesh_comm(amesh_comm)
+    : mesh(filename, amesh_comm)
   {
     UpdateBuffers();
   }
   
   MeshAccess :: ~MeshAccess ()
   {
-    // delete mesh;
-    // Ng_LoadGeometry("");
+    ;
   }
 
-
+  /*
   void MeshAccess :: LoadMesh (const string & filename)
   {
     static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);
@@ -775,7 +772,8 @@ namespace ngcomp
     mesh.LoadMesh (str, this->mesh_comm);
     UpdateBuffers();
   }
-
+  */
+  
   void MeshAccess :: SaveMesh (ostream & str) const
   {
     mesh.SaveMesh (str);
@@ -786,14 +784,6 @@ namespace ngcomp
     mesh.SelectMesh();
   }
 
-
-  /*
-  void MeshAccess :: LoadMeshFromString(const string & str)
-  {
-    Ng_LoadMeshFromString(const_cast<char*>(str.c_str()));
-    UpdateBuffers();
-  }
-  */
 
   void MeshAccess :: GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
   {
@@ -823,7 +813,6 @@ namespace ngcomp
     static Timer t("MeshAccess::UpdateBuffers");
     RegionTimer reg(t);
 
-    
     if (!mesh.Valid())
       {
         for (int i = 0; i < 4; i++)  
@@ -850,7 +839,7 @@ namespace ngcomp
     dim = mesh.GetDimension();
     nlevels = mesh.GetNLevels(); 
 
-    if (MyMPI_GetNTasks(mesh_comm) > 1 && MyMPI_GetId(mesh_comm) == 0)
+    if (MyMPI_GetNTasks(GetCommunicator()) > 1 && MyMPI_GetId(GetCommunicator()) == 0)
       {
         for (int i = 0; i < 4; i++)  
           {
@@ -913,7 +902,7 @@ namespace ngcomp
     */
 
     ndomains++;
-    ndomains = MyMPI_AllReduce (ndomains, MPI_MAX, mesh_comm);
+    ndomains = MyMPI_AllReduce (ndomains, MPI_MAX, GetCommunicator());
     pml_trafos.SetSize(ndomains);
     
     int nboundaries = -1;
@@ -924,7 +913,7 @@ namespace ngcomp
         nboundaries = max2(nboundaries, elindex);
       }
     nboundaries++;
-    nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX, mesh_comm);
+    nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX, GetCommunicator());
     nregions[1] = nboundaries;
 
 
@@ -948,7 +937,7 @@ namespace ngcomp
               nbboundaries = max2(nbboundaries, elindex);
           }
         nbboundaries++;
-        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX, mesh_comm);
+        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX, GetCommunicator());
       }
 
     int & nbbboundaries = nregions[BBBND];
@@ -966,7 +955,7 @@ namespace ngcomp
               nbbboundaries = max2(nbbboundaries, elindex);
           }
         nbbboundaries++;
-        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX, mesh_comm);
+        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX, GetCommunicator());
       }
     
     // update periodic mappings
@@ -975,7 +964,7 @@ namespace ngcomp
     periodic_node_pairs[NT_EDGE]->SetSize(0);
     periodic_node_pairs[NT_FACE]->SetSize(0);
 #ifdef PARALLEL
-    if(MyMPI_GetNTasks(mesh_comm)>1 && MyMPI_GetId(mesh_comm)==0)
+    if(MyMPI_GetNTasks(GetCommunicator())>1 && MyMPI_GetId(GetCommunicator())==0)
       nid = 0; //hopefully this is enough...
       //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
 #endif
