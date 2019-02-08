@@ -9,8 +9,9 @@ namespace netgen
 
 extern int dummy_bvp;
 
+using ngstd::NgProfiler;
 void printMeasurement( string name ) {
-    int nr = NgProfiler::GetNr(name);
+  int nr = NgProfiler::GetNr(name);
     cout << name << ": " << nr << endl;
     if(nr < 0) return;
     double time =  NgProfiler::GetTime(nr);
@@ -51,7 +52,7 @@ int main(int argc, char ** argv)
   dummy_bvp = 17;
 
   ngsolve::MyMPI mympi(argc, argv);
-  cout << IM(1) << "CTEST_FULL_OUTPUT" << endl;
+  cout << ngstd::IM(1) << "CTEST_FULL_OUTPUT" << endl;
 
   try
     {
