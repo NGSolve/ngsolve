@@ -2338,7 +2338,7 @@ namespace ngcomp
     string data;
     pde = apde;
 
-    if (MyMPI_GetId() == 0)
+    if (MyMPI_GetId(ngs_comm) == 0)
       {
 	string::size_type pos1 = filename.rfind('\\');
 	string::size_type pos2 = filename.rfind('/');
@@ -2373,8 +2373,8 @@ namespace ngcomp
 	  }
 
 	string hfilename = filename;
-	MyMPI_Bcast (hfilename);
-	MyMPI_Bcast (pde_directory);
+	MyMPI_Bcast (hfilename, ngs_comm);
+	MyMPI_Bcast (pde_directory, ngs_comm);
       }
 
     else
@@ -2382,13 +2382,13 @@ namespace ngcomp
       {
 	string filename, pde_directory;
 
-	MyMPI_Bcast (filename);
-	MyMPI_Bcast (pde_directory);	
+	MyMPI_Bcast (filename, ngs_comm);
+	MyMPI_Bcast (pde_directory, ngs_comm);	
 	pde->SetDirectory(pde_directory);
 	pde->SetFilename(filename);
       }
     
-    MyMPI_Bcast (data);
+    MyMPI_Bcast (data, ngs_comm);
 
     stringstream strdata(data);
     LoadPDE(pde, strdata, nomeshload, nogeometryload);

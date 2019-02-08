@@ -44,7 +44,8 @@ auto NodalData (const MeshAccess & ama, Array<TELEM> & a) -> NodalArray<NT,TELEM
 template <NODE_TYPE NT, typename T> 
 Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
-  if (MyMPI_GetNTasks() == 1) return archive & a.A();
+  auto comm = a.GetMeshAccess().GetCommunicator();
+  if (MyMPI_GetNTasks(comm) == 1) return archive & a.A();
   
   auto g = [&] (int size) { archive & size; };    
 

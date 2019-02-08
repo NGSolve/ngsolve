@@ -1050,7 +1050,8 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     cout << "Update amg" << endl;
 
 #ifdef PARALLEL
-    if ( this->on_proc != MyMPI_GetId() && this->on_proc != -1)
+    auto comm = ma->GetCommunicator();
+    if ( this->on_proc != MyMPI_GetId(comm) && this->on_proc != -1)
       {
 	amg = NULL;
 	return;

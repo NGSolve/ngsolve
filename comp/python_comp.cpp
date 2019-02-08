@@ -2267,7 +2267,7 @@ integrator : ngsolve.fem.LFI
                              //cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
                              //     << MyMPI_GetNTasks(ngs_comm) << endl;
 
-                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
+                             NGSOStream::SetGlobalActive (MyMPI_GetId(ngs_comm)==0);
                              return LoadPDE (filename);
                            }), py::arg("filename"))
 #endif
@@ -2529,13 +2529,13 @@ integrator : ngsolve.fem.LFI
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = MyMPI_AllReduce(sum(0));
+                sum(0) = MyMPI_AllReduce(sum(0), MPI_SUM, ma->GetCommunicator());
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 Vector<> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                 sum = gsum;
 #endif
                 result = py::cast(sum);
@@ -2616,7 +2616,7 @@ integrator : ngsolve.fem.LFI
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = MyMPI_AllReduce(sum(0));
+                sum(0) = MyMPI_AllReduce(sum(0), MPI_SUM, ma->GetCommunicator());
                 result = py::cast(sum(0));
               }
               else {

@@ -137,9 +137,10 @@ namespace ngstd
   template <>
   inline auto GetGlobalNodeId<NT_FACE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_FACE>::TKEY 
   {
-    Array<int> edges (3);
+    // Array<int> edges (3);
     Array<int> verts;
-    ma.GetFaceEdges(nr, edges);
+    // ma.GetFaceEdges(nr, edges);
+    auto edges = ma.GetFaceEdges(nr);
     for(int k=0;k<3;k++)
       {
 	// int p1, p2;
@@ -165,8 +166,9 @@ namespace ngstd
     auto faces = ma.GetElFacets(ElementId(VOL,nr));
     for(int k=0;k<4;k++)
       {
-	Array<int> edges(3);
-	ma.GetFaceEdges(faces[k], edges);
+	// Array<int> edges(3);
+	// ma.GetFaceEdges(faces[k], edges);
+        auto edges = ma.GetFaceEdges(faces[k]);
 	//cout << "edges: " << edges << endl;
 	for(int j=0;j<3;j++)
 	  {
@@ -906,7 +908,8 @@ namespace ngstd
     Array<TKEY> global_keys;
       
     // gather local data where I am master
-    int myid = MyMPI_GetId();
+    auto comm = ma.GetCommunicator();
+    int myid = MyMPI_GetId(comm);
     for (int i = 0; i < ma.GetNNodes(NT); i++)
       {
 	bool ismaster = true;
