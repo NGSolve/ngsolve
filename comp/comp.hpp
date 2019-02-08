@@ -10,7 +10,7 @@
 #include <fem.hpp>
 #include <la.hpp>
 
-#include <soldata.hpp>   // netgen visualization
+
 
 
 /**
