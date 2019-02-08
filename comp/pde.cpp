@@ -522,7 +522,7 @@ namespace ngcomp
     }
     double starttime = WallTime();
 
-    MyMPI_Barrier();
+    MyMPI_Barrier(ngs_comm);
     if (pc == 0 || pc == todo.Size())
       {
         pc = 0;
@@ -813,7 +813,7 @@ namespace ngcomp
     Ng_Redraw();
     levelsolved++;
     
-    MyMPI_Barrier();
+    MyMPI_Barrier(ngs_comm);
     double endtime = WallTime();
     
     cout << IM(1) << "Equation Solved" << endl;
@@ -864,7 +864,7 @@ namespace ngcomp
             archive << spaces[i] -> GetDimension();
 
 	    MyMPI_SendCmd ("ngs_archive_space");
-	    MyMPI_Bcast (i);
+	    MyMPI_Bcast (i, ngs_comm);
 
             spaces[i] -> DoArchive(archive);
 	    cout << "space " << i << " complete" << endl;
@@ -902,7 +902,7 @@ namespace ngcomp
             archive << gridfunctions[i]->GetFESpace()->GetName();
 
 	    MyMPI_SendCmd ("ngs_archive_gridfunction");
-	    MyMPI_Bcast (i);
+	    MyMPI_Bcast (i, ngs_comm);
 
             gridfunctions[i] -> DoArchive (archive);
             // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
@@ -1207,7 +1207,7 @@ namespace ngcomp
     cout << IM(1) << "add preconditioner " << name << flush;
     shared_ptr<Preconditioner> pre;
     const string & type = flags.GetStringFlag ("type");
-    int ntasks = MyMPI_GetNTasks ();
+    int ntasks = MyMPI_GetNTasks (ngs_comm);
     
     if ( ntasks == 1 )
       {

@@ -1675,7 +1675,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: UpdateParallelDofs ( )
   {
-    if (MyMPI_GetNTasks(ma->GetCommunicator()) == 1) return;
+    // if (MyMPI_GetNTasks(ma->GetCommunicator()) == 1) return;
+    if (ma->GetCommunicator().Size() == 1) return;
 
     static Timer timer ("FESpace::UpdateParallelDofs"); RegionTimer reg(timer);
 
@@ -2635,7 +2636,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (spaces[i]->GetFreeDofs()) 
 	has_dirichlet_dofs = true;
 
-    has_dirichlet_dofs = MyMPI_AllReduce (has_dirichlet_dofs, MPI_LOR);
+    auto comm = ma->GetCommunicator();
+    has_dirichlet_dofs = MyMPI_AllReduce (has_dirichlet_dofs, MPI_LOR, comm);
 
     if (has_dirichlet_dofs)
       {

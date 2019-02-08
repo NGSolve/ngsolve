@@ -2348,7 +2348,8 @@ namespace ngcomp
             int MASK = eliminate_internal ? EXTERNAL_DOF : (eliminate_hidden ? VISIBLE_DOF : ANY_DOF);
             bool first_time = true;
 
-            if (MyMPI_GetNTasks() == 1 && check_unused) 
+            auto comm = ma->GetCommunicator();
+            if (comm.Size() == 1 && check_unused) 
               for (int i = 0; i < useddof.Size(); i++)
                 if (useddof[i] != 
                     ((fespace->GetDofCouplingType(i) & MASK) != 0) )
@@ -3764,7 +3765,8 @@ namespace ngcomp
                        if(elnums.Size() < 2)
                          {
 #ifdef PARALLEL
-			   if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), facet)).Size() > 0) && (MyMPI_GetNTasks()>1) )
+                           auto comm = ma->GetCommunicator();
+			   if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), facet)).Size() > 0) && (comm.Size()>1) )
 			     continue;
 #endif
                            facet2 = ma->GetPeriodicFacet(facet);
@@ -3888,7 +3890,8 @@ namespace ngcomp
                        ma->GetFacetElements(facet,elnums);
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
-			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
+                         auto comm = ma->GetCommunicator();
+			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks(comm)>1) )
 			   continue;
 #endif
                          facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
@@ -4030,8 +4033,8 @@ namespace ngcomp
 
 	
 #ifdef PARALLEL
-	if( (MyMPI_GetNTasks()>1) &&
-	    (mpi_facet_parts.Size()) )
+        auto comm = ma->GetCommunicator();
+	if (comm.Size() > 1 && mpi_facet_parts.Size())
 	  {
 	    RegionTimer rt(timerDGparallelfacets);
 	    

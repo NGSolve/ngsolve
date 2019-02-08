@@ -180,7 +180,7 @@ namespace ngla
 					 dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
 
-    return MyMPI_AllReduce (localsum);
+    return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
   }
 
 

@@ -21,7 +21,7 @@ namespace ngla
   {
   protected:
     /// the communicator 
-    MPI_Comm comm;
+    NgMPI_Comm comm;
     
     /// local ndof
     size_t ndof;
