@@ -750,6 +750,10 @@ namespace ngcomp
   MeshAccess :: MeshAccess (string filename, MPI_Comm amesh_comm)
     : mesh(filename, amesh_comm), mesh_comm(amesh_comm)
   {
+    // the connection to netgen global variables
+    ngstd::testout = netgen::testout;
+    ngstd::printmessage_importance = netgen::printmessage_importance;
+
     UpdateBuffers();
   }
   
