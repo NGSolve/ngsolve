@@ -7,6 +7,9 @@
 /* Date:   10. Jul. 2000                                             */
 /*********************************************************************/
 
+
+#include <soldata.hpp>   // netgen visualization
+
 namespace ngcomp
 {
 
@@ -360,7 +363,7 @@ namespace ngcomp
 
 
 
-
+  
   template <class SCAL>
   class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {

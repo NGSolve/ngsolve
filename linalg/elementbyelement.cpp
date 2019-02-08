@@ -952,11 +952,12 @@ namespace ngla
              for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                {
                  size_t li = min2(bi+BS, r.Next());
-                 size_t num = li-bi;
-                 
+                 size_t num = li-bi; 
                  for (size_t i = 0; i < num; i++)
                    hx.Row(i) = fx(row_dnums[bi+i]);
                  {
+                   NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                   ThreadRegionTimer reg(tpmult, TaskManager::GetThreadId());
                    RegionTracer rt(TaskManager::GetThreadId(), tpmult);
                    hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
                  }
@@ -997,6 +998,8 @@ namespace ngla
                      hx.Row(i) = fx(col_dnums[col[bi+i]]);
                    
                    {
+                     NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                     ThreadRegionTimer reg(tpmult, TaskManager::GetThreadId());
                      RegionTracer rt(TaskManager::GetThreadId(), tpmult);
                      hy.Rows(0, num) = hx.Rows(0, num) * matrix;
                    }
@@ -1025,7 +1028,10 @@ namespace ngla
                    hx.Row(i) = fx(col_dnums[bi+i]);
                  
                  {
+                   NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                   ThreadRegionTimer reg(tpmult, TaskManager::GetThreadId());
                    RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   
                    hy.Rows(0, num) = hx.Rows(0, num) * matrix;
                  }
                  
