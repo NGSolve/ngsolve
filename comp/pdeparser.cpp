@@ -567,15 +567,15 @@ namespace ngcomp
                   if (ifstream (meshfile.c_str()))
 		    {
 		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
-                      auto ma = make_shared<MeshAccess>();
-                      ma -> LoadMesh (meshfile);
+                      auto ma = make_shared<MeshAccess>(meshfile);
+                      // ma -> LoadMesh (meshfile);
                       pde -> AddMeshAccess(ma);
 		    }
 		  else
 		    {
 		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
-                      auto ma = make_shared<MeshAccess>();
-                      ma -> LoadMesh (scan->GetStringValue());
+                      auto ma = make_shared<MeshAccess>(scan->GetStringValue());
+                      // ma -> LoadMesh (scan->GetStringValue());
                       pde -> AddMeshAccess(ma);
 		    }
 		}
