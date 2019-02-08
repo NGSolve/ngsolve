@@ -1213,8 +1213,12 @@ global system.
     quad = new L2HighOrderFE<ET_QUAD> (order);
     */
 
-    lowest_order_ct =
-      flags.GetDefineFlagX ("lowest_order_wb").IsTrue() ? WIREBASKET_DOF : LOCAL_DOF;
+    lowest_order_wb = flags.GetDefineFlagX ("lowest_order_wb").IsTrue();
+
+    discontinuous = flags.GetDefineFlagX ("discontinuous").IsTrue();
+
+    if (lowest_order_wb && discontinuous)
+      throw Exception("In L2SurfaceFESpace: lowest_order_wb and discontinuous flag are set!");
     
     if (ma->GetDimension() == 2)
       {
@@ -1271,7 +1275,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 )raw_string";
 
     docu.Arg("lowest_order_wb") = "bool = False\n"
-      "  Keep lowest order dof in WIRE_BASKET";
+      "  Keep lowest order dof in WIRE_BASKET and make other dofs LOCAL";
+    docu.Arg("discontinuous") = "bool = False\n"
+      "  Make all dofs LOCAL";
 
     return docu;
   }
@@ -1340,16 +1346,17 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   void L2SurfaceHighOrderFESpace :: UpdateCouplingDofArray()
   {
     ctofdof.SetSize(ndof);
+    ctofdof = UNUSED_DOF;
+    
     for (auto i : Range(ma->GetNSE()))
-      {
-        bool definedon = DefinedOn(ElementId(BND,i));
-        auto r = GetElementDofs(i);
-        
-        ctofdof[r] =  definedon ? LOCAL_DOF : UNUSED_DOF;
-
-        if (r.Size() != 0)
-            ctofdof[r.First()] = definedon ? lowest_order_ct : UNUSED_DOF;
-      }
+      if (DefinedOn({BND,i}))
+        {
+          auto r = GetElementDofs(i);
+          ctofdof[r] =  (discontinuous || lowest_order_wb) ? LOCAL_DOF : WIREBASKET_DOF;
+          
+          if (lowest_order_wb && r.Size() != 0)
+            ctofdof[r.First()] = WIREBASKET_DOF;
+        }
   }
 
 
