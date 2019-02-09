@@ -1675,7 +1675,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: UpdateParallelDofs ( )
   {
-    // if (MyMPI_GetNTasks(ma->GetCommunicator()) == 1) return;
     if (ma->GetCommunicator().Size() == 1) return;
 
     static Timer timer ("FESpace::UpdateParallelDofs"); RegionTimer reg(timer);

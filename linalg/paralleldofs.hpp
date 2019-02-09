@@ -81,11 +81,11 @@ namespace ngla
     MPI_Datatype MyGetMPI_Type (int dest) const
     { return mpi_t[dest]; }
 
-    MPI_Comm GetCommunicator () const { return comm; }
+    NgMPI_Comm GetCommunicator () const { return comm; }
 
     int GetMasterProc (int dof) const
     {
-      int m = MyMPI_GetId(comm);
+      int m = comm.Rank();
       for (int p : GetDistantProcs(dof))
 	m = min2(p, m);
       return m;
@@ -181,9 +181,9 @@ namespace ngla
     static Timer t0("ParallelDofs :: ReduceDofData");
     RegionTimer rt(t0);
 
-    MPI_Comm comm = GetCommunicator();
-    int ntasks = GetNTasks();
-    int rank = MyMPI_GetId(comm);
+    auto comm = GetCommunicator();
+    int ntasks = comm.Size();
+    int rank = comm.Rank();
     if (ntasks <= 1) return;
 
 
@@ -254,9 +254,9 @@ namespace ngla
     static Timer t0("ParallelDofs :: ScatterDofData");
     RegionTimer rt(t0);
 
-    MPI_Comm comm = GetCommunicator();
-    int ntasks = GetNTasks();
-    int rank = MyMPI_GetId(comm);
+    NgMPI_Comm comm = GetCommunicator();
+    int ntasks = comm.Size();
+    int rank = comm.Rank();
     if (ntasks <= 1) return;
 
 
