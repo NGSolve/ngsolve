@@ -23,8 +23,8 @@ namespace ngla
     : comm(acomm), dist_procs(adist_procs)
     
   {
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
       
     ndof = dist_procs.Size();
     
@@ -126,8 +126,8 @@ namespace ngla
 					  Array<int> & global_nums,
 					  int & num_glob_dofs) const
   {
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
 
     global_nums.SetSize(ndof);
     global_nums = -1;

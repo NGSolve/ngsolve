@@ -839,7 +839,7 @@ namespace ngcomp
     dim = mesh.GetDimension();
     nlevels = mesh.GetNLevels(); 
 
-    if (MyMPI_GetNTasks(GetCommunicator()) > 1 && MyMPI_GetId(GetCommunicator()) == 0)
+    if (GetCommunicator().Size() > 1 && GetCommunicator().Rank() == 0)
       {
         for (int i = 0; i < 4; i++)  
           {
@@ -964,9 +964,9 @@ namespace ngcomp
     periodic_node_pairs[NT_EDGE]->SetSize(0);
     periodic_node_pairs[NT_FACE]->SetSize(0);
 #ifdef PARALLEL
-    if(MyMPI_GetNTasks(GetCommunicator())>1 && MyMPI_GetId(GetCommunicator())==0)
+    if(GetCommunicator().Size() > 1 && GetCommunicator().Rank() == 0)
       nid = 0; //hopefully this is enough...
-      //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
+    //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
 #endif
     for (auto idnr : Range(nid))
       {
