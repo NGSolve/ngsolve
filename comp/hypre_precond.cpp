@@ -70,11 +70,11 @@ namespace ngcomp
       throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
 
     pardofs = pmat.GetParallelDofs ();
-    MPI_Comm comm = pardofs->GetCommunicator();
+    NgMPI_Comm comm = pardofs->GetCommunicator();
     int ndof = pardofs->GetNDofLocal();
 
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
     
 
     // find global dof enumeration 
