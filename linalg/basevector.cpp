@@ -783,7 +783,7 @@ namespace ngla
       else ps += p;
     }
     // if all vectors are sequential, do not reduce reduce
-    if (comm == MPI_COMM_NULL) return ps;
+    if (MPI_Comm(comm) == MPI_COMM_NULL) return ps;
     return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
   }
 

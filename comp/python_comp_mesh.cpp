@@ -344,13 +344,13 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("ngmesh"),
          "Make an NGSolve-mesh from a Netgen-mesh")
 
-    .def(py::init([](const string & filename, shared_ptr<PyMPI_Comm> c)
+    .def(py::init([](const string & filename, NgMPI_Comm comm)
                   {
 		    // MPI_Comm comm = c ? c->comm : ngs_comm;
-                    NGSOStream::SetGlobalActive (MyMPI_GetId(c->comm)==0);
-                    return make_shared<MeshAccess>(filename, c->comm);
+                    NGSOStream::SetGlobalActive (comm.Rank()==0);
+                    return make_shared<MeshAccess>(filename, comm);
                   }),
-         py::arg("filename"), py::arg("comm")=make_shared<PyMPI_Comm>(MPI_COMM_WORLD),
+         py::arg("filename"), py::arg("comm")=NgMPI_Comm(MPI_COMM_WORLD),
          "Load a mesh from file.\n"
          "In MPI-parallel mode the mesh is distributed over the MPI-group given by the communicator (WIP!)")
     
@@ -358,8 +358,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
          { return self == other; }, py::arg("mesh"))
      .def_property_readonly("comm", [](const MeshAccess& ma)
-                           { return make_shared<PyMPI_Comm>(ma.GetCommunicator()); },
-                           "MPI-communicator the Mesh lives in")
+                            { return ma.GetCommunicator(); },
+                            "MPI-communicator the Mesh lives in")
    
     .def(NGSPickle<MeshAccess>())
     /*

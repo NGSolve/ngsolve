@@ -126,7 +126,7 @@ namespace ngla
     int GetNDofGlobal () const { return ndof; }
     
     int GetNTasks() const { return 1; }
-    NgMPI_Comm GetCommunicator () const { return NgMPI_Comm(1); }
+    NgMPI_Comm GetCommunicator () const { return NgMPI_Comm(MPI_COMM_WORLD); }
     
     FlatArray<int> GetExchangeDofs (int proc) const
     { return FlatArray<int> (0, nullptr); }
