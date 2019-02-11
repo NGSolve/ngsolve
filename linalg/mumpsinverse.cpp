@@ -44,9 +44,9 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    NgMPI_Comm comm(MPI_COMM_WORLD);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
     
     if (id == 0)
       {
@@ -343,8 +343,8 @@ namespace ngla
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int id = MyMPI_GetId(comm);
+    NgMPI_Comm comm(MPI_COMM_WORLD);
+    int id = comm.Rank();
 
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
     NgProfiler::RegionTimer reg (timer);
@@ -439,9 +439,9 @@ namespace ngla
 
     cout << IM(1) << "Mumps Parallel inverse, symmetric = " << symmetric << endl;
 
-    MPI_Comm comm = pardofs->GetCommunicator();
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    NgMPI_Comm comm = pardofs->GetCommunicator();
+    int ntasks = comm.Size();
+    int id = comm.Rank();
 
     if (id == 0)
       {
@@ -855,9 +855,9 @@ namespace ngla
     y.SetParallelStatus (CUMULATED);
 
 
-    MPI_Comm comm = paralleldofs->GetCommunicator();
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    int ntasks = comm.Size();
+    int id = comm.Rank();
 
 
     if (id != 0)
