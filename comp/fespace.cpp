@@ -3094,32 +3094,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
   Table<int> Nodes2Table (const MeshAccess & ma,
                           const Array<NodeId> & dofnodes)
   {
-    int ndof = dofnodes.Size();
+    size_t ndof = dofnodes.Size();
 
-    Array<int> distprocs;
     Array<int> ndistprocs(ndof);
     ndistprocs = 0;
-    for (int i = 0; i < ndof; i++)
+    
+    for (size_t i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
-	ma.GetDistantProcs (dofnodes[i], distprocs);
-	ndistprocs[i] = distprocs.Size();
+        ndistprocs[i] = ma.GetDistantProcs (dofnodes[i]).Size();
       }
     
     Table<int> dist_procs(ndistprocs);
 
-    for (int i = 0; i < ndof; i++)
+    for (size_t i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
-	ma.GetDistantProcs (dofnodes[i], distprocs);
-	dist_procs[i] = distprocs;
+	dist_procs[i] = ma.GetDistantProcs (dofnodes[i]);
       }
 
     return dist_procs;
   }
 
 
-#ifdef PARALLEL
+  // #ifdef PARALLEL
   ParallelMeshDofs :: ParallelMeshDofs (shared_ptr<MeshAccess> ama, 
 					const Array<Node> & adofnodes, 
 					int dim, bool iscomplex)
@@ -3127,7 +3125,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    Nodes2Table (*ama, adofnodes), dim, iscomplex),		    
       ma(ama), dofnodes(adofnodes)
   { ; }
-#endif
+  // #endif
 
 
 

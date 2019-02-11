@@ -963,11 +963,10 @@ namespace ngcomp
     periodic_node_pairs[NT_VERTEX]->SetSize(0);
     periodic_node_pairs[NT_EDGE]->SetSize(0);
     periodic_node_pairs[NT_FACE]->SetSize(0);
-#ifdef PARALLEL
-    if(GetCommunicator().Size() > 1 && GetCommunicator().Rank() == 0)
+
+    if (GetCommunicator().Size() > 1 && GetCommunicator().Rank() == 0)
       nid = 0; //hopefully this is enough...
-    //if(MyMPI_GetNTasks()==1 || MyMPI_GetId()!=0)
-#endif
+
     for (auto idnr : Range(nid))
       {
         // only if it is periodic

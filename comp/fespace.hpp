@@ -1371,7 +1371,7 @@ ANY                  1 1 1 1 | 15
 
 
 
-#ifdef PARALLEL
+  // #ifdef PARALLEL
 
   class ParallelMeshDofs : public ParallelDofs
   {
@@ -1385,9 +1385,10 @@ ANY                  1 1 1 1 | 15
     const Array<Node> & GetDofNodes() const { return dofnodes; }
   };
   
-#else
+  // #else
 
-
+#ifdef NOPARALLEL
+  
   class ParallelMeshDofs : public ParallelDofs 
   {
   public:
