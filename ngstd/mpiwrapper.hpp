@@ -356,12 +356,16 @@ namespace ngstd
       : comm(c.comm), refcount(c.refcount)
     {
       if (refcount) (*refcount)++;
+      MPI_Comm_rank(comm, &rank);
+      MPI_Comm_size(comm, &size);
     }
 
     NgMPI_Comm (NgMPI_Comm && c)
       : comm(c.comm), refcount(c.refcount)
     {
       c.refcount = nullptr;
+      MPI_Comm_rank(comm, &rank);
+      MPI_Comm_size(comm, &size);
     }
     
     ~NgMPI_Comm()
