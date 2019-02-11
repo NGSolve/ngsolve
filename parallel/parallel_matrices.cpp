@@ -4,7 +4,6 @@
 /* Date:   June 2011                                                 */
 /*********************************************************************/
 
-#ifdef PARALLEL
  
 #include <la.hpp>
 #include "../linalg/mumpsinverse.hpp"
@@ -13,6 +12,8 @@
 
 namespace ngla
 {
+
+#ifdef PARALLEL
   
   template <typename TM> AutoVector MasterInverse<TM> :: CreateVector () const
   { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
@@ -351,6 +352,33 @@ namespace ngla
     // dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
 
   }
+
+
+
+
+  template class MasterInverse<double>;
+  template class MasterInverse<Complex>;
+
+#if MAX_SYS_DIM >= 1
+  template class MasterInverse<Mat<1,1,double> >;
+  template class MasterInverse<Mat<1,1,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 2
+  template class MasterInverse<Mat<2,2,double> >;
+  template class MasterInverse<Mat<2,2,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 3
+  template class MasterInverse<Mat<3,3,double> >;
+  template class MasterInverse<Mat<3,3,Complex> >;
+#endif
+
+
+
+
+
+  
+#endif
+
   
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
 				    shared_ptr<ParallelDofs> arpardofs,
@@ -466,7 +494,7 @@ namespace ngla
   shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrixTM (shared_ptr<BitArray> subset) const
   {
     const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
-    if (!dmat) return NULL;
+    if (!dmat) return nullptr;
 
 #ifdef USE_MUMPS
     bool symmetric = dynamic_cast<const SparseMatrixSymmetric<TM>*> (mat.get()) != NULL;
@@ -474,7 +502,11 @@ namespace ngla
       return make_shared<ParallelMumpsInverse<TM>> (*dmat, subset, nullptr, paralleldofs, symmetric);
     else 
 #endif
+
+#ifdef PARALLEL
       return make_shared<MasterInverse<TM>> (*dmat, subset, paralleldofs);
+#endif
+    throw Exception ("ParallelMatrix: don't know how to invert");
   }
 
 
@@ -501,26 +533,7 @@ namespace ngla
 
 
 
-
-
-
-
-  template class MasterInverse<double>;
-  template class MasterInverse<Complex>;
-
-#if MAX_SYS_DIM >= 1
-  template class MasterInverse<Mat<1,1,double> >;
-  template class MasterInverse<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class MasterInverse<Mat<2,2,double> >;
-  template class MasterInverse<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class MasterInverse<Mat<3,3,double> >;
-  template class MasterInverse<Mat<3,3,Complex> >;
-#endif
-
+#ifdef PARALLEL
 
 
 
@@ -616,7 +629,7 @@ namespace ngla
 						 jump_paralleldofs);
   }
   
+#endif
   
 }
 
-#endif

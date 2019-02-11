@@ -47,11 +47,13 @@ namespace ngstd
   class MPI_Traits : public no_base_impl
   {
   public:
+    /*
     static MPI_Datatype MPIType () 
     { 
       cerr << "MPIType " << typeid(T).name() << " not available" << endl;
       return 0; 
     }
+    */
   };
   
   template <>
@@ -115,8 +117,11 @@ namespace ngstd
     }
   };
 
+  
+#define NGSMPI_ENABLE_FOR_STD typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0
 
-  template <class T>
+
+  template <class T, NGSMPI_ENABLE_FOR_STD>
   INLINE MPI_Datatype MyGetMPIType ()
   {
     return MPI_Traits<T>::MPIType();
@@ -156,26 +161,24 @@ namespace ngstd
   { MPI_Send (&val, 1, MyGetMPIType<T>(), dest, tag, comm); }
   **/
 
-#define NGSMPI_ENABLE_FOR_STD typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0
-
 
   
   /** --- blocking P2P --- **/
 
-  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  template<typename T, typename T2 = decltype(MyGetMPIType<T>())> // , NGSMPI_ENABLE_FOR_STD>
   INLINE void MyMPI_Send( T & val, int dest, int tag /* = MPI_TAG_SOLVE */, MPI_Comm comm /* = ngs_comm*/)
   { MPI_Send (&val, 1, MyGetMPIType<T>(), dest, tag, comm); }
-  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  template<typename T, typename T2 = decltype(MyGetMPIType<T>())> // , NGSMPI_ENABLE_FOR_STD>
   INLINE void MyMPI_Recv (T & val, int src, int tag /* = MPI_TAG_SOLVE */, MPI_Comm comm /* = ngs_comm*/)
   { MPI_Recv (&val, 1, MyGetMPIType<T>(), src, tag, comm, MPI_STATUS_IGNORE); }
 
-  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  template<typename T> // , NGSMPI_ENABLE_FOR_STD>
   INLINE void MyMPI_Send(FlatArray<T> s, int dest, int tag /* = MPI_TAG_SOLVE */, MPI_Comm comm)
   { MPI_Send( &s[0], s.Size(), MyGetMPIType<T>(), dest, tag, comm); }
-  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  template <typename T> // , NGSMPI_ENABLE_FOR_STD>
   INLINE void MyMPI_Recv (FlatArray <T> s, int src, int tag /* = MPI_TAG_SOLVE */, MPI_Comm comm /* = ngs_comm */)
   { MPI_Recv (&s[0], s.Size(), MyGetMPIType<T> (), src, tag, comm, MPI_STATUS_IGNORE); }
-  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  template <typename T> // , NGSMPI_ENABLE_FOR_STD>
   INLINE void MyMPI_Recv (Array <T> &s, int src, int tag /* = MPI_TAG_SOLVE */, MPI_Comm comm /* = ngs_comm */)
   {
     MPI_Status status;
@@ -413,7 +416,13 @@ public:
 #undef NGSMPI_ENABLE_FOR_STD
 #else
   enum { MPI_COMM_WORLD = 12345, MPI_COMM_NULL = 0};
+
+  enum { MPI_TAG_CMD = 110 };
+  enum { MPI_TAG_SOLVE = 1110 };
+  
   typedef int MPI_Comm;
+  typedef int MPI_Datatype;
+  typedef int MPI_Request;
   NGS_DLL_HEADER extern MPI_Comm ngs_comm;
   
   typedef int MPI_Op;
@@ -444,7 +453,9 @@ public:
   template <class T>
   INLINE void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = 0) { ; }
   INLINE void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
-  
+
+  INLINE void MyMPI_WaitAll (const Array<MPI_Request> & requests) { ; }
+
   class MyMPI
   {
   public:

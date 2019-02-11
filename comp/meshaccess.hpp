@@ -1139,25 +1139,24 @@ namespace ngcomp
        Returns the list of other MPI - processes where node is present.
        The ordering coincides for all processes.
     */
+    [[deprecated("Use GetDistantProcs (NodeId) instead!")]]                
     void GetDistantProcs (NodeId node, Array<int> & procs) const;
 
     /**
        Returns the global number of the node.
        Currently, this function works only for vertex-nodes.
      */
+
+    // [[deprecated("should not need global numbers")]]                    
     size_t GetGlobalNodeNum (NodeId node) const;
     
     
     FlatArray<int> GetDistantProcs (NodeId node) const
     {
-#ifdef PARALLEL
-      std::tuple<int,int*> tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
+      std::tuple<int,int*> tup =
+        mesh.GetDistantProcs(StdNodeType(node.GetType(), GetDimension()), node.GetNr());
       return FlatArray<int> (std::get<0>(tup), std::get<1>(tup));
-#else
-      return FlatArray<int>(0,nullptr);
-#endif
     }
-
 
     /// Reduces MPI - distributed data associated with mesh-nodes
     template <typename T>
@@ -1282,9 +1281,13 @@ namespace ngcomp
     cnt = 0;
     for (int i = 0; i < GetNNodes(nt); i++)
       {
+        /*
 	GetDistantProcs (Node (nt, i), distp);
 	for (int j = 0; j < distp.Size(); j++)
 	  cnt[distp[j]]++;
+        */
+        for (auto p : GetDistantProcs(Node(nt,i)))
+          cnt[p]++;
       }
 
     Table<T> dist_data(cnt), recv_data(cnt);
@@ -1292,9 +1295,13 @@ namespace ngcomp
     cnt = 0;
     for (int i = 0; i < GetNNodes(nt); i++)
       {
+        /*
 	GetDistantProcs (Node (nt, i), distp);
 	for (int j = 0; j < distp.Size(); j++)
 	  dist_data[distp[j]][cnt[distp[j]]++] = data[i];
+        */
+        for (auto p : GetDistantProcs(Node(nt, i)))
+          dist_data[p][cnt[p]++] = data[i];
       }
 
     Array<MPI_Request> requests;
@@ -1309,9 +1316,14 @@ namespace ngcomp
     cnt = 0;
     for (int i = 0; i < data.Size(); i++)
       {
+        /*
 	GetDistantProcs (Node (nt, i), distp);
 	for (int j = 0; j < distp.Size(); j++)
 	  MPI_Reduce_local (&recv_data[distp[j]][cnt[distp[j]]++],
+			    &data[i], 1, type, op);
+        */
+        for (auto p : GetDistantProcs(Node(nt, i)))
+	  MPI_Reduce_local (&recv_data[p][cnt[p]++],
 			    &data[i], 1, type, op);
       }
   }
