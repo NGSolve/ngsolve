@@ -56,8 +56,8 @@ namespace ngcomp
         case NG_TRIG: case NG_TRIG6:    return ET_TRIG;
         case NG_QUAD: case NG_QUAD6: case NG_QUAD8: return ET_QUAD;
         case NG_TET:  case NG_TET10:     return ET_TET;
-        case NG_PRISM: case NG_PRISM12: return ET_PRISM;
-        case NG_PYRAMID:                return ET_PYRAMID;
+        case NG_PRISM: case NG_PRISM12: case NG_PRISM15: return ET_PRISM;
+        case NG_PYRAMID: case NG_PYRAMID13: return ET_PYRAMID;
         case NG_HEX: case NG_HEX20:     return ET_HEX;
         default:
           __assume (false);
