@@ -181,8 +181,10 @@ namespace ngcomp
 
     HYPRE_Int err;	
 
-    this->rank = MyMPI_GetId();
-    this->np = MyMPI_GetNTasks();
+    this->parallel = this->hcurlfes->GetParallelDofs()!=nullptr;
+    MPI_Comm comm = this->parallel ? MPI_Comm(this->hcurlfes->GetParallelDofs()->GetCommunicator()) : MPI_COMM_WORLD;
+    this->rank = MyMPI_GetId(comm);
+    this->np = MyMPI_GetNTasks(comm);
     this->parallel = (np>1);
 
     cout << IM(2) << "NP: " << np << endl;
