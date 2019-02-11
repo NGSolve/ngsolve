@@ -339,6 +339,7 @@ namespace ngstd
   {
     MPI_Comm comm;
     int * refcount;
+    int rank, size;
   public:
     NgMPI_Comm (MPI_Comm _comm, bool owns = false)
       : comm(_comm)
@@ -347,6 +348,8 @@ namespace ngstd
         refcount = nullptr;
       else
         refcount = new int{1};
+      MPI_Comm_rank(comm, &rank);
+      MPI_Comm_size(comm, &size);
     }
     
     NgMPI_Comm (const NgMPI_Comm & c)
@@ -370,8 +373,8 @@ namespace ngstd
     
     operator MPI_Comm() const { return comm; }
 
-    auto Rank() const { int r; MPI_Comm_rank(comm, &r); return r; }
-    auto Size() const { int s; MPI_Comm_size(comm, &s); return s; }    
+    auto Rank() const { return rank; }
+    auto Size() const { return size; }
   };
 
 
