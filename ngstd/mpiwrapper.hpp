@@ -452,7 +452,7 @@ public:
   INLINE int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
   INLINE void MyMPI_Barrier (MPI_Comm comm) { ; }
-  INLINE void MyMPI_SendCmd (const char * cmd) { ; }
+  INLINE void MyMPI_SendCmd (const char * cmd, MPI_Comm comm) { ; }
 
   template <typename T>
   INLINE void MyMPI_Send (const T & data, int dest, int tag = 0)
