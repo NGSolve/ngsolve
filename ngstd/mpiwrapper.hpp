@@ -23,6 +23,7 @@
 
 #endif
 
+/*
 namespace netgen
 {
 #ifndef PARALLEL
@@ -31,29 +32,52 @@ namespace netgen
   extern DLL_HEADER MPI_Comm ng_comm;
   class PyMPI_Comm;
 }
+*/
+
+
+#ifdef PARALLEL
+namespace ngcore {
+  template<int S, typename T>
+  class MPI_typetrait<ngstd::INT<S, T> >
+  {
+  public:
+    /// gets the MPI datatype
+    static MPI_Datatype MPIType () 
+    { 
+      static MPI_Datatype MPI_T = 0;
+      if (!MPI_T)
+	{
+	  MPI_Type_contiguous ( S, MPI_typetrait<T>::MPIType(), &MPI_T);
+	  MPI_Type_commit ( &MPI_T );
+	}
+      return MPI_T;
+    }
+  };
+}
+#endif
+
 
 namespace ngstd
 {
 
 #ifdef PARALLEL
-
+  
   extern MPI_Comm ngs_comm;
 
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
 
+  /*
   struct no_base_impl {};
   template <class T>
   class MPI_Traits : public no_base_impl
   {
   public:
-    /*
-    static MPI_Datatype MPIType () 
-    { 
-      cerr << "MPIType " << typeid(T).name() << " not available" << endl;
-      return 0; 
-    }
-    */
+    //    static MPI_Datatype MPIType () 
+    // { 
+    // cerr << "MPIType " << typeid(T).name() << " not available" << endl;
+    // return 0; 
+    // }
   };
   
   template <>
@@ -98,35 +122,26 @@ namespace ngstd
   public:
     static MPI_Datatype MPIType () { return MPI_BYTE; }
   }; 
+  */
 
-
-  template<int S, typename T>
-  class MPI_Traits<INT<S, T> >
-  {
-  public:
-    /// gets the MPI datatype
-    static MPI_Datatype MPIType () 
-    { 
-      static MPI_Datatype MPI_T = 0;
-      if (!MPI_T)
-	{
-	  MPI_Type_contiguous ( S, MPI_Traits<T>::MPIType(), &MPI_T);
-	  MPI_Type_commit ( &MPI_T );
-	}
-      return MPI_T;
-    }
-  };
 
   
-#define NGSMPI_ENABLE_FOR_STD typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0
-
-
+  // #define NGSMPI_ENABLE_FOR_STD typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0
+#define NGSMPI_ENABLE_FOR_STD typename T2 = decltype(ngcore::GetMPIType<T>()) 
+  /*
   template <class T, NGSMPI_ENABLE_FOR_STD>
   INLINE MPI_Datatype MyGetMPIType ()
   {
     return MPI_Traits<T>::MPIType();
   }
+  */
+  template <class T, class T2 = decltype(ngcore::GetMPIType<T>())>
+  INLINE MPI_Datatype MyGetMPIType ()
+  {
+    return ngcore::GetMPIType<T>();
+  }
 
+  
   INLINE int MyMPI_GetNTasks (MPI_Comm comm)
   {
     static Timer t("dummy - size");
@@ -334,7 +349,10 @@ namespace ngstd
     if (MyMPI_GetId(comm) != 0) s.resize (len);
     MPI_Bcast (&s[0], len, MPI_CHAR, root, comm);
   }
+
+  using ngcore::NgMPI_Comm;
   
+  /*
   class NgMPI_Comm
   {
     MPI_Comm comm;
@@ -380,7 +398,7 @@ namespace ngstd
     auto Rank() const { return rank; }
     auto Size() const { return size; }
   };
-
+  */
 
 
 class MyMPI
@@ -401,7 +419,7 @@ public:
       
     // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     ngs_comm = MPI_COMM_WORLD;
-    netgen::ng_comm = ngs_comm;
+    // netgen::ng_comm = ngs_comm;
     NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD) == 0);
     
     if (MyMPI_GetNTasks (ngs_comm) > 1)
@@ -422,12 +440,15 @@ public:
   
 #undef NGSMPI_ENABLE_FOR_STD
 #else
-  enum { MPI_COMM_WORLD = 12345, MPI_COMM_NULL = 0};
+  using ngcore::MPI_Comm;
+  using ngcore::MPI_COMM_WORLD;
+
+  // enum { MPI_COMM_WORLD = 12345, MPI_COMM_NULL = 0};
 
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
   
-  typedef int MPI_Comm;
+  // typedef int MPI_Comm;
   typedef int MPI_Datatype;
   typedef int MPI_Request;
   NGS_DLL_HEADER extern MPI_Comm ngs_comm;
@@ -437,7 +458,7 @@ public:
   INLINE int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
   INLINE int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
-  INLINE void MyMPI_Barrier (MPI_Comm comm = 0 ) { ; }
+  INLINE void MyMPI_Barrier (MPI_Comm comm) { ; }
   INLINE void MyMPI_SendCmd (const char * cmd) { ; }
 
   template <typename T>
@@ -449,17 +470,17 @@ public:
   { ; }
 
   template <typename T>
-  INLINE T MyMPI_AllReduce (T d, int op = 0, MPI_Comm comm = 0)  { return d; }
+  INLINE T MyMPI_AllReduce (T d, int op, MPI_Comm comm)  { return d; }
 
   template <typename T>
-  INLINE T MyMPI_Reduce (T d, int op = 0, MPI_Comm comm = ngs_comm) { return d; }
+  INLINE T MyMPI_Reduce (T d, int op, MPI_Comm comm) { return d; }
 
 
   template <class T>
-  INLINE void MyMPI_Bcast (T & s, MPI_Comm comm = 0) { ; }
+  INLINE void MyMPI_Bcast (T & s, MPI_Comm comm) { ; }
   template <class T>
-  INLINE void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = 0) { ; }
-  INLINE void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
+  INLINE void MyMPI_Bcast (Array<T> & s, MPI_Comm comm) { ; }
+  INLINE void MyMPI_Bcast (string & s, MPI_Comm comm) { ; }
 
   INLINE void MyMPI_WaitAll (const Array<MPI_Request> & requests) { ; }
 
@@ -474,7 +495,8 @@ public:
   // enum { MPI_MAX = 4711 };
   // enum { MPI_MIN = 4711 };
 
-
+  using ngcore::NgMPI_Comm;
+  /*
   class NgMPI_Comm
   {
     MPI_Comm comm;
@@ -485,11 +507,11 @@ public:
     auto Rank() const { return 0; }
     auto Size() const { return 1; }
   };
-
+  */
 #endif
   
 
-  using netgen::PyMPI_Comm;
+  // using netgen::PyMPI_Comm;
 }
 
 #endif
