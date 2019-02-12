@@ -1515,7 +1515,7 @@ namespace ngsolve
 	}
       });
 
-      sum = MyMPI_AllReduce (sum, MPI_SUM, ma->GetCommunicator());
+      sum = ma->GetCommunicator().AllReduce (sum, MPI_SUM);
       return sum;
     }
 
@@ -1556,7 +1556,7 @@ namespace ngsolve
       if(flags.NumFlagDefined("outputprecision"))
         outputprecision = int(flags.GetNumFlag("outputprecision",-1));
       
-      if (filename.length() && (MyMPI_GetId(ma->GetCommunicator()) == 0) )
+      if (filename.length() && (ma->GetCommunicator().Rank() == 0) )
 	{
 	  filename = apde->GetDirectory() + dirslash + filename;
 	  cout << "NP WriteFile: outputfile is " << filename << endl;
@@ -2792,7 +2792,7 @@ namespace ngsolve
     : NumProc(apde)
   {
 
-    if ( MyMPI_GetId(ma->GetCommunicator()) != 0 ) return;
+    if (ma->GetCommunicator().Rank() != 0 ) return;
 
     Array<double> centerpoint;
     bool center = flags.NumListFlagDefined("centerpoint");

@@ -906,7 +906,10 @@ namespace ngcomp
     */
 
     ndomains++;
-    ndomains = MyMPI_AllReduce (ndomains, MPI_MAX, GetCommunicator());
+    
+    // ndomains = MyMPI_AllReduce (ndomains, MPI_MAX, GetCommunicator());
+    ndomains = GetCommunicator().AllReduce (ndomains, MPI_MAX);
+    
     pml_trafos.SetSize(ndomains);
     
     int nboundaries = -1;
@@ -917,7 +920,7 @@ namespace ngcomp
         nboundaries = max2(nboundaries, elindex);
       }
     nboundaries++;
-    nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX, GetCommunicator());
+    nboundaries = GetCommunicator().AllReduce (nboundaries, MPI_MAX);
     nregions[1] = nboundaries;
 
 
@@ -941,7 +944,7 @@ namespace ngcomp
               nbboundaries = max2(nbboundaries, elindex);
           }
         nbboundaries++;
-        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX, GetCommunicator());
+        nbboundaries = GetCommunicator().AllReduce(nbboundaries, MPI_MAX);
       }
 
     int & nbbboundaries = nregions[BBBND];
@@ -959,7 +962,7 @@ namespace ngcomp
               nbbboundaries = max2(nbbboundaries, elindex);
           }
         nbbboundaries++;
-        nbbboundaries = MyMPI_AllReduce(nbbboundaries, MPI_MAX, GetCommunicator());
+        nbbboundaries = GetCommunicator().AllReduce(nbbboundaries, MPI_MAX);
       }
     
     // update periodic mappings
@@ -2020,16 +2023,25 @@ namespace ngcomp
 				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal), comm(ama->GetCommunicator())
   {
-    is_root = (MyMPI_GetId(comm) == 0);
+    cout << "in progressoutput ctor" << endl;
+    is_root = comm.Rank() == 0;
     prevtime = WallTime();
-    size_t glob_total = MyMPI_Reduce (total, MPI_SUM, comm);
+
+    // will be 1 line whtn Reduce moved to mpi_wrapper:
+    size_t glob_total;
+    if (comm.Size() > 1)
+      glob_total = MyMPI_Reduce (total, MPI_SUM, comm);
+    else
+      glob_total = total;
+    
     if (is_root) total = glob_total;
 
     done_called = false;
     cnt = 0;
     thd_cnt = 0;
     cleanup_func = [this] () {  this->SumUpLocal(); };
-    TaskManager::SetCleanupFunction(cleanup_func); 
+    TaskManager::SetCleanupFunction(cleanup_func);
+    cout << "ctor complete" << endl;
   }
 
   ProgressOutput :: ~ProgressOutput ()
@@ -2101,7 +2113,7 @@ namespace ngcomp
     if (is_root)
       {
 #ifdef PARALLEL	  
-	int ntasks = MyMPI_GetNTasks(comm);
+	int ntasks = comm.Size();
 	if (ntasks > 1)
 	  {
 	    Array<int> working(ntasks), computed(ntasks);

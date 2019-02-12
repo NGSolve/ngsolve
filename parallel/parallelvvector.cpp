@@ -184,7 +184,8 @@ namespace ngla
 					 dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
 
-    return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
+    // return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
+    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
   }
 
 
@@ -219,7 +220,7 @@ namespace ngla
 #endif
     return globalsum;
     */
-    return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
+    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
   }
 
   template class S_ParallelBaseVector<double>;
@@ -382,7 +383,8 @@ namespace ngla
 	    sum += L2Norm2 (fv.Row(dof));
       }
       
-    double globsum = MyMPI_AllReduce (sum, MPI_SUM, paralleldofs->GetCommunicator()); // ngs_comm);
+    // double globsum = MyMPI_AllReduce (sum, MPI_SUM, paralleldofs->GetCommunicator()); // ngs_comm);
+    double globsum = paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM); 
     return sqrt (globsum);
   }
 

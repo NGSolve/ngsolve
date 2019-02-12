@@ -909,7 +909,7 @@ namespace ngstd
       
     // gather local data where I am master
     auto comm = ma.GetCommunicator();
-    int myid = MyMPI_GetId(comm);
+    int myid = comm.Rank();
     for (int i = 0; i < ma.GetNNodes(NT); i++)
       {
 	bool ismaster = true;

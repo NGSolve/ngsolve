@@ -1693,7 +1693,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
 
-    if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM, ma->GetCommunicator())) 
+    // if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM, ma->GetCommunicator()))
+    if (ma->GetCommunicator().AllReduce (ctofdof.Size(), MPI_SUM))
       paralleldofs -> AllReduceDofData (ctofdof, MPI_MAX);
   }
 
@@ -2636,7 +2637,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	has_dirichlet_dofs = true;
 
     auto comm = ma->GetCommunicator();
-    has_dirichlet_dofs = MyMPI_AllReduce (has_dirichlet_dofs, MPI_LOR, comm);
+    has_dirichlet_dofs = comm.AllReduce (has_dirichlet_dofs, MPI_LOR);
 
     if (has_dirichlet_dofs)
       {

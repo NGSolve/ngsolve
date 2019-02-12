@@ -35,7 +35,7 @@ Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
   auto comm = a.GetMeshAccess().GetCommunicator();
   
-  if (MyMPI_GetNTasks(comm) == 1) return archive & a.A();
+  if (comm.Size() == 1) return archive & a.A();
   
   auto g = [&] (int size) { archive & size; };    
 
@@ -368,7 +368,7 @@ namespace ngcomp
   void S_GridFunction<SCAL> :: Load (istream & ist)
   {
     auto comm = ma->GetCommunicator();
-    if (MyMPI_GetNTasks(comm) == 1)
+    if (comm.Size() == 1)
       { 
 	const FESpace & fes = *GetFESpace();
 	Array<DofId> dnums;
@@ -443,8 +443,8 @@ namespace ngcomp
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    int id = MyMPI_GetId(comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    int id = comm.Rank();
+    int ntasks = comm.Size();
     
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
@@ -580,7 +580,7 @@ namespace ngcomp
   void S_GridFunction<SCAL> :: Save (ostream & ost) const
   {
     auto comm = ma->GetCommunicator();
-    int ntasks = MyMPI_GetNTasks(comm);
+    int ntasks = comm.Size();
     const FESpace & fes = *GetFESpace();
   
     if (ntasks == 1)
@@ -680,8 +680,8 @@ namespace ngcomp
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    int id = MyMPI_GetId(comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    int id = comm.Rank();
+    int ntasks = comm.Size();
 
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
@@ -830,7 +830,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    if (MyMPI_GetNTasks(comm)>1)
+    if (comm.Size()>1)
       {
 	auto pds = cfes[comp]->GetParallelDofs();
 	for (int i = 0; i < gf_parent->GetMultiDim(); i++)
