@@ -2337,7 +2337,7 @@ namespace ngcomp
     cout << IM(1) << "Load PDE from file " << filename << endl;
     string data;
     pde = apde;
-
+    MPI_Comm ngs_comm = MPI_COMM_WORLD;
     if (MyMPI_GetId(ngs_comm) == 0)
       {
 	string::size_type pos1 = filename.rfind('\\');

@@ -2,9 +2,9 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( solve ${NGS_LIB_TYPE}
         bvp.cpp generalizedEVP.cpp numproc.cpp evp.cpp 
-        hyperbolic.cpp numprocee.cpp python_solve.cpp python_mpi.cpp
+        hyperbolic.cpp numprocee.cpp python_solve.cpp
         )
-
+#  python_mpi.cpp
 target_include_directories(solve PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
 
 if(NETGEN_USE_PYTHON)

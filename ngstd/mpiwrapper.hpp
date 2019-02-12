@@ -62,7 +62,7 @@ namespace ngstd
 
 #ifdef PARALLEL
   
-  extern MPI_Comm ngs_comm;
+  // extern MPI_Comm ngs_comm;
 
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
@@ -205,9 +205,9 @@ namespace ngstd
     MPI_Recv (&s[0], len, MPI_T, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
-  INLINE void MyMPI_SendCmd (const char * cmd)
+  INLINE void MyMPI_SendCmd (const char * cmd, MPI_Comm comm)
   {
-    int ntasks = MyMPI_GetNTasks(ngs_comm);
+    int ntasks = MyMPI_GetNTasks(comm);
     if(ntasks==1) return;
     for (int dest = 1; dest < ntasks; dest++)
       MPI_Send( (void*)cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
@@ -411,11 +411,11 @@ public:
       initialized_by_me = false;
       
     // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
-    ngs_comm = MPI_COMM_WORLD;
+    // ngs_comm = MPI_COMM_WORLD;
     // netgen::ng_comm = ngs_comm;
     NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD) == 0);
     
-    if (MyMPI_GetNTasks (ngs_comm) > 1)
+    if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
       TaskManager::SetNumThreads (1);
   }
 

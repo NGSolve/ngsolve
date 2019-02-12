@@ -653,7 +653,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
   template <typename T>
-  inline void MyMPI_Gather (T d, MPI_Comm comm = ngs_comm)
+  inline void MyMPI_Gather (T d, MPI_Comm comm /* = ngs_comm */)
   {
     static Timer t("dummy - gather"); RegionTimer r(t);
     
@@ -662,7 +662,7 @@ namespace ngcomp
   }
 
   template <typename T>
-  inline void MyMPI_GatherRoot (FlatArray<T> d, MPI_Comm comm = ngs_comm)
+  inline void MyMPI_GatherRoot (FlatArray<T> d, MPI_Comm comm /* = ngs_comm */)
   {
     static Timer t("dummy - gather"); RegionTimer r(t);
 
@@ -738,8 +738,8 @@ namespace ngcomp
 	Array<Vec<2,int> > positions(0);
 
 	Array<size_t> size_nodes(ntasks), size_data(ntasks);
-	MyMPI_GatherRoot (size_nodes);
-	MyMPI_GatherRoot (size_data);
+	MyMPI_GatherRoot (size_nodes, comm);
+	MyMPI_GatherRoot (size_data, comm);
 
 	Array<MPI_Request> requests;
 

@@ -2262,12 +2262,12 @@ integrator : ngsolve.fem.LFI
 #else
       .def(py::init([](const string & filename)
                            { 
-                             ngs_comm = MPI_COMM_WORLD;
+                             // ngs_comm = MPI_COMM_WORLD;
 
                              //cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
                              //     << MyMPI_GetNTasks(ngs_comm) << endl;
 
-                             NGSOStream::SetGlobalActive (MyMPI_GetId(ngs_comm)==0);
+                             NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD)==0);
                              return LoadPDE (filename);
                            }), py::arg("filename"))
 #endif
@@ -2520,7 +2520,7 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
 #endif
                 // result = py::list(py::cast(region_sum));  // crashes ?!?!
@@ -2607,7 +2607,7 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<Complex> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
 #endif
                 // result = py::list(py::cast(region_sum));
@@ -2622,7 +2622,7 @@ integrator : ngsolve.fem.LFI
               else {
 #ifdef PARALLEL
                 Vector<Complex> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 sum = gsum;
 #endif
                 result = py::cast(sum);
@@ -3266,9 +3266,9 @@ deformation : ngsolve.comp.GridFunction
    m.def("SetNGSComm", [&](NgMPI_Comm & c)
 	 {
 	   netgen::ng_comm = c;
-	   ngcore::id = MyMPI_GetId(ngs_comm);
-	   ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
-	   ngs_comm = c;
+	   ngcore::id = c.Rank();
+	   ngcore::ntasks = c.Size();
+	   // ngs_comm = c;
 	 });  
 
    m.def("MPI_Init", [&]()
@@ -3279,10 +3279,10 @@ deformation : ngsolve.comp.GridFunction
 	   pchar * pptr = &ptrs[0];
           
 	   static MyMPI mympi(1, (char**)pptr);
-	   netgen::ng_comm = ngs_comm;
-	   ngcore::id = MyMPI_GetId(ngs_comm);
-	   ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
-	   return NgMPI_Comm(ngs_comm);
+	   netgen::ng_comm = MPI_COMM_WORLD;
+	   ngcore::id = MyMPI_GetId(MPI_COMM_WORLD);
+	   ngcore::ntasks = MyMPI_GetNTasks(MPI_COMM_WORLD);
+	   return NgMPI_Comm(MPI_COMM_WORLD);
 	 });
 
   /////////////////////////////////////////////////////////////////////////////////////

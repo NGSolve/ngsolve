@@ -301,7 +301,7 @@ namespace ngsolve
 	  sum += diff(i);
       }
     
-      sum = MyMPI_AllReduce (sum, MPI_SUM, ngs_comm);
+      sum = MyMPI_AllReduce (sum, MPI_SUM, ma->GetCommunicator());
 
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
     shared_ptr<PDE>(pde)->AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);
