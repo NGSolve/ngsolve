@@ -1515,7 +1515,7 @@ namespace ngsolve
 	}
       });
 
-      sum = MyMPI_AllReduce (sum, MPI_SUM, ngs_comm);
+      sum = MyMPI_AllReduce (sum, MPI_SUM, ma->GetCommunicator());
       return sum;
     }
 
@@ -1556,7 +1556,7 @@ namespace ngsolve
       if(flags.NumFlagDefined("outputprecision"))
         outputprecision = int(flags.GetNumFlag("outputprecision",-1));
       
-      if (filename.length() && (MyMPI_GetId(ngs_comm) == 0) )
+      if (filename.length() && (MyMPI_GetId(ma->GetCommunicator()) == 0) )
 	{
 	  filename = apde->GetDirectory() + dirslash + filename;
 	  cout << "NP WriteFile: outputfile is " << filename << endl;
