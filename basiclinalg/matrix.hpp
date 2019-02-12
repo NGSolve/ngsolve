@@ -2318,10 +2318,10 @@ namespace ngstd
 
 
 #ifdef PARALLEL
-namespace ngstd
+namespace ngcore
 {
   template<int N, int M, typename T>
-  class MPI_Traits<ngbla::Mat<N, M, T> >
+  class MPI_typetrait<ngbla::Mat<N, M, T> >
   {
   public:
     /// gets the MPI datatype
@@ -2331,7 +2331,7 @@ namespace ngstd
       if (!MPI_T)
 	{
 	  int size = N * M;
-	  MPI_Type_contiguous ( size, MPI_Traits<T>::MPIType(), &MPI_T);
+	  MPI_Type_contiguous ( size, MPI_typetrait<T>::MPIType(), &MPI_T);
 	  MPI_Type_commit ( &MPI_T );
 	}
       return MPI_T;

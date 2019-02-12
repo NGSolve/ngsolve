@@ -2607,7 +2607,7 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<Complex> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ngs_comm);
                 region_sum = rs2;
 #endif
                 // result = py::list(py::cast(region_sum));
@@ -2622,7 +2622,7 @@ integrator : ngsolve.fem.LFI
               else {
 #ifdef PARALLEL
                 Vector<Complex> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ngs_comm);
                 sum = gsum;
 #endif
                 result = py::cast(sum);
@@ -3263,15 +3263,12 @@ deformation : ngsolve.comp.GridFunction
      ;
 
    
-   m.def("SetNGSComm", [&](PyMPI_Comm & c)
+   m.def("SetNGSComm", [&](NgMPI_Comm & c)
 	 {
-	   if(MyMPI_GetNTasks(c.comm)==2) {
-	     throw Exception("Sorry, NGSolve cannot handle NP=2.");
-	   }
-	   netgen::ng_comm = c.comm;
-	   ngcore::id = MyMPI_GetId(c.comm);
-	   ngcore::ntasks = MyMPI_GetNTasks(c.comm);
-	   ngs_comm = c.comm;
+	   netgen::ng_comm = c;
+	   ngcore::id = MyMPI_GetId(ngs_comm);
+	   ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
+	   ngs_comm = c;
 	 });  
 
    m.def("MPI_Init", [&]()
@@ -3285,7 +3282,7 @@ deformation : ngsolve.comp.GridFunction
 	   netgen::ng_comm = ngs_comm;
 	   ngcore::id = MyMPI_GetId(ngs_comm);
 	   ngcore::ntasks = MyMPI_GetNTasks(ngs_comm);
-	   return make_shared<PyMPI_Comm>(ngs_comm);
+	   return NgMPI_Comm(ngs_comm);
 	 });
 
   /////////////////////////////////////////////////////////////////////////////////////
