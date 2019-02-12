@@ -2267,7 +2267,7 @@ integrator : ngsolve.fem.LFI
                              //cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
                              //     << MyMPI_GetNTasks(ngs_comm) << endl;
 
-                             NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD)==0);
+                             // NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD)==0);
                              return LoadPDE (filename);
                            }), py::arg("filename"))
 #endif
@@ -2520,7 +2520,8 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                if (ma->GetCommunicator().Size() > 1)                
+                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
 #endif
                 // result = py::list(py::cast(region_sum));  // crashes ?!?!
@@ -2529,13 +2530,14 @@ integrator : ngsolve.fem.LFI
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = MyMPI_AllReduce(sum(0), MPI_SUM, ma->GetCommunicator());
+                sum(0) = ma->GetCommunicator().AllReduce(sum(0), MPI_SUM);
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 Vector<> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                 sum = gsum;
 #endif
                 result = py::cast(sum);
@@ -2607,7 +2609,8 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<Complex> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
 #endif
                 // result = py::list(py::cast(region_sum));
@@ -2616,13 +2619,14 @@ integrator : ngsolve.fem.LFI
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = MyMPI_AllReduce(sum(0), MPI_SUM, ma->GetCommunicator());
+                sum(0) = ma->GetCommunicator().AllReduce(sum(0), MPI_SUM);
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 Vector<Complex> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                if (ma->GetCommunicator().Size() > 1)                
+                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 sum = gsum;
 #endif
                 result = py::cast(sum);
@@ -3265,9 +3269,9 @@ deformation : ngsolve.comp.GridFunction
    
    m.def("SetNGSComm", [&](NgMPI_Comm & c)
 	 {
-	   netgen::ng_comm = c;
-	   ngcore::id = c.Rank();
-	   ngcore::ntasks = c.Size();
+	   // netgen::ng_comm = c;
+	   // ngcore::id = c.Rank();
+	   // ngcore::ntasks = c.Size();
 	   // ngs_comm = c;
 	 });  
 
@@ -3279,9 +3283,9 @@ deformation : ngsolve.comp.GridFunction
 	   pchar * pptr = &ptrs[0];
           
 	   static MyMPI mympi(1, (char**)pptr);
-	   netgen::ng_comm = MPI_COMM_WORLD;
-	   ngcore::id = MyMPI_GetId(MPI_COMM_WORLD);
-	   ngcore::ntasks = MyMPI_GetNTasks(MPI_COMM_WORLD);
+	   // netgen::ng_comm = MPI_COMM_WORLD;
+	   // ngcore::id = MyMPI_GetId(MPI_COMM_WORLD);
+	   // ngcore::ntasks = MyMPI_GetNTasks(MPI_COMM_WORLD);
 	   return NgMPI_Comm(MPI_COMM_WORLD);
 	 });
 

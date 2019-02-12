@@ -601,8 +601,8 @@ int NGS_LoadPy (ClientData clientData,
 
 void * SolveBVP(void *)
 {
-  if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
-     TaskManager::SetNumThreads(1);
+  // if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+  // TaskManager::SetNumThreads(1);
 
   try
     {
@@ -1238,8 +1238,9 @@ if(is_pardiso_available)
     NgProfiler::SetFileName (string("ngs.prof"));
   
 #ifdef PARALLEL
-  if (MyMPI_GetNTasks(MPI_COMM_WORLD) > 1)
-    TaskManager::SetNumThreads (1);
+  // in MyMPI
+  // if (MyMPI_GetNTasks(MPI_COMM_WORLD) > 1)
+  // TaskManager::SetNumThreads (1);
 #endif
   cout << "Running parallel using " << TaskManager::GetMaxThreads() << " thread(s)" << endl;
 
@@ -1285,7 +1286,8 @@ if(is_pardiso_available)
                                });
     }
 
-    if (MyMPI_GetId(MPI_COMM_WORLD) == 0)
+    // only relevant for gui+mpi -> undefined
+    // if (MyMPI_GetId(MPI_COMM_WORLD) == 0)
       {
         pyenv.exec("from ngsolve import *");
         // Release GIL on this thread and reset thread state
@@ -1502,7 +1504,7 @@ void NGS_ParallelRun (const string & message)
   if (getenv ("NGSPROFILE"))
     {
       stringstream filename;
-      filename << "ngs.prof." << MyMPI_GetId (MPI_COMM_WORLD);
+      filename << "ngs.prof." << NgMPI_Comm(MPI_COMM_WORLD).Rank();
       NgProfiler::SetFileName (filename.str());
     }
 
@@ -1557,7 +1559,7 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_archive_space" )
     {
       int nr;
-      MyMPI_Bcast (nr, MPI_COMM_WORLD);
+      NgMPI_Comm(MPI_COMM_WORLD).Bcast (nr);
       // cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
       WorkerOutArchive archive;
       pde->GetSpaceTable()[nr] -> DoArchive (archive);
@@ -1566,7 +1568,7 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_archive_gridfunction" )
     {
       int nr;
-      MyMPI_Bcast (nr, MPI_COMM_WORLD);
+      NgMPI_Comm(MPI_COMM_WORLD).Bcast (nr);      
       // cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
       WorkerOutArchive archive;
       pde->GetGridFunctionTable()[nr] -> DoArchive (archive);

@@ -23,13 +23,13 @@ namespace ngla
 				      shared_ptr<BitArray> subset, 
 				      shared_ptr<ParallelDofs> hpardofs)
     
-    : BaseMatrix(hpardofs), loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator()))
+    : BaseMatrix(hpardofs), loc2glob(hpardofs -> GetCommunicator().Size())
   {
     inv = nullptr;
     
-    MPI_Comm comm = paralleldofs->GetCommunicator();
-    int id = MyMPI_GetId (comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    int id = comm.Rank();
+    int ntasks = comm.Size();
 
     // consistent enumeration
     
@@ -274,9 +274,9 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
     
-    MPI_Comm comm = paralleldofs->GetCommunicator();
-    int id = MyMPI_GetId(comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    int id = comm.Rank();
+    int ntasks = comm.Size();
 
     bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
     // x.Distribute();
@@ -582,7 +582,7 @@ namespace ngla
       }
       }
     */
-    auto me = MyMPI_GetId(paralleldofs->GetCommunicator());
+    auto me = paralleldofs->GetCommunicator().Rank();
     auto fx = x.FVDouble();
     auto fy = y.FVDouble();
     for (auto p : paralleldofs->GetDistantProcs())
@@ -599,7 +599,7 @@ namespace ngla
     size_t count = 0;
     for (auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+      if (p<paralleldofs->GetCommunicator().Rank()) {
 	for (auto k:Range(exdofs.Size())) {
 	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
 	}

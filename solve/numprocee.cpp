@@ -212,7 +212,7 @@ namespace ngsolve
     gfdiff = apde->GetGridFunction (flags.GetStringFlag ("diff", ""), 1);
 
     filename = flags.GetStringFlag ("filename","");
-    if (filename.length() && MyMPI_GetId(ma->GetCommunicator()) == 0)
+    if (filename.length() && ma->GetCommunicator().Rank() == 0)
       {
         if (!flags.GetDefineFlag ("append"))
           file = new ofstream (filename.c_str());
@@ -301,7 +301,7 @@ namespace ngsolve
 	  sum += diff(i);
       }
     
-      sum = MyMPI_AllReduce (sum, MPI_SUM, ma->GetCommunicator());
+      sum = ma->GetCommunicator().AllReduce (sum, MPI_SUM);
 
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
     shared_ptr<PDE>(pde)->AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);

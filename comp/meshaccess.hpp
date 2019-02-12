@@ -1229,7 +1229,7 @@ namespace ngcomp
   class ProgressOutput
   {
     shared_ptr<MeshAccess> ma;
-    MPI_Comm comm;
+    NgMPI_Comm comm;
     string task;
     size_t total;
     double prevtime;
@@ -1271,10 +1271,10 @@ namespace ngcomp
   void MeshAccess::
   AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const
   {
-    MPI_Comm comm = GetCommunicator();
+    NgMPI_Comm comm = GetCommunicator();
     MPI_Datatype type = MyGetMPIType<T>();
 
-    int ntasks = MyMPI_GetNTasks (comm);
+    int ntasks = comm.Size();
     if (ntasks <= 1) return;
 
     Array<int> cnt(ntasks), distp;
