@@ -61,7 +61,7 @@ namespace ngstd
 {
 
 #ifdef PARALLEL
-
+  
   extern MPI_Comm ngs_comm;
 
   enum { MPI_TAG_CMD = 110 };
@@ -412,7 +412,7 @@ public:
       
     // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     ngs_comm = MPI_COMM_WORLD;
-    netgen::ng_comm = ngs_comm;
+    // netgen::ng_comm = ngs_comm;
     NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD) == 0);
     
     if (MyMPI_GetNTasks (ngs_comm) > 1)
