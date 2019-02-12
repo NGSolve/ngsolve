@@ -453,8 +453,8 @@ public:
   typedef int MPI_Request;
   NGS_DLL_HEADER extern MPI_Comm ngs_comm;
   
-  typedef int MPI_Op;
-  enum { MPI_SUM = 0, MPI_MIN = 1, MPI_MAX = 2 };
+  // typedef int MPI_Op;
+  // enum { MPI_SUM = 0, MPI_MIN = 1, MPI_MAX = 2 };
   // INLINE int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
   // INLINE int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
