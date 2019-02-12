@@ -1285,7 +1285,7 @@ if(is_pardiso_available)
                                });
     }
 
-    if (MyMPI_GetId() == 0)
+    if (MyMPI_GetId(MPI_COMM_WORLD) == 0)
       {
         pyenv.exec("from ngsolve import *");
         // Release GIL on this thread and reset thread state
@@ -1508,7 +1508,7 @@ void NGS_ParallelRun (const string & message)
 
   if ( message == "ngs_loadngs" )
     {
-      ; // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+      // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
     }
 
   else if ( message == "ngs_pdefile" )
@@ -1557,8 +1557,8 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_archive_space" )
     {
       int nr;
-      MyMPI_Bcast (nr);
-      cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
+      MyMPI_Bcast (nr, MPI_COMM_WORLD);
+      // cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
       WorkerOutArchive archive;
       pde->GetSpaceTable()[nr] -> DoArchive (archive);
     }
@@ -1566,8 +1566,8 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_archive_gridfunction" )
     {
       int nr;
-      MyMPI_Bcast (nr);
-      cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
+      MyMPI_Bcast (nr, MPI_COMM_WORLD);
+      // cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
       WorkerOutArchive archive;
       pde->GetGridFunctionTable()[nr] -> DoArchive (archive);
     }
