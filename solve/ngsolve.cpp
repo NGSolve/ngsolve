@@ -458,7 +458,7 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
-	  MyMPI_SendCmd ("ngs_pdefile", NGS_COMM_WORLD);
+	  MyMPI_SendCmd ("ngs_pdefile", MPI_COMM_WORLD);
 
 	  pde = make_shared<ngsolve::PDE>();
           pde->SetTclInterpreter (interp);
@@ -1508,7 +1508,7 @@ void NGS_ParallelRun (const string & message)
 
   if ( message == "ngs_loadngs" )
     {
-      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+      ; // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     }
 
   else if ( message == "ngs_pdefile" )
