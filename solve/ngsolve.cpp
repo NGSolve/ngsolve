@@ -458,7 +458,7 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
-	  MyMPI_SendCmd ("ngs_pdefile");
+	  MyMPI_SendCmd ("ngs_pdefile", NGS_COMM_WORLD);
 
 	  pde = make_shared<ngsolve::PDE>();
           pde->SetTclInterpreter (interp);
@@ -543,7 +543,7 @@ int NGS_LoadPy (ClientData clientData,
 #ifdef PARALLEL
 	  stringstream buf;
 	  buf << "ngs_py " << ifstream(filename).rdbuf();
-	  MyMPI_SendCmd (buf.str().c_str());
+	  MyMPI_SendCmd (buf.str().c_str(), MPI_COMM_WORLD);
 #endif // PARALLEL
 	  {
         std::thread([](string init_file_) 
@@ -654,7 +654,7 @@ int NGS_SolvePDE (ClientData clientData,
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
 
-  MyMPI_SendCmd ("ngs_solvepde");
+  MyMPI_SendCmd ("ngs_solvepde", MPI_COMM_WORLD);
 
   RunParallel (SolveBVP, NULL);
 
@@ -1182,7 +1182,7 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 // tcl package dynamic load
 extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 {
-  MyMPI_SendCmd ("ngs_exit");
+  MyMPI_SendCmd ("ngs_exit", MPI_COMM_WORLD);
   pde.reset();
   return TCL_OK;
 }
@@ -1229,8 +1229,8 @@ if(is_pardiso_available)
 #endif
 
 #ifdef PARALLEL
-  MyMPI_SendCmd ("ngs_loadngs");
-  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+  MyMPI_SendCmd ("ngs_loadngs", MPI_COMM_WORLD);
+  // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
   NGSOStream::SetGlobalActive (true);
 #endif
 
