@@ -67,7 +67,7 @@ for classname in all_classes:
 
 # from ngsolve.ngstd import MPIManager
 # MPIManager.InitMPI()
-MPI_Init()
+mpi_world = MPI_Init()
 
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
@@ -105,7 +105,7 @@ finite element shape functions, and element-matrix/vector integrators
 # pickle.dump, pickle.dumps, pickle.load, pickle.loads = pickle._dump, pickle._dumps, pickle._load, pickle._loads
 
 
-__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing", "solvers", "meshes"]
+__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing", "solvers", "meshes", "mpi_world"]
 
 
 

@@ -21,7 +21,7 @@ namespace ngla
   {
   protected:
     /// the communicator 
-    NgMPI_Comm comm;
+    NgsMPI_Comm comm;
     
     /// local ndof
     size_t ndof;
@@ -81,7 +81,7 @@ namespace ngla
     MPI_Datatype MyGetMPI_Type (int dest) const
     { return mpi_t[dest]; }
 
-    NgMPI_Comm GetCommunicator () const { return comm; }
+    const NgsMPI_Comm & GetCommunicator () const { return comm; }
 
     int GetMasterProc (int dof) const
     {
@@ -112,16 +112,22 @@ namespace ngla
   };
 
 #else
+
   class ParallelDofs 
   {
   protected:
     int ndof;
     
   public:
+    ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
+		  int dim = 1, bool iscomplex = false) { ; }
     
     int GetNDofLocal () const { return ndof; }
     int GetNDofGlobal () const { return ndof; }
-
+    
+    int GetNTasks() const { return 1; }
+    NgMPI_Comm GetCommunicator () const { return NgMPI_Comm(MPI_COMM_WORLD); }
+    
     FlatArray<int> GetExchangeDofs (int proc) const
     { return FlatArray<int> (0, nullptr); }
 
@@ -130,6 +136,9 @@ namespace ngla
 
     FlatArray<int> GetDistantProcs () const
     { return FlatArray<int> (0, nullptr); }      
+
+    bool IsMasterDof (size_t localdof) const
+    { return true; }
     
     template <typename T>
     void ReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }

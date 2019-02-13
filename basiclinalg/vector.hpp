@@ -1798,10 +1798,10 @@ namespace ngstd
 
 
 #ifdef PARALLEL
-namespace ngstd
+namespace ngcore
 {
   template<int S, typename T>
-  class MPI_Traits<ngbla::Vec<S, T> >
+  class MPI_typetrait<ngbla::Vec<S, T> >
   {
   public:
     /// gets the MPI datatype
@@ -1810,7 +1810,7 @@ namespace ngstd
       static MPI_Datatype MPI_T = 0;
       if (!MPI_T)
 	{
-	  MPI_Type_contiguous ( S, MPI_Traits<T>::MPIType(), &MPI_T);
+	  MPI_Type_contiguous ( S, MPI_typetrait<T>::MPIType(), &MPI_T);
 	  MPI_Type_commit ( &MPI_T );
 	}
       return MPI_T;

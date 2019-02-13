@@ -35,7 +35,7 @@ Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
   auto comm = a.GetMeshAccess().GetCommunicator();
   
-  if (MyMPI_GetNTasks(comm) == 1) return archive & a.A();
+  if (comm.Size() == 1) return archive & a.A();
   
   auto g = [&] (int size) { archive & size; };    
 
@@ -368,7 +368,7 @@ namespace ngcomp
   void S_GridFunction<SCAL> :: Load (istream & ist)
   {
     auto comm = ma->GetCommunicator();
-    if (MyMPI_GetNTasks(comm) == 1)
+    if (comm.Size() == 1)
       { 
 	const FESpace & fes = *GetFESpace();
 	Array<DofId> dnums;
@@ -443,8 +443,8 @@ namespace ngcomp
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    int id = MyMPI_GetId(comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    int id = comm.Rank();
+    int ntasks = comm.Size();
     
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
@@ -486,10 +486,10 @@ namespace ngcomp
 	    nodekeys.Append (key);	
 	  }
 	
-	MyMPI_Send (nodekeys, 0, 12, comm);
+	comm.Send (nodekeys, 0, 12);
 	
 	Array<SCAL> loc_data;
-	MyMPI_Recv (loc_data, 0, 13, comm);
+	comm.Recv (loc_data, 0, 13);
 	
 	for (int i = 0, cnt = 0; i < master_nodes.Size(); i++)
 	  {
@@ -514,7 +514,7 @@ namespace ngcomp
 	for( int proc = 1; proc < ntasks; proc++)
 	  {
 	    Array<Vec<N+1, int> > nodenums_proc;
-	    MyMPI_Recv(nodenums_proc,proc,12, comm);
+	    comm.Recv(nodenums_proc,proc,12);
 	    nodenums_of_procs[proc-1] = new Array<int> (nodenums_proc.Size());
 	    
 	    for (int j=0; j < nodenums_proc.Size(); j++)
@@ -568,7 +568,7 @@ namespace ngcomp
 		int node = inverse_index[nodenums_proc[i]];
 		loc_data.Append (node_data.Range (first_node_dof[node], first_node_dof[node+1]));
 	      }
-	    MyMPI_Send(loc_data,proc,13, comm); 		
+	    comm.Send(loc_data,proc,13); 		
 	  }
       }
 #endif	
@@ -580,7 +580,7 @@ namespace ngcomp
   void S_GridFunction<SCAL> :: Save (ostream & ost) const
   {
     auto comm = ma->GetCommunicator();
-    int ntasks = MyMPI_GetNTasks(comm);
+    int ntasks = comm.Size();
     const FESpace & fes = *GetFESpace();
   
     if (ntasks == 1)
@@ -653,7 +653,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
   template <typename T>
-  inline void MyMPI_Gather (T d, MPI_Comm comm = ngs_comm)
+  inline void MyMPI_Gather (T d, MPI_Comm comm /* = ngs_comm */)
   {
     static Timer t("dummy - gather"); RegionTimer r(t);
     
@@ -662,7 +662,7 @@ namespace ngcomp
   }
 
   template <typename T>
-  inline void MyMPI_GatherRoot (FlatArray<T> d, MPI_Comm comm = ngs_comm)
+  inline void MyMPI_GatherRoot (FlatArray<T> d, MPI_Comm comm /* = ngs_comm */)
   {
     static Timer t("dummy - gather"); RegionTimer r(t);
 
@@ -680,8 +680,8 @@ namespace ngcomp
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    int id = MyMPI_GetId(comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    int id = comm.Rank();
+    int ntasks = comm.Size();
 
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
@@ -729,8 +729,8 @@ namespace ngcomp
 	MyMPI_Gather (nodenums.Size(), comm);
 	MyMPI_Gather (data.Size(), comm);
         
-	MyMPI_Send(nodenums,0,22, comm);
-	MyMPI_Send(data,0,23, comm);
+	comm.Send(nodenums,0,22);
+	comm.Send(data,0,23);
       }
     else
       {
@@ -738,8 +738,8 @@ namespace ngcomp
 	Array<Vec<2,int> > positions(0);
 
 	Array<size_t> size_nodes(ntasks), size_data(ntasks);
-	MyMPI_GatherRoot (size_nodes);
-	MyMPI_GatherRoot (size_data);
+	MyMPI_GatherRoot (size_nodes, comm);
+	MyMPI_GatherRoot (size_data, comm);
 
 	Array<MPI_Request> requests;
 
@@ -830,7 +830,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    if (MyMPI_GetNTasks(comm)>1)
+    if (comm.Size()>1)
       {
 	auto pds = cfes[comp]->GetParallelDofs();
 	for (int i = 0; i < gf_parent->GetMultiDim(); i++)

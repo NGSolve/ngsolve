@@ -738,11 +738,14 @@ namespace ngla
       if ( stat==NOT_PARALLEL ) continue;
       ispar.Set(k);
       auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
+      comm = pv->GetParallelDofs()->GetCommunicator();
+      /*
       auto vcomm = pv->GetParallelDofs()->GetCommunicator();
       if (comm==MPI_COMM_NULL)
 	comm = vcomm;
       else if (comm != vcomm)
 	throw Exception("Tried to construct a BlockVector with components in different MPI-Communicators!!");
+      */
     }
 #endif
   }
@@ -783,8 +786,8 @@ namespace ngla
       else ps += p;
     }
     // if all vectors are sequential, do not reduce reduce
-    if (comm == MPI_COMM_NULL) return ps;
-    return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
+    // if (MPI_Comm(comm) == MPI_COMM_NULL) return ps;
+    return pp + comm.AllReduce(ps, MPI_SUM);
   }
 
 

@@ -3764,11 +3764,10 @@ namespace ngcomp
                        // timerDG1.Stop();
                        if(elnums.Size() < 2)
                          {
-#ifdef PARALLEL
-                           auto comm = ma->GetCommunicator();
-			   if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), facet)).Size() > 0) && (comm.Size()>1) )
-			     continue;
-#endif
+                           if (ma->GetCommunicator().Size() > 1)
+                             if (ma->GetDistantProcs (NodeId(NT_FACET, facet)).Size() > 0)
+                               continue;
+
                            facet2 = ma->GetPeriodicFacet(facet);
                            if(facet2 > facet)
                              {
@@ -3891,7 +3890,7 @@ namespace ngcomp
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
                          auto comm = ma->GetCommunicator();
-			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks(comm)>1) )
+			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (comm.Size()>1) )
 			   continue;
 #endif
                          facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
@@ -4770,11 +4769,9 @@ namespace ngcomp
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
 
-
-#ifdef PARALLEL
-    if ( this->GetFESpace()->IsParallel() )
+    if (this->GetFESpace()->IsParallel())
       mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
-#endif
+
     this->mats.Append (mat);
 
     delete graph;
@@ -4805,11 +4802,10 @@ namespace ngcomp
   CreateRowVector() const
   {
     auto afespace = this->GetTrialSpace();
-#ifdef PARALLEL
-    if ( afespace->IsParallel() )
+    
+    if (afespace->IsParallel())
       return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
-#endif
       return make_shared<VVector<TV>> (afespace->GetNDof());
   }
   
@@ -4818,11 +4814,9 @@ namespace ngcomp
   CreateColVector() const
   {
     auto afespace = this->GetTestSpace();
-#ifdef PARALLEL
-    if ( afespace->IsParallel() )
+    if (afespace->IsParallel())
       return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
-#endif
       return make_shared<VVector<TV>> (afespace->GetNDof());
   }
 
@@ -4921,10 +4915,9 @@ namespace ngcomp
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
 
-#ifdef PARALLEL
-    if ( this->GetFESpace()->IsParallel() )
+    if (this->GetFESpace()->IsParallel())
       mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
-#endif
+
     this->mats.Append (mat);
 
     delete graph;

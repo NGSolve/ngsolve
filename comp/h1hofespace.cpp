@@ -45,7 +45,7 @@ template <NODE_TYPE NT, typename T>
 Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
   auto comm = a.GetMeshAccess().GetCommunicator();
-  if (MyMPI_GetNTasks(comm) == 1) return archive & a.A();
+  if (comm.Size() == 1) return archive & a.A();
   
   auto g = [&] (int size) { archive & size; };    
 

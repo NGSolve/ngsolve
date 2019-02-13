@@ -10,31 +10,6 @@
 namespace ngla
 {
 
-#ifdef PARALLEL
-
-
-  template <typename TM>
-  class MasterInverse : public BaseMatrix
-  {
-    shared_ptr<BaseMatrix> inv;
-    shared_ptr<BitArray> subset;
-    DynamicTable<int> loc2glob;
-    Array<int> select;
-    string invtype;
-    //shared_ptr<ParallelDofs> pardofs;
-  public:
-    MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
-		   shared_ptr<ParallelDofs> apardofs);
-    virtual ~MasterInverse () override;
-    virtual bool IsComplex() const override { return inv->IsComplex(); } 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-
-    virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
-    virtual int VWidth() const override { return paralleldofs->GetNDofLocal(); }
-
-    virtual AutoVector CreateVector () const override;
-  };
-
 
   class ParallelMatrix : public BaseMatrix
   {
@@ -83,6 +58,35 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
     virtual INVERSETYPE GetInverseType () const override;
   };
+
+
+
+  
+#ifdef PARALLEL
+
+
+  template <typename TM>
+  class MasterInverse : public BaseMatrix
+  {
+    shared_ptr<BaseMatrix> inv;
+    shared_ptr<BitArray> subset;
+    DynamicTable<int> loc2glob;
+    Array<int> select;
+    string invtype;
+    //shared_ptr<ParallelDofs> pardofs;
+  public:
+    MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
+		   shared_ptr<ParallelDofs> apardofs);
+    virtual ~MasterInverse () override;
+    virtual bool IsComplex() const override { return inv->IsComplex(); } 
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
+    virtual int VWidth() const override { return paralleldofs->GetNDofLocal(); }
+
+    virtual AutoVector CreateVector () const override;
+  };
+
 
   
   class FETI_Jump_Matrix : public BaseMatrix

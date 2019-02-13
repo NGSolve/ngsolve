@@ -458,7 +458,7 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
-	  MyMPI_SendCmd ("ngs_pdefile");
+	  MyMPI_SendCmd ("ngs_pdefile", MPI_COMM_WORLD);
 
 	  pde = make_shared<ngsolve::PDE>();
           pde->SetTclInterpreter (interp);
@@ -543,7 +543,7 @@ int NGS_LoadPy (ClientData clientData,
 #ifdef PARALLEL
 	  stringstream buf;
 	  buf << "ngs_py " << ifstream(filename).rdbuf();
-	  MyMPI_SendCmd (buf.str().c_str());
+	  MyMPI_SendCmd (buf.str().c_str(), MPI_COMM_WORLD);
 #endif // PARALLEL
 	  {
         std::thread([](string init_file_) 
@@ -601,8 +601,8 @@ int NGS_LoadPy (ClientData clientData,
 
 void * SolveBVP(void *)
 {
-  if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
-     TaskManager::SetNumThreads(1);
+  // if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+  // TaskManager::SetNumThreads(1);
 
   try
     {
@@ -654,7 +654,7 @@ int NGS_SolvePDE (ClientData clientData,
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
 
-  MyMPI_SendCmd ("ngs_solvepde");
+  MyMPI_SendCmd ("ngs_solvepde", MPI_COMM_WORLD);
 
   RunParallel (SolveBVP, NULL);
 
@@ -1182,7 +1182,7 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 // tcl package dynamic load
 extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 {
-  MyMPI_SendCmd ("ngs_exit");
+  MyMPI_SendCmd ("ngs_exit", MPI_COMM_WORLD);
   pde.reset();
   return TCL_OK;
 }
@@ -1229,8 +1229,8 @@ if(is_pardiso_available)
 #endif
 
 #ifdef PARALLEL
-  MyMPI_SendCmd ("ngs_loadngs");
-  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+  MyMPI_SendCmd ("ngs_loadngs", MPI_COMM_WORLD);
+  // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
   NGSOStream::SetGlobalActive (true);
 #endif
 
@@ -1238,8 +1238,9 @@ if(is_pardiso_available)
     NgProfiler::SetFileName (string("ngs.prof"));
   
 #ifdef PARALLEL
-  if (MyMPI_GetNTasks(MPI_COMM_WORLD) > 1)
-    TaskManager::SetNumThreads (1);
+  // in MyMPI
+  // if (MyMPI_GetNTasks(MPI_COMM_WORLD) > 1)
+  // TaskManager::SetNumThreads (1);
 #endif
   cout << "Running parallel using " << TaskManager::GetMaxThreads() << " thread(s)" << endl;
 
@@ -1285,7 +1286,8 @@ if(is_pardiso_available)
                                });
     }
 
-    if (MyMPI_GetId() == 0)
+    // only relevant for gui+mpi -> undefined
+    // if (MyMPI_GetId(MPI_COMM_WORLD) == 0)
       {
         pyenv.exec("from ngsolve import *");
         // Release GIL on this thread and reset thread state
@@ -1502,13 +1504,13 @@ void NGS_ParallelRun (const string & message)
   if (getenv ("NGSPROFILE"))
     {
       stringstream filename;
-      filename << "ngs.prof." << MyMPI_GetId (MPI_COMM_WORLD);
+      filename << "ngs.prof." << NgMPI_Comm(MPI_COMM_WORLD).Rank();
       NgProfiler::SetFileName (filename.str());
     }
 
   if ( message == "ngs_loadngs" )
     {
-      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+      // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
     }
 
   else if ( message == "ngs_pdefile" )
@@ -1557,8 +1559,8 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_archive_space" )
     {
       int nr;
-      MyMPI_Bcast (nr);
-      cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
+      NgMPI_Comm(MPI_COMM_WORLD).Bcast (nr);
+      // cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
       WorkerOutArchive archive;
       pde->GetSpaceTable()[nr] -> DoArchive (archive);
     }
@@ -1566,8 +1568,8 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_archive_gridfunction" )
     {
       int nr;
-      MyMPI_Bcast (nr);
-      cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
+      NgMPI_Comm(MPI_COMM_WORLD).Bcast (nr);      
+      // cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
       WorkerOutArchive archive;
       pde->GetGridFunctionTable()[nr] -> DoArchive (archive);
     }
