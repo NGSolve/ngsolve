@@ -25,7 +25,7 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True):
         vecs.append (mata.CreateRowVector())
 
     for v in uvecs:
-        r.FV().NumPy()[:] = random.rand(r.size)
+        r.FV().NumPy()[:] = random.rand(len(r.FV()))
         v.data = pre * r
 
     asmall = Matrix(2*num, 2*num)
