@@ -1773,7 +1773,7 @@ namespace ngcomp
 					       bool build_searchtree,
 					       const Array<int> * const indices) const
   {
-    static Timer t("FindSurfaceElementOfPonit");
+    static Timer t("FindSurfaceElementOfPoint");
     RegionTimer reg(t);
     int elnr;
 
@@ -1783,13 +1783,36 @@ namespace ngcomp
 	// for(int i=0; i<indices->Size(); i++) dummy[i] = (*indices)[i]+1;
 	// elnr = Ng_FindSurfaceElementOfPoint (&point(0), lami, build_searchtree,dummy,indices->Size());
 	// delete [] dummy;
-        elnr = mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree,
-                                           &(*indices)[0],indices->Size());
+        switch (dim)
+          {
+          case 1:
+            throw Exception("FindSurfaceElementOfPoint for mesh-dim = 1 not implemented yet!");
+            break;
+          case 2:
+            elnr = mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree,
+                                               &(*indices)[0],indices->Size());
+            break;
+          case 3:
+            elnr = mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree,
+                                               &(*indices)[0],indices->Size());
+            break;
+          }
       }
     else
       {  
 	// elnr = Ng_FindSurfaceElementOfPoint (&point(0), lami, build_searchtree);
-        elnr = mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);        
+        switch (dim)
+          {
+          case 1:
+            throw Exception("FindSurfaceElementOfPoint for mesh-dim = 1 not implemented yet!");
+            break;
+          case 2:
+            elnr = mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0);
+            break;
+          case 3:
+            elnr = mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);
+           break;
+          }
       }
 
     return elnr;
