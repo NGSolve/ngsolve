@@ -1,3 +1,7 @@
+mkdir %SRC_DIR%
+xcopy . %SRC_DIR%\ /O /X /E /H /K /Q
+cd %SRC_DIR%
+
 git submodule update --init --recursive
 IF %errorlevel% NEQ 0 exit /b %errorlevel%
 rd /s /q %NETGEN_BUILD_DIR%
@@ -6,10 +10,15 @@ IF %errorlevel% NEQ 0 exit /b %errorlevel%
 cd %NETGEN_BUILD_DIR%
 IF %errorlevel% NEQ 0 exit /b %errorlevel%
 
-cmake %CI_PROJECT_DIR% ^
+cmake %SRC_DIR% ^
         -G"%CMAKE_GENERATOR%" ^
         -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL_PREFIX% ^
         %CMAKE_CONFIG% ^
+        -DUSE_OCC=ON ^
+        -DUSE_CCACHE=ON ^
+        -DUSE_MKL=ON ^
+        -DMKL_STATIC=ON ^
+        -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl" ^
         -DUSE_UMFPACK=ON ^
         -DENABLE_UNIT_TESTS=ON ^
         -DCPACK_PACKAGE_NAME=NGSolve ^
