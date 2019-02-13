@@ -27,7 +27,7 @@ namespace ngla
   {
     inv = nullptr;
     
-    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    auto & comm = paralleldofs->GetCommunicator();
     int id = comm.Rank();
     int ntasks = comm.Size();
 
@@ -151,10 +151,10 @@ namespace ngla
 		  }
 	    }
 
-	MyMPI_Send (rows, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (cols, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (vals, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (global_nums, 0, MPI_TAG_SOLVE, comm);
+	comm.Send (rows, 0, MPI_TAG_SOLVE);
+	comm.Send (cols, 0, MPI_TAG_SOLVE);
+	comm.Send (vals, 0, MPI_TAG_SOLVE);
+	comm.Send (global_nums, 0, MPI_TAG_SOLVE);
 
 #ifdef USE_MUMPS
 	if (mat.GetInverseType() == MUMPS)
@@ -185,10 +185,10 @@ namespace ngla
 	    Array<TM> hvals;
 	    Array<int> hglobid;
 
-	    MyMPI_Recv (hrows, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hcols, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hvals, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hglobid, src, MPI_TAG_SOLVE, comm);
+	    comm.Recv (hrows, src, MPI_TAG_SOLVE);
+	    comm.Recv (hcols, src, MPI_TAG_SOLVE);
+	    comm.Recv (hvals, src, MPI_TAG_SOLVE);
+	    comm.Recv (hglobid, src, MPI_TAG_SOLVE);
 
             /*
 	    *testout << "got from P" << src << ":" << endl
@@ -274,7 +274,7 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
     
-    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    NgsMPI_Comm comm = paralleldofs->GetCommunicator();
     int id = comm.Rank();
     int ntasks = comm.Size();
 
@@ -323,7 +323,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 
 	    Array<TV> lx(selecti.Size());
-	    MyMPI_Recv (lx, src, MPI_TAG_SOLVE, comm);
+	    comm.Recv (lx, src, MPI_TAG_SOLVE);
 
 	    if(is_x_cum) {
 	      for (int i = 0; i < selecti.Size(); i++)

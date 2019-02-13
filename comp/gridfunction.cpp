@@ -486,10 +486,10 @@ namespace ngcomp
 	    nodekeys.Append (key);	
 	  }
 	
-	MyMPI_Send (nodekeys, 0, 12, comm);
+	comm.Send (nodekeys, 0, 12);
 	
 	Array<SCAL> loc_data;
-	MyMPI_Recv (loc_data, 0, 13, comm);
+	comm.Recv (loc_data, 0, 13);
 	
 	for (int i = 0, cnt = 0; i < master_nodes.Size(); i++)
 	  {
@@ -514,7 +514,7 @@ namespace ngcomp
 	for( int proc = 1; proc < ntasks; proc++)
 	  {
 	    Array<Vec<N+1, int> > nodenums_proc;
-	    MyMPI_Recv(nodenums_proc,proc,12, comm);
+	    comm.Recv(nodenums_proc,proc,12);
 	    nodenums_of_procs[proc-1] = new Array<int> (nodenums_proc.Size());
 	    
 	    for (int j=0; j < nodenums_proc.Size(); j++)
@@ -568,7 +568,7 @@ namespace ngcomp
 		int node = inverse_index[nodenums_proc[i]];
 		loc_data.Append (node_data.Range (first_node_dof[node], first_node_dof[node+1]));
 	      }
-	    MyMPI_Send(loc_data,proc,13, comm); 		
+	    comm.Send(loc_data,proc,13); 		
 	  }
       }
 #endif	
@@ -729,8 +729,8 @@ namespace ngcomp
 	MyMPI_Gather (nodenums.Size(), comm);
 	MyMPI_Gather (data.Size(), comm);
         
-	MyMPI_Send(nodenums,0,22, comm);
-	MyMPI_Send(data,0,23, comm);
+	comm.Send(nodenums,0,22);
+	comm.Send(data,0,23);
       }
     else
       {

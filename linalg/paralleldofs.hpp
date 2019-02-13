@@ -21,7 +21,7 @@ namespace ngla
   {
   protected:
     /// the communicator 
-    NgMPI_Comm comm;
+    NgsMPI_Comm comm;
     
     /// local ndof
     size_t ndof;
@@ -81,7 +81,7 @@ namespace ngla
     MPI_Datatype MyGetMPI_Type (int dest) const
     { return mpi_t[dest]; }
 
-    NgMPI_Comm GetCommunicator () const { return comm; }
+    const NgsMPI_Comm & GetCommunicator () const { return comm; }
 
     int GetMasterProc (int dof) const
     {

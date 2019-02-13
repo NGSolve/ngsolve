@@ -357,7 +357,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
          { return self == other; }, py::arg("mesh"))
-     .def_property_readonly("comm", [](const MeshAccess& ma)
+     .def_property_readonly("comm", [](const MeshAccess& ma) -> NgMPI_Comm
                             { return ma.GetCommunicator(); },
                             "MPI-communicator the Mesh lives in")
    
