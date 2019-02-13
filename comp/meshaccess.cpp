@@ -2023,14 +2023,13 @@ namespace ngcomp
 				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal), comm(ama->GetCommunicator())
   {
-    cout << "in progressoutput ctor" << endl;
     is_root = comm.Rank() == 0;
     prevtime = WallTime();
 
     // will be 1 line whtn Reduce moved to mpi_wrapper:
     size_t glob_total;
     if (comm.Size() > 1)
-      glob_total = MyMPI_Reduce (total, MPI_SUM, comm);
+      glob_total = comm.Reduce (total, MPI_SUM);
     else
       glob_total = total;
     
@@ -2041,7 +2040,6 @@ namespace ngcomp
     thd_cnt = 0;
     cleanup_func = [this] () {  this->SumUpLocal(); };
     TaskManager::SetCleanupFunction(cleanup_func);
-    cout << "ctor complete" << endl;
   }
 
   ProgressOutput :: ~ProgressOutput ()
@@ -2094,7 +2092,7 @@ namespace ngcomp
 	  else
 	    {
 	      static Timer t("dummy - progressreport"); RegionTimer r(t);
-	      MyMPI_Send (nr, 0, MPI_TAG_SOLVE, comm);
+	      comm.Send (nr, 0, MPI_TAG_SOLVE);
               // changed from BSend (VSC-problem)
 	    }
 #endif
@@ -2131,7 +2129,7 @@ namespace ngcomp
 		    if (flag)
 		      {
 			got_flag = true;
-			MyMPI_Recv (data, source, MPI_TAG_SOLVE, comm);
+			comm.Recv (data, source, MPI_TAG_SOLVE);
 			if (data == -1) 
 			  working[source] = 0;
 			else
@@ -2156,9 +2154,9 @@ namespace ngcomp
     else
       {
 #ifdef PARALLEL
-	MyMPI_Send (total, 0, MPI_TAG_SOLVE, comm);
+	comm.Send (total, 0, MPI_TAG_SOLVE);
 	size_t final = -1;
-	MyMPI_Send (final, 0, MPI_TAG_SOLVE, comm);
+	comm.Send (final, 0, MPI_TAG_SOLVE);
 #endif
       }
   }

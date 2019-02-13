@@ -1133,7 +1133,7 @@ namespace ngcomp
     template <int DIMS, int DIMR> friend class Ng_ConstElementTransformation;
 
 
-    NgMPI_Comm GetCommunicator () const { return mesh.GetCommunicator(); }
+    NgsMPI_Comm GetCommunicator () const { return mesh.GetCommunicator(); }
 
     /**
        Returns the list of other MPI - processes where node is present.
