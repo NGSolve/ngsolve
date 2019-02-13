@@ -2023,18 +2023,16 @@ namespace ngcomp
 				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal), comm(ama->GetCommunicator())
   {
+    use_mpi = false;   // hardcoded for the moment 
     is_root = comm.Rank() == 0;
     prevtime = WallTime();
 
-    // will be 1 line whtn Reduce moved to mpi_wrapper:
-    size_t glob_total;
-    if (comm.Size() > 1)
-      glob_total = comm.Reduce (total, MPI_SUM);
-    else
-      glob_total = total;
+    if (use_mpi)
+      {
+        size_t glob_total = comm.Reduce (total, MPI_SUM);
+        if (is_root) total = glob_total;
+      }
     
-    if (is_root) total = glob_total;
-
     done_called = false;
     cnt = 0;
     thd_cnt = 0;
@@ -2089,7 +2087,7 @@ namespace ngcomp
 	      ma->SetThreadPercentage ( 100.0*nr / total);
 	    }
 #ifdef PARALLEL
-	  else
+	  else if (use_mpi)
 	    {
 	      static Timer t("dummy - progressreport"); RegionTimer r(t);
 	      comm.Send (nr, 0, MPI_TAG_SOLVE);
@@ -2112,7 +2110,7 @@ namespace ngcomp
       {
 #ifdef PARALLEL	  
 	int ntasks = comm.Size();
-	if (ntasks > 1)
+	if (ntasks > 1 && use_mpi)
 	  {
 	    Array<int> working(ntasks), computed(ntasks);
 	    working = 1;
@@ -2151,13 +2149,11 @@ namespace ngcomp
 	cout << IM(3) << "\r" << task << " " << total << "/" << total
 	     << "                                 " << endl;
       }
-    else
+    else if (use_mpi)
       {
-#ifdef PARALLEL
 	comm.Send (total, 0, MPI_TAG_SOLVE);
 	size_t final = -1;
 	comm.Send (final, 0, MPI_TAG_SOLVE);
-#endif
       }
   }
   

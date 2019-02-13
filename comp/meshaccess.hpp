@@ -1234,7 +1234,7 @@ namespace ngcomp
     size_t total;
     double prevtime;
     bool is_root;
-
+    bool use_mpi = true;
     bool done_called;
 
     static atomic<size_t> cnt;
