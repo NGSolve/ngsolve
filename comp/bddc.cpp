@@ -313,11 +313,9 @@ namespace ngcomp
       // auto fes = bfa->GetFESpace();
       int ndof = fes->GetNDof();      
 
-
-#ifdef PARALLEL
-      if(!local)
+      if (!local)
 	AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
-#endif
+      
       ParallelFor (weight.Size(),
                    [&] (size_t i)
                    {
@@ -391,7 +389,6 @@ namespace ngcomp
 	}
       else
 	{
-#ifdef PARALLEL
 	  if (bfa->GetFESpace()->IsParallel() && !local)
 	    {
 	      shared_ptr<ParallelDofs> pardofs = bfa->GetFESpace()->GetParallelDofs();
@@ -418,7 +415,6 @@ namespace ngcomp
 		harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans, pardofs);
 	    }
 	  else
-#endif
 	    {
 
               int cntfreedofs = 0;

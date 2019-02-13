@@ -155,10 +155,13 @@ namespace ngstd
       if (use_paje_trace)
         {
 #ifdef PARALLEL
-          sprintf(buf, "ng%d_rank%d.trace", cnt++, MyMPI_GetId(ngs_comm));
-#else
-          sprintf(buf, "ng%d.trace", cnt++);
+          int is_init = -1;
+          MPI_Initialized(&is_init);
+          if (is_init)
+            sprintf(buf, "ng%d_rank%d.trace", cnt++, NgMPI_Comm(MPI_COMM_WORLD).Size());
+          else
 #endif
+            sprintf(buf, "ng%d.trace", cnt++);
         }
       else
         buf[0] = 0;

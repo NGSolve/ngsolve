@@ -1051,7 +1051,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
-    if ( this->on_proc != MyMPI_GetId(comm) && this->on_proc != -1)
+    if ( this->on_proc != comm.Rank() && this->on_proc != -1)
       {
 	amg = NULL;
 	return;

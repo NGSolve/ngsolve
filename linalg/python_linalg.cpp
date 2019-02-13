@@ -120,7 +120,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #ifdef PARALLEL
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
         return self.SubSet(take_dofs); }, py::arg("dofs"))
-    .def(py::init([](py::object procs, shared_ptr<PyMPI_Comm> comm) {
+    .def(py::init([](py::object procs, NgMPI_Comm comm) {
 	  size_t n = py::len(procs);
 	  TableCreator<int> ct(n);
 	  while (!ct.Done()) {
@@ -132,7 +132,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	    }
 	    ct++;
 	  }
-	  return new ParallelDofs(comm->comm, ct.MoveTable());
+	  return new ParallelDofs(comm, ct.MoveTable());
 	}), py::arg("dist_procs"), py::arg("comm"))
 #endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
@@ -1002,29 +1002,32 @@ maxsteps : int
     ;
   
   m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
-                            py::list vecs, py::object bpshift)
+                            py::list vecs, Complex shift)
         {
-          if (py::len(vecs) > mata.Height())
-            throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
-                             + " is greater than matrix dimension "
-                             + ToString(mata.Height()));
+          int nev;
+          {
+            py::gil_scoped_acquire acq;
+            if (py::len(vecs) > mata.Height())
+              throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
+                               + " is greater than matrix dimension "
+                               + ToString(mata.Height()));
+            nev = py::len(vecs);
+          }
           if (mata.IsComplex())
             {
               Arnoldi<Complex> arnoldi (mata, matm, freedofs);
-              Complex shift = 0.0;
-              shift = py::cast<Complex>(bpshift);
-              // cout << "shift = " << shift << endl;
               arnoldi.SetShift (shift);
               
-              int nev = py::len(vecs);
-              // cout << "num vecs: " << nev << endl;
               Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
               Array<Complex> lam(nev);
               arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-              
-              for (int i = 0; i < nev; i++)
-                vecs[i].cast<BaseVector&>() = *evecs[i];
+
+              {
+                py::gil_scoped_acquire acq;
+                for (int i = 0; i < nev; i++)
+                  vecs[i].cast<BaseVector&>() = *evecs[i];
+              }
               
               Vector<Complex> vlam(nev);
               for (int i = 0; i < nev; i++)
@@ -1034,19 +1037,20 @@ maxsteps : int
           else
             {
               Arnoldi<double> arnoldi (mata, matm, freedofs);
-              double shift = py::cast<double>(bpshift);
-              // cout << "shift = " << shift << endl;
-              arnoldi.SetShift (shift);
+              if (shift.imag())
+                throw Exception("Only real shifts allowed for real arnoldi");
+              arnoldi.SetShift (shift.real());
               
-              int nev = py::len(vecs);
-              // cout << "num vecs: " << nev << endl;
               Array<shared_ptr<BaseVector>> evecs(nev);
               
               Array<Complex> lam(nev);
               arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-              
-              for (int i = 0; i < nev; i++)
-                vecs[i].cast<BaseVector&>() = *evecs[i];
+
+              {
+                py::gil_scoped_acquire acq;
+                for (int i = 0; i < nev; i++)
+                  vecs[i].cast<BaseVector&>() = *evecs[i];
+              }
               
               Vector<Complex> vlam(nev);
               for (int i = 0; i < nev; i++)
@@ -1054,7 +1058,9 @@ maxsteps : int
               return vlam;
             }
         },
-          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
+          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(),
+        py::call_guard<py::gil_scoped_release>(),
+        docu_string(R"raw_string(
 Shift-and-invert Arnoldi eigenvalue solver
 
 Solves the generalized linear EVP A*u = M*lam*u using an Arnoldi iteration for the 

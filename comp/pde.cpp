@@ -522,7 +522,8 @@ namespace ngcomp
     }
     double starttime = WallTime();
 
-    MyMPI_Barrier(ngs_comm);
+    auto comm = GetMeshAccess()->GetCommunicator();
+    comm.Barrier();
     if (pc == 0 || pc == todo.Size())
       {
         pc = 0;
@@ -813,7 +814,7 @@ namespace ngcomp
     Ng_Redraw();
     levelsolved++;
     
-    MyMPI_Barrier(ngs_comm);
+    comm.Barrier();
     double endtime = WallTime();
     
     cout << IM(1) << "Equation Solved" << endl;
@@ -863,8 +864,9 @@ namespace ngcomp
             archive << spaces[i] -> type;
             archive << spaces[i] -> GetDimension();
 
-	    MyMPI_SendCmd ("ngs_archive_space");
-	    MyMPI_Bcast (i, ngs_comm);
+	    MyMPI_SendCmd ("ngs_archive_space", MPI_COMM_WORLD);
+            // MyMPI_Bcast (i, MPI_COMM_WORLD);
+            GetMeshAccess()->GetCommunicator().Bcast (i);
 
             spaces[i] -> DoArchive(archive);
 	    cout << "space " << i << " complete" << endl;
@@ -901,8 +903,9 @@ namespace ngcomp
             archive << string (gridfunctions.GetName(i));
             archive << gridfunctions[i]->GetFESpace()->GetName();
 
-	    MyMPI_SendCmd ("ngs_archive_gridfunction");
-	    MyMPI_Bcast (i, ngs_comm);
+	    MyMPI_SendCmd ("ngs_archive_gridfunction", MPI_COMM_WORLD);
+	    // MyMPI_Bcast (i, MPI_COMM_WORLD);
+            GetMeshAccess()->GetCommunicator().Bcast(i);
 
             gridfunctions[i] -> DoArchive (archive);
             // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
@@ -1207,7 +1210,7 @@ namespace ngcomp
     cout << IM(1) << "add preconditioner " << name << flush;
     shared_ptr<Preconditioner> pre;
     const string & type = flags.GetStringFlag ("type");
-    int ntasks = MyMPI_GetNTasks (ngs_comm);
+    int ntasks = GetMeshAccess()->GetCommunicator().Size();
     
     if ( ntasks == 1 )
       {

@@ -1371,7 +1371,7 @@ ANY                  1 1 1 1 | 15
 
 
 
-#ifdef PARALLEL
+  // #ifdef PARALLEL
 
   class ParallelMeshDofs : public ParallelDofs
   {
@@ -1385,9 +1385,10 @@ ANY                  1 1 1 1 | 15
     const Array<Node> & GetDofNodes() const { return dofnodes; }
   };
   
-#else
+  // #else
 
-
+#ifdef NOPARALLEL
+  
   class ParallelMeshDofs : public ParallelDofs 
   {
   public:
@@ -1405,10 +1406,10 @@ ANY                  1 1 1 1 | 15
 
 
 #ifdef PARALLEL
-namespace ngstd
+namespace ngcore
 {
   template<>
-  class MPI_Traits<ngcomp::COUPLING_TYPE>
+  class MPI_typetrait<ngcomp::COUPLING_TYPE>
   {
   public:
     /// returns MPI-type 

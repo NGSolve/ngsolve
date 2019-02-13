@@ -44,8 +44,9 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
-    int ntasks = MyMPI_GetNTasks();
-    int id = MyMPI_GetId();
+    NgMPI_Comm comm(MPI_COMM_WORLD);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
     
     if (id == 0)
       {
@@ -239,7 +240,7 @@ namespace ngla
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     // cout << IM(1) << "MUMPS version number is " << mumps_id.version_number << endl;
@@ -271,7 +272,7 @@ namespace ngla
     mumps_id.icntl[28]=0;  // 0..auto, 1..ptscotch 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
     mumps_id.job = JOB_ANALYSIS;
 
 
@@ -298,7 +299,7 @@ namespace ngla
     if (id == 0)
       cout << "factor ... " << flush;
 
-    MPI_Barrier (ngs_comm);
+    MPI_Barrier (comm);
 
     timer_factor.Start();
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
@@ -342,7 +343,8 @@ namespace ngla
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    int id = MyMPI_GetId();
+    NgMPI_Comm comm(MPI_COMM_WORLD);
+    int id = comm.Rank();
 
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
     NgProfiler::RegionTimer reg (timer);
@@ -437,8 +439,9 @@ namespace ngla
 
     cout << IM(1) << "Mumps Parallel inverse, symmetric = " << symmetric << endl;
 
-    int ntasks = MyMPI_GetNTasks();
-    int id = MyMPI_GetId();
+    NgMPI_Comm comm = pardofs->GetCommunicator();
+    int ntasks = comm.Size();
+    int id = comm.Rank();
 
     if (id == 0)
       {
@@ -748,7 +751,7 @@ namespace ngla
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 2 : 0;    // 1 .. spd, 2 .. general symmetric
     //mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
 
 
     MumpsFunction (mumps_id);
@@ -797,7 +800,7 @@ namespace ngla
 
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
     mumps_id.job = JOB_ANALYSIS;
 
     cout << IM(1) << "analysis ... " << flush;
@@ -852,8 +855,9 @@ namespace ngla
     y.SetParallelStatus (CUMULATED);
 
 
-    int ntasks = MyMPI_GetNTasks();
-    int id = MyMPI_GetId();
+    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    int ntasks = comm.Size();
+    int id = comm.Rank();
 
 
     if (id != 0)
@@ -868,15 +872,15 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  select_loc2glob[i] = loc2glob[select[i]];
 	
-	MyMPI_Send (select_loc2glob, 0);
-	MyMPI_Send (hx, 0);
+	MyMPI_Send (select_loc2glob, 0, MPI_TAG_SOLVE, comm);
+	MyMPI_Send (hx, 0, MPI_TAG_SOLVE, comm);
 
 	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
 	ncid.job = JOB_SOLVE;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
 
-	MyMPI_Send (select_loc2glob, 0);
-	MyMPI_Recv (hx, 0);
+	MyMPI_Send (select_loc2glob, 0, MPI_TAG_SOLVE, comm);
+	MyMPI_Recv (hx, 0, MPI_TAG_SOLVE, comm);
 
 	y = 0;
 	for (int i = 0; i < select.Size(); i++)
@@ -891,8 +895,8 @@ namespace ngla
 	  {
 	    Array<int> loc2glob;
 	    Array<TV> hx;
-	    MyMPI_Recv (loc2glob, src);
-	    MyMPI_Recv (hx, src);
+	    MyMPI_Recv (loc2glob, src, MPI_TAG_SOLVE, comm);
+	    MyMPI_Recv (hx, src, MPI_TAG_SOLVE, comm);
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      rhs(loc2glob[j]) += hx[j];
 	  } 
@@ -908,12 +912,12 @@ namespace ngla
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    Array<int> loc2glob;
-	    MyMPI_Recv (loc2glob, src);
+	    MyMPI_Recv (loc2glob, src, MPI_TAG_SOLVE, comm);
 	    Array<TV> hx(loc2glob.Size());
 
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      hx[j] = rhs(loc2glob[j]);
-	    MyMPI_Send (hx, src);
+	    MyMPI_Send (hx, src, MPI_TAG_SOLVE, comm);
 	  }
       }
 

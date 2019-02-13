@@ -1,4 +1,4 @@
-#ifdef PARALLEL
+// #ifdef PARALLEL
 
 
 #include <parallelngs.hpp>
@@ -108,6 +108,7 @@ namespace ngla
 
   void ParallelBaseVector :: Cumulate () const
   {
+#ifdef PARALLEL
     if (status != DISTRIBUTED) return;
     
     int ntasks = paralleldofs->GetNTasks();
@@ -137,14 +138,17 @@ namespace ngla
       } 
 
     SetStatus(CUMULATED);
+#endif
   }
 
 
 
   void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
   {
+#ifdef PARALLEL
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
     MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
+#endif
   }
 
   /*
@@ -180,7 +184,8 @@ namespace ngla
 					 dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
 
-    return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
+    // return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
+    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
   }
 
 
@@ -203,14 +208,19 @@ namespace ngla
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
       Distribute();
 
-    Complex localsum ;
+    Complex localsum = ngbla::InnerProduct (FVComplex(), 
+                                            dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
+
+    /*    
     Complex globalsum = 0;
-
-    localsum = ngbla::InnerProduct (FVComplex(), 
-				    dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
-
+#ifdef PARALLEL
     MPI_Allreduce (&localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, ngs_comm);
+#else
+    globalsum = localsum;
+#endif
     return globalsum;
+    */
+    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
   }
 
   template class S_ParallelBaseVector<double>;
@@ -300,11 +310,13 @@ namespace ngla
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, MPI_Request & request )
   {
+#ifdef PARALLEL
     MPI_Datatype MPI_TS = MyGetMPIType<TSCAL> ();
     MPI_Irecv( &( (*recvvalues)[dest][0]), 
 	       (*recvvalues)[dest].Size(), 
 	       MPI_TS, dest, 
 	       MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
+#endif
   }
 
   /*
@@ -371,7 +383,8 @@ namespace ngla
 	    sum += L2Norm2 (fv.Row(dof));
       }
       
-    double globsum = MyMPI_AllReduce (sum, MPI_SUM, ngs_comm);
+    // double globsum = MyMPI_AllReduce (sum, MPI_SUM, paralleldofs->GetCommunicator()); // ngs_comm);
+    double globsum = paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM); 
     return sqrt (globsum);
   }
 
@@ -382,5 +395,5 @@ namespace ngla
 
 
 
-#endif
+// #endif
 
