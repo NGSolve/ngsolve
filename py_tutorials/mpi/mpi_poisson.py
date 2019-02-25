@@ -35,17 +35,11 @@ if rank==0:
 comm.Barrier()
 
 # now load mesh from file
-if comm.rank==0:
-    ngmesh = netgen.Mesh(dim=3)
-    ngmesh.Load("some_mesh.vol")
-    ngmesh.Distribute(comm)
-else:
-    ngmesh = netgen.Mesh.Receive(comm)
+ngmesh = netgen.Mesh(dim=3, comm=comm)
+ngmesh.Load("some_mesh.vol")
 
 #refine once?
 # ngmesh.Refine()
-
-print("points: ", len(list(ngmesh.Points())))
 
 mesh = Mesh(ngmesh)
 
