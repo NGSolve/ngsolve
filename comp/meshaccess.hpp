@@ -249,7 +249,7 @@ namespace ngcomp
     /// connects to Netgen - mesh
     MeshAccess (shared_ptr<netgen::Mesh> amesh);
     /// loads new mesh from file
-    MeshAccess (string filename, MPI_Comm amesh_comm = MPI_COMM_WORLD);
+    MeshAccess (string filename, NgMPI_Comm amesh_comm = NgMPI_Comm(MPI_COMM_WORLD));
     /// select this mesh in netgen visuaization
     void SelectMesh() const;
     /// not much to do 
