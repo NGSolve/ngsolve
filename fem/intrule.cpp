@@ -3226,9 +3226,11 @@ namespace ngfem
     dim_space = DIM_SPACE;
     baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
     incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
-
-    for (int i = 0; i < ir.Size(); i++)
-      new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
+    
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    FlatArray<SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>> hmips = mips;
+    for (size_t i = 0; i < hir.Size(); i++)
+      new (&hmips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (hir[i], eltrans, -1);
 
     new (&points) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
                                                  &mips[0].Point()(0),
@@ -3594,6 +3596,7 @@ namespace ngfem
           
       case ET_HEX:
         {
+          if (!irfacet.IsTP()) break;
           FlatVec<3> p0 = points(faces[fnr][0]);
           FlatVec<3> p1 = points(faces[fnr][1]);
           FlatVec<3> p2 = points(faces[fnr][3]);
@@ -3617,7 +3620,7 @@ namespace ngfem
                   else
                     {
                       int order = 2*irfacet.GetIRX().GetNIP()-1;
-                        ir1d = intrules.simd_segmentrules_inv[order];
+                      ir1d = intrules.simd_segmentrules_inv[order];
                     }
                 }
               switch (dir)
