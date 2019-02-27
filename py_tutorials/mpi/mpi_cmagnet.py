@@ -28,21 +28,28 @@ def MakeGeometry():
     geometry.Add (coil)
     return geometry
 
+# For curving, we need the geometry. We have to
+# generate it everywhere and then set it.
+# It is not distributed automatically.
+geom = MakeGeometry()
 if rank==0:
-    ngmesh = MakeGeometry().GenerateMesh(maxh=0.5)
-    ngmesh.Save("some_mesh.vol")
-
-comm.Barrier()
-
-ngmesh = netgen.Mesh(dim=3)
-ngmesh.Load("some_mesh.vol")
+    # master proc generates and immediately distributes
+    ngmesh = geom.GenerateMesh(maxh=0.5)
+    ngmesh.Distribute(comm)
+else:
+    # worker procs receive mesh
+    ngmesh = netgen.Mesh.Receive(comm)
+    # and then manually set the geometry
+    ngmesh.SetGeometry(geom)
 mesh = Mesh(ngmesh)
 
+# now we can curve!
 mesh.Curve(5)
 
 ngsglobals.msg_level = 5
 
 fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
+
 
 u = fes.TrialFunction()
 v = fes.TestFunction()

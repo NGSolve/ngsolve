@@ -745,7 +745,7 @@ namespace ngcomp
     UpdateBuffers();
   }
 
-  MeshAccess :: MeshAccess (string filename, MPI_Comm amesh_comm)
+  MeshAccess :: MeshAccess (string filename, NgMPI_Comm amesh_comm)
     : mesh(filename, amesh_comm)
   {
     // the connection to netgen global variables

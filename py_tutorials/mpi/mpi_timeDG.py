@@ -22,17 +22,10 @@ np = comm.size
 do_vtk = False
 
 if rank==0:
-    # master-proc generates mesh
-    mesh = unit_square.GenerateMesh(maxh=0.05)
-    # and saves it to file
-    mesh.Save("some_mesh.vol")
-
-# wait for master to be done meshing
-comm.Barrier()
-
-# now load mesh from file
-ngmesh = netgen.Mesh(dim=2)
-ngmesh.Load("some_mesh.vol")
+    ngmesh = unit_square.GenerateMesh(maxh=0.05)
+    ngmesh.Distribute(comm)
+else:
+    ngmesh = netgen.Mesh.Receive(comm)
 mesh = Mesh(ngmesh)
 
 # build L2-FESpace
