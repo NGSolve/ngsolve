@@ -3267,14 +3267,6 @@ deformation : ngsolve.comp.GridFunction
      ;
 
    
-   m.def("SetNGSComm", [&](NgMPI_Comm & c)
-	 {
-	   // netgen::ng_comm = c;
-	   // ngcore::id = c.Rank();
-	   // ngcore::ntasks = c.Size();
-	   // ngs_comm = c;
-	 });  
-
    m.def("MPI_Init", [&]()
 	 {
 	   const char * progname = "ngslib";

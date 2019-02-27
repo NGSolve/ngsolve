@@ -20,16 +20,16 @@ tau = 0.001
 tend = 3
 
 # mesh = Mesh("cylinder.vol")
+geo = SplineGeometry()
+geo.AddRectangle( (0, 0), (2, 0.41), bcs = ("wall", "outlet", "wall", "inlet"))
+geo.AddCircle ( (0.2, 0.2), r=0.05, leftdomain=0, rightdomain=1, bc="cyl")
 if rank==0:
-    geo = SplineGeometry()
-    geo.AddRectangle( (0, 0), (2, 0.41), bcs = ("wall", "outlet", "wall", "inlet"))
-    geo.AddCircle ( (0.2, 0.2), r=0.05, leftdomain=0, rightdomain=1, bc="cyl")
     ngmesh = geo.GenerateMesh(maxh=0.08)
-    ngmesh.Save("some_mesh.vol")
-
-comm.Barrier()
-ngmesh = netgen.Mesh(dim=2)
-ngmesh.Load("some_mesh.vol")
+    ngmesh.Distribute(comm)
+else:
+    ngmesh = netgen.Mesh.Receive(comm)
+    ngmesh.SetGeometry(geo)
+    
 mesh = Mesh(ngmesh)
 
 #does not work with mpi yet...
