@@ -3890,7 +3890,7 @@ namespace ngcomp
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
                          auto comm = ma->GetCommunicator();
-			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (comm.Size()>1) )
+			 if( (comm.Size()>1) && (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) )
 			   continue;
 #endif
                          facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
