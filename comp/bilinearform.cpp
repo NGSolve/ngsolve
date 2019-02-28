@@ -4068,6 +4068,15 @@ namespace ngcomp
 	      auto elfacets = ma->GetElFacets(ElementId(VOL,i));
 	      for (auto f : elfacets) fine_facet.Set(f);
 	    }
+	    /** 
+		We can have surf-els without elements. If we just skip these, 
+		the order of facets can be jumbled between ranks.
+		So we include facets from surf-els and jump to the identified facet
+		(+ its local vol el) if on mpi-bnd.
+	    **/
+	    size_t nse = ma->GetNE(BND);
+	    for (int i = 0; i < nse; ++i)
+	      fine_facet.Set(ma->GetSElFace(i));
 
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
 	    
@@ -4075,19 +4084,27 @@ namespace ngcomp
 	      cnt_in = 0;
 	      cnt_per = 0;
 	      for(auto facet:Range(ma->GetNFacets())) {
-		NodeId facet_id(StdNodeType(NT_FACET, ma->GetDimension()), facet);
 		if(!fine_facet.Test(facet)) continue;
+		NodeId facet_id(StdNodeType(NT_FACET, ma->GetDimension()), facet);
 		auto fdps = ma->GetDistantProcs(facet_id);
 		//skip non-mpi facets
-		if (fdps.Size() == 0)
-		  continue;
+		if (fdps.Size() == 0) continue;
 		auto d = fdps[0];
 		HeapReset hr(lh);
-		
-		ma->GetFacetElements(facet, elnums);
 
 		ma->GetFacetSurfaceElements (facet, elnums2);
+		ma->GetFacetElements(facet, elnums);
 		bool periodic_facet = elnums2.Size()!=0;
+		if (periodic_facet) { // dont double up on facets!
+		  auto facet2 = ma->GetPeriodicFacet(facet);
+		  if (facet>facet2) continue;
+		}
+		if (periodic_facet && !elnums.Size()) // use the identified facet!
+		  {
+		    facet = ma->GetPeriodicFacet(facet);
+		    ma->GetFacetElements(facet, elnums);
+		    ma->GetFacetSurfaceElements (facet, elnums2);
+		  }
 
 		ElementId eiv(VOL, elnums[0]);
 
