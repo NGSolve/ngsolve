@@ -1728,7 +1728,7 @@ namespace ngfem
           // tir.Start();
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-          const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order());
+          const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
           
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
@@ -2595,7 +2595,7 @@ namespace ngfem
     auto eltype1 = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
 
-    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
@@ -2709,7 +2709,7 @@ namespace ngfem
     auto eltype2 = trafo2.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
-    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
@@ -2810,7 +2810,7 @@ namespace ngfem
     auto etvol = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (etvol, LocalFacetNr1);
 
-    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
     Facet2ElementTrafo transform1(etvol, ElVertices1);
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
     
@@ -2893,7 +2893,7 @@ namespace ngfem
     auto eltype1 = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
-    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices1);
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
     
@@ -3031,7 +3031,7 @@ namespace ngfem
             Facet2ElementTrafo transform1(eltype1, ElVertices1); 
             Facet2ElementTrafo transform2(eltype2, ElVertices2); 
             
-            const SIMD_IntegrationRule& simd_ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder);
+            const SIMD_IntegrationRule& simd_ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
             
             auto & simd_ir_facet_vol1 = transform1(LocalFacetNr1, simd_ir_facet, lh);
             auto & simd_mir1 = trafo1(simd_ir_facet_vol1, lh);
@@ -3146,7 +3146,7 @@ namespace ngfem
     auto eltype2 = trafo2.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
-    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
     
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
@@ -3243,7 +3243,7 @@ namespace ngfem
             
             Facet2ElementTrafo transform(eltype, ElVertices); 
             
-            const SIMD_IntegrationRule & simd_ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder);
+            const SIMD_IntegrationRule & simd_ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
 	    
             auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
             auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
@@ -3294,7 +3294,7 @@ namespace ngfem
     auto eltype = eltrans.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
 
-    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*maxorder + bonus_intorder);
     
     Facet2ElementTrafo transform(eltype, ElVertices); 
     IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
@@ -3349,7 +3349,7 @@ namespace ngfem
             auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
 
             Facet2ElementTrafo transform(eltype, ElVertices); 
-            const SIMD_IntegrationRule & simd_ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder);
+            const SIMD_IntegrationRule & simd_ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
 
             auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
             auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
@@ -3427,7 +3427,7 @@ namespace ngfem
     int maxorder = volumefel.Order();
     auto eltype = eltrans.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
-    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
 
     Facet2ElementTrafo transform(eltype, ElVertices); 
     IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
@@ -3508,7 +3508,7 @@ namespace ngfem
             auto eltype1 = trafo1.GetElementType();
             auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
             
-            const SIMD_IntegrationRule & ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder);
+            const SIMD_IntegrationRule & ir_facet = GetSIMDIntegrationRule(etfacet, 2*maxorder + bonus_intorder);
             Facet2ElementTrafo transform1(eltype1, ElVertices);
             Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices); 
             auto & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
@@ -3603,7 +3603,7 @@ namespace ngfem
     auto eltype1 = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
 
-    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder);
+    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder + bonus_intorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices);
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices); 
     
