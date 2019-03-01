@@ -398,8 +398,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
   m.def ("InnerProduct",
-           [] (py::object x, py::object y) -> py::object
-         { return py::handle(x.attr("InnerProduct")) (y); }, py::arg("x"), py::arg("y"), "Computes InnerProduct of given objects");
+         [] (py::object x, py::object y, py::kwargs kw) -> py::object
+         { return py::handle(x.attr("InnerProduct")) (y, **kw); }, py::arg("x"), py::arg("y"), "Computes InnerProduct of given objects");
   ;
   
 
