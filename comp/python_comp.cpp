@@ -2536,9 +2536,10 @@ integrator : ngsolve.fem.LFI
               else {
 #ifdef PARALLEL
                 Vector<> gsum(dim);
-                if (ma->GetCommunicator().Size() > 1)
+                if (ma->GetCommunicator().Size() > 1) {
                   MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
-                sum = gsum;
+		  sum = gsum;
+		}
 #endif
                 result = py::cast(sum);
               }
@@ -2625,9 +2626,10 @@ integrator : ngsolve.fem.LFI
               else {
 #ifdef PARALLEL
                 Vector<Complex> gsum(dim);
-                if (ma->GetCommunicator().Size() > 1)                
+                if (ma->GetCommunicator().Size() > 1) {
                   MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
-                sum = gsum;
+		  sum = gsum;
+		}
 #endif
                 result = py::cast(sum);
               }
