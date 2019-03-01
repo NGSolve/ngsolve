@@ -27,7 +27,7 @@ print("Hello from rank "+str(rank)+" of "+str(np))
 
 if rank==0:
     # master-proc generates mesh
-    mesh = unit_cube.GenerateMesh(maxh=0.1)
+    mesh = unit_cube.GenerateMesh(maxh=0.3)
     # and saves it to file
     mesh.Save("some_mesh.vol")
 
@@ -35,7 +35,7 @@ if rank==0:
 comm.Barrier()
 
 # now load mesh from file
-ngmesh = netgen.Mesh(dim=3)
+ngmesh = netgen.Mesh(dim=3, comm=comm)
 ngmesh.Load("some_mesh.vol")
 
 #refine once?
