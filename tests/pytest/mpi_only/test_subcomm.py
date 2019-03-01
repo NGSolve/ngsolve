@@ -39,27 +39,6 @@ def test_load_ngs_sub1():
     assert mesh.comm.rank == sub_comm.rank
     comm.Barrier()
 
-#set global comm to sub-comm, then load ngsolve-mesh
-def test_load_ngs_sub2():
-    comm = MPI_Init()
-    assert comm.size>=5
-    groups = [[1,2,4]]
-    sub_comm = comm.SubComm(find_group(comm, groups))
-    from ngsolve.comp import SetNGSComm
-    SetNGSComm(sub_comm)
-    newcomm = MPI_Init()
-    assert newcomm.size == sub_comm.size
-    assert newcomm.rank == sub_comm.rank
-    mesh = Mesh('square.vol.gz')
-    assert mesh.comm.size == sub_comm.size
-    assert mesh.comm.rank == sub_comm.rank
-    SetNGSComm(comm)
-    newnewcomm = MPI_Init()
-    assert newnewcomm.size == comm.size
-    assert newnewcomm.rank == comm.rank
-    comm.Barrier()
-
-    
 #load netgen-mesh, then make ngsolve-mesh
 def test_load_ng():
     comm = MPI_Init()
@@ -176,7 +155,6 @@ if __name__ == "__main__":
     test_load_ngs()
     test_load_ngs_seq()
     test_load_ngs_sub1()
-    test_load_ngs_sub2()
 
     test_load_ng()
     test_load_ng_sub1()
