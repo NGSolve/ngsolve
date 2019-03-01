@@ -56,6 +56,7 @@ namespace ngcomp
   
   PDE :: ~PDE()
   {
+    
     for (int i = 0; i < string_constants.Size(); i++)
       delete string_constants[i];
     string_constants.DeleteAll();
@@ -71,6 +72,9 @@ namespace ngcomp
     CurvePointIntegrators.DeleteAll();
 
     Ng_ClearSolutionData ();
+
+    // Reset global Netgen-geoemtry with dummy-geom
+    Ng_LoadGeometry ("");
     
     // for (int i = 0; i < mas.Size(); i++) delete mas[i];
   }
