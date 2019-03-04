@@ -1282,6 +1282,7 @@ mip : ngsolve.BaseMappedIntegrationPoint
              BaseScalarFiniteElement * fe = nullptr;
              switch (et)
                {
+               case ET_SEGM: fe = new H1HighOrderFE<ET_SEGM>(order); break;
                case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
                case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
                case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
@@ -1307,6 +1308,7 @@ order : int
              BaseScalarFiniteElement * fe = nullptr;
              switch (et)
                {
+               case ET_SEGM: fe = new L2HighOrderFE<ET_SEGM>(order); break;
                case ET_TRIG: fe = new L2HighOrderFE<ET_TRIG>(order); break;
                case ET_QUAD: fe = new L2HighOrderFE<ET_QUAD>(order); break;
                case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
