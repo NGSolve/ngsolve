@@ -403,6 +403,8 @@ namespace ngcomp
     if (!bli)
       {
         cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
+        if (!fes->GetEvaluator(vb))
+          throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
         auto single_evaluator =  fes->GetEvaluator(vb);
         if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
           single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
