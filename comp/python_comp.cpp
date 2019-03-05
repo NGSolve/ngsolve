@@ -2457,7 +2457,14 @@ integrator : ngsolve.fem.LFI
           int dim = cf->Dimension();
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
-          
+
+          cf -> TraverseTree
+            ([&] (CoefficientFunction & stepcf)
+             {
+               if (dynamic_cast<ProxyFunction*>(&stepcf))
+                 throw Exception("Cannot integrate ProxFunction!");
+             });
+                   
           if (!cf->IsComplex())
             {
               Vector<> sum(dim);

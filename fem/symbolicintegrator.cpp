@@ -3693,6 +3693,10 @@ namespace ngfem
             }
         });
 
+    for (auto proxy : trial_proxies)
+      if (!proxy->Evaluator()->SupportsVB(vb))
+        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+
     nonzeros = Matrix<bool>(trial_cum.Last(), trial_cum.Last());
     nonzeros_proxies = Matrix<bool>(trial_proxies.Size(), trial_proxies.Size());
     nonzeros_proxies = false;
