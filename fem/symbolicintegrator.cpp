@@ -248,7 +248,8 @@ namespace ngfem
             BareSliceMatrix<SIMD<double>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    assert (ud);
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction without userdata");
     
     if (!testfunction && ud->fel)
       {
