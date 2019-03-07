@@ -1258,7 +1258,7 @@ namespace ngcomp
 
 
   /// old style, compatibility for a while
-  template <typename T>
+  template <typename T>  [[deprecated("use ma.AllReduceNodalData instead")]]
   void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma)
   {
     ma.AllReduceNodalData (nt, data, op);
@@ -1271,41 +1271,24 @@ namespace ngcomp
   void MeshAccess::
   AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const
   {
-    NgMPI_Comm comm = GetCommunicator();
-    MPI_Datatype type = MyGetMPIType<T>();
+    NgsMPI_Comm comm = GetCommunicator();
+    if (comm.Size() <= 1) return;
 
-    int ntasks = comm.Size();
-    if (ntasks <= 1) return;
-
-    Array<int> cnt(ntasks), distp;
+    Array<int> cnt(comm.Size());
     cnt = 0;
-    for (int i = 0; i < GetNNodes(nt); i++)
-      {
-        /*
-	GetDistantProcs (Node (nt, i), distp);
-	for (int j = 0; j < distp.Size(); j++)
-	  cnt[distp[j]]++;
-        */
-        for (auto p : GetDistantProcs(Node(nt,i)))
-          cnt[p]++;
-      }
-
+    for (auto i : Range(GetNNodes(nt)))
+      for (auto p : GetDistantProcs(Node(nt,i)))
+        cnt[p]++;
+    
     Table<T> dist_data(cnt), recv_data(cnt);
-
+    
     cnt = 0;
-    for (int i = 0; i < GetNNodes(nt); i++)
-      {
-        /*
-	GetDistantProcs (Node (nt, i), distp);
-	for (int j = 0; j < distp.Size(); j++)
-	  dist_data[distp[j]][cnt[distp[j]]++] = data[i];
-        */
-        for (auto p : GetDistantProcs(Node(nt, i)))
-          dist_data[p][cnt[p]++] = data[i];
-      }
+    for (auto i : Range(GetNNodes(nt)))
+      for (auto p : GetDistantProcs(Node(nt, i)))
+        dist_data[p][cnt[p]++] = data[i];
 
     Array<MPI_Request> requests;
-    for (int i = 0; i < ntasks; i++)
+    for (auto i : cnt.Range())
       if (cnt[i])
 	{
 	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
@@ -1314,18 +1297,11 @@ namespace ngcomp
     MyMPI_WaitAll (requests);
     
     cnt = 0;
-    for (int i = 0; i < data.Size(); i++)
-      {
-        /*
-	GetDistantProcs (Node (nt, i), distp);
-	for (int j = 0; j < distp.Size(); j++)
-	  MPI_Reduce_local (&recv_data[distp[j]][cnt[distp[j]]++],
-			    &data[i], 1, type, op);
-        */
-        for (auto p : GetDistantProcs(Node(nt, i)))
-	  MPI_Reduce_local (&recv_data[p][cnt[p]++],
-			    &data[i], 1, type, op);
-      }
+    MPI_Datatype type = GetMPIType<T>();
+    for (auto i : Range(GetNNodes(nt)))
+      for (auto p : GetDistantProcs(Node(nt, i)))
+        MPI_Reduce_local (&recv_data[p][cnt[p]++],
+                          &data[i], 1, type, op);
   }
 
 
