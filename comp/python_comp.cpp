@@ -2107,6 +2107,8 @@ flags : dict
 
     .def_property_readonly("vec", [] (shared_ptr<LF> self)
                            { return self->GetVectorPtr();}, "vector of the assembled linear form")
+    .def_property_readonly("space", [](LF& self)
+                                    { return self.GetFESpace(); })
 
     .def("Add", [](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
           { 
