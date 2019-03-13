@@ -27,7 +27,8 @@ namespace ngcomp
 				FlatArray<int> row_gnums, FlatArray<int> col_gnums,
 				bool matrix_cumulated = false)
   {
-    HYPRE_IJMatrixCreate(ngs_comm, row_ilower, row_iupper, col_ilower, col_iupper, ijmat);
+    NgsMPI_Comm comm = row_pardofs->GetCommunicator();
+    HYPRE_IJMatrixCreate(comm, row_ilower, row_iupper, col_ilower, col_iupper, ijmat);
     HYPRE_IJMatrixSetPrintLevel(*ijmat, 1);
     HYPRE_IJMatrixSetObjectType(*ijmat, HYPRE_PARCSR);
     HYPRE_IJMatrixInitialize(*ijmat);
@@ -88,9 +89,9 @@ namespace ngcomp
   /**
      Creates hypre-IJvector from ngsolve-vector and copies values.
    **/
-  void Create_IJVec_from_BVec(HYPRE_IJVector & v, HYPRE_ParVector & pv, double* vals,
+  void Create_IJVec_from_BVec(NgsMPI_Comm & comm, HYPRE_IJVector & v, HYPRE_ParVector & pv, double* vals,
 			      Array<int> & global_nums, int ilower, int iupper, bool full_vals) {    
-    HYPRE_IJVectorCreate(ngs_comm, ilower, iupper,&v);
+    HYPRE_IJVectorCreate(comm, ilower, iupper,&v);
     HYPRE_IJVectorSetPrintLevel(v, 1);
     HYPRE_IJVectorSetObjectType(v, HYPRE_PARCSR);
     HYPRE_IJVectorInitialize(v);
@@ -182,7 +183,7 @@ namespace ngcomp
     HYPRE_Int err;	
 
     this->parallel = this->hcurlfes->GetParallelDofs()!=nullptr;
-    NgMPI_Comm comm = this->parallel ? this->hcurlfes->GetParallelDofs()->GetCommunicator() : NgMPI_Comm(MPI_COMM_WORLD);
+    NgsMPI_Comm comm = this->parallel ? this->hcurlfes->GetParallelDofs()->GetCommunicator() : NgMPI_Comm(MPI_COMM_WORLD);
     this->rank = comm.Rank();
     this->np = comm.Size();
     this->parallel = (np>1);
@@ -334,7 +335,7 @@ namespace ngcomp
 	  c[j][k] = co[j];
       }
       for(auto k:Range(3))
-	(void) Create_IJVec_from_BVec (h[k], ph[k], cp[k], this->h1_global_nums, this->h1_ilower, this->h1_iupper, true);
+	(void) Create_IJVec_from_BVec (comm, h[k], ph[k], cp[k], this->h1_global_nums, this->h1_ilower, this->h1_iupper, true);
       if( (err = HYPRE_AMSSetCoordinateVectors(this->precond, ph[0], ph[1], ph[2])) != 0)
 	cerr << "HYPRE_AMSSetCoordinateVectors returned with error " << err << endl;      
     }
@@ -342,8 +343,8 @@ namespace ngcomp
     /** working vectors **/
     Array<double> zeros(this->hc_ndof+1); //+1 for rank 0...
     zeros = 0.0;
-    (void) Create_IJVec_from_BVec (this->b, this->par_b,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
-    (void) Create_IJVec_from_BVec (this->x, this->par_x,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
+    (void) Create_IJVec_from_BVec (comm, this->b, this->par_b,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
+    (void) Create_IJVec_from_BVec (comm, this->x, this->par_x,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
     
     /** main system matrix **/
     const auto & matrix = this->bfa->GetMatrix();
