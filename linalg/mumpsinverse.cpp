@@ -855,7 +855,7 @@ namespace ngla
     y.SetParallelStatus (CUMULATED);
 
 
-    NgMPI_Comm comm = paralleldofs->GetCommunicator();
+    NgsMPI_Comm comm = paralleldofs->GetCommunicator();
     int ntasks = comm.Size();
     int id = comm.Rank();
 
@@ -872,15 +872,15 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  select_loc2glob[i] = loc2glob[select[i]];
 	
-	MyMPI_Send (select_loc2glob, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (hx, 0, MPI_TAG_SOLVE, comm);
+	comm.Send (select_loc2glob, 0, MPI_TAG_SOLVE);
+	comm.Send (hx, 0, MPI_TAG_SOLVE);
 
 	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
 	ncid.job = JOB_SOLVE;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
 
-	MyMPI_Send (select_loc2glob, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Recv (hx, 0, MPI_TAG_SOLVE, comm);
+	comm.Send (select_loc2glob, 0, MPI_TAG_SOLVE);
+	comm.Recv (hx, 0, MPI_TAG_SOLVE);
 
 	y = 0;
 	for (int i = 0; i < select.Size(); i++)
@@ -895,8 +895,8 @@ namespace ngla
 	  {
 	    Array<int> loc2glob;
 	    Array<TV> hx;
-	    MyMPI_Recv (loc2glob, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hx, src, MPI_TAG_SOLVE, comm);
+	    comm.Recv (loc2glob, src, MPI_TAG_SOLVE);
+	    comm.Recv (hx, src, MPI_TAG_SOLVE);
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      rhs(loc2glob[j]) += hx[j];
 	  } 
@@ -912,12 +912,12 @@ namespace ngla
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    Array<int> loc2glob;
-	    MyMPI_Recv (loc2glob, src, MPI_TAG_SOLVE, comm);
+	    comm.Recv (loc2glob, src, MPI_TAG_SOLVE);
 	    Array<TV> hx(loc2glob.Size());
 
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      hx[j] = rhs(loc2glob[j]);
-	    MyMPI_Send (hx, src, MPI_TAG_SOLVE, comm);
+	    comm.Send (hx, src, MPI_TAG_SOLVE);
 	  }
       }
 
