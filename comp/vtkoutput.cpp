@@ -349,14 +349,17 @@ namespace ngcomp
 
   /// output of cell types (here only simplices)
   template <int D> 
-  void VTKOutput<D>::PrintCellTypes()
+  void VTKOutput<D>::PrintCellTypes(VorB vb, const BitArray * drawelems)
   {
     *fileout << "CELL_TYPES " << cells.Size() << endl;
     int factor = (1<<subdivision)*(1<<subdivision);
-    if (D==3)
+    if (D==3 && vb == VOL)
       factor *= (1<<subdivision);
-    for (auto e : ma->Elements(VOL))
+    for (auto e : ma->Elements(vb))
     {
+      if (drawelems && !(drawelems->Test(e.Nr())))
+          continue;
+
       switch(ma->GetElType(e))
       {
       case ET_TET:
@@ -407,7 +410,7 @@ namespace ngcomp
     
 
   template <int D> 
-  void VTKOutput<D>::Do (LocalHeap & lh, const BitArray * drawelems)
+  void VTKOutput<D>::Do (LocalHeap & lh, VorB vb, const BitArray * drawelems)
   {
     ostringstream filenamefinal;
     filenamefinal << filename;
@@ -446,7 +449,7 @@ namespace ngcomp
     *fileout << "ASCII" << endl;
     *fileout << "DATASET UNSTRUCTURED_GRID" << endl;
 
-    int ne = ma->GetNE();
+    int ne = ma->GetNE(vb);
 
     IntRange range = only_element >= 0 ? IntRange(only_element,only_element+1) : IntRange(ne);
     
@@ -457,7 +460,7 @@ namespace ngcomp
       
       HeapReset hr(lh);
 
-      ElementId ei(VOL, elnr);
+      ElementId ei(vb, elnr);
       ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
       ELEMENT_TYPE eltype = ma->GetElType(ei);
 
@@ -490,20 +493,40 @@ namespace ngcomp
       int offset = points.Size();
       for ( auto ip : ref_vertices)
       {
-        MappedIntegrationPoint<D,D> mip(ip, eltrans);
-        points.Append(mip.GetPoint());
+        if (vb==VOL)
+        {
+          MappedIntegrationPoint<D,D> mip(ip, eltrans);
+          points.Append(mip.GetPoint());
+        }
+        else
+        {
+          MappedIntegrationPoint<D-1,D> mip(ip, eltrans);
+          points.Append(mip.GetPoint());
+        }
       }
       
       for (int i = 0; i < coefs.Size(); i++)
       {
         for ( auto ip : ref_vertices)
         {
-          MappedIntegrationPoint<D,D> mip(ip, eltrans);
-          const int dim = coefs[i]->Dimension();
-          FlatVector<> tmp(dim,lh);
-          coefs[i]->Evaluate(mip,tmp);
-          for (int d = 0; d < dim; ++d)
-            value_field[i]->Append(tmp(d));
+          if (vb==VOL)
+          {
+            MappedIntegrationPoint<D,D> mip(ip, eltrans);
+            const int dim = coefs[i]->Dimension();
+            FlatVector<> tmp(dim,lh);
+            coefs[i]->Evaluate(mip,tmp);
+            for (int d = 0; d < dim; ++d)
+              value_field[i]->Append(tmp(d));
+          }
+          else
+          {
+            MappedIntegrationPoint<D-1,D> mip(ip, eltrans);
+            const int dim = coefs[i]->Dimension();
+            FlatVector<> tmp(dim,lh);
+            coefs[i]->Evaluate(mip,tmp);
+            for (int d = 0; d < dim; ++d)
+              value_field[i]->Append(tmp(d));
+          }
         }
       }
       
@@ -519,7 +542,7 @@ namespace ngcomp
 
     PrintPoints();
     PrintCells();
-    PrintCellTypes();
+    PrintCellTypes(vb,drawelems);
     PrintFieldData();
       
     cout << " Done." << endl;
