@@ -3264,15 +3264,17 @@ deformation : ngsolve.comp.GridFunction
          py::arg("subdivision") = 0,
          py::arg("only_element") = -1
          )
-     .def("Do", [](shared_ptr<BaseVTKOutput> self)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb)
           { 
-            self->Do(glh);
+            self->Do(glh,vb);
           },
+          py::arg("vb")=VOL,
           py::call_guard<py::gil_scoped_release>())
-     .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb, const BitArray * drawelems)
           { 
-            self->Do(glh, drawelems);
+            self->Do(glh, vb, drawelems);
           },
+          py::arg("vb")=VOL,
           py::arg("drawelems"),
           py::call_guard<py::gil_scoped_release>())
      ;
