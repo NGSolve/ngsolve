@@ -1234,8 +1234,8 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval complex");
-    static Timer timer ("GFCoeffFunc::Eval-scal", 3);
-    RegionTimer reg (timer);
+    // static Timer timer ("GFCoeffFunc::Eval-scal", 3);
+    // RegionTimer reg (timer);
 
     if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
       {
