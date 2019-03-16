@@ -81,7 +81,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", damp
 
 
 
-def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True):
+def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True, callback=None):
     """
     Newton's method for solving non-linear problems of the form A(u)=0 involving energy integrators.
 
@@ -166,6 +166,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
                     print ("tau = ", tau)
                     print ("energy uh = ", a.Energy(uh))
         u.vec.data = uh
+        if callback: callback()
         if abs(err) < maxerr: break
     else:
         print("Warning: Newton might not converge! Error = ", err)
