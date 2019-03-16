@@ -1182,7 +1182,9 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 // tcl package dynamic load
 extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 {
+#ifdef PARALLELGL
   MyMPI_SendCmd ("ngs_exit", MPI_COMM_WORLD);
+#endif
   pde.reset();
   return TCL_OK;
 }
@@ -1228,7 +1230,7 @@ if(is_pardiso_available)
   cout << "Including sparse direct solver SuperLU by Lawrence Berkeley National Laboratory" << endl;
 #endif
 
-#ifdef PARALLEL
+#ifdef PARALLELGL
   MyMPI_SendCmd ("ngs_loadngs", MPI_COMM_WORLD);
   // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
   NGSOStream::SetGlobalActive (true);

@@ -4045,11 +4045,15 @@ namespace ngcomp
 		 - make integrators that are not defined everywhere working
 		   (this requires checking DefinedOn on el-indices on both sides of the facet!
 	     **/
-	    
+
+            /*
 	    MPI_Comm mcomm = ma->GetCommunicator();
 	    int mrank, mnp;
 	    MPI_Comm_rank(mcomm, &mrank);
 	    MPI_Comm_size(mcomm, &mnp);
+            */
+            int mrank = comm.Rank();
+            int mnp = comm.Size();
 	    Array<int> cnt_in(mnp), cnt_per(mnp);
 	    if(!have_mpi_facet_data) {
 	      os_per = Array<int>(mnp);
@@ -4167,8 +4171,8 @@ namespace ngcomp
 	      else if(loop==1) {
 		for(auto dp:Range(mnp))
 		  if(send_table[dp].Size()) {
-		    reqs.Append(MyMPI_ISend(send_table[dp], dp, MPI_TAG_SOLVE, mcomm));
-		    reqr.Append(MyMPI_IRecv(recv_table[dp], dp, MPI_TAG_SOLVE, mcomm));
+		    reqs.Append(MyMPI_ISend(send_table[dp], dp, MPI_TAG_SOLVE, comm));
+		    reqr.Append(MyMPI_IRecv(recv_table[dp], dp, MPI_TAG_SOLVE, comm));
 		  }
 		MyMPI_WaitAll(reqr);
 	      }
