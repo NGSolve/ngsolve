@@ -1189,6 +1189,8 @@ rho : ngsolve.fem.CoefficientFunction
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
   
   ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
+
+  ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
   
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   
