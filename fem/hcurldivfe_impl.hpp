@@ -256,16 +256,28 @@ namespace ngfem
       auto B = b.Value();
       auto Bx = b.DValue(0);
       auto By = b.DValue(1);
+      auto Bxx = b.DDValue(0,0);
+      auto Bxy = b.DDValue(0,1);
+      auto Byy = b.DDValue(1,1);
 
-      return Vec<4,T> (S.DDValue(1,0)*B + By*S.DValue(0),
+      auto trace = 0.5 * (By*S.DValue(0)  - Bx*S.DValue(1));
+
+      return Vec<4,T> (S.DDValue(1,0)*B + By*S.DValue(0) - trace,
 		       -S.DDValue(0,0)*B - Bx*S.DValue(0),
 		       S.DDValue(1,1)*B + By*S.DValue(1),
-		       -S.DDValue(0,1)*B - Bx*S.DValue(1));
+		       -S.DDValue(0,1)*B - Bx*S.DValue(1) - trace);
     }
 
     Vec<2,T> DivShape()
     {
-      return Vec<2,T> (0.0,0.0);
+      auto Bx = b.DValue(0);
+      auto By = b.DValue(1);
+      auto Bxx = b.DDValue(0,0);
+      auto Bxy = b.DDValue(0,1);
+      auto Byy = b.DDValue(1,1);
+      
+      return -0.5 * Vec<2,T>(Bxy*S.DValue(0) + By * S.DDValue(0,0) - Bxx*S.DValue(1) - Bx*S.DDValue(0,1),
+			   Byy*S.DValue(0) + By * S.DDValue(1,0) - Bxy*S.DValue(1) - Bx*S.DDValue(1,1));
     }
 
     Vec<2,T> CurlShape()
@@ -315,8 +327,10 @@ namespace ngfem
       auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
       auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
       /////////////////////
-      
+     
       Vec<9,T> sigmaref;
+
+      auto trace = 1.0/3.0 * (S_x * (b0_z - b0_y) + S_y * (b0_x - b1_z) + S_z * (b1_y - b0_x));
 
       sigmaref(0) = 0.0;
       sigmaref(1) = 0.0;
@@ -335,13 +349,55 @@ namespace ngfem
       sigmaref(7)+=  S_xz*B0 +S_z*b0_x-S_xx*B3 -S_x*b3_x; //-dx(b3)
       sigmaref(8) = -S_xz*B0 -S_z*b0_x+S_xx*B0 +S_x*b0_x; // dx(b2)
       sigmaref(8)+=  S_yz*B1 +S_z*b1_y-S_xy*B0 -S_x*b0_y; //-dy(b1)
+
+      sigmaref(0) -= trace;
+      sigmaref(4) -= trace;
+      sigmaref(8) -= trace;
       
       return sigmaref;
     }
 
     Vec<3,T> DivShape()
     {
-      return Vec<3,T> (0.0,0.0, 0.0);
+      auto b1_x  =  b1.DValue(0);
+      auto b1_y  =  b1.DValue(1); 
+      auto b1_z  =  b1.DValue(2);
+      
+      auto b0_x = b0.DValue(0);
+      auto b0_y = b0.DValue(1);
+      auto b0_z = b0.DValue(2);
+
+      auto b1_xx  =  b1.DDValue(0,0);
+      auto b1_yy  =  b1.DDValue(1,1);         
+      auto b1_zz  =  b1.DDValue(2,2);   
+      auto b1_yx  =  b1.DDValue(0,1);   
+      auto b1_zx  =  b1.DDValue(0,2);
+      auto b1_yz  =  b1.DDValue(1,2);
+
+      auto b0_xx  =  b0.DDValue(0,0);
+      auto b0_yy  =  b0.DDValue(1,1);         
+      auto b0_zz  =  b0.DDValue(2,2);   
+      auto b0_yx  =  b0.DDValue(0,1);   
+      auto b0_zx  =  b0.DDValue(0,2);
+      auto b0_yz  =  b0.DDValue(1,2);
+      /////////////////////
+      auto S_x = S.DValue(0); 
+      auto S_y = S.DValue(1);
+      auto S_z = S.DValue(2);
+    
+      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
+      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
+      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
+      /////////////////////
+
+      //(S_x * (b0_z - b0_y) + S_y * (b0_x - b1_z) + S_z * (b1_y - b0_x));
+
+      auto div1 = -1.0/3.0 * (S_xx*(b0_z-b0_y)+S_x*(b0_zx-b0_yx) + S_xy*(b0_x-b1_z)+S_y*(b0_xx-b1_zx) + S_xz*(b1_y-b0_x)+S_z*(b1_yx-b0_xx));
+      auto div2 = -1.0/3.0 * (S_xy*(b0_z-b0_y)+S_x*(b0_yz-b0_yy) + S_yy*(b0_x-b1_z)+S_y*(b0_yx-b1_yz) + S_yz*(b1_y-b0_x)+S_z*(b1_yy-b0_yx));
+      auto div3 = -1.0/3.0 * (S_xz*(b0_z-b0_y)+S_x*(b0_zz-b0_yz) + S_yz*(b0_x-b1_z)+S_y*(b0_zx-b1_zz) + S_zz*(b1_y-b0_x)+S_z*(b1_yz-b0_zx));
+      
+      //return -1.0/3 * Vec<3,T>(0.0,0.0,0.0);
+      return  Vec<3,T> (div1,div2,div3);     
     }
 
     Vec<3,T> CurlShape()
@@ -391,6 +447,7 @@ namespace ngfem
       /////////////////////
       
       Vec<9,T> sigmaref;
+      auto trace = 1.0/3.0 * ((b2_z-b0_y)*S_x + (b0_x-b0_z)*S_y + (b0_y-b2_x)*S_z);
 
       sigmaref(0) = -(-S_yy*B0 -S_y*b0_y+S_xy*B0 +S_x*b0_y); // dy(a3)
       sigmaref(0)+= -( S_yz*B0 +S_y*b0_z-S_xz*B2 -S_x*b2_z); //-dz(a2)
@@ -409,14 +466,54 @@ namespace ngfem
       sigmaref(7)+=  S_xz*B0 +S_z*b0_x-S_xy*B3 -S_y*b3_x; //-dx(c3)
       sigmaref(8) = -S_xz*B2 -S_z*b2_x+S_xy*B0 +S_y*b0_x; // dx(c2)
       sigmaref(8)+=  S_yz*B0 +S_z*b0_y-S_yy*B0 -S_y*b0_y; //-dy(c1)
-	  
+
+      sigmaref(0) -= trace;
+      sigmaref(4) -= trace;
+      sigmaref(8) -= trace;
       
       return sigmaref;
     }
 
     Vec<3,T> DivShape()
     {
-      return Vec<3,T> (0.0,0.0, 0.0);
+      /////////////////////
+      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
+      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
+      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
+      
+      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
+      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
+      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
+
+      ///
+      auto b1_xx  =  b1.DDValue(0,0);      auto b2_xx  =  b2.DDValue(0,0);
+      auto b1_yy  =  b1.DDValue(1,1);      auto b2_yy  =  b2.DDValue(1,1);         
+      auto b1_zz  =  b1.DDValue(2,2);      auto b2_zz  =  b2.DDValue(2,2);   
+      auto b1_yx  =  b1.DDValue(0,1);      auto b2_yx  =  b2.DDValue(0,1);   
+      auto b1_zx  =  b1.DDValue(0,2);      auto b2_zx  =  b2.DDValue(0,2);
+      auto b1_yz  =  b1.DDValue(1,2);      auto b2_yz  =  b2.DDValue(1,2);
+
+      auto b3_xx  =  b3.DDValue(0,0);      auto b0_xx  =  b0.DDValue(0,0);
+      auto b3_yy  =  b3.DDValue(1,1);      auto b0_yy  =  b0.DDValue(1,1);         
+      auto b3_zz  =  b3.DDValue(2,2);      auto b0_zz  =  b0.DDValue(2,2);   
+      auto b3_yx  =  b3.DDValue(0,1);      auto b0_yx  =  b0.DDValue(0,1);   
+      auto b3_zx  =  b3.DDValue(0,2);      auto b0_zx  =  b0.DDValue(0,2);
+      auto b3_yz  =  b3.DDValue(1,2);      auto b0_yz  =  b0.DDValue(1,2);
+      
+      /////////////////////
+      auto S_x = S.DValue(0); 
+      auto S_y = S.DValue(1);
+      auto S_z = S.DValue(2);
+    
+      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
+      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
+      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
+      /////////////////////
+
+      //return -1.0/3 * Vec<3,T>(0.0,0.0,0.0);
+      return -1.0/3.0 * Vec<3,T> (S_xx*(b2_z-b0_y)+S_x*(b2_zx-b0_yx) + S_xy*(b0_x-b0_z)+S_y*(b0_xx-b0_zx) + S_xz*(b0_y-b2_x)+S_z*(b0_yx-b2_xx),
+				  S_xy*(b2_z-b0_y)+S_x*(b2_yz-b0_yy) + S_yy*(b0_x-b0_z)+S_y*(b0_yx-b0_yz) + S_yz*(b0_y-b2_x)+S_z*(b0_yy-b2_yx),
+				  S_xz*(b2_z-b0_y)+S_x*(b2_zz-b0_yz) + S_yz*(b0_x-b0_z)+S_y*(b0_zx-b0_zz) + S_zz*(b0_y-b2_x)+S_z*(b0_yz-b2_zx));
     }
 
     Vec<3,T> CurlShape()
@@ -466,6 +563,7 @@ namespace ngfem
       /////////////////////
       
       Vec<9,T> sigmaref;
+      auto trace = 1.0/3.0 *((b0_z-b3_y)*S_x + (b3_x-b0_z)*S_y + (b0_y-b0_x)*S_z);    
 
       sigmaref(0) = -(-S_yz*B0 -S_z*b0_y+S_xy*B3 +S_x*b3_y); // dy(b3)
       sigmaref(0)+= -( S_zz*B0 +S_z*b0_z-S_xz*B0 -S_x*b0_z); //-dz(b2)
@@ -484,13 +582,55 @@ namespace ngfem
       sigmaref(6) = 0.0;
       sigmaref(7) = 0.0;
       sigmaref(8) = 0.0;
+
+      //auto trace = 1.0/3.0 * (sigmaref(0) + sigmaref(4) + sigmaref(8));
+      sigmaref(0) -= trace;
+      sigmaref(4) -= trace;
+      sigmaref(8) -= trace;
       
       return sigmaref;
     }
 
     Vec<3,T> DivShape()
     {
-      return Vec<3,T> (0.0,0.0, 0.0);
+      /////////////////////
+      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
+      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
+      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
+      
+      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
+      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
+      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
+
+      ///
+      auto b1_xx  =  b1.DDValue(0,0);      auto b2_xx  =  b2.DDValue(0,0);
+      auto b1_yy  =  b1.DDValue(1,1);      auto b2_yy  =  b2.DDValue(1,1);         
+      auto b1_zz  =  b1.DDValue(2,2);      auto b2_zz  =  b2.DDValue(2,2);   
+      auto b1_yx  =  b1.DDValue(0,1);      auto b2_yx  =  b2.DDValue(0,1);   
+      auto b1_zx  =  b1.DDValue(0,2);      auto b2_zx  =  b2.DDValue(0,2);
+      auto b1_yz  =  b1.DDValue(1,2);      auto b2_yz  =  b2.DDValue(1,2);
+
+      auto b3_xx  =  b3.DDValue(0,0);      auto b0_xx  =  b0.DDValue(0,0);
+      auto b3_yy  =  b3.DDValue(1,1);      auto b0_yy  =  b0.DDValue(1,1);         
+      auto b3_zz  =  b3.DDValue(2,2);      auto b0_zz  =  b0.DDValue(2,2);   
+      auto b3_yx  =  b3.DDValue(0,1);      auto b0_yx  =  b0.DDValue(0,1);   
+      auto b3_zx  =  b3.DDValue(0,2);      auto b0_zx  =  b0.DDValue(0,2);
+      auto b3_yz  =  b3.DDValue(1,2);      auto b0_yz  =  b0.DDValue(1,2);
+      /////////////////////
+      auto S_x = S.DValue(0); 
+      auto S_y = S.DValue(1);
+      auto S_z = S.DValue(2);
+    
+      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
+      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
+      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
+      /////////////////////
+
+
+      //return - 1.0/3 * Vec<3,T>(0.0,0.0,0.0);
+      return -1.0/3.0 * Vec<3,T> (S_xx*(b0_z-b3_y)+S_x*(b0_zx-b3_yx) + S_xy*(b3_x-b0_z)+S_y*(b3_xx-b0_zx) + S_xz*(b0_y-b0_x)+S_z*(b0_yx-b0_xx),
+				  S_xy*(b0_z-b3_y)+S_x*(b0_yz-b3_yy) + S_yy*(b3_x-b0_z)+S_y*(b3_yx-b0_yz) + S_yz*(b0_y-b0_x)+S_z*(b0_yy-b0_yx),
+				  S_xz*(b0_z-b3_y)+S_x*(b0_zz-b3_yz) + S_yz*(b3_x-b0_z)+S_y*(b3_zx-b0_zz) + S_zz*(b0_y-b0_x)+S_z*(b0_yz-b0_zx));
     }
 
     Vec<3,T> CurlShape()
