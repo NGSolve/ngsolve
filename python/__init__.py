@@ -38,7 +38,7 @@ fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'Ele
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'HCurlDiv', 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'Region', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','H1','VectorH1','L2','VectorL2','SurfaceL2','HDivDiv','HDivDivSurface','VectorFacet','FacetFESpace','FacetSurface','HDiv','NumberSpace','HDivSurface','HCurl','Compress','CompressCompound']           
+comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'HCurlDiv', 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'Region', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','H1','VectorH1','L2','VectorL2','SurfaceL2','HDivDiv', 'HCurlCurl','HDivDivSurface','VectorFacet','FacetFESpace','FacetSurface','HDiv','NumberSpace','HDivSurface','HCurl','Compress','CompressCompound']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
