@@ -91,6 +91,15 @@ namespace ngcomp
     virtual const char * ClassName() const
     { return "base-class Preconditioner"; }
 
+    virtual AutoVector CreateRowVector () const override
+    {
+      return GetAMatrix().CreateColVector();
+    }
+
+    virtual AutoVector CreateColVector () const override
+    {
+      return GetAMatrix().CreateRowVector();
+    }
 
     virtual void PrintReport (ostream & ost) const override
     {
