@@ -123,17 +123,74 @@ namespace ngfem
   //---------------------------------------------------
 
 
-  template <int D, typename T> class T_REGGE_Bubble_Shape;
-  template <typename T> class T_REGGE_Bubble_Shape<2,T>
+    // ***************** EpsGrad ****************************** */
+  // eps (nabla u)
+  
+  template <int D, typename T> class T_EpsGrad;
+  template <typename T> class T_EpsGrad<2,T>
   {
     AutoDiffDiff<2,T> u;
   public:
-    T_REGGE_Bubble_Shape  (AutoDiffDiff<2,T> au) : u(au) { ; }
+    T_EpsGrad  (AutoDiffDiff<2,T> au) : u(au) { ; }
     Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(0,0), u.DDValue(1,1), u.DDValue(0,1)); }
-    /*0 2
-      2 1*/
-    Vec<2,T> CurlShape() { return Vec<2,T> (0, 0); }
+    Vec<2,T> CurlShape() { return Vec<2,T> (0.0, 0.0); }
   };
+  
+  template <int D, typename T>
+  auto EpsGrad (AutoDiffDiff<D,T> au) { return T_EpsGrad<D,T>(au); }
+  
+  
+  // ***************** Eps_u_Gradv ****************************** */
+  // eps (u nabla v)
+  
+  template <int D, typename T> class T_Eps_u_Gradv;
+  template <typename T> class T_Eps_u_Gradv<2,T>
+  {
+    AutoDiffDiff<2,T> u, v;
+  public:
+    T_Eps_u_Gradv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> ((u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0)),
+                                        (u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1)),
+                                        u.Value()*v.DDValue(0,1) + 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
+    Vec<2,T> CurlShape()
+    {
+      /*T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+      
+      return -0.5 * Vec<2,T> (uyy*vx - uxy*vy + uy*vxy - ux*vyy,
+      -uxy*vx + uxx*vy - uy*vxx + ux*vxy);*/
+      throw Exception("curl shape not implemented for Eps_u_Gradv");
+    }
+  };
+  
+  template <int D, typename T>
+  auto Eps_u_Gradv (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_Eps_u_Gradv<D,T>(au, av); }
+  
+  
+  template <int D, typename T> class T_vEpsGradu;
+  template <typename T> class T_vEpsGradu<2,T>
+  {
+    AutoDiffDiff<2,T> u,v;
+  public:
+    T_vEpsGradu  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(0,0)*v.Value(),
+                                      u.DDValue(1,1)*v.Value(),  (u.DDValue(1,0)*v.Value()));}
+    Vec<2,T> CurlShape()
+    {
+      /*T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      // T ux = u.DValue(0), uy = u.DValue(1);
+      // T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+
+      return Vec<2,T> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);*/
+      throw Exception("curl shape not implemented for Eps_u_Gradv");
+    }
+  };
+  
+  template <int D, typename T>
+  auto vEpsGradu (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_vEpsGradu<D,T>(au, av); }
     
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
 
@@ -567,14 +624,12 @@ namespace ngfem
         ndof += order_facet[i][0]+1;
         order = max2(order, order_facet[i][0]);
       }
-      int ninner = (order_inner[0])*(order_inner[0]) + 
-        (order_inner[0]+2)*(order_inner[0]) *2 +
-        2*(order_inner[0]) +1;
+      int ninner = order_inner[0]*order_inner[0] + (order_inner[0]+2)*order_inner[0]*2 + 2*order_inner[0] +1;
       order = max2(order, order_inner[0]);
-      order += 5;
+      order += 1;
       ndof += ninner;
-
     }
+    
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
@@ -582,8 +637,8 @@ namespace ngfem
       typedef decltype(x.Value()+x.Value()) T;
       AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
-      //Tx lx[4] ={1-xx, xx, xx, 1-xx};
-      //Tx ly[4] = {1-yy, 1-yy, yy, yy};
+      Tx lx[4] ={1-x, x, x, 1-x};
+      Tx ly[4] = {1-y, 1-y, y, y};
       AutoDiff<2,T> dlam[4]  = {1-xx-yy+xx*yy, xx*(1-yy), xx*yy, yy*(1-xx)};
       AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
       AutoDiffDiff<2,T> ddlam[4] = {1-x-y+x*y, x*(1-y), x*y, y*(1-x)};
@@ -595,23 +650,49 @@ namespace ngfem
       
       for (int i = 0; i < 4; i++)
         {
-          INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort(i,vnums);
-	  AutoDiff<2,T> ls = dlam[e[0]], le = dlam[e[1]];
+          int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+          Tx xi = lx[ee]+ly[ee]-lx[es]-ly[es];
+          Tx eta = lx[es]*ly[es]+lx[ee]*ly[ee];
+
+	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
+
           
-          AutoDiff<2,T> xi  = sigma[e[1]]-sigma[e[0]];
-          AutoDiff<2,T> lam_e = dlam[e[0]]+dlam[e[1]];
-          
-          //shape[ii++] = T_REGGE_Shape<2,T>(lam_e*SymDyadProd(xi,xi));
-          LegendrePolynomial::EvalScaled(order_facet[i][0], ls-le,ls+le, SBLambda([&ii, shape, xi, lam_e] (size_t nr, auto val)
-                            {
-                              shape[ii++] = T_REGGE_Shape<2,T>(val*lam_e*SymDyadProd(xi,xi));
-                            }));
+          for (int l = 0; l <= order_facet[i][0]; l++)
+            // shape[ii++] = SigmaGrad (eta*u[l]);
+            shape[ii++] = Eps_u_Gradv (eta, u[l]);
         }
 
-      shape[ii++] = T_REGGE_Bubble_Shape<2,T>(ddlam[0]);
+      int oi=order_inner[0];
 
-      //TODO buubles
-      
+      IntegratedLegendreMonomialExt::Calc(oi+3,lx[0]-lx[1],u);
+      IntegratedLegendreMonomialExt::Calc(oi+3,ly[0]-ly[2],v);
+
+
+      // original 
+      for(int i = 0; i <= oi-1; i++)
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {
+          shape[ii++] = EpsGrad(u[i]*v[j]);
+        }
+      }
+      for(int i = 0; i <= oi+1; i++)
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {
+          shape[ii++] = vEpsGradu(u[i],v[j]);
+          shape[ii++] = vEpsGradu(v[i],u[j]);
+        }
+      }
+
+      shape[ii++] = Eps_u_Gradv(lx[0], ly[0]);
+
+      for(int i = 0; i <= oi-1; i++)
+      {
+        shape[ii++] = Eps_u_Gradv(u[i], ly[0]);
+        shape[ii++] = Eps_u_Gradv(v[i], lx[0]);
+      }      
     };
 
     template <typename MIP, typename TFA>
