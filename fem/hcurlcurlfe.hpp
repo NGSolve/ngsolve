@@ -663,13 +663,12 @@ namespace ngfem
             shape[ii++] = Eps_u_Gradv (eta, u[l]);
         }
 
-      int oi=order_inner[0];
+      int oi = order_inner[0];
 
       IntegratedLegendreMonomialExt::Calc(oi+3,lx[0]-lx[1],u);
       IntegratedLegendreMonomialExt::Calc(oi+3,ly[0]-ly[2],v);
 
 
-      // original 
       for(int i = 0; i <= oi-1; i++)
       {
         for(int j = 0; j <= oi-1; j++)
@@ -698,6 +697,67 @@ namespace ngfem
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
+      cout << "In quad calc dual shape" << endl;
+      
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+      T x = ip(0), y = ip(1);
+      T lam[4] = {1-x-y+x*y, x*(1-y), x*y, y*(1-x)};
+      Vec<2,T> pnts[4] = { { 0, 0 }, { 1, 0 } , { 1, 1 }, { 0, 1 } };
+      int facetnr = ip.FacetNr();
+      cout << "facetnr = " << facetnr << endl;
+      int ii = 0;
+      T sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          cout << "BND" << endl;
+          for (int i = 0; i < 4; i++)
+            {
+              int p = order_facet[i][0];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+                  
+                  T xi = lam[e[0]]-lam[e[1]];
+                  Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
+                  
+                  
+                  Vec<2,T> tv = mip.GetJacobian()*tauref;
+
+                  Mat<2> tt = DyadProd(tv,tv);
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 4; i++)
+            ii += order_facet[i][0]+1;
+        }
+      if (ip.VB() == VOL)
+        {
+          cout << "VOL" << endl;
+          auto p = order_inner[0];
+          cout << "order_inner[0] = "  << order_inner[0] << endl;
+          if( p >= 0 )
+            {
+              DubinerBasis3::Eval (p, lam[0], lam[1],
+                                   SBLambda([&] (size_t nr, T val)
+                                            {
+                                              shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+                                              //shape[ii++] = val*Matrix<>({{0,0},{0,1}});
+                                              //shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+                                            }));
+            }
+        }
     }
   };
   /*
