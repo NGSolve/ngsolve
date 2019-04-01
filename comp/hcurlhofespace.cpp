@@ -957,9 +957,16 @@ namespace ngcomp
 	    break; 
 	  case ET_TET: 
 	    if(p[0]>2)
-	      { 
-		ndof += ((usegrad_cell[i] + 2) *  p[0] + 3) * (p[0]-2) * (p[0]-1) / 6; 
-		cell_ngrad[i] = ((usegrad_cell[i] ) *  p[0]) * (p[0]-2) * (p[0]-1) / 6; 
+	      {
+		if (type1) {
+		  cell_ngrad[i] = usegrad_cell[i] * (p[0]-3)*(p[0]-2)*(p[0]-1)/6;
+		  ndof += (p[0]-2)*(p[0]-1)*(2*p[0]+3)/6 + cell_ngrad[i];
+				  
+		}
+		else {
+		  ndof += ((usegrad_cell[i] + 2) *  p[0] + 3) * (p[0]-2) * (p[0]-1) / 6; 
+		  cell_ngrad[i] = ((usegrad_cell[i] ) *  p[0]) * (p[0]-2) * (p[0]-1) / 6;
+		}
 	      }
 	    break; 
 	  case ET_PRISM:

@@ -50,9 +50,13 @@ namespace ngfem
     switch (ET)
       {
       case ET_TET: 
-        if(order_cell[0] > 2)
-          ndof += ((usegrad_cell + 2) * order_cell[0] + 3) 
-            * (order_cell[0]-2) * (order_cell[0]-1) / 6; 
+        if(order_cell[0] > 2) {
+	  if (type1)	    
+	    ndof += usegrad_cell*(order_cell[0]-3)*(order_cell[0]-2)*(order_cell[0]-1)/6  + (order_cell[0]-2)*(order_cell[0]-1)*(2*order_cell[0]+3)/6 ;
+	  else 
+	    ndof += ((usegrad_cell + 2) * order_cell[0] + 3) 
+	      * (order_cell[0]-2) * (order_cell[0]-1) / 6;
+	}
         break;
       case ET_PRISM:
         if(order_cell[2] > 0 && order_cell[0] > 1)
@@ -459,49 +463,125 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i])
             {
-              DubinerBasis::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
-                                             lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                             SBLambda ([&](int nr, Tx val)
-                                                       {
-                                                         shape[ii++] = Du (val);
-                                                       }));
+	      if (type1)
+
+		DubinerBasis::EvalMult
+		  (p-3, lam[fav[0]], lam[fav[1]], 
+		   lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+		   SBLambda
+		   ([&](int nr, Tx val)
+		    {
+		      shape[ii++] = Du (val);
+		    }));
+
+	      else
+
+		DubinerBasis::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]],
+					      1-lam[vop], 
+					      lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+					      SBLambda ([&](int nr, Tx val)
+							{
+							  shape[ii++] = Du (val);
+							}));
             }
 
-          // other combination
-          for (int j = 0; j <= p-2; j++)
-            for (int k = 0; k <= p-2-j; k++, ii++)
-              shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);
+	  // non-gradient face shapes
+	  if (type1) {
+
+	    DubinerBasis::EvalMult
+	      (p-2, lam[fav[0]], lam[fav[1]],
+	       lam[fav[0]],
+	       SBLambda
+	       ([&](int nr, Tx val)
+		{
+		  shape[ii++] =	wuDv_minus_wvDu(lam[fav[1]], lam[fav[2]], val);
+		}));
+	    
+            LegendrePolynomial::EvalMult
+	      (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
+	       SBLambda
+	       ([&] (int j, Tx val)
+		{
+		  shape[ii++] = wuDv_minus_wvDu(lam[fav[1]], lam[fav[0]], val);
+		}));
+	  }
+	  else {
+
+	    // other combination
+	    for (int j = 0; j <= p-2; j++)
+	      for (int k = 0; k <= p-2-j; k++, ii++)
+		shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);
           
-          // type 3
-          for (int j = 0; j <= p-2; j++, ii++)
-            shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
+	    // type 3
+	    for (int j = 0; j <= p-2; j++, ii++)
+	      shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
+	  }
         }
 
     
     int p = order_cell[0]; 
     if (p >= 3)
       {
-        TetShapesInnerLegendre::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
+	if (type1) {
+
+	  if(usegrad_cell) 
+	    DubinerBasis3D::EvalMult
+	      (p-4, lam[0], lam[1], lam[2], lam[0]*lam[1]*lam[2]*lam[3], 
+	       SBLambda
+	       ([&](int nr, Tx val)
+		{
+		  shape[ii++] = Du(val);
+		}));
+
+	  DubinerBasis3D::EvalMult
+	    (p-3, lam[0], lam[1], lam[2],  lam[1]*lam[2],
+	     SBLambda
+	     ([&](int nr, Tx val)
+	      {
+		shape[ii++] = wuDv_minus_wvDu(lam[3], lam[0], val);
+	      }));
+
+	  DubinerBasis3D::EvalMult
+	    (p-3, lam[0], lam[1], lam[2], lam[3]*lam[0],
+	     SBLambda
+	     ([&](int nr, Tx val)
+	      {
+		shape[ii++] = wuDv_minus_wvDu(lam[2], lam[1], val);
+	      }));
+
+	  DubinerBasis::EvalMult
+	    (p-3, lam[0], lam[1], lam[0]*lam[1], 
+	     SBLambda
+	     ([&](int nr, Tx val)
+	      {
+		shape[ii++] = wuDv_minus_wvDu(lam[3], lam[2], val);
+	      }));
+
+	}
+	else {
+	  
+	  TetShapesInnerLegendre::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
         
-        //gradient fields 
-        if(usegrad_cell)
-          for (int i = 0; i <= p-3; i++)
-            for (int j = 0; j <= p-3-i; j++)
-              for (int k = 0; k <= p-3-i-j; k++)
-                shape[ii++] = Du (adpol1[i] * adpol2[j] * adpol3[k]);
+	  //gradient fields 
+	  if(usegrad_cell)
+	    for (int i = 0; i <= p-3; i++)
+	      for (int j = 0; j <= p-3-i; j++)
+		for (int k = 0; k <= p-3-i-j; k++)
+		  shape[ii++] = Du (adpol1[i] * adpol2[j] * adpol3[k]);
         
-        // other combinations
-        for (int i = 0; i <= p-3; i++)
-          for (int j = 0; j <= p-3-i; j++)
-            for (int k = 0; k <= p-3-i-j; k++)
-              { // not Sabine's original ...
-                shape[ii++] = uDv_minus_vDu (adpol1[i], adpol2[j] * adpol3[k]);
-                shape[ii++] = uDv_minus_vDu (adpol1[i] * adpol3[k], adpol2[j]);
-              }
+	  // other combinations
+	  for (int i = 0; i <= p-3; i++)
+	    for (int j = 0; j <= p-3-i; j++)
+	      for (int k = 0; k <= p-3-i-j; k++)
+		{ // not Sabine's original ...
+		  shape[ii++] = uDv_minus_vDu (adpol1[i], adpol2[j] * adpol3[k]);
+		  shape[ii++] = uDv_minus_vDu (adpol1[i] * adpol3[k], adpol2[j]);
+		}
         
-        for (int j= 0; j <= p-3; j++)
-          for (int k = 0; k <= p-3-j; k++)
-            shape[ii++] = wuDv_minus_wvDu (lam[0], lam[3], adpol2[j] * adpol3[k]);
+	  for (int j= 0; j <= p-3; j++)
+	    for (int k = 0; k <= p-3-j; k++)
+	      shape[ii++] = wuDv_minus_wvDu (lam[0], lam[3], adpol2[j] * adpol3[k]);
+	}
       }
   }
 
