@@ -744,20 +744,87 @@ namespace ngfem
         }
       if (ip.VB() == VOL)
         {
+          cout << "ii start = " << ii << endl;
           cout << "VOL" << endl;
           auto p = order_inner[0];
           cout << "order_inner[0] = "  << order_inner[0] << endl;
-          if( p >= 0 )
+          INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
+          /*DubinerBasis3::Eval (p, lam[0], lam[1],
+            SBLambda([&] (size_t nr, T val)
             {
-              DubinerBasis3::Eval (p, lam[0], lam[1],
-                                   SBLambda([&] (size_t nr, T val)
-                                            {
-                                              shape[ii++] = val*Matrix<>({{0,1},{1,0}});
-                                              //shape[ii++] = val*Matrix<>({{0,0},{0,1}});
-                                              //shape[ii++] = val*Matrix<>({{0,1},{1,0}});
-                                            }));
+            cout << "val = " << val << endl;
+            cout << "val*mat = " << val*Matrix<>({{0,1},{1,0}}) << endl;
+            //shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+            //shape[ii++] = val*Matrix<>({{0,0},{0,1}});
+            //shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+            }));
+            }*/
+          /*T xi = sigma[f[0]]-sigma[f[1]]; 
+          T eta = sigma[f[0]]-sigma[f[3]];
+          STACK_ARRAY(T, mem, 2*p+2);
+          T * polx = &mem[0];
+          T * poly = &mem[p+1];
+          
+          LegendrePolynomial (p, xi, polx);
+          LegendrePolynomial (p, eta, poly);
+          
+          shape[ii++] = (polx[p] * poly[p])*Matrix<>({{0,1},{1,0}});
+          
+          if (p > 0)
+            {
+              
+              for (size_t i = 0; i <= p; i++)
+                for (size_t j = 0; j <= p; j++)
+                  {
+                    if ( i == j && i == p )
+                      continue;
+                    cout << "i = " << i << ", j = " << j << endl;
+                    //shape[ii++] = (polx[i] * poly[j])*Matrix<>({{1,0},{0,0}});
+                    //shape[ii++] = (polx[i] * poly[j])*Matrix<>({{0,0},{0,1}});
+                    //shape[ii++] = (polx[i] * poly[j])*Matrix<>({{0,1},{1,0}});
+                    
+                  }
+            }*/
+          Vec<2, AutoDiffDiff<2>> adp;
+          for ( int i=0; i<2; i++)
+            adp(i) = AutoDiff<2>(ip(i),i);
+          auto tip = TIP<2, AutoDiffDiff<2>> (adp);
+          
+          AutoDiffDiff<2,T> xx = tip.x;
+          AutoDiffDiff<2,T> yy = tip.y;
+          AutoDiffDiff<2,T> lx[4] ={1-xx, xx, xx, 1-xx};
+          AutoDiffDiff<2,T> ly[4] = {1-yy, 1-yy, yy, yy};
+          ArrayMem<AutoDiffDiff<2,T>,20> u(order+2), v(order+2);
+
+          IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
+          IntegratedLegendreMonomialExt::Calc(p+3,ly[0]-ly[2],v);
+
+
+          for(int i = 0; i <= p-1; i++)
+            {
+              for(int j = 0; j <= p-1; j++)
+                {
+                  shape[ii++] = EpsGrad(u[i]*v[j]).Shape();
+                }
             }
+          for(int i = 0; i <= p+1; i++)
+            {
+              for(int j = 0; j <= p-1; j++)
+                {
+                  shape[ii++] = vEpsGradu(u[i],v[j]).Shape();
+                  shape[ii++] = vEpsGradu(v[i],u[j]).Shape();
+                }
+            }
+          
+          shape[ii++] = Eps_u_Gradv(lx[0], ly[0]).Shape();
+          
+          for(int i = 0; i <= p-1; i++)
+            {
+              shape[ii++] = Eps_u_Gradv(u[i], ly[0]).Shape();
+              shape[ii++] = Eps_u_Gradv(v[i], lx[0]).Shape();
+            }  
         }
+      cout << "ii ebd = " << ii << endl;
     }
   };
   /*
