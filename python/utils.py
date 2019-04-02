@@ -71,9 +71,12 @@ def grad(func):
     # return func.Deriv()
 
 def curl(func):
-    if func.derivname != "curl":
-        raise Exception("cannot form curl")
-    return func.Deriv()
+    if func.derivname == "curl":
+        return func.Deriv()
+    add = func.Operator("curl")
+    if add:
+        return add
+    raise Exception("cannot form curl")    
 
 def div(func):
     if func.derivname == "div":
