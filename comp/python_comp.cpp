@@ -7,9 +7,9 @@
 #include <multigrid.hpp> 
 
 #include "hdivdivfespace.hpp"
+#include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
-#include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
 using namespace ngcomp;
@@ -1226,6 +1226,8 @@ rho : ngsolve.fem.CoefficientFunction
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
+  
+  ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
 
   ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
   
