@@ -813,29 +813,31 @@ namespace ngfem
   };
 
   
-
-
   
-  template <ELEMENT_TYPE ET>
-  class L2HighOrderFETP : public T_ScalarFiniteElementTP<L2HighOrderFETP<ET>, L2HighOrderFE_Shape<ET>, ET, DGFiniteElement<ET_trait<ET>::DIM>>,
-                          public ET_trait<ET>
+
+  template <ELEMENT_TYPE ET> class L2HighOrderFETP;
+  
+  template <> // ELEMENT_TYPE ET>
+  class L2HighOrderFETP <ET_TET> :
+    public T_ScalarFiniteElementTP<L2HighOrderFETP<ET_TET>, L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_trait<ET_TET>::DIM>>,
+    public ET_trait<ET_TET>
   {
-    enum { DIM = ET_trait<ET>::DIM };
+    enum { DIM = ET_trait<ET_TET>::DIM };
   public:
     template <typename TA> 
     L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)
     {
       this->order = aorder;
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) this->vnums[i] = avnums[i];
-      this->ndof = ET_trait<ET>::PolDimension (aorder);
+      for (int i = 0; i < ET_trait<ET_TET>::N_VERTEX; i++) this->vnums[i] = avnums[i];
+      this->ndof = ET_trait<ET_TET>::PolDimension (aorder);
       if (this->vnums[0] >= this->vnums[1] ||
           this->vnums[1] >= this->vnums[2] ||
           this->vnums[1] >= this->vnums[3])
         cerr << "tensor-tet: wrong orientation" << endl;
     }
-
-    template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const;
+    
+    // template<typename Tx, typename TFA>  
+    // INLINE void T_CalcShape (TIP<ET_trait<ET_TET>::DIM,Tx> ip, TFA & shape) const;
 
     virtual void ComputeNDof() override { ; } 
     virtual void SetOrder (INT<DIM> p) override { ; } 
@@ -849,7 +851,7 @@ namespace ngfem
       for (int ix = 0, ii = 0; ix <= order; ix++)
         for (int iy = 0; iy <= order - ix; iy++)
           for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
-          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+            mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
     }
     
     int GetNDof1d () const { return this->order+1; }
@@ -1035,4 +1037,106 @@ namespace ngfem
 
     
   };
+
+
+  
+  template <> 
+  class L2HighOrderFETP <ET_QUAD> :
+    public T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>,
+    public ET_trait<ET_QUAD>
+  {
+    enum { DIM = ET_trait<ET_QUAD>::DIM };
+    typedef T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>> TBASE;
+  public:
+    template <typename TA> 
+    L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)
+    {
+      this->order = aorder;
+      for (int i = 0; i < ET_trait<ET_QUAD>::N_VERTEX; i++) this->vnums[i] = avnums[i];
+      this->ndof = ET_trait<ET_QUAD>::PolDimension (aorder);
+    }
+    virtual ~L2HighOrderFETP();
+    virtual void ComputeNDof() override { ; } 
+    virtual void SetOrder (INT<DIM> p) override { ; } 
+    virtual void PrecomputeTrace () override { ; } 
+    virtual void PrecomputeGrad () override { ; }
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      Tx x = ip.x, y = ip.y;
+      Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+      
+      INT<4> f = GetFaceSort (0, vnums);  
+      
+      Tx xi = sigma[f[0]]-sigma[f[1]]; 
+      Tx eta = sigma[f[0]]-sigma[f[3]]; 
+      
+      // int p=order_inner[0];
+      // int q=order_inner[1];
+      int p = order, q = order;
+      
+      STACK_ARRAY(Tx, mem, p+q+2);
+      Tx * polx = &mem[0];
+      Tx * poly = &mem[p+1];
+      
+      LegendrePolynomial (p, xi, polx);
+      LegendrePolynomial (q, eta, poly);
+      
+      for (size_t i = 0, ii = 0; i <= p; i++)
+        for (size_t j = 0; j <= q; j++)
+          shape[ii++] = polx[i] * poly[j];
+    }
+    
+    virtual void GetDiagMassMatrix(FlatVector<> mass) const override
+    {
+      for (int ix = 0, ii = 0; ix <= order; ix++)
+        for (int iy = 0; iy <= order; iy++, ii++)
+          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * iy + 1));
+    }
+    
+    virtual void Evaluate (const SIMD_IntegrationRule & ir,
+                           BareSliceVector<> bcoefs,
+                           BareVector<SIMD<double>> values) const override;
+
+    virtual void AddTrans (const SIMD_IntegrationRule & ir,
+                           BareVector<SIMD<double>> values,
+                           BareSliceVector<> coefs) const override;    
+  };
+  
+
+  // extern template class L2HighOrderFETP<ET_QUAD>;
+  // extern template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
+
+
+
+  template <> 
+  class L2HighOrderFETP <ET_HEX> : public L2HighOrderFE<ET_HEX>
+  {
+    typedef L2HighOrderFE<ET_HEX> TBASE;
+
+  public:
+    template <typename TA> 
+    L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)
+      : L2HighOrderFE<ET_HEX>(aorder)
+    {
+      SetVertexNumbers (avnums);
+    }
+    virtual ~L2HighOrderFETP();
+    
+    virtual void Evaluate (const SIMD_IntegrationRule & ir,
+                           BareSliceVector<> bcoefs,
+                           BareVector<SIMD<double>> values) const override;
+
+    virtual void AddTrans (const SIMD_IntegrationRule & ir,
+                           BareVector<SIMD<double>> values,
+                           BareSliceVector<> coefs) const override;
+
+    virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & mir,
+                               BareSliceMatrix<SIMD<double>> values,
+                               BareSliceVector<> bcoefs) const override;
+  };
+  
+
+  
 }

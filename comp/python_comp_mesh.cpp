@@ -153,6 +153,22 @@ nr : int
     .def_property_readonly("faces", [](MeshNode & node) -> py::tuple
                            {
                              auto & mesh = node.Mesh();
+                             if (node.GetType() == NT_VERTEX)  
+                               {
+                                 Array<int> fnums;
+                                 for (auto el : mesh.GetVertexElements(node.GetNr()))
+                                   for (auto face : mesh.GetElement(ElementId(VOL,el)).Faces())
+                                     if (!fnums.Contains(face))
+                                       fnums.Append(face);
+                                 QuickSort (fnums);
+                                 return MakePyTuple(Substitute(fnums, Nr2Face));
+                               }
+                             if (node.GetType() == NT_EDGE)
+                               {
+                                 Array<int> faces;
+                                 mesh.GetEdgeFaces(node.GetNr(), faces);
+                                 return MakePyTuple(Substitute(faces, Nr2Face));
+                               }
                              if (node.GetType() == NT_CELL)
                                return MakePyTuple(Substitute(mesh.GetElFacets(ElementId(VOL, node.GetNr())),
                                                              Nr2Face));
@@ -262,6 +278,21 @@ nr : int
                                }
                            },
                            "tuple of global face, edge or vertex numbers")
+    .def_property_readonly("elementnode", [](Ngs_Element &el)
+                           {
+                             switch (ElementTopology::GetSpaceDim(el.GetType()))
+                               {
+                               case 1:
+                                 return Nr2Edge (el.Edges()[0]);
+                               case 2:
+                                 return Nr2Face (el.Faces()[0]);
+                               case 3:
+                                 return NodeId(NT_CELL, el.Nr());
+                               default:
+                                 throw Exception ("Illegal dimension in Ngs_Element.elementnode");
+                               }
+                           },
+                           "inner node, i.e. cell, face or edge node for 3D/2D/1D")
     .def_property_readonly("type", [](Ngs_Element &self)
         { return self.GetType(); },
         "geometric shape of element")
@@ -313,79 +344,24 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("ngmesh"),
          "Make an NGSolve-mesh from a Netgen-mesh")
 
-    .def(py::init([](const string & filename, PyMPI_Comm c)
+    .def(py::init([](const string & filename, NgMPI_Comm comm)
                   {
-                    ngs_comm = c.comm;
-                    NGSOStream::SetGlobalActive (c.Rank()==0);
-                    return make_shared<MeshAccess>(filename, c.comm);
+		    // MPI_Comm comm = c ? c->comm : ngs_comm;
+                    NGSOStream::SetGlobalActive (comm.Rank()==0);
+                    return make_shared<MeshAccess>(filename, comm);
                   }),
-         py::arg("filename"), py::arg("comm")=PyMPI_Comm(MPI_COMM_WORLD),
+         py::arg("filename"), py::arg("comm")=NgMPI_Comm{},
          "Load a mesh from file.\n"
          "In MPI-parallel mode the mesh is distributed over the MPI-group given by the communicator (WIP!)")
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
          { return self == other; }, py::arg("mesh"))
-    
-    .def(py::pickle([](const MeshAccess& ma)
-                    {
-                      /*
-                      Timer tsave("save mesh");
-                      tsave.Start();
-                      stringstream ss;
-                      ma.SaveMesh(ss);
-                      tsave.Stop();
-                      return py::make_tuple(ss.str());
-                      */
-
-                      Timer tbin("binary archive");
-                      tbin.Start();
-                      auto str = make_shared<stringstream>();
-
-                      BinaryOutArchive binar(str);
-                      const_cast<MeshAccess&>(ma).ArchiveMesh(binar);
-                      binar.FlushBuffer();
-
-                      tbin.Stop();
-                      cout << IM(3) << "mesh binary archive size: " << str->str().length() << endl;
-                      return py::make_tuple(int(1), py::bytes(str->str()));
-
-                      /*
-                      Timer tpy("python archive");
-                      tpy.Start();
-                      PyOutArchive ar;
-                      const_cast<MeshAccess&>(ma).ArchiveMesh(ar);
-                      tpy.Stop();
-                      return py::make_tuple(int(0), ar.GetList());
-                      */
-                    },
-                    [] (py::tuple state)
-                    {
-                      /*
-                      auto ma = make_shared<MeshAccess>();
-                      stringstream ss(state[0].cast<string>());
-                      ma->LoadMesh(ss);
-                      return ma;
-                      */
-                      int binary = py::cast<int> (state[0]);
-
-                      if (!binary)
-                        {
-                          py::list pylist = py::cast<py::list> (state[1]);
-                          PyInArchive ar(pylist);
-                          auto ma = make_shared<MeshAccess>();
-                          ma->ArchiveMesh(ar);
-                          return ma;
-                        }
-                      else
-                        {
-                          auto str = make_shared<stringstream> (py::cast<string> (state[1]));
-                          BinaryInArchive ar(str);
-                          auto ma = make_shared<MeshAccess>();
-                          ma->ArchiveMesh(ar);
-                          return ma;
-                        }
-                    }))
+     .def_property_readonly("comm", [](const MeshAccess& ma) -> NgMPI_Comm
+                            { return ma.GetCommunicator(); },
+                            "MPI-communicator the Mesh lives in")
+   
+    .def(NGSPickle<MeshAccess>())
     /*
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
@@ -413,6 +389,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
     .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "number of edges")
     .def_property_readonly ("nface", &MeshAccess::GetNFaces, "number of faces")
+    .def_property_readonly ("nfacet", &MeshAccess::GetNFacets, "number of facets")
     .def ("nnodes", &MeshAccess::GetNNodes, "number of nodes given type")
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "the Netgen mesh")
@@ -436,6 +413,13 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                                       MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh));
           }, "iterable of mesh faces")
 
+    .def_property_readonly ("facets", [] (shared_ptr<MeshAccess> mesh)
+          {
+            auto nt = StdNodeType(NT_FACET, mesh->GetDimension());
+            return T_Range<MeshNode> (MeshNode(NodeId(nt, 0), *mesh),
+                                      MeshNode(NodeId(nt, mesh->GetNNodes(nt)), *mesh));
+          }, "iterable of mesh facets")
+
     .def("nodes", [] (shared_ptr<MeshAccess> mesh, NODE_TYPE type)
          {
            return T_Range<MeshNode> (MeshNode(NodeId(type, 0), *mesh),
@@ -448,6 +432,18 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           (&MeshAccess::GetTrafo), 
           py::return_value_policy::reference)
     */
+
+    .def("GetPeriodicNodePairs", [](MeshAccess& self, NODE_TYPE type)
+         {
+           py::list pairs;
+           for(auto idnr : Range(self.GetNPeriodicIdentifications()))
+             {
+               const auto& periodic_nodes = self.GetPeriodicNodes(type, idnr);
+               for(auto pair : periodic_nodes)
+                 pairs.append(py::make_tuple(py::make_tuple(pair[0], pair[1]),idnr));
+             }
+           return pairs;
+         }, "returns list of periodic nodes with their identification number as [((master_nr, slave_nr),idnr),...]")
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
@@ -621,8 +617,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("RefineHP",
          [](MeshAccess & ma, int levels, double factor)
           {
-            Ng_HPRefinement(levels, factor);
-            ma.UpdateBuffers();
+            ma.HPRefinement(levels, factor);
+            // Ng_HPRefinement(levels, factor);
+            // ma.UpdateBuffers();
           },
          py::arg("levels"), py::arg("factor")=0.125,
 	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points")
@@ -643,7 +640,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           },
          py::arg("vnum"),
          "Return parent vertex numbers on refined mesh")
-
+    .def("GetHPElementLevel", &MeshAccess::GetHPElementLevel,
+         py::arg("ei"),
+         "THIS FUNCTION IS WIP!\n Return HP-refinement level of element")
     .def("SetElementOrder",
          [](MeshAccess & ma, ElementId id, int order)
          {

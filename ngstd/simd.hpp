@@ -223,6 +223,10 @@ namespace ngstd
       : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
                                      _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
     { ; }
+    SIMD (int i)
+      : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
+                                     _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
+    { ; }
     SIMD (__mmask8 _mask) : mask(_mask) { ; }        
     __mmask8 Data() const { return mask; }
     static constexpr int Size() { return 8; }    
@@ -245,7 +249,7 @@ namespace ngstd
     SIMD (int val)    { data = val; }
     SIMD (size_t val) { data = val; }
     SIMD (double const * p) { data = *p; }
-    SIMD (double const * p, SIMD<mask64,1> mask) { if (mask.Data()) data = *p; }
+    SIMD (double const * p, SIMD<mask64,1> mask) { data = mask.Data() ? *p : 0.0; }
     
     template <typename T, typename std::enable_if<std::is_convertible<T,std::function<double(int)>>::value,int>::type = 0>
     SIMD (const T & func)
@@ -425,7 +429,7 @@ namespace ngstd
     void Store (double * p, SIMD<mask64,4> mask)
     {
       data[0].Store(p, mask.Lo());
-      data[1].Store(p, mask.Hi());
+      data[1].Store(p+2, mask.Hi());
     }    
 
     /*
@@ -613,6 +617,7 @@ namespace ngstd
 
 
   INLINE double IfPos (double a, double b, double c) { return a>0 ? b : c; }
+  INLINE double IfZero (double a, double b, double c) { return a==0. ? b : c; }
   
 #ifdef __SSE__
 
@@ -635,6 +640,8 @@ namespace ngstd
   { return ngstd::SIMD<double,2>([&](int i)->double { return ceil(a[i]); } ); }
   INLINE SIMD<double,2> IfPos (SIMD<double,2> a, SIMD<double,2> b, SIMD<double,2> c)
   { return ngstd::SIMD<double,2>([&](int i)->double { return a[i]>0 ? b[i] : c[i]; }); }
+  INLINE SIMD<double,2> IfZero (SIMD<double,2> a, SIMD<double,2> b, SIMD<double,2> c)
+  { return ngstd::SIMD<double,2>([&](int i)->double { return a[i]==0. ? b[i] : c[i]; }); }
 
   
   INLINE double HSum (SIMD<double,2> sd)
@@ -666,6 +673,12 @@ namespace ngstd
   INLINE SIMD<double,4> IfPos (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
   {
     auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
+    return _mm256_blendv_pd(c.Data(), b.Data(), cp);
+  }
+
+  INLINE SIMD<double,4> IfZero (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
+  {
+    auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_EQ_OS);
     return _mm256_blendv_pd(c.Data(), b.Data(), cp);
   }
 
@@ -704,6 +717,11 @@ namespace ngstd
   INLINE SIMD<double,8> IfPos (SIMD<double,8> a, SIMD<double> b, SIMD<double> c)
   {
     auto k = _mm512_cmp_pd_mask(a.Data(),_mm512_setzero_pd(), _CMP_GT_OS);
+    return _mm512_mask_blend_pd(k,c.Data(),b.Data());
+  }
+  INLINE SIMD<double,8> IfZero (SIMD<double,8> a, SIMD<double,8> b, SIMD<double,8> c)
+  {
+    auto k = _mm512_cmp_pd_mask(a.Data(),_mm512_setzero_pd(), _CMP_EQ_OS);
     return _mm512_mask_blend_pd(k,c.Data(),b.Data());
   }
 
@@ -784,6 +802,10 @@ namespace ngstd
   INLINE SIMD<double,1> IfPos (SIMD<double,1> a, SIMD<double,1> b, SIMD<double,1> c)
   {
     return (a.Data() > 0) ? b : c;
+  }
+  INLINE SIMD<double,1> IfZero (SIMD<double,1> a, SIMD<double,1> b, SIMD<double,1> c)
+  {
+    return (a.Data() == 0.) ? b : c;
   }
 
   INLINE double HSum (SIMD<double,1> sd)

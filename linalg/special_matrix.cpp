@@ -52,7 +52,118 @@ namespace ngla
       }
   }
 
+  void Embedding :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("Embedding::Mult"); RegionTimer reg(t);
+    y = 0.0;
+    y.Range(range) = x;
+  }
+  
+  void Embedding :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("Embedding::MultTrans"); RegionTimer reg(t);
+    y = x.Range(range);    
+  }
+    
+  void Embedding :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("Embedding::MultAdd"); RegionTimer reg(t);
+    y.Range(range) += s*x;
+  }
+  
+  void Embedding :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("Embedding::MultAddTrans"); RegionTimer reg(t);
+    y += s*x.Range(range);
+  }
 
+  
+  void EmbeddedMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    if (Height() != y.Size()) throw Exception("Embedded matrix, h = "+ToString(Height())
+                                              + " != y.size = " + ToString(y.Size()));
+    if (range.Size() != mat->Height()) throw Exception("range mismatch");
+    if (Width() != x.Size()) throw Exception("Embedded matrix, w = "+ToString(Width())
+                                             + " != x.Size() = " + ToString(x.Size()));
+    y = 0;
+    y.Range(range) = *mat * x;
+  }
+  void EmbeddedMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultTrans(x.Range(range), y);
+  }
+
+  void EmbeddedMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    y.Range(range) += s * (*mat) * x;
+  }
+  
+  void EmbeddedMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    mat->MultTransAdd(s, x.Range(range), y);
+  }
+
+
+
+
+
+  void EmbeddingTranspose :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::Mult"); RegionTimer reg(t);
+    y = x.Range(range);    
+  }
+  
+  void EmbeddingTranspose :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::MultTrans"); RegionTimer reg(t);
+    y = 0.0;
+    y.Range(range) = x;
+  }
+    
+  void EmbeddingTranspose :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::MultAdd"); RegionTimer reg(t);
+    y += s*x.Range(range);
+  }
+  
+  void EmbeddingTranspose :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("EmbeddingTranspose::MultAddTrans"); RegionTimer reg(t);
+    y.Range(range) += s*x;
+  }
+
+
+
+  void EmbeddedTransposeMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    mat->Mult(x.Range(range), y);
+  }
+  
+  void EmbeddedTransposeMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    y = 0;
+    auto ry = y.Range(range);
+    mat->MultTrans(x, ry);
+  }
+
+  void EmbeddedTransposeMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    mat->MultAdd (s, x.Range(range), y);
+  }
+  
+  void EmbeddedTransposeMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    auto ry = y.Range(range);    
+    mat->MultTransAdd(s, x, ry);
+  }
+
+
+
+
+
+
+
+  
   template <class TVR, class TVC>
   Real2ComplexMatrix<TVR,TVC> :: 
   Real2ComplexMatrix (const BaseMatrix * arealmatrix)

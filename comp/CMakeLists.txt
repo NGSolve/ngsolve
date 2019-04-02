@@ -4,10 +4,6 @@ if (NETGEN_USE_GUI)
     add_definitions(-DTCL)
 endif (NETGEN_USE_GUI)
 
-if(NOT WIN32)
-    set(ngcomp_object_libs $<TARGET_OBJECTS:ngmg> )
-endif(NOT WIN32)
-
 add_library( ngcomp ${NGS_LIB_TYPE}
         ${ngcomp_object_libs}
         bilinearform.cpp facetfespace.cpp fespace.cpp 
@@ -20,17 +16,11 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         periodic.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
         )
 
-target_compile_definitions(ngcomp PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(ngcomp PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(ngcomp PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngcomp PUBLIC ${NGSOLVE_INCLUDE_DIRS})
-target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
+target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS})
 
-if(NOT WIN32)
-    target_link_libraries (ngcomp PUBLIC interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
-    target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
-    install( TARGETS ngcomp ${ngs_install_dir} )
-endif(NOT WIN32)
+target_link_libraries (ngcomp PUBLIC interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE ngmg ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
+target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+install( TARGETS ngcomp ${ngs_install_dir} )
 
 install( FILES
         bilinearform.hpp comp.hpp facetfespace.hpp	   

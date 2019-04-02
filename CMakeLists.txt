@@ -2,7 +2,12 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 3.3)
+if(WIN32)
+  # we are linking to object libraries on Windows
+  cmake_minimum_required(VERSION 3.12)
+else(WIN32)
+  cmake_minimum_required(VERSION 3.3)
+endif(WIN32)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
@@ -182,16 +187,16 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++14> /Qopt-report-file:report.log)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++17> /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj /std:c++17)
     endif()
 
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 endif(WIN32)
 if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
@@ -234,7 +239,7 @@ endif (USE_VT)
 if (USE_CUDA)
     find_package(CUDA)
     set(CUDA_SEPARABLE_COMPILATION ON)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14;-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++17;-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
     set(CUDA_OPTIONS -Xcompiler -fPIC)
     SET (EXTRA_LIBS ${EXTRA_LIBS} cudart cublas cusparse)
 endif (USE_CUDA)
@@ -258,7 +263,7 @@ endif (USE_MKL)
 
 if(MKL_STATIC)
   set(LAPACK_CMAKE_LINK_INTERFACE PRIVATE)
-  list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE LAPACK)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 else()
   set(LAPACK_CMAKE_LINK_INTERFACE PUBLIC)
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
@@ -427,7 +432,7 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
-    set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib libngsolve.lib" )
+    set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib ngcore.lib libngsolve.lib" )
 else()
     set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
     set(ngscxx_header
@@ -520,6 +525,8 @@ configure_file(
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
+get_filename_component(NGS_CMAKE_DIR_ABS ${NGSOLVE_INSTALL_DIR_CMAKE} ABSOLUTE BASE_DIR ${CMAKE_INSTALL_PREFIX})
+file(RELATIVE_PATH CMAKE_TO_PREFIX_RELPATH ${NGS_CMAKE_DIR_ABS} ${CMAKE_INSTALL_PREFIX})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY ESCAPE_QUOTES)
 

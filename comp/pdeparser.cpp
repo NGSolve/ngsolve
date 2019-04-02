@@ -1,3 +1,6 @@
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <solve.hpp>
 #include <parallelngs.hpp>
 
@@ -564,15 +567,15 @@ namespace ngcomp
                   if (ifstream (meshfile.c_str()))
 		    {
 		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
-                      auto ma = make_shared<MeshAccess>();
-                      ma -> LoadMesh (meshfile);
+                      auto ma = make_shared<MeshAccess>(meshfile);
+                      // ma -> LoadMesh (meshfile);
                       pde -> AddMeshAccess(ma);
 		    }
 		  else
 		    {
 		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
-                      auto ma = make_shared<MeshAccess>();
-                      ma -> LoadMesh (scan->GetStringValue());
+                      auto ma = make_shared<MeshAccess>(scan->GetStringValue());
+                      // ma -> LoadMesh (scan->GetStringValue());
                       pde -> AddMeshAccess(ma);
 		    }
 		}
@@ -2334,8 +2337,8 @@ namespace ngcomp
     cout << IM(1) << "Load PDE from file " << filename << endl;
     string data;
     pde = apde;
-
-    if (MyMPI_GetId() == 0)
+    NgMPI_Comm ngs_comm; //  = MPI_COMM_WORLD;
+    if (ngs_comm.Rank() == 0)
       {
 	string::size_type pos1 = filename.rfind('\\');
 	string::size_type pos2 = filename.rfind('/');
@@ -2370,8 +2373,8 @@ namespace ngcomp
 	  }
 
 	string hfilename = filename;
-	MyMPI_Bcast (hfilename);
-	MyMPI_Bcast (pde_directory);
+	ngs_comm.Bcast (hfilename);
+	ngs_comm.Bcast (pde_directory);
       }
 
     else
@@ -2379,13 +2382,14 @@ namespace ngcomp
       {
 	string filename, pde_directory;
 
-	MyMPI_Bcast (filename);
-	MyMPI_Bcast (pde_directory);	
+	ngs_comm.Bcast (filename);
+	ngs_comm.Bcast (pde_directory);
 	pde->SetDirectory(pde_directory);
 	pde->SetFilename(filename);
       }
     
-    MyMPI_Bcast (data);
+    // MyMPI_Bcast (data, ngs_comm);
+    ngs_comm.Bcast (data);
 
     stringstream strdata(data);
     LoadPDE(pde, strdata, nomeshload, nogeometryload);

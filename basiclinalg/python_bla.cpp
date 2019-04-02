@@ -85,6 +85,7 @@ void PyVecAccess( py::module &m, TCLASS &c )
         c.def("__sub__" , [](T &self, T &v) { return TNEW(self-v); }, py::arg("vec") );
         c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("__rmul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
+        c.def("__neg__" , [](T &self) { return TNEW(-self); });        
         c.def("InnerProduct",  [](T & x, T & y) { return InnerProduct (x, y); }, py::arg("y"), "Returns InnerProduct with other object");
         c.def("Norm",  [](T & x) { return L2Norm(x); }, "Returns L2-norm");
 }
@@ -195,18 +196,27 @@ void PyMatAccess( TCLASS &c )
           static void SetTuple( TMAT & self, py::tuple t, const TMAT & rmat) {
             py::object rows = t[0];
             py::object cols = t[1];
-
             // Both elements have to be slices
             try {
               auto row_slice = rows.cast<py::slice> ();
               auto col_slice = cols.cast<py::slice> ();
+              /*
               size_t start, step, n;
               InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 py::object f = row.attr("__setitem__");
-                f(self, cols, rmat.Row(i));
+                f(row, cols, rmat.Row(i));
               }
+              */
+              size_t rstart, rstep, rn;              
+              size_t cstart, cstep, cn;
+              InitSlice( row_slice, self.Height(), rstart, rstep, rn );
+              InitSlice( col_slice, self.Width(), cstart, cstep, cn );
+              for (int i = 0, ii=rstart; i < rn; i++, ii+=rstep)
+                for (int j = 0, jj = cstart; j < cn; j++, jj+=cstep)
+                  self(ii,jj) = rmat(i,j);
+
             } catch (py::error_already_set const &) {
               PyErr_Print();
             }
@@ -303,6 +313,7 @@ void PyMatAccess( TCLASS &c )
         c.def("__mul__" , [](TMAT &self, FlatVector<TSCAL> &v) { return Vector<TSCAL>(self*v); }, py::arg("vec") );
         c.def("__mul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("values") );
         c.def("__rmul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
+        c.def("__neg__" , [](TMAT &self) { return TNEW(-self); });
         c.def("Height", &TMAT::Height, "Return height of matrix" );
         c.def("Width", &TMAT::Width, "Return width of matrix" );
         c.def_property_readonly("h", py::cpp_function(&TMAT::Height ), "Height of the matrix");
@@ -325,6 +336,15 @@ auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
     c.def(py::self-=py::self);
     c.def(py::self*=TSCAL());
     return c;
+  }
+
+template <typename T, typename TSCAL, typename TPYCLASS>
+void ExportImmediateOperators(TPYCLASS &c)
+  {
+      // "return self;" is important here!
+      c.def("__iadd__", [] (T &self, T &rhs) { self+=rhs; return self; });
+      c.def("__isub__", [] (T &self, T &rhs) { self-=rhs; return self; });
+      c.def("__imul__", [] (T &self, TSCAL &rhs) { self*=rhs; return self; });
   }
 
 void NGS_DLL_HEADER ExportNgbla(py::module & m) {
@@ -359,10 +379,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
     cvd.def(py::init( [] (int n) { return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
+    ExportImmediateOperators<VD, double>(cvd);
 
     py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
     cvc.def(py::init( [] (int n) { return new VC(n); }));
     PyDefVecBuffer<VC>(cvc);
+    ExportImmediateOperators<VC, Complex>(cvc);
 
     m.def("Vector",
             [] (int n, bool is_complex) {
@@ -486,6 +508,7 @@ vals : tuple
                     result(j,i) = Conj(self(i,j));
             return result;
             } ), "Return conjugate and transposed matrix" )
+          .def_property_readonly("I", py::cpp_function([](FMC & self) { return Inv(self); }))
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 
@@ -493,11 +516,13 @@ vals : tuple
       .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
+    ExportImmediateOperators<Matrix<double>, double>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
       .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
+    ExportImmediateOperators<Matrix<Complex>, Complex>(class_MC);
 
     auto class_Mat2D = py::class_<Mat<2,2,double>>(m,"Mat2D", py::buffer_protocol());
     PyDefMatBuffer<Mat<2,2,double>>(class_Mat2D);
@@ -548,7 +573,7 @@ complex : bool
              [] (py::object x) -> py::object
           { return py::object(x.attr("Norm")) (); }, py::arg("x"),"Compute Norm");
 
-    m.def("__timing__", &ngbla::Timing);
+    m.def("__timing__", &ngbla::Timing, py::arg("what"), py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lapack")=false);
     m.def("CheckPerformance",
              [] (size_t n, size_t m, size_t k)
                               {

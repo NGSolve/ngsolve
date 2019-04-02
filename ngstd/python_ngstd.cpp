@@ -175,8 +175,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   
   std::string nested_name = "ngstd";
 
-  m.def("TestFlags", [] (py::dict const &d) { cout << py::extract<Flags>(d)() << endl; } );
-
   py::class_<DummyArgument>(m, "DummyArgument")
     .def("__bool__", []( DummyArgument &self ) { return false; } )
     .def("__repr__", [] ( DummyArgument & self) { return "<ngsolve.ngstd.DummyArgument>"; })
@@ -295,6 +293,17 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                                    self.Clear(start);
                                              }
                                          }, py::arg("inds"), py::arg("value"), "Clear/Set bit at given positions")
+    
+    .def("__setitem__", [](BitArray & self,  IntRange range, bool b)
+      {
+        if (b)
+          for (size_t i : range)
+            self.Set(i);
+        else
+          for (size_t i : range)
+            self.Clear(i);
+      }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
+    
     .def("NumSet", [] (BitArray & self) { return self.NumSet(); })
     .def("Set", [] (BitArray & self, py::object in)
                                    {
@@ -344,25 +353,21 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           SetFlag (flags, "", d);
           return flags;
         }), py::arg("obj"), "Create Flags by given object")
-    /*
-    .def("__init__", [] (Flags &f, py::object & obj) {
-         py::dict d(obj);
-         new (&f) Flags();
-         SetFlag(f, "", d);
-     })
-    */
-    .def("__getstate__", [] (py::object self_object) {
-        auto self = self_object.cast<Flags>();
-        stringstream str;
-        self.SaveFlags(str);
-        return py::make_tuple(py::cast(str.str())); 
-      }, "Return state of the flags")
-    .def("__setstate__", [] (Flags & self, py::tuple state) {
-        string s = state[0].cast<string>();
-        stringstream str(s);
-        new (&self) Flags();
-        self.LoadFlags(str);
-      }, py::arg("state"), "Set the state of the flags" )
+    .def(py::pickle([] (const Flags& self)
+        {
+          stringstream str;
+          self.SaveFlags(str);
+          return py::make_tuple(py::cast(str.str()));
+        },
+        [] (py::tuple state)
+        {
+          string s = state[0].cast<string>();
+          stringstream str(s);
+          Flags flags;
+          flags.LoadFlags(str);
+          return flags;
+        }
+    ))
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
@@ -401,18 +406,22 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("flags") );
   py::implicitly_convertible<py::dict, Flags>();
 
-  py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
-  py_intrange.def( py::init<size_t,size_t>());
-  py_intrange.def("__str__", &ToString<IntRange>);
-  py_intrange.def("__iter__", [] (ngstd::IntRange & i)
-      { return py::make_iterator(i.begin(), i.end()); },
-      py::keep_alive<0,1>()
-    );
+  py::class_<ngstd::IntRange> (m, "IntRange")
+    .def( py::init<size_t,size_t>())
+    .def("__str__", &ToString<IntRange>)
+    .def("__iter__", [] (ngstd::IntRange & i)
+         { return py::make_iterator(i.begin(), i.end()); },
+         py::keep_alive<0,1>())
+    .def_property_readonly("start", [](IntRange& self) { return self.First();})
+    .def_property_readonly("stop", [](IntRange& self) { return self.Next();})
+    .def_property_readonly("step", [](IntRange& self) { return 1; })
+    ;
 
   py::class_<Timer> (m, "Timer")
     .def(py::init<const string&>())
     .def("Start", &Timer::Start, "start timer")
     .def("Stop", &Timer::Stop, "stop timer")
+    .def_property_readonly("time", &Timer::GetTime, "returns time")
     ;
   
   m.def("Timers",
@@ -420,13 +429,13 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 	   {
 	     py::list timers;
 	     for (int i = 0; i < NgProfiler::SIZE; i++)
-	       if (!NgProfiler::names[i].empty())
+	       if (!NgProfiler::timers[i].name.empty())
                {
                  py::dict timer;
-                 timer["name"] = py::str(NgProfiler::names[i]);
+                 timer["name"] = py::str(NgProfiler::timers[i].name);
                  timer["time"] = py::float_(NgProfiler::GetTime(i));
                  timer["counts"] = py::int_(NgProfiler::GetCounts(i));
-                 timer["flops"] = py::int_(NgProfiler::GetFlops(i));
+                 timer["flops"] = py::float_(NgProfiler::GetFlops(i));
                  timer["Gflop/s"] = py::float_(NgProfiler::GetFlops(i)/NgProfiler::GetTime(i)*1e-9);
                  timers.append(timer);
                }
@@ -545,39 +554,43 @@ threads : int
           memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), size-n);
           unpickler.attr("append")(MemoryView(mem,size));
         }, py::arg("unpickler"));
-  py::class_<MemoryView>(m, "_MemoryView");
 
-  
-  py::class_<PyMPI_Comm> (m, "MPI_Comm")
-    .def_property_readonly ("rank", &PyMPI_Comm::Rank)
-    .def_property_readonly ("size", &PyMPI_Comm::Size)
-    .def("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
-#ifdef PARALLEL
-    .def("WTime", [](PyMPI_Comm c) { return MPI_Wtime(); })
-#endif
-    .def("Sum", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
+  py::class_<MemoryView>(m, "_MemoryView")
+    .def(py::pickle([](MemoryView& mv)
+                    {
+                      if(have_numpy)
+                          return py::make_tuple(true,
+                                                py::array_t<char> (py::buffer_info((char*) mv.Ptr(),
+                                                                                   mv.Size())));
+                      else
+                          return py::make_tuple(false,
+                                                py::bytes((char*) mv.Ptr(),
+                                                          mv.Size()));
+                    },
+                    [](py::tuple state)
+                    {
+                      if(py::cast<bool>(state[0]))
+                        {
+                          if(!have_numpy)
+                            throw Exception("Data was pickled using numpy, need numpy to unpickle it!");
+                          auto array = py::cast<py::array_t<char>>(state[1]);
+                          auto size = array.size();
+                          char* mem = new char[size];
+                          memcpy(mem, array.data(0), size);
+                          return MemoryView (mem, size);
+                        }
+                      else
+                        {
+                          auto bytes = py::cast<py::bytes>(state[1]);
+                          char* buffer;
+                          py::ssize_t size;
+                          PYBIND11_BYTES_AS_STRING_AND_SIZE(bytes.ptr(), &buffer, &size);
+                          char *mem = new char[size];
+                          memcpy(mem, buffer, size);
+                          return MemoryView(mem, (size_t) size);
+                        }
+                    }))
     ;
-
-  
-  
-  m.def("MPI_Init", [&]()
-        {
-          const char * progname = "ngslib";
-          typedef const char * pchar;
-          pchar ptrs[2] = { progname, nullptr };
-          pchar * pptr = &ptrs[0];
-          
-          static MyMPI mympi(1, (char**)pptr);
-          return PyMPI_Comm(ngs_comm);
-        });
 
 }
 

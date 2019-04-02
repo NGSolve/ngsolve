@@ -2,6 +2,7 @@ from ngsolve.la import InnerProduct
 from math import sqrt
 from ngsolve import Projector, Norm
 from ngsolve.ngstd import Timer
+import ngsolve
 
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method
@@ -394,7 +395,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
         ResNorm = abs(s_new) * ResNorm_old
         if (printrates):        
             print("it = ", k, " err = ", ResNorm)   
-
+        if ResNorm < tol: break
         k += 1
 
         # shift vectors by renaming
@@ -485,3 +486,166 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
     return u   
 
 
+def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = 1e-7, innerproduct=None,
+          callback=None, restart=None, startiteration=0, printrates=True):
+    """ Restarting preconditioned gmres solver for A*x=b. Minimizes the preconditioned
+residuum pre*(b-A*x)
+
+Parameters
+----------
+
+A : BaseMatrix
+  The left hand side of the linear system.
+
+b : BaseVector
+  The right hand side of the linear system.
+
+pre : BaseMatrix = None
+  The preconditioner for the system. If no preconditioner is given, the freedofs
+  of the system must be given.
+
+freedofs : BitArray = None
+  Freedofs to solve on, only necessary if no preconditioner is given.
+
+x : BaseVector = None
+  Startvector, if given it will be modified in the routine and returned. Will be created
+  if not given.
+
+maxsteps : int = 100
+  Maximum iteration steps.
+
+tol : float = 1e-7
+  Tolerance to be computed to. Gmres breaks if norm(pre*(b-A*x)) < tol.
+
+innerproduct : function = None
+  Innerproduct to be used in iteration, all orthogonalizations/norms are computed with
+  respect to that inner product.
+
+callback : function = None
+  If given, this function is called with the solution vector x in each step. Only for debugging
+  purposes, since it requires the overhead of computing x in every step.
+
+restart : int = None
+  If given, gmres is restarted with the current solution x every 'restart' steps.
+
+startiteration : int = 0
+  Internal value to count total number of iterations in restarted setup, no user input required
+  here.
+
+printrates : bool = True
+  Print norm of preconditioned residual in each step.
+"""
+
+    if not innerproduct:
+        innerproduct = lambda x,y: y.InnerProduct(x, conjugate=True)
+        norm = ngsolve.Norm
+    else:
+        norm = lambda x: ngsolve.sqrt(innerproduct(x,x).real)
+    # is_complex = isinstance(b.FV(), ngsolve.bla.FlatVectorC)
+    is_complex = b.is_complex
+    if not pre:
+        assert freedofs
+        pre = ngsolve.Projector(freedofs, True)
+    n = len(b)
+    m = maxsteps
+    if not x:
+        x = b.CreateVector()
+        x[:] = 0
+
+    if callback:
+        xstart = x.CreateVector()
+        xstart.data = x
+    else:
+        xstart = None
+    sn = ngsolve.Vector(m, is_complex)
+    cs = ngsolve.Vector(m, is_complex)
+    sn[:] = 0
+    cs[:] = 0
+
+    r = b.CreateVector()
+    tmp = b.CreateVector()
+    tmp.data = b - A * x
+    r.data = pre * tmp
+
+    Q = []
+    H = []
+    Q.append(b.CreateVector())
+    r_norm = norm(r)
+    Q[0].data = 1./r_norm * r
+    beta = ngsolve.Vector(m+1, is_complex)
+    beta[:] = 0
+    beta[0] = r_norm
+
+    def arnoldi(A,Q,k):
+        q = b.CreateVector()
+        tmp.data = A * Q[k]
+        q.data = pre * tmp
+        h = ngsolve.Vector(m+1, is_complex)
+        h[:] = 0
+        for i in range(k+1):
+            h[i] = innerproduct(Q[i],q)
+            q.data += (-1)* h[i] * Q[i]
+        h[k+1] = norm(q)
+        if abs(h[k+1]) < 1e-12:
+            return h, None
+        q *= 1./h[k+1].real
+        return h, q
+
+    def givens_rotation(v1,v2):
+        if v2 == 0:
+            return 1,0
+        elif v1 == 0:
+            return 0,v2/abs(v2)
+        else:
+            t = ngsolve.sqrt((v1.conjugate()*v1+v2.conjugate()*v2).real)
+            cs = abs(v1)/t
+            sn = v1/abs(v1) * v2.conjugate()/t
+            return cs,sn
+
+    def apply_givens_rotation(h, cs, sn, k):
+        for i in range(k):
+            temp = cs[i] * h[i] + sn[i] * h[i+1]
+            h[i+1] = -sn[i].conjugate() * h[i] + cs[i].conjugate() * h[i+1]
+            h[i] = temp
+        cs[k], sn[k] = givens_rotation(h[k], h[k+1])
+        h[k] = cs[k] * h[k] + sn[k] * h[k+1]
+        h[k+1] = 0
+
+    def calcSolution(k):
+        mat = ngsolve.Matrix(k+1,k+1, is_complex)
+        for i in range(k+1):
+            mat[:,i] = H[i][:k+1]
+        rs = ngsolve.Vector(k+1, is_complex)
+        rs[:] = beta[:k+1]
+        y = mat.I * rs
+        if xstart:
+            x.data = xstart
+        for i in range(k+1):
+            x.data += y[i] * Q[i]
+
+    for k in range(m):
+        startiteration += 1
+        h,q = arnoldi(A,Q,k)
+        H.append(h)
+        if q is None:
+            break
+        Q.append(q)
+        apply_givens_rotation(h, cs, sn, k)
+        beta[k+1] = -sn[k].conjugate() * beta[k]
+        beta[k] = cs[k] * beta[k]
+        error = abs(beta[k+1])
+        if printrates:
+            print("Step", startiteration, ", error = ", error)
+        if callback:
+            calcSolution(k)
+            callback(x)
+        if error < tol:
+            break
+        if restart and k+1 == restart and not (restart == maxsteps):
+            calcSolution(k)
+            del Q
+            return GMRes(A, b, freedofs=freedofs, pre=pre, x=x, maxsteps=maxsteps-restart, callback=callback,
+                         tol=tol, innerproduct=innerproduct,
+                         restart=restart, startiteration=startiteration, printrates=printrates)
+    calcSolution(k)
+    return x

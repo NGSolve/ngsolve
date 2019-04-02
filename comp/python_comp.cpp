@@ -8,8 +8,8 @@
 
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
-#include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
 using namespace ngcomp;
@@ -475,12 +475,12 @@ when building the system matrices.
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
-         [] (const spProxy self, string name) -> py::object
+         [] (const spProxy self, string name)
           {
             auto op = self->GetAdditionalProxy(name);
-            if (op)
-              return py::cast(op);
-            return py::none();
+            if (!op)
+              throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
          [] (const spProxy self)
@@ -912,6 +912,15 @@ order : int
 
 )raw_string")
          )
+
+    .def("GetOrder",
+         [](shared_ptr<FESpace> self, NodeId ni) -> int
+         {
+           return self->GetOrder(ni);
+         },
+         py::arg("nodeid"),
+         "return order of node.\n"
+         "by now, only isotropic order is supported here\n")
     
     .def("Elements", 
          [](shared_ptr<FESpace> self, VorB vb)
@@ -995,9 +1004,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
-            Allocator alloc;
-            
-            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); 
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
@@ -1052,13 +1059,12 @@ coupling : bool
          "Return prolongation operator for use in multi-grid")
 
     .def("Range",
-         [] (const shared_ptr<FESpace> self, int comp) -> py::slice
+         [] (const shared_ptr<FESpace> self, int comp)
          {
            auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
            if (!compspace)
              throw py::type_error("'Range' is available only for product spaces");
-           IntRange r = compspace->GetRange(comp);
-           return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
+           return compspace->GetRange(comp);
          },
          py::arg("component"), docu_string(R"raw_string(
          Return interval of dofs of a component of a product space.
@@ -1104,9 +1110,26 @@ component : int
          },
          docu_string("Return a tuple of trial and testfunction"))
 
+    .def("InvM",
+         [] (const shared_ptr<FESpace> self,
+             shared_ptr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
+         {
+           return make_shared<ApplyMass> (self, rho, true, nullptr, glh); 
+         }, py::arg("rho") = nullptr)
+    .def("Mass",
+         [] (const shared_ptr<FESpace> self,
+             shared_ptr<CoefficientFunction> rho,
+             optional<Region> definedon) -> shared_ptr<BaseMatrix>
+         {
+           shared_ptr<Region> spdefon;
+           if (definedon) spdefon = make_shared<Region> (*definedon);
+           // return make_shared<ApplyMass> (self, rho, false, spdefon, glh);
+           return self->GetMassOperator(rho, spdefon, glh);
+         }, py::arg("rho") = nullptr, py::arg("definedon") = nullptr)
+    
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho)
+             BaseVector& vec, spCF rho) 
          { self->SolveM(rho.get(), vec, glh); },
          py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
@@ -1123,10 +1146,26 @@ rho : ngsolve.fem.CoefficientFunction
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
-         { self->ApplyM(rho.get(), vec, glh); },
+         { self->ApplyM(rho.get(), vec, nullptr, glh); },
          py::arg("vec"), py::arg("rho")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
-        
+    .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
+                               bool avg) -> shared_ptr<BaseMatrix>
+          {
+            return self->GetTraceOperator(tracespace);
+            // return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
+          }, py::arg("tracespace"), py::arg("average"))
+    .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
+                          BaseVector & in, BaseVector & out, bool avg)
+          {
+            self->GetTrace(tracespace, in, out, avg, glh);
+          })
+    .def ("GetTraceTrans", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
+                               BaseVector & in, BaseVector & out, bool avg)
+          {
+            self->GetTraceTrans(tracespace, in, out, avg, glh);
+          })
+    
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
          {
@@ -1187,6 +1226,8 @@ rho : ngsolve.fem.CoefficientFunction
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
+
+  ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
   
   ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
 
@@ -1346,6 +1387,10 @@ active_dofs : BitArray or None
            self.SetActiveDofs(active_dofs);
          },
          py::arg("dofs"))
+    .def("GetBaseSpace", [](CompressedFESpace & self)
+         {
+           return self.GetBaseSpace();
+         })
     .def(py::pickle([](const CompressedFESpace* compr_fes)
                     {
                       return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());
@@ -1530,7 +1575,7 @@ parallel : bool
               reg = &py::extract<Region&>(definedon)();
             
             py::gil_scoped_release release;
-            
+
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -1602,31 +1647,29 @@ definedon : object
          "returns list of available differential operators")
     
     .def("Operator",
-         [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
+         [](shared_ptr<GF> self, string name, VorB vb)
           {
-            if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+            if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+              throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+            shared_ptr<GridFunctionCoefficientFunction> coef;
+            switch(vb)
               {
-                auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                shared_ptr<GridFunctionCoefficientFunction> coef;
-                switch(vb)
-                  {
-                  case VOL:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
-                    break;
-                  case BND:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
-                    break;
-                  case BBND:
-                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
-                    break;
-                  case BBBND:
-                    throw Exception ("there are no Operators with BBBND");
-                  }
-                coef->SetDimensions(diffop->Dimensions());
-                coef->generated_from_operator = name;
-                return py::cast(shared_ptr<CoefficientFunction>(coef));
+              case VOL:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                break;
+              case BND:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+                break;
+              case BBND:
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+                break;
+              case BBBND:
+                throw Exception ("there are no Operators with BBBND");
               }
-            return py::none(); 
+            coef->SetDimensions(diffop->Dimensions());
+            coef->generated_from_operator = name;
+            return coef;
           }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
 
@@ -1891,9 +1934,11 @@ reallocate : bool
 
 )raw_string"))
 
-    .def_property_readonly("mat", [](BF & self)
+    .def_property_readonly("mat", [](shared_ptr<BF> self) -> shared_ptr<BaseMatrix>
                                          {
-                                           auto mat = self.GetMatrixPtr();
+                                           if (self->NonAssemble())
+                                             return make_shared<BilinearFormApplication> (self, glh);
+                                           auto mat = self->GetMatrixPtr();
                                            if (!mat)
                                              throw py::type_error("matrix not ready - assemble bilinearform first");
                                            return mat;
@@ -2066,6 +2111,8 @@ flags : dict
 
     .def_property_readonly("vec", [] (shared_ptr<LF> self)
                            { return self->GetVectorPtr();}, "vector of the assembled linear form")
+    .def_property_readonly("space", [](LF& self)
+                                    { return self.GetFESpace(); })
 
     .def("Add", [](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
           { 
@@ -2221,12 +2268,12 @@ integrator : ngsolve.fem.LFI
 #else
       .def(py::init([](const string & filename)
                            { 
-                             ngs_comm = MPI_COMM_WORLD;
+                             // ngs_comm = MPI_COMM_WORLD;
 
                              //cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
                              //     << MyMPI_GetNTasks(ngs_comm) << endl;
 
-                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
+                             // NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD)==0);
                              return LoadPDE (filename);
                            }), py::arg("filename"))
 #endif
@@ -2395,29 +2442,35 @@ integrator : ngsolve.fem.LFI
   m.def("Integrate", 
         [](spCF cf,
            shared_ptr<MeshAccess> ma, 
-           VorB vb, int order, py::object definedon,
+           VorB vb, int order,
+           // std::optional<Region> definedon,
+           Region * definedon,
 	   bool region_wise, bool element_wise)
         {
           static Timer t("Integrate CF"); RegionTimer reg(t);
           // static mutex addcomplex_mutex;
           BitArray mask;
-          {
-            py::gil_scoped_acquire aquire;
-            py::extract<Region> defon_region(definedon);
-            if (defon_region.check())
-              {
-                vb = VorB(defon_region());
-                mask = BitArray(defon_region().Mask());
-              }
-          }
+          if (definedon)
+            {
+              vb = VorB(*definedon);
+              mask = BitArray((*definedon).Mask());
+            }
           if(!mask.Size()){
             mask = BitArray(ma->GetNRegions(vb));
             mask.Set();
           }
+ 
           int dim = cf->Dimension();
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
-          
+
+          cf -> TraverseTree
+            ([&] (CoefficientFunction & stepcf)
+             {
+               if (dynamic_cast<ProxyFunction*>(&stepcf))
+                 throw Exception("Cannot integrate ProxFunction!");
+             });
+                   
           if (!cf->IsComplex())
             {
               Vector<> sum(dim);
@@ -2480,22 +2533,26 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
+                if (ma->GetCommunicator().Size() > 1)                
+                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
 #endif
-                result = py::list(py::cast(region_sum));
+                // result = py::list(py::cast(region_sum));  // crashes ?!?!
+                result = py::cast(region_sum);
               }
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = MyMPI_AllReduce(sum(0));
+                sum(0) = ma->GetCommunicator().AllReduce(sum(0), MPI_SUM);
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 Vector<> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
-                sum = gsum;
+                if (ma->GetCommunicator().Size() > 1) {
+                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+		  sum = gsum;
+		}
 #endif
                 result = py::cast(sum);
               }
@@ -2566,22 +2623,26 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 Vector<Complex> rs2(ma->GetNRegions(vb));
-                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
 #endif
-                result = py::list(py::cast(region_sum));
+                // result = py::list(py::cast(region_sum));
+                result = py::cast(region_sum);
               }
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = MyMPI_AllReduce(sum(0));
+                sum(0) = ma->GetCommunicator().AllReduce(sum(0), MPI_SUM);
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 Vector<Complex> gsum(dim);
-                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
-                sum = gsum;
+                if (ma->GetCommunicator().Size() > 1) {
+                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+		  sum = gsum;
+		}
 #endif
                 result = py::cast(sum);
               }
@@ -2590,7 +2651,7 @@ integrator : ngsolve.fem.LFI
         },
 	py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
 	py::arg("order")=5,
-	py::arg("definedon")=DummyArgument(),
+	py::arg("definedon") = nullptr, // =DummyArgument(),
         py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
         R"raw(
@@ -2631,14 +2692,15 @@ element_wise: bool = False
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate, VorB element_vb) 
+             bool simd_evaluate, VorB element_vb,
+             shared_ptr<GridFunction> deformation) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             
+
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
                lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
@@ -2653,6 +2715,7 @@ element_wise: bool = False
                }
 
              lfi->SetSimdEvaluate (simd_evaluate);
+             lfi->SetDeformation (deformation);
              // lfi -> SetDefinedOn (makeCArray<int> (definedon));
 
              if (defon_region.check())
@@ -2680,6 +2743,7 @@ element_wise: bool = False
            py::arg("definedonelements")=DummyArgument(),
            py::arg("simd_evaluate")=true,
            py::arg("element_vb")=VOL,
+           py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic linear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate right hand sides in a symbolic way.
 
@@ -2707,13 +2771,16 @@ bonus_intorder : int
   input additional integration order
 
 definedonelements : object
-  input definedonelements
+  input BitArray that marks all elements or facets (for skeleton-integrators) that the integrator is applied on
 
 simd_evaluate : bool
   input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
 element_vb : ngsolve.fem.VorB
   input element VorB
+
+deformation : ngsolve.comp.GridFunction
+  input GridFunction to transform/deform the linear form with
 
 )raw_string")
           );
@@ -2722,7 +2789,7 @@ element_vb : ngsolve.fem.VorB
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate, VorB element_vb,
+             bool simd_evaluate, VorB element_vb, bool geom_free,
              shared_ptr<GridFunction> deformation)
            {
              py::extract<Region> defon_region(definedon);
@@ -2732,6 +2799,7 @@ element_vb : ngsolve.fem.VorB
              if (element_boundary) element_vb = BND;
              // check for DG terms
              bool has_other = false;
+
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2747,7 +2815,7 @@ element_vb : ngsolve.fem.VorB
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_vb);
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);
-             
+             bfi->geom_free = geom_free;
              if (py::extract<py::list> (definedon).check())
                {
                  Array<int> defon = makeCArray<int> (definedon);
@@ -2784,6 +2852,7 @@ element_vb : ngsolve.fem.VorB
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
+        py::arg("geom_free")=false,        
         py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic bilinear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
@@ -2820,6 +2889,9 @@ simd_evaluate : bool
 element_vb : ngsolve.comp.VorB
   input element_vb. Used for skeleton formulation. VOL -> interior faces, BND -> boundary faces
 
+deformation : ngsolve.comp.GridFunction
+  input GridFunction to transform/deform the bilinear form with
+
 )raw_string")
         );
           
@@ -2833,6 +2905,7 @@ element_vb : ngsolve.comp.VorB
 
              // check for DG terms
              bool has_other = false;
+
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
@@ -2868,7 +2941,7 @@ element_vb : ngsolve.comp.VorB
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
            int bonus_intorder, py::object definedonelem, bool simd_evaluate,
-           VorB element_vb)
+           VorB element_vb, shared_ptr<GridFunction> deformation)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
@@ -2876,7 +2949,8 @@ element_vb : ngsolve.comp.VorB
                vb = VorB(defon_region());
 
              if (element_boundary) element_vb = BND;
-             
+
+
              auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
@@ -2887,6 +2961,7 @@ element_vb : ngsolve.comp.VorB
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              bfi->SetSimdEvaluate (simd_evaluate);
+             bfi->SetDeformation (deformation);
              return bfi;
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
@@ -2895,6 +2970,7 @@ element_vb : ngsolve.comp.VorB
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
+        py::arg("deformation")=shared_ptr<GridFunction>(),
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
@@ -2923,6 +2999,9 @@ simd_evaluate : bool
 
 element_vb : ngsolve.fem.VorB
   input eleemnt VorB
+
+deformation : ngsolve.comp.GridFunction
+  input GridFunction to transform/deform the bilinear form with
 
 )raw_string")
           );
@@ -3189,18 +3268,35 @@ element_vb : ngsolve.fem.VorB
          py::arg("subdivision") = 0,
          py::arg("only_element") = -1
          )
-     .def("Do", [](shared_ptr<BaseVTKOutput> self)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb)
           { 
-            self->Do(glh);
+            self->Do(glh,vb);
           },
+          py::arg("vb")=VOL,
           py::call_guard<py::gil_scoped_release>())
-     .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb, const BitArray * drawelems)
           { 
-            self->Do(glh, drawelems);
+            self->Do(glh, vb, drawelems);
           },
+          py::arg("vb")=VOL,
           py::arg("drawelems"),
           py::call_guard<py::gil_scoped_release>())
      ;
+
+   
+   m.def("MPI_Init", [&]()
+	 {
+	   const char * progname = "ngslib";
+	   typedef const char * pchar;
+	   pchar ptrs[2] = { progname, nullptr };
+	   pchar * pptr = &ptrs[0];
+          
+	   static MyMPI mympi(1, (char**)pptr);
+	   // netgen::ng_comm = MPI_COMM_WORLD;
+	   // ngcore::id = MyMPI_GetId(MPI_COMM_WORLD);
+	   // ngcore::ntasks = MyMPI_GetNTasks(MPI_COMM_WORLD);
+	   return NgMPI_Comm(MPI_COMM_WORLD);
+	 });
 
   /////////////////////////////////////////////////////////////////////////////////////
 }

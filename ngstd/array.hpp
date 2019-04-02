@@ -221,6 +221,8 @@ namespace ngstd
       INLINE T_Range(T_Range<T2> r2) : first(r2.First()), next(r2.Next()) { ; }
     INLINE T First() const { return first; }
     INLINE T Next() const { return next; }
+    INLINE T & First() { return first; }
+    INLINE T & Next() { return next; }
     INLINE auto Size() const { return next-first; }
     INLINE T operator[] (T i) const { return first+i; }
     INLINE bool Contains (T i) const { return ((i >= first) && (i < next)); }
@@ -675,6 +677,21 @@ namespace ngstd
     INLINE ~Array()
     {
       delete [] mem_to_delete;
+    }
+
+    // Only provide this function if T is archivable
+    template<typename T2=T>
+    auto DoArchive(Archive& archive) -> typename std::enable_if_t<is_archivable<T2>, void>
+    {
+      if(archive.Output())
+        archive << size;
+      else
+        {
+          size_t s;
+          archive & s;
+          SetSize(s);
+        }
+      archive.Do(data, size);
     }
 
     /// we tell the compiler that there is no need for deleting the array ..
@@ -1408,27 +1425,6 @@ namespace ngstd
   T * operator+ (HTArray<S,T> & ar, size_t i)
   {
     return ar.Ptr()+i;
-  }
-  
-
-  template <typename T> 
-  Archive & operator & (Archive & archive, Array<T> & a)
-  {
-    if (archive.Output())
-      archive << a.Size();
-    else
-      {
-        size_t size;
-        archive & size;
-        a.SetSize (size);
-      }
-
-    /*
-    for (auto & ai : a)
-      archive & ai;
-    */
-    archive.Do (&a[0], a.Size());
-    return archive;
   }
 }
 

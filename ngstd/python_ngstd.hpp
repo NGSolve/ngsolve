@@ -226,6 +226,18 @@ struct PyNameTraits<shared_ptr<T>> {
 };
 
 
+template<typename ... Args>
+inline py::object PyRange(Args ... i)
+{
+  constexpr size_t n = sizeof...(Args);
+  static_assert(n>=1 && n<=3, "Wrong number of arguments");
+  return py::module::import("__main__").attr("__builtins__").attr("range")(i...);
+}
+
+inline py::object PyRange(IntRange i)
+{
+  return PyRange(i.First(), i.Next());
+}
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename TCLASS = py::class_<T> >
@@ -344,6 +356,24 @@ Array<T> makeCArray(const py::object & obj)
   if (py::isinstance<py::tuple>(obj))
     return makeCArray<T>(obj.cast<py::tuple>());
   throw py::type_error("Cannot convert Python object to C Array");
+}
+
+template <typename T>
+Table<T> makeCTable (py::list obj)
+{
+  size_t n = py::len(obj);
+  Array<int> entrysize(n);
+                       
+  for (size_t i = 0; i < n; i++)
+    entrysize[i] = py::len(obj[i]);
+  
+  Table<T> tab(entrysize);
+  for (size_t i = 0; i < n; i++)
+    {
+      const py::object & obji = obj[i];
+      tab[i] = makeCArray<T> (obji);
+    }
+  return tab;
 }
 
 template<typename T>
@@ -477,8 +507,12 @@ class PyOutArchive : public Archive
 {
   py::list list;
 public:
-  PyOutArchive () : Archive(true) { ; }
+  PyOutArchive () : Archive(true) {  }
   py::list GetList() const { return list; }
+  const VersionInfo& GetVersion(const std::string& library)
+  { return GetLibraryVersions()[library]; }
+
+  using Archive::operator&;
   virtual Archive & operator & (double & d) { list.append(py::cast(d)); return *this; }
   virtual Archive & operator & (int & i) { list.append(py::cast(i)); return *this; }
   virtual Archive & operator & (short & i) { list.append(py::cast(i)); return *this; }
@@ -497,8 +531,12 @@ class PyInArchive : public Archive
     // decltype(list.begin())auto iter;
     size_t iter;
   public:
-    PyInArchive (py::list alist) : Archive(false), list(alist), iter(0) { ; }
+    PyInArchive (py::list alist) : Archive(false), list(alist), iter(0)
+    {
+    }
+    const VersionInfo& GetVersion(const std::string& library) { return GetLibraryVersions()[library]; }
 
+    using Archive::operator&;
     virtual Archive & operator & (double & d) { d = py::cast<double> (list[iter]); iter++; return *this; }
     virtual Archive & operator & (int & d) { d = py::cast<int> (list[iter]); iter++; return *this; }
     virtual Archive & operator & (short & d) { d = py::cast<short> (list[iter]); iter++; return *this; }

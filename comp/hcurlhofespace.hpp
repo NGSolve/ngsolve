@@ -70,6 +70,7 @@ namespace ngcomp
 
     bool fast_pfem;
     bool discontinuous;
+    bool highest_order_dc;
     bool type1;        // first family
     bool wb_loedge;    // keep linear on edge as wb-dof
     bool ctupgrade = true;  // set WIREBASKET_DOF on badly shaped elements

@@ -4,7 +4,6 @@
 /* Date:   June 2011                                                 */
 /*********************************************************************/
 
-#ifdef PARALLEL
  
 #include <la.hpp>
 #include "../linalg/mumpsinverse.hpp"
@@ -13,6 +12,8 @@
 
 namespace ngla
 {
+
+#ifdef PARALLEL
   
   template <typename TM> AutoVector MasterInverse<TM> :: CreateVector () const
   { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
@@ -22,13 +23,13 @@ namespace ngla
 				      shared_ptr<BitArray> subset, 
 				      shared_ptr<ParallelDofs> hpardofs)
     
-    : BaseMatrix(hpardofs), loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator()))
+    : BaseMatrix(hpardofs), loc2glob(hpardofs -> GetCommunicator().Size())
   {
     inv = nullptr;
     
-    MPI_Comm comm = paralleldofs->GetCommunicator();
-    int id = MyMPI_GetId (comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    auto & comm = paralleldofs->GetCommunicator();
+    int id = comm.Rank();
+    int ntasks = comm.Size();
 
     // consistent enumeration
     
@@ -140,18 +141,20 @@ namespace ngla
 	      for (int j = 0; j < rcols.Size(); j++)
 		if (!subset || subset->Test(rcols[j]))
 		  {
+                    /*
 		    *testout << "send (" << row << "," << rcols[j] 
 			     << "), global = (" <<  global_nums[row] << "," << global_nums[rcols[j]] << ")" << endl;
+                    */
 		    rows.Append (global_nums[row]);
 		    cols.Append (global_nums[rcols[j]]);
 		    vals.Append (rvals[j]);
 		  }
 	    }
 
-	MyMPI_Send (rows, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (cols, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (vals, 0, MPI_TAG_SOLVE, comm);
-	MyMPI_Send (global_nums, 0, MPI_TAG_SOLVE, comm);
+	comm.Send (rows, 0, MPI_TAG_SOLVE);
+	comm.Send (cols, 0, MPI_TAG_SOLVE);
+	comm.Send (vals, 0, MPI_TAG_SOLVE);
+	comm.Send (global_nums, 0, MPI_TAG_SOLVE);
 
 #ifdef USE_MUMPS
 	if (mat.GetInverseType() == MUMPS)
@@ -182,15 +185,17 @@ namespace ngla
 	    Array<TM> hvals;
 	    Array<int> hglobid;
 
-	    MyMPI_Recv (hrows, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hcols, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hvals, src, MPI_TAG_SOLVE, comm);
-	    MyMPI_Recv (hglobid, src, MPI_TAG_SOLVE, comm);
+	    comm.Recv (hrows, src, MPI_TAG_SOLVE);
+	    comm.Recv (hcols, src, MPI_TAG_SOLVE);
+	    comm.Recv (hvals, src, MPI_TAG_SOLVE);
+	    comm.Recv (hglobid, src, MPI_TAG_SOLVE);
 
+            /*
 	    *testout << "got from P" << src << ":" << endl
 		     << "rows " << endl << hrows << endl
 		     << "cols " << endl << hcols << endl;
-
+            */
+            
 	    for (int i = 0; i < hglobid.Size(); i ++)
 	      {
 		if (hglobid[i] == -1) continue;
@@ -269,9 +274,9 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
     
-    MPI_Comm comm = paralleldofs->GetCommunicator();
-    int id = MyMPI_GetId(comm);
-    int ntasks = MyMPI_GetNTasks(comm);
+    NgsMPI_Comm comm = paralleldofs->GetCommunicator();
+    int id = comm.Rank();
+    int ntasks = comm.Size();
 
     bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
     // x.Distribute();
@@ -318,7 +323,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 
 	    Array<TV> lx(selecti.Size());
-	    MyMPI_Recv (lx, src, MPI_TAG_SOLVE, comm);
+	    comm.Recv (lx, src, MPI_TAG_SOLVE);
 
 	    if(is_x_cum) {
 	      for (int i = 0; i < selecti.Size(); i++)
@@ -347,6 +352,33 @@ namespace ngla
     // dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
 
   }
+
+
+
+
+  template class MasterInverse<double>;
+  template class MasterInverse<Complex>;
+
+#if MAX_SYS_DIM >= 1
+  template class MasterInverse<Mat<1,1,double> >;
+  template class MasterInverse<Mat<1,1,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 2
+  template class MasterInverse<Mat<2,2,double> >;
+  template class MasterInverse<Mat<2,2,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 3
+  template class MasterInverse<Mat<3,3,double> >;
+  template class MasterInverse<Mat<3,3,Complex> >;
+#endif
+
+
+
+
+
+  
+#endif
+
   
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
 				    shared_ptr<ParallelDofs> arpardofs,
@@ -462,7 +494,7 @@ namespace ngla
   shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrixTM (shared_ptr<BitArray> subset) const
   {
     const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
-    if (!dmat) return NULL;
+    if (!dmat) return nullptr;
 
 #ifdef USE_MUMPS
     bool symmetric = dynamic_cast<const SparseMatrixSymmetric<TM>*> (mat.get()) != NULL;
@@ -470,7 +502,11 @@ namespace ngla
       return make_shared<ParallelMumpsInverse<TM>> (*dmat, subset, nullptr, paralleldofs, symmetric);
     else 
 #endif
+
+#ifdef PARALLEL
       return make_shared<MasterInverse<TM>> (*dmat, subset, paralleldofs);
+#endif
+    throw Exception ("ParallelMatrix: don't know how to invert");
   }
 
 
@@ -497,26 +533,7 @@ namespace ngla
 
 
 
-
-
-
-
-  template class MasterInverse<double>;
-  template class MasterInverse<Complex>;
-
-#if MAX_SYS_DIM >= 1
-  template class MasterInverse<Mat<1,1,double> >;
-  template class MasterInverse<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class MasterInverse<Mat<2,2,double> >;
-  template class MasterInverse<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class MasterInverse<Mat<3,3,double> >;
-  template class MasterInverse<Mat<3,3,Complex> >;
-#endif
-
+#ifdef PARALLEL
 
 
 
@@ -565,7 +582,7 @@ namespace ngla
       }
       }
     */
-    auto me = MyMPI_GetId(paralleldofs->GetCommunicator());
+    auto me = paralleldofs->GetCommunicator().Rank();
     auto fx = x.FVDouble();
     auto fy = y.FVDouble();
     for (auto p : paralleldofs->GetDistantProcs())
@@ -582,7 +599,7 @@ namespace ngla
     size_t count = 0;
     for (auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+      if (p<paralleldofs->GetCommunicator().Rank()) {
 	for (auto k:Range(exdofs.Size())) {
 	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
 	}
@@ -612,7 +629,7 @@ namespace ngla
 						 jump_paralleldofs);
   }
   
+#endif
   
 }
 
-#endif

@@ -30,7 +30,7 @@ namespace ngcomp
   {
   public:
     virtual ~BaseVTKOutput() { ; }
-    virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0) = 0;
+    virtual void Do (LocalHeap & lh, VorB vb = VOL, const BitArray * drawelems = 0) = 0;
   };
   
   template <int D> 
@@ -72,10 +72,10 @@ namespace ngcomp
     // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
     void PrintPoints();
     void PrintCells();
-    void PrintCellTypes();
+    void PrintCellTypes(VorB vb, const BitArray * drawelems=nullptr);
     void PrintFieldData();    
 
-    virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0);
+    virtual void Do (LocalHeap & lh, VorB vb = VOL, const BitArray * drawelems = 0);
   };
 
 

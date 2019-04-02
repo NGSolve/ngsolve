@@ -3,6 +3,8 @@
 #include <parallelngs.hpp>
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
+// include netgen-header to get access to PyMPI
+#include <myadt.hpp>
 
 
 template<typename T>
@@ -72,6 +74,25 @@ void ExportSparseMatrix(py::module m)
                   auto cvalues = makeCArray<double>(values);
                   return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
                 }, py::arg("indi"), py::arg("indj"), py::arg("values"), py::arg("h"), py::arg("w"))
+
+    .def_static("CreateFromElmat",
+                [] (py::list coldnums, py::list rowdnums, py::list elmats, size_t h, size_t w)
+                {
+                  auto cdnums1 = makeCTable<int>(coldnums);
+                  auto rdnums1 = makeCTable<int>(rowdnums);
+                  auto sparsemat = make_shared<SparseMatrix<double>>(h, w, cdnums1, rdnums1, false);
+                  sparsemat->SetZero();
+                  auto cdnums = makeCTable<int>(coldnums);
+                  auto rdnums = makeCTable<int>(rowdnums);
+                  for (int i = 0; i < py::len(elmats); i++)
+                    {
+                      const Matrix<double> & m = py::cast<const Matrix<double>&> (elmats[i]);
+                      sparsemat -> AddElementMatrix(cdnums[i], rdnums[i], m, false);
+                    }
+                  return sparsemat;
+                  // auto cvalues = makeCArray<double>(values);
+                  // return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
+                }, py::arg("col_ind"), py::arg("row_ind"), py::arg("matrices"), py::arg("h"), py::arg("w"))
     
     .def("CreateTranspose", [] (const SparseMatrix<double> & sp)
          { return TransposeMatrix (sp); }, "Return transposed matrix")
@@ -99,7 +120,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #ifdef PARALLEL
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
         return self.SubSet(take_dofs); }, py::arg("dofs"))
-    .def(py::init([](py::object procs, PyMPI_Comm comm) {
+    .def(py::init([](py::object procs, NgMPI_Comm comm) {
 	  size_t n = py::len(procs);
 	  TableCreator<int> ct(n);
 	  while (!ct.Done()) {
@@ -111,8 +132,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	    }
 	    ct++;
 	  }
-	  return new ParallelDofs(comm.comm, ct.MoveTable());
-	}), "dist_procs"_a, "comm"_a)
+	  return new ParallelDofs(comm, ct.MoveTable());
+	}), py::arg("dist_procs"), py::arg("comm"))
 #endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
@@ -195,6 +216,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
+    .def_property_readonly("is_complex", &BaseVector::IsComplex)
+
     .def("CreateVector", [] (BaseVector & self)
          { return shared_ptr<BaseVector>(self.CreateVector()); },
          "creates a new vector of same type, contents is undefined")
@@ -274,6 +297,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");
           return shared_ptr<BaseVector>(self.Range(start, start+n));
       }, py::arg("inds"), "Return values at given position" )
+    .def("__getitem__", [](BaseVector& self, IntRange range)
+         {
+           return shared_ptr<BaseVector>(self.Range(range));
+         })
     .def("__setitem__", [](BaseVector & self,  int ind, double d )
       {
           self.Range(ind,ind+1) = d;
@@ -302,14 +329,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
       }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
-    .def("__setitem__", [](BaseVector & self, py::slice inds, shared_ptr<BaseVector> v )
+    .def("__setitem__", [](BaseVector & self,  IntRange range, double d )
       {
-        size_t start, step, n;
-        InitSlice( inds, self.Size(), start, step, n );
-        if (step != 1)
-          throw Exception ("slices with non-unit distance not allowed");        
-        self.Range(start, start+n) = *v;
-      }, py::arg("inds"), py::arg("vec") )
+        self.Range(range) = d;
+      }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
+    .def("__setitem__", [](BaseVector & self,  IntRange range, Complex z )
+      {
+        self.Range(range) = z;
+      }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
+    .def("__setitem__", [](BaseVector & self, IntRange range, shared_ptr<BaseVector> v )
+      {
+        self.Range(range) = *v;
+      }, py::arg("range"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<double> & v )
       {
           if( self.IsComplex() )
@@ -355,6 +386,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                   else
                                     return py::cast(self.FVComplex());
                                 })
+    .def("Reshape", [] (BaseVector & self, size_t w)
+         {
+           size_t h = self.Size()/w;
+           return FlatMatrix<> (h, w, &self.FVDouble()(0));
+         }, py::arg("width"))
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
@@ -362,8 +398,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
   m.def ("InnerProduct",
-           [] (py::object x, py::object y) -> py::object
-         { return py::handle(x.attr("InnerProduct")) (y); }, py::arg("x"), py::arg("y"), "Computes InnerProduct of given objects");
+         [] (py::object x, py::object y, py::kwargs kw) -> py::object
+         { return py::handle(x.attr("InnerProduct")) (y, **kw); }, py::arg("x"), py::arg("y"), "Computes InnerProduct of given objects");
   ;
   
 
@@ -619,6 +655,8 @@ inverse : string
          { return make_shared<VScaleMatrix<double>> (ma, a); }, py::arg("value"))
     .def("__rmul__", [](shared_ptr<BM> ma, Complex a)->shared_ptr<BaseMatrix>
          { return make_shared<VScaleMatrix<Complex>> (ma, a); }, py::arg("value"))
+    .def("__neg__", [](shared_ptr<BM> ma)->shared_ptr<BaseMatrix>
+         { return make_shared<VScaleMatrix<double>> (ma, -1); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
 
@@ -626,31 +664,33 @@ inverse : string
     (m, "BaseSparseMatrix", "sparse matrix of any type")
     
     .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba) 
-         { return m.CreateJacobiPrecond(ba); },
+         { return m.CreateJacobiPrecond(ba); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("freedofs") = shared_ptr<BitArray>())
     
     .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks)
          {
-           size_t size = py::len(blocks);
+           shared_ptr<Table<int>> blocktable;
+           {
+             py::gil_scoped_acquire aq;
+             size_t size = py::len(blocks);
            
-           Array<int> cnt(size);
-           size_t i = 0;
-           for (auto block : blocks)
-             cnt[i++] = py::len(block);
+             Array<int> cnt(size);
+             size_t i = 0;
+             for (auto block : blocks)
+               cnt[i++] = py::len(block);
            
-           i = 0;
-           Table<int> blocktable(cnt);
-           for (auto block : blocks)
-             {
-               auto row = blocktable[i++];
-               size_t j = 0;
-               for (auto val : block)
-                 row[j++] = val.cast<int>();
-             }
-
-           auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
-           return pre;
-         }, py::arg("blocks"))
+             i = 0;
+             blocktable = make_shared<Table<int>>(cnt);
+             for (auto block : blocks)
+               {
+                 auto row = (*blocktable)[i++];
+                 size_t j = 0;
+                 for (auto val : block)
+                   row[j++] = val.cast<int>();
+               }
+           }
+           return m.CreateBlockJacobiPrecond (blocktable);
+         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"))
      ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
@@ -658,7 +698,42 @@ inverse : string
   py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
     (m, "S_BaseMatrixC", "base sparse matrix");
 
+  py::class_<ConstantElementByElementMatrix, shared_ptr<ConstantElementByElementMatrix>, BaseMatrix>
+    (m, "ConstEBEMatrix")
+    .def(py::init<> ([] (size_t h, size_t w, Matrix<> mat,
+                         py::list pycdofs, py::list pyrdofs)
+                     {
+                       /*
+                       size_t n = py::len(pyrdofs);
+                       Array<int> entrysize(n);
+                       for (size_t i = 0; i < n; i++)
+                         entrysize[i] = py::len(pyrdofs[i]);
+                       Table<int> rdofs(entrysize);
+                       for (size_t i = 0; i < n; i++)
+                         {
+                           const py::object & obj = pyrdofs[i];
+                           rdofs[i] = makeCArray<int> (obj);
+                         }
 
+                       for (size_t i = 0; i < n; i++)
+                         entrysize[i] = py::len(pycdofs[i]);
+                       Table<int> cdofs(entrysize);
+                       for (size_t i = 0; i < n; i++)
+                         {
+                           const py::object & obj = pycdofs[i];
+                           cdofs[i] = makeCArray<int> (obj);
+                         }
+                       */
+                       auto rdofs = makeCTable<int> (pyrdofs);
+                       auto cdofs = makeCTable<int> (pycdofs);
+                       
+                       return make_shared<ConstantElementByElementMatrix> (h, w, mat,
+                                                                           std::move(cdofs), std::move(rdofs));
+                     }),
+         py::arg("h"), py::arg("w"), py::arg("matrix"),
+         py::arg("col_ind"), py::arg("row_ind"))
+    ;
+  
   py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
     .def(py::init<> ([] (vector<vector<shared_ptr<BaseMatrix>>> mats)
                      {
@@ -721,11 +796,11 @@ inverse : string
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
      "block Jacobi and block Gauss-Seidel smoothing")
-    .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth,
+    .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b")
     .def("SmoothBack", &BaseBlockJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"), py::arg("steps")=1,
+         py::arg("x"), py::arg("b"), py::arg("steps")=1, py::call_guard<py::gil_scoped_release>(),
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
@@ -733,11 +808,11 @@ inverse : string
     (m, "Smoother",
      "Jacobi and Gauss-Seidel smoothing")
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
-         { jac.GSSmooth (x, b); },
+         { jac.GSSmooth (x, b); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"),
          "performs one step Gauss-Seidel iteration for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"),
+         py::arg("x"), py::arg("b"), py::call_guard<py::gil_scoped_release>(),
          "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
@@ -746,7 +821,8 @@ inverse : string
     .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
          {
            self.Smooth (u, y /* this is not needed */, y);
-         }, "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
+         }, py::call_guard<py::gil_scoped_release>(),
+         "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
     ;
 
   py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d");
@@ -758,13 +834,30 @@ inverse : string
          "Linear operator projecting to true/false bits of BitArray mask, depending on argument range")
     .def("Project", &Projector::Project, "project vector inline")
     ;
-
-    py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
-      .def(py::init<>())
-      .def(py::init<size_t, bool>(),
-           py::arg("size"), py::arg("complex")=false)
-      ;
-
+  
+  py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
+    .def(py::init<>())
+    .def(py::init<size_t, bool>(),
+         py::arg("size"), py::arg("complex")=false)
+    ;
+  
+  py::class_<Embedding, shared_ptr<Embedding>, BaseMatrix> (m, "Embedding")
+    .def(py::init<size_t, IntRange>(),
+         py::arg("height"), py::arg("range"),
+         "Linear operator embedding a shorter vector into a longer vector")
+    .def_property_readonly("T", [](shared_ptr<Embedding> m)->shared_ptr<EmbeddingTranspose>
+                           { return make_shared<EmbeddingTranspose> (m->Height(), m->GetRange()); }, "Return transpose of matrix")
+    .def("__matmul__", [](shared_ptr<Embedding> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         { return make_shared<EmbeddedMatrix> (ma->Height(), ma->GetRange(), mb); }, py::arg("mat"))
+    ;
+  
+  py::class_<EmbeddingTranspose, shared_ptr<EmbeddingTranspose>, BaseMatrix> (m, "EmbeddingTranspose")
+    .def("__rmatmul__", [](shared_ptr<EmbeddingTranspose> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         {
+           return make_shared<EmbeddedTransposeMatrix> (ma->Width(), ma->GetRange(), mb);
+         }, py::arg("mat"))
+    ;
+    
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
     ;
@@ -850,15 +943,16 @@ maxsteps : int
 )raw_string"))
     ;
 
-  m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre) {
+  m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre, double tol) {
       EigenSystem eigen(mat, pre);
+      eigen.SetPrecision(tol);
       eigen.Calc();
       Vector<double> ev(eigen.NumEigenValues());
       for (size_t i = 0; i < ev.Size(); i++)
         ev[i] = eigen.EigenValue(i+1);
       return ev;
     },
-    py::arg("mat"), py::arg("pre"),
+    py::arg("mat"), py::arg("pre"), py::arg("tol")=1e-10,
     "Calculate eigenvalues of pre * mat, where pre and mat are positive definite matrices.\n"
     "The typical usecase of this function is to calculate the condition number of a preconditioner."
     "It uses the Lanczos algorithm and bisection for the tridiagonal matrix"
@@ -908,29 +1002,32 @@ maxsteps : int
     ;
   
   m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
-                            py::list vecs, py::object bpshift)
+                            py::list vecs, Complex shift)
         {
-          if (py::len(vecs) > mata.Height())
-            throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
-                             + " is greater than matrix dimension "
-                             + ToString(mata.Height()));
+          int nev;
+          {
+            py::gil_scoped_acquire acq;
+            if (py::len(vecs) > mata.Height())
+              throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
+                               + " is greater than matrix dimension "
+                               + ToString(mata.Height()));
+            nev = py::len(vecs);
+          }
           if (mata.IsComplex())
             {
               Arnoldi<Complex> arnoldi (mata, matm, freedofs);
-              Complex shift = 0.0;
-              shift = py::cast<Complex>(bpshift);
-              // cout << "shift = " << shift << endl;
               arnoldi.SetShift (shift);
               
-              int nev = py::len(vecs);
-              // cout << "num vecs: " << nev << endl;
               Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
               Array<Complex> lam(nev);
               arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-              
-              for (int i = 0; i < nev; i++)
-                vecs[i].cast<BaseVector&>() = *evecs[i];
+
+              {
+                py::gil_scoped_acquire acq;
+                for (int i = 0; i < nev; i++)
+                  vecs[i].cast<BaseVector&>() = *evecs[i];
+              }
               
               Vector<Complex> vlam(nev);
               for (int i = 0; i < nev; i++)
@@ -940,19 +1037,20 @@ maxsteps : int
           else
             {
               Arnoldi<double> arnoldi (mata, matm, freedofs);
-              double shift = py::cast<double>(bpshift);
-              // cout << "shift = " << shift << endl;
-              arnoldi.SetShift (shift);
+              if (shift.imag())
+                throw Exception("Only real shifts allowed for real arnoldi");
+              arnoldi.SetShift (shift.real());
               
-              int nev = py::len(vecs);
-              // cout << "num vecs: " << nev << endl;
               Array<shared_ptr<BaseVector>> evecs(nev);
               
               Array<Complex> lam(nev);
               arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-              
-              for (int i = 0; i < nev; i++)
-                vecs[i].cast<BaseVector&>() = *evecs[i];
+
+              {
+                py::gil_scoped_acquire acq;
+                for (int i = 0; i < nev; i++)
+                  vecs[i].cast<BaseVector&>() = *evecs[i];
+              }
               
               Vector<Complex> vlam(nev);
               for (int i = 0; i < nev; i++)
@@ -960,7 +1058,9 @@ maxsteps : int
               return vlam;
             }
         },
-          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
+          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(),
+        py::call_guard<py::gil_scoped_release>(),
+        docu_string(R"raw_string(
 Shift-and-invert Arnoldi eigenvalue solver
 
 Solves the generalized linear EVP A*u = M*lam*u using an Arnoldi iteration for the 

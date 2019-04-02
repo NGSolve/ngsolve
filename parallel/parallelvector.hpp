@@ -9,7 +9,7 @@
 
 
 
-#ifdef PARALLEL
+// #ifdef PARALLEL
 
 namespace ngla
 {
@@ -253,5 +253,5 @@ namespace ngla
   };
 }
 
-#endif
+// #endif
 #endif
