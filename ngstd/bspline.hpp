@@ -18,11 +18,17 @@ namespace ngstd
     Array<double> c;
     
   public:
+    BSpline() = default;
     BSpline (int aorder, 
              Array<double> at,
              Array<double> ac);
     BSpline (const BSpline &) = default;
     BSpline & operator= (const BSpline &) = default;
+
+    void DoArchive(Archive& ar)
+    {
+      ar & order & t & c;
+    }
 
     BSpline Differentiate () const;
     BSpline Integrate () const;

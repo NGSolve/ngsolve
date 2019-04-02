@@ -10,11 +10,11 @@ void ExportNgmpi(py::module &m) {
       }, py::arg("cmd"));
 
     m.def("Rank", [] () {
-        return  MyMPI_GetId();
+        return  MyMPI_GetId(ngs_comm);
     });
 
     m.def("Barrier", [] () {
-        MyMPI_Barrier();
+        MyMPI_Barrier(ngs_comm);
     }); 
 }
 

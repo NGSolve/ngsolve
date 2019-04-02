@@ -58,10 +58,10 @@ namespace ngstd
 
 
 #ifdef PARALLEL
-namespace ngstd
+namespace ngcore
 {
   template <>
-  class MPI_Traits<ngbla::Complex>
+  class MPI_typetrait<ngbla::Complex>
   {
   public:
     /// gets the MPI datatype

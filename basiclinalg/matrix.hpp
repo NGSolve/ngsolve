@@ -543,6 +543,7 @@ namespace ngbla
     /// fill matrix with scalar
     Matrix & operator= (const Matrix & m2) 
     {
+      SetSize (m2.Height(), m2.Width());
       FlatMatrix<T,ORD>::operator= (m2);
       return *this;
     }
@@ -667,6 +668,10 @@ namespace ngbla
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
     }
 
+    void DoArchive(Archive& ar)
+    {
+      ar.Do(&data[0], H*W);
+    }
   };
 
   template <int H, int W, typename T>
@@ -1607,6 +1612,9 @@ namespace ngbla
 
   template <int H, typename T, int DIST>
   SliceMatrix<T,ColMajor> make_SliceMatrix (FlatMatrixFixHeight<H,T,DIST> mat) { return mat; }
+
+  template <int H, int W, typename T>
+  SliceMatrix<T,RowMajor> make_SliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
   
   template <typename T, ORDERING ORDER>
   SliceMatrix<T,ORDER> make_SliceMatrix (SliceMatrix<T,ORDER> mat) { return mat; }
@@ -2149,6 +2157,16 @@ namespace ngbla
   }
   
   template <int H, int W, typename T>
+  INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & mat)
+  {
+    Mat<H,W,T> res;
+    Iterate<H*W> ([&] (auto i) {
+        res(i.value) = -mat(i.value);
+      });
+    return res;
+  }
+
+  template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
   {
     Mat<H,W,T> res;
@@ -2201,6 +2219,17 @@ namespace ngbla
     return res;
   }
 
+  template <int H, int W, typename T1, typename T2>
+  INLINE auto operator* (const Mat<H,W,T1> & mat, FlatVector<T2> vec) 
+    -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
+  {
+    typedef decltype(RemoveConst(mat(0,0)*vec(0))) TRES;
+    Vec<H, TRES> res = TRES(0);
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        res(i) += mat(i,j) * vec(j);
+    return res;
+  }
 
 
   //
@@ -2289,10 +2318,10 @@ namespace ngstd
 
 
 #ifdef PARALLEL
-namespace ngstd
+namespace ngcore
 {
   template<int N, int M, typename T>
-  class MPI_Traits<ngbla::Mat<N, M, T> >
+  class MPI_typetrait<ngbla::Mat<N, M, T> >
   {
   public:
     /// gets the MPI datatype
@@ -2302,7 +2331,7 @@ namespace ngstd
       if (!MPI_T)
 	{
 	  int size = N * M;
-	  MPI_Type_contiguous ( size, MPI_Traits<T>::MPIType(), &MPI_T);
+	  MPI_Type_contiguous ( size, MPI_typetrait<T>::MPIType(), &MPI_T);
 	  MPI_Type_commit ( &MPI_T );
 	}
       return MPI_T;

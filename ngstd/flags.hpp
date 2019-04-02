@@ -47,9 +47,12 @@ namespace ngstd
     /// delete mem
     ~Flags ();
 
-    Flags & operator= (const Flags & f2) = default;
+    Flags & operator= (const Flags & f2) { *this = f2; return *this; };
     Flags & operator= (Flags && f2) = default;
 
+    void DoArchive(Archive& ar);
+
+    void Update(const Flags& other);
   
     /// Deletes all flags
     void DeleteFlags ();
@@ -166,11 +169,7 @@ namespace ngstd
     { name = strlistflags.GetName(i); return strlistflags[i]; }
     const Flags & GetFlagsFlag (int i, string & name) const
     { name = flaglistflags.GetName(i); return flaglistflags[i]; }
-
-    friend Archive & operator & (Archive & archive, Flags & flags);
   };
-
-
 
   /// Print flags
   inline ostream & operator<< (ostream & s, const Flags & flags)
@@ -178,8 +177,6 @@ namespace ngstd
     flags.PrintFlags (s);
     return s;
   }
-
-  extern Archive & operator & (Archive & archive, Flags & flags);
 }
 
   

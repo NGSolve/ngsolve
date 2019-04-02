@@ -137,9 +137,10 @@ namespace ngstd
   template <>
   inline auto GetGlobalNodeId<NT_FACE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_FACE>::TKEY 
   {
-    Array<int> edges (3);
+    // Array<int> edges (3);
     Array<int> verts;
-    ma.GetFaceEdges(nr, edges);
+    // ma.GetFaceEdges(nr, edges);
+    auto edges = ma.GetFaceEdges(nr);
     for(int k=0;k<3;k++)
       {
 	// int p1, p2;
@@ -165,8 +166,9 @@ namespace ngstd
     auto faces = ma.GetElFacets(ElementId(VOL,nr));
     for(int k=0;k<4;k++)
       {
-	Array<int> edges(3);
-	ma.GetFaceEdges(faces[k], edges);
+	// Array<int> edges(3);
+	// ma.GetFaceEdges(faces[k], edges);
+        auto edges = ma.GetFaceEdges(faces[k]);
 	//cout << "edges: " << edges << endl;
 	for(int j=0;j<3;j++)
 	  {
@@ -297,6 +299,8 @@ namespace ngstd
   template<typename DT, NODE_TYPE NT>
   void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key_trait<NT>::TKEY *array_dnrs, int n, int p_in, int p_out)
   {
+    NgsMPI_Comm comm(MPI_COMM_WORLD);
+
     typedef typename key_trait<NT>::TKEY TKEY;
 
     int base_array_size = n;
@@ -331,14 +335,14 @@ namespace ngstd
     if(n_in)
       {
 	//get 1st halve
-	MyMPI_Recv (in_buf[r1], p_in, 700001, MPI_COMM_WORLD);
-	MyMPI_Recv (in_dnrs[r1], p_in, 700001, MPI_COMM_WORLD);
+	comm.Recv (in_buf[r1], p_in, 700001);
+	comm.Recv (in_dnrs[r1], p_in, 700001);
 
 	if(n_in>pkg_size)
 	  {
 	    //get 2nd halve
-	    MyMPI_Recv (in_buf[r2], p_in, 700001, MPI_COMM_WORLD);
-	    MyMPI_Recv (in_dnrs[r2], p_in, 700001, MPI_COMM_WORLD);
+	    comm.Recv (in_buf[r2], p_in, 700001);
+	    comm.Recv (in_dnrs[r2], p_in, 700001);
 	  }
       }
   
@@ -355,14 +359,14 @@ namespace ngstd
 	iib = index_in%in_buf_size;
 	if(iib == pkg_size && index_in+pkg_size<n_in && !have1[0]) //is at first of 2nd halve - replace first halve
 	  {
-	    MyMPI_Recv (in_buf[r1], p_in, 700001, MPI_COMM_WORLD);
-	    MyMPI_Recv (in_dnrs[r1], p_in, 700001, MPI_COMM_WORLD);
+	    comm.Recv (in_buf[r1], p_in, 700001);
+	    comm.Recv (in_dnrs[r1], p_in, 700001);
 	    have1[0] = true;
 	  }
 	if(iib == 0 && index_in!=0 && index_in+pkg_size<n_in && !have1[1] ) //is at last of 2nd halve - set to 0 and replace 2nd halve
 	  {
-	    MyMPI_Recv (in_buf[r2], p_in, 700001, MPI_COMM_WORLD);
-	    MyMPI_Recv (in_dnrs[r2], p_in, 700001, MPI_COMM_WORLD);
+	    comm.Recv (in_buf[r2], p_in, 700001);
+	    comm.Recv (in_dnrs[r2], p_in, 700001);
 	    have1[1] = true;
 	  }
 	if(in_dnrs[iib] < array_dnrs[index_own])
@@ -383,8 +387,8 @@ namespace ngstd
 	if(index_out == pkg_size)
 	  {
 	    index_out = 0;
-	    MyMPI_Send (out_buf, p_out, 700001, MPI_COMM_WORLD);
-	    MyMPI_Send (out_dnrs, p_out, 700001, MPI_COMM_WORLD);
+	    comm.Send (out_buf, p_out, 700001);
+	    comm.Send (out_dnrs, p_out, 700001);
 	    packages_sent++;
 	  }
       }
@@ -393,14 +397,14 @@ namespace ngstd
 	iib = index_in%in_buf_size;
 	if(iib == pkg_size && index_in+pkg_size<n_in && !have1[0]) //is at first of 2nd halve - replace first halve
 	  {
-	    MyMPI_Recv (in_buf[r1], p_in, 700001, MPI_COMM_WORLD);
-	    MyMPI_Recv (in_dnrs[r1], p_in, 700001, MPI_COMM_WORLD);
+	    comm.Recv (in_buf[r1], p_in, 700001);
+	    comm.Recv (in_dnrs[r1], p_in, 700001);
 	    have1[0] = true;
 	  }
 	if(iib == 0 && index_in!= 0 && index_in+pkg_size<n_in && !have1[1]) //is at last of 2nd halve - set to 0 and replace 2nd halve
 	  {
-	    MyMPI_Recv (in_buf[r2], p_in, 700001, MPI_COMM_WORLD);
-	    MyMPI_Recv (in_dnrs[r2], p_in, 700001, MPI_COMM_WORLD);
+	    comm.Recv (in_buf[r2], p_in, 700001);
+	    comm.Recv (in_dnrs[r2], p_in, 700001);
 	    have1[1] = true;
 	  }
 	out_buf[index_out] = in_buf[iib];
@@ -413,8 +417,8 @@ namespace ngstd
 	if(index_out == pkg_size)
 	  {
 	    index_out = 0;
-	    MyMPI_Send (out_buf, p_out, 700001, MPI_COMM_WORLD);
-	    MyMPI_Send (out_dnrs, p_out, 700001, MPI_COMM_WORLD);
+	    comm.Send (out_buf, p_out, 700001);
+	    comm.Send (out_dnrs, p_out, 700001);
 	    packages_sent++;
 	  }
       }
@@ -425,15 +429,15 @@ namespace ngstd
 	if(index_out == pkg_size)
 	  {
 	    index_out = 0;
-	    MyMPI_Send (out_buf, p_out, 700001, MPI_COMM_WORLD);
-	    MyMPI_Send (out_dnrs, p_out, 700001, MPI_COMM_WORLD);
+	    comm.Send (out_buf, p_out, 700001);
+	    comm.Send (out_dnrs, p_out, 700001);
 	    packages_sent++;
 	  }
       }
     if(has_extra)
       {
-	MyMPI_Send (out_buf, p_out, 700001, MPI_COMM_WORLD);
-	MyMPI_Send (out_dnrs, p_out, 700001, MPI_COMM_WORLD);
+	comm.Send (out_buf, p_out, 700001);
+	comm.Send (out_dnrs, p_out, 700001);
 	packages_sent++;
       }
   }
@@ -782,10 +786,14 @@ namespace ngstd
     typedef typename key_trait<NT>::TKEY tkey;
     // MPI_Datatype mpi_type_key = MyGetMPIType<tkey>();     
 
+    NgsMPI_Comm comm(MPI_COMM_WORLD);
+    int rank = comm.Rank();
+    int np = comm.Size();
+    /*
     int rank, np;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &np);
- 
+    */
     bool even = 1-rank%2;
     //first step
  
@@ -813,8 +821,8 @@ namespace ngstd
 	    // MPI_Recv(&end[0]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    // MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-	    MyMPI_Recv(end, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD);
-	    MyMPI_Recv(end_keys, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD);
+	    comm.Recv(end, MPI_ANY_SOURCE, 700001);
+	    comm.Recv(end_keys, MPI_ANY_SOURCE, 700001);
 
 	    //cout << "0 received pkg " << k << "/" << n_pkg << endl;
 	    for(int j = 0; j < pkg_size; j++)
@@ -822,8 +830,8 @@ namespace ngstd
 	  }
 	// MPI_Recv(&end[0]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	// MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	MyMPI_Recv(end, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD);
-	MyMPI_Recv(end_keys, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD);
+	comm.Recv(end, MPI_ANY_SOURCE, 700001);
+	comm.Recv(end_keys, MPI_ANY_SOURCE, 700001);
 
 	for(int j=0;(n_pkg-1)*pkg_size+j < n;j++)
 	  f(end_keys[j], end[j]);      
@@ -906,7 +914,8 @@ namespace ngstd
     Array<TKEY> global_keys;
       
     // gather local data where I am master
-    int myid = MyMPI_GetId();
+    auto comm = ma.GetCommunicator();
+    int myid = comm.Rank();
     for (int i = 0; i < ma.GetNNodes(NT); i++)
       {
 	bool ismaster = true;

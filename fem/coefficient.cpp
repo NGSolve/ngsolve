@@ -187,7 +187,9 @@ namespace ngfem
   ConstantCoefficientFunction ::   
   ConstantCoefficientFunction (double aval) 
     : BASE(1, false), val(aval) 
-  { ; }
+  {
+    elementwise_constant = true;
+  }
 
   ConstantCoefficientFunction ::
   ~ConstantCoefficientFunction ()
@@ -198,6 +200,13 @@ namespace ngfem
     ost << "ConstantCF, val = " << val << endl;
   }
 
+  /*
+  virtual string ConsantCoefficientFunction :: GetDescription() const 
+  {
+    return "Constant "+ToString(val);
+  }
+  */
+  
   void ConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
                                                 BareSliceMatrix<double> values) const
   {
@@ -935,19 +944,32 @@ class ScaleCoefficientFunction : public T_CoefficientFunction<ScaleCoefficientFu
   shared_ptr<CoefficientFunction> c1;
   typedef T_CoefficientFunction<ScaleCoefficientFunction> BASE;
 public:
+  ScaleCoefficientFunction() = default;
   ScaleCoefficientFunction (double ascal, 
                             shared_ptr<CoefficientFunction> ac1)
     : BASE(ac1->Dimension(), ac1->IsComplex()),
       scal(ascal), c1(ac1)
   {
     SetDimensions(c1->Dimensions());
+    elementwise_constant = c1->ElementwiseConstant();
   }
   
+  void DoArchive (Archive & archive) override
+  {
+    BASE::DoArchive(archive);
+    archive.Shallow(c1) & scal;
+  }
+
   virtual void PrintReport (ostream & ost) const override
   {
     ost << scal << "*(";
     c1->PrintReport(ost);
     ost << ")";
+  }
+
+  virtual string GetDescription() const override
+  {
+    return "Scale "+ToString(scal);
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1039,14 +1061,6 @@ public:
   {
     values = input[0];
   }
-
-  
-  virtual CF_Type GetType() const override { return CF_Type_scale; }
-  virtual void DoArchive (Archive & archive) override
-  {
-    CoefficientFunction::DoArchive(archive);
-    archive & scal;
-  }
 };
 
 
@@ -1055,11 +1069,18 @@ class ScaleCoefficientFunctionC : public CoefficientFunction
   Complex scal;
   shared_ptr<CoefficientFunction> c1;
 public:
+  ScaleCoefficientFunctionC() = default;
   ScaleCoefficientFunctionC (Complex ascal, 
                             shared_ptr<CoefficientFunction> ac1)
     : CoefficientFunction(ac1->Dimension(), true), scal(ascal), c1(ac1)
   {
     SetDimensions (c1->Dimensions());
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    CoefficientFunction::DoArchive(ar);
+    ar.Shallow(c1) & scal;
   }
   
   // virtual bool IsComplex() const { return true; }
@@ -1122,13 +1143,6 @@ public:
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-  }  
-    
-  virtual CF_Type GetType() const override { return CF_Type_scale_complex; }
-  virtual void DoArchive (Archive & archive) override
-  {
-    CoefficientFunction::DoArchive(archive);
-    archive & scal;
   }
 };
 
@@ -1140,6 +1154,7 @@ class MultScalVecCoefficientFunction : public T_CoefficientFunction<MultScalVecC
   shared_ptr<CoefficientFunction> c2;  // vector
   typedef T_CoefficientFunction<MultScalVecCoefficientFunction> BASE;
 public:
+  MultScalVecCoefficientFunction() = default;
   MultScalVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                   shared_ptr<CoefficientFunction> ac2)
     : BASE(ac2->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
@@ -1155,6 +1170,11 @@ public:
     func(*this);
   }
 
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2);
+  }
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
@@ -1259,9 +1279,6 @@ public:
     for (size_t j = 0; j < dim; j++)
       values(j) = in0(0) * in1(j);
   }
-
-  
-  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -1270,14 +1287,23 @@ class MultVecVecCoefficientFunction : public T_CoefficientFunction<MultVecVecCoe
   shared_ptr<CoefficientFunction> c1;
   shared_ptr<CoefficientFunction> c2;
   int dim1;
+  using BASE = T_CoefficientFunction<MultVecVecCoefficientFunction>;
 public:
+  MultVecVecCoefficientFunction() = default;
   MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                  shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction<MultVecVecCoefficientFunction>(1, ac1->IsComplex() || ac2->IsComplex()), c1(ac1), c2(ac2)
   {
+    elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     dim1 = c1->Dimension();
     if (dim1 != c2->Dimension())
       throw Exception("MultVecVec : dimensions don't fit");
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2) & dim1;
   }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1374,9 +1400,10 @@ public:
       }    
   }  
 
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
-  
+  */
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1394,8 +1421,6 @@ public:
     nonzero_deriv = nzd;
     nonzero_dderiv = nzdd;
   }
-
-  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 template <int DIM>
@@ -1403,13 +1428,22 @@ class T_MultVecVecCoefficientFunction : public T_CoefficientFunction<T_MultVecVe
 {
   shared_ptr<CoefficientFunction> c1;
   shared_ptr<CoefficientFunction> c2;
+  using BASE = T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>;
 public:
+  T_MultVecVecCoefficientFunction() = default;
   T_MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                    shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
   {
+    this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     if (DIM != c1->Dimension() || DIM != c2->Dimension())
       throw Exception("T_MultVecVec : dimensions don't fit");
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2);
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1513,9 +1547,10 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
-  
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
+  */
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
@@ -1549,9 +1584,6 @@ public:
       sum += v1(i)*v2(i);
     values(0) = sum;
   }
-  
-  
-  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -1563,18 +1595,25 @@ class EigCoefficientFunction : public CoefficientFunctionNoDerivative
   int vecdim;
   
 public:
+  EigCoefficientFunction() = default;
   EigCoefficientFunction (shared_ptr<CoefficientFunction> ac1) : CoefficientFunctionNoDerivative(ac1->Dimension() + ac1->Dimensions()[0],false), cfmat(ac1)
   {
     vecdim = cfmat->Dimensions()[0];
     dim1 = cfmat->Dimension();
   }
+
+  void DoArchive(Archive& ar) override
+  {
+    CoefficientFunctionNoDerivative::DoArchive(ar);
+    ar.Shallow(cfmat) & dim1 & vecdim;
+  }
   
-    using CoefficientFunctionNoDerivative::Evaluate;
-  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  using CoefficientFunctionNoDerivative::Evaluate;
+  double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     return 0;
   }
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+  void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
   {
     STACK_ARRAY(double,mem, dim1);
     FlatVector<double> vec(dim1, &mem[0]);
@@ -1587,9 +1626,6 @@ public:
     
     CalcEigenSystem(mat,lami,eigenvecs);
   }
-
-  virtual CF_Type GetType() const { return CF_Type_eig; }
-    
 };
 
 
@@ -1599,11 +1635,20 @@ class NormCoefficientFunction : public T_CoefficientFunction<NormCoefficientFunc
   shared_ptr<CoefficientFunction> c1;
   int dim1;
   typedef double TIN;
+  using BASE = T_CoefficientFunction<NormCoefficientFunction>;
 public:
+  NormCoefficientFunction() = default;
   NormCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<NormCoefficientFunction> (1, false), c1(ac1)
   {
     dim1 = c1->Dimension();
+    elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & dim1;
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1639,10 +1684,11 @@ public:
     result(0) = res(0);
   }
 
-  
+
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant(); }
-
+  */
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -1716,8 +1762,6 @@ public:
     values(0).DValue(0) = sum.DValue(0);
     values(0).DDValue(0) = sum.DValue(0) || sum.DDValue(0);
   }
-  
-  virtual CF_Type GetType() const override { return CF_Type_norm; }
 };
 
 
@@ -1729,10 +1773,18 @@ class NormCoefficientFunctionC : public CoefficientFunction
   int dim1;
   typedef Complex TIN;
 public:
+  NormCoefficientFunctionC() = default;
   NormCoefficientFunctionC (shared_ptr<CoefficientFunction> ac1)
     : CoefficientFunction (1, false), c1(ac1)
   {
     dim1 = c1->Dimension();
+    elementwise_constant = c1->ElementwiseConstant(); 
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    CoefficientFunction::DoArchive(ar);
+    ar.Shallow(c1) & dim1;
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1767,10 +1819,11 @@ public:
     result(0) = res(0);
   }
 
-  
+
+  /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant(); }
-
+  */
   
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         BareSliceMatrix<> result) const override
@@ -1823,8 +1876,6 @@ public:
     nonzero_deriv = nzd;
     nonzero_dderiv = nzd || nzdd;
   }
-
-  virtual CF_Type GetType() const override { return CF_Type_norm; }
 };
 
   
@@ -1834,7 +1885,9 @@ class MultMatMatCoefficientFunction : public T_CoefficientFunction<MultMatMatCoe
   shared_ptr<CoefficientFunction> c1;
   shared_ptr<CoefficientFunction> c2;
   int inner_dim;
+  using BASE = T_CoefficientFunction<MultMatMatCoefficientFunction>;
 public:
+  MultMatMatCoefficientFunction() = default;
   MultMatMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                  shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction<MultMatMatCoefficientFunction>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
@@ -1847,7 +1900,7 @@ public:
       throw Exception(string("Matrix dimensions don't fit: m1 is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) +
                       ", m2 is " + ToLiteral(dims_c2[0]) + " x " + ToLiteral(dims_c2[1]) );
-    SetDimensions( Array<int> ({ dims_c1[0], dims_c2[1] }));
+    SetDimensions( ngstd::INT<2> (dims_c1[0], dims_c2[1]) );
     inner_dim = dims_c1[1];
   }
   
@@ -1856,6 +1909,12 @@ public:
     c1->TraverseTree (func);
     c2->TraverseTree (func);
     func(*this);
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2) & inner_dim;
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
@@ -2017,8 +2076,6 @@ public:
             // row_c = pw_mult (row_a, row_b);
           }
   }
- 
-  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -2033,7 +2090,9 @@ class MultMatVecCoefficientFunction : public T_CoefficientFunction<MultMatVecCoe
   shared_ptr<CoefficientFunction> c2;
   // Array<int> dims;
   int inner_dim;
+  using BASE = T_CoefficientFunction<MultMatVecCoefficientFunction>;
 public:
+  MultMatVecCoefficientFunction() = default;
   MultMatVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                  shared_ptr<CoefficientFunction> ac2)
     : T_CoefficientFunction(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
@@ -2045,9 +2104,14 @@ public:
     if (dims_c1[1] != dims_c2[0])
       throw Exception(string ("Matrix dimensions don't fit: mat is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) + ", vec is " + ToLiteral(dims_c2[0]));
-    // dims = Array<int> ({ dims_c1[0] });
-    SetDimensions (Array<int> ({ dims_c1[0] }));
+    SetDimensions (ngstd::INT<1>(dims_c1[0]));
     inner_dim = dims_c1[1];
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2) & inner_dim;
   }
   
   // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
@@ -2183,8 +2247,6 @@ public:
         for (size_t k = 0; k < ir.Size(); k++)
           values(i,k) += va(i*inner_dim+j, k) * vb(j,k);
   }
-
-  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -2193,7 +2255,9 @@ public:
 class TransposeCoefficientFunction : public T_CoefficientFunction<TransposeCoefficientFunction>
 {
   shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<TransposeCoefficientFunction>;
 public:
+  TransposeCoefficientFunction() = default;
   TransposeCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<TransposeCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
   {
@@ -2201,7 +2265,13 @@ public:
     if (dims_c1.Size() != 2)
       throw Exception("Transpose of non-matrix called");
 
-    SetDimensions (Array<int> ({ dims_c1[1], dims_c1[0] }));
+    SetDimensions (ngstd::INT<2> (dims_c1[1], dims_c1[0]) );
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -2327,9 +2397,7 @@ public:
         for (size_t i = 0; i < np; i++)
           values(j*hdims[1]+k, i) = in0(k*hdims[0]+j, i);
   }
-  
-  virtual CF_Type GetType() const override { return CF_Type_trans; }
-  };  
+};
 
 
 
@@ -2341,15 +2409,19 @@ public:
 
   struct GenericPlus {
     template <typename T> T operator() (T x, T y) const { return x+y; }
+    void DoArchive(Archive& ar){}
   };
   struct GenericMinus {
     template <typename T> T operator() (T x, T y) const { return x-y; }
+    void DoArchive(Archive& ar){}
   };
   struct GenericMult {
     template <typename T> T operator() (T x, T y) const { return x*y; }
+    void DoArchive(Archive& ar){}
   };
   struct GenericDiv {
     template <typename T> T operator() (T x, T y) const { return x/y; }
+    void DoArchive(Archive& ar){}
   };
   GenericPlus gen_plus;
   GenericMinus gen_minus;
@@ -2358,28 +2430,12 @@ public:
   
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
-    return BinaryOpCF (c1, c2, 
-                       gen_plus, // [](double a, double b) { return a+b; },
-                       // [](Complex a, Complex b) { return a+b; },
-                       // [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
-                       // [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       // { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       [](bool a, bool b) { return a||b; }, "+"
-                       );
+    return BinaryOpCF (c1, c2, gen_plus, "+");
   }
   
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
-    return BinaryOpCF (c1, c2, 
-                       gen_minus, // [](double a, double b) { return a-b; },
-                       /*
-                       [](Complex a, Complex b) { return a-b; },
-                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
-                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       */
-                       [](bool a, bool b) { return a||b; }, "-"
-                       );
+    return BinaryOpCF (c1, c2, gen_minus, "-");
   }
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
@@ -2408,16 +2464,7 @@ public:
     if (c1->Dimension() > 1 && c2->Dimension() == 1)
       return make_shared<MultScalVecCoefficientFunction> (c2, c1);
     
-    return BinaryOpCF (c1, c2, 
-                       gen_mult, // [](double a, double b) { return a*b; },
-                       /*
-                       [](Complex a, Complex b) { return a*b; },
-                       [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
-                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 1; ddbdb = 0; },
-                       */
-                       [](bool a, bool b) { return a&&b; }, "*"
-                       );
+    return BinaryOpCF (c1, c2, gen_mult,"*");
   }
 
   shared_ptr<CoefficientFunction> operator* (double v1, shared_ptr<CoefficientFunction> c2)
@@ -2478,23 +2525,8 @@ public:
   
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
-    return BinaryOpCF (c1, c2,
-                       gen_div, // [](double a, double b) { return a/b; },
-                       /*
-                       [](Complex a, Complex b) { return a/b; },
-                       [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
-                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); },
-                       */
-                       [](bool a, bool b) { return a; }, "/"
-                       );
+    return BinaryOpCF (c1, c2, gen_div, "/");
   }
-
-
-
-
-
-
 
   
 class ComponentCoefficientFunction : public T_CoefficientFunction<ComponentCoefficientFunction>
@@ -2504,11 +2536,19 @@ class ComponentCoefficientFunction : public T_CoefficientFunction<ComponentCoeff
   int comp;
   typedef T_CoefficientFunction<ComponentCoefficientFunction> BASE;
 public:
+  ComponentCoefficientFunction() = default;
   ComponentCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                 int acomp)
     : BASE(1, ac1->IsComplex()), c1(ac1), comp(acomp)
   {
     dim1 = c1->Dimension();
+    elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & dim1 & comp;
   }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -2600,13 +2640,6 @@ public:
   {
     values(0) = input[0](comp);
   }
-  
-  virtual CF_Type GetType() const override { return CF_Type_component; }
-  virtual void DoArchive (Archive & archive) override
-  {
-      CoefficientFunction::DoArchive(archive);
-      archive & comp;
-  }
 };
 
   shared_ptr<CoefficientFunction>
@@ -2626,6 +2659,7 @@ class DomainWiseCoefficientFunction : public T_CoefficientFunction<DomainWiseCoe
   typedef T_CoefficientFunction<DomainWiseCoefficientFunction> BASE;
   using BASE::Evaluate;
 public:
+  DomainWiseCoefficientFunction() = default;
   DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
     : BASE(1, false), ci(aci) 
   { 
@@ -2633,6 +2667,21 @@ public:
       if (cf && cf->IsComplex()) is_complex = true;
     for (auto & cf : ci)
       if (cf) SetDimensions(cf->Dimensions());
+
+    elementwise_constant = true;
+    for (auto cf : ci)
+      if (cf && !cf->ElementwiseConstant())
+        elementwise_constant = false;
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    auto size = ci.Size();
+    ar & size;
+    ci.SetSize(size);
+    for(auto& cf : ci)
+      ar.Shallow(cf);
   }
 
   virtual bool DefinedOn (const ElementTransformation & trafo) override
@@ -2641,6 +2690,16 @@ public:
     return (matindex < ci.Size() && ci[matindex]);
   }
 
+  /*
+  bool ElementwiseConstant() const override
+  {
+    for(auto cf : ci)
+      if(cf && !cf->ElementwiseConstant())
+        return false;
+    return true;
+  }
+  */
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     code.body += "// DomainWiseCoefficientFunction:\n";
@@ -2784,8 +2843,6 @@ public:
       for (size_t i = 0; i < values.Size(); i++)
         values(i) += ini(i);
   }
-  
-  virtual CF_Type GetType() const override { return CF_Type_domainwise; }
 };
 
   shared_ptr<CoefficientFunction>
@@ -2807,9 +2864,16 @@ class OtherCoefficientFunction : public T_CoefficientFunction<OtherCoefficientFu
   typedef T_CoefficientFunction<OtherCoefficientFunction> BASE;
   using BASE::Evaluate;
 public:
+  OtherCoefficientFunction() = default;
   OtherCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : BASE(ac1->Dimension(), ac1->IsComplex()), c1(ac1)
   { ; }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -2943,6 +3007,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
     shared_ptr<CoefficientFunction> cf_else;
     typedef T_CoefficientFunction<IfPosCoefficientFunction> BASE;
   public:
+    IfPosCoefficientFunction() = default;
     IfPosCoefficientFunction (shared_ptr<CoefficientFunction> acf_if,
                               shared_ptr<CoefficientFunction> acf_then,
                               shared_ptr<CoefficientFunction> acf_else)
@@ -2950,7 +3015,15 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
              acf_then->IsComplex() || acf_else->IsComplex()),
         cf_if(acf_if), cf_then(acf_then), cf_else(acf_else)
     {
+      if (acf_then->Dimension() != acf_else->Dimension())
+        throw Exception(string("In IfPosCoefficientFunction: dim(cf_then) == ") + ToLiteral(acf_then->Dimension()) + string(" != dim(cf_else) == ") + ToLiteral(acf_else->Dimension()));
       SetDimensions(cf_then->Dimensions());
+    }
+
+    void DoArchive(Archive& ar) override
+    {
+      BASE::DoArchive(ar);
+      ar.Shallow(cf_if).Shallow(cf_then).Shallow(cf_else);
     }
 
     virtual ~IfPosCoefficientFunction () { ; }
@@ -3313,9 +3386,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       auto v2 = input[2];
       values = v1+v2;
     }
-
-    
-  virtual CF_Type GetType() const override { return CF_Type_ifpos; }
   };
   
   extern
@@ -3331,30 +3401,42 @@ class VectorialCoefficientFunction : public T_CoefficientFunction<VectorialCoeff
 {
   Array<shared_ptr<CoefficientFunction>> ci;
   Array<size_t> dimi;  // dimensions of components
-  Array<std::tuple<CoefficientFunction*, size_t>> both;
   typedef T_CoefficientFunction<VectorialCoefficientFunction> BASE;
 public:
+  VectorialCoefficientFunction() = default;
   VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : BASE(0, false), ci(aci), dimi(aci.Size()), both(aci.Size()+1)
+    : BASE(0, false), ci(aci), dimi(aci.Size())
   {
     int hdim = 0;
     for (int i : Range(ci))
       {
         dimi[i] = ci[i]->Dimension();
-        both[i] = make_tuple(aci[i].get(), hdim);
         hdim += dimi[i];
       }
-    both[ci.Size()] = make_tuple(nullptr, hdim);
     
     for (auto cf : ci)
       if (cf && cf->IsComplex())
         is_complex = true;
 
     SetDimension(hdim);
+
+    elementwise_constant = true;
+    for (auto cf : ci)
+      if (!cf->ElementwiseConstant())
+        elementwise_constant = false;
     // dims = Array<int> ( { dimension } ); 
   }
 
-
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    auto size = ci.Size();
+    ar & size;
+    ci.SetSize(size);
+    for(auto& cf : ci)
+      ar.Shallow(cf);
+    ar & dimi;
+  }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
 
@@ -3448,9 +3530,12 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    FlatArray<std::tuple<CoefficientFunction*, size_t>> hboth = both;
-    for (size_t i = 0; i < hboth.Size()-1; i++)
-      get<0>(hboth[i])->Evaluate(ir, values.Rows(get<1>(hboth[i]), get<1>(hboth[i+1])));
+    size_t base = 0;
+    for (auto i : Range(ci.Size()))
+      {
+        ci[i]->Evaluate(ir, values.Rows(base, base + dimi[i]));
+        base += dimi[i];
+      }
   }
  
   template <typename MIR, typename T, ORDERING ORD>
@@ -3481,13 +3566,6 @@ public:
         base += dimi;
       }
   }
-
-  virtual CF_Type GetType() const override { return CF_Type_vectorial; } 
-  virtual void DoArchive (Archive & archive) override
-  {
-    CoefficientFunction::DoArchive(archive);
-    archive & dimi;
-  } 
 };
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -3526,7 +3604,15 @@ public:
     int dir;
     typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
+    CoordCoefficientFunction() = default;
     CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
+
+    void DoArchive(Archive& ar) override
+    {
+      BASE::DoArchive(ar);
+      ar & dir;
+    }
+
     virtual string GetDescription () const override
     {
       string dirname;
@@ -3608,13 +3694,6 @@ public:
       Evaluate (ir, values);
     }
     */
-
-    virtual CF_Type GetType() const override { return CF_Type_coordinate; } 
-    virtual void DoArchive (Archive & archive) override
-    {
-      CoefficientFunction::DoArchive(archive);
-      archive & dir;
-    } 
   };
 
 
@@ -3657,6 +3736,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     lib_function_simd_complex compiled_function_simd_complex = nullptr;
 
   public:
+    CompiledCoefficientFunction() = default;
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
       : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
@@ -3699,6 +3779,43 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
     }
 
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunction::DoArchive(ar);
+      ar.Shallow(cf);
+      if(ar.Input())
+        {
+          cf -> TraverseTree
+            ([&] (CoefficientFunction & stepcf)
+             {
+               if (!steps.Contains(&stepcf))
+                 {
+                   steps.Append (&stepcf);
+                   // timers.Append (new Timer(string("CompiledCF")+typeid(stepcf).name()));
+                   dim.Append (stepcf.Dimension());
+                   is_complex.Append (stepcf.IsComplex());
+                 }
+             });
+          totdim = 0;
+          for (int d : dim) totdim += d;
+          inputs = DynamicTable<int> (steps.Size());
+          max_inputsize = 0;
+
+          cf -> TraverseTree
+            ([&] (CoefficientFunction & stepcf)
+             {
+               int mypos = steps.Pos (&stepcf);
+               if (!inputs[mypos].Size())
+                 {
+                   Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
+                   max_inputsize = max2(in.Size(), max_inputsize);
+                   for (auto incf : in)
+                     inputs.Add (mypos, steps.Pos(incf.get()));
+                 }
+             });
+        }
+    }
+
     void RealCompile(int maxderiv, bool wait)
     {
         std::vector<string> link_flags;
@@ -3721,8 +3838,9 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             code.is_simd = simd;
             code.deriv = deriv;
             for (auto i : Range(steps)) {
-              cout << IM(3) << "step " << i << ": " << typeid(*steps[i]).name() << endl;
-              steps[i]->GenerateCode(code, inputs[i],i);
+              auto& step = *steps[i];
+              cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
+              step.GenerateCode(code, inputs[i],i);
             }
 
             pointer_code += code.pointer;
@@ -3853,7 +3971,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         }
     }
 
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+    void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
       cf -> TraverseTree (func);
       func(*cf);
@@ -3864,26 +3982,26 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     // virtual Array<int> Dimensions() const  { return cf->Dimensions(); } 
     
     
-    virtual bool ElementwiseConstant () const { return false; }
+    // bool ElementwiseConstant () const override { return false; }
     /*
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
     { cf->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv); }
     */
     
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return cf -> Evaluate(ip);
     }
 
-    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<> result) const
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<> result) const override
     {
       cf->Evaluate (ip, result);      
     }
 
-    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<Complex> result) const
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<Complex> result) const override
     {
       cf->Evaluate (ip, result);
     }
@@ -3913,8 +4031,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         }
     }
     
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
-                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
+    void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                         FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
     {
       typedef AutoDiffDiff<1,bool> T;
       ArrayMem<T, 1000> hmem(totdim);
@@ -3957,7 +4075,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     }
 
     
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
       if(compiled_function)
       {
@@ -4008,8 +4126,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiff<1,double>> values) const
+    void Evaluate (const BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<AutoDiff<1,double>> values) const override
     {
       if(compiled_function_deriv)
         {
@@ -4047,8 +4165,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const
+    void Evaluate (const BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<AutoDiffDiff<1,double>> values) const override
     {
       if(compiled_function_dderiv)
       {
@@ -4086,8 +4204,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
     
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
     {
       if(compiled_function_simd_deriv)
         {
@@ -4127,8 +4245,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
     
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
     {
       if(compiled_function_simd_dderiv)
       {
@@ -4168,7 +4286,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     }
 
     
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<SIMD<double>> values) const override
     {
       if(compiled_function_simd)
       {
@@ -4209,7 +4328,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       */
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+    void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override
     {
       if(compiled_function_complex)
       {
@@ -4222,7 +4341,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       }
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<SIMD<Complex>> values) const override
     {
       if(compiled_function_simd_complex)
       {
@@ -4460,10 +4580,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     }
 #endif
     
-
-
-    
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       return cf->GenerateCode(code, inputs, index);
     }
@@ -4474,10 +4591,17 @@ class RealCF : public CoefficientFunctionNoDerivative
     shared_ptr<CoefficientFunction> cf;
     bool cf_is_complex;
   public:
+    RealCF() = default;
     RealCF(shared_ptr<CoefficientFunction> _cf)
       : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
     {
       cf_is_complex = cf->IsComplex();
+    }
+
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunctionNoDerivative::DoArchive(ar);
+      ar.Shallow(cf) & cf_is_complex;
     }
 
     virtual string GetDescription() const override
@@ -4536,16 +4660,22 @@ class RealCF : public CoefficientFunctionNoDerivative
       cf->Evaluate (ir, cvalues);
       values.AddSize(Dimension(), ir.Size()) = Real(cvalues);
     }
-
-    virtual CF_Type GetType() const override { return CF_Type_real; }
   };
 
   class ImagCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
   public:
+    ImagCF() = default;
     ImagCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
     { ; }
+
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunctionNoDerivative::DoArchive(ar);
+      ar.Shallow(cf);
+    }
+
     virtual string GetDescription() const override
     {
       return "ImagCF";
@@ -4597,8 +4727,6 @@ class RealCF : public CoefficientFunctionNoDerivative
       cf->Evaluate (ir, cvalues);
       values.AddSize(Dimension(), ir.Size()) = Imag(cvalues);
     }
-
-    virtual CF_Type GetType() const override { return CF_Type_imag; }
   };
 
   shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf)
@@ -4618,6 +4746,40 @@ class RealCF : public CoefficientFunctionNoDerivative
     return cf;
   }
 
-  
+static RegisterClassForArchive<CoefficientFunction> regcf;
+static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction> regccf;
+static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;
+static RegisterClassForArchive<ParameterCoefficientFunction, CoefficientFunction> regpar;
+static RegisterClassForArchive<DomainConstantCoefficientFunction, CoefficientFunction> regdccf;
+static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
+static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;
+static RegisterClassForArchive<PolynomialCoefficientFunction, CoefficientFunction> regpolcf;
+static RegisterClassForArchive<FileCoefficientFunction, CoefficientFunction> regfilecf;
+static RegisterClassForArchive<CoordCoefficientFunction, CoefficientFunction> regcoocf;
+static RegisterClassForArchive<DomainWiseCoefficientFunction, CoefficientFunction> regdwcf;
+static RegisterClassForArchive<VectorialCoefficientFunction, CoefficientFunction> regveccf;
+static RegisterClassForArchive<ComponentCoefficientFunction, CoefficientFunction> regcompcf;
+static RegisterClassForArchive<ScaleCoefficientFunction, CoefficientFunction> regscale;
+static RegisterClassForArchive<ScaleCoefficientFunctionC, CoefficientFunction> regscalec;
+static RegisterClassForArchive<MultScalVecCoefficientFunction, CoefficientFunction> regscalvec;
+static RegisterClassForArchive<MultVecVecCoefficientFunction, CoefficientFunction> regmultvecvec;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<1>, CoefficientFunction> regtmultvecvec1;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<2>, CoefficientFunction> regtmultvecvec2;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<3>, CoefficientFunction> regtmultvecvec3;
+static RegisterClassForArchive<EigCoefficientFunction, CoefficientFunction> regeigcf;
+static RegisterClassForArchive<NormCoefficientFunction, CoefficientFunction> regnormcf;
+static RegisterClassForArchive<NormCoefficientFunctionC, CoefficientFunction> regnormcfc;
+static RegisterClassForArchive<MultMatMatCoefficientFunction, CoefficientFunction> regmultmatmatcf;
+static RegisterClassForArchive<MultMatVecCoefficientFunction, CoefficientFunction> regmultmatveccf;
+static RegisterClassForArchive<TransposeCoefficientFunction, CoefficientFunction> regtransposecf;
+static RegisterClassForArchive<cl_BinaryOpCF<GenericPlus>, CoefficientFunction> regcfplus;
+static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction> regcfminus;
+static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;
+static RegisterClassForArchive<cl_BinaryOpCF<GenericDiv>, CoefficientFunction> regcfdiv;
+static RegisterClassForArchive<IfPosCoefficientFunction, CoefficientFunction> regfifpos;
+static RegisterClassForArchive<RealCF, CoefficientFunction> regrealcf;
+static RegisterClassForArchive<ImagCF, CoefficientFunction> regimagcf;
+static RegisterClassForArchive<CompiledCoefficientFunction, CoefficientFunction> regcompiledcf;
+static RegisterClassForArchive<OtherCoefficientFunction, CoefficientFunction> regothercf;
 }
 

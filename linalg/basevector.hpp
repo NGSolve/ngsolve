@@ -674,7 +674,8 @@ namespace ngla
   {
     Array<shared_ptr<BaseVector>> vecs;
     BitArray ispar;
-    MPI_Comm comm = MPI_COMM_NULL;
+    // MPI_Comm comm = MPI_COMM_NULL;
+    NgMPI_Comm comm;
   public:
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs);
 
@@ -695,6 +696,8 @@ namespace ngla
     virtual AutoVector CreateVector () const;
 
     virtual double InnerProductD (const BaseVector & v2) const;
+    virtual double L2Norm () const;
+    
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & SetScalar (double scal);
 

@@ -13,6 +13,17 @@
 
 namespace ngfem
 {
+
+  /*
+  template <> inline void L2HighOrderFE<ET_TRIG> ::
+  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+    for (int ix = 0, ii = 0; ix <= order; ix++)
+      for (int iy = 0; iy <= order - ix; iy++, ii++)
+	mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
+  }
+  */
+
   
   template class L2HighOrderFE<ET_TRIG>;  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;

@@ -32,6 +32,8 @@ namespace ngcomp
     bool nonassemble;
     /// store only diagonal of matrix
     bool diagonal;
+    /// element-matrix for ref-elements
+    bool geom_free;
     /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
@@ -67,6 +69,9 @@ namespace ngcomp
     // loop over facets, VB=0 .. inner facets, VB=1 .. boundary facets
     Array<shared_ptr<FacetBilinearFormIntegrator>> facetwise_skeleton_parts[2];
 
+    // geometry-free parts (only for apply)
+    Array<shared_ptr<BilinearFormIntegrator>> geom_free_parts;
+    
     // loop over elements
     Array<shared_ptr<FacetBilinearFormIntegrator>> elementwise_skeleton_parts;
 
@@ -103,7 +108,8 @@ namespace ngcomp
     Array<void*> precomputed_data;
     /// output of norm of matrix entries
     bool checksum;
-
+    
+    mutable std::map<size_t, Matrix<>> precomputed;
   public:
     /// generate a bilinear-form
     BilinearForm (shared_ptr<FESpace> afespace,
@@ -212,7 +218,11 @@ namespace ngcomp
     /// y += val * Mat * x
     virtual void AddMatrix (Complex val, const BaseVector & x,
 			    BaseVector & y, LocalHeap & lh) const = 0;
-  
+
+    /// y += val * Mat^T * x
+    virtual void AddMatrixTrans (double val, const BaseVector & x,
+                                 BaseVector & y, LocalHeap & lh) const = 0;
+    
     /// y += val * lin.mat * x
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
@@ -231,11 +241,7 @@ namespace ngcomp
     const BaseMatrix & GetMatrix () const { return *mats.Last(); }
     const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
     /// returns the assembled matrix
-    shared_ptr<BaseMatrix> GetMatrixPtr () const 
-    {
-      if (!mats.Size()) return nullptr;
-      return mats.Last(); 
-    }
+    shared_ptr<BaseMatrix> GetMatrixPtr () const;
 
     // operator const BaseMatrix& () const { return GetMatrix(); }
 
@@ -297,7 +303,9 @@ namespace ngcomp
     shared_ptr<FESpace> GetFESpace() const { return fespace; }
     /// the finite element test space
     shared_ptr<FESpace> GetFESpace2() const { return fespace2; }
-
+    
+    shared_ptr<FESpace> GetTrialSpace() const { return fespace; }
+    shared_ptr<FESpace> GetTestSpace() const { return fespace2 ? fespace2 : fespace; }
     ///
     int GetNLevels() const { return mats.Size(); }
 
@@ -312,6 +320,7 @@ namespace ngcomp
 
     /// don't assemble the matrix
     void SetNonAssemble (bool na = true) { nonassemble = na; }
+    bool NonAssemble() const { return nonassemble; }
 
     ///
     void SetGalerkin (bool agalerkin = true) { galerkin = agalerkin; }
@@ -381,7 +390,8 @@ namespace ngcomp
     virtual Array<MemoryUsage> GetMemoryUsage () const;
 
     /// creates a compatible vector
-    virtual shared_ptr<BaseVector> CreateVector() const = 0;
+    virtual shared_ptr<BaseVector> CreateRowVector() const = 0;
+    virtual shared_ptr<BaseVector> CreateColVector() const = 0;
 
     /// frees matrix 
     virtual void CleanUpLevel() { ; }
@@ -458,6 +468,9 @@ namespace ngcomp
     void AddMatrix1 (SCAL val, const BaseVector & x,
                     BaseVector & y, LocalHeap & lh) const;
 
+    void AddMatrixGF (SCAL val, const BaseVector & x,
+                      BaseVector & y, bool transpose, LocalHeap & lh) const;
+
     virtual void AddMatrix (double val, const BaseVector & x,
                            BaseVector & y, LocalHeap & lh) const
     {
@@ -473,6 +486,8 @@ namespace ngcomp
       AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }
 
+    virtual void AddMatrixTrans (double val, const BaseVector & x,
+                                 BaseVector & y, LocalHeap & lh) const;
 
     virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const 
     {
@@ -509,6 +524,7 @@ namespace ngcomp
 
     ///
     virtual void DoAssemble (LocalHeap & lh);
+    void AssembleGF (LocalHeap & lh);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
@@ -606,7 +622,8 @@ namespace ngcomp
     virtual void AllocateMatrix ();
 
     ///
-    virtual shared_ptr<BaseVector> CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateRowVector() const;
+    virtual shared_ptr<BaseVector> CreateColVector() const;
 
     ///
     virtual void CleanUpLevel();
@@ -646,7 +663,8 @@ namespace ngcomp
     virtual void AllocateMatrix ();
     virtual void CleanUpLevel();
 
-    virtual shared_ptr<BaseVector> CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateRowVector() const;
+    virtual shared_ptr<BaseVector> CreateColVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -687,11 +705,9 @@ namespace ngcomp
     virtual void AllocateMatrix () { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
     virtual void CleanUpLevel() { ; } 
 
-    virtual shared_ptr<BaseVector> CreateVector() const
-    {
-      throw Exception ("CreateVector for non-assemble not available");
-    }
-    
+    virtual shared_ptr<BaseVector> CreateRowVector() const;
+    virtual shared_ptr<BaseVector> CreateColVector() const;
+
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
                                    BareSliceMatrix<TSCAL> elmat,
@@ -741,7 +757,8 @@ namespace ngcomp
     virtual ~T_BilinearFormDiagonal ();
 
     virtual void AllocateMatrix ();
-    virtual shared_ptr<BaseVector> CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateRowVector() const;
+    virtual shared_ptr<BaseVector> CreateColVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -795,6 +812,10 @@ namespace ngcomp
 			    BaseVector & y, LocalHeap & lh) const
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
+    virtual void AddMatrixTrans (double val, const BaseVector & x,
+                                 BaseVector & y, LocalHeap & lh) const
+    { throw Exception ("comp-bf - AddMatrixTrans is illegal"); }
+    
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
@@ -820,8 +841,10 @@ namespace ngcomp
     { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
     virtual void ModifyRHS (BaseVector & f) const 
     { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
-    virtual shared_ptr<BaseVector> CreateVector() const 
-    { throw Exception ("comp-bf - CreateVector is illegal"); } 
+    virtual shared_ptr<BaseVector> CreateRowVector() const 
+    { throw Exception ("comp-bf - CreateRowVector is illegal"); } 
+    virtual shared_ptr<BaseVector> CreateColVector() const 
+    { throw Exception ("comp-bf - CreateColVector is illegal"); } 
     virtual void DoAssemble (LocalHeap & lh) 
     { throw Exception ("comp-bf - DoAssemble is illegal"); } 
     virtual void AllocateMatrix ()
@@ -870,10 +893,10 @@ namespace ngcomp
   protected:
     ///
     shared_ptr<BilinearForm> bf;
-
+    LocalHeap & lh;
   public:
     ///
-    BilinearFormApplication (shared_ptr<BilinearForm> abf);
+    BilinearFormApplication (shared_ptr<BilinearForm> abf, LocalHeap & alh);
 
     virtual bool IsComplex() const override
     {
@@ -887,10 +910,17 @@ namespace ngcomp
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
     ///
+    virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
+    
     virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+    
     ///
     virtual int VHeight() const override
     {
+      if (bf->GetFESpace2())
+        return bf->GetFESpace2()->GetNDof();         
       return bf->GetFESpace()->GetNDof(); 
     }
     ///
@@ -912,7 +942,8 @@ namespace ngcomp
   public:
     ///
     LinearizedBilinearFormApplication (shared_ptr<BilinearForm> abf,
-				       const BaseVector * aveclin);
+				       const BaseVector * aveclin,
+                                       LocalHeap & alh);
 
     ///
       using BilinearFormApplication::Mult;
@@ -935,16 +966,17 @@ namespace ngcomp
     ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, 
                                    const string & aname,
                                    const Flags & flags);
-    virtual ~ElementByElement_BilinearForm ();
+    virtual ~ElementByElement_BilinearForm () override;
     
-    virtual void AllocateMatrix ();
-    virtual shared_ptr<BaseVector> CreateVector() const;
+    virtual void AllocateMatrix () override;
+    virtual shared_ptr<BaseVector> CreateRowVector() const override;
+    virtual shared_ptr<BaseVector> CreateColVector() const override;
     
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
                                    BareSliceMatrix<SCAL> elmat,
                                    ElementId id, 
-                                   LocalHeap & lh);    
+                                   LocalHeap & lh) override;    
   };
   
   

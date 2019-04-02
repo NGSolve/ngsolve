@@ -8,8 +8,7 @@
 
 #include <la.hpp>
 
-#include "concurrentqueue.h"
-#include <nginterface.h>
+#include "concurrentqueue.h" 
 
 
 typedef moodycamel::ConcurrentQueue<int> TQueue; 
@@ -665,7 +664,6 @@ namespace ngla
     int n = nused; // Height();
     if (n > 2000){
       cout << IM(4) << " factor " << flush;
-      Ng_PushStatus("SparseCholesky ordering");
     }
 
     // to avoid aliasing:
@@ -682,15 +680,9 @@ namespace ngla
     double flops1 = 0;
     double flops2 = 0;
     // starttime1 = clock();
-    int percent = 0;
 
     for (int i1 = 0; i1 < n;  )
       {
-        if(i1*100/n > percent)
-          {
-            percent = i1*100/n;
-            Ng_SetThreadPercentage(percent);
-          }
 	int last_same = i1;
 	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
 	  last_same++;
@@ -965,7 +957,6 @@ namespace ngla
 
     if (n > 2000){
       cout << IM(4) << endl;
-      Ng_PopStatus();
     }
   }
 
@@ -1031,7 +1022,6 @@ namespace ngla
     size_t n = nused; // Height();
     if (n > 2000){
       cout << IM(4) << " factor SPD " << flush;
-      Ng_PushStatus("SparseCholesky factoring");
     }
 
     // to avoid aliasing:
@@ -1577,7 +1567,6 @@ namespace ngla
 
     if (n > 2000){
       cout << IM(4) << endl;
-      Ng_PopStatus();
     }
 
     // task_manager -> StartWorkers();

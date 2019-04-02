@@ -44,7 +44,8 @@ auto NodalData (const MeshAccess & ama, Array<TELEM> & a) -> NodalArray<NT,TELEM
 template <NODE_TYPE NT, typename T> 
 Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
-  if (MyMPI_GetNTasks() == 1) return archive & a.A();
+  auto comm = a.GetMeshAccess().GetCommunicator();
+  if (comm.Size() == 1) return archive & a.A();
   
   auto g = [&] (int size) { archive & size; };    
 
@@ -164,7 +165,11 @@ namespace ngcomp
     if (flags.NumFlagDefined("smoothing")) 
       throw Exception ("Flag 'smoothing' for fespace is obsolete \n Please use flag 'blocktype' in preconditioner instead");
     nodalp2 = flags.GetDefineFlag ("nodalp2");
-          
+    
+    highest_order_dc = flags.GetDefineFlag ("highest_order_dc");
+    if (highest_order_dc && order < 2)
+      throw Exception ("highest_order_dc needs order >= 2");
+    
     Flags loflags;
     loflags.SetFlag ("order", 1);
     loflags.SetFlag ("dim", dimension);
@@ -207,8 +212,7 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        auto vbs = { VOL,BND, BBND, BBBND };
-        for (auto vb : vbs)
+        for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
           {
             if (evaluator[vb])
               evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
@@ -531,8 +535,9 @@ into the wirebasket.
     for (auto i : Range (ned))
       {
 	first_edge_dof[i] = hndof;
-	if (order_edge[i] > 1)
-	  hndof += order_edge[i] - 1;
+        int oe = order_edge[i];
+        if (highest_order_dc) oe--;
+	if (oe > 1) hndof += oe - 1;
       }
     first_edge_dof[ned] = hndof;
 
@@ -612,6 +617,8 @@ into the wirebasket.
             neldof = 0;
 	    break;
 	  }
+        if (highest_order_dc)
+          neldof += ElementTopology::GetNEdges(ma->GetElType(ei));
         first_element_dof[i] = neldof;        
        });
 
@@ -1088,16 +1095,27 @@ into the wirebasket.
     
     dnums = ngel.Vertices();
     if (fixed_order && order==1) return;
-        
+
+    IntRange eldofs;
+    if (ei.IsVolume())
+      eldofs = GetElementDofs (ei.Nr());
+    
     if (ma->GetDimension() >= 2)
       for (auto edge : ngel.Edges())
-        dnums += GetEdgeDofs (edge);
+        {
+          dnums += GetEdgeDofs (edge);
+          if (ei.IsVolume() && highest_order_dc)
+            {
+              dnums += eldofs.First();
+              eldofs.First()++;
+            }
+        }
 
     if (ma->GetDimension() == 3)
       for (auto face : ngel.Faces())
         dnums += GetFaceDofs (face);
-    if(ei.VB()==VOL)
-      dnums += GetElementDofs (ei.Nr());
+    if (ei.IsVolume())
+      dnums += eldofs;
   }
 
 
@@ -1543,13 +1561,9 @@ into the wirebasket.
 		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
 		}
 	      
-	      Array<int> f2ed;
-	      for (int i = 0; i < nfa; i++)
-		{
-		  ma->GetFaceEdges (i, f2ed);
-		  for (int k = 0; k < f2ed.Size(); k++)
-		    creator.Add (nv+f2ed[k], GetFaceDofs(i));
-		}
+	      for (auto face : Range(nfa))
+                for (auto edge : ma->GetFaceEdges(face))
+                  creator.Add (nv+edge, GetFaceDofs(face));
 	      
 	      for (int i = 0; i < ni; i++)
 		creator.Add (nv+ned+i, GetElementDofs(i));
@@ -1993,6 +2007,7 @@ into the wirebasket.
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2,BND>>>();
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>();
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           

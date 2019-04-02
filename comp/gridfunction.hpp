@@ -7,6 +7,9 @@
 /* Date:   10. Jul. 2000                                             */
 /*********************************************************************/
 
+
+#include <soldata.hpp>   // netgen visualization
+
 namespace ngcomp
 {
 
@@ -118,10 +121,11 @@ namespace ngcomp
 
     /// used for many right-hand-sides
     int cacheblocksize = 1;
+    /// Component gridfunctions living somewhere - need to call update on them
+    Array<weak_ptr<GridFunction>> compgfs;
     /// the actual data, array for multi-dim 
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
-    Array<shared_ptr<GridFunction>> compgfs;
     shared_ptr<GridFunctionCoefficientFunction> derivcf;
   public:
     /// 
@@ -185,8 +189,14 @@ namespace ngcomp
     virtual bool IsUpdated () const; 
 
     
-    int GetNComponents () const { return compgfs.Size(); }
-    shared_ptr<GridFunction> GetComponent (int compound_comp) const;
+    int GetNComponents () const
+    {
+      auto compfes = dynamic_pointer_cast<CompoundFESpace>(fespace);
+      if(compfes)
+        return compfes->GetNSpaces();
+      return 0;
+    }
+    shared_ptr<GridFunction> GetComponent (int compound_comp);
 
     shared_ptr<GridFunctionCoefficientFunction> GetDeriv()
     {
@@ -276,12 +286,17 @@ namespace ngcomp
     S_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
       : GridFunction (afespace, aname, flags) { ; }
     */
-    using GridFunction::GridFunction;
+    // using GridFunction::GridFunction;
 
-
+    S_GridFunction (shared_ptr<FESpace> afespace, 
+		    const string & aname = "gfu", 
+		    const Flags & flags = Flags());
+      
     // parallel Load/Save by Martin Huber and Lothar Nannen 
     virtual void Load (istream & ist);
     virtual void Save (ostream & ost) const;
+
+    virtual void Update ();
 
   private:
     template <int N, NODE_TYPE NT> void LoadNodeType (istream & ist);
@@ -294,23 +309,23 @@ namespace ngcomp
   template <class TV>
   class NGS_DLL_HEADER T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
-    using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
-    using S_GridFunction<typename mat_traits<TV>::TSCAL>::compgfs;
-
   public:
     typedef typename mat_traits<TV>::TSCAL TSCAL;
-    enum { VDIM = mat_traits<TV>::HEIGHT };
 
+    [[deprecated("Use T_GridFunction(shared_ptr<FESpace> ... instead!")]] 
     T_GridFunction (const FESpace & afespace, 
 		    const string & aname = "gfu", 
-		    const Flags & flags = Flags());
+		    const Flags & flags = Flags())
+      : T_GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), aname, flags)
+      { ; } 
+
     T_GridFunction (shared_ptr<FESpace> afespace, 
 		    const string & aname = "gfu", 
-		    const Flags & flags = Flags());
+		    const Flags & flags = Flags())
+      : S_GridFunction<TSCAL> (afespace, aname, flags)
+      { ; }
 
-    virtual ~T_GridFunction ();
-
-    virtual void Update ();
+    virtual ~T_GridFunction () { ; } 
   };
 
 
@@ -320,7 +335,7 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags);
 
-  /// compatibility with old codes
+  [[deprecated("Use CreateGridFunction(shared_ptr<FESpace> ... instead!")]]   
   inline 
   shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
                                                const string & name, const Flags & flags)
@@ -332,27 +347,28 @@ namespace ngcomp
 
 
 
-  template <class SCAL>
-  class NGS_DLL_HEADER S_ComponentGridFunction : public S_GridFunction<SCAL>
+  class NGS_DLL_HEADER ComponentGridFunction : public GridFunction
   {
-    const S_GridFunction<SCAL> & gf_parent;
+    shared_ptr<GridFunction> gf_parent;
     int comp;
   public:
-    S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp);
-    virtual ~S_ComponentGridFunction ();
-    virtual void Update ();
+    ComponentGridFunction (shared_ptr<GridFunction> agf_parent, int acomp);
+    ~ComponentGridFunction () override;
+    void Update () override;
+    void Load(istream& ist) override { throw Exception("Load not implemented for ComponentGF"); }
+    void Save(ostream& ost) const override { throw Exception("Save not implemented for ComponentGF"); }
   };
   
 
 
 
 
-
+  
   template <class SCAL>
   class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {
     shared_ptr<MeshAccess> ma;
-    shared_ptr<S_GridFunction<SCAL>> gf;
+    shared_ptr<GridFunction> gf;
     Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
     Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
     bool applyd;

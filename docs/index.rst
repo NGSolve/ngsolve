@@ -86,8 +86,8 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
    :maxdepth: 1
    :caption: C++ Tutorials
 
-   mylittlengs/1_Basic/basic
-   mylittlengs/2_Advanced/advanced
+   mylittlengs/1_Basic/README
+   mylittlengs/2_Advanced/README
 
 .. toctree::
    :maxdepth: 1

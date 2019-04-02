@@ -1,3 +1,6 @@
+#include <ngstd.hpp>
+#include <nginterface.h>
+
 #include <solve.hpp>
 
 #ifdef TCL
@@ -53,6 +56,7 @@ namespace ngcomp
   
   PDE :: ~PDE()
   {
+    
     for (int i = 0; i < string_constants.Size(); i++)
       delete string_constants[i];
     string_constants.DeleteAll();
@@ -68,6 +72,9 @@ namespace ngcomp
     CurvePointIntegrators.DeleteAll();
 
     Ng_ClearSolutionData ();
+
+    // Reset global Netgen-geoemtry with dummy-geom
+    Ng_LoadGeometry ("");
     
     // for (int i = 0; i < mas.Size(); i++) delete mas[i];
   }
@@ -519,7 +526,8 @@ namespace ngcomp
     }
     double starttime = WallTime();
 
-    MyMPI_Barrier();
+    auto comm = GetMeshAccess()->GetCommunicator();
+    comm.Barrier();
     if (pc == 0 || pc == todo.Size())
       {
         pc = 0;
@@ -810,7 +818,7 @@ namespace ngcomp
     Ng_Redraw();
     levelsolved++;
     
-    MyMPI_Barrier();
+    comm.Barrier();
     double endtime = WallTime();
     
     cout << IM(1) << "Equation Solved" << endl;
@@ -830,12 +838,12 @@ namespace ngcomp
 
     if (archive.Output())
       {
-        mas[0] -> ArchiveMesh (archive);
+        archive & mas[0];
       }
     else
       {
         auto ma = make_shared<MeshAccess>();
-        ma -> ArchiveMesh (archive);
+        archive & ma;
         AddMeshAccess(ma);
       }
     
@@ -860,8 +868,9 @@ namespace ngcomp
             archive << spaces[i] -> type;
             archive << spaces[i] -> GetDimension();
 
-	    MyMPI_SendCmd ("ngs_archive_space");
-	    MyMPI_Bcast (i);
+	    MyMPI_SendCmd ("ngs_archive_space", MPI_COMM_WORLD);
+            // MyMPI_Bcast (i, MPI_COMM_WORLD);
+            GetMeshAccess()->GetCommunicator().Bcast (i);
 
             spaces[i] -> DoArchive(archive);
 	    cout << "space " << i << " complete" << endl;
@@ -898,8 +907,9 @@ namespace ngcomp
             archive << string (gridfunctions.GetName(i));
             archive << gridfunctions[i]->GetFESpace()->GetName();
 
-	    MyMPI_SendCmd ("ngs_archive_gridfunction");
-	    MyMPI_Bcast (i);
+	    MyMPI_SendCmd ("ngs_archive_gridfunction", MPI_COMM_WORLD);
+	    // MyMPI_Bcast (i, MPI_COMM_WORLD);
+            GetMeshAccess()->GetCommunicator().Bcast(i);
 
             gridfunctions[i] -> DoArchive (archive);
             // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
@@ -1204,7 +1214,7 @@ namespace ngcomp
     cout << IM(1) << "add preconditioner " << name << flush;
     shared_ptr<Preconditioner> pre;
     const string & type = flags.GetStringFlag ("type");
-    int ntasks = MyMPI_GetNTasks ();
+    int ntasks = GetMeshAccess()->GetCommunicator().Size();
     
     if ( ntasks == 1 )
       {

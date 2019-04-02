@@ -83,7 +83,7 @@ namespace ngcomp
       CoefficientFunction(sqr(_pmltrafo->GetDimension()),true),
       pmltrafo(_pmltrafo), dim(_pmltrafo->GetDimension())
     {
-      SetDimensions(Array<int>({dim,dim}));
+      SetDimensions (ngstd::INT<2>(dim,dim));
     }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -120,7 +120,7 @@ namespace ngcomp
       pmltrafo(_pmltrafo),
       dim(_pmltrafo->GetDimension())
     {
-      SetDimensions(Array<int>({dim,dim}));
+      SetDimensions(ngstd::INT<2>(dim,dim));
     }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -451,7 +451,7 @@ namespace ngcomp
       : PML_TransformationDim<DIM>(), trafo(_trafo), jac(_jac) {
         if (jac->Dimension()!=trafo->Dimension()*trafo->Dimension())
             throw Exception( string("CustomPML_Transformation::CustomPML_Transformation: dimensions of jacobian and transformation do not match!"));
-        jac->SetDimensions(Array<int>({trafo->Dimension(),trafo->Dimension()}));
+        jac->SetDimensions(ngstd::INT<2>(trafo->Dimension(),trafo->Dimension()));
       }
     
     ~CustomPML_Transformation() {;}

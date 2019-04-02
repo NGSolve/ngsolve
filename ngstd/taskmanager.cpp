@@ -8,7 +8,7 @@
 #include <thread>
 
 #include "taskmanager.hpp"
-#include "paje_interface.hpp"
+#include <core/paje_trace.hpp>
 
 #ifdef USE_MKL
 #include <mkl.h>
@@ -16,8 +16,6 @@
 
 
 #include "../linalg/concurrentqueue.h"
-
-
 
 namespace ngstd
 {
@@ -157,10 +155,13 @@ namespace ngstd
       if (use_paje_trace)
         {
 #ifdef PARALLEL
-          sprintf(buf, "ng%d_rank%d.trace", cnt++, MyMPI_GetId());
-#else
-          sprintf(buf, "ng%d.trace", cnt++);
+          int is_init = -1;
+          MPI_Initialized(&is_init);
+          if (is_init)
+            sprintf(buf, "ng%d_rank%d.trace", cnt++, NgMPI_Comm(MPI_COMM_WORLD).Size());
+          else
 #endif
+            sprintf(buf, "ng%d.trace", cnt++);
         }
       else
         buf[0] = 0;
@@ -204,8 +205,6 @@ namespace ngstd
     while (active_workers < num_threads-1)
       ;
   }
-  extern size_t dummy_thread_times[NgProfiler::SIZE];
-  extern size_t dummy_thread_flops[NgProfiler::SIZE];
 
   static size_t calibrate_init_tsc = __rdtsc();
   typedef std::chrono::system_clock TClock;
@@ -223,14 +222,14 @@ namespace ngstd
     for (size_t i = 0; i < num_threads; i++)
       for (size_t j = NgProfiler::SIZE; j-- > 0; )
         {
-          if (!NgProfiler::usedcounter[j]) break;
-          NgProfiler::tottimes[j] += 1.0/frequ * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
-          NgProfiler::flops[j] += NgProfiler::thread_flops[i*NgProfiler::SIZE+j];
+          if (!NgProfiler::timers[j].usedcounter) break;
+          NgProfiler::timers[j].tottime += 1.0/frequ * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
+          NgProfiler::timers[j].flops += NgProfiler::thread_flops[i*NgProfiler::SIZE+j];
         }
     delete [] NgProfiler::thread_times;
-    NgProfiler::thread_times = dummy_thread_times;
+    NgProfiler::thread_times = NgProfiler::dummy_thread_times;
     delete [] NgProfiler::thread_flops;
-    NgProfiler::thread_flops = dummy_thread_flops;
+    NgProfiler::thread_flops = NgProfiler::dummy_thread_flops;
     
     while (active_workers)
       ;

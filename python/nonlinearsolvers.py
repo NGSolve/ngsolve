@@ -42,9 +42,9 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", damp
     w = u.vec.CreateVector()
     r = u.vec.CreateVector()
 
-    err = 1
+    err   = 1
     numit = 0
-    inv = None
+    inv   = None
     
     for it in range(maxit):
         numit += 1
@@ -53,7 +53,10 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", damp
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
+        if inverse == "sparsecholesky" and inv:
+            inv.Update()
+        else:
+            inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
 
         if a.condense:
             r.data += a.harmonic_extension_trans * r
@@ -71,14 +74,14 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", damp
         
         if abs(err) < maxerr: break
     else:
-        print("Warning: Newton might not converge!")
+        print("Warning: Newton might not converge! Error = ", err)
         return (-1,numit)
     return (0,numit)
 
 
 
 
-def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True):
+def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True, callback=None):
     """
     Newton's method for solving non-linear problems of the form A(u)=0 involving energy integrators.
 
@@ -122,9 +125,9 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
     r = u.vec.CreateVector()
     uh = u.vec.CreateVector()
 
-    err = 1
+    err   = 1
     numit = 0
-    inv = None
+    inv   = None
     
     for it in range(maxit):
         numit += 1
@@ -134,7 +137,10 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
+        if inverse == "sparsecholesky" and inv:
+            inv.Update()
+        else:
+            inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
 
         if a.condense:
             r.data += a.harmonic_extension_trans * r
@@ -160,9 +166,10 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
                     print ("tau = ", tau)
                     print ("energy uh = ", a.Energy(uh))
         u.vec.data = uh
+        if callback: callback()
         if abs(err) < maxerr: break
     else:
-        print("Warning: Newton might not converge!")
+        print("Warning: Newton might not converge! Error = ", err)
         return (-1,numit)
     return (0,numit)
 

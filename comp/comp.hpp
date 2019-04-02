@@ -10,7 +10,7 @@
 #include <fem.hpp>
 #include <la.hpp>
 
-#include <soldata.hpp>   // netgen visualization
+
 
 
 /**
@@ -77,8 +77,6 @@ namespace ngcomp
 #include "facetsurffespace.hpp"
 
 // #include "bddc.hpp"
-#include "hypre_precond.hpp"
-#include "hypre_ams_precond.hpp"
 #include "vtkoutput.hpp"
 
 #endif

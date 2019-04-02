@@ -20,6 +20,8 @@
 namespace ngla
 {
 
+  using namespace ngbla;
+  
 #ifdef PARALLEL
   class ParallelBaseVector;
 #endif
@@ -44,7 +46,7 @@ namespace ngla
     double parts[16];
     ParallelJob ([me,&parts] (TaskInfo ti)
                  {
-                   auto r = ::Range(me).Split (ti.task_nr, ti.ntasks);
+                   auto r = ngstd::Range(me).Split (ti.task_nr, ti.ntasks);
                    parts[ti.task_nr] = ngbla::L2Norm2 (me.Range(r));
                  }, 16);
     double sum = 0;
@@ -229,7 +231,7 @@ namespace ngla
   {
     size_t sum = 0;
     auto fv = FVDouble();
-    for (auto i : ::Range(fv))
+    for (auto i : ngstd::Range(fv))
       {
         double val = fv(i);
         sum += *reinterpret_cast<size_t*> (&val);
@@ -673,7 +675,7 @@ namespace ngla
     double parts[16];
     ParallelJob ([me,you,&parts] (TaskInfo ti)
                  {
-                   auto r = ::Range(me).Split (ti.task_nr, ti.ntasks);
+                   auto r = ngstd::Range(me).Split (ti.task_nr, ti.ntasks);
                    parts[ti.task_nr] =  ngbla::InnerProduct (me.Range(r), you.Range(r));
                  }, 16);
     double scal = 0;
@@ -736,11 +738,14 @@ namespace ngla
       if ( stat==NOT_PARALLEL ) continue;
       ispar.Set(k);
       auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
+      comm = pv->GetParallelDofs()->GetCommunicator();
+      /*
       auto vcomm = pv->GetParallelDofs()->GetCommunicator();
       if (comm==MPI_COMM_NULL)
 	comm = vcomm;
       else if (comm != vcomm)
 	throw Exception("Tried to construct a BlockVector with components in different MPI-Communicators!!");
+      */
     }
 #endif
   }
@@ -781,27 +786,37 @@ namespace ngla
       else ps += p;
     }
     // if all vectors are sequential, do not reduce reduce
-    if (comm == MPI_COMM_NULL) return ps;
-    return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
+    // if (MPI_Comm(comm) == MPI_COMM_NULL) return ps;
+    return pp + comm.AllReduce(ps, MPI_SUM);
   }
+
+
+  double BlockVector :: L2Norm () const
+  {
+    double sum = 0;
+    for (size_t k = 0; k < vecs.Size(); k++)
+      sum += sqr(vecs[k]->L2Norm());
+    return sqrt(sum);
+  }
+
   
   BaseVector & BlockVector :: Scale (double scal)
   {
-    for (auto i : ::Range(vecs))
+    for (auto i : ngstd::Range(vecs))
       *vecs[i] *= scal;
     return *this;
   }
   
   BaseVector & BlockVector :: SetScalar (double scal)
   {
-    for (auto i : ::Range(vecs))
+    for (auto i : ngstd::Range(vecs))
       vecs[i]->SetScalar(scal);
     return *this;
   }
   
   ostream & BlockVector :: Print (ostream & ost) const
   {
-    for (auto i : ::Range(vecs))
+    for (auto i : ngstd::Range(vecs))
       vecs[i] -> Print(ost);
     return ost;
   }
@@ -809,7 +824,7 @@ namespace ngla
   BaseVector & BlockVector :: Set (double scal, const BaseVector & v)
   {
     auto & bv = dynamic_cast_BlockVector(v);
-    for (size_t i : ::Range(vecs))
+    for (size_t i : ngstd::Range(vecs))
       vecs[i] -> Set(scal, *bv[i]);
     return *this;
   }
@@ -817,7 +832,7 @@ namespace ngla
   BaseVector & BlockVector :: Add (double scal, const BaseVector & v)
   {
     auto & bv = dynamic_cast_BlockVector(v);
-    for (size_t i : ::Range(vecs))
+    for (size_t i : ngstd::Range(vecs))
       vecs[i] -> Add(scal, *bv[i]);
     return *this;
   }

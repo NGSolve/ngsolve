@@ -8,6 +8,7 @@
 
 
 #include <solve.hpp>
+#include "hypre_precond.hpp"
 
 namespace ngcomp
 {
@@ -69,10 +70,11 @@ namespace ngcomp
       throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
 
     pardofs = pmat.GetParallelDofs ();
+    NgsMPI_Comm comm = pardofs->GetCommunicator();
     int ndof = pardofs->GetNDofLocal();
 
-    int ntasks = MyMPI_GetNTasks();
-    int id = MyMPI_GetId();
+    int ntasks = comm.Size();
+    int id = comm.Rank();
     
 
     // find global dof enumeration 
@@ -105,13 +107,11 @@ namespace ngcomp
     ScatterDofData (global_nums, pardofs);
     cout << IM(3) << "num glob dofs = " << num_glob_dofs << endl;
 	
-    VT_OFF();
-	
     // range of my master dofs ...
     ilower = first_master_dof[id];
     iupper = first_master_dof[id+1]-1;
    
-    HYPRE_IJMatrixCreate(ngs_comm, ilower, iupper, ilower, iupper, &A);
+    HYPRE_IJMatrixCreate(comm, ilower, iupper, ilower, iupper, &A);
     HYPRE_IJMatrixSetObjectType(A, HYPRE_PARCSR);
     HYPRE_IJMatrixInitialize(A);
    
@@ -162,7 +162,6 @@ namespace ngcomp
     cout << IM(2) << "Call BoomerAMGSetup" << endl;
     HYPRE_BoomerAMGSetup (precond, parcsr_A, par_b, par_x);
 	
-    VT_ON();
   }
 
 
@@ -171,6 +170,7 @@ namespace ngcomp
   {
     static Timer t("hypre mult");
     RegionTimer reg(t);
+    NgsMPI_Comm comm = pardofs->GetCommunicator();
 
     f.Distribute();
     u.SetParallelStatus(DISTRIBUTED);
@@ -180,11 +180,11 @@ namespace ngcomp
     HYPRE_IJVector x;
     HYPRE_ParVector par_x;
 
-    HYPRE_IJVectorCreate(ngs_comm, ilower, iupper,&b);
+    HYPRE_IJVectorCreate(comm, ilower, iupper,&b);
     HYPRE_IJVectorSetObjectType(b, HYPRE_PARCSR);
     HYPRE_IJVectorInitialize(b);
 
-    HYPRE_IJVectorCreate(ngs_comm, ilower, iupper,&x);
+    HYPRE_IJVectorCreate(comm, ilower, iupper,&x);
     HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
     HYPRE_IJVectorInitialize(x);
   
@@ -230,9 +230,7 @@ namespace ngcomp
    
     // HYPRE_IJVectorPrint(b, "IJ.out.b");
 
-    VT_OFF();
     HYPRE_BoomerAMGSolve(precond, parcsr_A, par_b, par_x);
-    VT_ON();
 
     // HYPRE_IJVectorPrint(x, "IJ.out.x");
     

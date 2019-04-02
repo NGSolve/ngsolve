@@ -305,11 +305,12 @@ namespace ngcomp
     first_face_dof[nfa] = ndof;
 
     first_element_dof.SetSize(nel + 1);
-    for (size_t i = 0; i < nel; i++)
+    for(auto i : Range(ma->GetNSE()))
       {
+        ElementId ei(BND, i);
         first_element_dof[i] = ndof;
 
-        switch (ma->GetElType({BND,i}))
+        switch (ma->GetElType(ei))
           {
           case ET_TRIG:
             ndof += 3 * order*(order + 1) / 2;
@@ -336,21 +337,16 @@ namespace ngcomp
 
     if (noncontinuous)
       {
-        //cout << "Update before discont" << endl;
         ndof = 0;
-        Array<int> pnums;
-			
-        for (size_t i = 0; i < nel; i++)
+	
+        for(auto i : Range(ma->GetNSE()))
           {
-            ElementId ei = { BND, i };
+            ElementId ei(BND, i);
             first_element_dof[i] = ndof;
-            auto facets = ma->GetElEdges(ei);
 
             // add facet dofs
-            for (int fa = 0; fa < facets.Size(); fa++)
-              {
-                ndof += first_face_dof[facets[fa] + 1] - first_face_dof[facets[fa]];
-              }
+            for (auto facets : ma->GetElEdges(ei))
+              ndof += first_face_dof[facets + 1] - first_face_dof[facets];
 
             // add inner dofs
             switch (ma->GetElType(ei))

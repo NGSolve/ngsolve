@@ -69,6 +69,11 @@ namespace ngstd
     INLINE INT (T ai1, T ai2, T ai3, T ai4, T ai5, T ai6, T ai7, T ai8, T ai9)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; i[3] = ai4; i[4] = ai5; i[5] = ai6; i[6] = ai7; i[7] = ai8; i[8] = ai9; }
 
+    void DoArchive(Archive& ar)
+    {
+      ar.Do(i, N);
+    }
+
     template <int N2, typename T2>
     INLINE INT (const INT<N2,T2> & in2)
     {
@@ -137,6 +142,9 @@ namespace ngstd
     INLINE const T & operator[] (int j) const
     { return i[j]; }
 
+    template <size_t J>
+    T get() const { return i[J]; }
+    
     /*
     INLINE void SetAll (T value)
     {
@@ -947,7 +955,7 @@ namespace ngstd
     };
 
     Array<ClosedHT> hts;
-    class alignas(64) MyMutex64 : public MyMutex { };
+    class alignas(64) MyMutex64 : public MyMutex, public AlignedAlloc<MyMutex64> { };
     
     Array<MyMutex64> locks;
 
@@ -1064,6 +1072,39 @@ namespace ngstd
       archive & mi[i];
     return archive;
   }
+}
+
+
+
+#ifdef PARALLEL
+namespace ngcore {
+  template<int S, typename T>
+  class MPI_typetrait<ngstd::INT<S, T> >
+  {
+  public:
+    /// gets the MPI datatype
+    static MPI_Datatype MPIType () 
+    { 
+      static MPI_Datatype MPI_T = 0;
+      if (!MPI_T)
+	{
+	  MPI_Type_contiguous ( S, MPI_typetrait<T>::MPIType(), &MPI_T);
+	  MPI_Type_commit ( &MPI_T );
+	}
+      return MPI_T;
+    }
+  };
+}
+#endif
+
+
+
+namespace std
+{
+  // structured binding support
+  template <size_t N, typename T>
+  struct tuple_size<ngstd::INT<N,T>> : std::integral_constant<std::size_t, N> {};
+  template<size_t N, int M, typename T> struct tuple_element<N,ngstd::INT<M,T>> { using type = T; };
 }
 
 #endif

@@ -23,8 +23,8 @@ namespace ngla
     : comm(acomm), dist_procs(adist_procs)
     
   {
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
       
     ndof = dist_procs.Size();
     
@@ -106,7 +106,7 @@ namespace ngla
     size_t nlocal = 0;
     for (int i = 0; i < ndof; i++)
       if (ismasterdof.Test(i)) nlocal++;
-    global_ndof = MyMPI_AllReduce (nlocal, MPI_SUM, comm);
+    global_ndof = comm.AllReduce (nlocal, MPI_SUM);
   }
 
   shared_ptr<ParallelDofs> ParallelDofs :: SubSet (shared_ptr<BitArray> take_dofs) const
@@ -126,8 +126,8 @@ namespace ngla
 					  Array<int> & global_nums,
 					  int & num_glob_dofs) const
   {
-    int ntasks = MyMPI_GetNTasks(comm);
-    int id = MyMPI_GetId(comm);
+    int ntasks = comm.Size();
+    int id = comm.Rank();
 
     global_nums.SetSize(ndof);
     global_nums = -1;

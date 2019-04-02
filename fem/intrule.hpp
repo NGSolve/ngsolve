@@ -1523,6 +1523,10 @@ namespace ngfem
 
 namespace ngstd
 {
+  using ngbla::Vec;
+  using ngbla::Mat;
+  using ngbla::FlatVector;
+  
   template<>
   class SIMD<ngfem::IntegrationPoint>
   {

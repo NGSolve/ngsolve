@@ -128,14 +128,13 @@ namespace ngstd
 #include <ngs_defines.hpp>
 
 // #include "mycomplex.hpp"  
+#include <core/ngcore.hpp>
+namespace ngstd { using namespace ngcore; }
 
 #include "ngs_utils.hpp"
-#include "archive_base.hpp"    
 #include "ngsstream.hpp"  
 #include "templates.hpp"
-#include "exception.hpp"
 #include "localheap.hpp"
-#include "profiler.hpp"
 
 #include "simd.hpp"
 #include "simd_complex.hpp"
@@ -146,7 +145,6 @@ namespace ngstd
 #include "xbool.hpp"
 
 #include "table.hpp"
-#include "symboltable.hpp"
 #include "hashtable.hpp"
 #include "bitarray.hpp"
 
@@ -168,7 +166,6 @@ namespace ngstd
 #ifndef WIN32
 #include "sockets.hpp"
 #endif
-#include "archive.hpp"
 
 namespace ngstd
 {
