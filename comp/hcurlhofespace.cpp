@@ -814,8 +814,7 @@ namespace ngcomp
         int dim = ma->GetDimension();
         size_t nedge = ma->GetNEdges(); 
         size_t nface = ma->GetNFaces();
-        if (dim == 3)
-          size_t ncell = ma->GetNNodes(NT_CELL);
+        size_t ncell = ma->GetNE();
 
         ndof = nedge;
         
@@ -877,7 +876,7 @@ namespace ngcomp
                   INT<2> pr = FESpace::order_face_right[i];
                 */
                 INT<2> pl = order_inner[i];
-                switch (ma->GetElType(i))
+                switch (ma->GetElType(ElementId(VOL,i)))
                   {
                   case ET_TET:
                     {
