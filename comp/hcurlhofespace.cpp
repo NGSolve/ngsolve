@@ -1256,8 +1256,8 @@ namespace ngcomp
     else if (order_policy == OLDSTYLE_ORDER)
       order_policy = VARIABLE_ORDER;
       
-    if (order < 1)
-      order = 1;
+    if (order < 0)
+      order = 0;
     
     switch (ni.GetType())
       {
