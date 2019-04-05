@@ -1002,6 +1002,26 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 )raw_string")
          )
 
+    .def("SetCouplingType", [](shared_ptr<FESpace> self, IntRange dofnrs, COUPLING_TYPE ct)
+         {
+           for (auto d : dofnrs)
+             self->SetDofCouplingType(DofId(d),ct);
+         },
+         py::arg("dofnrs"), py::arg("coupling_type"), docu_string(R"raw_string(
+         Set coupling type for interval of dofs.
+
+Parameters:
+
+dofnrs : Range
+  range of dofs
+
+coupling_type : ngsolve.comp.COUPLING_TYPE
+  input coupling type
+
+)raw_string")
+         )
+
+    
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
@@ -1018,7 +1038,7 @@ Get the finite element to corresponding element id.
 
 Parameters:
 
-ei : ngsolve.com.ElementId
+ei : ngsolve.comp.ElementId
    input element id
 
 )raw_string"))
