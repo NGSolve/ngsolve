@@ -69,6 +69,17 @@ namespace ngfem
     }
   }
 
+  template <int D,typename MAT>
+  Vec<D*D-D> SymMatToVec(MAT & mat)
+  {
+    if (D == 2)
+      return Vec<3>(mat(0),mat(3),mat(2));
+    else if (D == 3)
+      return Vec<6>(mat(0),mat(4),mat(8),mat(5),mat(2),mat(1));
+    else
+      return 0;
+  }
+
   template <typename T>
   Mat<2> DyadProd(Vec<2,T> a, Vec<2,T> b)
   {
@@ -106,6 +117,7 @@ namespace ngfem
       2 1*/
     Vec<2,T> CurlShape() { return Vec<2,T> (u(2).DValue(0)-u(0).DValue(1), u(1).DValue(0)-u(2).DValue(1)); }
   };
+  
   template <typename T> class T_REGGE_Shape<3,T>
   {
     Vec<6,AutoDiff<3,T>> u;
@@ -121,6 +133,76 @@ namespace ngfem
   };
   //---------------------------------------------------
 
+
+    // ***************** EpsGrad ****************************** */
+  // eps (nabla u)
+  
+  template <int D, typename T> class T_EpsGrad;
+  template <typename T> class T_EpsGrad<2,T>
+  {
+    AutoDiffDiff<2,T> u;
+  public:
+    T_EpsGrad  (AutoDiffDiff<2,T> au) : u(au) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(0,0), u.DDValue(1,1), u.DDValue(0,1)); }
+    Vec<2,T> CurlShape() { return Vec<2,T> (0.0, 0.0); }
+  };
+  
+  template <int D, typename T>
+  auto EpsGrad (AutoDiffDiff<D,T> au) { return T_EpsGrad<D,T>(au); }
+  
+  
+  // ***************** Eps_u_Gradv ****************************** */
+  // eps (u nabla v)
+  
+  template <int D, typename T> class T_Eps_u_Gradv;
+  template <typename T> class T_Eps_u_Gradv<2,T>
+  {
+    AutoDiffDiff<2,T> u, v;
+  public:
+    T_Eps_u_Gradv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> ((u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0)),
+                                        (u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1)),
+                                        u.Value()*v.DDValue(0,1) + 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
+    Vec<2,T> CurlShape()
+    {
+      /*T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+      
+      return -0.5 * Vec<2,T> (uyy*vx - uxy*vy + uy*vxy - ux*vyy,
+      -uxy*vx + uxx*vy - uy*vxx + ux*vxy);*/
+      throw Exception("curl shape not implemented for Eps_u_Gradv");
+    }
+  };
+  
+  template <int D, typename T>
+  auto Eps_u_Gradv (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_Eps_u_Gradv<D,T>(au, av); }
+  
+  
+  template <int D, typename T> class T_vEpsGradu;
+  template <typename T> class T_vEpsGradu<2,T>
+  {
+    AutoDiffDiff<2,T> u,v;
+  public:
+    T_vEpsGradu  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(0,0)*v.Value(),
+                                      u.DDValue(1,1)*v.Value(),  (u.DDValue(1,0)*v.Value()));}
+    Vec<2,T> CurlShape()
+    {
+      /*T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      // T ux = u.DValue(0), uy = u.DValue(1);
+      // T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+
+      return Vec<2,T> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);*/
+      throw Exception("curl shape not implemented for Eps_u_Gradv");
+    }
+  };
+  
+  template <int D, typename T>
+  auto vEpsGradu (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_vEpsGradu<D,T>(au, av); }
+    
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
 
   
@@ -205,7 +287,10 @@ namespace ngfem
     virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override
     {
       shape = 0.0;
-      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t i, Mat<DIM,DIM> val) { shape.Row(i)=val; }));
+      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t nr, auto val)
+                                              {
+                                                VecToSymMat<DIM> (val, shape.Row(nr));
+                                              }));
     }
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
@@ -476,7 +561,6 @@ namespace ngfem
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      
       auto & ip = mip.IP();
       typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
       T x = ip(0), y = ip(1);
@@ -504,11 +588,12 @@ namespace ngfem
                   Vec<2,T> tv = mip.GetJacobian()*tauref;
 
                   Mat<2> tt = DyadProd(tv,tv);
+                  Vec<3> vtt = Vec<3>( tt(0,0),tt(1,1),tt(0,1) );
                   LegendrePolynomial::Eval
                     (p, xi,
                      SBLambda([&] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*vtt;
                               }));
                 }
               ii += (p+1);
@@ -527,9 +612,9 @@ namespace ngfem
               DubinerBasis3::Eval (p, lam[0], lam[1],
                                    SBLambda([&] (size_t nr, T val)
                                             {
-                                              shape[ii++] = val*Matrix<>({{1,0},{0,0}});
-                                              shape[ii++] = val*Matrix<>({{0,0},{0,1}});
-                                              shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+                                              shape[ii++] = val*Vec<3>(1,0,0);
+                                              shape[ii++] = val*Vec<3>(0,1,0);
+                                              shape[ii++] = val*Vec<3>(0,0,1);
                                             }));
             }
         }
@@ -538,14 +623,11 @@ namespace ngfem
     
   };
   
-  /*template <> class HCurlCurlFE<ET_QUAD> : public T_HCurlCurlFE<ET_QUAD> 
+  template <> class HCurlCurlFE<ET_QUAD> : public T_HCurlCurlFE<ET_QUAD> 
   {
     
   public:
     using T_HCurlCurlFE<ET_QUAD> :: T_HCurlCurlFE;
-
-    enum {incsg = -1};
-    enum {incsugv = -1};
 
     virtual void ComputeNDof()
     {
@@ -556,75 +638,154 @@ namespace ngfem
         ndof += order_facet[i][0]+1;
         order = max2(order, order_facet[i][0]);
       }
-      int ninner = (order_inner[0]+1+incsg)*(order_inner[0]+1+incsg) + 
-        (order_inner[0]+2)*(order_inner[0]) *2 +
-        2*(order_inner[0]+1+incsugv) +1;
+      int ninner = order_inner[0]*order_inner[0] + (order_inner[0]+2)*order_inner[0]*2 + 2*order_inner[0] +1;
       order = max2(order, order_inner[0]);
-      order += 5;
+      order += 1;
       ndof += ninner;
-
     }
+    
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      auto x = ip.x, y = ip.y;
+      Tx x = ip.x, y = ip.y;
+      typedef decltype(x.Value()+x.Value()) T;
+      AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
       Tx lx[4] ={1-x, x, x, 1-x};
       Tx ly[4] = {1-y, 1-y, y, y};
-      
+      AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
       int ii = 0;
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
 
       ArrayMem<Tx,20> u(order+2), v(order+2);
       
       for (int i = 0; i < 4; i++)
         {
-          int es = edges[i][0], ee = edges[i][1];
-          if (vnums[es] > vnums[ee]) swap (es,ee);
-          
-          Tx xi = lx[ee]+ly[ee]-lx[es]-ly[es];
-          Tx eta = lx[es]*ly[es]+lx[ee]*ly[ee];
+          INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+          Tx xi = lx[e[0]]+ly[e[0]]-lx[e[1]]-ly[e[1]];
+          Tx eta = lx[e[1]]*ly[e[1]]+lx[e[0]]*ly[e[0]];
 
 	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
 
           
           for (int l = 0; l <= order_facet[i][0]; l++)
-            shape[ii++] = SigmaGrad (eta*u[l]);
+            // shape[ii++] = SigmaGrad (eta*u[l]);
+            shape[ii++] = Eps_u_Gradv (eta, u[l]);
         }
 
-
-      int oi=order_inner[0];
-
+      int oi = order_inner[0];
 
       IntegratedLegendreMonomialExt::Calc(oi+3,lx[0]-lx[1],u);
       IntegratedLegendreMonomialExt::Calc(oi+3,ly[0]-ly[2],v);
-      
-      
-      for(int i = 0; i <= oi+incsg; i++)
-      {
-        for(int j = 0; j <= oi+incsg; j++)
-        {
-          shape[ii++] = SigmaGrad(u[i]*v[j]);
-        }
-      }
+
+
+      for(int i = 0; i <= oi-1; i++)
+        for(int j = 0; j <= oi-1; j++)
+          shape[ii++] = EpsGrad(u[i]*v[j]);
+
       for(int i = 0; i <= oi+1; i++)
-      {
         for(int j = 0; j <= oi-1; j++)
         {
-          shape[ii++] = vSigmaGradu(u[i],v[j]);
-          shape[ii++] = vSigmaGradu(v[i],u[j]);
+          shape[ii++] = vEpsGradu(u[i],v[j]);
+          shape[ii++] = vEpsGradu(v[i],u[j]);
         }
-      }
 
-      shape[ii++] = Sigma_u_Gradv(lx[0], ly[0]);
+      shape[ii++] = Eps_u_Gradv(lx[0], ly[0]);
 
-      for(int i = 0; i <= oi+incsugv; i++)
+      for(int i = 0; i <= oi-1; i++)
       {
-        shape[ii++] = Sigma_u_Gradv(u[i], ly[0]);
-        shape[ii++] = Sigma_u_Gradv(v[i], lx[0]); //
+        shape[ii++] = Eps_u_Gradv(u[i], ly[0]);
+        shape[ii++] = Eps_u_Gradv(v[i], lx[0]);
       }
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      Vec<2, AutoDiff<2>> ip = mip;
+      auto tip = TIP<2, AutoDiffDiff<2>> (ip);
+                             
+      AutoDiffDiff<2> x = tip.x, y = tip.y;
+      typedef decltype(x.Value()+x.Value()) T;
+      AutoDiff<2> xx(x.Value(), &x.DValue(0));
+      AutoDiff<2> yy(y.Value(), &y.DValue(0));
+      AutoDiffDiff<2> lx[4] ={1-x, x, x, 1-x};
+      AutoDiffDiff<2> ly[4] = {1-y, 1-y, y, y};
+      AutoDiff<2> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
+      int ii = 0;
+
+      int facetnr = mip.IP().FacetNr();
+      auto xxx = mip.IP()(0), yyy = mip.IP()(1);
+      T lam[4] = { 1-xxx-yyy+xxx*yyy, xxx*(1-yyy), xxx*yyy, yyy*(1-xxx) };
+      Vec<2> pnts[4] = { { 0, 0 }, { 1, 0 } , { 1, 1 }, { 0, 1 } };
+      
+      ArrayMem<AutoDiffDiff<2>,20> u(order+2), v(order+2);
+      
+      if (mip.IP().VB() == BND)
+        { // facet shapes
+          for (int i = 0; i < 4; i++)
+            {
+              int p = order_facet[i][0];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+                  
+                  T xi = lam[e[0]]-lam[e[1]];
+                  Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
+                  
+                  
+                  Vec<2,T> tv = mip.GetJacobian()*tauref;
+
+                  Mat<2> tt = DyadProd(tv,tv);
+                  Vec<3> vtt = Vec<3> (tt(0,0), tt(1,1), tt(0,1) );
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*vtt;
+                                }));
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 4; i++)
+            ii += order_facet[i][0]+1;
+        }
+      
+      if (mip.IP().VB() == VOL)
+        {
+          auto p = order_inner[0];
+          INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
+
+          IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
+          IntegratedLegendreMonomialExt::Calc(p+3,ly[0]-ly[2],v);
+
+
+          for(int i = 0; i <= p-1; i++)
+              for(int j = 0; j <= p-1; j++)
+                  shape[ii++] = EpsGrad(u[i]*v[j]).Shape();
+          
+          for(int i = 0; i <= p+1; i++)
+              for(int j = 0; j <= p-1; j++)
+                {
+                  shape[ii++] = vEpsGradu(u[i],v[j]).Shape();
+                  shape[ii++] = vEpsGradu(v[i],u[j]).Shape();
+                }
+
+          shape[ii++] = Eps_u_Gradv(lx[0], ly[0]).Shape();
+          
+          for(int i = 0; i <= p-1; i++)
+            {
+              shape[ii++] = Eps_u_Gradv(u[i], ly[0]).Shape();
+              shape[ii++] = Eps_u_Gradv(v[i], lx[0]).Shape();
+            }  
+        }
+    }
   };
+  /*
 
   // ***************** S_zz(uvw) ****************************** *
   // write uvw into zz component
@@ -1390,11 +1551,12 @@ namespace ngfem
                   Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
                   Vec<3,T> tau = mip.GetJacobian()*tauref;
                   Mat<3> tt = DyadProd(tau,tau);
+                  Vec<6> vtt = SymMatToVec<3>(tt);
                   LegendrePolynomial::Eval
                     (p, xi,
                      SBLambda([&] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*vtt;
                               }));
                 }
               ii += (p+1);
@@ -1429,9 +1591,12 @@ namespace ngfem
                   DubinerBasis3::Eval (p, xi, eta,
                                        SBLambda([&] (size_t nr, T val)
                                                 {
-                                                  shape[ii++] = 1/det*val*F*Matrix<>({{1,0},{0,0}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*F*Matrix<>({{0,0},{0,1}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*F*Matrix<>({{0,1},{1,0}})*Trans(F);
+                                                  Mat<3,3> tmpmat = F*Matrix<>({{1,0},{0,0}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
+                                                  tmpmat = F*Matrix<>({{0,0},{0,1}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
+                                                  tmpmat = F*Matrix<>({{0,1},{1,0}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
                                                 }));
                 }
               else
@@ -1466,12 +1631,18 @@ namespace ngfem
                                             jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
                                                           SBLambda([&](size_t j, T val) LAMBDA_INLINE
                                                                    {
-                                                                     shape[ii++] = val*Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
+                                                                     Mat<3,3> tmpmat = Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
                                                                    }));
                                             jac2.IncAlpha2();
                                           }));
@@ -1479,7 +1650,7 @@ namespace ngfem
                            }));
             
             }
-        }
+            }
     }
       
   };
@@ -2047,7 +2218,7 @@ namespace ngfem
 
 
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TRIG>;
-  //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_QUAD>;
+  HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_QUAD>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TET>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_PRISM>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_HEX>;
