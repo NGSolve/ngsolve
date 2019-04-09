@@ -578,15 +578,19 @@ namespace ngcomp
         fine_face.SetSize (nfa); 
         
         int p = var_order ? 0 : order; 
-        order_edge = p - (type1 ? 1 : 0); 
+        order_edge = max(0, p - (type1 ? 1 : 0) + et_bonus_order[ET_SEGM]);
         // order_inner = INT<3> (p,p,p); 
         order_inner = INT<3> (0,0,0); 
         
         fine_edge = 0; 
         // if (nfa > 0)
         { 
-          fine_face = 0; 
-          order_face = INT<2> (p,p);
+          fine_face = 0;
+          if (et_bonus_order[ET_TRIG] || et_bonus_order[ET_QUAD])
+            for (auto f : Range(nfa))
+              order_face[f] = p+et_bonus_order[ma->GetFaceType(f)];
+          else
+            order_face = INT<2> (p,p);
           usegrad_face = 0; 
         } 
         
@@ -677,7 +681,7 @@ namespace ngcomp
             
             if (dim == 3)
               {
-                elfaces = ma->GetElFaces(ei);
+                auto elfaces = ma->GetElFaces(ei);
                 for(int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
               }
             
