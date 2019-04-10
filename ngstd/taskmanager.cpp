@@ -158,7 +158,7 @@ namespace ngstd
           int is_init = -1;
           MPI_Initialized(&is_init);
           if (is_init)
-            sprintf(buf, "ng%d_rank%d.trace", cnt++, NgMPI_Comm(MPI_COMM_WORLD).Size());
+            sprintf(buf, "ng%d_rank%d.trace", cnt++, NgMPI_Comm(MPI_COMM_WORLD).Rank());
           else
 #endif
             sprintf(buf, "ng%d.trace", cnt++);
