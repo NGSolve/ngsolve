@@ -464,9 +464,10 @@ namespace ngfem
           if (usegrad_face[i])
             {
 	      if (type1)
-
-		DubinerBasis::EvalMult
-		  (p-3, lam[fav[0]], lam[fav[1]], 
+		
+		DubinerBasis::EvalScaledMult
+		  (p-3, lam[fav[0]], lam[fav[1]],
+		   1-lam[vop],
 		   lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
 		   SBLambda
 		   ([&](int nr, Tx val)
@@ -524,15 +525,18 @@ namespace ngfem
       {
 	if (type1) {
 
-	  if(usegrad_cell) 
-	    DubinerBasis3D::EvalMult
-	      (p-4, lam[0], lam[1], lam[2], lam[0]*lam[1]*lam[2]*lam[3], 
-	       SBLambda
-	       ([&](int nr, Tx val)
-		{
-		  shape[ii++] = Du(val);
-		}));
+	  if (usegrad_cell) {
+	    
+	    TetShapesInnerLegendre::CalcSplitted
+	      (p+1, x-(1-x-y-z), y, z, adpol1, adpol2, adpol3);
 
+	    for (int i = 0; i <= p-4; i++)
+	      for (int j = 0; j <= p-4-i; j++)
+		for (int k = 0; k <= p-4-i-j; k++)
+		  shape[ii++] = Du(adpol1[i] * adpol2[j] * adpol3[k]);
+
+	  }
+	  
 	  DubinerBasis3D::EvalMult
 	    (p-3, lam[0], lam[1], lam[2],  lam[1]*lam[2],
 	     SBLambda
