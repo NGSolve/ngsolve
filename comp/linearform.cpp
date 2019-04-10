@@ -225,7 +225,8 @@ namespace ngcomp
                          
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
-			 lfip -> CalcElementVector (fel, eltrans, elvec, lh);
+			 auto & mapped_trafo = eltrans.AddDeformation(lfip->GetDeformation().get(), lh);
+			 lfip -> CalcElementVector (fel, mapped_trafo, elvec, lh);
 			 
 			 if (printelvec)
 			   {
