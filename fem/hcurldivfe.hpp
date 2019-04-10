@@ -784,8 +784,8 @@ namespace ngfem
 
        
        ArrayMem<AutoDiff<3,T>,20> ha((maxorder_facet+1)*(maxorder_facet+2)/2.0); 
-       ArrayMem<AutoDiff<3,T>,20> v((order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0);
-       ArrayMem<AutoDiff<3,T>,20> dubb(order_inner*(order_inner+1)*(order_inner+2)/6.0);
+       //ArrayMem<AutoDiff<3,T>,20> v((order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0);
+       //ArrayMem<AutoDiff<3,T>,20> dubb(order_inner*(order_inner+1)*(order_inner+2)/6.0);
        
       /* Edge based basis functions for tangential-normal continuity */
       for(int fa = 0; fa < 4; fa++)
@@ -822,9 +822,17 @@ namespace ngfem
       LegendrePolynomial leg;
       JacobiPolynomialAlpha jac1(1);
 
+
       //############ type 1 ############
       if (ot>-1)
 	{
+	  ArrayMem<AutoDiff<3,T>,20> dub_vals_inner((ot+1)*(ot+2)*(ot+3)/6.0);      
+	  DubinerBasis3D::Eval(ot,ls,le,lt ,dub_vals_inner);
+
+	  for (int l = 0; l < (ot+1)*(ot+2)*(ot+3)/6.0; l++)
+	     shape[ii++] =  Id_v(dub_vals_inner[l]); 
+
+	  /*
 	  leg.EvalScaled1Assign 
 	    (ot, lt-lo, lt+lo,
 	     SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
@@ -843,10 +851,27 @@ namespace ngfem
 				      }));
 			 jac1.IncAlpha2();
 		       }));
+	  */
 	}
       
       //############ type 2 ############
-            
+      ArrayMem<AutoDiff<3,T>,20> dub_vals((oi+1)*(oi+2)*(oi+3)/6.0);
+      
+      DubinerBasis3D::Eval(oi,ls,le,lt ,dub_vals);
+
+      for (int l = 0; l < (oi+1)*(oi+2)*(oi+3)/6.0; l++)
+	    {
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,lo*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,lo*dub_vals[l]);	  
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lo,lt*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lo,le,lt*dub_vals[l]);	  
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,lo,lt,ls*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,lt,le,ls*dub_vals[l]);	  
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,ls,lt,le*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lt,ls,lo,le*dub_vals[l]);
+	    }
+      
+      /*
       leg.EvalScaled1Assign 
 	(oi-1, lt-lo, lt+lo,
 	 SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
@@ -873,6 +898,7 @@ namespace ngfem
 				  }));
 		     jac1.IncAlpha2();
 		   }));
+      */
 
       if(GGbubbles)
 	{
