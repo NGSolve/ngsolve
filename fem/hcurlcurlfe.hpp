@@ -69,6 +69,17 @@ namespace ngfem
     }
   }
 
+  template <int D,typename MAT>
+  Vec<D*D-D> SymMatToVec(MAT & mat)
+  {
+    if (D == 2)
+      return Vec<3>(mat(0),mat(3),mat(2));
+    else if (D == 3)
+      return Vec<6>(mat(0),mat(4),mat(8),mat(5),mat(2),mat(1));
+    else
+      return 0;
+  }
+
   template <typename T>
   Mat<2> DyadProd(Vec<2,T> a, Vec<2,T> b)
   {
@@ -276,7 +287,10 @@ namespace ngfem
     virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override
     {
       shape = 0.0;
-      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t i, Mat<DIM,DIM> val) { shape.Row(i)=val; }));
+      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t nr, auto val)
+                                              {
+                                                VecToSymMat<DIM> (val, shape.Row(nr));
+                                              }));
     }
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
@@ -547,7 +561,6 @@ namespace ngfem
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      
       auto & ip = mip.IP();
       typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
       T x = ip(0), y = ip(1);
@@ -575,11 +588,12 @@ namespace ngfem
                   Vec<2,T> tv = mip.GetJacobian()*tauref;
 
                   Mat<2> tt = DyadProd(tv,tv);
+                  Vec<3> vtt = Vec<3>( tt(0,0),tt(1,1),tt(0,1) );
                   LegendrePolynomial::Eval
                     (p, xi,
                      SBLambda([&] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*vtt;
                               }));
                 }
               ii += (p+1);
@@ -598,9 +612,9 @@ namespace ngfem
               DubinerBasis3::Eval (p, lam[0], lam[1],
                                    SBLambda([&] (size_t nr, T val)
                                             {
-                                              shape[ii++] = val*Matrix<>({{1,0},{0,0}});
-                                              shape[ii++] = val*Matrix<>({{0,0},{0,1}});
-                                              shape[ii++] = val*Matrix<>({{0,1},{1,0}});
+                                              shape[ii++] = val*Vec<3>(1,0,0);
+                                              shape[ii++] = val*Vec<3>(0,1,0);
+                                              shape[ii++] = val*Vec<3>(0,0,1);
                                             }));
             }
         }
@@ -639,21 +653,17 @@ namespace ngfem
       AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
       Tx lx[4] ={1-x, x, x, 1-x};
       Tx ly[4] = {1-y, 1-y, y, y};
-      AutoDiff<2,T> dlam[4]  = {1-xx-yy+xx*yy, xx*(1-yy), xx*yy, yy*(1-xx)};
       AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
-      AutoDiffDiff<2,T> ddlam[4] = {1-x-y+x*y, x*(1-y), x*y, y*(1-x)};
       int ii = 0;
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
 
       ArrayMem<Tx,20> u(order+2), v(order+2);
       
       for (int i = 0; i < 4; i++)
         {
-          int es = edges[i][0], ee = edges[i][1];
-          if (vnums[es] > vnums[ee]) swap (es,ee);
-          Tx xi = lx[ee]+ly[ee]-lx[es]-ly[es];
-          Tx eta = lx[es]*ly[es]+lx[ee]*ly[ee];
+          INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+          Tx xi = lx[e[0]]+ly[e[0]]-lx[e[1]]-ly[e[1]];
+          Tx eta = lx[e[1]]*ly[e[1]]+lx[e[0]]*ly[e[0]];
 
 	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
 
@@ -670,20 +680,15 @@ namespace ngfem
 
 
       for(int i = 0; i <= oi-1; i++)
-      {
         for(int j = 0; j <= oi-1; j++)
-        {
           shape[ii++] = EpsGrad(u[i]*v[j]);
-        }
-      }
+
       for(int i = 0; i <= oi+1; i++)
-      {
         for(int j = 0; j <= oi-1; j++)
         {
           shape[ii++] = vEpsGradu(u[i],v[j]);
           shape[ii++] = vEpsGradu(v[i],u[j]);
         }
-      }
 
       shape[ii++] = Eps_u_Gradv(lx[0], ly[0]);
 
@@ -691,27 +696,33 @@ namespace ngfem
       {
         shape[ii++] = Eps_u_Gradv(u[i], ly[0]);
         shape[ii++] = Eps_u_Gradv(v[i], lx[0]);
-      }      
+      }
     };
 
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      cout << "In quad calc dual shape" << endl;
-      
-      auto & ip = mip.IP();
-      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
-      T x = ip(0), y = ip(1);
-      T lam[4] = {1-x-y+x*y, x*(1-y), x*y, y*(1-x)};
-      Vec<2,T> pnts[4] = { { 0, 0 }, { 1, 0 } , { 1, 1 }, { 0, 1 } };
-      int facetnr = ip.FacetNr();
-      cout << "facetnr = " << facetnr << endl;
+      Vec<2, AutoDiff<2>> ip = mip;
+      auto tip = TIP<2, AutoDiffDiff<2>> (ip);
+                             
+      AutoDiffDiff<2> x = tip.x, y = tip.y;
+      typedef decltype(x.Value()+x.Value()) T;
+      AutoDiff<2> xx(x.Value(), &x.DValue(0));
+      AutoDiff<2> yy(y.Value(), &y.DValue(0));
+      AutoDiffDiff<2> lx[4] ={1-x, x, x, 1-x};
+      AutoDiffDiff<2> ly[4] = {1-y, 1-y, y, y};
+      AutoDiff<2> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
       int ii = 0;
-      T sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
-      if (ip.VB() == BND)
+      int facetnr = mip.IP().FacetNr();
+      auto xxx = mip.IP()(0), yyy = mip.IP()(1);
+      T lam[4] = { 1-xxx-yyy+xxx*yyy, xxx*(1-yyy), xxx*yyy, yyy*(1-xxx) };
+      Vec<2> pnts[4] = { { 0, 0 }, { 1, 0 } , { 1, 1 }, { 0, 1 } };
+      
+      ArrayMem<AutoDiffDiff<2>,20> u(order+2), v(order+2);
+      
+      if (mip.IP().VB() == BND)
         { // facet shapes
-          cout << "BND" << endl;
           for (int i = 0; i < 4; i++)
             {
               int p = order_facet[i][0];
@@ -727,12 +738,13 @@ namespace ngfem
                   Vec<2,T> tv = mip.GetJacobian()*tauref;
 
                   Mat<2> tt = DyadProd(tv,tv);
+                  Vec<3> vtt = Vec<3> (tt(0,0), tt(1,1), tt(0,1) );
                   LegendrePolynomial::Eval
                     (p, xi,
                      SBLambda([&] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
-                              }));
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*vtt;
+                                }));
                 }
               ii += (p+1);
             }
@@ -742,80 +754,27 @@ namespace ngfem
           for (int i = 0; i < 4; i++)
             ii += order_facet[i][0]+1;
         }
-      if (ip.VB() == VOL)
+      
+      if (mip.IP().VB() == VOL)
         {
-          cout << "ii start = " << ii << endl;
-          cout << "VOL" << endl;
           auto p = order_inner[0];
-          cout << "order_inner[0] = "  << order_inner[0] << endl;
           INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
-          /*DubinerBasis3::Eval (p, lam[0], lam[1],
-            SBLambda([&] (size_t nr, T val)
-            {
-            cout << "val = " << val << endl;
-            cout << "val*mat = " << val*Matrix<>({{0,1},{1,0}}) << endl;
-            //shape[ii++] = val*Matrix<>({{0,1},{1,0}});
-            //shape[ii++] = val*Matrix<>({{0,0},{0,1}});
-            //shape[ii++] = val*Matrix<>({{0,1},{1,0}});
-            }));
-            }*/
-          /*T xi = sigma[f[0]]-sigma[f[1]]; 
-          T eta = sigma[f[0]]-sigma[f[3]];
-          STACK_ARRAY(T, mem, 2*p+2);
-          T * polx = &mem[0];
-          T * poly = &mem[p+1];
-          
-          LegendrePolynomial (p, xi, polx);
-          LegendrePolynomial (p, eta, poly);
-          
-          shape[ii++] = (polx[p] * poly[p])*Matrix<>({{0,1},{1,0}});
-          
-          if (p > 0)
-            {
-              
-              for (size_t i = 0; i <= p; i++)
-                for (size_t j = 0; j <= p; j++)
-                  {
-                    if ( i == j && i == p )
-                      continue;
-                    cout << "i = " << i << ", j = " << j << endl;
-                    //shape[ii++] = (polx[i] * poly[j])*Matrix<>({{1,0},{0,0}});
-                    //shape[ii++] = (polx[i] * poly[j])*Matrix<>({{0,0},{0,1}});
-                    //shape[ii++] = (polx[i] * poly[j])*Matrix<>({{0,1},{1,0}});
-                    
-                  }
-            }*/
-          Vec<2, AutoDiffDiff<2>> adp;
-          for ( int i=0; i<2; i++)
-            adp(i) = AutoDiff<2>(ip(i),i);
-          auto tip = TIP<2, AutoDiffDiff<2>> (adp);
-          
-          AutoDiffDiff<2,T> xx = tip.x;
-          AutoDiffDiff<2,T> yy = tip.y;
-          AutoDiffDiff<2,T> lx[4] ={1-xx, xx, xx, 1-xx};
-          AutoDiffDiff<2,T> ly[4] = {1-yy, 1-yy, yy, yy};
-          ArrayMem<AutoDiffDiff<2,T>,20> u(order+2), v(order+2);
 
           IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
           IntegratedLegendreMonomialExt::Calc(p+3,ly[0]-ly[2],v);
 
 
           for(int i = 0; i <= p-1; i++)
-            {
               for(int j = 0; j <= p-1; j++)
-                {
                   shape[ii++] = EpsGrad(u[i]*v[j]).Shape();
-                }
-            }
+          
           for(int i = 0; i <= p+1; i++)
-            {
               for(int j = 0; j <= p-1; j++)
                 {
                   shape[ii++] = vEpsGradu(u[i],v[j]).Shape();
                   shape[ii++] = vEpsGradu(v[i],u[j]).Shape();
                 }
-            }
-          
+
           shape[ii++] = Eps_u_Gradv(lx[0], ly[0]).Shape();
           
           for(int i = 0; i <= p-1; i++)
@@ -824,7 +783,6 @@ namespace ngfem
               shape[ii++] = Eps_u_Gradv(v[i], lx[0]).Shape();
             }  
         }
-      cout << "ii ebd = " << ii << endl;
     }
   };
   /*
@@ -1593,11 +1551,12 @@ namespace ngfem
                   Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
                   Vec<3,T> tau = mip.GetJacobian()*tauref;
                   Mat<3> tt = DyadProd(tau,tau);
+                  Vec<6> vtt = SymMatToVec<3>(tt);
                   LegendrePolynomial::Eval
                     (p, xi,
                      SBLambda([&] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*vtt;
                               }));
                 }
               ii += (p+1);
@@ -1632,9 +1591,12 @@ namespace ngfem
                   DubinerBasis3::Eval (p, xi, eta,
                                        SBLambda([&] (size_t nr, T val)
                                                 {
-                                                  shape[ii++] = 1/det*val*F*Matrix<>({{1,0},{0,0}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*F*Matrix<>({{0,0},{0,1}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*F*Matrix<>({{0,1},{1,0}})*Trans(F);
+                                                  Mat<3,3> tmpmat = F*Matrix<>({{1,0},{0,0}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
+                                                  tmpmat = F*Matrix<>({{0,0},{0,1}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
+                                                  tmpmat = F*Matrix<>({{0,1},{1,0}})*Trans(F);
+                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
                                                 }));
                 }
               else
@@ -1669,12 +1631,18 @@ namespace ngfem
                                             jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
                                                           SBLambda([&](size_t j, T val) LAMBDA_INLINE
                                                                    {
-                                                                     shape[ii++] = val*Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
-                                                                     shape[ii++] = val*Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
+                                                                     Mat<3,3> tmpmat = Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
+                                                                     tmpmat = Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
+                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
                                                                    }));
                                             jac2.IncAlpha2();
                                           }));
@@ -1682,7 +1650,7 @@ namespace ngfem
                            }));
             
             }
-        }
+            }
     }
       
   };
