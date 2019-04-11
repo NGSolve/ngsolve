@@ -1450,7 +1450,7 @@ active_dofs : BitArray or None
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
   py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
-    (m, "CoefficientFunction")
+    (m, "GridFunctionCoefficientFunction")
     .def(py::pickle([] (const GridFunctionCoefficientFunction & gfcf)
                     {
                       return py::make_tuple(gfcf.GetGridFunctionPtr(),
@@ -1834,7 +1834,59 @@ diffop : ngsolve.fem.DifferentialOperator
 )raw_string"))
     ;
 
+  py::class_<S_GridFunction<double>, shared_ptr<S_GridFunction<double>>, GridFunction>
+    (m, "GridFunctionD")
+    .def(py::pickle([](const S_GridFunction<double> gf)
+                    {
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
+                    },
+                    [](py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                      return dynamic_pointer_cast<S_GridFunction<double>>(gf);
+                    }))
+    ;
+  py::class_<S_GridFunction<Complex>, shared_ptr<S_GridFunction<Complex>>, GridFunction>
+    (m, "GridFunctionC")
+    .def(py::pickle([](const S_GridFunction<Complex> gf)
+                    {
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
+                    },
+                    [](py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                      return dynamic_pointer_cast<S_GridFunction<Complex>>(gf);
+                    }))
+    ;
 
+
+  py::class_<ComponentGridFunction, shared_ptr<ComponentGridFunction>, GridFunction>
+    (m, "ComponentGridFunction")
+    .def(py::pickle(
+                    [](ComponentGridFunction& cgf)
+                    {
+                      return py::make_tuple(cgf.GetParent(), cgf.GetComponent());
+                    },
+                    [](py::tuple state)
+                    {
+                      return make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
+                                                                py::cast<int>(state[1]));
+                    }))
+    ;
 
   ///////////////////////////// BilinearForm   ////////////////////////////////////////
 
