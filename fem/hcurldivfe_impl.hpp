@@ -587,7 +587,6 @@ namespace ngfem
       sigmaref(0) -= trace;
       sigmaref(4) -= trace;
       sigmaref(8) -= trace;
-      
       return sigmaref;
     }
 

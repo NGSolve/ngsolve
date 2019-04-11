@@ -69,7 +69,7 @@ namespace ngcomp
 
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     
-    virtual void UpdateCouplingDofArray();
+    virtual void UpdateCouplingDofArray() override;
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
 

@@ -158,7 +158,7 @@ public:
   }
   string GetTestoutFile () const
   {
-    return "no-filename-here";
+    return dynamic_cast<ofstream*>(testout) ? "testout set" : "no testout set";
   }
   void SetTestoutFile(string filename) 
   {

@@ -136,6 +136,7 @@ namespace ngmg
     const BaseMatrix * cpre;
     ///
     shared_ptr<Smoother> smoother;
+    shared_ptr<BaseMatrix> embedding;
     ///
     int level;
     ///
@@ -148,6 +149,11 @@ namespace ngmg
     ///
     ~TwoLevelMatrix ();
 
+    void SetEmbedding (shared_ptr<BaseMatrix> aembedding)
+    {
+      embedding = aembedding;
+    }
+    
     virtual bool IsComplex() const override { return mat->IsComplex(); }
 
     ///

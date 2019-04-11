@@ -167,7 +167,8 @@ ANY                  1 1 1 1 | 15
 
     /// if non-zero, pointer to low order space
     shared_ptr<FESpace> low_order_space; 
-
+    shared_ptr<BaseMatrix> low_order_embedding;
+      
     /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
     Array<bool> directsolverclustered;
 
@@ -503,7 +504,8 @@ ANY                  1 1 1 1 | 15
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
-
+    shared_ptr<BaseMatrix> LowOrderEmbedding () const { return low_order_embedding; }
+    
     /// non Dirichlet dofs
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
     bool IsFreeDof (DofId dof, bool external = false) const
