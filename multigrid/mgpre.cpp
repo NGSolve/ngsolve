@@ -336,10 +336,17 @@ namespace ngmg
         // res = f - (*mat) * u;    
         smoother->PreSmoothResiduum (level, u, f, *res, smoothingsteps);
 
-
-        cres = *res.Range (0, cres.Size());
+        if (embedding)
+          embedding->MultTrans(res, cres);
+        else
+          cres = *res.Range (0, cres.Size());
+        
         cw = *cpre * cres;
-        u.Range (0, cw.Size()) += cw;
+
+        if (embedding)
+          u += *embedding * cw;
+        else
+          u.Range (0, cw.Size()) += cw;
 
         /*
         auto ref_cres = res->Range(0,cres->Size());

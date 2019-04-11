@@ -1356,7 +1356,7 @@ namespace ngcomp
         hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
         hofe -> SetOrderFace (order_face[ngel.Faces()]);
         if (ma->GetDimension() == 3) {
-          hofe->SetUseGradCell(ta);
+          hofe->SetUseGradCell(true);
           hofe->SetOrderCell(order_inner[ngel.Nr()]);
         }
         hofe -> SetType1 (false);
