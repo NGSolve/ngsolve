@@ -357,6 +357,8 @@ namespace ngcomp
     void Update () override;
     void Load(istream& ist) override { throw Exception("Load not implemented for ComponentGF"); }
     void Save(ostream& ost) const override { throw Exception("Save not implemented for ComponentGF"); }
+    shared_ptr<GridFunction> GetParent() const { return gf_parent; }
+    int GetComponent() const { return comp; }
   };
   
 
