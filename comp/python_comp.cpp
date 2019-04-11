@@ -1670,6 +1670,10 @@ definedon : object
             if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
             auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+
+            if (!diffop->SupportsVB(vb))
+              throw Exception(string("Operator \"") + name + string("\" does not support vb = ") + ToString(vb) + string("!"));
+
             shared_ptr<GridFunctionCoefficientFunction> coef;
             switch(vb)
               {

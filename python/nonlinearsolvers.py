@@ -159,7 +159,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
             
         tau = min(1, numit*dampfactor)
         if linesearch:
-            while a.Energy(uh) > energy+1e-15:
+            while a.Energy(uh) > energy+(max(1e-14*abs(energy),maxerr)) and tau > 1e-10:
                 tau *= 0.5
                 uh.data = u.vec - tau * w
                 if printing:
