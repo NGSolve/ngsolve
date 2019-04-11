@@ -815,9 +815,10 @@ namespace ngcomp
   {
     if (order_policy == VARIABLE_ORDER)
       {
+        int dim = ma->GetDimension();
         size_t nedge = ma->GetNEdges(); 
         size_t nface = ma->GetNFaces();
-        // size_t ncell = ma->GetNNodes(NT_CELL);
+        size_t ncell = ma->GetNE();
 
         ndof = nedge;
         
@@ -866,6 +867,42 @@ namespace ngcomp
             ndof += ngrad + ncurl;
           } 
         first_face_dof[nface] = ndof;
+
+
+        if (dim == 3)
+          {
+            first_inner_dof.SetSize(ncell + 1);
+            for (auto i : Range(ncell))
+              {
+                first_inner_dof[i] = ndof;
+                /*
+                  INT<2> pl = FESpace::order_face_left[i];
+                  INT<2> pr = FESpace::order_face_right[i];
+                */
+                INT<2> pl = order_inner[i];
+                switch (ma->GetElType(ElementId(VOL,i)))
+                  {
+                  case ET_TET:
+                    {
+                      ndof += (pl[0] * pl[0] - 1)*(pl[0] - 2) / 2;
+                      break;
+                    }
+                  case ET_HEX:
+                    {
+                      ndof += 3 * pl[0] * pl[0] * (pl[0] + 1);
+                      /*
+                        ndof += (usegrad_face[i]+1)*p[0]*p[1] + p[0] + p[1];
+                        face_ngrad[i] = usegrad_face[i]*p[0]*p[1];;
+                      */
+                      break;
+                    }
+                  default:
+                    __assume(false);
+                  }
+                
+              }
+            first_inner_dof[ncell] = ndof;
+          }
         return;
       }
 
@@ -1222,8 +1259,8 @@ namespace ngcomp
     else if (order_policy == OLDSTYLE_ORDER)
       order_policy = VARIABLE_ORDER;
       
-    if (order < 1)
-      order = 1;
+    if (order < 0)
+      order = 0;
     
     switch (ni.GetType())
       {
@@ -1318,6 +1355,10 @@ namespace ngcomp
         */
         hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
         hofe -> SetOrderFace (order_face[ngel.Faces()]);
+        if (ma->GetDimension() == 3) {
+          hofe->SetUseGradCell(ta);
+          hofe->SetOrderCell(order_inner[ngel.Nr()]);
+        }
         hofe -> SetType1 (false);
         hofe -> ComputeNDof();
         // cout << "                                neldof = " << hofe->GetNDof() << ", order = " << hofe->Order() << endl;
@@ -1738,12 +1779,17 @@ namespace ngcomp
         dnums.Append (edge);
     
     // new style
-    if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+    if (order_policy == VARIABLE_ORDER && ma->GetDimension() >= 2)
       {
         for (auto edge : ngel.Edges())
           dnums += GetEdgeDofs(edge);
         for (auto face : ngel.Faces())
           dnums += GetFaceDofs(face);
+
+        if (ma->GetDimension() == 3 && ei.IsVolume())
+          {
+            dnums += GetElementDofs(ngel.Nr());
+          }
         return;
       }
 
