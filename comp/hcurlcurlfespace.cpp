@@ -966,7 +966,8 @@ namespace ngcomp
                   }
                 break;
               case ET_QUAD:
-                throw Exception("Hcurlcurl Quad not implemented yet");
+                ndof += oi[0]*oi[0] + (oi[0]+2)*(oi[0])*2 + 2*oi[0] + 1;
+                //throw Exception("Hcurlcurl Quad not implemented yet");
                 break;
               case ET_PRISM:
                 throw Exception("Hcurlcurl Prism not implemented yet");
@@ -1105,8 +1106,8 @@ namespace ngcomp
       if(!discontinuous || (issurfacespace && ei.VB() == BND))
       {
         auto feseg = new (alloc) HCurlCurlSurfaceFE<ET_SEGM> (order);
-        auto fetr = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
-        //auto fequ = new (alloc) HCurlCurlSurfaceFE<ET_QUAD> (order);
+        auto fetr  = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
+        //auto fequ  = new (alloc) HCurlCurlSurfaceFE<ET_QUAD> (order);
         switch(ma->GetElType(ei))
           {
           case ET_SEGM:
@@ -1126,11 +1127,16 @@ namespace ngcomp
               return *fetr;
             }
             
-            /*case ET_QUAD:          
+            /*case ET_QUAD:
+            {
               fequ->SetVertexNumbers (ngel.Vertices());
+              int ii = 0;
+              for(auto e : ngel.Edges())
+                fetr->SetOrderEdge(ii++,order_edge[e][0]);
               fequ->SetOrderInner(order_facet[ei.Nr()]);
               fequ->ComputeNDof();
-              return *fequ;*/
+              return *fequ;
+              }*/
             
           default:
             stringstream str;
@@ -1173,18 +1179,21 @@ namespace ngcomp
           fe->ComputeNDof();
           return *fe;
         }
-        /*case ET_QUAD:
-          {
+      case ET_QUAD:
+        {
           auto fe = new (alloc) HCurlCurlFE<ET_QUAD> (order);
           fe->SetVertexNumbers (ngel.Vertices());
           int ii = 0;
+          for(auto e : ngel.Edges())
+            fe->SetOrderEdge(ii++,order_edge[e][0]);
+          ii = 0;
           for(auto f : ngel.Facets())
-          fe->SetOrderFacet(ii++,order_facet[f]);
+            fe->SetOrderFacet(ii++,order_facet[f]);
           fe->SetOrderInner(order_inner[ei.Nr()]);
           fe->ComputeNDof();
           return *fe;
-          }
-          case ET_PRISM:
+        }
+        /*case ET_PRISM:
           {
           auto fe = new (alloc) HCurlCurlFE<ET_PRISM> (order);
           fe->SetVertexNumbers (ngel.vertices);
