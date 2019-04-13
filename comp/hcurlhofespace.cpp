@@ -579,6 +579,7 @@ namespace ngcomp
         
         int p = var_order ? 0 : order; 
         order_edge = max(0, p - (type1 ? 1 : 0) + et_bonus_order[ET_SEGM]);
+
         // order_inner = INT<3> (p,p,p); 
         order_inner = INT<3> (0,0,0); 
         
@@ -998,9 +999,16 @@ namespace ngcomp
 	    break; 
 	  case ET_TET: 
 	    if(p[0]>2)
-	      { 
-		ndof += ((usegrad_cell[i] + 2) *  p[0] + 3) * (p[0]-2) * (p[0]-1) / 6; 
-		cell_ngrad[i] = ((usegrad_cell[i] ) *  p[0]) * (p[0]-2) * (p[0]-1) / 6; 
+	      {
+		if (type1) {
+		  cell_ngrad[i] = usegrad_cell[i] * (p[0]-3)*(p[0]-2)*(p[0]-1)/6;
+		  ndof += (p[0]-2)*(p[0]-1)*(2*p[0]+3)/6 + cell_ngrad[i];
+				  
+		}
+		else {
+		  ndof += ((usegrad_cell[i] + 2) *  p[0] + 3) * (p[0]-2) * (p[0]-1) / 6; 
+		  cell_ngrad[i] = ((usegrad_cell[i] ) *  p[0]) * (p[0]-2) * (p[0]-1) / 6;
+		}
 	      }
 	    break; 
 	  case ET_PRISM:
@@ -3364,7 +3372,9 @@ namespace ngcomp
     Flags flags2(flags);
     if(iscomplex)
       flags2.SetFlag("complex");
-    flags2.SetFlag("order", order+1);
+
+    flags2.SetFlag("order", order+1 - (type1? 1: 0));
+    
     flags2.SetFlag("print");
     if(uniform_order_inner>-1)
       flags2.SetFlag("orderinner",uniform_order_inner+1);
@@ -3425,7 +3435,7 @@ namespace ngcomp
 	value = 1;
       }
       else{
-	value = order+1;
+	value = order+1 - (type1? 1: 0);
       }
         auto eledges = ma->GetElEdges(sei);
 	for(int j=0;j<eledges.Size();j++){
@@ -3437,6 +3447,7 @@ namespace ngcomp
     }
     fesh1->UpdateDofTables();
     fesh1->UpdateCouplingDofArray();
+      
     return fesh1;
   }
 
