@@ -2485,7 +2485,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineDefineFlag("compound");
     DefineStringListFlag("spaces");
     if (parseflags) CheckFlags(flags);
-    
+
+    if (flags.GetDefineFlag("low_order_space"))
+      {
+        Flags loflags = flags;
+        loflags.SetFlag("low_order_space", false);
+        low_order_space = make_shared<CompoundFESpace> (ama, loflags, parseflags);
+      }
     prol = make_shared<CompoundProlongation> (this);
 
     needs_transform_vec = false;
@@ -2534,6 +2540,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
       needs_transform_vec = true;
     if (fes != spaces[0])
       all_the_same = false;
+    
+    if (low_order_space)
+      {
+        if (fes->LowOrderFESpacePtr())
+          dynamic_pointer_cast<CompoundFESpace>(low_order_space)
+            -> AddSpace (fes->LowOrderFESpacePtr());
+        else
+          low_order_space.reset();
+      }
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -2551,7 +2566,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
-
+    if (low_order_space)
+      low_order_space->Update (lh);
+    
     cummulative_nd.SetSize (spaces.Size()+1);
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
@@ -2613,6 +2630,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     UpdateCouplingDofArray();
 
+
+    if (low_order_space)
+      {
+        shared_ptr<BaseMatrix> sum_emb;
+        for (size_t i = 0; i < spaces.Size(); i++)
+          {
+            auto emb_i = spaces[i]->LowOrderEmbedding();
+            auto hi_range = GetRange(i);
+            auto lo_range = dynamic_pointer_cast<CompoundFESpace>(low_order_space)->GetRange(i);
+            emb_i = make_shared<EmbeddedMatrix> (GetNDof(), hi_range, emb_i);
+            emb_i = make_shared<EmbeddedTransposeMatrix> (low_order_space->GetNDof(), lo_range, emb_i);
+            if (sum_emb)
+              sum_emb = make_shared<SumMatrix> (sum_emb, emb_i);
+            else
+              sum_emb = emb_i;
+          }
+        low_order_embedding = sum_emb;
+        // cout << "embedding = " << *low_order_embedding << endl;
+      }
+
+    
     if (print)
       {
 	(*testout) << "Update compound fespace" << endl;

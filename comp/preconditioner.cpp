@@ -432,6 +432,8 @@ namespace ngcomp
                                            fine_smoother,
                                            bfa->GetMeshAccess()->GetNLevels()-1);
         tlp -> SetSmoothingSteps (finesmoothingsteps);
+        if (bfa->GetFESpace()->LowOrderEmbedding())
+          tlp->SetEmbedding (bfa->GetFESpace()->LowOrderEmbedding());
 	tlp -> Update();
       }
     else

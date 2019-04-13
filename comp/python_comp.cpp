@@ -7,9 +7,9 @@
 #include <multigrid.hpp> 
 
 #include "hdivdivfespace.hpp"
+#include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
-#include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
 using namespace ngcomp;
@@ -158,7 +158,7 @@ public:
   }
   string GetTestoutFile () const
   {
-    return "no-filename-here";
+    return dynamic_cast<ofstream*>(testout) ? "testout set" : "no testout set";
   }
   void SetTestoutFile(string filename) 
   {
@@ -1002,6 +1002,26 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 )raw_string")
          )
 
+    .def("SetCouplingType", [](shared_ptr<FESpace> self, IntRange dofnrs, COUPLING_TYPE ct)
+         {
+           for (auto d : dofnrs)
+             self->SetDofCouplingType(DofId(d),ct);
+         },
+         py::arg("dofnrs"), py::arg("coupling_type"), docu_string(R"raw_string(
+         Set coupling type for interval of dofs.
+
+Parameters:
+
+dofnrs : Range
+  range of dofs
+
+coupling_type : ngsolve.comp.COUPLING_TYPE
+  input coupling type
+
+)raw_string")
+         )
+
+    
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
@@ -1018,7 +1038,7 @@ Get the finite element to corresponding element id.
 
 Parameters:
 
-ei : ngsolve.com.ElementId
+ei : ngsolve.comp.ElementId
    input element id
 
 )raw_string"))
@@ -1226,6 +1246,8 @@ rho : ngsolve.fem.CoefficientFunction
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
+  
+  ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
 
   ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
   
@@ -1428,7 +1450,7 @@ active_dofs : BitArray or None
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
   py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
-    (m, "CoefficientFunction")
+    (m, "GridFunctionCoefficientFunction")
     .def(py::pickle([] (const GridFunctionCoefficientFunction & gfcf)
                     {
                       return py::make_tuple(gfcf.GetGridFunctionPtr(),
@@ -1648,6 +1670,10 @@ definedon : object
             if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
             auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+
+            if (!diffop->SupportsVB(vb))
+              throw Exception(string("Operator \"") + name + string("\" does not support vb = ") + ToString(vb) + string("!"));
+
             shared_ptr<GridFunctionCoefficientFunction> coef;
             switch(vb)
               {
@@ -1812,7 +1838,59 @@ diffop : ngsolve.fem.DifferentialOperator
 )raw_string"))
     ;
 
+  py::class_<S_GridFunction<double>, shared_ptr<S_GridFunction<double>>, GridFunction>
+    (m, "GridFunctionD")
+    .def(py::pickle([](const S_GridFunction<double> gf)
+                    {
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
+                    },
+                    [](py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                      return dynamic_pointer_cast<S_GridFunction<double>>(gf);
+                    }))
+    ;
+  py::class_<S_GridFunction<Complex>, shared_ptr<S_GridFunction<Complex>>, GridFunction>
+    (m, "GridFunctionC")
+    .def(py::pickle([](const S_GridFunction<Complex> gf)
+                    {
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
+                    },
+                    [](py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                      return dynamic_pointer_cast<S_GridFunction<Complex>>(gf);
+                    }))
+    ;
 
+
+  py::class_<ComponentGridFunction, shared_ptr<ComponentGridFunction>, GridFunction>
+    (m, "ComponentGridFunction")
+    .def(py::pickle(
+                    [](ComponentGridFunction& cgf)
+                    {
+                      return py::make_tuple(cgf.GetParent(), cgf.GetComponent());
+                    },
+                    [](py::tuple state)
+                    {
+                      return make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
+                                                                py::cast<int>(state[1]));
+                    }))
+    ;
 
   ///////////////////////////// BilinearForm   ////////////////////////////////////////
 
