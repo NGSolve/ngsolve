@@ -213,82 +213,37 @@ namespace ngfem
 
 	Tx xi  = lam[fav[2]]-lam[fav[1]];
 	Tx eta = lam[fav[0]]; 
+	int pg = p - 2 - (type1 ? 1 : 0);
 
-	// gradients:
-	if(usegrad_face[0])
-          {
-            int pg = p-2 - (type1 ? 1 : 0);
-            DubinerBasis::EvalMult (pg, lam[fav[0]], lam[fav[1]], 
-                                    lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                    SBLambda ([&](int nr, Tx val)
-                                              {
-                                                shape[ii++] = Du (val);
-                                              }));
-            /*
-            for (int j = 0; j < p-1; j++)
-              for (int k = 0; k < p-1-j; k++, ii++)
-                shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
-            */
-          }
+	// gradients:	
+	if (usegrad_face[0] && pg >=0)
+            
+	  DubinerBasis::EvalMult
+	    (pg, lam[fav[0]], lam[fav[1]], 
+	     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+	     SBLambda
+	     ([&](int nr, Tx val)
+	      {
+		shape[ii++] = Du (val);
+	      }));
 
-        if (type1)
-          {
-            DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
-                                    lam[fav[0]], 
-                                    SBLambda ([&](int nr, Tx val)
-                                              {
-                                                shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
-                                              }));
-            LegendrePolynomial::EvalMult 
-              (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
-               SBLambda([&] (int j, Tx val)
-                        {
-                          shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[0]], val);
-                        }));
-            
-          }
+	// non-gradient inner shapes, same for type 1 and 2:
+	DubinerBasis::EvalMult
+	  (p-2, lam[fav[0]], lam[fav[1]], 
+	   lam[fav[0]], 
+	   SBLambda
+	   ([&](int nr, Tx val)
+	    {
+	      shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
+	    }));
 
-        else
-          {
-            ArrayMem<Tx,20> adpol1(order),adpol2(order);	
-            TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
-	
-            // other combination
-            for (int j = 0; j < p-1; j++)
-              for (int k = 0; k < p-1-j; k++, ii++)
-                shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);     
-            
-            /*
-              Tx x = lam[fav[0]];
-              Tx y = lam[fav[1]];
-              LegendrePolynomial leg;
-              leg.EvalScaledMult1Assign 
-              (p-2, y-(1-x-y), 1-x, y*(1-x-y),
-              SBLambda ([&] (int i, Tx val1) LAMBDA_INLINE 
-              {
-              JacobiPolynomialAlpha jac(1+2*i);
-              jac.EvalMult1Assign 
-              (p-2-i, 2*x-1, x, 
-              SBLambda([&](int j, Tx val2) 
-              {
-              shape[ii++] = uDv_minus_vDu<2> (val1,val2);
-              }));
-              }));
-            */
-            
-            
-            // rec_pol * Nedelec0 
-            for (int j = 0; j < p-1; j++, ii++)
-              shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
-            /*
-              leg.EvalMult 
-              (p-2, 2*x-1, x, 
-              SBLambda([&] (int j, Tx val)
-              {
-              shape[ii++] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], val);
-              }));
-            */
-          }
+	LegendrePolynomial::EvalMult 
+	  (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
+	   SBLambda
+	   ([&] (int j, Tx val)
+	    {
+	      shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[0]], val);
+	    }));
       }
   }
 
@@ -462,7 +417,7 @@ namespace ngfem
           TetShapesFaceLegendre::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
           
           // gradients 
-          if (usegrad_face[i])
+          if (usegrad_face[i] && pg >= 2)
             
 	    DubinerBasis::EvalScaledMult
 	      (pg-2, lam[fav[0]], lam[fav[1]],
@@ -507,69 +462,47 @@ namespace ngfem
 	      shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
 	  }
         }
-
+    
     
     int p = order_cell[0];
     int pg = p - (type1 ? 1 : 0);
-	      
-    if (p >= 3)
-      {
 
-	if (usegrad_cell)
+    // gradient inner shapes
+	
+    if (usegrad_cell && pg >= 3)
 
-	  DubinerBasis3D::EvalMult
-	    (pg-3, lam[0], lam[1], lam[2], lam[0]*lam[1]*lam[2]*lam[3], 
-	     SBLambda
-	     ([&](int nr, Tx val)
-	      {
-		shape[ii++] = Du(val);
-	      }));
+      DubinerBasis3D::EvalMult
+	(pg-3, lam[0], lam[1], lam[2], lam[0]*lam[1]*lam[2]*lam[3], 
+	 SBLambda
+	 ([&](int nr, Tx val)
+	  {
+	    shape[ii++] = Du(val);
+	  }));
 
-	// non-gradient inner shapes
+    // non-gradient inner shapes, same for type 1 and type 2 Nedelec:
 
-	if (type1) {
+    if (p >= 3)  {
 
-	  DubinerBasis3D::EvalMult
-	    (p-3, lam[0], lam[1], lam[2],  lam[1]*lam[2],
-	     SBLambda
-	     ([&](int nr, Tx val)
-	      {
-	  	shape[ii++] = wuDv_minus_wvDu(lam[3], lam[0], val);
-	      }));
+      Tx lam21 = lam[2]*lam[1], lam30 = lam[3]*lam[0];
 
-	  DubinerBasis3D::EvalMult
-	    (p-3, lam[0], lam[1], lam[2], lam[3]*lam[0],
-	     SBLambda
-	     ([&](int nr, Tx val)
-	      {
-	  	shape[ii++] = wuDv_minus_wvDu(lam[2], lam[1], val);
-	      }));
+      DubinerBasis3D::Eval
+	(p-3, lam[0], lam[1], lam[2],
+	 SBLambda
+	 ([&](int nr, Tx val)
+	  {
+	    shape[ii++] = wuDv_minus_wvDu(lam[3], lam[0], lam21*val);
+	    shape[ii++] = wuDv_minus_wvDu(lam[2], lam[1], lam30*val);
+	  }));
 
-	  DubinerBasis::EvalMult
-	    (p-3, lam[0], lam[1], lam[0]*lam[1], 
-	     SBLambda
-	     ([&](int nr, Tx val)
-	      {
-		shape[ii++] = wuDv_minus_wvDu(lam[3], lam[2], val);
-	      }));
-	}
-	else {
-	  
-      	  TetShapesInnerLegendre::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3);
 
-      	  for (int i = 0; i <= p-3; i++)
-      	    for (int j = 0; j <= p-3-i; j++)
-      	      for (int k = 0; k <= p-3-i-j; k++)
-      		{ // not Sabine's original ...
-      		  shape[ii++] = uDv_minus_vDu (adpol1[i], adpol2[j] * adpol3[k]);
-      		  shape[ii++] = uDv_minus_vDu (adpol1[i] * adpol3[k], adpol2[j]);
-      		}
-        
-      	  for (int j= 0; j <= p-3; j++)
-      	    for (int k = 0; k <= p-3-j; k++)
-      	      shape[ii++] = wuDv_minus_wvDu (lam[0], lam[3], adpol2[j] * adpol3[k]);
-      	}
-      }
+      DubinerBasis::EvalMult
+	(p-3, lam[0], lam[1], lam[0]*lam[1], 
+	 SBLambda
+	 ([&](int nr, Tx val)
+	  {
+	    shape[ii++] = wuDv_minus_wvDu(lam[3], lam[2], val);
+	  }));
+    }
   }
 
 
