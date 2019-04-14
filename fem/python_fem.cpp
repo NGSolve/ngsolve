@@ -981,6 +981,7 @@ wait : bool
     .def (NGSPickle<CoefficientFunction>())
     ;
 
+  m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
 
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
