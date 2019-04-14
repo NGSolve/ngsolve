@@ -145,8 +145,8 @@ namespace ngfem
 
         if (!ho_div_free)
           {
-            Tx x = lam[fav[0]];
-            Tx y = lam[fav[1]];
+            // Tx x = lam[fav[0]];
+            // Tx y = lam[fav[1]];
             LegendrePolynomial leg;
             // IntLegNoBubble leg;
             /*

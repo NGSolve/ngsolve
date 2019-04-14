@@ -211,8 +211,8 @@ namespace ngfem
       {
 	INT<4> fav = GetFaceSort (0, vnums);
 
-	Tx xi  = lam[fav[2]]-lam[fav[1]];
-	Tx eta = lam[fav[0]]; 
+	// Tx xi  = lam[fav[2]]-lam[fav[1]];
+	// Tx eta = lam[fav[0]]; 
 	int pg = p - 2 - (type1 ? 1 : 0);
 
 	// gradients:	
