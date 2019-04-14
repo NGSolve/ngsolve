@@ -473,7 +473,9 @@ namespace ngfem
           shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
     */
 
+    DubinerBasis3D::Eval (this->order, lamis[0], lamis[1], lamis[2], shape);
 
+    /*
     size_t ii = 0;
     size_t order = this->order;
     LegendrePolynomial leg;
@@ -500,8 +502,7 @@ namespace ngfem
                                 }));
                    jac1.IncAlpha2();
                  }));
-
-
+    */
   }
 
 
