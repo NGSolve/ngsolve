@@ -1118,6 +1118,7 @@ namespace ngfem
   {
     static Timer t(string("SymbolicBFI::CalcElementMatrixAdd")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
     if (element_vb != VOL)
       {
@@ -1135,7 +1136,9 @@ namespace ngfem
         {
           // ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
           // NgProfiler::StartThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
-
+          // static Timer tsimd(string("SymbolicBFI::CalcElementMatrixAddSIMD")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);          
+          // RegionTracer regsimd(TaskManager::GetThreadId(), tsimd);
+ 
           const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
@@ -1187,7 +1190,8 @@ namespace ngfem
                                   cf -> Evaluate (mir, proxyvalues.Rows(kk,kk+1));
                                 }
                               else
-                                proxyvalues.Row(kk) = 0.0;
+                                ; 
+                                // proxyvalues.Row(kk) = 0.0;
                             }
                       else
                         for (size_t k = 0; k < dim_proxy1; k++)
@@ -1201,10 +1205,12 @@ namespace ngfem
                           }
                       // td.Stop();
                       }
-                      // NgProfiler::StartThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());                      
+                      // NgProfiler::StartThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
+                      FlatVector<SIMD<double>> weights(ir.Size(), lh);
                       if (!is_diagonal)
                         for (size_t i = 0; i < ir.Size(); i++)
-                          proxyvalues.Col(i) *= mir[i].GetWeight();
+                          // proxyvalues.Col(i) *= mir[i].GetWeight();
+                          weights(i) = mir[i].GetWeight();
                       else
                         for (size_t i = 0; i < ir.Size(); i++)
                           diagproxyvalues.Col(i) *= mir[i].GetWeight();
@@ -1259,6 +1265,7 @@ namespace ngfem
                       else
                         {
                           bdbmat1 = 0.0; 
+                          /*
                           for (auto i : r1)
                             for (size_t j = 0; j < dim_proxy2; j++)
                               for (size_t k = 0; k < dim_proxy1; k++)
@@ -1268,8 +1275,35 @@ namespace ngfem
                                   auto b = proxyvalues.Row(k*dim_proxy2+j);
                                   res += pw_mult(a,b);
                                 }
-                        }
+                          */
+                          /*
+                          for (size_t j = 0; j < dim_proxy2; j++)
+                            for (size_t k = 0; k < dim_proxy1; k++)
+                              if (nonzeros(l1+j, k1+k))
+                                {
+                                  auto hproxyvalues = proxyvalues.Row(k*dim_proxy2+j);
+                                  auto hbbmat1 = bbmat1.RowSlice(k, dim_proxy1);
+                                  auto hbdbmat1 = bdbmat1.RowSlice(j, dim_proxy2);
+                                    // for (auto i : r1)
+                                    // hbdbmat1.Row(i).AddSize(ir.Size()) += pw_mult(hbbmat1.Row(i), hproxyvalues);
+                                  for (size_t i = 0; i < ir.Size(); i++)
+                                    hbdbmat1.Col(i).Range(r1) += hproxyvalues(i) * hbbmat1.Col(i).Range(r1);
+                                }
+                          */
 
+                          for (size_t j = 0; j < dim_proxy2; j++)
+                            for (size_t k = 0; k < dim_proxy1; k++)
+                              if (nonzeros(l1+j, k1+k))
+                                {
+                                  auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
+                                  auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
+                                  auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
+
+                                  for (size_t i = 0; i < ir.Size(); i++)
+                                    bdbmat1_j.Col(i).AddSize(r1.Size()) += proxyvalues_jk(i)*weights(i) * bbmat1_k.Col(i);
+                                }
+                        }
+                      
                       // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                       // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
 
