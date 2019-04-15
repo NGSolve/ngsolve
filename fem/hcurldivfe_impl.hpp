@@ -293,6 +293,9 @@ namespace ngfem
   // GG-bubble of Jay
   // computes curl ( curl A B) where A is a skew sym matrix which is L^2 orthogonal on P^k-1
   // and B is the matrix bubble
+
+
+  //////////////////////////////////////////////////////
   
   template <int D, typename T> class T_GGbubble_B1;
   template <typename T> class T_GGbubble_B1<3,T>
@@ -639,11 +642,301 @@ namespace ngfem
     }
     
   };
-
+  
   template <int D, typename T>
   auto GGbubble_B3 (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2, AutoDiffDiff<D,T> ab3) { return T_GGbubble_B3<D, T>(aS, ab0, ab1, ab2, ab3); }
+
+
+  template <typename T> INLINE auto makeAD(AutoDiffDiff<3,T> add)
+  {
+    AutoDiff<3,T> res(add.Value());
+    for (int i = 0; i<3; i++)
+      res.DValue(i) = add.DValue(i);
+
+    return res;
+  }
+
+  template <typename T>
+  INLINE Vec<3,AutoDiff<3,T>> Cross (const AutoDiffDiff<3,T> & u,
+					  const Vec<3,T> & v)
+  {
+    AutoDiff<3,T> hv[3];
+    hv[0].Value() = u.DValue(1)*v(2)-u.DValue(2)*v(1);
+    hv[1].Value() = u.DValue(2)*v(0)-u.DValue(0)*v(2);
+    hv[2].Value() = u.DValue(0)*v(1)-u.DValue(1)*v(0);
+
+    for (int i = 0; i<3; i++)
+      {
+	hv[0].DValue(i) = u.DDValue(i,1)*v(2)-u.DDValue(i,2)*v(1);
+	hv[1].DValue(i) = u.DDValue(i,2)*v(0)-u.DDValue(i,0)*v(2);
+	hv[2].DValue(i) = u.DDValue(i,0)*v(1)-u.DDValue(i,1)*v(0);
+      }
     
-   
+    return Vec<3,AutoDiff<3,T>>(hv[0],hv[1],hv[2]);
+  }
+  
+     template <int D, typename T> class T_GGbubble_3D;
+  template <typename T> class T_GGbubble_3D<3,T>
+  {
+    AutoDiffDiff<3,T> q;
+    AutoDiffDiff<3,T> b0;
+    AutoDiffDiff<3,T> b1;
+    AutoDiffDiff<3,T> b2;
+    AutoDiffDiff<3,T> b3;
+    AutoDiffDiff<3,T> l1;
+    AutoDiffDiff<3,T> l2;
+    
+  public:
+    T_GGbubble_3D  (AutoDiffDiff<3,T> aq, AutoDiffDiff<3,T> ab0, AutoDiffDiff<3,T> ab1, AutoDiffDiff<3,T> ab2, AutoDiffDiff<3,T> ab3, AutoDiffDiff<3,T> al1, AutoDiffDiff<3,T> al2) : q(aq), b0(ab0), b1(ab1), b2(ab2), b3(ab3), l1(al1), l2(al2){ ; }
+
+    Vec<9,T> Shape() {
+      /*
+      //symmetric bubble matrix            
+      auto B_00 = b0.Value()*b1.Value()*b2.Value()*b3.DValue(0)*b3.DValue(0) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(0)*b0.DValue(0) +
+	          b2.Value()*b3.Value()*b0.Value()*b1.DValue(0)*b1.DValue(0) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(0)*b2.DValue(0);
+	
+      auto B_01 = b0.Value()*b1.Value()*b2.Value()*b3.DValue(0)*b3.DValue(1) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(0)*b0.DValue(1) +
+	          b2.Value()*b3.Value()*b0.Value()*b1.DValue(0)*b1.DValue(1) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(0)*b2.DValue(1);
+
+      auto B_02 = b0.Value()*b1.Value()*b2.Value()*b3.DValue(0)*b3.DValue(2) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(0)*b0.DValue(2) +
+	          b2.Value()*b3.Value()*b0.Value()*b1.DValue(0)*b1.DValue(2) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(0)*b2.DValue(2);
+
+      auto B_11 = b0.Value()*b1.Value()*b2.Value()*b3.DValue(1)*b3.DValue(1) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(1)*b0.DValue(1) +
+	          b2.Value()*b3.Value()*b0.Value()*b1.DValue(1)*b1.DValue(1) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(1)*b2.DValue(1);
+
+      auto B_12 = b0.Value()*b1.Value()*b2.Value()*b3.DValue(1)*b3.DValue(2) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(1)*b0.DValue(2) +
+	          b2.Value()*b3.Value()*b0.Value()*b1.DValue(1)*b1.DValue(2) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(1)*b2.DValue(2);
+
+      auto B_22 = b0.Value()*b1.Value()*b2.Value()*b3.DValue(2)*b3.DValue(2) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(2)*b0.DValue(2) +
+	          b2.Value()*b3.Value()*b0.Value()*b1.DValue(2)*b1.DValue(2) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(2)*b2.DValue(2);
+
+      auto B_10 = B_01; auto B_20 = B_02; auto B_21 = B_12; 
+                 
+      auto B_012 = b0 * b1 * b2; auto B_123 = b1 * b2 * b3; auto B_230 = b2 * b3 * b0; auto B_301 = b3 * b1 * b0;
+      
+      //construct skew -sym matrix \nabla lam_i \otimes \nabla lam_j - \nabla lam_j \otimes \nabla lam_i
+      auto S_01 = l1.DValue(0) * l2.DValue(1) - l1.DValue(1) * l2.DValue(0);
+      auto S_02 = l1.DValue(0) * l2.DValue(2) - l1.DValue(2) * l2.DValue(0);
+      auto S_12 = l1.DValue(1) * l2.DValue(2) - l1.DValue(2) * l2.DValue(1);
+
+      T S_00 = 0.0;
+      T S_11 = 0.0;
+      T S_22 = 0.0;
+
+      auto S_10 = - S_01;
+      auto S_20 = - S_02;
+      auto S_21 = - S_12;     
+      
+      /////////////////////
+      //row-wise curl of B = (b1,b0,b0,b0,b2,b0,b0,b0,b3)
+            
+      Vec<3,T> curl_B0; Vec<3,T> curl_B1; Vec<3,T> curl_B2;
+      
+      curl_B0(0) = b3.DValue(0) * (  B_012.DValue(1) * b3.DValue(2) - B_012.DValue(2) * b3.DValue(1)) +
+	           b0.DValue(0) * (  B_123.DValue(1) * b0.DValue(2) - B_123.DValue(2) * b0.DValue(1)) +
+	           b1.DValue(0) * (  B_230.DValue(1) * b1.DValue(2) - B_230.DValue(2) * b1.DValue(1)) +
+	           b2.DValue(0) * (  B_301.DValue(1) * b2.DValue(2) - B_301.DValue(2) * b2.DValue(1));
+      
+      curl_B0(1) = b3.DValue(0) * (- B_012.DValue(0) * b3.DValue(2) + B_012.DValue(2) * b3.DValue(0)) +
+	           b0.DValue(0) * (- B_123.DValue(0) * b0.DValue(2) + B_123.DValue(2) * b0.DValue(0)) +
+	           b1.DValue(0) * (- B_230.DValue(0) * b1.DValue(2) + B_230.DValue(2) * b1.DValue(0)) +
+	           b2.DValue(0) * (- B_301.DValue(0) * b2.DValue(2) + B_301.DValue(2) * b2.DValue(0));
+      
+      curl_B0(2) = b3.DValue(0) * (  B_012.DValue(0) * b3.DValue(1) - B_012.DValue(1) * b3.DValue(0)) +
+	           b0.DValue(0) * (  B_123.DValue(0) * b0.DValue(1) - B_123.DValue(1) * b0.DValue(0)) +
+	           b1.DValue(0) * (  B_230.DValue(0) * b1.DValue(1) - B_230.DValue(1) * b1.DValue(0)) +
+	           b2.DValue(0) * (  B_301.DValue(0) * b2.DValue(1) - B_301.DValue(1) * b2.DValue(0));
+      
+      /////////
+      curl_B1(0) = b3.DValue(1) * (  B_012.DValue(1) * b3.DValue(2) - B_012.DValue(2) * b3.DValue(1)) +
+	           b0.DValue(1) * (  B_123.DValue(1) * b0.DValue(2) - B_123.DValue(2) * b0.DValue(1)) +
+	           b1.DValue(1) * (  B_230.DValue(1) * b1.DValue(2) - B_230.DValue(2) * b1.DValue(1)) +
+	           b2.DValue(1) * (  B_301.DValue(1) * b2.DValue(2) - B_301.DValue(2) * b2.DValue(1));
+      			     
+      curl_B1(1) = b3.DValue(1) * (- B_012.DValue(0) * b3.DValue(2) + B_012.DValue(2) * b3.DValue(0)) +
+	           b0.DValue(1) * (- B_123.DValue(0) * b0.DValue(2) + B_123.DValue(2) * b0.DValue(0)) +
+	           b1.DValue(1) * (- B_230.DValue(0) * b1.DValue(2) + B_230.DValue(2) * b1.DValue(0)) +
+	           b2.DValue(1) * (- B_301.DValue(0) * b2.DValue(2) + B_301.DValue(2) * b2.DValue(0));
+      			     
+      curl_B1(2) = b3.DValue(1) * (  B_012.DValue(0) * b3.DValue(1) - B_012.DValue(1) * b3.DValue(0)) +
+	           b0.DValue(1) * (  B_123.DValue(0) * b0.DValue(1) - B_123.DValue(1) * b0.DValue(0)) +
+	           b1.DValue(1) * (  B_230.DValue(0) * b1.DValue(1) - B_230.DValue(1) * b1.DValue(0)) +
+	           b2.DValue(1) * (  B_301.DValue(0) * b2.DValue(1) - B_301.DValue(1) * b2.DValue(0));
+
+      /////////
+      curl_B2(0) = b3.DValue(2) * (  B_012.DValue(1) * b3.DValue(2) - B_012.DValue(2) * b3.DValue(1)) +
+	           b0.DValue(2) * (  B_123.DValue(1) * b0.DValue(2) - B_123.DValue(2) * b0.DValue(1)) +
+	           b1.DValue(2) * (  B_230.DValue(1) * b1.DValue(2) - B_230.DValue(2) * b1.DValue(1)) +
+	           b2.DValue(2) * (  B_301.DValue(1) * b2.DValue(2) - B_301.DValue(2) * b2.DValue(1));
+      			     
+      curl_B2(1) = b3.DValue(2) * (- B_012.DValue(0) * b3.DValue(2) + B_012.DValue(2) * b3.DValue(0)) +
+	           b0.DValue(2) * (- B_123.DValue(0) * b0.DValue(2) + B_123.DValue(2) * b0.DValue(0)) +
+	           b1.DValue(2) * (- B_230.DValue(0) * b1.DValue(2) + B_230.DValue(2) * b1.DValue(0)) +
+	           b2.DValue(2) * (- B_301.DValue(0) * b2.DValue(2) + B_301.DValue(2) * b2.DValue(0));
+      			     
+      curl_B2(2) = b3.DValue(2) * (  B_012.DValue(0) * b3.DValue(1) - B_012.DValue(1) * b3.DValue(0)) +
+	           b0.DValue(2) * (  B_123.DValue(0) * b0.DValue(1) - B_123.DValue(1) * b0.DValue(0)) +
+	           b1.DValue(2) * (  B_230.DValue(0) * b1.DValue(1) - B_230.DValue(1) * b1.DValue(0)) +
+	           b2.DValue(2) * (  B_301.DValue(0) * b2.DValue(1) - B_301.DValue(1) * b2.DValue(0));
+
+      ////////////////////      
+      Vec<3,T> grad_q(q.DValue(0),q.DValue(1),q.DValue(2));
+      
+      Vec<3,T> grad_q_cross_S0(grad_q(1)*S_02 - grad_q(2)*S_01, -grad_q(0)*S_02 + grad_q(2)*S_00, grad_q(0)*S_01 - grad_q(1)*S_00);
+      Vec<3,T> grad_q_cross_S1(grad_q(1)*S_12 - grad_q(2)*S_11, -grad_q(0)*S_12 + grad_q(2)*S_10, grad_q(0)*S_11 - grad_q(1)*S_10);
+      Vec<3,T> grad_q_cross_S2(grad_q(1)*S_22 - grad_q(2)*S_21, -grad_q(0)*S_22 + grad_q(2)*S_20, grad_q(0)*S_21 - grad_q(1)*S_20);
+      
+      Vec<3,T> grad_grad_q_cross_S0_0( q.DDValue(0,1)*S_02 - q.DDValue(0,2)*S_01, q.DDValue(1,1)*S_02 - q.DDValue(1,2)*S_01, q.DDValue(2,1)*S_02 - q.DDValue(2,2)*S_01);
+      Vec<3,T> grad_grad_q_cross_S0_1(-q.DDValue(0,0)*S_02 + q.DDValue(0,2)*S_00,-q.DDValue(1,0)*S_02 + q.DDValue(1,2)*S_00,-q.DDValue(2,0)*S_02 + q.DDValue(2,2)*S_00);
+      Vec<3,T> grad_grad_q_cross_S0_2( q.DDValue(0,0)*S_01 - q.DDValue(0,1)*S_00, q.DDValue(1,0)*S_01 - q.DDValue(1,1)*S_00, q.DDValue(2,0)*S_01 - q.DDValue(2,1)*S_00);
+
+      Vec<3,T> grad_grad_q_cross_S1_0( q.DDValue(0,1)*S_12 - q.DDValue(0,2)*S_11, q.DDValue(1,1)*S_12 - q.DDValue(1,2)*S_11, q.DDValue(2,1)*S_12 - q.DDValue(2,2)*S_11);
+      Vec<3,T> grad_grad_q_cross_S1_1(-q.DDValue(0,0)*S_12 + q.DDValue(0,2)*S_10,-q.DDValue(1,0)*S_12 + q.DDValue(1,2)*S_10,-q.DDValue(2,0)*S_12 + q.DDValue(2,2)*S_10);
+      Vec<3,T> grad_grad_q_cross_S1_2( q.DDValue(0,0)*S_11 - q.DDValue(0,1)*S_10, q.DDValue(1,0)*S_11 - q.DDValue(1,1)*S_10, q.DDValue(2,0)*S_11 - q.DDValue(2,1)*S_10);
+
+      Vec<3,T> grad_grad_q_cross_S2_0( q.DDValue(0,1)*S_22 - q.DDValue(0,2)*S_21, q.DDValue(1,1)*S_22 - q.DDValue(1,2)*S_21, q.DDValue(2,1)*S_22 - q.DDValue(2,2)*S_21);
+      Vec<3,T> grad_grad_q_cross_S2_1(-q.DDValue(0,0)*S_22 + q.DDValue(0,2)*S_20,-q.DDValue(1,0)*S_22 + q.DDValue(1,2)*S_20,-q.DDValue(2,0)*S_22 + q.DDValue(2,2)*S_20);
+      Vec<3,T> grad_grad_q_cross_S2_2( q.DDValue(0,0)*S_21 - q.DDValue(0,1)*S_20, q.DDValue(1,0)*S_21 - q.DDValue(1,1)*S_20, q.DDValue(2,0)*S_21 - q.DDValue(2,1)*S_20 );     
+      /////////////////////
+      
+      
+      Vec<9,T> sigmaref;
+      
+     
+      
+      /*
+      sigmaref(0)  =  grad_grad_q_cross_S0_0(1)*B_02 - grad_grad_q_cross_S0_0(2) * B_01 +
+	              grad_grad_q_cross_S0_1(1)*B_12 - grad_grad_q_cross_S0_1(2) * B_11 +
+	              grad_grad_q_cross_S0_2(1)*B_22 - grad_grad_q_cross_S0_2(2) * B_21;      
+      sigmaref(0) +=  grad_q_cross_S0(0) * curl_B0(0) + grad_q_cross_S0(1) * curl_B1(0) + grad_q_cross_S0(2) * curl_B2(0);
+      
+      sigmaref(1)  = - grad_grad_q_cross_S0_0(0)*B_02 + grad_grad_q_cross_S0_0(2) * B_00
+	             - grad_grad_q_cross_S0_1(0)*B_12 + grad_grad_q_cross_S0_1(2) * B_10
+	             - grad_grad_q_cross_S0_2(0)*B_22 + grad_grad_q_cross_S0_2(2) * B_20;
+      
+      sigmaref(1) +=  grad_q_cross_S0(0) * curl_B0(1) + grad_q_cross_S0(1) * curl_B1(1) + grad_q_cross_S0(2) * curl_B2(1);
+
+      sigmaref(2)  =  grad_grad_q_cross_S0_0(0)*B_01 - grad_grad_q_cross_S0_0(1) * B_00 +
+	              grad_grad_q_cross_S0_1(0)*B_11 - grad_grad_q_cross_S0_1(1) * B_10 +
+	              grad_grad_q_cross_S0_2(0)*B_21 - grad_grad_q_cross_S0_2(1) * B_20;
+      
+      sigmaref(2) +=  grad_q_cross_S0(0) * curl_B0(2) + grad_q_cross_S0(1) * curl_B1(2) + grad_q_cross_S0(2) * curl_B2(2);
+
+      ////////////////////////////
+      sigmaref(3)  =  grad_grad_q_cross_S1_0(1)*B_02 - grad_grad_q_cross_S1_0(2) * B_01 +
+	              grad_grad_q_cross_S1_1(1)*B_12 - grad_grad_q_cross_S1_1(2) * B_11 +
+	              grad_grad_q_cross_S1_2(1)*B_22 - grad_grad_q_cross_S1_2(2) * B_21;
+      
+      sigmaref(3) +=  grad_q_cross_S1(0) * curl_B0(0) + grad_q_cross_S1(1) * curl_B1(0) + grad_q_cross_S1(2) * curl_B2(0);
+      
+      sigmaref(4)  = - grad_grad_q_cross_S1_0(0)*B_02 + grad_grad_q_cross_S1_0(2) * B_00
+	             - grad_grad_q_cross_S1_1(0)*B_12 + grad_grad_q_cross_S1_1(2) * B_10
+	             - grad_grad_q_cross_S1_2(0)*B_22 + grad_grad_q_cross_S1_2(2) * B_20;
+      
+      sigmaref(4) +=  grad_q_cross_S1(0) * curl_B0(1) + grad_q_cross_S1(1) * curl_B1(1) + grad_q_cross_S1(2) * curl_B2(1);
+
+      sigmaref(5)  =  grad_grad_q_cross_S1_0(0)*B_01 - grad_grad_q_cross_S1_0(1) * B_00 +
+	              grad_grad_q_cross_S1_1(0)*B_11 - grad_grad_q_cross_S1_1(1) * B_10 +
+	              grad_grad_q_cross_S1_2(0)*B_21 - grad_grad_q_cross_S1_2(1) * B_20;
+      
+      sigmaref(5) +=  grad_q_cross_S1(0) * curl_B0(2) + grad_q_cross_S1(1) * curl_B1(2) + grad_q_cross_S1(2) * curl_B2(2);
+
+      ////////////////////////////
+      sigmaref(6)  =  grad_grad_q_cross_S2_0(1)*B_02 - grad_grad_q_cross_S2_0(2) * B_01 +
+	              grad_grad_q_cross_S2_1(1)*B_12 - grad_grad_q_cross_S2_1(2) * B_11 +
+	              grad_grad_q_cross_S2_2(1)*B_22 - grad_grad_q_cross_S2_2(2) * B_21;
+      
+      sigmaref(6) +=  grad_q_cross_S2(0) * curl_B0(0) + grad_q_cross_S2(1) * curl_B1(0) + grad_q_cross_S2(2) * curl_B2(0);
+      
+      sigmaref(7)  = - grad_grad_q_cross_S2_0(0)*B_02 + grad_grad_q_cross_S2_0(2) * B_00
+	             - grad_grad_q_cross_S2_1(0)*B_12 + grad_grad_q_cross_S2_1(2) * B_10
+	             - grad_grad_q_cross_S2_2(0)*B_22 + grad_grad_q_cross_S2_2(2) * B_20;
+      
+      sigmaref(7) +=  grad_q_cross_S2(0) * curl_B0(1) + grad_q_cross_S2(1) * curl_B1(1) + grad_q_cross_S2(2) * curl_B2(1);
+
+      sigmaref(8)  =  grad_grad_q_cross_S2_0(0)*B_01 - grad_grad_q_cross_S2_0(1) * B_00 +
+	              grad_grad_q_cross_S2_1(0)*B_11 - grad_grad_q_cross_S2_1(1) * B_10 +
+ 	              grad_grad_q_cross_S2_2(0)*B_21 - grad_grad_q_cross_S2_2(1) * B_20;
+      
+      sigmaref(8) +=  grad_q_cross_S2(0) * curl_B0(2) + grad_q_cross_S2(1) * curl_B1(2) + grad_q_cross_S2(2) * curl_B2(2);
+      
+      */
+
+
+      //////NEW
+      //Mat B - sum_i lambda_i+1 * lambda_i+2 * lambda_i+3 (grad lambda_i \otines  grad lambda_i)
+      Mat<3,3,T> B;
+      for (int i = 0; i<3; i++)
+	for (int j = 0; j<3; j++)
+	  B(i,j) = b0.Value()*b1.Value()*b2.Value()*b3.DValue(i)*b3.DValue(j) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(i)*b0.DValue(j) +
+	           b2.Value()*b3.Value()*b0.Value()*b1.DValue(i)*b1.DValue(j) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(i)*b2.DValue(j);
+
+      //Mat S = grad lambda_i otimes(skw) grad lambda_j      
+      Vec<3,T> S[3];
+      S[0](0)= 0; S[1](1)=0; S[2](2)=0;
+      S[0](1)= l1.DValue(0) * l2.DValue(1) - l1.DValue(1) * l2.DValue(0); 
+      S[0](2)= l1.DValue(0) * l2.DValue(2) - l1.DValue(2) * l2.DValue(0);
+      S[1](2)= l1.DValue(1) * l2.DValue(2) - l1.DValue(2) * l2.DValue(1);
+
+      S[1](0) = -S[0](1); S[2](0) = -S[0](2); S[2](1) = -S[1](2);
+      
+      // curl of each row of B
+      Vec<3,T> curlB[3];      
+      for(int i = 0; i<3; i++)
+	{
+	  auto crossres = b3.DValue(i) * Cross(makeAD(b0 * b1 * b2),makeAD(b3)) + b0.DValue(i) * Cross(makeAD(b1 * b2 * b3),makeAD(b0)) +
+    	                  b1.DValue(i) * Cross(makeAD(b2 * b3 * b0),makeAD(b1)) + b2.DValue(i) * Cross(makeAD(b3 * b0 * b1),makeAD(b2));
+	  for(int j = 0; j<3; j++)
+	    curlB[i](j) = crossres.DValue(j);
+	}          
+      
+      Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
+      for (int i = 0; i < 3; i++)
+	grad_q_cross_S[i] = Cross (q, S[i]);
+
+      Vec<9,T> sigmaref;
+      
+      for (int i = 0; i < 3; i++)
+	{
+	  sigmaref(i*3) = 0;
+	  sigmaref(i*3+1) = 0;
+	  sigmaref(i*3+2) = 0;
+	  for (int j = 0; j < 3; j++)
+	    {
+	      Vec<3,T> hv1(grad_q_cross_S[i](j).DValue(0),grad_q_cross_S[i](j).DValue(1),grad_q_cross_S[i](j).DValue(2));
+	      Vec<3,T> hv2(B(j,0),B(j,1),B(j,2));
+	      Vec<3,T> crossres = Cross(hv1,hv2);
+	      Vec<3,T> res2 = grad_q_cross_S[i](j).Value() * curlB[j];
+	      sigmaref(i*3)   += crossres(0) + res2(0);
+	      sigmaref(i*3+1) += crossres(1) + res2(1);
+	      sigmaref(i*3+2) += crossres(2) + res2(2);
+	    }
+	}      
+      
+      //auto sigma_trace = 1/3.0 * (sigmaref(0) + sigmaref(4) + sigmaref(8));
+      //sigmaref(0) -= sigma_trace;
+      //sigmaref(4) -= sigma_trace;
+      //sigmaref(8) -= sigma_trace;
+      
+      return sigmaref;
+      
+    }
+
+    Vec<3,T> DivShape()
+    {            
+      return (0,0,0);
+    }
+
+    Vec<3,T> CurlShape()
+    {     
+      throw Exception("not implemented for GG-bubbles");
+    }
+    
+  };
+
+  template <int D, typename T>
+  auto GGbubble_3D (AutoDiffDiff<D,T> aq, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2,AutoDiffDiff<D,T> ab3,AutoDiffDiff<D,T> al1,AutoDiffDiff<D,T> al2) { return T_GGbubble_3D<D, T>(aq, ab0, ab1, ab2, ab3,al1,al2); }
+
   /* Face basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
   /* DivShape assumes that phi_12 =  [(grad l1) o-times (grad l2 x grad l3)] is constant!!! */

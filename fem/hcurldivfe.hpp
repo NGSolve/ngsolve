@@ -828,10 +828,10 @@ namespace ngfem
 	{
 	  ArrayMem<AutoDiff<3,T>,20> dub_vals_inner((ot+1)*(ot+2)*(ot+3)/6.0);      
 	  DubinerBasis3D::Eval(ot,ls,le,lt ,dub_vals_inner);
-
+	  
 	  for (int l = 0; l < (ot+1)*(ot+2)*(ot+3)/6.0; l++)
 	     shape[ii++] =  Id_v(dub_vals_inner[l]); 
-
+	  
 	  /*
 	  leg.EvalScaled1Assign 
 	    (ot, lt-lo, lt+lo,
@@ -852,14 +852,17 @@ namespace ngfem
 			 jac1.IncAlpha2();
 		       }));
 	  */
+	  
 	}
       
       //############ type 2 ############
-      ArrayMem<AutoDiff<3,T>,20> dub_vals((oi+1)*(oi+2)*(oi+3)/6.0);
+      int ndof_inner = 1.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       
-      DubinerBasis3D::Eval(oi,ls,le,lt ,dub_vals);
-
-      for (int l = 0; l < (oi+1)*(oi+2)*(oi+3)/6.0; l++)
+      ArrayMem<AutoDiff<3,T>,20> dub_vals(ndof_inner);
+      
+      DubinerBasis3D::Eval(oi-1,ls,le,lt ,dub_vals);
+      
+      for (int l = 0; l < ndof_inner; l++)
 	    {
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,lo*dub_vals[l]);	      
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,lo*dub_vals[l]);	  
@@ -898,47 +901,32 @@ namespace ngfem
 				  }));
 		     jac1.IncAlpha2();
 		   }));
+      
       */
-
       if(GGbubbles)
 	{
-	  //old version
-	  
-	  //if(!GG)
-	  //  {
-	  //int oc = oi+1;
-	  //
-	  //ArrayMem<AutoDiff<3,T>,20> adpol1(oc); 
-	  //ArrayMem<AutoDiff<3,T>,20> adpol2(oc);
-	  //ArrayMem<AutoDiff<3,T>,20> adpol3(oc);
-	  //
-	  //TetShapesInnerLegendre::CalcSplitted(oc+2, ddlami[0]-ddlami[3], ddlami[1], ddlami[2], adpol1, adpol2, adpol3 );
-	  //
-	  //for (int i = 0; i <3; i++)
-	  //  {
-	  //    for (int j = 0; j <= oc-2; j++)
-	  //	for (int k = 0; k <= oc-2-j; k++)
-	  //	  {
-	  //	    //  [grad v  x  grad (uw)] o-times Dlami
-	  //	    shape[ii++] = CurlBubble3D_type1(adpol2[j], adpol1[oc-2-j-k]*adpol3[k], ddlami[i]);        
-	  //	    // grad w  x  grad (uv)
-	  //	    shape[ii++] = CurlBubble3D_type1(adpol3[k], adpol1[oc-2-j-k]*adpol2[j], ddlami[i]);
-	  //	  }     
-	  //    // ned = [lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0])] o-times Dlami
-	  //    for (int j= 0; j <= oc-2; j++)
-	  //	shape[ii++] = CurlBubble3D_type2(ddlami[0], ddlami[3], adpol2[j]*adpol3[oc-2-j], ddlami[i]);
-	  //  }
-	  //  }
-	  
-	  //GGbubbles
-
 	  AutoDiffDiff<3, T> ax[4] = { x, y, z, 1-x-y-z};
 	      
 	  AutoDiffDiff<3, T> b1 = ax[0]*ax[1]*ax[2] + ax[1]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
 	  AutoDiffDiff<3, T> b2 = ax[0]*ax[1]*ax[2] + ax[0]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
 	  AutoDiffDiff<3, T> b3 = ax[0]*ax[1]*ax[2] + ax[0]*ax[1]*(1-ax[0]-ax[1]-ax[2]);
 	  AutoDiffDiff<3, T> b0 = ax[0]*ax[1]*ax[2];
-
+	  
+	  //GGbubbles
+	  
+	  ArrayMem<AutoDiffDiff<3,T>,20> highest_dub_vals_inner((oi+1)*(oi+2)/2);
+	  
+	  DubinerBasis3D::EvalHighestOrder(oi,ax[0],ax[1],ax[2] ,highest_dub_vals_inner);
+	  
+	  for (int l = 0; l < (oi+1)*(oi+2)/2; l++)
+	    {
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[1]);
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[2]);
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[1],ax[2]);
+	    }
+	  
+	  
+	  /*
 	  leg.EvalScaled1Assign 
 	    (oi, ax[2]-ax[3], ax[2]+ax[3],
 	     SBLambda ([&](size_t k, Tx polz) LAMBDA_INLINE
@@ -965,20 +953,10 @@ namespace ngfem
 				      }));
 			 jac1.IncAlpha2();
 		       }));
-
-	  //old version with	      
-	  /*
-	    Vector<AutoDiffDiff<3, T> > S( (oi+1)*(oi+2)/2.0+1 );
-	    l2orth.T_L2orthShape<AutoDiffDiff<3,T> > (ax,S);
-	      
-	    for ( int i = 0; i<(oi+1)*(oi+2)/2.0; i++)
-	    {	    
-	    shape[ii++] = GGbubble_B1(S[i], b0, b1, b2, b3);
-	    shape[ii++] = GGbubble_B2(S[i], b0, b1, b2, b3);
-	    shape[ii++] = GGbubble_B3(S[i], b0, b1, b2, b3);
-	    }
+	  
+	  
 	  */
-
+	 
 	}
 	
             
