@@ -68,30 +68,16 @@ def test_pickle_secondorder_mesh():
 
 
 def test_pickle_gridfunction_complex():
-    return
-    # copy paste errors ?????
-
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
-    fes = H1(mesh,order=3,complex=True)
+    fes = HCurl(mesh,order=3,complex=True)
     u = GridFunction(fes,"u")
-    u.Set(x*y + 1J * y)
-    data = pickle.dumps((u, grad(u), u.Trace()))
-    
-    with TaskManager():
-        a.Assemble()
-        f.Assemble()
-        u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
-
-    with io.BytesIO() as f:
-        pickler = pickle.Pickler(f)
-        pickler.dump(u)
-        data = f.getvalue()
-
-    with io.BytesIO(data) as f:
-        unpickler = pickle.Unpickler(f)
-        u2 = unpickler.load()
-    error = sqrt(Integrate(Conj(u-u2)*(u-u2),mesh))
-    assert error.real < 1e-14 and error.imag < 1e-14
+    u.Set((x*y,1J * y))
+    data = pickle.dumps((u, curl(u)))
+    u2, curlu2  = pickle.loads(data)
+    difvec = u.vec.CreateVector()
+    difvec.data = u.vec - u2.vec
+    assert Norm(difvec) < 1e-12
+    assert Integrate(Norm(curl(u)-curlu2), mesh) < 1e-14
 
 def test_pickle_hcurl():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
