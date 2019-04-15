@@ -227,23 +227,43 @@ namespace ngfem
 		shape[ii++] = Du (val);
 	      }));
 
-	// non-gradient inner shapes, same for type 1 and 2:
-	DubinerBasis::EvalMult
-	  (p-2, lam[fav[0]], lam[fav[1]], 
-	   lam[fav[0]], 
-	   SBLambda
-	   ([&](int nr, Tx val)
-	    {
-	      shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
-	    }));
-
-	LegendrePolynomial::EvalMult 
-	  (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
-	   SBLambda
-	   ([&] (int j, Tx val)
-	    {
-	      shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[0]], val);
-	    }));
+	// not yet: compatibility with tets/prisms ! non-gradient inner shapes, same for type 1 and 2
+        if (type1)
+          {
+            DubinerBasis::EvalMult
+              (p-2, lam[fav[0]], lam[fav[1]], 
+               lam[fav[0]], 
+               SBLambda
+               ([&](int nr, Tx val)
+                {
+                  shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
+                }));
+            
+            LegendrePolynomial::EvalMult 
+              (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]], 
+               SBLambda
+               ([&] (int j, Tx val)
+                {
+                  shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[0]], val);
+                }));
+          }
+        else
+          {
+            Tx xi  = lam[fav[2]]-lam[fav[1]];
+            Tx eta = lam[fav[0]];
+            
+            ArrayMem<Tx,20> adpol1(order),adpol2(order);	
+            TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
+	
+            // other combination
+            for (int j = 0; j < p-1; j++)
+              for (int k = 0; k < p-1-j; k++, ii++)
+                shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);     
+            
+            // rec_pol * Nedelec0 
+            for (int j = 0; j < p-1; j++, ii++)
+              shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
+          }
       }
   }
 
