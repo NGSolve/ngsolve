@@ -4079,8 +4079,10 @@ namespace ngcomp
 		(+ its local vol el) if on mpi-bnd.
 	    **/
 	    size_t nse = ma->GetNE(BND);
-	    for (int i = 0; i < nse; ++i)
-	      fine_facet.Set(ma->GetSElFace(i));
+	    for (int i = 0; i < nse; ++i) {
+	      auto selfacets = ma->GetElFacets(ElementId(BND, i));
+	      for (auto f : selfacets) fine_facet.Set(f);
+	    }
 
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
 	    
