@@ -11,6 +11,12 @@
 
 namespace ngfem
 {
+
+  void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c)
+  {
+    throw Exception ("AddABt(simd<complex>, simd<double>) not implemented");
+  }
+               
   
   ProxyFunction ::
   ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
@@ -974,9 +980,11 @@ namespace ngfem
                 }
           nonzeros_proxies(l1, k1) = is_nonzero;
           diagonal_proxies(l1, k1) = is_diagonal;
-          // same_diffops(l1,k1) = *(proxy2->Evaluator()) == *(proxy1->Evaluator());
+          same_diffops(l1,k1) = *(proxy2->Evaluator()) == *(proxy1->Evaluator());
+          // same_diffops(l1,k1) = proxy2->Evaluator() == proxy1->Evaluator();
           // same objects, not only equal objects, what implies also the same space
-          same_diffops(l1,k1) = proxy2->Evaluator() == proxy1->Evaluator();
+          // should be ok now, since we check also for MixedFE
+          // important to recognize equatl CompoundDiffOps (which are never the same)
           if (nonzeros_proxies(l1,k1) && (!diagonal_proxies(l1,k1) || !same_diffops(l1,k1))) is_symmetric = false;
         }
     
@@ -984,7 +992,7 @@ namespace ngfem
     cout << IM(6) << "nonzeros_deriv: " << endl << nonzeros_deriv << endl;
     cout << IM(6) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
     cout << IM(6) << "symmetric: " << endl << is_symmetric << endl;
-    
+    cout << IM(6) << "same diffops: " << endl << same_diffops << endl;
     trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
@@ -1118,10 +1126,14 @@ namespace ngfem
   {
     static Timer t(string("SymbolicBFI::CalcElementMatrixAdd")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-    // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+    RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
     if (element_vb != VOL)
       {
+        static Timer t(string("SymbolicBFI::EB ")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
+        ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+        RegionTracer regtr(TaskManager::GetThreadId(), t);    
+        
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
         return;
       }
@@ -1136,8 +1148,8 @@ namespace ngfem
         {
           // ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
           // NgProfiler::StartThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
-          // static Timer tsimd(string("SymbolicBFI::CalcElementMatrixAddSIMD")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);          
-          // RegionTracer regsimd(TaskManager::GetThreadId(), tsimd);
+          static Timer tsimd(string("SymbolicBFI::CalcElementMatrixAddSIMD")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);          
+          RegionTracer regsimd(TaskManager::GetThreadId(), tsimd);
  
           const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
@@ -1647,7 +1659,7 @@ namespace ngfem
       static Timer tb("symbolicBFI - CalcElementMatrix EB - bmats", 2);
       static Timer tmult("symbolicBFI - CalcElementMatrix EB - mult", 2);
       */
-      RegionTimer reg(t);
+      // RegionTimer reg(t);
 
       // elmat = 0;
 
@@ -1715,16 +1727,10 @@ namespace ngfem
                         SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
                         
                         FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width()*dim_proxy1, mir.Size(), lh);
-                        FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*dim_proxy2, mir.Size(), lh);
                         bool samediffop = false; // not yet available
                         FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
                           bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*dim_proxy2, mir.Size(), lh);
-                      
-                        FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*mir.Size(),
-                                                        &bdbmat1(0,0));
-                        FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*mir.Size(),
-                                                              &bbmat2(0,0));
-                        
+
                         {
                           // ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
                           proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
@@ -1732,18 +1738,69 @@ namespace ngfem
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
                         }
 
-                        bdbmat1 = 0.0; 
-                        for (auto i : r1)
-                          for (size_t j = 0; j < dim_proxy2; j++)
-                            for (size_t k = 0; k < dim_proxy1; k++)
-                              {
-                                auto res = bdbmat1.Row(i*dim_proxy2+j);
-                                auto a = bbmat1.Row(i*dim_proxy1+k);
-                                auto b = proxyvalues.Row(k*dim_proxy2+j);
-                                res += pw_mult(a,b);
-                              }
+                        
 
-                        AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+
+                        if (dim_proxy2 < dim_proxy1)
+                          {
+                            FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*dim_proxy2, mir.Size(), lh);
+                            FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*mir.Size(),
+                                                            &bdbmat1(0,0));
+                            
+                            {
+                              static Timer t("SymbolicBFI::EB - DB  V1", 2);
+                              RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                              bdbmat1 = 0.0;
+                              for (size_t j = 0; j < dim_proxy2; j++)
+                                for (size_t k = 0; k < dim_proxy1; k++)
+                                  // if (nonzeros(l1+j, k1+k))
+                                  {
+                                    auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
+                                    auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
+                                    auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
+                                    
+                                    for (size_t i = 0; i < mir.Size(); i++)
+                                      bdbmat1_j.Col(i).AddSize(r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
+                                  }
+                            }
+                            
+                            static Timer t("SymbolicBFI::EB - AddABt V1", 2);
+                            RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                            
+                            FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*mir.Size(),
+                                                                  &bbmat2(0,0));
+                            AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                          }
+                        else
+                          {
+                            FlatMatrix<SIMD<SCAL>> bdbmat2(elmat.Height()*dim_proxy1, mir.Size(), lh);
+                            FlatMatrix<SIMD<SCAL>> hbdbmat2(elmat.Height(), dim_proxy1*mir.Size(),
+                                                            &bdbmat2(0,0));
+                            
+                            {
+                              static Timer t("SymbolicBFI::EB - DB V1", 2);
+                              RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                              bdbmat2 = 0.0;
+                              for (size_t j = 0; j < dim_proxy2; j++)
+                                for (size_t k = 0; k < dim_proxy1; k++)
+                                  // if (nonzeros(l1+j, k1+k))
+                                  {
+                                    auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
+                                    auto bbmat2_j = bbmat2.RowSlice(j, dim_proxy2).Rows(r2);
+                                    auto bdbmat2_k = bdbmat2.RowSlice(k, dim_proxy1).Rows(r2);
+                                    
+                                    for (size_t i = 0; i < mir.Size(); i++)
+                                      bdbmat2_k.Col(i).AddSize(r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
+                                  }
+                            }
+                            
+                            static Timer t("SymbolicBFI::EB - AddABt V2", 2);
+                            RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                            
+                            FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat1(elmat.Width(), dim_proxy1*mir.Size(),
+                                                                  &bbmat1(0,0));
+                            AddABt (hbdbmat2.Rows(r2), hbbmat1.Rows(r1), part_elmat);
+                          }
                       }
                 }
               return;
