@@ -110,7 +110,7 @@ namespace ngfem
       }*/
     
     
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HCurlDivFE<ET> * Cast() const { return static_cast<const HCurlDivFE<ET>*> (this); } 
     
     INLINE void SetOrderFacet (int nr, int order) { order_facet[nr] = order; }
@@ -123,7 +123,7 @@ namespace ngfem
     }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
@@ -138,7 +138,7 @@ namespace ngfem
     }
 
     virtual void CalcDivShape (const IntegrationPoint & ip,
-                               BareSliceMatrix<double> shape) const
+                               BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
@@ -153,7 +153,7 @@ namespace ngfem
     }
 
     virtual void CalcCurlShape (const IntegrationPoint & ip,
-                               BareSliceMatrix<double> shape) const
+                               BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
@@ -170,7 +170,7 @@ namespace ngfem
 
 
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM>> addp;
@@ -282,7 +282,7 @@ namespace ngfem
     }
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM>> addp;
@@ -1017,7 +1017,7 @@ namespace ngfem
     {
       cout << "Error, T_HCurlDivSurfaceFE<ET>:: ComputeNDof not available for base class" << endl;
     }
-
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {

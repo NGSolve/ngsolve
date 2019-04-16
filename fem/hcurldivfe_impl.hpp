@@ -590,7 +590,6 @@ namespace ngfem
       sigmaref(0) -= trace;
       sigmaref(4) -= trace;
       sigmaref(8) -= trace;
-      
       return sigmaref;
     }
 
@@ -654,6 +653,31 @@ namespace ngfem
       res.DValue(i) = add.DValue(i);
 
     return res;
+  }
+
+    template <typename T>
+  INLINE AutoDiffDiff<3,T> Cross (const AutoDiffDiff<3,T> & u,
+                                 const AutoDiffDiff<3,T> & v)
+  {
+    AutoDiffDiff<3,T> ret;
+    ret.Value()=0;
+    ret.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+    ret.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+    ret.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+
+    ret.DDValue(0,0) = u.DDValue(0,1)*v.DValue(2)-u.DDValue(0,2)*v.DValue(1) + u.DValue(1)*v.DDValue(0,2)-u.DValue(2)*v.DDValue(0,1);
+    ret.DDValue(0,1) = u.DDValue(1,1)*v.DValue(2)-u.DDValue(1,2)*v.DValue(1) + u.DValue(1)*v.DDValue(1,2)-u.DValue(2)*v.DDValue(1,1);
+    ret.DDValue(0,2) = u.DDValue(2,1)*v.DValue(2)-u.DDValue(2,2)*v.DValue(1) + u.DValue(1)*v.DDValue(2,2)-u.DValue(2)*v.DDValue(2,1);
+
+    ret.DDValue(1,0) = u.DDValue(0,2)*v.DValue(0)-u.DDValue(0,0)*v.DValue(2) + u.DValue(2)*v.DDValue(0,0)-u.DValue(0)*v.DDValue(0,2);
+    ret.DDValue(1,1) = u.DDValue(1,2)*v.DValue(0)-u.DDValue(1,0)*v.DValue(2) + u.DValue(2)*v.DDValue(1,0)-u.DValue(0)*v.DDValue(1,2);
+    ret.DDValue(1,2) = u.DDValue(2,2)*v.DValue(0)-u.DDValue(2,0)*v.DValue(2) + u.DValue(2)*v.DDValue(2,0)-u.DValue(0)*v.DDValue(2,2);
+
+    ret.DDValue(2,0) = u.DDValue(0,0)*v.DValue(1)-u.DDValue(0,1)*v.DValue(0) + u.DValue(0)*v.DDValue(0,1)-u.DValue(1)*v.DDValue(0,0);
+    ret.DDValue(2,1) = u.DDValue(1,0)*v.DValue(1)-u.DDValue(1,1)*v.DValue(0) + u.DValue(0)*v.DDValue(1,1)-u.DValue(1)*v.DDValue(1,0);
+    ret.DDValue(2,2) = u.DDValue(2,0)*v.DValue(1)-u.DDValue(2,1)*v.DValue(0) + u.DValue(0)*v.DDValue(2,1)-u.DValue(1)*v.DDValue(2,0);
+    
+    return ret;
   }
 
   template <typename T>
@@ -881,6 +905,7 @@ namespace ngfem
       S[1](0) = -S[0](1); S[2](0) = -S[0](2); S[2](1) = -S[1](2);
       
       // curl of each row of B
+      
       Vec<3,T> curlB[3];      
       for(int i = 0; i<3; i++)
 	{
@@ -890,12 +915,23 @@ namespace ngfem
 	    curlB[i](j) = crossres.DValue(j);
 	}          
       
+
+      //Version 2 - much slower
+      /*
+      AutoDiffDiff<3,T> curlB[3];      
+      for(int i = 0; i<3; i++)
+	{
+	  curlB[i] = b3.DValue(i) * Cross(b0 * b1 * b2,b3) + b0.DValue(i) * Cross(b1 * b2 * b3,b0) +
+	             b1.DValue(i) * Cross(b2 * b3 * b0,b1) + b2.DValue(i) * Cross(b3 * b0 * b1,b2);
+	} 
+      */
+      
       Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
       for (int i = 0; i < 3; i++)
 	grad_q_cross_S[i] = Cross (q, S[i]);
 
       Vec<9,T> sigmaref;
-      
+           
       for (int i = 0; i < 3; i++)
 	{
 	  sigmaref(i*3) = 0;
@@ -906,25 +942,80 @@ namespace ngfem
 	      Vec<3,T> hv1(grad_q_cross_S[i](j).DValue(0),grad_q_cross_S[i](j).DValue(1),grad_q_cross_S[i](j).DValue(2));
 	      Vec<3,T> hv2(B(j,0),B(j,1),B(j,2));
 	      Vec<3,T> crossres = Cross(hv1,hv2);
+	      //AutoDiffDiff<3,T> res2 = grad_q_cross_S[i](j).Value() * curlB[j];
 	      Vec<3,T> res2 = grad_q_cross_S[i](j).Value() * curlB[j];
 	      sigmaref(i*3)   += crossres(0) + res2(0);
 	      sigmaref(i*3+1) += crossres(1) + res2(1);
 	      sigmaref(i*3+2) += crossres(2) + res2(2);
 	    }
-	}      
+	}
+
+      T sigma_trace = 1/3.0 * (sigmaref(0) + sigmaref(4) + sigmaref(8));	          
       
-      //auto sigma_trace = 1/3.0 * (sigmaref(0) + sigmaref(4) + sigmaref(8));
-      //sigmaref(0) -= sigma_trace;
-      //sigmaref(4) -= sigma_trace;
-      //sigmaref(8) -= sigma_trace;
+      sigmaref(0) -= sigma_trace;
+      sigmaref(4) -= sigma_trace;
+      sigmaref(8) -= sigma_trace;
       
-      return sigmaref;
-      
+      return sigmaref;      
     }
 
     Vec<3,T> DivShape()
-    {            
-      return (0,0,0);
+    {
+      
+      Mat<3,3,T> B;
+      for (int i = 0; i<3; i++)
+	for (int j = 0; j<3; j++)
+	  B(i,j) = b0.Value()*b1.Value()*b2.Value()*b3.DValue(i)*b3.DValue(j) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(i)*b0.DValue(j) +
+	           b2.Value()*b3.Value()*b0.Value()*b1.DValue(i)*b1.DValue(j) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(i)*b2.DValue(j);
+
+      //Mat S = grad lambda_i otimes(skw) grad lambda_j      
+      Vec<3,T> S[3];
+      S[0](0)= 0; S[1](1)=0; S[2](2)=0;
+      S[0](1)= l1.DValue(0) * l2.DValue(1) - l1.DValue(1) * l2.DValue(0); 
+      S[0](2)= l1.DValue(0) * l2.DValue(2) - l1.DValue(2) * l2.DValue(0);
+      S[1](2)= l1.DValue(1) * l2.DValue(2) - l1.DValue(2) * l2.DValue(1);
+
+      S[1](0) = -S[0](1); S[2](0) = -S[0](2); S[2](1) = -S[1](2);
+      
+      // curl of each row of B
+      //Vec<3,T> curlB[3];
+
+      AutoDiffDiff<3,T> curlB[3];
+      
+      for(int i = 0; i<3; i++)
+	{
+	  curlB[i] = b3.DValue(i) * Cross(b0 * b1 * b2,b3) + b0.DValue(i) * Cross(b1 * b2 * b3,b0) +
+	             b1.DValue(i) * Cross(b2 * b3 * b0,b1) + b2.DValue(i) * Cross(b3 * b0 * b1,b2);
+	  //for(int j = 0; j<3; j++)
+	  //curlB[i](j) = crossres;
+	}          
+      
+      Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
+      for (int i = 0; i < 3; i++)
+	grad_q_cross_S[i] = Cross (q, S[i]);
+
+      T grad_x=0.0;
+      T grad_y=0.0;
+      T grad_z=0.0;
+
+      for(int i = 0; i<3; i++)
+      	{
+	  for(int j = 0; j<3; j++)
+	    {
+	      grad_x += grad_q_cross_S[i](j).DValue(0) * curlB[j].DValue(i) + grad_q_cross_S[i](j).Value() * curlB[j].DDValue(i,0);
+	      grad_y += grad_q_cross_S[i](j).DValue(1) * curlB[j].DValue(i) + grad_q_cross_S[i](j).Value() * curlB[j].DDValue(i,1);
+	      grad_z += grad_q_cross_S[i](j).DValue(2) * curlB[j].DValue(i) + grad_q_cross_S[i](j).Value() * curlB[j].DDValue(i,2);
+	    }	      
+	  //grad_x += grad_q_cross_S[i](0).DValue(0) * curlB[0].DValue(i) + grad_q_cross_S[i](1).DValue(0) * curlB[1].DValue(i) + grad_q_cross_S[i](2).DValue(0) * curlB[2].DValue(i);
+	  //grad_x += grad_q_cross_S[i](0).Value() * curlB[0].DDValue(i,0) + grad_q_cross_S[i](1).Value() * curlB[1].DDValue(i,0) + grad_q_cross_S[i](2).Value() * curlB[2].DDValue(i,0);
+	  //grad_y += grad_q_cross_S[i](0).DValue(1) * curlB[0].DValue(i) + grad_q_cross_S[i](1).DValue(1) * curlB[1].DValue(i) + grad_q_cross_S[i](2).DValue(1) * curlB[2].DValue(i);
+	  //grad_y += grad_q_cross_S[i](0).Value() * curlB[0].DDValue(i,1) + grad_q_cross_S[i](1).Value() * curlB[1].DDValue(i,1) + grad_q_cross_S[i](2).Value() * curlB[2].DDValue(i,1);
+	  //grad_z += grad_q_cross_S[i](0).DValue(2) * curlB[0].DValue(i) + grad_q_cross_S[i](1).DValue(2) * curlB[1].DValue(i) + grad_q_cross_S[i](2).DValue(2) * curlB[2].DValue(i);
+	  //grad_z += grad_q_cross_S[i](0).Value() * curlB[0].DDValue(i,2) + grad_q_cross_S[i](1).Value() * curlB[1].DDValue(i,2) + grad_q_cross_S[i](2).Value() * curlB[2].DDValue(i,2);
+      	}
+          
+      return -1.0/3.0 * Vec<3,T>(grad_x,grad_y,grad_z);
+      //return Vec<3,T>(0,0,0);
     }
 
     Vec<3,T> CurlShape()
