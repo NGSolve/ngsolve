@@ -18,7 +18,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS})
 
-target_link_libraries (ngcomp PUBLIC interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE ngmg ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
+target_link_libraries (ngcomp PUBLIC nglib ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE ngmg ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
 target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 install( TARGETS ngcomp ${ngs_install_dir} )
 
