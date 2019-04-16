@@ -3434,13 +3434,19 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
+      auto cast_value = [&] (int i) {
+          return code.res_type + "(" + Var(inputs[i]).S() + ")";
+      };
+
       auto var_if = Var(inputs[0]);
       TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
-          code.body += Var(index,i,j).Declare("decltype("+Var(inputs[1]).S()+")");
+          code.body += Var(index,i,j).Declare(code.res_type);
       });
+
       if(code.is_simd) {
         TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign("IfPos("+Var(inputs[0]).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+")", false);
+            // cast all input parameters of IfPos to enforce the right overload (f.i. intermediate results could be double instead of AutoDiff<>)
+            code.body += Var(index,i,j).Assign("IfPos("+cast_value(0) + ',' + cast_value(1) + ',' + cast_value(2)+')', false);
         });
       } else {
         code.body += "if (" + var_if.S() + ">0.0) {\n";
