@@ -153,6 +153,13 @@ namespace ngfem
     /// return a mapped integration rule on localheap
     virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const;
 
+    template <int DIMS, int DIMR> 
+      void CalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, Vec<DIMR, Mat<DIMS,DIMS,SIMD<double>>> & hesse) const
+    {
+      VCalcHesse (ip, &hesse(0)(0,0));
+    }
+    virtual void VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const;
+        
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
     virtual const void * GetMesh () const { return NULL; }
 
@@ -229,25 +236,22 @@ namespace ngfem
   
     ///
     virtual void CalcJacobian (const IntegrationPoint & ip,
-			       FlatMatrix<> dxdxi) const;
+			       FlatMatrix<> dxdxi) const override;
 
     ///
     virtual void CalcPoint (const IntegrationPoint & ip, 
-			    FlatVector<> point) const;
+			    FlatVector<> point) const override;
 
     ///
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, 
-				    FlatMatrix<> dxdxi) const;
-
-
-
+				    FlatMatrix<> dxdxi) const override;
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
-					 BaseMappedIntegrationRule & bmir) const;
+					 BaseMappedIntegrationRule & bmir) const override;
 
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
-					 SIMD_BaseMappedIntegrationRule & mir) const;
+					 SIMD_BaseMappedIntegrationRule & mir) const override;
 
     ///
     // const FlatMatrix<> & PointMatrix () const { return pointmat; }
@@ -275,32 +279,32 @@ namespace ngfem
     }
 
     ///
-    int SpaceDim () const
+    int SpaceDim () const override
     {
       return pointmat.Height(); 
     }
 
-    VorB VB(void) const
+    VorB VB(void) const override
     {
       return pointmat.Height()==ElementTopology::GetSpaceDim(fel->ElementType()) ? VOL :
 	(pointmat.Height()==ElementTopology::GetSpaceDim(fel->ElementType())-1 ? BND : BBND);
     }
 
-    void GetSort (FlatArray<int> sort) const
+    void GetSort (FlatArray<int> sort) const override
     { ; }
 
 
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const override
     {
       return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const override
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }
 
-    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const override
     {
       return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }

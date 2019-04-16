@@ -22,6 +22,11 @@ namespace ngfem
     throw ExceptionNOSIMD("ElementTransformation(SIMD_IR) not overloaded");
   }
 
+  void ElementTransformation :: VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const
+  {
+    cout << "ElementTransformation::VCalcHesse not overloaded for " << typeid(*this).name() << endl;
+  }
+  
   void ElementTransformation :: CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
                                                         SIMD_BaseMappedIntegrationRule & mir) const
   {
