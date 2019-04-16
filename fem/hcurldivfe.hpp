@@ -119,7 +119,7 @@ namespace ngfem
 
     virtual void ComputeNDof()
     {
-      cout << "Error, T_HCurlDivFE<ET>:: ComputeNDof not available, only for ET == TRIG" << endl;
+      cout << "Error, T_HCurlDivFE<ET>:: ComputeNDof not available, only for ET == TRIG,TET,QUAD" << endl;
     }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
