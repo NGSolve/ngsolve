@@ -12,9 +12,19 @@
 namespace ngfem
 {
 
+  // not yet optimized ...
   void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c)
   {
-    throw Exception ("AddABt(simd<complex>, simd<double>) not implemented");
+    for (int i = 0; i < c.Height(); i++)
+      for (int j = 0; j < c.Width(); j++)
+        {
+          SIMD<Complex> sum = 0.0;
+          auto rowa = a.Row(i);
+          auto rowb = b.Row(j);
+          for (int k = 0; k < a.Width(); k++)
+            sum += rowa(k)*rowb(k);
+          c(i,j) += HSum(sum);
+        }
   }
                
   
