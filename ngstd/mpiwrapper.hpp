@@ -463,7 +463,7 @@ public:
   
   // typedef int MPI_Comm;
   typedef int MPI_Datatype;
-  typedef int MPI_Request;
+  // typedef int MPI_Request;
 
   class NgsMPI_Comm : public NgMPI_Comm
   {
