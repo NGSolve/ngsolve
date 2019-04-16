@@ -360,18 +360,18 @@ namespace ngcomp
     
     static string Name() { return "div"; }
 
-
-    //template <typename FEL,typename SIP>
-    /*static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+    
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
 
       fel.CalcMappedDivShape (sip, Trans(mat));
-      }*/
-
+      }
     
+    /*
     
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
@@ -395,7 +395,7 @@ namespace ngcomp
       //Mat<D> sjac = (1.0/det) * jacinv;
       
       mat = sjac * Trans (div_shape);      
-      }        
+      }*/        
   };
 
   template <int D> class DiffOpCurlHCurlDiv : public DiffOp<DiffOpCurlHCurlDiv<D> >
@@ -411,7 +411,7 @@ namespace ngcomp
     
     static string Name() { return "curl"; }
 
-    
+    /*
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
@@ -421,8 +421,8 @@ namespace ngcomp
 
       fel.CalcMappedCurlShape (sip, Trans(mat));
     }
-    
-    /*    
+    */
+        
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
@@ -445,7 +445,7 @@ namespace ngcomp
       Mat<D> sjac = (1.0/(det*det)) * jac;          
       mat = sjac * Trans (curl_shape);
       }
-    */
+    
     
   };
 
