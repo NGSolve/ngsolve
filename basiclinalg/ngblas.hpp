@@ -146,6 +146,8 @@ namespace ngbla
   extern NGS_DLL_HEADER void AddABt (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
   extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
   extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c);
+
   extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<double>> a,
                          FlatMatrix<SIMD<Complex>> b,
                          SliceMatrix<Complex> c);

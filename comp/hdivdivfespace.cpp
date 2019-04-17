@@ -127,6 +127,9 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
+      static Timer t("HDivDivFE - DiffOpId", 2);
+      RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
     }
 
@@ -162,6 +165,9 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
+      static Timer t("HDivDivFE - div IP", 2);
+      RegionTracer regtr(TaskManager::GetThreadId(), t);    
+      
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
 
@@ -172,6 +178,9 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
+      static Timer t("HDivDivFE - div IP 2", 2);
+      RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
       HeapReset hr(lh);
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -189,6 +198,9 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
+      static Timer t("HDivDivFE - div IR", 2);
+      RegionTracer regtr(TaskManager::GetThreadId(), t);
+      
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
     }
 
@@ -660,6 +672,7 @@ namespace ngcomp
                 break;
               case ET_TET:
                 ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+                if (plus) ndof += 8;
                 if(discontinuous)
                   {
                     for (auto f : ma->GetElFacets(ei))
