@@ -16,6 +16,8 @@ ExternalProject_Add(project_parmetis
 	 -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
          -DMETIS_PATH=${PARMETIS_SRC_DIR}/metis/
          -DCMAKE_INSTALL_PREFIX=${PARMETIS_DIR}
+         -DCMAKE_C_COMPILER=${MPI_C_COMPILER}
+         -DCMAKE_CXX_COMPILER=${MPI_CXX_COMPILER}
          -DMETIS_INSTALL=ON
   UPDATE_COMMAND "" # Disable update
   )
