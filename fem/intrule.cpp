@@ -308,6 +308,7 @@ namespace ngfem
 
   }
 
+  
 
   template class MappedIntegrationPoint<0,0>;
   template class MappedIntegrationPoint<0,1>;
@@ -320,6 +321,7 @@ namespace ngfem
   
   template class MappedIntegrationPoint<0,2>;
   template class MappedIntegrationPoint<0,3>;
+
 
 
  
@@ -3758,6 +3760,36 @@ namespace ngstd
     throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
   }
 
+  
+  template <int DIMS, int DIMR>
+  void SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>>::
+  CalcHesse (Vec<DIMR,Mat<DIMS,DIMS,SIMD<double>>> & ddx) const
+  {
+    double eps = 1e-6;
+    LocalHeapMem<10000> lh("calchesse");
+    ngfem::SIMD_IntegrationRule ir(2*SIMD<double>::Size(), lh);  // number of scalar pnts
+    
+    for (int dir = 0; dir < DIMS; dir++)
+      {
+        ir[0] = this->IP();
+        ir[0](dir) += eps;
+        ir[1] = this->IP();
+        ir[1](dir) -= eps;
+        ngfem::SIMD_MappedIntegrationRule<DIMS,DIMR> mir(ir, *this->eltrans, lh);
+        auto jacr = mir[0].GetJacobian();
+        auto jacl = mir[1].GetJacobian();
+        for (int k = 0; k < DIMR; k++)
+          for (int j = 0; j < DIMS; j++)
+            ddx(k)(dir,j) = (jacr(k,j) - jacl(k,j) ) / (2*eps);
+      }
+  }
+  
+  template class SIMD<ngfem::MappedIntegrationPoint<1,1>>;
+  template class SIMD<ngfem::MappedIntegrationPoint<2,2>>;
+  template class SIMD<ngfem::MappedIntegrationPoint<3,3>>;
+
+
+  
 }
 
 /*

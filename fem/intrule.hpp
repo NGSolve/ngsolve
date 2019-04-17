@@ -1773,8 +1773,8 @@ namespace ngstd
       return adp;
     }
 
-
-    
+    void CalcHesse (Vec<DIMR,Mat<DIMS,DIMS,SIMD<double>>> & ddx1) const;
+   
     void Print (ostream & ost) const
     {
       ost << "ip = " << this->ip << endl;
