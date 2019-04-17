@@ -1259,6 +1259,7 @@ namespace ngbla
   }
 
   Timer timer_addabtdc ("AddABt-double-complex");
+  Timer timer_addabtcd ("AddABt-complex-double");
   Timer timer_addabtdcsym ("AddABt-double-complex, sym");
 
   // block and pack B
@@ -1285,13 +1286,33 @@ namespace ngbla
   {
     ThreadRegionTimer reg(timer_addabtdc, TaskManager::GetThreadId());
     NgProfiler::AddThreadFlops(timer_addabtdc, TaskManager::GetThreadId(),
-                               a.Height()*b.Height()*a.Width()*8);
+                               a.Height()*b.Height()*a.Width()*2*SIMD<double>::Size());
     constexpr size_t bs = 64;
     for (size_t k = 0; k < a.Width(); k+=bs)
       {
         size_t k2 = min2(k+bs, a.Width());
         AddABt2<bs> (a.Cols(k,k2), b.Cols(k,k2), c);
       }
+  }
+
+
+
+  void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c)
+  {
+    ThreadRegionTimer reg(timer_addabtcd, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops(timer_addabtcd, TaskManager::GetThreadId(),
+                               a.Height()*b.Height()*a.Width()*2*SIMD<double>::Size());
+
+    for (int i = 0; i < c.Height(); i++)
+      for (int j = 0; j < c.Width(); j++)
+        {
+          SIMD<Complex> sum = 0.0;
+          auto rowa = a.Row(i);
+          auto rowb = b.Row(j);
+          for (int k = 0; k < a.Width(); k++)
+            sum += rowa(k)*rowb(k);
+          c(i,j) += HSum(sum);
+        }
   }
 
   
