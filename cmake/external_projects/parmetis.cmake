@@ -11,7 +11,7 @@ ExternalProject_Add(project_parmetis
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   PATCH_COMMAND patch -p1 -i ${CMAKE_CURRENT_LIST_DIR}/parmetis.patch
   CMAKE_ARGS
-         -DCMAKE_C_FLAGS=-fPIC
+	 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
          -DMPI_INCLUDE_PATH=${MPI_HDIR}
 	 -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
          -DMETIS_PATH=${PARMETIS_SRC_DIR}/metis/
