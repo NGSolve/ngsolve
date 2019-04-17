@@ -147,7 +147,17 @@ namespace ngfem
   void CoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
   {
-    throw ExceptionNOSIMD (string("CF :: simd-Evaluate (complex) not implemented for class ") + typeid(*this).name());
+    if (IsComplex())
+      throw ExceptionNOSIMD (string("CF :: simd-Evaluate (complex) not implemented for class ") + typeid(*this).name());
+    else
+      {
+        size_t nv = ir.Size();
+        SliceMatrix<SIMD<double>> overlay(Dimension(), nv, 2*values.Dist(), &values(0,0).real());
+        Evaluate (ir, overlay);
+        for (size_t i = 0; i < Dimension(); i++)
+          for (size_t j = nv; j-- > 0; )
+            values(i,j) = overlay(i,j);
+      }
   }
 
   
