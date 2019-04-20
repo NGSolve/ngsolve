@@ -570,9 +570,16 @@ namespace ngcomp
                 if (highest_order_dc) 
 		  {
 		    // ma->GetElFacets (i, fnums);
+                    /*
                     auto fnums = ma->GetElFacets(i);
 		    for (int j = 0; j < fnums.Size(); j++)
-		      if (!boundary_facet[fnums[j]]) inci += p[0]+1;
+                      {
+                        INT<2> pf = order_facet[fnums[j]]; 
+                        if (!boundary_facet[fnums[j]]) inci += pf[0]+1;
+                      }
+                    */
+                    for (auto f : ma->GetElFacets(i))
+                      if (!boundary_facet[f]) inci += order_facet[f][0]+1;
 		  }
 		if (RT)
 		  inci += (p[0]+1) * (p[0]+2)/2;
