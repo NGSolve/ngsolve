@@ -401,17 +401,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
+    /*
     static Timer timer1 ("FESpace::FinalizeUpdate 1");
     static Timer timer2 ("FESpace::FinalizeUpdate 2");
     static Timer timer3 ("FESpace::FinalizeUpdate 3");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
     static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
     static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
-    
+    */
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
     RegionTimer reg (timer);
-    timer1.Start();
+    // timer1.Start();
     dirichlet_dofs.SetSize (GetNDof());
     dirichlet_dofs.Clear();
 
@@ -442,8 +443,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
     */
-    timer1.Stop();
-    timer2.Start();
+    // timer1.Stop();
+    // timer2.Start();
     ParallelForRange
       (dirichlet_vertex.Size(),
        [&] (IntRange r)
@@ -457,7 +458,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                  if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
-    timer2.Stop();
+    // timer2.Stop();
     /*
     for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
@@ -490,7 +491,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 	}
     
-    tcolbits.Start();
+    // tcolbits.Start();
     free_dofs = make_shared<BitArray>(GetNDof());
     *free_dofs = dirichlet_dofs;
     free_dofs->Invert();
@@ -507,7 +508,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << *free_dofs << endl;
-    tcolbits.Stop();
+    // tcolbits.Stop();
     
     UpdateParallelDofs();
 
@@ -521,9 +522,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else
       {
-        tcolmutex.Start();
+        // tcolmutex.Start();
       Array<MyMutex> locks(GetNDof());
-      tcolmutex.Stop();
+      // tcolmutex.Stop();
       
       for (auto vb : { VOL, BND, BBND, BBBND })
       {
@@ -605,7 +606,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-        tcol.Start();
+        // tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
 
@@ -686,7 +687,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             basecol += 8*sizeof(unsigned int); // 32;
           }
 
-        tcol.Stop();
+        // tcol.Stop();
 
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;

@@ -1121,13 +1121,13 @@ namespace ngfem
   {
     static Timer t(string("SymbolicBFI::CalcElementMatrixAdd")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-    RegionTracer regtr(TaskManager::GetThreadId(), t);    
+    // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
     if (element_vb != VOL)
       {
-        static Timer t(string("SymbolicBFI::EB ")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
-        ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-        RegionTracer regtr(TaskManager::GetThreadId(), t);    
+        // static Timer t(string("SymbolicBFI::EB ")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
+        // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+        // RegionTracer regtr(TaskManager::GetThreadId(), t);    
         
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
         return;
@@ -1141,10 +1141,8 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          // ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
-          // NgProfiler::StartThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
-          static Timer tsimd(string("SymbolicBFI::CalcElementMatrixAddSIMD")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);          
-          RegionTracer regsimd(TaskManager::GetThreadId(), tsimd);
+          // static Timer tsimd(string("SymbolicBFI::CalcElementMatrixAddSIMD")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);          
+          // RegionTracer regsimd(TaskManager::GetThreadId(), tsimd);
  
           const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
@@ -1250,6 +1248,8 @@ namespace ngfem
 
                       if (is_diagonal)
                         {
+                          // static Timer t("diag DB", 2);
+                          // RegionTracer reg(TaskManager::GetThreadId(), t);
                           // NgProfiler::StartThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                      
                           
                           /*
@@ -1271,7 +1271,11 @@ namespace ngfem
                         }
                       else
                         {
-                          bdbmat1 = 0.0; 
+                          // static Timer t("DB", 2);
+                          // RegionTracer reg(TaskManager::GetThreadId(), t);
+                          
+                          // bdbmat1 = 0.0;
+                          hbdbmat1.Rows(r1) = 0.0; 
                           /*
                           for (auto i : r1)
                             for (size_t j = 0; j < dim_proxy2; j++)
@@ -1325,7 +1329,10 @@ namespace ngfem
                       */
 
                       {
-                      if (symmetric_so_far)
+                        // static Timer t("AddABt", 2);
+                        // RegionTracer reg(TaskManager::GetThreadId(), t);
+                        
+                        if (symmetric_so_far)
                         {
                           /*
                             ThreadRegionTimer regdmult(timer_SymbBFImultsym, TaskManager::GetThreadId());
@@ -1743,9 +1750,9 @@ namespace ngfem
                                                             &bdbmat1(0,0));
                             
                             {
-                              static Timer t("SymbolicBFI::EB - DB  V1", 2);
-                              RegionTracer regtr(TaskManager::GetThreadId(), t);    
-                              bdbmat1 = 0.0;
+                              // static Timer t("SymbolicBFI::EB - DB  V1", 2);
+                              // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                              hbdbmat1.Rows(r1) = 0.0;
                               for (size_t j = 0; j < dim_proxy2; j++)
                                 for (size_t k = 0; k < dim_proxy1; k++)
                                   // if (nonzeros(l1+j, k1+k))
@@ -1759,8 +1766,8 @@ namespace ngfem
                                   }
                             }
                             
-                            static Timer t("SymbolicBFI::EB - AddABt V1", 2);
-                            RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                            // static Timer t("SymbolicBFI::EB - AddABt V1", 2);
+                            // RegionTracer regtr(TaskManager::GetThreadId(), t);    
                             
                             FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*mir.Size(),
                                                                   &bbmat2(0,0));
@@ -1773,9 +1780,9 @@ namespace ngfem
                                                             &bdbmat2(0,0));
                             
                             {
-                              static Timer t("SymbolicBFI::EB - DB V1", 2);
-                              RegionTracer regtr(TaskManager::GetThreadId(), t);    
-                              bdbmat2 = 0.0;
+                              // static Timer t("SymbolicBFI::EB - DB V2", 2);
+                              // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                              hbdbmat2.Rows(r2) = 0.0;
                               for (size_t j = 0; j < dim_proxy2; j++)
                                 for (size_t k = 0; k < dim_proxy1; k++)
                                   // if (nonzeros(l1+j, k1+k))
@@ -1789,8 +1796,8 @@ namespace ngfem
                                   }
                             }
                             
-                            static Timer t("SymbolicBFI::EB - AddABt V2", 2);
-                            RegionTracer regtr(TaskManager::GetThreadId(), t);    
+                            // static Timer t("SymbolicBFI::EB - AddABt V2", 2);
+                            // RegionTracer regtr(TaskManager::GetThreadId(), t);    
                             
                             FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat1(elmat.Width(), dim_proxy1*mir.Size(),
                                                                   &bbmat1(0,0));
