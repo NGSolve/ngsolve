@@ -8,7 +8,6 @@
    High Order Finite Element Space for L2
 */
 
-
 #include <comp.hpp>
 #include <multigrid.hpp>
 #include "../fem/l2hofetp.hpp"
