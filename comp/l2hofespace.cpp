@@ -714,22 +714,30 @@ global system.
 #endif
   
   
-  void L2HighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
+  void L2HighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                      LocalHeap & lh) const
   {
     static Timer t("SolveM"); RegionTimer reg(t);
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::SolveM needs a scalar density");
     IterateElements (*this, VOL, lh,
-                     [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
+                     [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
                        const ElementTransformation & trafo = el.GetTrafo();
                        
                        Array<int> dnums(fel.GetNDof(), lh);
                        GetDofNrs (el.Nr(), dnums);
-                       
+
                        FlatVector<double> elx(fel.GetNDof()*dimension, lh);
+
+                       if (def && !def->Mask()[ma->GetElIndex(el)])
+                         {
+                           elx = 0.0;
+                           vec.SetIndirect (dnums, elx);
+                           return;
+                         }
+                       
                        vec.GetIndirect(dnums, elx);
 		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
 
@@ -2143,42 +2151,16 @@ One can evaluate the vector-valued function, and one can take the gradient.
 #endif
   
   
-  void VectorL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
+  void VectorL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                   LocalHeap & lh) const
   {
-    /*
-    if (piola)
-      {
-        switch (ma->GetDimension())
-          {
-          case 1: SolveMPiola<1>(rho, vec, lh); break;
-          case 2: SolveMPiola<2>(rho, vec, lh); break;
-          case 3: SolveMPiola<3>(rho, vec, lh); break;
-          default: throw Exception("VectorL2FESpace::SolveM: illegal dimension");
-          }
-        return;
-      }
-
-    if (covariant)
-      {
-        switch (ma->GetDimension())
-          {
-          case 1: SolveMCovariant<1>(rho, vec, lh); break;
-          case 2: SolveMCovariant<2>(rho, vec, lh); break;
-          case 3: SolveMCovariant<3>(rho, vec, lh); break;
-          default: throw Exception("VectorL2FESpace::SolveM: illegal dimension");
-          }
-        return;
-      }
-    */
-    
     if (covariant || piola || (rho && rho->Dimension() > 1) )
       {
         switch (ma->GetDimension())
           {
-          case 1: SolveM_Dim<1>(rho, vec, lh); break;
-          case 2: SolveM_Dim<2>(rho, vec, lh); break;
-          case 3: SolveM_Dim<3>(rho, vec, lh); break;
+          case 1: SolveM_Dim<1>(rho, vec, def, lh); break;
+          case 2: SolveM_Dim<2>(rho, vec, def, lh); break;
+          case 3: SolveM_Dim<3>(rho, vec, def, lh); break;
           default: throw Exception("VectorL2FESpace::SolveM: illegal dimension");
           }
         return;
@@ -2187,7 +2169,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
     for (size_t i = 0; i < spaces.Size(); i++)
       {
         auto veci = vec.Range (GetRange(i));
-        spaces[i] -> SolveM (rho, veci, lh);
+        spaces[i] -> SolveM (rho, veci, def, lh);
       }
   }
 
@@ -2244,14 +2226,14 @@ One can evaluate the vector-valued function, and one can take the gradient.
   
   template <int DIM>
   void VectorL2FESpace ::
-  SolveM_Dim (CoefficientFunction * rho, BaseVector & vec,
+  SolveM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * def,
               LocalHeap & lh) const
   {
     static Timer t("SolveM - Vec"); RegionTimer reg(t);
     
     IterateElements
       (*this, VOL, lh,
-       [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
+       [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
        {
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
@@ -2261,6 +2243,14 @@ One can evaluate the vector-valued function, and one can take the gradient.
          GetDofNrs (el.Nr(), dnums);
          
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
+
+         if (def && !def->Mask()[ma->GetElIndex(el)])
+           {
+             elx = 0.0;
+             vec.SetIndirect (dnums, elx);
+             return;
+           }
+
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
          
