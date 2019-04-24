@@ -1149,9 +1149,9 @@ component : int
     
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho) 
-         { self->SolveM(rho.get(), vec, glh); },
-         py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
+             BaseVector& vec, spCF rho, Region * definedon) 
+         { self->SolveM(rho.get(), vec, definedon, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
 Parameters:
@@ -1165,9 +1165,9 @@ rho : ngsolve.fem.CoefficientFunction
 )raw_string"))
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho)
-         { self->ApplyM(rho.get(), vec, nullptr, glh); },
-         py::arg("vec"), py::arg("rho")=nullptr,
+             BaseVector& vec, spCF rho, Region * definedon)
+         { self->ApplyM(rho.get(), vec, definedon, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
     .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
                                bool avg) -> shared_ptr<BaseMatrix>

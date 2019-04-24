@@ -652,7 +652,7 @@ ANY                  1 1 1 1 | 15
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const;
     
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
@@ -1182,7 +1182,7 @@ ANY                  1 1 1 1 | 15
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
