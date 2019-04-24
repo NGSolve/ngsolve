@@ -1662,7 +1662,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   
-  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
+  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
@@ -2890,13 +2890,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   
 
-  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,
+  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                                  LocalHeap & lh) const
   {
     for (size_t i = 0; i < spaces.Size(); i++)
       {
         auto veci = vec.Range (GetRange(i));
-        spaces[i] -> SolveM (rho, veci, lh);
+        spaces[i] -> SolveM (rho, veci, definedon, lh);
       }
   }
     
@@ -3018,7 +3018,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     prod = v;
     if (inverse)
-      fes->SolveM(rho.get(), prod, lh);
+      fes->SolveM(rho.get(), prod, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), prod, definedon.get(), lh);
   }
@@ -3028,7 +3028,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto hv = prod.CreateVector();
     hv = v;
     if (inverse)    
-      fes->SolveM(rho.get(), hv, lh);
+      fes->SolveM(rho.get(), hv, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;
@@ -3039,7 +3039,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto hv = prod.CreateVector();
     hv = v;
     if (inverse)
-      fes->SolveM(rho.get(), hv, lh);
+      fes->SolveM(rho.get(), hv, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;
