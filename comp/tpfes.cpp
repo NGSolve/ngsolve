@@ -394,7 +394,7 @@ namespace ngcomp
       }
   }
   
-  void TPHighOrderFESpace::SolveM (CoefficientFunction * rho, BaseVector & vec,
+  void TPHighOrderFESpace::SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                          LocalHeap & clh) const
   {
     static Timer tall("TPHighOrderFESpace::SolveM"); RegionTimer rall(tall);
