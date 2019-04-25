@@ -227,9 +227,9 @@ namespace ngstd
           NgProfiler::timers[j].flops += NgProfiler::thread_flops[i*NgProfiler::SIZE+j];
         }
     delete [] NgProfiler::thread_times;
-    NgProfiler::thread_times = NgProfiler::dummy_thread_times;
+    NgProfiler::thread_times = NgProfiler::dummy_thread_times.data();
     delete [] NgProfiler::thread_flops;
-    NgProfiler::thread_flops = NgProfiler::dummy_thread_flops;
+    NgProfiler::thread_flops = NgProfiler::dummy_thread_flops.data();
     
     while (active_workers)
       ;
