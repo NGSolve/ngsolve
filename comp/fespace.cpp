@@ -1674,6 +1674,90 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
+  shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
+  {
+    LocalHeap lh(1000000);
+    Array<short> classnr(ma->GetNE());
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+    
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+
+    shared_ptr<BaseMatrix> sum;
+  
+    size_t ne = ma->GetNE();
+  
+    for (auto elclass_inds : table)
+      {
+        if (elclass_inds.Size() == 0) continue;
+        
+        ElementId ei(VOL,elclass_inds[0]);
+        auto & fel = GetFE (ei, lh);
+        auto & fel_l2 = l2space->GetFE (ei, lh);
+        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        MixedFiniteElement fel_mixed(fel, fel_l2);
+        auto evaluator = GetEvaluator(VOL);
+        auto l2evaluator = l2space->GetEvaluator(VOL);
+
+        auto trial = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                                false, false, evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto trial_l2 = make_shared<ProxyFunction>(l2space, 
+                                                   false, false, l2evaluator,
+                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test_l2  = make_shared<ProxyFunction>(l2space,
+                                                   true, false, l2evaluator,
+                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+        shared_ptr<BilinearFormIntegrator> bfi_mass_mixed =
+          make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test_l2), VOL, VOL);
+        shared_ptr<BilinearFormIntegrator> bfi_mass_l2 =
+          make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial_l2,test_l2), VOL, VOL);
+
+        Matrix<> mass_l2(fel_l2.GetNDof(), fel_l2.GetNDof());
+        Matrix<> mass_mixed(fel_l2.GetNDof(), fel.GetNDof());
+        bfi_mass_l2->CalcElementMatrix (fel_l2, trafo, mass_l2, lh);
+        bfi_mass_mixed->CalcElementMatrix (fel_mixed, trafo, mass_mixed, lh);
+
+        CalcInverse (mass_l2);
+        Matrix<> trans = mass_l2 * mass_mixed;
+
+        Table<DofId> xdofs(elclass_inds.Size(), fel.GetNDof()),
+          ydofs(elclass_inds.Size(), fel_l2.GetNDof());
+        
+        Array<DofId> dnumsx, dnumsy;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            GetDofNrs(ei, dnumsx);
+            l2space->GetDofNrs(ei, dnumsy);
+            xdofs[i] = dnumsx;
+            ydofs[i] = dnumsy;
+          }
+
+        auto mat = make_shared<ConstantElementByElementMatrix>
+          (l2space->GetNDof(), this->GetNDof(),
+           trans, std::move(ydofs), std::move(xdofs));
+
+        if (sum)
+          sum = make_shared<SumMatrix>(sum, mat);
+        else
+          sum = mat;
+      }
+    return sum;    
+  }
+
+
+  
   void FESpace :: UpdateParallelDofs ( )
   {
     if (ma->GetCommunicator().Size() == 1) return;
