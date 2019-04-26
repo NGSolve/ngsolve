@@ -907,11 +907,38 @@ namespace ngfem
 	{
 	  AutoDiffDiff<3, T> ax[4] = { x, y, z, 1-x-y-z};
 	      
-	  AutoDiffDiff<3, T> b1 = ax[0]*ax[1]*ax[2] + ax[1]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
-	  AutoDiffDiff<3, T> b2 = ax[0]*ax[1]*ax[2] + ax[0]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
-	  AutoDiffDiff<3, T> b3 = ax[0]*ax[1]*ax[2] + ax[0]*ax[1]*(1-ax[0]-ax[1]-ax[2]);
-	  AutoDiffDiff<3, T> b0 = ax[0]*ax[1]*ax[2];
+	  //AutoDiffDiff<3, T> b1 = ax[0]*ax[1]*ax[2] + ax[1]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
+	  //AutoDiffDiff<3, T> b2 = ax[0]*ax[1]*ax[2] + ax[0]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
+	  //AutoDiffDiff<3, T> b3 = ax[0]*ax[1]*ax[2] + ax[0]*ax[1]*(1-ax[0]-ax[1]-ax[2]);
+	  //AutoDiffDiff<3, T> b0 = ax[0]*ax[1]*ax[2];
 	  
+	  Mat<3,3,T> B;
+	  for (int i = 0; i<3; i++)
+	    for (int j = 0; j<3; j++)
+	      B(i,j) = ax[0].Value()*ax[1].Value()*ax[2].Value()*ax[3].DValue(i)*ax[3].DValue(j) + ax[1].Value()*ax[2].Value()*ax[3].Value()*ax[0].DValue(i)*ax[0].DValue(j) +
+		       ax[2].Value()*ax[3].Value()*ax[0].Value()*ax[1].DValue(i)*ax[1].DValue(j) + ax[3].Value()*ax[0].Value()*ax[1].Value()*ax[2].DValue(i)*ax[2].DValue(j);
+
+	  AutoDiffDiff<3,T> curlB[3];      
+	  for(int i = 0; i<3; i++)
+	    {
+	      curlB[i] = ax[3].DValue(i) * Cross(ax[0] * ax[1] * ax[2],ax[3]) + ax[0].DValue(i) * Cross(ax[1] * ax[2] * ax[3],ax[0]) +
+                         ax[1].DValue(i) * Cross(ax[2] * ax[3] * ax[0],ax[1]) + ax[2].DValue(i) * Cross(ax[3] * ax[0] * ax[1],ax[2]);
+	    }
+
+	  Mat<3,3,T> S[3];
+
+	  AutoDiffDiff<3, T> al[6] = { x, y, x, z, y, z};
+	  
+	  for (int i = 0; i<3; i++)	   
+	    {
+	      S[i](0,0) = 0; S[i](1,1) = 0; S[i](2,2) = 0;
+	      S[i](0,1)= al[2*i].DValue(0) * al[2*i+1].DValue(1) - al[2*i].DValue(1) * al[2*i+1].DValue(0); 
+	      S[i](0,2)= al[2*i].DValue(0) * al[2*i+1].DValue(2) - al[2*i].DValue(2) * al[2*i+1].DValue(0);
+	      S[i](1,2)= al[2*i].DValue(1) * al[2*i+1].DValue(2) - al[2*i].DValue(2) * al[2*i+1].DValue(1);
+	      
+	      S[i](1,0) = -S[i](0,1); S[i](2,0) = -S[i](0,2); S[i](2,1) = -S[i](1,2);
+	    }
+	
 	  //GGbubbles
 	  
 	  ArrayMem<AutoDiffDiff<3,T>,20> highest_dub_vals_inner((oi+1)*(oi+2)/2);
@@ -920,9 +947,15 @@ namespace ngfem
 	  
 	  for (int l = 0; l < (oi+1)*(oi+2)/2; l++)
 	    {
-	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[1]);
-	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[2]);
-	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[1],ax[2]);
+	      //shape[ii++] = GGbubble_B1(highest_dub_vals_inner[l], b0, b1, b2, b3);
+	      //shape[ii++] = GGbubble_B2(highest_dub_vals_inner[l], b0, b1, b2, b3);
+	      //shape[ii++] = GGbubble_B3(highest_dub_vals_inner[l], b0, b1, b2, b3);
+	      //shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[1]);
+	      //shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[2]);
+	      //shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[1],ax[2]);	      
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[0], B, curlB);
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[1], B, curlB);
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[2], B, curlB);
 	    }
 	  
 	  
