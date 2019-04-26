@@ -172,19 +172,23 @@ namespace ngfem
                         }));
             */
             // the correct RT !
+            auto l0 = lam[0];
+            auto l1 = lam[1];
+            auto l2 = lam[2];
+            
             DubinerBasis::EvalMult (pd-2, lam[0], lam[1], 
                                     lam[0], 
-                                    SBLambda ([&](int nr, Tx val)
+                                    SBLambda ([l1,l2,shape,&ii](int nr, Tx val)
                                                {
-                                                 shape[ii++] = wuDv_minus_wvDu (lam[1], lam[2], val);
+                                                 shape[ii++] = wuDv_minus_wvDu (l1, l2, val);
                                                }));
+
             LegendrePolynomial::EvalMult 
               (pd-2, lam[2]-lam[1], lam[2], 
-               SBLambda([&] (int j, Tx val)
+               SBLambda([shape,l0,l1,&ii] (int j, Tx val)
                         {
-                          shape[ii++] = wuDv_minus_wvDu (lam[1], lam[0], val);
+                          shape[ii++] = wuDv_minus_wvDu (l1, l0, val);
                         }));
-            
           }
 
       }
