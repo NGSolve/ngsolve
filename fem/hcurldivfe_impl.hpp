@@ -703,15 +703,12 @@ namespace ngfem
   template <typename T> class T_GGbubble_3D<3,T>
   {
     AutoDiffDiff<3,T> q;
-    AutoDiffDiff<3,T> b0;
-    AutoDiffDiff<3,T> b1;
-    AutoDiffDiff<3,T> b2;
-    AutoDiffDiff<3,T> b3;
-    AutoDiffDiff<3,T> l1;
-    AutoDiffDiff<3,T> l2;
+    Mat<3,3,T> S;    
+    Mat<3,3,T> B;
+    AutoDiffDiff<3,T> *curlB;
     
   public:
-    T_GGbubble_3D  (AutoDiffDiff<3,T> aq, AutoDiffDiff<3,T> ab0, AutoDiffDiff<3,T> ab1, AutoDiffDiff<3,T> ab2, AutoDiffDiff<3,T> ab3, AutoDiffDiff<3,T> al1, AutoDiffDiff<3,T> al2) : q(aq), b0(ab0), b1(ab1), b2(ab2), b3(ab3), l1(al1), l2(al2){ ; }
+    T_GGbubble_3D  (AutoDiffDiff<3,T> aq, Mat<3,3,T> aS, Mat<3,3,T> aB, AutoDiffDiff<3,T> acurlB[] ) : q(aq), S(aS), B(aB), curlB(acurlB){ ; }
 
     Vec<9,T> Shape() {
       /*
@@ -889,13 +886,15 @@ namespace ngfem
       //////NEW
    
       //Mat B - sum_i lambda_i+1 * lambda_i+2 * lambda_i+3 (grad lambda_i \otines  grad lambda_i)
+      /*
       Mat<3,3,T> B;
       for (int i = 0; i<3; i++)
 	for (int j = 0; j<3; j++)
 	  B(i,j) = b0.Value()*b1.Value()*b2.Value()*b3.DValue(i)*b3.DValue(j) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(i)*b0.DValue(j) +
 	           b2.Value()*b3.Value()*b0.Value()*b1.DValue(i)*b1.DValue(j) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(i)*b2.DValue(j);
-
-      //Mat S = grad lambda_i otimes(skw) grad lambda_j      
+      */	   
+      //Mat S = grad lambda_i otimes(skw) grad lambda_j
+      /*
       Vec<3,T> S[3];
       S[0](0)= 0; S[1](1)=0; S[2](2)=0;
       S[0](1)= l1.DValue(0) * l2.DValue(1) - l1.DValue(1) * l2.DValue(0); 
@@ -903,6 +902,7 @@ namespace ngfem
       S[1](2)= l1.DValue(1) * l2.DValue(2) - l1.DValue(2) * l2.DValue(1);
 
       S[1](0) = -S[0](1); S[2](0) = -S[0](2); S[2](1) = -S[1](2);
+      */
       
       // curl of each row of B
       /*
@@ -917,18 +917,19 @@ namespace ngfem
       */
 
       //Version 2 - much slower
-      
+      /*
       AutoDiffDiff<3,T> curlB[3];      
       for(int i = 0; i<3; i++)
 	{
 	curlB[i] = b3.DValue(i) * Cross(b0 * b1 * b2,b3) + b0.DValue(i) * Cross(b1 * b2 * b3,b0) +
                    b1.DValue(i) * Cross(b2 * b3 * b0,b1) + b2.DValue(i) * Cross(b3 * b0 * b1,b2);
 	} 
-	
+      */
       
-      Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
+      Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];
+      
       for (int i = 0; i < 3; i++)
-	grad_q_cross_S[i] = Cross (q, S[i]);
+	grad_q_cross_S[i] = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
 
       Vec<9,T> sigmaref;
            
@@ -963,14 +964,15 @@ namespace ngfem
 
     Vec<3,T> DivShape()
     {
-      
+      /*
       Mat<3,3,T> B;
       for (int i = 0; i<3; i++)
 	for (int j = 0; j<3; j++)
 	  B(i,j) = b0.Value()*b1.Value()*b2.Value()*b3.DValue(i)*b3.DValue(j) + b1.Value()*b2.Value()*b3.Value()*b0.DValue(i)*b0.DValue(j) +
 	           b2.Value()*b3.Value()*b0.Value()*b1.DValue(i)*b1.DValue(j) + b3.Value()*b0.Value()*b1.Value()*b2.DValue(i)*b2.DValue(j);
-
-      //Mat S = grad lambda_i otimes(skw) grad lambda_j      
+      */
+      //Mat S = grad lambda_i otimes(skw) grad lambda_j
+      /*
       Vec<3,T> S[3];
       S[0](0)= 0; S[1](1)=0; S[2](2)=0;
       S[0](1)= l1.DValue(0) * l2.DValue(1) - l1.DValue(1) * l2.DValue(0); 
@@ -978,10 +980,11 @@ namespace ngfem
       S[1](2)= l1.DValue(1) * l2.DValue(2) - l1.DValue(2) * l2.DValue(1);
 
       S[1](0) = -S[0](1); S[2](0) = -S[0](2); S[2](1) = -S[1](2);
-      
+      */
       // curl of each row of B
       //Vec<3,T> curlB[3];
 
+      /*
       AutoDiffDiff<3,T> curlB[3];
       
       for(int i = 0; i<3; i++)
@@ -991,10 +994,11 @@ namespace ngfem
 	  //for(int j = 0; j<3; j++)
 	  //curlB[i](j) = crossres;
 	}          
+      */
       
       Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
       for (int i = 0; i < 3; i++)
-	grad_q_cross_S[i] = Cross (q, S[i]);
+	grad_q_cross_S[i] = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
 
       T grad_x=0.0;
       T grad_y=0.0;
@@ -1028,7 +1032,7 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto GGbubble_3D (AutoDiffDiff<D,T> aq, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2,AutoDiffDiff<D,T> ab3,AutoDiffDiff<D,T> al1,AutoDiffDiff<D,T> al2) { return T_GGbubble_3D<D, T>(aq, ab0, ab1, ab2, ab3,al1,al2); }
+  auto GGbubble_3D (AutoDiffDiff<D,T> aq, Mat<D,D,T> aS, Mat<D,D,T> aB, AutoDiffDiff<D,T> acurlB[]) { return T_GGbubble_3D<D, T>(aq, aS, aB, acurlB); }
 
   /* Face basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
