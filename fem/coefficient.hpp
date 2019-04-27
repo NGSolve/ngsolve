@@ -1150,6 +1150,9 @@ public:
     return string("unary operation '")+name+"'";
   }
 
+  virtual bool DefinedOn (const ElementTransformation & trafo) override
+  { return c1->DefinedOn(trafo); } 
+
   // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override

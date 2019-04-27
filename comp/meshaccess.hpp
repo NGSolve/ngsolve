@@ -1221,6 +1221,10 @@ namespace ngcomp
     }
   };
 
+
+  shared_ptr<CoefficientFunction>
+  MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf);
+  
   /**
      Controls the progress - output.
      It controls the Netgen - progressbar as well as console progress update.
