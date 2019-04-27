@@ -3086,18 +3086,6 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    // const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel1);
-    // if(tpfel)
-    // {
-      // int facet_x_y = 0;
-      // if(LocalFacetNr1>=10)
-      // {
-        // facet_x_y = 1;
-        // LocalFacetNr1-=10;
-      // }
-      // ApplyFacetMatrixTP(fel1,LocalFacetNr1,trafo1,ElVertices1,fel2,LocalFacetNr2,trafo2,ElVertices2,elx,ely,facet_x_y,lh);
-      // return;
-    // }
     if (simd_evaluate)
       {
         try
