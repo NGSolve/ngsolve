@@ -680,7 +680,10 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"));
 
   
-  
+    m.def("BoundaryFromVolumeCF", 
+          [] (shared_ptr<CoefficientFunction> vol_cf)
+          { return MakeBoundaryFromVolumeCoefficientFunction(vol_cf); }, py::arg("vol_cf"));
+
 }
 
 
