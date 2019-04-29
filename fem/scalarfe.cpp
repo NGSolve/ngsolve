@@ -258,6 +258,7 @@ namespace ngfem
     Matrix<> dvalues(ir.Size(), D);
     Vector<SIMD<double>> avalues(simdir.Size());
     Matrix<SIMD<double>> advalues(D, simdir.Size());
+    Matrix<SIMD<double>> simd_shapes(GetNDof(), simdir.Size());
     FE_ElementTransformation<D,D> trafo(ElementType());
     static LocalHeap lh (10000000, "FE - Timing");
     HeapReset hr(lh);
@@ -275,6 +276,12 @@ namespace ngfem
                        this -> CalcShape(ir[0], shape);
                      });
     timings.push_back(make_tuple("CalcShape", time/steps*1e9/GetNDof()));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> CalcShape(simdir, simd_shapes);
+                     });
+    timings.push_back(make_tuple("CalcShape (SIMD)", time/steps*1e9/(simdir.GetNIP()*GetNDof())));
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)

@@ -401,17 +401,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
+    /*
     static Timer timer1 ("FESpace::FinalizeUpdate 1");
     static Timer timer2 ("FESpace::FinalizeUpdate 2");
     static Timer timer3 ("FESpace::FinalizeUpdate 3");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
     static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
     static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
-    
+    */
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
     RegionTimer reg (timer);
-    timer1.Start();
+    // timer1.Start();
     dirichlet_dofs.SetSize (GetNDof());
     dirichlet_dofs.Clear();
 
@@ -442,8 +443,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
     */
-    timer1.Stop();
-    timer2.Start();
+    // timer1.Stop();
+    // timer2.Start();
     ParallelForRange
       (dirichlet_vertex.Size(),
        [&] (IntRange r)
@@ -457,7 +458,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                  if (IsRegularDof(d)) dirichlet_dofs.Set (d);
              }
        });
-    timer2.Stop();
+    // timer2.Stop();
     /*
     for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
@@ -490,7 +491,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (IsRegularDof(d)) dirichlet_dofs.Set (d);
 	}
     
-    tcolbits.Start();
+    // tcolbits.Start();
     free_dofs = make_shared<BitArray>(GetNDof());
     *free_dofs = dirichlet_dofs;
     free_dofs->Invert();
@@ -507,7 +508,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << *free_dofs << endl;
-    tcolbits.Stop();
+    // tcolbits.Stop();
     
     UpdateParallelDofs();
 
@@ -521,9 +522,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else
       {
-        tcolmutex.Start();
+        // tcolmutex.Start();
       Array<MyMutex> locks(GetNDof());
-      tcolmutex.Stop();
+      // tcolmutex.Stop();
       
       for (auto vb : { VOL, BND, BBND, BBBND })
       {
@@ -605,7 +606,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-        tcol.Start();
+        // tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
 
@@ -686,7 +687,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             basecol += 8*sizeof(unsigned int); // 32;
           }
 
-        tcol.Stop();
+        // tcol.Stop();
 
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
@@ -1661,7 +1662,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   
-  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
+  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
@@ -1673,6 +1674,90 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
+  shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
+  {
+    LocalHeap lh(1000000);
+    Array<short> classnr(ma->GetNE());
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+    
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+
+    shared_ptr<BaseMatrix> sum;
+  
+    size_t ne = ma->GetNE();
+  
+    for (auto elclass_inds : table)
+      {
+        if (elclass_inds.Size() == 0) continue;
+        
+        ElementId ei(VOL,elclass_inds[0]);
+        auto & fel = GetFE (ei, lh);
+        auto & fel_l2 = l2space->GetFE (ei, lh);
+        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        MixedFiniteElement fel_mixed(fel, fel_l2);
+        auto evaluator = GetEvaluator(VOL);
+        auto l2evaluator = l2space->GetEvaluator(VOL);
+
+        auto trial = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                                false, false, evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto trial_l2 = make_shared<ProxyFunction>(l2space, 
+                                                   false, false, l2evaluator,
+                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test_l2  = make_shared<ProxyFunction>(l2space,
+                                                   true, false, l2evaluator,
+                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+        shared_ptr<BilinearFormIntegrator> bfi_mass_mixed =
+          make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test_l2), VOL, VOL);
+        shared_ptr<BilinearFormIntegrator> bfi_mass_l2 =
+          make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial_l2,test_l2), VOL, VOL);
+
+        Matrix<> mass_l2(fel_l2.GetNDof(), fel_l2.GetNDof());
+        Matrix<> mass_mixed(fel_l2.GetNDof(), fel.GetNDof());
+        bfi_mass_l2->CalcElementMatrix (fel_l2, trafo, mass_l2, lh);
+        bfi_mass_mixed->CalcElementMatrix (fel_mixed, trafo, mass_mixed, lh);
+
+        CalcInverse (mass_l2);
+        Matrix<> trans = mass_l2 * mass_mixed;
+
+        Table<DofId> xdofs(elclass_inds.Size(), fel.GetNDof()),
+          ydofs(elclass_inds.Size(), fel_l2.GetNDof());
+        
+        Array<DofId> dnumsx, dnumsy;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            GetDofNrs(ei, dnumsx);
+            l2space->GetDofNrs(ei, dnumsy);
+            xdofs[i] = dnumsx;
+            ydofs[i] = dnumsy;
+          }
+
+        auto mat = make_shared<ConstantElementByElementMatrix>
+          (l2space->GetNDof(), this->GetNDof(),
+           trans, std::move(ydofs), std::move(xdofs));
+
+        if (sum)
+          sum = make_shared<SumMatrix>(sum, mat);
+        else
+          sum = mat;
+      }
+    return sum;    
+  }
+
+
+  
   void FESpace :: UpdateParallelDofs ( )
   {
     if (ma->GetCommunicator().Size() == 1) return;
@@ -2485,7 +2570,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineDefineFlag("compound");
     DefineStringListFlag("spaces");
     if (parseflags) CheckFlags(flags);
-    
+
+    if (flags.GetDefineFlag("low_order_space"))
+      {
+        Flags loflags = flags;
+        loflags.SetFlag("low_order_space", false);
+        low_order_space = make_shared<CompoundFESpace> (ama, loflags, parseflags);
+      }
     prol = make_shared<CompoundProlongation> (this);
 
     needs_transform_vec = false;
@@ -2534,6 +2625,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
       needs_transform_vec = true;
     if (fes != spaces[0])
       all_the_same = false;
+    
+    if (low_order_space)
+      {
+        if (fes->LowOrderFESpacePtr())
+          dynamic_pointer_cast<CompoundFESpace>(low_order_space)
+            -> AddSpace (fes->LowOrderFESpacePtr());
+        else
+          low_order_space.reset();
+      }
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -2551,7 +2651,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
-
+    if (low_order_space)
+      low_order_space->Update (lh);
+    
     cummulative_nd.SetSize (spaces.Size()+1);
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
@@ -2613,6 +2715,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     UpdateCouplingDofArray();
 
+
+    if (low_order_space)
+      {
+        shared_ptr<BaseMatrix> sum_emb;
+        for (size_t i = 0; i < spaces.Size(); i++)
+          {
+            auto emb_i = spaces[i]->LowOrderEmbedding();
+            auto hi_range = GetRange(i);
+            auto lo_range = dynamic_pointer_cast<CompoundFESpace>(low_order_space)->GetRange(i);
+            emb_i = make_shared<EmbeddedMatrix> (GetNDof(), hi_range, emb_i);
+            emb_i = make_shared<EmbeddedTransposeMatrix> (low_order_space->GetNDof(), lo_range, emb_i);
+            if (sum_emb)
+              sum_emb = make_shared<SumMatrix> (sum_emb, emb_i);
+            else
+              sum_emb = emb_i;
+          }
+        low_order_embedding = sum_emb;
+        // cout << "embedding = " << *low_order_embedding << endl;
+      }
+
+    
     if (print)
       {
 	(*testout) << "Update compound fespace" << endl;
@@ -2851,13 +2974,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   
 
-  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,
+  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                                  LocalHeap & lh) const
   {
     for (size_t i = 0; i < spaces.Size(); i++)
       {
         auto veci = vec.Range (GetRange(i));
-        spaces[i] -> SolveM (rho, veci, lh);
+        spaces[i] -> SolveM (rho, veci, definedon, lh);
       }
   }
     
@@ -2979,7 +3102,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     prod = v;
     if (inverse)
-      fes->SolveM(rho.get(), prod, lh);
+      fes->SolveM(rho.get(), prod, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), prod, definedon.get(), lh);
   }
@@ -2989,7 +3112,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto hv = prod.CreateVector();
     hv = v;
     if (inverse)    
-      fes->SolveM(rho.get(), hv, lh);
+      fes->SolveM(rho.get(), hv, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;
@@ -3000,7 +3123,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto hv = prod.CreateVector();
     hv = v;
     if (inverse)
-      fes->SolveM(rho.get(), hv, lh);
+      fes->SolveM(rho.get(), hv, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;

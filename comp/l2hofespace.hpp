@@ -105,7 +105,7 @@ namespace ngcomp
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const override;
     
-    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
@@ -225,13 +225,13 @@ namespace ngcomp
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const override;
     
-    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
-    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * defindon,
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
 
     template <int DIM>
-    void SolveM_Dim (CoefficientFunction * rho, BaseVector & vec,
+    void SolveM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * region,
                      LocalHeap & lh) const;
 
     /*

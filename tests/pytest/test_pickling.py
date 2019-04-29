@@ -1,6 +1,8 @@
 from netgen.geom2d import *
+from netgen.csg import unit_cube
 from ngsolve import *
 import pickle
+import numpy
 import io
 
 def test_pickle_volume_fespaces():
@@ -8,17 +10,9 @@ def test_pickle_volume_fespaces():
     spaces = [H1(mesh,order=3,dirichlet=[1,2,3,4]), VectorH1(mesh,order=3,dirichlet=[1,2,3,4]), L2(mesh,order=3), VectorL2(mesh,order=3), SurfaceL2(mesh,order=3), HDivDiv(mesh,order=3,dirichlet=[1,2,3,4]), VectorFacet(mesh,order=3,dirichlet=[1,2,3,4]), FacetFESpace(mesh,order=3,dirichlet=[1,2,3,4]), NumberSpace(mesh), HDiv(mesh,order=3,dirichlet=[1,2,3,4]), HCurl(mesh,order=3,dirichlet=[1,2,3,4])]
     
     for space in spaces:
-        with io.BytesIO() as f:
-            pickler = pickle.Pickler(f)
-            pickler.dump(space)
-            data = f.getvalue()
-
-        with io.BytesIO(data) as f:
-            unpickler = pickle.Unpickler(f)
-            space2 = unpickler.load()
-
+        data = pickle.dumps(space)
+        space2 = pickle.loads(data)
         assert space.ndof == space2.ndof
-
         
 def test_pickle_surface_fespaces():
     import netgen.meshing as meshing
@@ -36,71 +30,54 @@ def test_pickle_surface_fespaces():
     spaces = [HDivDivSurface(mesh,order=3,dirichlet=[1,2,3,4]), FacetSurface(mesh,order=3,dirichlet=[1,2,3,4]), HDivSurface(mesh,order=3,dirichlet=[1,2,3,4])]
 
     for space in spaces:
-        with io.BytesIO() as f:
-            pickler = pickle.Pickler(f)
-            pickler.dump(space)
-            data = f.getvalue()
-
-        with io.BytesIO(data) as f:
-            unpickler = pickle.Unpickler(f)
-            space2 = unpickler.load()
-
+        data = pickle.dumps(space)
+        space2 = pickle.loads(data)
         assert space.ndof == space2.ndof
         
 def test_pickle_gridfunction_real():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
     fes = H1(mesh,order=3,dirichlet=[1,2,3,4])
-    u,v = fes.TrialFunction(), fes.TestFunction()
-    a = BilinearForm(fes)
-    a += SymbolicBFI(grad(u) * grad(v))
-
-    f = LinearForm(fes)
-    f += SymbolicLFI(1*v)
-
     u = GridFunction(fes,"u")
-    with TaskManager():
-        a.Assemble()
-        f.Assemble()
-        u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
+    u.Set(x*y)
 
-    with io.BytesIO() as f:
-        pickler = pickle.Pickler(f)
-        pickler.dump(u)
-        data = f.getvalue()
-
-    with io.BytesIO(data) as f:
-        unpickler = pickle.Unpickler(f)
-        u2 = unpickler.load()
-
+    data = pickle.dumps((u, grad(u)))
+    u2, gradu2 = pickle.loads(data)
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
+    assert sqrt(Integrate(InnerProduct(grad(u)-gradu2, grad(u)-gradu2), mesh)) < 1e-14
+
+def test_pickle_multidim():
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.4))
+    fes = H1(mesh,order=3,dim=3)
+    u = GridFunction(fes)
+    u.Set((1,2,3))
+    pickled = pickle.dumps((u,grad(u)))
+    u2, gradu2 = pickle.loads(pickled)
+    assert numpy.linalg.norm(u.vec.FV().NumPy() - u2.vec.FV().NumPy()) < 1e-14
+    assert Integrate(Norm(grad(u)-gradu2), mesh) < 1e-14
+
+def test_pickle_secondorder_mesh():
+    m = unit_cube.GenerateMesh(maxh=0.4)
+    m.SecondOrder()
+    mesh = Mesh(m)
+    fes = H1(mesh, order=3)
+    u = GridFunction(fes)
+    u.Set(x)
+    pickled = pickle.dumps(u)
+    u2 = pickle.loads(pickled)
+    assert numpy.linalg.norm(u.vec.FV().NumPy() - u2.vec.FV().NumPy()) < 1e-14
 
 
 def test_pickle_gridfunction_complex():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
-    fes = H1(mesh,order=3,complex=True,dirichlet=[1,2,3,4])
-    u,v = fes.TrialFunction(), fes.TestFunction()
-    a = BilinearForm(fes)
-    a += SymbolicBFI(grad(u) * grad(v))
-
-    f = LinearForm(fes)
-    f += SymbolicLFI(1j*v)
-
+    fes = HCurl(mesh,order=3,complex=True)
     u = GridFunction(fes,"u")
-    with TaskManager():
-        a.Assemble()
-        f.Assemble()
-        u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
-
-    with io.BytesIO() as f:
-        pickler = pickle.Pickler(f)
-        pickler.dump(u)
-        data = f.getvalue()
-
-    with io.BytesIO(data) as f:
-        unpickler = pickle.Unpickler(f)
-        u2 = unpickler.load()
-    error = sqrt(Integrate(Conj(u-u2)*(u-u2),mesh))
-    assert error.real < 1e-14 and error.imag < 1e-14
+    u.Set((x*y,1J * y))
+    data = pickle.dumps((u, curl(u)))
+    u2, curlu2  = pickle.loads(data)
+    difvec = u.vec.CreateVector()
+    difvec.data = u.vec - u2.vec
+    assert Norm(difvec) < 1e-12
+    assert Integrate(Norm(curl(u)-curlu2), mesh) < 1e-14
 
 def test_pickle_hcurl():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
@@ -171,15 +148,8 @@ def test_pickle_periodic():
         a.Assemble()
         f.Assemble()
         u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
-    with io.BytesIO() as f:
-        pickler = pickle.Pickler(f)
-        pickler.dump(u)
-        data = f.getvalue()
-
-    with io.BytesIO(data) as f:
-        unpickler = pickle.Unpickler(f)
-        u2 = unpickler.load()
-
+    data = pickle.dumps(u)
+    u2 = pickle.loads(data)
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
 
 def test_pickle_CoefficientFunctions():
@@ -279,3 +249,5 @@ if __name__ == "__main__":
     test_pickle_hcurl()
     test_pickle_periodic()
     test_pickle_CoefficientFunctions()
+    test_pickle_multidim()
+    test_pickle_secondorder_mesh()

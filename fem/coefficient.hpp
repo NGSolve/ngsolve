@@ -1150,6 +1150,9 @@ public:
     return string("unary operation '")+name+"'";
   }
 
+  virtual bool DefinedOn (const ElementTransformation & trafo) override
+  { return c1->DefinedOn(trafo); } 
+
   // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1608,6 +1611,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef);

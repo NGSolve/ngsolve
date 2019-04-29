@@ -167,7 +167,8 @@ ANY                  1 1 1 1 | 15
 
     /// if non-zero, pointer to low order space
     shared_ptr<FESpace> low_order_space; 
-
+    shared_ptr<BaseMatrix> low_order_embedding;
+      
     /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
     Array<bool> directsolverclustered;
 
@@ -503,7 +504,8 @@ ANY                  1 1 1 1 | 15
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
-
+    shared_ptr<BaseMatrix> LowOrderEmbedding () const { return low_order_embedding; }
+    
     /// non Dirichlet dofs
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
     bool IsFreeDof (DofId dof, bool external = false) const
@@ -650,13 +652,15 @@ ANY                  1 1 1 1 | 15
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const;
     
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
 
     virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace) const
     { throw Exception("GetTraceOperator not overloaded"); }
+
+    virtual shared_ptr<BaseMatrix> ConvertL2Operator (shared_ptr<FESpace> l2space) const;
     
     virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
                            LocalHeap & lh) const
@@ -1180,7 +1184,7 @@ ANY                  1 1 1 1 | 15
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;

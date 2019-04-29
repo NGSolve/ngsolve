@@ -127,6 +127,9 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
+      // static Timer t("HDivDivFE - DiffOpId", 2);
+      // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
     }
 
@@ -145,6 +148,78 @@ namespace ngcomp
     }    
   };
 
+
+  template<int D>
+  class DiffOpNormalComponentHDivDiv: public DiffOp<DiffOpNormalComponentHDivDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D}); }
+
+    /*
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+    }
+    */
+    
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,D*D,lh);
+      Vec<D> n = sip.GetNV();
+      Mat<D,D> mati;
+      fel.CalcMappedShape_Matrix(sip,shape);
+      for(int i=0; i<nd; i++)
+        {
+          for(int j = 0; j < D*D; j++)
+            mati(j) = shape(i,j);
+          mat.Col(i) = mati * n;
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      // static Timer t("HDivDivFE - DiffOpNormalComponent", 2);
+      // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcShape_NormalComponent (mir, mat);      
+    }
+    /*
+    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+    }    
+    */
+  };
+
+  
   template<int D>
   class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
   {
@@ -162,6 +237,9 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
+      static Timer t("HDivDivFE - div IP", 2);
+      RegionTracer regtr(TaskManager::GetThreadId(), t);    
+      
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
 
@@ -172,6 +250,9 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
+      static Timer t("HDivDivFE - div IP 2", 2);
+      RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
       HeapReset hr(lh);
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -189,6 +270,9 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
+      // static Timer t("HDivDivFE - div IR", 2);
+      // RegionTracer regtr(TaskManager::GetThreadId(), t);
+      
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
     }
 
@@ -660,6 +744,7 @@ namespace ngcomp
                 break;
               case ET_TET:
                 ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+                if (plus) ndof += 2*(oi[0]+1)*(oi[0]+2);
                 if(discontinuous)
                   {
                     for (auto f : ma->GetElFacets(ei))
@@ -941,6 +1026,7 @@ namespace ngcomp
       additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<3>>> ());
       additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<3>>> ());
       additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<3>>> ());
+      additional.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDivDiv<3>>> ());
       break;
     default:
       ;

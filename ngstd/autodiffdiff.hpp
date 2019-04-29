@@ -155,6 +155,9 @@ public:
   /// accesses partial derivative 
   SCAL & DDValue (int i, int j) throw() { return ddval[i*D+j]; }
 
+  explicit operator AutoDiff<D,SCAL> () const
+  { return AutoDiff<D,SCAL> (val, &dval[0]); }
+  
   /// add autodiffdiff object
   AutoDiffDiff<D, SCAL> & operator+= (const AutoDiffDiff<D, SCAL> & y) throw()
   {
