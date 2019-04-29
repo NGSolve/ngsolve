@@ -184,6 +184,9 @@ namespace ngcomp
     /// preconditioner gets element-matrix
     void SetPreconditioner (Preconditioner * pre);
 
+    /// unregister preconditioner
+    void UnsetPreconditioner(Preconditioner* pre);
+
     /// generates matrix graph
     virtual MatrixGraph * GetGraph (int level, bool symmetric);
 
