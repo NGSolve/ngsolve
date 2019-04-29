@@ -290,114 +290,117 @@ namespace ngfem
   template <int D, typename T>
   auto GGbubble (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab ) { return T_GGbubble<D, T>(aS, ab); }
   
+    template <typename T>
+  INLINE AutoDiffDiff<3,T> Cross (const AutoDiffDiff<3,T> & u,
+                                 const AutoDiffDiff<3,T> & v)
+  {
+    AutoDiffDiff<3,T> ret;
+    ret.Value()=0;
+    ret.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+    ret.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+    ret.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+
+    ret.DDValue(0,0) = u.DDValue(0,1)*v.DValue(2)-u.DDValue(0,2)*v.DValue(1) + u.DValue(1)*v.DDValue(0,2)-u.DValue(2)*v.DDValue(0,1);
+    ret.DDValue(0,1) = u.DDValue(1,1)*v.DValue(2)-u.DDValue(1,2)*v.DValue(1) + u.DValue(1)*v.DDValue(1,2)-u.DValue(2)*v.DDValue(1,1);
+    ret.DDValue(0,2) = u.DDValue(2,1)*v.DValue(2)-u.DDValue(2,2)*v.DValue(1) + u.DValue(1)*v.DDValue(2,2)-u.DValue(2)*v.DDValue(2,1);
+
+    ret.DDValue(1,0) = u.DDValue(0,2)*v.DValue(0)-u.DDValue(0,0)*v.DValue(2) + u.DValue(2)*v.DDValue(0,0)-u.DValue(0)*v.DDValue(0,2);
+    ret.DDValue(1,1) = u.DDValue(1,2)*v.DValue(0)-u.DDValue(1,0)*v.DValue(2) + u.DValue(2)*v.DDValue(1,0)-u.DValue(0)*v.DDValue(1,2);
+    ret.DDValue(1,2) = u.DDValue(2,2)*v.DValue(0)-u.DDValue(2,0)*v.DValue(2) + u.DValue(2)*v.DDValue(2,0)-u.DValue(0)*v.DDValue(2,2);
+
+    ret.DDValue(2,0) = u.DDValue(0,0)*v.DValue(1)-u.DDValue(0,1)*v.DValue(0) + u.DValue(0)*v.DDValue(0,1)-u.DValue(1)*v.DDValue(0,0);
+    ret.DDValue(2,1) = u.DDValue(1,0)*v.DValue(1)-u.DDValue(1,1)*v.DValue(0) + u.DValue(0)*v.DDValue(1,1)-u.DValue(1)*v.DDValue(1,0);
+    ret.DDValue(2,2) = u.DDValue(2,0)*v.DValue(1)-u.DDValue(2,1)*v.DValue(0) + u.DValue(0)*v.DDValue(2,1)-u.DValue(1)*v.DDValue(2,0);
+    
+    return ret;
+  }
+
+  template <typename T>
+  INLINE Vec<3,AutoDiff<3,T>> Cross (const AutoDiffDiff<3,T> & u,
+					  const Vec<3,T> & v)
+  {
+    AutoDiff<3,T> hv[3];
+    hv[0].Value() = u.DValue(1)*v(2)-u.DValue(2)*v(1);
+    hv[1].Value() = u.DValue(2)*v(0)-u.DValue(0)*v(2);
+    hv[2].Value() = u.DValue(0)*v(1)-u.DValue(1)*v(0);
+
+    for (int i = 0; i<3; i++)
+      {
+	hv[0].DValue(i) = u.DDValue(i,1)*v(2)-u.DDValue(i,2)*v(1);
+	hv[1].DValue(i) = u.DDValue(i,2)*v(0)-u.DDValue(i,0)*v(2);
+	hv[2].DValue(i) = u.DDValue(i,0)*v(1)-u.DDValue(i,1)*v(0);
+      }
+    
+    return Vec<3,AutoDiff<3,T>>(hv[0],hv[1],hv[2]);
+  }
+
   // GG-bubble of Jay
   // computes curl ( curl A B) where A is a skew sym matrix which is L^2 orthogonal on P^k-1
   // and B is the matrix bubble
   
-  template <int D, typename T> class T_GGbubble_B1;
-  template <typename T> class T_GGbubble_B1<3,T>
+  template <int D, typename T> class T_GGbubble_3D;
+  template <typename T> class T_GGbubble_3D<3,T>
   {
-    AutoDiffDiff<3,T> S;
-    AutoDiffDiff<3,T> b0;
-    AutoDiffDiff<3,T> b1;
-    AutoDiffDiff<3,T> b2;
-    AutoDiffDiff<3,T> b3;
+    AutoDiffDiff<3,T> q;
+    Mat<3,3,T> S;    
+    Mat<3,3,T> B;
+    AutoDiffDiff<3,T> *curlB;
     
   public:
-    T_GGbubble_B1  (AutoDiffDiff<3,T> aS, AutoDiffDiff<3,T> ab0, AutoDiffDiff<3,T> ab1, AutoDiffDiff<3,T> ab2, AutoDiffDiff<3,T> ab3) : S(aS), b0(ab0), b1(ab1), b2(ab2), b3(ab3){ ; }
-
+    T_GGbubble_3D  (AutoDiffDiff<3,T> aq, Mat<3,3,T> aS, Mat<3,3,T> aB, AutoDiffDiff<3,T> acurlB[] ) : q(aq), S(aS), B(aB), curlB(acurlB){ ; }
     Vec<9,T> Shape() {
-      /////////////////////
-      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
-      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
-      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
-      
-      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
-      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
-      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
-      
-      auto B0 = b0.Value();  auto B1 = b1.Value();
-      auto B2 = b2.Value();  auto B3 = b3.Value();
-      /////////////////////
-      auto S_x = S.DValue(0); auto S0 = S.Value();
-      auto S_y = S.DValue(1);
-      auto S_z = S.DValue(2);
-    
-      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
-      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
-      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
-      /////////////////////
-     
+      Vec<3,AutoDiff<3,T>> grad_q_cross_Si;
       Vec<9,T> sigmaref;
-
-      auto trace = 1.0/3.0 * (S_x * (b0_z - b0_y) + S_y * (b0_x - b1_z) + S_z * (b1_y - b0_x));
-
-      sigmaref(0) = 0.0;
-      sigmaref(1) = 0.0;
-      sigmaref(2) = 0.0;
+           
+      for (int i = 0; i < 3; i++)
+	{
+	  grad_q_cross_Si = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
+	  
+	  sigmaref(i*3) = 0;
+	  sigmaref(i*3+1) = 0;
+	  sigmaref(i*3+2) = 0;
+	  for (int j = 0; j < 3; j++)
+	    {
+	      Vec<3,T> hv1(grad_q_cross_Si(j).DValue(0),grad_q_cross_Si(j).DValue(1),grad_q_cross_Si(j).DValue(2));
+	      Vec<3,T> hv2(B(j,0),B(j,1),B(j,2));
+	      Vec<3,T> crossres = Cross(hv1,hv2);
+	      AutoDiffDiff<3,T> res2 = grad_q_cross_Si(j).Value() * curlB[j];
+	      sigmaref(i*3)   += crossres(0) + res2.DValue(0);
+	      sigmaref(i*3+1) += crossres(1) + res2.DValue(1);
+	      sigmaref(i*3+2) += crossres(2) + res2.DValue(2);
+	    }
+	}
       
-      sigmaref(3) = -S_yy*B0 -S_y*b0_y+S_xy*B0 +S_x*b0_y; // dy(a3)
-      sigmaref(3)+=  S_yz*B0 +S_y*b0_z-S_xz*B2 -S_x*b2_z; //-dz(a2)
-      sigmaref(4) = -S_yz*B1 -S_y*b1_z+S_xz*B0 +S_x*b0_z; // dz(a1)
-      sigmaref(4)+=  S_xy*B0 +S_y*b0_x-S_xx*B0 -S_x*b0_x; //-dx(a3)
-      sigmaref(5) = -S_xy*B0 -S_y*b0_x+S_xx*B2 +S_x*b2_x; // dx(a2)
-      sigmaref(5)+=  S_yy*B1 +S_y*b1_y-S_xy*B0 -S_x*b0_y; //-dy(a1)
+      T sigma_trace = 1/3.0 * (sigmaref(0) + sigmaref(4) + sigmaref(8));	          
       
-      sigmaref(6) = -S_yz*B0 -S_z*b0_y+S_xy*B3 +S_x*b3_y; // dy(b3)
-      sigmaref(6)+=  S_zz*B0 +S_z*b0_z-S_xz*B0 -S_x*b0_z; //-dz(b2)
-      sigmaref(7) = -S_zz*B1 -S_z*b1_z+S_xz*B0 +S_x*b0_z; // dz(b1)
-      sigmaref(7)+=  S_xz*B0 +S_z*b0_x-S_xx*B3 -S_x*b3_x; //-dx(b3)
-      sigmaref(8) = -S_xz*B0 -S_z*b0_x+S_xx*B0 +S_x*b0_x; // dx(b2)
-      sigmaref(8)+=  S_yz*B1 +S_z*b1_y-S_xy*B0 -S_x*b0_y; //-dy(b1)
-
-      sigmaref(0) -= trace;
-      sigmaref(4) -= trace;
-      sigmaref(8) -= trace;
+      sigmaref(0) -= sigma_trace;
+      sigmaref(4) -= sigma_trace;
+      sigmaref(8) -= sigma_trace;
       
-      return sigmaref;
+      return sigmaref;      
     }
 
     Vec<3,T> DivShape()
     {
-      auto b1_x  =  b1.DValue(0);
-      auto b1_y  =  b1.DValue(1); 
-      auto b1_z  =  b1.DValue(2);
-      
-      auto b0_x = b0.DValue(0);
-      auto b0_y = b0.DValue(1);
-      auto b0_z = b0.DValue(2);
+      T grad_x=0.0;
+      T grad_y=0.0;
+      T grad_z=0.0;
 
-      auto b1_xx  =  b1.DDValue(0,0);
-      auto b1_yy  =  b1.DDValue(1,1);         
-      auto b1_zz  =  b1.DDValue(2,2);   
-      auto b1_yx  =  b1.DDValue(0,1);   
-      auto b1_zx  =  b1.DDValue(0,2);
-      auto b1_yz  =  b1.DDValue(1,2);
+      Vec<3,AutoDiff<3,T>> grad_q_cross_Si;
 
-      auto b0_xx  =  b0.DDValue(0,0);
-      auto b0_yy  =  b0.DDValue(1,1);         
-      auto b0_zz  =  b0.DDValue(2,2);   
-      auto b0_yx  =  b0.DDValue(0,1);   
-      auto b0_zx  =  b0.DDValue(0,2);
-      auto b0_yz  =  b0.DDValue(1,2);
-      /////////////////////
-      auto S_x = S.DValue(0); 
-      auto S_y = S.DValue(1);
-      auto S_z = S.DValue(2);
-    
-      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
-      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
-      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
-      /////////////////////
-
-      //(S_x * (b0_z - b0_y) + S_y * (b0_x - b1_z) + S_z * (b1_y - b0_x));
-
-      auto div1 = -1.0/3.0 * (S_xx*(b0_z-b0_y)+S_x*(b0_zx-b0_yx) + S_xy*(b0_x-b1_z)+S_y*(b0_xx-b1_zx) + S_xz*(b1_y-b0_x)+S_z*(b1_yx-b0_xx));
-      auto div2 = -1.0/3.0 * (S_xy*(b0_z-b0_y)+S_x*(b0_yz-b0_yy) + S_yy*(b0_x-b1_z)+S_y*(b0_yx-b1_yz) + S_yz*(b1_y-b0_x)+S_z*(b1_yy-b0_yx));
-      auto div3 = -1.0/3.0 * (S_xz*(b0_z-b0_y)+S_x*(b0_zz-b0_yz) + S_yz*(b0_x-b1_z)+S_y*(b0_zx-b1_zz) + S_zz*(b1_y-b0_x)+S_z*(b1_yz-b0_zx));
-      
-      //return -1.0/3 * Vec<3,T>(0.0,0.0,0.0);
-      return  Vec<3,T> (div1,div2,div3);     
+      for(int i = 0; i<3; i++)
+      	{
+	  grad_q_cross_Si = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
+	  
+	  for(int j = 0; j<3; j++)
+	    {
+	      grad_x += grad_q_cross_Si(j).DValue(0) * curlB[j].DValue(i) + grad_q_cross_Si(j).Value() * curlB[j].DDValue(i,0);
+	      grad_y += grad_q_cross_Si(j).DValue(1) * curlB[j].DValue(i) + grad_q_cross_Si(j).Value() * curlB[j].DDValue(i,1);
+	      grad_z += grad_q_cross_Si(j).DValue(2) * curlB[j].DValue(i) + grad_q_cross_Si(j).Value() * curlB[j].DDValue(i,2);
+	    }	      
+      	}
+          
+      return -1.0/3.0 * Vec<3,T>(grad_x,grad_y,grad_z);
     }
 
     Vec<3,T> CurlShape()
@@ -408,241 +411,8 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto GGbubble_B1 (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2,AutoDiffDiff<D,T> ab3) { return T_GGbubble_B1<D, T>(aS, ab0, ab1, ab2, ab3); }
+  auto GGbubble_3D (AutoDiffDiff<D,T> aq, Mat<D,D,T> aS, Mat<D,D,T> aB, AutoDiffDiff<D,T> acurlB[]) { return T_GGbubble_3D<D, T>(aq, aS, aB, acurlB); }
 
-  ////////////////////////////////
-  
-    template <int D, typename T> class T_GGbubble_B2;
-  template <typename T> class T_GGbubble_B2<3,T>
-  {
-    AutoDiffDiff<3,T> S;
-    AutoDiffDiff<3,T> b0;
-    AutoDiffDiff<3,T> b1;
-    AutoDiffDiff<3,T> b2;
-    AutoDiffDiff<3,T> b3;
-    
-  public:
-    T_GGbubble_B2  (AutoDiffDiff<3,T> aS, AutoDiffDiff<3,T> ab0, AutoDiffDiff<3,T> ab1, AutoDiffDiff<3,T> ab2, AutoDiffDiff<3,T> ab3) : S(aS), b0(ab0), b1(ab1), b2(ab2), b3(ab3){ ; }
-
-    Vec<9,T> Shape() {
-      /////////////////////
-      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
-      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
-      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
-      
-      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
-      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
-      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
-      
-      auto B0 = b0.Value();  auto B1 = b1.Value();
-      auto B2 = b2.Value();  auto B3 = b3.Value();
-      /////////////////////
-      auto S_x = S.DValue(0); auto S0 = S.Value();
-      auto S_y = S.DValue(1);
-      auto S_z = S.DValue(2);
-    
-      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
-      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
-      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
-      /////////////////////
-      
-      Vec<9,T> sigmaref;
-      auto trace = 1.0/3.0 * ((b2_z-b0_y)*S_x + (b0_x-b0_z)*S_y + (b0_y-b2_x)*S_z);
-
-      sigmaref(0) = -(-S_yy*B0 -S_y*b0_y+S_xy*B0 +S_x*b0_y); // dy(a3)
-      sigmaref(0)+= -( S_yz*B0 +S_y*b0_z-S_xz*B2 -S_x*b2_z); //-dz(a2)
-      sigmaref(1) = -(-S_yz*B1 -S_y*b1_z+S_xz*B0 +S_x*b0_z); // dz(a1)
-      sigmaref(1)+= -( S_xy*B0 +S_y*b0_x-S_xx*B0 -S_x*b0_x); //-dx(a3)
-      sigmaref(2) = -(-S_xy*B0 -S_y*b0_x+S_xx*B2 +S_x*b2_x); // dx(a2)
-      sigmaref(2)+= -( S_yy*B1 +S_y*b1_y-S_xy*B0 -S_x*b0_y); //-dy(a1)
-      
-      sigmaref(3) = 0.0;
-      sigmaref(4) = 0.0;
-      sigmaref(5) = 0.0;
-      
-      sigmaref(6) = -S_yz*B0 -S_z*b0_y+S_yy*B3 +S_y*b3_y; // dy(c3)
-      sigmaref(6)+=  S_zz*B2 +S_z*b2_z-S_yz*B0 -S_y*b0_z; //-dz(c2)
-      sigmaref(7) = -S_zz*B0 -S_z*b0_z+S_yz*B0 +S_y*b0_z; // dz(c1)
-      sigmaref(7)+=  S_xz*B0 +S_z*b0_x-S_xy*B3 -S_y*b3_x; //-dx(c3)
-      sigmaref(8) = -S_xz*B2 -S_z*b2_x+S_xy*B0 +S_y*b0_x; // dx(c2)
-      sigmaref(8)+=  S_yz*B0 +S_z*b0_y-S_yy*B0 -S_y*b0_y; //-dy(c1)
-
-      sigmaref(0) -= trace;
-      sigmaref(4) -= trace;
-      sigmaref(8) -= trace;
-      
-      return sigmaref;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      /////////////////////
-      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
-      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
-      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
-      
-      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
-      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
-      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
-
-      ///
-      auto b1_xx  =  b1.DDValue(0,0);      auto b2_xx  =  b2.DDValue(0,0);
-      auto b1_yy  =  b1.DDValue(1,1);      auto b2_yy  =  b2.DDValue(1,1);         
-      auto b1_zz  =  b1.DDValue(2,2);      auto b2_zz  =  b2.DDValue(2,2);   
-      auto b1_yx  =  b1.DDValue(0,1);      auto b2_yx  =  b2.DDValue(0,1);   
-      auto b1_zx  =  b1.DDValue(0,2);      auto b2_zx  =  b2.DDValue(0,2);
-      auto b1_yz  =  b1.DDValue(1,2);      auto b2_yz  =  b2.DDValue(1,2);
-
-      auto b3_xx  =  b3.DDValue(0,0);      auto b0_xx  =  b0.DDValue(0,0);
-      auto b3_yy  =  b3.DDValue(1,1);      auto b0_yy  =  b0.DDValue(1,1);         
-      auto b3_zz  =  b3.DDValue(2,2);      auto b0_zz  =  b0.DDValue(2,2);   
-      auto b3_yx  =  b3.DDValue(0,1);      auto b0_yx  =  b0.DDValue(0,1);   
-      auto b3_zx  =  b3.DDValue(0,2);      auto b0_zx  =  b0.DDValue(0,2);
-      auto b3_yz  =  b3.DDValue(1,2);      auto b0_yz  =  b0.DDValue(1,2);
-      
-      /////////////////////
-      auto S_x = S.DValue(0); 
-      auto S_y = S.DValue(1);
-      auto S_z = S.DValue(2);
-    
-      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
-      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
-      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
-      /////////////////////
-
-      //return -1.0/3 * Vec<3,T>(0.0,0.0,0.0);
-      return -1.0/3.0 * Vec<3,T> (S_xx*(b2_z-b0_y)+S_x*(b2_zx-b0_yx) + S_xy*(b0_x-b0_z)+S_y*(b0_xx-b0_zx) + S_xz*(b0_y-b2_x)+S_z*(b0_yx-b2_xx),
-				  S_xy*(b2_z-b0_y)+S_x*(b2_yz-b0_yy) + S_yy*(b0_x-b0_z)+S_y*(b0_yx-b0_yz) + S_yz*(b0_y-b2_x)+S_z*(b0_yy-b2_yx),
-				  S_xz*(b2_z-b0_y)+S_x*(b2_zz-b0_yz) + S_yz*(b0_x-b0_z)+S_y*(b0_zx-b0_zz) + S_zz*(b0_y-b2_x)+S_z*(b0_yz-b2_zx));
-    }
-
-    Vec<3,T> CurlShape()
-    {     
-      throw Exception("not implemented for GG-bubbles");
-    }
-    
-  };
-
-  template <int D, typename T>
-  auto GGbubble_B2 (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2, AutoDiffDiff<D,T> ab3) { return T_GGbubble_B2<D, T>(aS, ab0, ab1, ab2, ab3); }
-
-  //////////////////
-  
-    template <int D, typename T> class T_GGbubble_B3;
-  template <typename T> class T_GGbubble_B3<3,T>
-  {
-    AutoDiffDiff<3,T> S;
-    AutoDiffDiff<3,T> b0;
-    AutoDiffDiff<3,T> b1;
-    AutoDiffDiff<3,T> b2;
-    AutoDiffDiff<3,T> b3;
-    
-  public:
-    T_GGbubble_B3  (AutoDiffDiff<3,T> aS, AutoDiffDiff<3,T> ab0, AutoDiffDiff<3,T> ab1, AutoDiffDiff<3,T> ab2, AutoDiffDiff<3,T> ab3) : S(aS), b0(ab0), b1(ab1), b2(ab2), b3(ab3){ ; }
-
-    Vec<9,T> Shape() {
-      /////////////////////
-      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
-      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
-      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
-      
-      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
-      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
-      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
-      
-      auto B0 = b0.Value();  auto B1 = b1.Value();
-      auto B2 = b2.Value();  auto B3 = b3.Value();
-      /////////////////////
-      auto S_x = S.DValue(0); auto S0 = S.Value();
-      auto S_y = S.DValue(1);
-      auto S_z = S.DValue(2);
-    
-      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
-      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
-      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
-      /////////////////////
-      
-      Vec<9,T> sigmaref;
-      auto trace = 1.0/3.0 *((b0_z-b3_y)*S_x + (b3_x-b0_z)*S_y + (b0_y-b0_x)*S_z);    
-
-      sigmaref(0) = -(-S_yz*B0 -S_z*b0_y+S_xy*B3 +S_x*b3_y); // dy(b3)
-      sigmaref(0)+= -( S_zz*B0 +S_z*b0_z-S_xz*B0 -S_x*b0_z); //-dz(b2)
-      sigmaref(1) = -(-S_zz*B1 -S_z*b1_z+S_xz*B0 +S_x*b0_z); // dz(b1)
-      sigmaref(1)+= -( S_xz*B0 +S_z*b0_x-S_xx*B3 -S_x*b3_x); //-dx(b3)
-      sigmaref(2) = -(-S_xz*B0 -S_z*b0_x+S_xx*B0 +S_x*b0_x); // dx(b2)
-      sigmaref(2)+= -( S_yz*B1 +S_z*b1_y-S_xy*B0 -S_x*b0_y); //-dy(b1)
-
-      sigmaref(3) = -(-S_yz*B0 -S_z*b0_y+S_yy*B3 +S_y*b3_y); // dy(c3)
-      sigmaref(3)+= -( S_zz*B2 +S_z*b2_z-S_yz*B0 -S_y*b0_z); //-dz(c2)
-      sigmaref(4) = -(-S_zz*B0 -S_z*b0_z+S_yz*B0 +S_y*b0_z); // dz(c1)
-      sigmaref(4)+= -( S_xz*B0 +S_z*b0_x-S_xy*B3 -S_y*b3_x); //-dx(c3)
-      sigmaref(5) = -(-S_xz*B2 -S_z*b2_x+S_xy*B0 +S_y*b0_x); // dx(c2)
-      sigmaref(5)+= -( S_yz*B0 +S_z*b0_y-S_yy*B0 -S_y*b0_y); //-dy(c1)          
-      
-      sigmaref(6) = 0.0;
-      sigmaref(7) = 0.0;
-      sigmaref(8) = 0.0;
-
-      //auto trace = 1.0/3.0 * (sigmaref(0) + sigmaref(4) + sigmaref(8));
-      sigmaref(0) -= trace;
-      sigmaref(4) -= trace;
-      sigmaref(8) -= trace;
-      return sigmaref;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      /////////////////////
-      auto b1_x  =  b1.DValue(0);   auto b2_x = b2.DValue(0);
-      auto b1_y  =  b1.DValue(1);   auto b2_y = b2.DValue(1); 
-      auto b1_z  =  b1.DValue(2);   auto b2_z = b2.DValue(2);
-      
-      auto b3_x = b3.DValue(0);     auto b0_x = b0.DValue(0);
-      auto b3_y = b3.DValue(1);     auto b0_y = b0.DValue(1);
-      auto b3_z = b3.DValue(2);     auto b0_z = b0.DValue(2);
-
-      ///
-      auto b1_xx  =  b1.DDValue(0,0);      auto b2_xx  =  b2.DDValue(0,0);
-      auto b1_yy  =  b1.DDValue(1,1);      auto b2_yy  =  b2.DDValue(1,1);         
-      auto b1_zz  =  b1.DDValue(2,2);      auto b2_zz  =  b2.DDValue(2,2);   
-      auto b1_yx  =  b1.DDValue(0,1);      auto b2_yx  =  b2.DDValue(0,1);   
-      auto b1_zx  =  b1.DDValue(0,2);      auto b2_zx  =  b2.DDValue(0,2);
-      auto b1_yz  =  b1.DDValue(1,2);      auto b2_yz  =  b2.DDValue(1,2);
-
-      auto b3_xx  =  b3.DDValue(0,0);      auto b0_xx  =  b0.DDValue(0,0);
-      auto b3_yy  =  b3.DDValue(1,1);      auto b0_yy  =  b0.DDValue(1,1);         
-      auto b3_zz  =  b3.DDValue(2,2);      auto b0_zz  =  b0.DDValue(2,2);   
-      auto b3_yx  =  b3.DDValue(0,1);      auto b0_yx  =  b0.DDValue(0,1);   
-      auto b3_zx  =  b3.DDValue(0,2);      auto b0_zx  =  b0.DDValue(0,2);
-      auto b3_yz  =  b3.DDValue(1,2);      auto b0_yz  =  b0.DDValue(1,2);
-      /////////////////////
-      auto S_x = S.DValue(0); 
-      auto S_y = S.DValue(1);
-      auto S_z = S.DValue(2);
-    
-      auto S_xx = S.DDValue(0,0); auto S_yy = S.DDValue(1,1);
-      auto S_xy = S.DDValue(0,1); auto S_yz = S.DDValue(1,2); 
-      auto S_xz = S.DDValue(0,2); auto S_zz = S.DDValue(2,2);
-      /////////////////////
-
-
-      //return - 1.0/3 * Vec<3,T>(0.0,0.0,0.0);
-      return -1.0/3.0 * Vec<3,T> (S_xx*(b0_z-b3_y)+S_x*(b0_zx-b3_yx) + S_xy*(b3_x-b0_z)+S_y*(b3_xx-b0_zx) + S_xz*(b0_y-b0_x)+S_z*(b0_yx-b0_xx),
-				  S_xy*(b0_z-b3_y)+S_x*(b0_yz-b3_yy) + S_yy*(b3_x-b0_z)+S_y*(b3_yx-b0_yz) + S_yz*(b0_y-b0_x)+S_z*(b0_yy-b0_yx),
-				  S_xz*(b0_z-b3_y)+S_x*(b0_zz-b3_yz) + S_yz*(b3_x-b0_z)+S_y*(b3_zx-b0_zz) + S_zz*(b0_y-b0_x)+S_z*(b0_yz-b0_zx));
-    }
-
-    Vec<3,T> CurlShape()
-    {     
-      throw Exception("not implemented for GG-bubbles");
-    }
-    
-  };
-
-  template <int D, typename T>
-  auto GGbubble_B3 (AutoDiffDiff<D,T> aS, AutoDiffDiff<D,T> ab0, AutoDiffDiff<D,T> ab1, AutoDiffDiff<D,T> ab2, AutoDiffDiff<D,T> ab3) { return T_GGbubble_B3<D, T>(aS, ab0, ab1, ab2, ab3); }
-    
-   
   /* Face basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
   /* DivShape assumes that phi_12 =  [(grad l1) o-times (grad l2 x grad l3)] is constant!!! */
