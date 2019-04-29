@@ -301,7 +301,7 @@ into the wirebasket.
     TORDER minorder = 99; 
 
     if (low_order_space) low_order_space -> Update(lh);
-
+    
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
@@ -515,6 +515,10 @@ into the wirebasket.
     UpdateDofTables ();
     UpdateCouplingDofArray ();
 
+    if (low_order_space)
+      low_order_embedding =
+        make_shared<Embedding> (GetNDof(),
+                                IntRange(low_order_space->GetNDof()));
     // timer3.Stop();
   }
 

@@ -100,6 +100,8 @@ namespace ngstd
   { return SIMD<Complex> (a*b.real(), a*b.imag()); }
   INLINE SIMD<Complex> operator* (SIMD<Complex> b, SIMD<double> a)
   { return SIMD<Complex> (a*b.real(), a*b.imag()); }
+  INLINE SIMD<Complex> operator* (double a, SIMD<Complex> b)
+  { return SIMD<Complex> (a*b.real(), a*b.imag()); }
   INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, double b)
   { a.real()*= b; a.imag() *= b; return a; }  
   INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, Complex b)

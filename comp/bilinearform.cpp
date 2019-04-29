@@ -1260,6 +1260,9 @@ namespace ngcomp
                            (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0)*/ has_hidden;
                          if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                            {
+                             // static Timer t("static condensation", 2);
+                             // RegionTracer reg(TaskManager::GetThreadId(), t);    
+
                              // if (!fespace->CouplingTypeArrayAvailable())
                              // throw Exception ("need coupling types for static condensation");
                              static Timer statcondtimer("static condensation", 2);
@@ -1454,7 +1457,9 @@ namespace ngcomp
                                      */
 
                                      {
-                                       ThreadRegionTimer reg (statcondtimer_inv, TaskManager::GetThreadId());
+                                       // ThreadRegionTimer reg (statcondtimer_inv, TaskManager::GetThreadId());
+                                       // RegionTracer rtr(TaskManager::GetThreadId(), statcondtimer_inv);    
+                              
                                        // LapackInverse (d);
                                        CalcInverse (d);
                                      }
@@ -4079,8 +4084,10 @@ namespace ngcomp
 		(+ its local vol el) if on mpi-bnd.
 	    **/
 	    size_t nse = ma->GetNE(BND);
-	    for (int i = 0; i < nse; ++i)
-	      fine_facet.Set(ma->GetSElFace(i));
+	    for (int i = 0; i < nse; ++i) {
+	      auto selfacets = ma->GetElFacets(ElementId(BND, i));
+	      for (auto f : selfacets) fine_facet.Set(f);
+	    }
 
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
 	    

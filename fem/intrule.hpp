@@ -1324,6 +1324,9 @@ namespace ngfem
     }
 
     class SIMD_IntegrationRule & operator() (const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
+
+    IntegrationRule & Inverse (const IntegrationRule & ir, LocalHeap & lh);    
+    class SIMD_IntegrationRule & Inverse (const class SIMD_IntegrationRule & ir, LocalHeap & lh);
   };
 
 
@@ -1773,8 +1776,8 @@ namespace ngstd
       return adp;
     }
 
-
-    
+    void CalcHesse (Vec<DIMR,Mat<DIMS,DIMS,SIMD<double>>> & ddx1) const;
+   
     void Print (ostream & ost) const
     {
       ost << "ip = " << this->ip << endl;

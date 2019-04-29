@@ -196,7 +196,7 @@ namespace ngbla
 #ifdef LAPACK
     if (il == INVERSE_LIB::INV_LAPACK)
       LapackInverse(inv);
-    else if (il == INVERSE_LIB::INV_CHOOSE && inv.Height() >= 20)
+    else if (il == INVERSE_LIB::INV_CHOOSE && inv.Height() >= 50)
       LapackInverse(inv);        
     else
 #endif

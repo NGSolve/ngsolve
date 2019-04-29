@@ -158,7 +158,7 @@ public:
   }
   string GetTestoutFile () const
   {
-    return "no-filename-here";
+    return dynamic_cast<ofstream*>(testout) ? "testout set" : "no testout set";
   }
   void SetTestoutFile(string filename) 
   {
@@ -1149,9 +1149,9 @@ component : int
     
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho) 
-         { self->SolveM(rho.get(), vec, glh); },
-         py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
+             BaseVector& vec, spCF rho, Region * definedon) 
+         { self->SolveM(rho.get(), vec, definedon, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
 Parameters:
@@ -1165,9 +1165,9 @@ rho : ngsolve.fem.CoefficientFunction
 )raw_string"))
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho)
-         { self->ApplyM(rho.get(), vec, nullptr, glh); },
-         py::arg("vec"), py::arg("rho")=nullptr,
+             BaseVector& vec, spCF rho, Region * definedon)
+         { self->ApplyM(rho.get(), vec, definedon, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
     .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
                                bool avg) -> shared_ptr<BaseMatrix>
@@ -1175,6 +1175,10 @@ rho : ngsolve.fem.CoefficientFunction
             return self->GetTraceOperator(tracespace);
             // return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
           }, py::arg("tracespace"), py::arg("average"))
+    .def ("ConvertL2Operator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> l2space)
+          {
+            return self->ConvertL2Operator(l2space);
+          }, py::arg("l2space"))
     .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
                           BaseVector & in, BaseVector & out, bool avg)
           {
@@ -1450,7 +1454,7 @@ active_dofs : BitArray or None
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
   py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
-    (m, "CoefficientFunction")
+    (m, "GridFunctionCoefficientFunction")
     .def(py::pickle([] (const GridFunctionCoefficientFunction & gfcf)
                     {
                       return py::make_tuple(gfcf.GetGridFunctionPtr(),
@@ -1670,6 +1674,10 @@ definedon : object
             if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
             auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+
+            if (!diffop->SupportsVB(vb))
+              throw Exception(string("Operator \"") + name + string("\" does not support vb = ") + ToString(vb) + string("!"));
+
             shared_ptr<GridFunctionCoefficientFunction> coef;
             switch(vb)
               {
@@ -1834,7 +1842,59 @@ diffop : ngsolve.fem.DifferentialOperator
 )raw_string"))
     ;
 
+  py::class_<S_GridFunction<double>, shared_ptr<S_GridFunction<double>>, GridFunction>
+    (m, "GridFunctionD")
+    .def(py::pickle([](const S_GridFunction<double> gf)
+                    {
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
+                    },
+                    [](py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                      return dynamic_pointer_cast<S_GridFunction<double>>(gf);
+                    }))
+    ;
+  py::class_<S_GridFunction<Complex>, shared_ptr<S_GridFunction<Complex>>, GridFunction>
+    (m, "GridFunctionC")
+    .def(py::pickle([](const S_GridFunction<Complex> gf)
+                    {
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
+                    },
+                    [](py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                      return dynamic_pointer_cast<S_GridFunction<Complex>>(gf);
+                    }))
+    ;
 
+
+  py::class_<ComponentGridFunction, shared_ptr<ComponentGridFunction>, GridFunction>
+    (m, "ComponentGridFunction")
+    .def(py::pickle(
+                    [](ComponentGridFunction& cgf)
+                    {
+                      return py::make_tuple(cgf.GetParent(), cgf.GetComponent());
+                    },
+                    [](py::tuple state)
+                    {
+                      return make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
+                                                                py::cast<int>(state[1]));
+                    }))
+    ;
 
   ///////////////////////////// BilinearForm   ////////////////////////////////////////
 

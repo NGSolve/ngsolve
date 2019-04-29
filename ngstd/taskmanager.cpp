@@ -158,7 +158,7 @@ namespace ngstd
           int is_init = -1;
           MPI_Initialized(&is_init);
           if (is_init)
-            sprintf(buf, "ng%d_rank%d.trace", cnt++, NgMPI_Comm(MPI_COMM_WORLD).Size());
+            sprintf(buf, "ng%d_rank%d.trace", cnt++, NgMPI_Comm(MPI_COMM_WORLD).Rank());
           else
 #endif
             sprintf(buf, "ng%d.trace", cnt++);
@@ -227,9 +227,9 @@ namespace ngstd
           NgProfiler::timers[j].flops += NgProfiler::thread_flops[i*NgProfiler::SIZE+j];
         }
     delete [] NgProfiler::thread_times;
-    NgProfiler::thread_times = NgProfiler::dummy_thread_times;
+    NgProfiler::thread_times = NgProfiler::dummy_thread_times.data();
     delete [] NgProfiler::thread_flops;
-    NgProfiler::thread_flops = NgProfiler::dummy_thread_flops;
+    NgProfiler::thread_flops = NgProfiler::dummy_thread_flops.data();
     
     while (active_workers)
       ;

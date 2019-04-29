@@ -261,11 +261,18 @@ namespace ngfem
 	  ii += (p-2)*(p-1)/2;
 	}
 
+    // interior shapes 
     if (order_cell[0][0] >= 4)
-      ii += TetShapesInnerLegendre::
-	Calc (order_cell[0][0], 
-	      lam[0]-lam[3], lam[1], lam[2], 
-	      shape+ii);
+
+      DubinerBasis3D::EvalMult
+	(order_cell[0][0]-4, lam[0], lam[1], lam[2],
+	 lam[0]*lam[1]*lam[2]*lam[3], shape+ii);
+	 
+    // if (order_cell[0][0] >= 4)
+    //   ii += TetShapesInnerLegendre::
+    // 	Calc (order_cell[0][0], 
+    // 	      lam[0]-lam[3], lam[1], lam[2], 
+    // 	      shape+ii);
   }
 
 

@@ -2681,7 +2681,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
                      (n-k, y-z-lam4, 1-x, polz, 
                       SBLambda ([&] (size_t j, S polsy) LAMBDA_INLINE
                                 {
-                                  jac2.EvalMult(n-k-j, 2*x - 1, polsy, values+ii);
+                                  jac2.EvalMult1Assign(n-k-j, 2*x - 1, polsy, values+ii);
                                   ii += n-k-j+1;
                                   jac2.IncAlpha2();
                                 }));

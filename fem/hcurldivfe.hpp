@@ -363,7 +363,7 @@ namespace ngfem
     }
 
      virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM>> addp;
