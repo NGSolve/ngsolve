@@ -926,24 +926,27 @@ namespace ngfem
 	} 
       */
       
-      Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];
+      //Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];
       
-      for (int i = 0; i < 3; i++)
-	grad_q_cross_S[i] = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
+      //for (int i = 0; i < 3; i++)
+      //	grad_q_cross_S[i] = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
 
+      Vec<3,AutoDiff<3,T>> grad_q_cross_Si;
       Vec<9,T> sigmaref;
            
       for (int i = 0; i < 3; i++)
 	{
+	  grad_q_cross_Si = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
+	  
 	  sigmaref(i*3) = 0;
 	  sigmaref(i*3+1) = 0;
 	  sigmaref(i*3+2) = 0;
 	  for (int j = 0; j < 3; j++)
 	    {
-	      Vec<3,T> hv1(grad_q_cross_S[i](j).DValue(0),grad_q_cross_S[i](j).DValue(1),grad_q_cross_S[i](j).DValue(2));
+	      Vec<3,T> hv1(grad_q_cross_Si(j).DValue(0),grad_q_cross_Si(j).DValue(1),grad_q_cross_Si(j).DValue(2));
 	      Vec<3,T> hv2(B(j,0),B(j,1),B(j,2));
 	      Vec<3,T> crossres = Cross(hv1,hv2);
-	      AutoDiffDiff<3,T> res2 = grad_q_cross_S[i](j).Value() * curlB[j];
+	      AutoDiffDiff<3,T> res2 = grad_q_cross_Si(j).Value() * curlB[j];
 	      //Vec<3,T> res2 = grad_q_cross_S[i](j).Value() * curlB[j];
 	      sigmaref(i*3)   += crossres(0) + res2.DValue(0);
 	      sigmaref(i*3+1) += crossres(1) + res2.DValue(1);
@@ -996,21 +999,25 @@ namespace ngfem
 	}          
       */
       
-      Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
-      for (int i = 0; i < 3; i++)
-	grad_q_cross_S[i] = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
+      //Vec<3,AutoDiff<3,T>> grad_q_cross_S[3];      
+      //for (int i = 0; i < 3; i++)
+      //	grad_q_cross_S[i] = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
 
       T grad_x=0.0;
       T grad_y=0.0;
       T grad_z=0.0;
 
+      Vec<3,AutoDiff<3,T>> grad_q_cross_Si;
+
       for(int i = 0; i<3; i++)
       	{
+	  grad_q_cross_Si = Cross (q, Vec<3,T>(S(i,0),S(i,1),S(i,2)));
+	  
 	  for(int j = 0; j<3; j++)
 	    {
-	      grad_x += grad_q_cross_S[i](j).DValue(0) * curlB[j].DValue(i) + grad_q_cross_S[i](j).Value() * curlB[j].DDValue(i,0);
-	      grad_y += grad_q_cross_S[i](j).DValue(1) * curlB[j].DValue(i) + grad_q_cross_S[i](j).Value() * curlB[j].DDValue(i,1);
-	      grad_z += grad_q_cross_S[i](j).DValue(2) * curlB[j].DValue(i) + grad_q_cross_S[i](j).Value() * curlB[j].DDValue(i,2);
+	      grad_x += grad_q_cross_Si(j).DValue(0) * curlB[j].DValue(i) + grad_q_cross_Si(j).Value() * curlB[j].DDValue(i,0);
+	      grad_y += grad_q_cross_Si(j).DValue(1) * curlB[j].DValue(i) + grad_q_cross_Si(j).Value() * curlB[j].DDValue(i,1);
+	      grad_z += grad_q_cross_Si(j).DValue(2) * curlB[j].DValue(i) + grad_q_cross_Si(j).Value() * curlB[j].DDValue(i,2);
 	    }	      
 	  //grad_x += grad_q_cross_S[i](0).DValue(0) * curlB[0].DValue(i) + grad_q_cross_S[i](1).DValue(0) * curlB[1].DValue(i) + grad_q_cross_S[i](2).DValue(0) * curlB[2].DValue(i);
 	  //grad_x += grad_q_cross_S[i](0).Value() * curlB[0].DDValue(i,0) + grad_q_cross_S[i](1).Value() * curlB[1].DDValue(i,0) + grad_q_cross_S[i](2).Value() * curlB[2].DDValue(i,0);
