@@ -735,8 +735,6 @@ namespace ngfem
         ndof += (order_facet[i]+1)*(order_facet[i]+2);
         order = max2(order, order_facet[i]);
       }
-      //first type + second type
-      //int ninner = (order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0 + 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       int ninner = 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       
       order = max2(order, order_inner);
@@ -750,14 +748,8 @@ namespace ngfem
 
       if (GGbubbles)
 	{
-	  //highest order div functions (with zero normal comp)
-	  //if(!GG)	    
-	  //  ndof += 3*((order_inner+1)*order_inner + order_inner);
-	  //else
-	  
 	  //GG bubbles of jay
 	  ndof += 3*(order_inner+1)*(order_inner+2)/2;
-	  //
 	  order +=1;
 	}
     }
@@ -766,8 +758,7 @@ namespace ngfem
     void T_CalcShape (TIP<3,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
       auto x = ip.x, y = ip.y, z = ip.z ;     
-      //Tx ddlami[4] ={ x, y, z, 1-x-y-z };
-
+      
       typedef decltype(x.Value()+x.Value()) T;      
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
@@ -778,14 +769,10 @@ namespace ngfem
       
       int maxorder_facet =
         max2(order_facet[0],max2(order_facet[1],order_facet[2]));
-      
 
        const FACE * faces = ElementTopology::GetFaces(ET_TET);
-
        
        ArrayMem<AutoDiff<3,T>,20> ha((maxorder_facet+1)*(maxorder_facet+2)/2.0); 
-       //ArrayMem<AutoDiff<3,T>,20> v((order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0);
-       //ArrayMem<AutoDiff<3,T>,20> dubb(order_inner*(order_inner+1)*(order_inner+2)/6.0);
        
       /* Edge based basis functions for tangential-normal continuity */
       for(int fa = 0; fa < 4; fa++)
@@ -797,7 +784,6 @@ namespace ngfem
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
 	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-
 
           AutoDiff<3,T> ls = ddlami[fav[0]], le = ddlami[fav[1]], lt = ddlami[fav[2]];
 	  
@@ -830,29 +816,7 @@ namespace ngfem
 	  DubinerBasis3D::Eval(ot,ls,le,lt ,dub_vals_inner);
 	  
 	  for (int l = 0; l < (ot+1)*(ot+2)*(ot+3)/6.0; l++)
-	     shape[ii++] =  Id_v(dub_vals_inner[l]); 
-	  
-	  /*
-	  leg.EvalScaled1Assign 
-	    (ot, lt-lo, lt+lo,
-	     SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-		       {
-			 JacobiPolynomialAlpha jac2(2*k+2);
- 
-			 jac1.EvalScaledMult1Assign
-			   (ot-k, le-lt-lo, 1-ls, polz, 
-			    SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-				      {				    
-					jac2.EvalMult(ot - k - j, 2 * ls - 1, polsy, 
-						      SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
-							       {
-								 shape[ii++] =  Id_v(val);	      							     					     							   }));
-					jac2.IncAlpha2();
-				      }));
-			 jac1.IncAlpha2();
-		       }));
-	  */
-	  
+	     shape[ii++] =  Id_v(dub_vals_inner[l]); 	  	  
 	}
       
       //############ type 2 ############
@@ -874,43 +838,9 @@ namespace ngfem
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lt,ls,lo,le*dub_vals[l]);
 	    }
       
-      /*
-      leg.EvalScaled1Assign 
-	(oi-1, lt-lo, lt+lo,
-	 SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-		   {
-		     JacobiPolynomialAlpha jac2(2*k+2);
- 
-		     jac1.EvalScaledMult1Assign
-		       (oi-1-k, le-lt-lo, 1-ls, polz, 
-			SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-				  {				    
-				    jac2.EvalMult(oi-1 - k - j, 2 * ls - 1, polsy, 
-						  SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
-							   {
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,lo*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,lo*val);	  
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lo,lt*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lo,le,lt*val);	  
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,lo,lt,ls*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,lt,le,ls*val);	  
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,ls,lt,le*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lt,ls,lo,le*val);							     
-							   }));
-				    jac2.IncAlpha2();
-				  }));
-		     jac1.IncAlpha2();
-		   }));
-      
-      */
       if(GGbubbles)
 	{
 	  AutoDiffDiff<3, T> ax[4] = { x, y, z, 1-x-y-z};
-	      
-	  //AutoDiffDiff<3, T> b1 = ax[0]*ax[1]*ax[2] + ax[1]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
-	  //AutoDiffDiff<3, T> b2 = ax[0]*ax[1]*ax[2] + ax[0]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
-	  //AutoDiffDiff<3, T> b3 = ax[0]*ax[1]*ax[2] + ax[0]*ax[1]*(1-ax[0]-ax[1]-ax[2]);
-	  //AutoDiffDiff<3, T> b0 = ax[0]*ax[1]*ax[2];
 	  
 	  Mat<3,3,T> B;
 	  for (int i = 0; i<3; i++)
@@ -937,62 +867,18 @@ namespace ngfem
 	      S[i](1,2)= al[2*i].DValue(1) * al[2*i+1].DValue(2) - al[2*i].DValue(2) * al[2*i+1].DValue(1);
 	      
 	      S[i](1,0) = -S[i](0,1); S[i](2,0) = -S[i](0,2); S[i](2,1) = -S[i](1,2);
-	    }
-	
-	  //GGbubbles
-	  
+	    }	  
 	  ArrayMem<AutoDiffDiff<3,T>,20> highest_dub_vals_inner((oi+1)*(oi+2)/2);
 	  
 	  DubinerBasis3D::EvalHighestOrder(oi,ax[0],ax[1],ax[2] ,highest_dub_vals_inner);
 	  
 	  for (int l = 0; l < (oi+1)*(oi+2)/2; l++)
 	    {
-	      //shape[ii++] = GGbubble_B1(highest_dub_vals_inner[l], b0, b1, b2, b3);
-	      //shape[ii++] = GGbubble_B2(highest_dub_vals_inner[l], b0, b1, b2, b3);
-	      //shape[ii++] = GGbubble_B3(highest_dub_vals_inner[l], b0, b1, b2, b3);
-	      //shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[1]);
-	      //shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[0],ax[2]);
-	      //shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], ax[0], ax[1], ax[2], ax[3], ax[1],ax[2]);	      
 	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[0], B, curlB);
 	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[1], B, curlB);
 	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[2], B, curlB);
-	    }
-	  
-	  
-	  /*
-	  leg.EvalScaled1Assign 
-	    (oi, ax[2]-ax[3], ax[2]+ax[3],
-	     SBLambda ([&](size_t k, Tx polz) LAMBDA_INLINE
-		       {
-			 // JacobiPolynomialAlpha jac(2*k+1);
-			 JacobiPolynomialAlpha jac2(2*k+2);
- 
-			 jac1.EvalScaledMult1Assign
-			   (oi-k, ax[1]-ax[2]-ax[3], 1-ax[0], polz, 
-			    SBLambda ([&] (size_t j, Tx polsy) LAMBDA_INLINE
-				      {
-					// JacobiPolynomialAlpha jac(2*(j+k)+2);
-					jac2.EvalMult(oi - k - j, 2 * ax[0] - 1, polsy, 
-						      SBLambda([&](size_t l, Tx val) LAMBDA_INLINE
-							       {
-								 if (l == oi - k - j)
-								   {
-								     shape[ii++] = GGbubble_B1(val, b0, b1, b2, b3);
-								     shape[ii++] = GGbubble_B2(val, b0, b1, b2, b3);
-								     shape[ii++] = GGbubble_B3(val, b0, b1, b2, b3);								   
-								   }
-							       }));
-					jac2.IncAlpha2();
-				      }));
-			 jac1.IncAlpha2();
-		       }));
-	  
-	  
-	  */
-	 
+	    }	 
 	}
-	
-            
      };
   };
   
