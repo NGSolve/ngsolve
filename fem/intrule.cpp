@@ -3808,27 +3808,33 @@ namespace ngfem
           break;
         }
 
-        /*
-	case ET_QUAD:
-	  {
-	    FlatVec<3> p0 = points(faces[fnr][0]);
-	    FlatVec<3> p1 = points(faces[fnr][1]);
-	    FlatVec<3> p2 = points(faces[fnr][3]);
-            Vec<3> delta1 = p1-p0;
-            Vec<3> delta2 = p2-p0;
+        
+      case ET_QUAD:
+	{
+	  FlatVec<3> p0 = points(faces[fnr][0]);
+	  FlatVec<3> p1 = points(faces[fnr][1]);
+	  FlatVec<3> p2 = points(faces[fnr][3]);
+          Vec<3> delta1 = p1-p0;
+          Vec<3> delta2 = p2-p0;
 
-	    // for (int i = 0; i < irfacet.GetNIP(); i++)
-            // irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
-            for (int i = 0; i < hirfacet.Size(); i++)
-              {
-                auto ip = hirfacet[i];
-                auto & ipvol = hirvol[i];              
-                for (int k = 0; k < 3; k++)
-                  ipvol(k) = p0(k) + delta1(k) * ip(0) + delta2(k) * ip(1);
-              }
-	    break;
-	  }
-        */
+          Vec<2> p02d(p0(0), p0(1));
+          Mat<2> mat;
+          mat(0,0) = delta1(0);   mat(0,1) = delta2(0);
+          mat(1,0) = delta1(1);   mat(1,1) = delta2(1);
+          mat = Inv(mat);
+          for (int i = 0; i < hir.Size(); i++)
+            {
+              auto ip = hir[i];
+              auto & ipinv = hirinv[i];
+              Vec<2> vip(ip(0), ip(1));
+              Vec<2> vipinv = mat * (vip - p02d);
+              ipinv(0) = vipinv(0);
+              ipinv(1) = vipinv(1);
+              ipinv(2) = 0;
+            }
+	  break;
+	}
+        
       default:
         throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
       } 
@@ -3912,27 +3918,31 @@ namespace ngfem
           break;
         }
 
-        /*
-	case ET_QUAD:
-	  {
-	    FlatVec<3> p0 = points(faces[fnr][0]);
-	    FlatVec<3> p1 = points(faces[fnr][1]);
-	    FlatVec<3> p2 = points(faces[fnr][3]);
-            Vec<3> delta1 = p1-p0;
-            Vec<3> delta2 = p2-p0;
+      case ET_QUAD:
+	{
+	  FlatVec<3> p0 = points(faces[fnr][0]);
+	  FlatVec<3> p1 = points(faces[fnr][1]);
+	  FlatVec<3> p2 = points(faces[fnr][3]);
+          Vec<3> delta1 = p1-p0;
+          Vec<3> delta2 = p2-p0;
 
-	    // for (int i = 0; i < irfacet.GetNIP(); i++)
-            // irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
-            for (int i = 0; i < hirfacet.Size(); i++)
-              {
-                auto ip = hirfacet[i];
-                auto & ipvol = hirvol[i];              
-                for (int k = 0; k < 3; k++)
-                  ipvol(k) = p0(k) + delta1(k) * ip(0) + delta2(k) * ip(1);
-              }
-	    break;
-	  }
-        */
+          Vec<2> p02d(p0(0), p0(1));
+          Mat<2> mat;
+          mat(0,0) = delta1(0);   mat(0,1) = delta2(0);
+          mat(1,0) = delta1(1);   mat(1,1) = delta2(1);
+          mat = Inv(mat);
+          for (int i = 0; i < hir.Size(); i++)
+            {
+              auto ip = hir[i];
+              auto & ipinv = hirinv[i];
+              Vec<2,SIMD<double>> vip(ip(0), ip(1));
+              Vec<2,SIMD<double>> vipinv = mat * (vip - p02d);
+              ipinv(0) = vipinv(0);
+              ipinv(1) = vipinv(1);
+              ipinv(2) = 0;
+            }
+	  break;
+	}
       default:
         throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
       } 
