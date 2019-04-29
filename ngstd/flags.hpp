@@ -47,7 +47,7 @@ namespace ngstd
     /// delete mem
     ~Flags ();
 
-    Flags & operator= (const Flags & f2) { *this = f2; return *this; };
+    Flags & operator= (const Flags & f2) = default;
     Flags & operator= (Flags && f2) = default;
 
     void DoArchive(Archive& ar);
