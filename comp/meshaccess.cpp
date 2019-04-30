@@ -1395,7 +1395,15 @@ namespace ngcomp
     */
   }
 
-
+    void MeshAccess :: SetDeformation (shared_ptr<GridFunction> def)
+    {
+      if (def)
+        {
+          if (dim  != def->GetFESpace()->GetDimension())
+            throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
+        }
+      deformation = def;
+    }
   
     void MeshAccess :: SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr)
     {
