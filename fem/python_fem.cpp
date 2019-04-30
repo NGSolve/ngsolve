@@ -121,6 +121,8 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_functions;
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
 
+
+
 template <typename FUNC>
 void ExportStdMathFunction(py::module &m, string name, string description)
 {
@@ -210,6 +212,13 @@ struct GenericIdentity {
   static string Name() { return  " "; }
   void DoArchive(Archive& ar) {}
 };
+template <>
+shared_ptr<CoefficientFunction> cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var) const
+{
+  return c1->Derive(var);
+}
+
+
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
   static string Name() { return "cos"; }
@@ -652,6 +661,7 @@ direction : int
     }
   };
 
+  
   ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
   ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
   ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
@@ -890,6 +900,9 @@ cf : ngsolve.CoefficientFunction
     
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
+
+    .def ("Derive", &CoefficientFunction::Derive,
+          "Compute derivative with respect to argument")
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now

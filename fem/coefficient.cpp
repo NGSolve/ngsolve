@@ -109,6 +109,19 @@ namespace ngfem
     return typeid(*this).name();
   }    
 
+  shared_ptr<CoefficientFunction> CoefficientFunction :: Derive (const CoefficientFunction * var) const
+  {
+    throw Exception(string("Deriv not implemented for CF ")+typeid(*this).name());
+  }
+
+  shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative :: Derive (const CoefficientFunction * var) const
+  {
+    if (var == this)
+      return make_shared<ConstantCoefficientFunction>(1);
+    else
+      return make_shared<ConstantCoefficientFunction>(0);
+  }
+  
   
   void CoefficientFunction :: TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1071,6 +1084,12 @@ public:
   {
     values = input[0];
   }
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  {
+    return scal * c1->Derive(var);
+  }
+  
 };
 
 
@@ -2583,17 +2602,38 @@ public:
   GenericMinus gen_minus;
   GenericMult gen_mult;
   GenericDiv gen_div;
-  
+
+template <> 
+shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericPlus>::Derive(const CoefficientFunction * var) const
+{
+  return c1->Derive(var) + c2->Derive(var);
+}
+
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2, gen_plus, "+");
   }
-  
+
+
+template <> 
+shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericMinus>::Derive(const CoefficientFunction * var) const
+{
+  return c1->Derive(var) - c2->Derive(var);
+}
+
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2, gen_minus, "-");
   }
-  shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+
+template <> 
+shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericMult>::Derive(const CoefficientFunction * var) const
+{
+  return c1->Derive(var)*c2 + c1*c2->Derive(var);
+}
+
+
+shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       return make_shared<MultMatMatCoefficientFunction> (c1, c2);

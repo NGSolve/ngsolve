@@ -235,6 +235,12 @@ public:
         values(i).DDValue(0) = nzdd(i);
       }
   }
+
+  virtual shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  {
+    // should also make sense, coming later ...
+    throw Exception ("cannot derive expressions with ProxyFunctions");
+  }
   
 };
 

@@ -328,7 +328,8 @@ namespace ngfem
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetDescription () const;
-    
+
+    virtual shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const;
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
     { return Array<shared_ptr<CoefficientFunction>>(); }
@@ -498,6 +499,7 @@ namespace ngfem
       values = AutoDiffDiff<1,bool> (true);
     }
     
+    virtual shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override;
   };
 
 
@@ -1251,6 +1253,8 @@ public:
         values(i,j) = lam (in0(i,j));
   }
 
+  virtual shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  { throw Exception ("unarycf "+name+" does not provide a derivative"); }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
@@ -1497,6 +1501,9 @@ public:
       for (size_t j = 0; j < np; j++)
         values(i,j) = lam (in0(i,j), in1(i,j));
   }
+
+  virtual shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
