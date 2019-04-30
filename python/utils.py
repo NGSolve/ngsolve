@@ -81,9 +81,12 @@ def curl(func):
 def div(func):
     if func.derivname == "div":
         return func.Deriv()
-    add = func.Operator("div")
-    if add:
-        return add
+    try:
+        return func.Operator("div")
+    except:
+        pass
+    if func.derivname == "grad" and len(func.dims)==2:  # should check for square
+        return Trace(grad(func))
     raise Exception("cannot form div")    
 
 
