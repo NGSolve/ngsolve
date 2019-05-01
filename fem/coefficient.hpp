@@ -657,6 +657,8 @@ namespace ngfem
     
     
     virtual void PrintReport (ostream & ost) const override;
+    virtual string GetDescription () const override;
+    
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override; 
 
     /*
