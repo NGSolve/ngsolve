@@ -119,7 +119,20 @@ namespace ngfem
     if (var == this)
       return make_shared<ConstantCoefficientFunction>(1);
     else
-      return make_shared<ConstantCoefficientFunction>(0);
+      {
+        if (Dimension() == 1)
+          return make_shared<ConstantCoefficientFunction>(0);
+        else
+          {
+            auto zero1 = make_shared<ConstantCoefficientFunction>(0);
+            Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
+            for (auto & z : zero_array)
+              z = zero1;
+            auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
+            zerovec->SetDimensions(Dimensions());
+            return zerovec;
+          }
+      }
   }
   
   
@@ -223,6 +236,12 @@ namespace ngfem
     ost << "ConstantCF, val = " << val << endl;
   }
 
+  string ConstantCoefficientFunction :: GetDescription () const 
+  {
+    return ToString(val);
+  }
+
+  
   /*
   virtual string ConsantCoefficientFunction :: GetDescription() const 
   {
@@ -1576,6 +1595,13 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  {
+    return c1->Derive(var)*c2 + c1 * c2->Derive(var);
+  }
+  
+
+  
   /*
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
@@ -1601,6 +1627,7 @@ public:
     nonzero_deriv = nzd;
     nonzero_dderiv = nzdd;
   }
+
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
