@@ -121,7 +121,7 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_functions;
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
 
-
+#include "integratorcf.hpp"
 
 template <typename FUNC>
 void ExportStdMathFunction(py::module &m, string name, string description)
@@ -213,9 +213,14 @@ struct GenericIdentity {
   void DoArchive(Archive& ar) {}
 };
 template <>
-shared_ptr<CoefficientFunction> cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var) const
+shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var,
+                                      shared_ptr<CoefficientFunction> dir) const
 {
-  return c1->Derive(var);
+  if (var == this) return dir;
+  auto hcf = c1->Derive(var, dir);
+  hcf->SetDimensions(Dimensions());
+  return hcf;
 }
 
 
@@ -921,6 +926,12 @@ cf : ngsolve.CoefficientFunction
              else
                return val * coef;
            }, py::arg("value"))
+
+    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol dx)
+         {
+           return make_shared<SumOfIntegratorCF>(make_shared<IntegratorCF> (cf, dx));
+         })
+    
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
            { 
              if (val.imag() == 0)
@@ -1002,6 +1013,22 @@ wait : bool
   py::implicitly_convertible<py::tuple, CoefficientFunction>();
   py::implicitly_convertible<py::list, CoefficientFunction>();
 
+  
+  py::class_<DifferentialSymbol>(m, "DifferentialSymbol")
+    .def(py::init<VorB>())
+    ;
+
+  py::class_<SumOfIntegratorCF, shared_ptr<SumOfIntegratorCF>>(m, "SumOfIntegratorCF")
+    .def ("__add__", [] (shared_ptr<SumOfIntegratorCF> c1, shared_ptr<SumOfIntegratorCF> c2)
+          {
+            auto sum = make_shared<SumOfIntegratorCF>();
+            for (auto & ci : c1->icfs) sum->icfs += ci;
+            for (auto & ci : c2->icfs) sum->icfs += ci;
+            return sum;
+          })
+    .def ("Derive", &SumOfIntegratorCF::Derive)
+    ;
+  
 
   
   if(have_numpy)

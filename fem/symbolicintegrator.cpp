@@ -3097,6 +3097,7 @@ namespace ngfem
             static Timer tapplyt("SymbolicFacetBFI::Apply - apply-trans", 2); 
 
             ThreadRegionTimer reg(tall, TaskManager::GetThreadId());
+            // RegionTracer rt(TaskManager::GetThreadId(), tall);
             HeapReset hr(lh);
             // tall.Start();
             
@@ -3138,7 +3139,8 @@ namespace ngfem
               ud.AssignMemory (cf, simd_ir_facet.GetNIP(), cf->Dimension(), lh);
             // tstart.Stop();
             // tapply.Start();
-            
+
+            // RegionTracer rtapply(TaskManager::GetThreadId(), tapply);                        
             for (ProxyFunction * proxy : trial_proxies)
               {
                 IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
@@ -3150,7 +3152,8 @@ namespace ngfem
                 // tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
               }
             // tapply.Stop();
-            
+
+            // RegionTracer rtapplyt(TaskManager::GetThreadId(), tapplyt);            
             for (auto proxy : test_proxies)
               {
                 HeapReset hr(lh);

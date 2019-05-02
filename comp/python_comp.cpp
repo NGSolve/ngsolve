@@ -12,6 +12,7 @@
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
+#include "../fem/integratorcf.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -1995,6 +1996,13 @@ integrator : ngsolve.fem.BFI
 )raw_string"))
     
     .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
+    .def("__iadd__", [](BF & self, shared_ptr<SumOfIntegratorCF> sum) -> BilinearForm& 
+         {
+           for (auto icf : sum->icfs)
+             self += make_shared<SymbolicBilinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+           return self;
+         })
+         
     .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
 
     .def_property_readonly("integrators", [](BF & self)
@@ -2211,6 +2219,13 @@ integrator : ngsolve.fem.LFI
     
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
          { (*self)+=lfi; return self; }, py::arg("lfi"))
+
+    .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegratorCF> sum) 
+         {
+           for (auto icf : sum->icfs)
+             *self += make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+           return self;
+         })
 
     .def_property_readonly("integrators", [](shared_ptr<LF> self)
                            { return MakePyTuple (self->Integrators()); }, "returns tuple of integrators of the linear form")

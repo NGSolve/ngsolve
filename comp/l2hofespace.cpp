@@ -1653,14 +1653,16 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      static Timer t("DiffOpIdVectorL2Piola::ApplySIMDIR");
+      // static Timer t("DiffOpIdVectorL2Piola::ApplySIMDIR");
+      // RegionTracer rt(TaskManager::GetThreadId(), t);
+      
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
       
       STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
-      FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
+      FlatMatrixFixWidth<DIM_SPACE, double> matx(ndofi, &memx[0]);
       for (size_t k = 0; k < DIM_SPACE; k++)
         matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
 
@@ -1682,6 +1684,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
+      //static Timer t("DiffpIdVectorL2Piola::AddTransSIMD");
+      // static Timer tc("DiffpIdVectorL2Piola::AddTransSIMD calc");
+      // RegionTracer rt(TaskManager::GetThreadId(), t);            
+
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
@@ -1699,10 +1705,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         }
       
       STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
-      FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
+      FlatMatrixFixWidth<DIM_SPACE, double> matx(ndofi, &memx[0]);
 
-      for (size_t k = 0; k < DIM_SPACE; k++)
-        matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
+      for (size_t i = 0; i < ndofi; i++)
+        matx.Row(i) = x.Slice(i, ndofi);
 
       feli.AddTrans(mir.IR(), hy, matx);
 
