@@ -315,6 +315,12 @@ namespace ngcomp
     preconditioners.Append (pre);
   }
 
+  void BilinearForm :: UnsetPreconditioner (Preconditioner* pre)
+  {
+    if(auto pos = preconditioners.Pos(pre); pos != preconditioners.ILLEGAL_POSITION)
+      preconditioners.DeleteElement(pos);
+  }
+
 
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
   {
