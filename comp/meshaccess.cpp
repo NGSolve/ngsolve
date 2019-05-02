@@ -2351,7 +2351,7 @@ namespace ngcomp
       }
   }
   
-
+static RegisterClassForArchive<BoundaryFromVolumeCoefficientFunction, CoefficientFunction> regbfvcf;
 
 }
 
