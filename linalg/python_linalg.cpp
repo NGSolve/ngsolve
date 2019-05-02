@@ -840,6 +840,17 @@ inverse : string
     .def(py::init<size_t, bool>(),
          py::arg("size"), py::arg("complex")=false)
     ;
+
+  py::class_<PermutationMatrix, shared_ptr<PermutationMatrix>, BaseMatrix> (m, "PermutationMatrix")
+    .def(py::init([](size_t w, std::vector<size_t> ind)
+                  {
+                    Array<size_t> inda(ind.size());
+                    for (size_t i = 0; i < inda.Size(); i++)
+                      inda[i] = ind[i];
+                    return make_shared<PermutationMatrix> (w, move(inda)); 
+                  }),
+         py::arg("w"), py::arg("ind"))
+    ;
   
   py::class_<Embedding, shared_ptr<Embedding>, BaseMatrix> (m, "Embedding")
     .def(py::init<size_t, IntRange>(),

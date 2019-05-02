@@ -52,6 +52,42 @@ namespace ngla
       }
   }
 
+
+  void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    auto fvx = x.FV<double>();
+    auto fvy = y.FV<double>();
+    for (size_t i = 0; i < ind.Size(); i++)
+      fvy(i) = fvx(ind[i]);
+  }
+  
+  void PermutationMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    auto fvx = x.FV<double>();
+    auto fvy = y.FV<double>();
+    y = 0;
+    for (size_t i = 0; i < ind.Size(); i++)
+      fvy(ind[i]) += fvx(i);
+  }
+
+  void PermutationMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fvx = x.FV<double>();
+    auto fvy = y.FV<double>();
+    for (size_t i = 0; i < ind.Size(); i++)
+      fvy(i) += s * fvx(ind[i]);
+  }
+  
+  void PermutationMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fvx = x.FV<double>();
+    auto fvy = y.FV<double>();
+    for (size_t i = 0; i < ind.Size(); i++)
+      fvy(ind[i]) += s * fvx(i);
+  }
+
+
+  
   void Embedding :: Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer t("Embedding::Mult"); RegionTimer reg(t);
