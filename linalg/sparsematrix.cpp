@@ -1191,7 +1191,7 @@ namespace ngla
     static Timer timer ("MatrixGraph - CalcBalancing");
     RegionTimer reg (timer);
 
-    balance.Calc (size, [&] (int row) { return 5 + GetRowIndices(row).Size(); });
+    balance.Calc (size, [&] (int row) { return 1 + GetRowIndices(row).Size(); });
   }
   
   void MatrixGraph :: FindSameNZE()
