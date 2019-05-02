@@ -109,15 +109,17 @@ namespace ngfem
     return typeid(*this).name();
   }    
 
-  shared_ptr<CoefficientFunction> CoefficientFunction :: Derive (const CoefficientFunction * var) const
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
+  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     throw Exception(string("Deriv not implemented for CF ")+typeid(*this).name());
   }
 
-  shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative :: Derive (const CoefficientFunction * var) const
+  shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
+  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     if (var == this)
-      return make_shared<ConstantCoefficientFunction>(1);
+      return dir; // make_shared<ConstantCoefficientFunction>(1);
     else
       {
         if (Dimension() == 1)
@@ -1104,9 +1106,10 @@ public:
     values = input[0];
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
   {
-    return scal * c1->Derive(var);
+    return scal * c1->Derive(var, dir);
   }
   
 };
@@ -1300,6 +1303,13 @@ public:
         values(j,i) = in0(0,i) * in1(j,i);
   }
 
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+  }
+  
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1595,9 +1605,10 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
   {
-    return c1->Derive(var)*c2 + c1 * c2->Derive(var);
+    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
   }
   
 
@@ -2303,6 +2314,15 @@ public:
         for (size_t k = 0; k < ir.Size(); k++)
           values(i,k) += va(i*inner_dim+j, k) * vb(j,k);
   }
+
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+  }
+  
+  
 };
 
 
@@ -2453,6 +2473,12 @@ public:
         for (size_t i = 0; i < np; i++)
           values(j*hdims[1]+k, i) = in0(k*hdims[0]+j, i);
   }
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return TransposeCF (c1->Derive(var, dir));
+  }  
 };
 
 
@@ -2631,9 +2657,11 @@ public:
   GenericDiv gen_div;
 
 template <> 
-shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericPlus>::Derive(const CoefficientFunction * var) const
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericPlus>::Derive(const CoefficientFunction * var,
+                                   shared_ptr<CoefficientFunction> dir) const
 {
-  return c1->Derive(var) + c2->Derive(var);
+  return c1->Derive(var,dir) + c2->Derive(var,dir);
 }
 
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -2643,9 +2671,11 @@ shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericPlus>::Derive(const Coeffic
 
 
 template <> 
-shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericMinus>::Derive(const CoefficientFunction * var) const
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericMinus>::Derive(const CoefficientFunction * var,
+                                    shared_ptr<CoefficientFunction> dir) const
 {
-  return c1->Derive(var) - c2->Derive(var);
+  return c1->Derive(var,dir) - c2->Derive(var,dir);
 }
 
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -2654,9 +2684,19 @@ shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericMinus>::Derive(const Coeffi
   }
 
 template <> 
-shared_ptr<CoefficientFunction> cl_BinaryOpCF<GenericMult>::Derive(const CoefficientFunction * var) const
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericMult>::Derive(const CoefficientFunction * var,
+                                   shared_ptr<CoefficientFunction> dir) const
 {
-  return c1->Derive(var)*c2 + c1*c2->Derive(var);
+  return c1->Derive(var,dir)*c2 + c1*c2->Derive(var,dir);
+}
+
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericDiv>::Derive(const CoefficientFunction * var,
+                                   shared_ptr<CoefficientFunction> dir) const
+{
+  return (c1->Derive(var,dir)*c2 - c1*c2->Derive(var,dir)) / (c2*c2);
 }
 
 
@@ -2852,6 +2892,12 @@ public:
     values.Row(0).AddSize(ir.Size()) = in0.Row(comp);
   }
 
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return MakeComponentCoefficientFunction (c1->Derive(var, dir), comp);
+  }  
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -3794,6 +3840,20 @@ public:
         base += dimi;
       }
   }
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    Array<shared_ptr<CoefficientFunction>> diff_ci;
+    for (auto & cf : ci)
+      if (cf)
+        diff_ci.Append (cf->Derive(var, dir));
+      else
+        diff_ci.Append (nullptr);
+    auto veccf = make_shared<VectorialCoefficientFunction> (move(diff_ci));
+    veccf->SetDimensions(Dimensions());
+    return veccf;
+  }  
 };
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const

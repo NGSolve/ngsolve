@@ -236,7 +236,8 @@ public:
       }
   }
 
-  virtual shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var) const override
+  virtual shared_ptr<CoefficientFunction>
+  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   {
     // should also make sense, coming later ...
     throw Exception ("cannot derive expressions with ProxyFunctions");
