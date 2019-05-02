@@ -470,7 +470,8 @@ namespace ngla
     for (int i = 1; i < nused; i++)
       if (blocknrs[i] == i)  //  || i >= blocks.Last()+256) // don't subdivide, for this we have the micro-blocks
         blocks.Append (i);
-    blocks.Append(nused);
+    if (nused > 0)
+      blocks.Append(nused);
 
 
     
