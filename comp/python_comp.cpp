@@ -1891,8 +1891,10 @@ diffop : ngsolve.fem.DifferentialOperator
                     },
                     [](py::tuple state)
                     {
-                      return make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
-                                                                py::cast<int>(state[1]));
+                      auto self = make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
+                                                                     py::cast<int>(state[1]));
+                      self->Update();
+                      return self;
                     }))
     ;
 
