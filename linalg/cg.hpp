@@ -19,7 +19,7 @@ namespace ngla
   {
   protected:
     ///
-    const BaseMatrix *a, *c;
+    shared_ptr<BaseMatrix> a, c;
     ///
     double prec;
     ///
@@ -44,15 +44,15 @@ namespace ngla
     ///
     NGS_DLL_HEADER KrylovSpaceSolver();
     ///
-    NGS_DLL_HEADER KrylovSpaceSolver(const BaseMatrix & aa);
+    NGS_DLL_HEADER KrylovSpaceSolver(shared_ptr<BaseMatrix> aa);
     ///
-    NGS_DLL_HEADER KrylovSpaceSolver(const BaseMatrix & aa, const BaseMatrix & ac);
+    NGS_DLL_HEADER KrylovSpaceSolver(shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac);
     ///
-    void SetMatrix (const BaseMatrix & aa)
-    { a = &aa; }
+    void SetMatrix (shared_ptr<BaseMatrix> aa)
+    { a = aa; }
     ///
-    void SetPrecond (const BaseMatrix & ac)
-    { c = &ac; }
+    void SetPrecond (shared_ptr<BaseMatrix> ac)
+    { c = ac; }
     ///
 
     virtual bool IsComplex() const { return a->IsComplex(); }
@@ -113,11 +113,11 @@ namespace ngla
     CGSolver () 
       : KrylovSpaceSolver () { ; }
     ///
-    CGSolver (const BaseMatrix & aa)
+    CGSolver (shared_ptr<BaseMatrix> aa)
       : KrylovSpaceSolver (aa) { ; }
 
     ///
-    CGSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+    CGSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
@@ -135,11 +135,11 @@ namespace ngla
     BiCGStabSolver () 
       : KrylovSpaceSolver () { ; }
     ///
-    BiCGStabSolver (const BaseMatrix & aa)
+    BiCGStabSolver (shared_ptr<BaseMatrix> aa)
       : KrylovSpaceSolver (aa) { ; }
 
     ///
-    BiCGStabSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+    BiCGStabSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
@@ -163,10 +163,10 @@ namespace ngla
     SimpleIterationSolver ()
       : KrylovSpaceSolver() { tau = 1; }
     ///
-    SimpleIterationSolver (const BaseMatrix & aa)
+    SimpleIterationSolver (shared_ptr<BaseMatrix> aa)
       : KrylovSpaceSolver (aa) { tau = 1; }
     ///
-    SimpleIterationSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+    SimpleIterationSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
       : KrylovSpaceSolver (aa, ac) { tau = 1; }
     ///
     virtual void Mult (const BaseVector & v, BaseVector & prod) const;
@@ -186,11 +186,11 @@ namespace ngla
     GMRESSolver () 
       : KrylovSpaceSolver () { ; }
     ///
-    GMRESSolver (const BaseMatrix & aa)
+    GMRESSolver (shared_ptr<BaseMatrix> aa)
       : KrylovSpaceSolver (aa) { ; }
 
     ///
-    GMRESSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+    GMRESSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
@@ -213,11 +213,11 @@ namespace ngla
     QMRSolver () 
       : KrylovSpaceSolver (), c2(0) { ; }
     ///
-    QMRSolver (const BaseMatrix & aa)
+    QMRSolver (shared_ptr<BaseMatrix> aa)
       : KrylovSpaceSolver (aa), c2(0) { ; }
 
     ///
-    QMRSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+    QMRSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
       : KrylovSpaceSolver (aa, ac), c2(0) { ; }
 
     ///
