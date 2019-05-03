@@ -1,6 +1,6 @@
 from ngsolve.fem import *
 from ngsolve.comp import *
-from ngsolve.fem import DifferentialSymbol
+from ngsolve.comp import DifferentialSymbol
 
 x = CoordCF(0)
 y = CoordCF(1)
