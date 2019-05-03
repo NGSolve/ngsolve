@@ -1433,15 +1433,72 @@ lot of new non-zero entries in the matrix!\n" << endl;
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
     size_t nd = GetNDof();
-    TableCreator<int> creator;
 
+    bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
+    auto freedofs = GetFreeDofs(eliminate_internal);
+
+    FilteredTableCreator creator(GetFreeDofs().get());
+
+    /*
     for ( ; !creator.Done(); creator++)
       {
 	for (size_t i = 0; i < nd; i++)
-	  if (!IsDirichletDof(i))
+	  if (freedofs->Test(i))
 	    creator.Add (i, i);
       }
+    */
 
+    Array<DofId> dofs;
+    for ( ; !creator.Done(); creator++)
+      {
+        // VEFI
+
+        for (size_t i : Range(ma->GetNV()))
+          {
+            GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+            for (auto d : dofs)
+              if (IsRegularDof(d))              
+                creator.Add (i, d);
+          }
+        for (size_t i : Range(ma->GetNEdges()))        
+          {
+            Ng_Node<1> edge = ma->GetNode<1> (i);
+            
+            GetDofNrs (NodeId(NT_EDGE, i), dofs);
+            for (auto d : dofs)
+              if (IsRegularDof(d))
+                for (int k = 0; k < 2; k++)
+                  creator.Add (edge.vertices[k], d);
+          }
+
+        for (size_t i : Range(ma->GetNFaces()))        
+          {
+            Ng_Node<2> face = ma->GetNode<2> (i);
+            
+            GetDofNrs (NodeId(NT_FACE, i), dofs);
+            for (auto d : dofs)
+              if (IsRegularDof(d))
+                for (int k = 0; k < face.vertices.Size(); k++)
+                  creator.Add (face.vertices[k], d);
+          }
+      }
+    /*
+                 
+                 for (int i = 0; i < nfa; i++)
+                 {
+                 Ng_Node<2> face = ma->GetNode<2> (i);
+                 for (int k = 0; k < face.vertices.Size(); k++)
+                 creator.Add (face.vertices[k], GetFaceDofs(i));
+                 }
+                 
+                 for (int i = 0; i < ni; i++)
+                 for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
+                 creator.Add (v, GetElementDofs(i));
+                 
+                 break; 
+               */
+               
+        
     return make_shared<Table<int>> (creator.MoveTable());
   }
 
