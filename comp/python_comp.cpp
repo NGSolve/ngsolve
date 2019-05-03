@@ -1901,7 +1901,38 @@ diffop : ngsolve.fem.DifferentialOperator
 
   ///////////////////////////// BilinearForm   ////////////////////////////////////////
 
+  py::class_<DifferentialSymbol>(m, "DifferentialSymbol")
+    .def(py::init<VorB>())
+    .def("__call__", [](DifferentialSymbol & self, bool element_boundary,
+                        VorB element_vb,
+                        shared_ptr<Region> definedon)
+         {
+           BitArray defon;
+           if (definedon)
+             defon = definedon->Mask();
+           if (element_boundary) element_vb = BND;
+           return DifferentialSymbol(self.vb, element_vb, defon);
+         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL, py::arg("definedon")=nullptr)
+    ;
 
+  py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
+    .def ("__add__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
+          {
+            auto sum = make_shared<SumOfIntegrals>();
+            for (auto & ci : c1->icfs) sum->icfs += ci;
+            for (auto & ci : c2->icfs) sum->icfs += ci;
+            return sum;
+          })
+    .def ("__rmul__", [] (shared_ptr<SumOfIntegrals> c1, double fac)
+          {
+            auto faccf = make_shared<SumOfIntegrals>();
+            for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
+            return faccf;
+          })
+    .def ("Derive", &SumOfIntegrals::Derive)
+    ;
+
+  
   typedef BilinearForm BF;
   auto bf_class = py::class_<BF, shared_ptr<BilinearForm>, NGS_Object>(m, "BilinearForm",
                                              docu_string(R"raw_string(
@@ -1996,10 +2027,32 @@ integrator : ngsolve.fem.BFI
 )raw_string"))
     
     .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
-    .def("__iadd__", [](BF & self, shared_ptr<SumOfIntegratorCF> sum) -> BilinearForm& 
+    .def("__iadd__", [](BF & self, shared_ptr<SumOfIntegrals> sum) -> BilinearForm& 
          {
            for (auto icf : sum->icfs)
-             self += make_shared<SymbolicBilinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+             {
+               auto & dx = icf->dx;
+
+               // check for DG terms
+               bool has_other = false;
+               icf->cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                                      {
+                                        if (dynamic_cast<ProxyFunction*> (&cf))
+                                          if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                            has_other = true;
+                                      });
+               // if (has_other && !element_boundary && !skeleton)
+               if (has_other && (dx.element_vb != BND) && !dx.skeleton)
+                 throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+
+               shared_ptr<BilinearFormIntegrator> bfi;
+               if (!has_other && !dx.skeleton)
+                 bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
+               else
+                 bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (icf->cf, dx.vb, !dx.skeleton);
+               bfi->SetDefinedOn(dx.definedon);
+               self += bfi;
+             }
            return self;
          })
          
@@ -2220,7 +2273,7 @@ integrator : ngsolve.fem.LFI
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
          { (*self)+=lfi; return self; }, py::arg("lfi"))
 
-    .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegratorCF> sum) 
+    .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
            for (auto icf : sum->icfs)
              *self += make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);

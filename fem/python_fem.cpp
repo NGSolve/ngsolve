@@ -929,7 +929,7 @@ cf : ngsolve.CoefficientFunction
 
     .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol dx)
          {
-           return make_shared<SumOfIntegratorCF>(make_shared<IntegratorCF> (cf, dx));
+           return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
          })
     
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
@@ -1014,20 +1014,6 @@ wait : bool
   py::implicitly_convertible<py::list, CoefficientFunction>();
 
   
-  py::class_<DifferentialSymbol>(m, "DifferentialSymbol")
-    .def(py::init<VorB>())
-    ;
-
-  py::class_<SumOfIntegratorCF, shared_ptr<SumOfIntegratorCF>>(m, "SumOfIntegratorCF")
-    .def ("__add__", [] (shared_ptr<SumOfIntegratorCF> c1, shared_ptr<SumOfIntegratorCF> c2)
-          {
-            auto sum = make_shared<SumOfIntegratorCF>();
-            for (auto & ci : c1->icfs) sum->icfs += ci;
-            for (auto & ci : c2->icfs) sum->icfs += ci;
-            return sum;
-          })
-    .def ("Derive", &SumOfIntegratorCF::Derive)
-    ;
   
 
   
