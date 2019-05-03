@@ -79,7 +79,7 @@ namespace ngsolve
           {
             cout << "complex evp" << endl;
             
-            Arnoldi<Complex> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
+            Arnoldi<Complex> arnoldi (bfa->GetMatrixPtr(), bfm->GetMatrixPtr(), 
                                       bfa->GetFESpace()->GetFreeDofs() );
             arnoldi.SetShift (Complex(shift,shifti));
             
@@ -88,7 +88,7 @@ namespace ngsolve
 
             Array<Complex> lam(nev);
             if (pre)
-              arnoldi.Calc (num, lam, nev, evecs, &pre->GetMatrix());
+              arnoldi.Calc (num, lam, nev, evecs, pre->GetMatrixPtr());
             else
               arnoldi.Calc (num, lam, nev, evecs, 0);
             
@@ -107,7 +107,7 @@ namespace ngsolve
         else
           {
             cout << "real evp" << endl;
-            Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
+            Arnoldi<double> arnoldi (bfa->GetMatrixPtr(), bfm->GetMatrixPtr(), 
                                      bfa->GetFESpace()->GetFreeDofs() );
             arnoldi.SetShift (shift);
             
@@ -117,7 +117,7 @@ namespace ngsolve
             // evecs[i] = &gfu->GetVector(i);
             Array<Complex> lam(nev);
             if (pre)
-              arnoldi.Calc (num, lam, nev, evecs, &pre->GetMatrix());
+              arnoldi.Calc (num, lam, nev, evecs, pre->GetMatrixPtr());
             else
               arnoldi.Calc (num, lam, nev, evecs, 0);
             
