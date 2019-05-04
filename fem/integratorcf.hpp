@@ -13,6 +13,7 @@ namespace ngfem
     DifferentialSymbol (VorB _vb, VorB _element_vb, const BitArray & _definedon)
       : vb(_vb), element_vb(_element_vb), definedon(_definedon) { ; } 
   };
+  
 
   class Integral
   {
