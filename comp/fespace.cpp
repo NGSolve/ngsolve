@@ -1733,7 +1733,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
   {
-    LocalHeap lh(1000000);
+    LocalHeap lh(10000000);
     Array<short> classnr(ma->GetNE());
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
@@ -1756,6 +1756,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
     for (auto elclass_inds : table)
       {
+        HeapReset hr(lh);
         if (elclass_inds.Size() == 0) continue;
         
         ElementId ei(VOL,elclass_inds[0]);

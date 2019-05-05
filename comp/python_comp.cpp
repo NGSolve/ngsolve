@@ -81,6 +81,9 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                bool testfunction,
                                const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
+  if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
+    return MakeProxyFunction2 (compressedspace->GetBaseSpace(), testfunction, addblock);
+  
   auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
   if (compspace && !fes->GetEvaluator())
     {
@@ -1080,7 +1083,7 @@ coupling : bool
          "Return prolongation operator for use in multi-grid")
 
     .def("Range",
-         [] (const shared_ptr<FESpace> self, int comp)
+         [] (shared_ptr<FESpace> self, int comp)
          {
            auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
            if (!compspace)
@@ -1396,7 +1399,8 @@ active_dofs : BitArray or None
                   {
                     shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
                     if (compspace)
-                        throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
+                      cout << "yes, we can also compress a CompoundFESpace" << endl;
+                    // throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
                     auto ret = make_shared<CompressedFESpace> (fes);
                     shared_ptr<BitArray> actdofs = nullptr;
                     if (! py::extract<DummyArgument> (active_dofs).check())

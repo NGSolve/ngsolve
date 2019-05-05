@@ -51,8 +51,10 @@ namespace ngfem
       SetDimensions (evaluator->Dimensions());
     else if (trace_evaluator)
       SetDimensions (trace_evaluator->Dimensions());
-    else
+    else if (ttrace_evaluator)
       SetDimensions (ttrace_evaluator->Dimensions());
+    else
+      throw Exception("a proxy needs at least one evaluator");
     elementwise_constant = true;
   }
   

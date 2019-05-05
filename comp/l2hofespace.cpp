@@ -2273,6 +2273,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
             case 3:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3>>>();
               flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivVectorL2Piola<3>>> ();
+              additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<3>>> ());
               break;
             }
         }
