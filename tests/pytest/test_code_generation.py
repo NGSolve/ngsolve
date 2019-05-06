@@ -1,12 +1,10 @@
-import pytest
-from netgen.geom2d import unit_square
-from netgen.csg import unit_cube
+from pytest import approx
+from meshes import *
 from ngsolve import *
 ngsglobals.msg_level = 7
 
-def test_code_generation_volume_terms():
-    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
-    fes = L2(mesh, order=5)
+def test_code_generation_volume_terms(unit_mesh_3d):
+    fes = L2(unit_mesh_3d, order=5)
     gfu = GridFunction(fes)
 
     functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2]
@@ -17,11 +15,9 @@ def test_code_generation_volume_terms():
         cfs = [ cf.Compile(), cf.Compile(True, wait=True), gfu, gfu.Compile(), gfu.Compile(True, wait=True) ]
 
         for f in cfs:
-            assert (Integrate ( (cf-f)*(cf-f), mesh)<1e-13)
+            assert Integrate( (cf-f)*(cf-f), unit_mesh_3d) == approx(0)
 
-def test_code_generation_boundary_terms():
-    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
-
+def test_code_generation_boundary_terms(unit_mesh_3d):
     functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size]
     functions = [0.1*f for f in functions]
 
@@ -30,12 +26,10 @@ def test_code_generation_boundary_terms():
         cfs = [ cf.Compile(), cf.Compile(True, wait=True)]
 
         for f in cfs:
-            print(Integrate ( (cf-f)*(cf-f), mesh, BND))
-            assert (Integrate ( (cf-f)*(cf-f), mesh, BND)<1e-13)
+            assert Integrate( (cf-f)*(cf-f), unit_mesh_3d, BND) == approx(0)
 
-def test_code_generation_volume_terms_complex():
-    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
-    fes = L2(mesh, order=5, complex=True)
+def test_code_generation_volume_terms_complex(unit_mesh_3d):
+    fes = L2(unit_mesh_3d, order=5, complex=True)
     gfu = GridFunction(fes)
 
     functions = [1J*x,1j*y,1J*x*y+y, sin(1J*x)*y+x, exp(x+1J*y)+y*y*y*sin(1J*x), 1J*specialcf.mesh_size]
@@ -43,21 +37,14 @@ def test_code_generation_volume_terms_complex():
 
     for cf in functions:
         gfu.Set(cf)
-        print ("norm gfu.vec = ", Norm(gfu.vec))
         # should all give the same results
         cfs = [ cf.Compile(), cf.Compile(True, wait=True), gfu, gfu.Compile(), gfu.Compile(True, wait=True) ]
 
         for f in cfs:
-            print ("integral f =", Integrate(f, mesh))
-            print ("integral cf =", Integrate(cf, mesh))
-            print ("integral cf-f =", Integrate(cf-f, mesh))
-            print ("integral Conj(cf-f) =", Integrate(Conj(cf-f), mesh))
-            error = (cf-f)*Conj(cf-f)
-            assert (abs(Integrate ( error, mesh))<1e-13)
+            assert Integrate((cf-f)*Conj(cf-f), unit_mesh_3d) == approx(0)
 
-def test_code_generation_derivatives():
-    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
-    fes = H1(mesh, order=4, dim=2)
+def test_code_generation_derivatives(unit_mesh_3d):
+    fes = H1(unit_mesh_3d, order=4, dim=2)
     gfu = GridFunction(fes)
     u,v = fes.TnT()
 
@@ -76,7 +63,7 @@ def test_code_generation_derivatives():
         a.AssembleLinearization(gfu.vec)
         vals = a.mat.AsVector()
         vals -= vals_ref
-        assert Norm(vals) < 1e-13
+        assert Norm(vals) == approx(0)
 
 if __name__ == "__main__":
     test_code_generation_derivatives()
