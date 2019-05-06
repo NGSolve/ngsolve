@@ -144,6 +144,11 @@ namespace ngla
     throw Exception (err.str());
   }
 
+  void BaseMatrix :: MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    throw Exception(string("MultHermitianAdd not overloaded for type ")+typeid(*this).name());
+  }
+  
    // to split mat x vec for symmetric matrices
   void BaseMatrix :: MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 			       const BitArray * ainner,

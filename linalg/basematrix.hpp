@@ -105,6 +105,8 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
     /// y += s Trans(matrix) * x
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
+   /// y += s Trans(matrix) * x
+    virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
 
 
 
@@ -298,6 +300,69 @@ namespace ngla
   };
 
 
+
+  /* ************************** ConjTrans ************************* */
+
+  /**
+     The conjugate transpose of a BaseMatrix.
+  */
+  class ConjTrans : public BaseMatrix
+  {
+    shared_ptr<BaseMatrix> spbm;
+  public:
+    ConjTrans (shared_ptr<BaseMatrix> aspbm) : spbm(aspbm) { ; }
+    ///
+    virtual bool IsComplex() const override { return spbm->IsComplex(); }
+
+    virtual AutoVector CreateRowVector () const override { return spbm->CreateColVector(); }
+    virtual AutoVector CreateColVector () const override { return spbm->CreateRowVector(); }
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override
+    {
+      y = 0.0;
+      spbm->MultConjTransAdd (1, x, y);
+    }
+    
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override
+    {
+      throw Exception("Trans of ConjTrans not available");
+    }
+    
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      spbm->MultConjTransAdd (s, x, y);
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      spbm->MultConjTransAdd (s, x, y);
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      throw Exception("Trans of ConjTrans not available");
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      throw Exception("Trans of ConjTrans not available");      
+    }  
+
+    virtual int VHeight() const override { return spbm->VWidth(); }
+    virtual int VWidth() const override { return spbm->VHeight(); }
+
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "ConjTrans of " << endl;
+      spbm->Print(ost);
+      return ost;
+    }
+  };
+
+
+  
 
   /* ************************** Product ************************* */
 
