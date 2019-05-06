@@ -1498,6 +1498,22 @@ namespace ngla
       AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
   }
 
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseMatrix<TM,TV_ROW,TV_COL> ::
+  MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("SparseMatrix::MultTransAdd Complex");
+    RegionTimer reg (timer);
+
+    FlatVector<TVX> fx = x.FV<TVX>(); //  (x.Size(), x.Memory());
+    FlatVector<TVY> fy = y.FV<TVY>(); // (y.Size(), y.Memory());
+    
+    for (int i = 0; i < this->Height(); i++)
+      AddRowConjTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
+  }
+
+
+  
   
   template <class TM, class TV_ROW, class TV_COL>
   void SparseMatrix<TM,TV_ROW,TV_COL> :: DoArchive (Archive & ar)
