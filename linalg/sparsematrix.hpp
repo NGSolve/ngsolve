@@ -459,12 +459,26 @@ namespace ngla
       for (size_t j = first; j < last; j++)
         vec[colpi[j]] += Trans(datap[j]) * el; 
     }
+    
+    ///
+    void AddRowConjTransToVector (int row, TVY el, FlatVector<TVX> vec) const
+    {
+      size_t first = firsti[row];
+      size_t last = firsti[row+1];
+
+      const int * colpi = colnr.Addr(0);
+      const TM * datap = data.Addr(0);
+
+      for (size_t j = first; j < last; j++)
+        vec[colpi[j]] += Conj(Trans(datap[j])) * el; 
+    }
 
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
     virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,

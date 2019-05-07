@@ -29,6 +29,37 @@ namespace ngla
     virtual void Project (BaseVector & x) const;    
   };
 
+  class PermutationMatrix : public BaseMatrix
+  {
+    size_t width;
+    Array<size_t> ind;
+  public:
+    PermutationMatrix (size_t awidth, Array<size_t> aind)
+      : width(awidth), ind(aind) { ; } 
+
+    virtual bool IsComplex() const override { return false; } 
+
+    virtual int VHeight() const override { return ind.Size(); }
+    virtual int VWidth() const override { return width; }
+
+    virtual AutoVector CreateRowVector () const override
+    {
+      return CreateBaseVector(width, false, 1);
+    }
+    
+    virtual AutoVector CreateColVector () const override
+    {
+      return CreateBaseVector(ind.Size(), false, 1);
+    }
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+  };
+
+
   class Embedding : public BaseMatrix
   {
     size_t height;
@@ -62,6 +93,7 @@ namespace ngla
   };
 
 
+  
   class EmbeddedMatrix : public BaseMatrix
   {
     size_t height;

@@ -1,9 +1,14 @@
 from ngsolve.fem import *
 from ngsolve.comp import *
+from ngsolve.comp import DifferentialSymbol
 
 x = CoordCF(0)
 y = CoordCF(1)
 z = CoordCF(2)
+
+dx = DifferentialSymbol(VOL)
+ds = DifferentialSymbol(BND)
+
 
 def Laplace (coef):
     return BFI("laplace", coef=coef)
@@ -81,9 +86,12 @@ def curl(func):
 def div(func):
     if func.derivname == "div":
         return func.Deriv()
-    add = func.Operator("div")
-    if add:
-        return add
+    try:
+        return func.Operator("div")
+    except:
+        pass
+    if func.derivname == "grad" and len(func.dims)==2:  # should check for square
+        return Trace(grad(func))
     raise Exception("cannot form div")    
 
 
@@ -146,6 +154,6 @@ def Skew(m):
 def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
 ## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof', 'Inv', 'Sym', 'Skew', 'OuterProduct']
+__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof', 'Inv', 'Sym', 'Skew', 'OuterProduct']
 
 

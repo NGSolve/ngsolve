@@ -121,6 +121,8 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_functions;
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
 
+#include "integratorcf.hpp"
+
 template <typename FUNC>
 void ExportStdMathFunction(py::module &m, string name, string description)
 {
@@ -210,6 +212,18 @@ struct GenericIdentity {
   static string Name() { return  " "; }
   void DoArchive(Archive& ar) {}
 };
+template <>
+shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var,
+                                      shared_ptr<CoefficientFunction> dir) const
+{
+  if (var == this) return dir;
+  auto hcf = c1->Derive(var, dir);
+  hcf->SetDimensions(Dimensions());
+  return hcf;
+}
+
+
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
   static string Name() { return "cos"; }
@@ -652,6 +666,7 @@ direction : int
     }
   };
 
+  
   ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
   ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
   ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
@@ -890,6 +905,9 @@ cf : ngsolve.CoefficientFunction
     
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
+
+    .def ("Derive", &CoefficientFunction::Derive,
+          "Compute derivative with respect to argument")
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -908,6 +926,12 @@ cf : ngsolve.CoefficientFunction
              else
                return val * coef;
            }, py::arg("value"))
+
+    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol dx)
+         {
+           return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
+         })
+    
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
            { 
              if (val.imag() == 0)
@@ -989,6 +1013,8 @@ wait : bool
   py::implicitly_convertible<py::tuple, CoefficientFunction>();
   py::implicitly_convertible<py::list, CoefficientFunction>();
 
+  
+  
 
   
   if(have_numpy)

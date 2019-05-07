@@ -1491,7 +1491,7 @@ namespace ngbla
   {
   protected:
     /// vector size
-    int s;
+    size_t s;
     /// the data
     T *  __restrict data;
   public:
@@ -1504,7 +1504,7 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     /// set size, distance and memory
-    FixSliceVector (unsigned int as, T * adata) 
+    FixSliceVector (size_t as, T * adata) 
       : s(as), data(adata) { ; }
 
     /// evaluates matrix expression
@@ -1517,7 +1517,7 @@ namespace ngbla
     /// assigns constant value
     const FixSliceVector & operator= (TSCAL scal) const
     {
-      for (int i = 0; i < s; i++)
+      for (size_t i = 0; i < s; i++)
 	data[i*DIST] = scal; 
       return *this;
     }
@@ -1525,7 +1525,7 @@ namespace ngbla
     /// copies contents of vector
     INLINE const FixSliceVector & operator= (const FixSliceVector & v2) const
     {
-      for (int i = 0; i < s; i++)
+      for (size_t i = 0; i < s; i++)
 	data[i*DIST] = v2(i);
       return *this;
     }
@@ -1534,10 +1534,10 @@ namespace ngbla
     INLINE const FixSliceVector & operator= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < s; i++)
+	for (size_t i = 0; i < s; i++)
 	  data[i*DIST] = v.Spec()(i);
       else
-	for (int i = 0; i < s; i++)
+	for (size_t i = 0; i < s; i++)
 	  data[i*DIST] = v.Spec()(i,0);
       return *this;
     }
@@ -1547,10 +1547,10 @@ namespace ngbla
     INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < s; i++)
+	for (size_t i = 0; i < s; i++)
 	  data[i*DIST] += v.Spec()(i);
       else
-	for (int i = 0; i < s; i++)
+	for (size_t i = 0; i < s; i++)
 	  data[i*DIST] += v.Spec()(i,0);
       return *this;
     }
@@ -1558,7 +1558,7 @@ namespace ngbla
 
 
     /// access element
-    TELEM & operator() (int i) 
+    TELEM & operator() (size_t i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1567,7 +1567,7 @@ namespace ngbla
     }
 
     /// access element
-    TELEM & operator() (int i) const
+    TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1576,7 +1576,7 @@ namespace ngbla
     }
 
     /// access element, index j is unused
-    TELEM & operator() (int i, int j) const
+    TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1585,7 +1585,7 @@ namespace ngbla
     }
 
     /// access element, index j is unused
-    TELEM & operator() (int i, int j) 
+    TELEM & operator() (size_t i, size_t j) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1594,7 +1594,7 @@ namespace ngbla
     }
 
     /// access element
-    TELEM & operator[] (int i) 
+    TELEM & operator[] (size_t i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1603,7 +1603,7 @@ namespace ngbla
     }
 
     /// access element
-    TELEM & operator[] (int i) const
+    TELEM & operator[] (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1619,14 +1619,14 @@ namespace ngbla
     */
 
     /// vector size
-    int Size () const { return s; }
+    size_t Size () const { return s; }
 
     /// vector is a matrix of height size
-    int Height () const { return s; }
+    size_t Height () const { return s; }
     /// vector is a matrix of width 1
-    int Width () const { return 1; }
+    size_t Width () const { return 1; }
 
-    const FixSliceVector Range (int first, int next) const
+    const FixSliceVector Range (size_t first, size_t next) const
     {
       return FixSliceVector (next-first, data+first*DIST);
     }
@@ -1637,7 +1637,7 @@ namespace ngbla
     }
 
 
-    const SliceVector<T> Slice (int first, int adist) const
+    const SliceVector<T> Slice (size_t first, size_t adist) const
     {
       return SliceVector<T> (s/adist, DIST*adist, data+first*DIST);
     }

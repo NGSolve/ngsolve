@@ -18,7 +18,7 @@ namespace ngla
   template <typename SCAL>
   void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, 
                             Array<shared_ptr<BaseVector>> & hevecs, 
-                            const BaseMatrix * pre) const
+                            shared_ptr<BaseMatrix> pre) const
   { 
     static Timer t("arnoldi");    
     static Timer t2("arnoldi - orthogonalize");    
@@ -26,10 +26,10 @@ namespace ngla
 
     RegionTimer reg(t);
 
-    auto hv  = a.CreateVector();
-    auto hv2 = a.CreateVector();
-    auto hva = a.CreateVector();
-    auto hvm = a.CreateVector();
+    auto hv  = a->CreateVector();
+    auto hv2 = a->CreateVector();
+    auto hva = a->CreateVector();
+    auto hvm = a->CreateVector();
    
     int n = hv.template FV<SCAL>().Size();    
     int m = min2 (numval, n);
@@ -38,16 +38,16 @@ namespace ngla
     Matrix<SCAL> matH(m);
     Array<shared_ptr<BaseVector>> abv(m);
     for (int i = 0; i < m; i++)
-      abv[i] = a.CreateVector();
+      abv[i] = a->CreateVector();
 
-    auto mat_shift = a.CreateMatrix();
-    mat_shift->AsVector() = a.AsVector() - shift*b.AsVector();  
+    auto mat_shift = a->CreateMatrix();
+    mat_shift->AsVector() = a->AsVector() - shift*b->AsVector();  
     shared_ptr<BaseMatrix> inv;
     if (!pre)
       inv = mat_shift->InverseMatrix (freedofs);
     else
       {
-        auto itso = make_shared<GMRESSolver<double>> (*mat_shift, *pre);
+        auto itso = make_shared<GMRESSolver<double>> (mat_shift, pre);
         itso->SetPrintRates(1);
         itso->SetMaxSteps(2000);
         inv = itso;
@@ -77,7 +77,7 @@ namespace ngla
 	*/
 	*abv[i] = *hv;
 
-	*hva = b * *hv;
+	*hva = *b * *hv;
 	*hvm = *inv * *hva;
 
 	for (int j = 0; j <= i; j++)
@@ -146,10 +146,10 @@ namespace ngla
 	hevecs.SetSize(nout);
 	for (int i = 0; i< nout; i++)
 	  {
-            if (a.IsComplex())
-              hevecs[i] = a.CreateVector();
+            if (a->IsComplex())
+              hevecs[i] = a->CreateVector();
             else // real biform and system-vecors not yet supported
-              hevecs[i] =  make_shared<VVector<Complex>> (a.Height());
+              hevecs[i] =  make_shared<VVector<Complex>> (a->Height());
             
 	    *hevecs[i] = 0;
 	    for (int j = 0; j < m; j++)

@@ -8,7 +8,6 @@
    High Order Finite Element Space for L2
 */
 
-
 #include <comp.hpp>
 #include <multigrid.hpp>
 #include "../fem/l2hofetp.hpp"
@@ -1649,7 +1648,75 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         }
     }
     
-  
+    
+    using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC>>::ApplySIMDIR;        
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      // static Timer t("DiffOpIdVectorL2Piola::ApplySIMDIR");
+      // RegionTracer rt(TaskManager::GetThreadId(), t);
+      
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+      
+      STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
+      FlatMatrixFixWidth<DIM_SPACE, double> matx(ndofi, &memx[0]);
+      for (size_t k = 0; k < DIM_SPACE; k++)
+        matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
+
+      {
+        // RegionTracer rt(TaskManager::GetThreadId(), t);                      
+        feli.Evaluate(mir.IR(), matx, y);
+      }
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto jac = mir[i].GetJacobian();
+          Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
+          val *= 1/mir[i].GetJacobiDet();
+          y.Col(i).AddSize(DIM_SPACE) = jac * val;
+        }
+    }    
+    
+    
+    using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      //static Timer t("DiffpIdVectorL2Piola::AddTransSIMD");
+      // static Timer tc("DiffpIdVectorL2Piola::AddTransSIMD calc");
+      // RegionTracer rt(TaskManager::GetThreadId(), t);            
+
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+      
+      STACK_ARRAY(SIMD<double>, mempt, mir.Size()*DIM_SPACE);
+      FlatMatrix<SIMD<double>> hy(DIM_SPACE, mir.Size(), &mempt[0]);
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto jac = mir[i].GetJacobian();
+          Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
+          val *= 1/mir[i].GetJacobiDet();
+          hy.Col(i) = Trans(jac) * val;
+        }
+      
+      STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
+      FlatMatrixFixWidth<DIM_SPACE, double> matx(ndofi, &memx[0]);
+
+      for (size_t i = 0; i < ndofi; i++)
+        matx.Row(i) = x.Slice(i, ndofi);
+
+      feli.AddTrans(mir.IR(), hy, matx);
+
+      for (size_t k = 0; k < DIM_SPACE; k++)
+        x.Range(k*ndofi, (k+1)*ndofi) = matx.Col(k);
+    }    
+
+    
 /*   
 
   using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
@@ -1701,7 +1768,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
       
       int ndofi = feli.GetNDof();
-      FlatMatrix<> grad (ndofi, 3, lh);
+      FlatMatrix<> grad (ndofi, DIM_SPC, lh);
       feli.CalcDShape(mip.IP(), grad);
       double idet = 1.0/mip.GetJacobiDet();
 
@@ -1799,6 +1866,126 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   
 
 
+  template <int DIM_SPC>
+  class DiffOpGradVectorL2Piola : public DiffOp<DiffOpGradVectorL2Piola<DIM_SPC>>
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "grad"; }
+
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); };
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
+      
+      int ndofi = feli.GetNDof();
+      FlatMatrix<> grad (ndofi, DIM_SPC, lh);
+      feli.CalcMappedDShape(mip, grad);
+
+      Mat<DIM_SPC,DIM_SPC> trans = 1/(mip.GetJacobiDet())*mip.GetJacobian();
+
+
+      for (int i = 0; i < DIM_SPC; i++)
+        for (int j = 0; j < DIM_SPC; j++)
+          for (int k = 0; k < DIM_SPC; k++)
+            mat.Row(i*DIM_SPC+j).Range(k*ndofi, (k+1)*ndofi) = trans(i,k) * grad.Col(j);
+    }
+
+    /*
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, 
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+
+      size_t ndofi = feli.GetNDof();
+      feli.CalcMappedDShape (mir, mat);
+
+      STACK_ARRAY (SIMD<double>, mem, ndofi*DIM_SPC);
+      FlatMatrix<SIMD<double>> tmp(ndofi, DIM_SPC, &mem[0]);
+      for (auto i_ip : Range(mir))
+        {
+          auto col = mat.Col(i_ip);
+          auto & mip = mir[i_ip];
+          
+          for (size_t i = 0; i < ndofi; i++)
+            for (size_t k = 0; k < DIM_SPC; k++)
+              tmp(i, k) = col(i*DIM_SPC+k);
+
+          for (size_t k = 0; k < DIM_SPC; k++)
+            {
+              Vec<DIM_SPC, SIMD<double>> dir = 1.0/mip.GetJacobiDet() * mip.GetJacobian().Col(k);
+              col.Range(k*ndofi, (k+1)*ndofi) = tmp * dir;
+            }
+        }
+    }
+    */
+    
+
+    /*
+    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;        
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+      y.AddSize(3,mir.Size()) = SIMD<double>(0.0);
+
+      STACK_ARRAY(SIMD<double>, mem, 3*mir.Size());
+      FlatMatrix<SIMD<double>> grad(3, mir.Size(), &mem[0]);
+      for (size_t k = 0; k < 3; k++)
+        {
+          feli.EvaluateGrad (mir, x.Range(k*ndofi, (k+1)*ndofi), grad);
+          for (size_t i = 0; i < mir.Size(); i++)
+            {
+              auto trafo = Trans(mir[i].GetJacobianInverse());
+              Vec<3,SIMD<double>> gi = grad.Col(i);
+              Vec<3,SIMD<double>> tek = trafo.Col(k);
+              Vec<3,SIMD<double>> hv = Cross(gi, tek);
+              y.Col(i).AddSize(3) += hv;
+            }
+        }             
+    }    
+    */
+    using DiffOp<DiffOpGradVectorL2Piola>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+
+      STACK_ARRAY(SIMD<double>, mem, DIM_SPC*DIM_SPC*mir.Size());
+      FlatMatrix<SIMD<double>> grad(DIM_SPC*DIM_SPC, mir.Size(), &mem[0]);
+      grad = SIMD<double>(0.0);
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto trans = 1/(mir[i].GetJacobiDet())*mir[i].GetJacobian();
+          for (int j = 0; j < DIM_SPC; j++)    
+            for (int k = 0; k < DIM_SPC; k++)
+              for (int l = 0; l < DIM_SPC; l++)
+                grad(j*DIM_SPC+k, i) += trans(l,j)*y(k*DIM_SPC+l, i);
+        }
+          
+      for (size_t k = 0; k < DIM_SPC; k++)
+        feli.AddGradTrans (mir, grad.Rows(k*DIM_SPC, (k+1)*DIM_SPC), x.Range(k*ndofi, (k+1)*ndofi));
+    }    
+  };
 
 
 
@@ -2081,10 +2268,12 @@ One can evaluate the vector-valued function, and one can take the gradient.
             case 2:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2>>>();
               flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivVectorL2Piola<2>>> ();
+              additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<2>>> ());
               break;
             case 3:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3>>>();
               flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivVectorL2Piola<3>>> ();
+              additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<3>>> ());
               break;
             }
         }

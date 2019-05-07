@@ -19,11 +19,15 @@ namespace ngfem
   */
   
   template <ELEMENT_TYPE ET>
-  class VectorFacetFacetFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
+  class VectorFacetFacetFE :
+    public HCurlFiniteElement<ET_trait<ET>::DIM>,
+    public VertexOrientedFE<ET>,
+    public ET_trait<ET>
   {
   protected:
     INT<2> order_inner;
     using VertexOrientedFE<ET>::vnums;
+    using ET_trait<ET>::DIM;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
@@ -60,6 +64,8 @@ namespace ngfem
     virtual void CalcShape(const IntegrationPoint & ip,
          		    SliceMatrix<> shape) const;
 
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;
   };
 
 
@@ -80,7 +86,7 @@ namespace ngfem
     
     VectorFacetVolumeFE () { highest_order_dc=false; }
     
-    HD virtual ELEMENT_TYPE ElementType() const { return ELEMENT_TYPE(ET); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
     void SetHighestOrderDC(bool set) { highest_order_dc=set; }
 
@@ -119,7 +125,7 @@ namespace ngfem
     INT<2> GetFacetOrder(int j) const { return facet_order[j]; }
     int GetVertexNumber(int j) const { return vnums[j]; }
     
-    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
+    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const override
     {
       int fnr = ip.FacetNr();
       if (fnr >= 0)
@@ -131,13 +137,13 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  BareSliceMatrix<SIMD<double>> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const override;
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
-                           BareSliceMatrix<SIMD<double>> values) const;
+                           BareSliceMatrix<SIMD<double>> values) const override;
     
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                           BareSliceVector<> coefs) const;
+                           BareSliceVector<> coefs) const override;
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
