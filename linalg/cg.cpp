@@ -40,7 +40,7 @@ namespace ngla
   }
   
 
-  KrylovSpaceSolver :: KrylovSpaceSolver (const BaseMatrix & aa)
+  KrylovSpaceSolver :: KrylovSpaceSolver (shared_ptr<BaseMatrix> aa)
   {
     //  SetSymmetric();
     
@@ -56,7 +56,7 @@ namespace ngla
 
 
 
-  KrylovSpaceSolver :: KrylovSpaceSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+  KrylovSpaceSolver :: KrylovSpaceSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
   {
     //  SetSymmetric();
     
@@ -281,8 +281,8 @@ namespace ngla
 	  smalla = new SparseMatrixSymmetric<SCAL,SCAL>(*dynamic_cast< const SparseMatrixSymmetricTM<SCAL> *>(a));
 	else
         */
-        if (dynamic_cast< const SparseMatrixTM<SCAL> *>(a))
-	  smalla = new SparseMatrix<SCAL,SCAL>(*dynamic_cast< const SparseMatrixTM<SCAL> *>(a));
+        if (dynamic_cast< const SparseMatrixTM<SCAL> *>(a.get()))
+	  smalla = new SparseMatrix<SCAL,SCAL>(*dynamic_cast< const SparseMatrixTM<SCAL> *>(a.get()));
 	else
 	  throw Exception("Assumption about bilinearform wrong.");
 

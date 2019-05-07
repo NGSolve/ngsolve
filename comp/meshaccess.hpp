@@ -646,45 +646,23 @@ namespace ngcomp
       UpdateBuffers();
     }
     
-    void SetDeformation (shared_ptr<GridFunction> def = nullptr)
+    void SetDeformation (shared_ptr<GridFunction> def = nullptr);
+    /*
     {
       deformation = def;
     }
-
+    */
     const shared_ptr<GridFunction> & GetDeformation () const
     {
       return deformation;
     }
 
     void SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr);
-    /*
-    {
-      if (_domnr>=nregions[VOL])
-        throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
-      if (pml_trafo->GetDimension()!=dim)
-        throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
-      pml_trafos[_domnr] = pml_trafo; 
-    }
-    */
     void UnSetPML (int _domnr);
-    /*
-    {
-      if (_domnr>=nregions[VOL])
-        throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
-      pml_trafos[_domnr] = nullptr; 
-    }
-    */
-    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos();
-    // { return pml_trafos; }
 
+    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos();
     shared_ptr<PML_Transformation> GetPML(int _domnr);
-    /*
-    {
-      if (_domnr>=nregions[VOL])
-        throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
-      return pml_trafos[_domnr];
-    }
-    */
+
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }
       
@@ -1221,6 +1199,10 @@ namespace ngcomp
     }
   };
 
+
+  shared_ptr<CoefficientFunction>
+  MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf);
+  
   /**
      Controls the progress - output.
      It controls the Netgen - progressbar as well as console progress update.

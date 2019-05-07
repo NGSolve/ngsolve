@@ -41,7 +41,7 @@ namespace ngcomp
 
   Preconditioner :: Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
                                     const string aname)
-    : NGS_Object(bfa? bfa->GetMeshAccess(): nullptr, aname), flags(aflags)
+    : NGS_Object(bfa? bfa->GetMeshAccess(): nullptr, aname), flags(aflags), bf(bfa)
   {
     test = flags.GetDefineFlag ("test");
     timing = flags.GetDefineFlag ("timing");
@@ -54,14 +54,19 @@ namespace ngcomp
 
     on_proc = int ( flags.GetNumFlag("only_on", -1));
     if (!flags.GetDefineFlag ("not_register_for_auto_update"))
-      bfa->SetPreconditioner(this);
+      {
+        bfa->SetPreconditioner(this);
+        is_registered = true;
+      }
+
   }
   
 
   
   Preconditioner :: ~Preconditioner ()
   {
-    ;
+    if (auto bfp = bf.lock(); is_registered && bfp)
+      bfp->UnsetPreconditioner(this);
   }
 
   void Preconditioner :: Test () const

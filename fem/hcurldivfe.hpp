@@ -119,7 +119,7 @@ namespace ngfem
 
     virtual void ComputeNDof()
     {
-      cout << "Error, T_HCurlDivFE<ET>:: ComputeNDof not available, only for ET == TRIG" << endl;
+      cout << "Error, T_HCurlDivFE<ET>:: ComputeNDof not available, only for ET == TRIG,TET,QUAD" << endl;
     }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -735,8 +735,6 @@ namespace ngfem
         ndof += (order_facet[i]+1)*(order_facet[i]+2);
         order = max2(order, order_facet[i]);
       }
-      //first type + second type
-      //int ninner = (order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0 + 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       int ninner = 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       
       order = max2(order, order_inner);
@@ -750,14 +748,8 @@ namespace ngfem
 
       if (GGbubbles)
 	{
-	  //highest order div functions (with zero normal comp)
-	  //if(!GG)	    
-	  //  ndof += 3*((order_inner+1)*order_inner + order_inner);
-	  //else
-	  
 	  //GG bubbles of jay
 	  ndof += 3*(order_inner+1)*(order_inner+2)/2;
-	  //
 	  order +=1;
 	}
     }
@@ -766,8 +758,7 @@ namespace ngfem
     void T_CalcShape (TIP<3,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
       auto x = ip.x, y = ip.y, z = ip.z ;     
-      //Tx ddlami[4] ={ x, y, z, 1-x-y-z };
-
+      
       typedef decltype(x.Value()+x.Value()) T;      
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
@@ -778,14 +769,10 @@ namespace ngfem
       
       int maxorder_facet =
         max2(order_facet[0],max2(order_facet[1],order_facet[2]));
-      
 
        const FACE * faces = ElementTopology::GetFaces(ET_TET);
-
        
        ArrayMem<AutoDiff<3,T>,20> ha((maxorder_facet+1)*(maxorder_facet+2)/2.0); 
-       ArrayMem<AutoDiff<3,T>,20> v((order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0);
-       ArrayMem<AutoDiff<3,T>,20> dubb(order_inner*(order_inner+1)*(order_inner+2)/6.0);
        
       /* Edge based basis functions for tangential-normal continuity */
       for(int fa = 0; fa < 4; fa++)
@@ -797,7 +784,6 @@ namespace ngfem
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
 	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-
 
           AutoDiff<3,T> ls = ddlami[fav[0]], le = ddlami[fav[1]], lt = ddlami[fav[2]];
 	  
@@ -822,140 +808,77 @@ namespace ngfem
       LegendrePolynomial leg;
       JacobiPolynomialAlpha jac1(1);
 
+
       //############ type 1 ############
       if (ot>-1)
 	{
-	  leg.EvalScaled1Assign 
-	    (ot, lt-lo, lt+lo,
-	     SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-		       {
-			 JacobiPolynomialAlpha jac2(2*k+2);
- 
-			 jac1.EvalScaledMult1Assign
-			   (ot-k, le-lt-lo, 1-ls, polz, 
-			    SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-				      {				    
-					jac2.EvalMult(ot - k - j, 2 * ls - 1, polsy, 
-						      SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
-							       {
-								 shape[ii++] =  Id_v(val);	      							     					     							   }));
-					jac2.IncAlpha2();
-				      }));
-			 jac1.IncAlpha2();
-		       }));
+	  ArrayMem<AutoDiff<3,T>,20> dub_vals_inner((ot+1)*(ot+2)*(ot+3)/6.0);      
+	  DubinerBasis3D::Eval(ot,ls,le,lt ,dub_vals_inner);
+	  
+	  for (int l = 0; l < (ot+1)*(ot+2)*(ot+3)/6.0; l++)
+	     shape[ii++] =  Id_v(dub_vals_inner[l]); 	  	  
 	}
       
       //############ type 2 ############
-            
-      leg.EvalScaled1Assign 
-	(oi-1, lt-lo, lt+lo,
-	 SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-		   {
-		     JacobiPolynomialAlpha jac2(2*k+2);
- 
-		     jac1.EvalScaledMult1Assign
-		       (oi-1-k, le-lt-lo, 1-ls, polz, 
-			SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-				  {				    
-				    jac2.EvalMult(oi-1 - k - j, 2 * ls - 1, polsy, 
-						  SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
-							   {
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,lo*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,lo*val);	  
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lo,lt*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lo,le,lt*val);	  
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,lo,lt,ls*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,lt,le,ls*val);	  
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,ls,lt,le*val);	      
-							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lt,ls,lo,le*val);							     
-							   }));
-				    jac2.IncAlpha2();
-				  }));
-		     jac1.IncAlpha2();
-		   }));
-
+      int ndof_inner = 1.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
+      
+      ArrayMem<AutoDiff<3,T>,20> dub_vals(ndof_inner);
+      
+      DubinerBasis3D::Eval(oi-1,ls,le,lt ,dub_vals);
+      
+      for (int l = 0; l < ndof_inner; l++)
+	    {
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,lo*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,lo*dub_vals[l]);	  
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lo,lt*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lo,le,lt*dub_vals[l]);	  
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,lo,lt,ls*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,lt,le,ls*dub_vals[l]);	  
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,ls,lt,le*dub_vals[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lt,ls,lo,le*dub_vals[l]);
+	    }
+      
       if(GGbubbles)
 	{
-	  //old version
-	  
-	  //if(!GG)
-	  //  {
-	  //int oc = oi+1;
-	  //
-	  //ArrayMem<AutoDiff<3,T>,20> adpol1(oc); 
-	  //ArrayMem<AutoDiff<3,T>,20> adpol2(oc);
-	  //ArrayMem<AutoDiff<3,T>,20> adpol3(oc);
-	  //
-	  //TetShapesInnerLegendre::CalcSplitted(oc+2, ddlami[0]-ddlami[3], ddlami[1], ddlami[2], adpol1, adpol2, adpol3 );
-	  //
-	  //for (int i = 0; i <3; i++)
-	  //  {
-	  //    for (int j = 0; j <= oc-2; j++)
-	  //	for (int k = 0; k <= oc-2-j; k++)
-	  //	  {
-	  //	    //  [grad v  x  grad (uw)] o-times Dlami
-	  //	    shape[ii++] = CurlBubble3D_type1(adpol2[j], adpol1[oc-2-j-k]*adpol3[k], ddlami[i]);        
-	  //	    // grad w  x  grad (uv)
-	  //	    shape[ii++] = CurlBubble3D_type1(adpol3[k], adpol1[oc-2-j-k]*adpol2[j], ddlami[i]);
-	  //	  }     
-	  //    // ned = [lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0])] o-times Dlami
-	  //    for (int j= 0; j <= oc-2; j++)
-	  //	shape[ii++] = CurlBubble3D_type2(ddlami[0], ddlami[3], adpol2[j]*adpol3[oc-2-j], ddlami[i]);
-	  //  }
-	  //  }
-	  
-	  //GGbubbles
-
 	  AutoDiffDiff<3, T> ax[4] = { x, y, z, 1-x-y-z};
-	      
-	  AutoDiffDiff<3, T> b1 = ax[0]*ax[1]*ax[2] + ax[1]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
-	  AutoDiffDiff<3, T> b2 = ax[0]*ax[1]*ax[2] + ax[0]*ax[2]*(1-ax[0]-ax[1]-ax[2]);
-	  AutoDiffDiff<3, T> b3 = ax[0]*ax[1]*ax[2] + ax[0]*ax[1]*(1-ax[0]-ax[1]-ax[2]);
-	  AutoDiffDiff<3, T> b0 = ax[0]*ax[1]*ax[2];
+	  
+	  Mat<3,3,T> B;
+	  for (int i = 0; i<3; i++)
+	    for (int j = 0; j<3; j++)
+	      B(i,j) = ax[0].Value()*ax[1].Value()*ax[2].Value()*ax[3].DValue(i)*ax[3].DValue(j) + ax[1].Value()*ax[2].Value()*ax[3].Value()*ax[0].DValue(i)*ax[0].DValue(j) +
+		       ax[2].Value()*ax[3].Value()*ax[0].Value()*ax[1].DValue(i)*ax[1].DValue(j) + ax[3].Value()*ax[0].Value()*ax[1].Value()*ax[2].DValue(i)*ax[2].DValue(j);
 
-	  leg.EvalScaled1Assign 
-	    (oi, ax[2]-ax[3], ax[2]+ax[3],
-	     SBLambda ([&](size_t k, Tx polz) LAMBDA_INLINE
-		       {
-			 // JacobiPolynomialAlpha jac(2*k+1);
-			 JacobiPolynomialAlpha jac2(2*k+2);
- 
-			 jac1.EvalScaledMult1Assign
-			   (oi-k, ax[1]-ax[2]-ax[3], 1-ax[0], polz, 
-			    SBLambda ([&] (size_t j, Tx polsy) LAMBDA_INLINE
-				      {
-					// JacobiPolynomialAlpha jac(2*(j+k)+2);
-					jac2.EvalMult(oi - k - j, 2 * ax[0] - 1, polsy, 
-						      SBLambda([&](size_t l, Tx val) LAMBDA_INLINE
-							       {
-								 if (l == oi - k - j)
-								   {
-								     shape[ii++] = GGbubble_B1(val, b0, b1, b2, b3);
-								     shape[ii++] = GGbubble_B2(val, b0, b1, b2, b3);
-								     shape[ii++] = GGbubble_B3(val, b0, b1, b2, b3);								   
-								   }
-							       }));
-					jac2.IncAlpha2();
-				      }));
-			 jac1.IncAlpha2();
-		       }));
-
-	  //old version with	      
-	  /*
-	    Vector<AutoDiffDiff<3, T> > S( (oi+1)*(oi+2)/2.0+1 );
-	    l2orth.T_L2orthShape<AutoDiffDiff<3,T> > (ax,S);
-	      
-	    for ( int i = 0; i<(oi+1)*(oi+2)/2.0; i++)
-	    {	    
-	    shape[ii++] = GGbubble_B1(S[i], b0, b1, b2, b3);
-	    shape[ii++] = GGbubble_B2(S[i], b0, b1, b2, b3);
-	    shape[ii++] = GGbubble_B3(S[i], b0, b1, b2, b3);
+	  AutoDiffDiff<3,T> curlB[3];      
+	  for(int i = 0; i<3; i++)
+	    {
+	      curlB[i] = ax[3].DValue(i) * Cross(ax[0] * ax[1] * ax[2],ax[3]) + ax[0].DValue(i) * Cross(ax[1] * ax[2] * ax[3],ax[0]) +
+                         ax[1].DValue(i) * Cross(ax[2] * ax[3] * ax[0],ax[1]) + ax[2].DValue(i) * Cross(ax[3] * ax[0] * ax[1],ax[2]);
 	    }
-	  */
 
+	  Mat<3,3,T> S[3];
+
+	  AutoDiffDiff<3, T> al[6] = { x, y, x, z, y, z};
+	  
+	  for (int i = 0; i<3; i++)	   
+	    {
+	      S[i](0,0) = 0; S[i](1,1) = 0; S[i](2,2) = 0;
+	      S[i](0,1)= al[2*i].DValue(0) * al[2*i+1].DValue(1) - al[2*i].DValue(1) * al[2*i+1].DValue(0); 
+	      S[i](0,2)= al[2*i].DValue(0) * al[2*i+1].DValue(2) - al[2*i].DValue(2) * al[2*i+1].DValue(0);
+	      S[i](1,2)= al[2*i].DValue(1) * al[2*i+1].DValue(2) - al[2*i].DValue(2) * al[2*i+1].DValue(1);
+	      
+	      S[i](1,0) = -S[i](0,1); S[i](2,0) = -S[i](0,2); S[i](2,1) = -S[i](1,2);
+	    }	  
+	  ArrayMem<AutoDiffDiff<3,T>,20> highest_dub_vals_inner((oi+1)*(oi+2)/2);
+	  
+	  DubinerBasis3D::EvalHighestOrder(oi,ax[0],ax[1],ax[2] ,highest_dub_vals_inner);
+	  
+	  for (int l = 0; l < (oi+1)*(oi+2)/2; l++)
+	    {
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[0], B, curlB);
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[1], B, curlB);
+	      shape[ii++] = GGbubble_3D(highest_dub_vals_inner[l], S[2], B, curlB);
+	    }	 
 	}
-	
-            
      };
   };
   
@@ -1013,7 +936,7 @@ namespace ngfem
     {
       cout << "Error, T_HCurlDivSurfaceFE<ET>:: ComputeNDof not available for base class" << endl;
     }
-
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {

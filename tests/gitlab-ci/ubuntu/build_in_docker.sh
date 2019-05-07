@@ -25,7 +25,7 @@ fi
 
 if [ "$IMAGE_NAME" == "mpi" ]
 then
-  apt-get -y install libopenmpi-dev openmpi-bin gfortran
+  apt-get update && apt-get -y install libopenmpi-dev openmpi-bin gfortran-7
   export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF"
 fi
 

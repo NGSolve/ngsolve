@@ -12,6 +12,7 @@
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
+#include "../fem/integratorcf.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -80,6 +81,9 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                bool testfunction,
                                const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
+  if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
+    return MakeProxyFunction2 (compressedspace->GetBaseSpace(), testfunction, addblock);
+  
   auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
   if (compspace && !fes->GetEvaluator())
     {
@@ -1079,7 +1083,7 @@ coupling : bool
          "Return prolongation operator for use in multi-grid")
 
     .def("Range",
-         [] (const shared_ptr<FESpace> self, int comp)
+         [] (shared_ptr<FESpace> self, int comp)
          {
            auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
            if (!compspace)
@@ -1175,6 +1179,10 @@ rho : ngsolve.fem.CoefficientFunction
             return self->GetTraceOperator(tracespace);
             // return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
           }, py::arg("tracespace"), py::arg("average"))
+    .def ("ConvertL2Operator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> l2space)
+          {
+            return self->ConvertL2Operator(l2space);
+          }, py::arg("l2space"))
     .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
                           BaseVector & in, BaseVector & out, bool avg)
           {
@@ -1391,7 +1399,8 @@ active_dofs : BitArray or None
                   {
                     shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
                     if (compspace)
-                        throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
+                      cout << "yes, we can also compress a CompoundFESpace" << endl;
+                    // throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
                     auto ret = make_shared<CompressedFESpace> (fes);
                     shared_ptr<BitArray> actdofs = nullptr;
                     if (! py::extract<DummyArgument> (active_dofs).check())
@@ -1887,14 +1896,47 @@ diffop : ngsolve.fem.DifferentialOperator
                     },
                     [](py::tuple state)
                     {
-                      return make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
-                                                                py::cast<int>(state[1]));
+                      auto self = make_shared<ComponentGridFunction>(py::cast<shared_ptr<GridFunction>>(state[0]),
+                                                                     py::cast<int>(state[1]));
+                      self->Update();
+                      return self;
                     }))
     ;
 
   ///////////////////////////// BilinearForm   ////////////////////////////////////////
 
+  py::class_<DifferentialSymbol>(m, "DifferentialSymbol")
+    .def(py::init<VorB>())
+    .def("__call__", [](DifferentialSymbol & self, bool element_boundary,
+                        VorB element_vb,
+                        shared_ptr<Region> definedon)
+         {
+           BitArray defon;
+           if (definedon)
+             defon = definedon->Mask();
+           if (element_boundary) element_vb = BND;
+           return DifferentialSymbol(self.vb, element_vb, defon);
+         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL, py::arg("definedon")=nullptr)
+    ;
 
+  py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
+    .def ("__add__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
+          {
+            auto sum = make_shared<SumOfIntegrals>();
+            for (auto & ci : c1->icfs) sum->icfs += ci;
+            for (auto & ci : c2->icfs) sum->icfs += ci;
+            return sum;
+          })
+    .def ("__rmul__", [] (shared_ptr<SumOfIntegrals> c1, double fac)
+          {
+            auto faccf = make_shared<SumOfIntegrals>();
+            for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
+            return faccf;
+          })
+    .def ("Derive", &SumOfIntegrals::Derive)
+    ;
+
+  
   typedef BilinearForm BF;
   auto bf_class = py::class_<BF, shared_ptr<BilinearForm>, NGS_Object>(m, "BilinearForm",
                                              docu_string(R"raw_string(
@@ -1989,6 +2031,35 @@ integrator : ngsolve.fem.BFI
 )raw_string"))
     
     .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
+    .def("__iadd__", [](BF & self, shared_ptr<SumOfIntegrals> sum) -> BilinearForm& 
+         {
+           for (auto icf : sum->icfs)
+             {
+               auto & dx = icf->dx;
+
+               // check for DG terms
+               bool has_other = false;
+               icf->cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                                      {
+                                        if (dynamic_cast<ProxyFunction*> (&cf))
+                                          if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                            has_other = true;
+                                      });
+               // if (has_other && !element_boundary && !skeleton)
+               if (has_other && (dx.element_vb != BND) && !dx.skeleton)
+                 throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+
+               shared_ptr<BilinearFormIntegrator> bfi;
+               if (!has_other && !dx.skeleton)
+                 bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
+               else
+                 bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (icf->cf, dx.vb, !dx.skeleton);
+               bfi->SetDefinedOn(dx.definedon);
+               self += bfi;
+             }
+           return self;
+         })
+         
     .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
 
     .def_property_readonly("integrators", [](BF & self)
@@ -2205,6 +2276,13 @@ integrator : ngsolve.fem.LFI
     
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
          { (*self)+=lfi; return self; }, py::arg("lfi"))
+
+    .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
+         {
+           for (auto icf : sum->icfs)
+             *self += make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+           return self;
+         })
 
     .def_property_readonly("integrators", [](shared_ptr<LF> self)
                            { return MakePyTuple (self->Integrators()); }, "returns tuple of integrators of the linear form")

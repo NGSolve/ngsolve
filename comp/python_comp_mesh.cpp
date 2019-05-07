@@ -680,7 +680,28 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"));
 
   
-  
+    m.def("BoundaryFromVolumeCF", 
+          [] (shared_ptr<CoefficientFunction> vol_cf)
+          { return MakeBoundaryFromVolumeCoefficientFunction(vol_cf); }, py::arg("vol_cf"),
+          docu_string(R"raw_string(Allows the evaluation of volumetric functions on the boundary.
+
+When evaluated on a boundary element, this function searches for the associated
+volume element, transforms the local coordinates, and evaluates the function in the
+volume. A typical use case is to visualize L2-functions, or mechanical stresses at
+the boundary.
+
+It is different from the boundary Trace()-operator. The trace provides a function
+which is defined by boundary degrees of freedom only. E.g. the trace of an H(div)
+function is only the normal component, while the BoundaryFromVolumeCF gives the
+whole function. Obviously, the Trace() function is cheaper to evaluate.
+
+If called on an interface, it evaluates from one side (which one is not specified).
+If the function is only defined on one side, this side will be taken. One can use
+a domain-wise CF to define a function only locally:
+uloc = CoefficientFunction( [None, None, u, None] )
+)raw_string")
+          );
+
 }
 
 
