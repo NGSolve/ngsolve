@@ -1355,7 +1355,7 @@ namespace ngcomp
       fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
     */
     else
-      throw Exception ("don't know how I shall evaluate");
+      throw Exception ("don't know how I shall evaluate, vb = "+ToString(vb));
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1417,7 +1417,7 @@ namespace ngcomp
     if (diffop[vb])
       diffop[vb]->Apply (fel, ir, elu, values, lh2);
     else
-      throw Exception ("don't know how I shall evaluate");
+      throw Exception ("don't know how I shall evaluate complex "+ToString(vb));
   }
 
   void GridFunctionCoefficientFunction ::   
