@@ -152,7 +152,7 @@ namespace ngcomp
       size_t num_vertices = vertex_weights.Size();
 
       cout << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
-
+      
       size = mat->Height();
 
       Array<double> edge_collapse_weights(num_edges);
@@ -240,7 +240,7 @@ namespace ngcomp
                              {
                                auto v0 = e2v[edgenr][0];
                                auto v1 = e2v[edgenr][1];
-                               if (edge_collapse_weights[edgenr] >= 0.01 && !vertex_collapse[v0] && !vertex_collapse[v1])
+                               if (edge_collapse_weights[edgenr] >= 0.01 && !vertex_collapse[v0] && !vertex_collapse[v1] && (*freedofs)[v0] && (*freedofs)[v1])
                                  {
                                    edge_collapse[edgenr] = true;
                                    vertex_collapse[v0] = true;
@@ -262,7 +262,8 @@ namespace ngcomp
       BitArray isolated_verts(num_vertices);
       isolated_verts.Clear();
       for (size_t i = 0; i < num_vertices; i++)
-        if (sum_vertex_weights[i] == vertex_weights[i])
+        if (sum_vertex_weights[i] == vertex_weights[i] ||
+            (*freedofs)[i] == false)
           isolated_verts.Set(i);
       
       // vertex 2 coarse vertex
@@ -355,6 +356,12 @@ namespace ngcomp
                   {
                     if (e2ce[e] != -1) 
                       AsAtomic(coarse_edge_weights[e2ce[e]]) += edge_weights[e];
+                    int v0 = e2v[e][0], v1 = e2v[e][1];
+                    bool free0 = (*freedofs)[v0], free1 = (*freedofs)[v1];
+                    if (free0 && !free1)
+                      AsAtomic(coarse_vertex_weights[v2cv[v0]]) += edge_weights[e];
+                    if (free1 && !free0)
+                      AsAtomic(coarse_vertex_weights[v2cv[v1]]) += edge_weights[e];
                   });
       
       ParallelFor(v2cv.Size(), [&] (int v)
