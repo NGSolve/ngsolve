@@ -108,6 +108,7 @@ namespace ngla
     virtual ~UmfpackInverse () { ; }
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const;
     ///
     virtual AutoVector CreateVector () const
     {

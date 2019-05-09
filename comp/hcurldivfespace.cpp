@@ -464,7 +464,7 @@ namespace ngcomp
     : FESpace(ama,flags)
   {
     order = int (flags.GetNumFlag ("order",1));
-
+    type="hcurldiv";
     hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
     alllocaldofs = flags.GetDefineFlag("all_local_dofs");
 

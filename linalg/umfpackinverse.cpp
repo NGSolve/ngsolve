@@ -401,6 +401,111 @@ namespace ngla
   }
 
 
+
+
+  template<class TM, class TV_ROW, class TV_COL>
+  void UmfpackInverse<TM,TV_ROW,TV_COL> ::
+  MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer(string("Umfpack Solve, mat = ") + typeid(TM).name() + ", vec = " + typeid(TV_ROW).name());
+    RegionTimer reg (timer);
+
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+
+    int nrhs = fx.Size() / (height/entrysize);
+
+    if(nrhs>1) throw Exception("UmfpackInverse: Multiple right-hand sides not supported.");
+
+    bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
+    if(is_complex && !is_vector_complex) throw Exception("UmfpackInverse: Cannot solve with complex matrix and real vector.");
+
+    if (fx.Size() != fy.Size())
+      {
+	cout << "UmfpackInverse::Mult .. sizes don't match" << endl;
+	cout << "type<TVX> = " << typeid(TVX).name() << endl;
+	cout << "type<TM> = " << typeid(TM).name() << endl;
+	cout << "fx.size = " << fx.Size() << endl;
+	cout << "fy.size = " << fy.Size() << endl;
+	cout << "size(x) = " << x.Size() << endl;
+	cout << "size(y) = " << y.Size() << endl;
+	cout << "height = " << height/entrysize << endl;
+      }
+
+
+    double *data = reinterpret_cast<double *>(&this->values[0]);
+
+    if (is_complex)
+      {
+        // complex matrix and vectors
+        FlatVector<TSCAL> mx(height, (TSCAL*)fx.Data());
+        FlatVector<TSCAL> my(height, (TSCAL*)fy.Data());
+
+        Vector<TSCAL> hx(compressed_height);
+        Vector<TSCAL> hy(compressed_height);
+
+        double *data_x = reinterpret_cast<double *>(&hx[0]);
+        double *data_y = reinterpret_cast<double *>(&hy[0]);
+
+        for (int i : Range(compress.Size()) )
+           hx(i) = mx(compress[i]);
+
+        int status = umfpack_zl_solve ( UMFPACK_A, &rowstart[0], &indices[0], data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
+        umfpack_zl_report_status( nullptr, status );
+        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
+
+        my = 0;
+        for (int i : Range(compress.Size()) )
+           my(compress[i]) = hy(i);
+
+      }
+    else
+      {
+        // real matrix
+        FlatVector<double> mx(height, (double*)fx.Data());
+        FlatVector<double> my(height, (double*)fy.Data());
+        Vector<double> hx(compressed_height);
+        Vector<double> hy(compressed_height);
+
+        for (int i : Range(compress.Size()) )
+          for (int j = 0; j < entrysize; j++)
+            hx(i*entrysize+j) = GetReal(mx(compress[i]*entrysize+j));
+
+        int status = umfpack_dl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
+        umfpack_dl_report_status( nullptr, status );
+        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
+
+        my = 0;
+        for (int i : Range(compress.Size()) )
+          for (int j = 0; j < entrysize; j++)
+            my(compress[i]*entrysize+j) = hy(i*entrysize+j);
+
+        if(is_vector_complex)
+          {
+            // complex vectors
+            for (int i : Range(compress.Size()) )
+              for (int j = 0; j < entrysize; j++)
+                hx(i*entrysize+j) = GetImag(mx(compress[i]*entrysize+j));
+
+            int status = umfpack_dl_solve ( UMFPACK_A, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
+            umfpack_dl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
+
+            for (int i : Range(compress.Size()) )
+              for (int j = 0; j < entrysize; j++)
+                SetImag(my(i*entrysize+j), hy(compress[i]*entrysize+j));
+          }
+      }
+  }
+
+
+
+
+
+
+
+
+  
   template<class TM>
   ostream & UmfpackInverseTM<TM> :: Print (ostream & ost) const
   {
