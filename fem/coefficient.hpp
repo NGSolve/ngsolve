@@ -328,7 +328,9 @@ namespace ngfem
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetDescription () const;
-    
+
+    virtual shared_ptr<CoefficientFunction>
+      Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
     { return Array<shared_ptr<CoefficientFunction>>(); }
@@ -498,6 +500,8 @@ namespace ngfem
       values = AutoDiffDiff<1,bool> (true);
     }
     
+    virtual shared_ptr<CoefficientFunction>
+      Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
   };
 
 
@@ -655,6 +659,8 @@ namespace ngfem
     
     
     virtual void PrintReport (ostream & ost) const override;
+    virtual string GetDescription () const override;
+    
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override; 
 
     /*
@@ -1150,6 +1156,9 @@ public:
     return string("unary operation '")+name+"'";
   }
 
+  virtual bool DefinedOn (const ElementTransformation & trafo) override
+  { return c1->DefinedOn(trafo); } 
+
   // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1248,6 +1257,9 @@ public:
         values(i,j) = lam (in0(i,j));
   }
 
+  virtual shared_ptr<CoefficientFunction>
+  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+  { throw Exception ("unarycf "+name+" does not provide a derivative"); }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
@@ -1494,6 +1506,10 @@ public:
       for (size_t j = 0; j < np; j++)
         values(i,j) = lam (in0(i,j), in1(i,j));
   }
+
+  virtual shared_ptr<CoefficientFunction>
+  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+  { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,

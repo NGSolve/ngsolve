@@ -214,7 +214,7 @@ namespace ngmg
 	    }
 	  case CG_COARSE:
 	    {
-	      CGSolver<double> inv (biform.GetMatrix (1));
+	      CGSolver<double> inv (biform.GetMatrixPtr (1));
 	      u = inv * f;
 	      break;
 	    }

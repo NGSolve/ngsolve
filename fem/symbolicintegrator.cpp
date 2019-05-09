@@ -51,8 +51,10 @@ namespace ngfem
       SetDimensions (evaluator->Dimensions());
     else if (trace_evaluator)
       SetDimensions (trace_evaluator->Dimensions());
-    else
+    else if (ttrace_evaluator)
       SetDimensions (ttrace_evaluator->Dimensions());
+    else
+      throw Exception("a proxy needs at least one evaluator");
     elementwise_constant = true;
   }
   
@@ -3086,18 +3088,6 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    // const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel1);
-    // if(tpfel)
-    // {
-      // int facet_x_y = 0;
-      // if(LocalFacetNr1>=10)
-      // {
-        // facet_x_y = 1;
-        // LocalFacetNr1-=10;
-      // }
-      // ApplyFacetMatrixTP(fel1,LocalFacetNr1,trafo1,ElVertices1,fel2,LocalFacetNr2,trafo2,ElVertices2,elx,ely,facet_x_y,lh);
-      // return;
-    // }
     if (simd_evaluate)
       {
         try
@@ -3109,6 +3099,7 @@ namespace ngfem
             static Timer tapplyt("SymbolicFacetBFI::Apply - apply-trans", 2); 
 
             ThreadRegionTimer reg(tall, TaskManager::GetThreadId());
+            // RegionTracer rt(TaskManager::GetThreadId(), tall);
             HeapReset hr(lh);
             // tall.Start();
             
@@ -3150,7 +3141,8 @@ namespace ngfem
               ud.AssignMemory (cf, simd_ir_facet.GetNIP(), cf->Dimension(), lh);
             // tstart.Stop();
             // tapply.Start();
-            
+
+            // RegionTracer rtapply(TaskManager::GetThreadId(), tapply);                        
             for (ProxyFunction * proxy : trial_proxies)
               {
                 IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
@@ -3162,7 +3154,8 @@ namespace ngfem
                 // tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
               }
             // tapply.Stop();
-            
+
+            // RegionTracer rtapplyt(TaskManager::GetThreadId(), tapplyt);            
             for (auto proxy : test_proxies)
               {
                 HeapReset hr(lh);

@@ -1395,7 +1395,15 @@ namespace ngcomp
     */
   }
 
-
+    void MeshAccess :: SetDeformation (shared_ptr<GridFunction> def)
+    {
+      if (def)
+        {
+          if (dim  != def->GetFESpace()->GetDimension())
+            throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
+        }
+      deformation = def;
+    }
   
     void MeshAccess :: SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr)
     {
@@ -2041,7 +2049,137 @@ namespace ngcomp
     Ng_AddPointCurvePoint(&(point(0)));
   }
 
- 
+
+  class BoundaryFromVolumeCoefficientFunction :
+    public T_CoefficientFunction<BoundaryFromVolumeCoefficientFunction>
+  {
+    shared_ptr<CoefficientFunction> vol_cf;
+    typedef T_CoefficientFunction<BoundaryFromVolumeCoefficientFunction> BASE;
+
+  public:
+    BoundaryFromVolumeCoefficientFunction() = default;
+    BoundaryFromVolumeCoefficientFunction (shared_ptr<CoefficientFunction> avol_cf)
+      : BASE(avol_cf->Dimension(), avol_cf->IsComplex()), vol_cf(avol_cf) { ; }
+
+    ~BoundaryFromVolumeCoefficientFunction() { ; }
+    
+    void DoArchive(Archive& ar) override
+    {
+      BASE::DoArchive(ar);
+      ar.Shallow(vol_cf);
+    }
+
+    virtual bool DefinedOn (const ElementTransformation & trafo) override
+    {
+      auto ei = trafo.GetElementId();
+      if (ei.IsVolume())
+        return vol_cf->DefinedOn(trafo);
+
+      const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
+      int facet = ma.GetElFacets(ei)[0];
+      ArrayMem<int,2> elnums;
+      ma.GetFacetElements (facet, elnums);
+      LocalHeapMem<1000> lh("definedonlh");
+
+      for (auto elnr : elnums)
+        {
+          ElementId vei(VOL, elnr);
+          ElementTransformation & vol_trafo = ma.GetTrafo (vei, lh);
+          if (vol_cf->DefinedOn(vol_trafo))
+            return true;
+        }
+
+      return false;
+    }
+
+    using BASE::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & mip) const override
+    {
+      // static Timer t("BFV - evaluate", 2);
+      // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+      
+      if (Dimension() > 1)
+        throw Exception("double eval called, but dim = " + ToString(Dimension()));
+
+      LocalHeapMem<1000> lh("lhbfv-1pnt");
+      IntegrationRule ir(1, const_cast<IntegrationPoint*>(&mip.IP()));
+      auto & mir = mip.GetTransformation() (ir, lh);
+      double res;
+      FlatMatrix<> mres(1,1, &res);
+      Evaluate (mir, mres);
+      return res;
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint & mip,
+                           FlatVector<> result) const override
+    {
+      // static Timer t("BFV - evaluate vec", 1);
+      // RegionTimer reg(t); // , TaskManager::GetThreadId());
+      
+      LocalHeapMem<1000> lh("lhbfv-1pnt");
+      IntegrationRule ir(1, const_cast<IntegrationPoint*>(&mip.IP()));
+      auto & mir = mip.GetTransformation() (ir, lh);
+      FlatMatrix<> mres(result.Size(),1, &result(0));
+      Evaluate (mir, mres);
+    }
+
+    
+    template <typename MIR, typename T, ORDERING ORD>            
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      // static Timer t("BFV - evaluate T-eval", 1);
+      // RegionTimer reg(t); // , TaskManager::GetThreadId());
+      
+      LocalHeapMem<100000> lh("lhbfv");
+      const ElementTransformation & trafo = ir.GetTransformation();
+      auto ei = trafo.GetElementId();
+      if (ei.IsVolume())
+        {
+          vol_cf->Evaluate(ir, values);
+          return;
+        }
+      const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
+      int facet = ma.GetElFacets(ei)[0];
+      ArrayMem<int,2> elnums;
+      ma.GetFacetElements (facet, elnums);
+
+      for (auto elnr : elnums)
+        {
+          ElementId vei(VOL, elnr);
+          int locfacnr = ma.GetElFacets(vei).Pos(facet);
+
+          ElementTransformation & vol_trafo = ma.GetTrafo (vei, lh);
+          if (!vol_cf->DefinedOn(vol_trafo)) continue;
+
+          Facet2ElementTrafo f2el(vol_trafo.GetElementType(), ma.GetElVertices(vei));
+          Array<int> surfvnums { ma.GetElVertices(ei) };
+          Facet2SurfaceElementTrafo f2sel(trafo.GetElementType(), surfvnums);
+          auto & ir_ref = f2sel.Inverse(ir.IR(), lh);
+          auto & ir_vol = f2el(locfacnr, ir_ref, lh);
+          auto & mir_vol = vol_trafo(ir_vol, lh);
+          mir_vol.ComputeNormalsAndMeasure (vol_trafo.GetElementType(), locfacnr);
+          vol_cf -> Evaluate (mir_vol, values);
+          return;
+        }
+
+    }
+    
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      throw Exception ("Surface-from-Volume inout not implemented");
+    }
+  };
+
+  shared_ptr<CoefficientFunction>
+  MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf)
+  {
+    return make_shared<BoundaryFromVolumeCoefficientFunction> (avol_cf);
+  }
+
+  
 
 #ifdef PARALLEL
  
@@ -2213,7 +2351,7 @@ namespace ngcomp
       }
   }
   
-
+static RegisterClassForArchive<BoundaryFromVolumeCoefficientFunction, CoefficientFunction> regbfvcf;
 
 }
 

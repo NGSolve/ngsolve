@@ -180,6 +180,7 @@ namespace ngfem
       this->order = 0;
     }
     HD NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const { ; } 
     template<typename Tx, typename TFA>  
     INLINE static void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) 
     { ; }

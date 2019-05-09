@@ -652,13 +652,15 @@ ANY                  1 1 1 1 | 15
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const;
     
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
 
     virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace) const
     { throw Exception("GetTraceOperator not overloaded"); }
+
+    virtual shared_ptr<BaseMatrix> ConvertL2Operator (shared_ptr<FESpace> l2space) const;
     
     virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
                            LocalHeap & lh) const
@@ -1182,7 +1184,7 @@ ANY                  1 1 1 1 | 15
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;

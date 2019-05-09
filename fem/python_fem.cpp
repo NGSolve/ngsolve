@@ -1,5 +1,6 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+#include "python_fem.hpp"
 #include "../ngstd/bspline.hpp"
 #include <fem.hpp>
 #include <comp.hpp>
@@ -14,13 +15,72 @@ namespace ngfem
 {
   extern SymbolTable<double> * constant_table_for_FEM;
   SymbolTable<double> pmlpar;
+
+  shared_ptr<CoefficientFunction> MakeCoefficient (py::object val)
+  {
+    py::extract<shared_ptr<CoefficientFunction>> ecf(val);
+    if (ecf.check()) return ecf();
+
+    // a numpy.complex converts itself to a real, and prints a warning
+    // thus we check for it first
+    if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
+      return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
+
+    if(py::CheckCast<double>(val))
+      return make_shared<ConstantCoefficientFunction> (val.cast<double>());
+    if(py::CheckCast<Complex>(val))
+      return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
+
+    if (py::isinstance<py::list>(val))
+      {
+        py::list el(val);
+        Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
+        for (int i : Range(cflist))
+          cflist[i] = MakeCoefficient(el[i]);
+        return MakeDomainWiseCoefficientFunction(move(cflist));
+      }
+
+    if (py::isinstance<py::tuple>(val))
+      {
+        py::tuple et(val);
+        Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
+        for (int i : Range(cflist))
+          cflist[i] = MakeCoefficient(et[i]);
+        return MakeVectorialCoefficientFunction(move(cflist));
+      }
+
+
+    throw Exception ("cannot make coefficient");
+  }
+
+  Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
+  {
+    Array<shared_ptr<CoefficientFunction>> tmp;
+    if (py::isinstance<py::list>(py_coef))
+      {
+        auto l = py_coef.cast<py::list>();
+        for (int i = 0; i < py::len(l); i++)
+          tmp += MakeCoefficient(l[i]);
+      }
+    else if (py::isinstance<py::tuple>(py_coef))
+      {
+        auto l = py_coef.cast<py::tuple>();
+        for (int i = 0; i < py::len(l); i++)
+          tmp += MakeCoefficient(l[i]);
+      }
+    else
+      tmp += MakeCoefficient(py_coef);
+
+    // return move(tmp);  // clang recommends not to move it ...
+    return tmp;
+  }
 }
 
 struct PythonCoefficientFunction : public CoefficientFunction {
   PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
     virtual double EvaluateXYZ (double x, double y, double z) const = 0;
-  
+
     py::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
         double x[3]{0};
         int dim = bip.GetTransformation().SpaceDim();
@@ -59,131 +119,8 @@ struct PythonCoefficientFunction : public CoefficientFunction {
 
 typedef CoefficientFunction CF;
 
-shared_ptr<CF> MakeCoefficient (py::object val)
-{
-  py::extract<shared_ptr<CF>> ecf(val);
-  if (ecf.check()) return ecf();
-  
-  // a numpy.complex converts itself to a real, and prints a warning
-  // thus we check for it first
-  if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
-    return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
-  if(py::CheckCast<double>(val))
-    return make_shared<ConstantCoefficientFunction> (val.cast<double>());
-  if(py::CheckCast<Complex>(val)) 
-    return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
-
-  if (py::isinstance<py::list>(val))
-    {
-      py::list el(val);
-      Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
-      for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(el[i]);
-      return MakeDomainWiseCoefficientFunction(move(cflist));
-    }
-
-  if (py::isinstance<py::tuple>(val))
-    {
-      py::tuple et(val);
-      Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
-      for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(et[i]);
-      return MakeVectorialCoefficientFunction(move(cflist));
-    }
-
-
-  throw Exception ("cannot make coefficient");
-}
-
-Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
-{
-  Array<shared_ptr<CoefficientFunction>> tmp;
-  if (py::isinstance<py::list>(py_coef))
-    {
-      auto l = py_coef.cast<py::list>();
-      for (int i = 0; i < py::len(l); i++)
-        tmp += MakeCoefficient(l[i]);
-    }
-  else if (py::isinstance<py::tuple>(py_coef))
-    {
-      auto l = py_coef.cast<py::tuple>();
-      for (int i = 0; i < py::len(l); i++)
-        tmp += MakeCoefficient(l[i]);
-    }
-  else
-    tmp += MakeCoefficient(py_coef);
-
-  // return move(tmp);  // clang recommends not to move it ...
-  return tmp;
-}
-
-std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_functions;
-std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
-
-template <typename FUNC>
-void ExportStdMathFunction(py::module &m, string name, string description)
-{
-  static RegisterClassForArchive<cl_UnaryOpCF<FUNC>, CoefficientFunction> reguopcf;
-  auto f = [name] (shared_ptr<CF> coef) -> shared_ptr<CF>
-            {
-                FUNC func;
-                return UnaryOpCF(coef, func, FUNC::Name());
-            };
-
-  unary_math_functions[name] = f;
-
-  m.def (name.c_str(), [name] (py::object x) -> py::object
-            {
-              FUNC func;
-              py::extract<double> ed(x);
-              if (ed.check()) return py::cast(func(ed()));
-              if (py::extract<Complex> (x).check())
-                return py::cast(func(py::extract<Complex> (x)()));
-              if (py::extract<shared_ptr<CF>>(x).check())
-                {
-                  auto coef = py::extract<shared_ptr<CF>>(x)();
-                  return py::cast(unary_math_functions[name](coef));
-                }
-              throw py::type_error (string("can't compute math-function, type = ")
-                                    + typeid(FUNC).name());
-            }, py::arg("x"), description.c_str());
-}
-
-
-template <typename FUNC>
-void ExportStdMathFunction2(py::module &m, string name, string description)
-{
-  static RegisterClassForArchive<cl_BinaryOpCF<FUNC>, CoefficientFunction> regbinopcf;
-
-  auto f = [name] (shared_ptr<CF> cx, shared_ptr<CF> cy) -> shared_ptr<CF>
-            {
-                FUNC func;
-                return BinaryOpCF(cx, cy, func, FUNC::Name());
-            };
-
-  binary_math_functions[name] = f;
-
-  m.def (name.c_str(), 
-         [name] (py::object x, py::object y) -> py::object
-         {
-           FUNC func;
-           if (py::extract<shared_ptr<CF>>(x).check() || py::extract<shared_ptr<CF>>(y).check())
-             {
-               shared_ptr<CoefficientFunction> cx = py::cast<shared_ptr<CF>>(x);
-               shared_ptr<CoefficientFunction> cy = py::cast<shared_ptr<CF>>(y);
-               return py::cast(binary_math_functions[name](cx,cy));
-             }
-           py::extract<double> dx(x), dy(y);
-           if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
-           py::extract<Complex> cx(x), cy(y);
-           if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
-           throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
-         }, py::arg("x"), py::arg("y"), description.c_str());
-}
-
-
-
+#include "integratorcf.hpp"
 
 
 struct GenericBSpline {
@@ -210,6 +147,18 @@ struct GenericIdentity {
   static string Name() { return  " "; }
   void DoArchive(Archive& ar) {}
 };
+template <>
+shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var,
+                                      shared_ptr<CoefficientFunction> dir) const
+{
+  if (var == this) return dir;
+  auto hcf = c1->Derive(var, dir);
+  hcf->SetDimensions(Dimensions());
+  return hcf;
+}
+
+
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
   static string Name() { return "cos"; }
@@ -652,6 +601,7 @@ direction : int
     }
   };
 
+  
   ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
   ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
   ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
@@ -861,15 +811,8 @@ val : can be one of the following:
              else
                return res;
            }, py::arg("exponent") )
-
-    .def ("__pow__", binary_math_functions["pow"])
-
-    .def ("__pow__", [] (shared_ptr<CF> c1, double val)
-           {
-             GenericPow func;
-	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
-             return binary_math_functions["pow"](c1, c2);
-           }, py::arg("exponent") )  
+    .def ("__pow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c1, c2); })
+    .def ("__pow__", [m] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return m.attr("pow")(c1, c2); })
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
@@ -890,6 +833,9 @@ cf : ngsolve.CoefficientFunction
     
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
+
+    .def ("Derive", &CoefficientFunction::Derive,
+          "Compute derivative with respect to argument")
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -908,6 +854,12 @@ cf : ngsolve.CoefficientFunction
              else
                return val * coef;
            }, py::arg("value"))
+
+    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol dx)
+         {
+           return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
+         })
+    
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
            { 
              if (val.imag() == 0)
@@ -989,6 +941,8 @@ wait : bool
   py::implicitly_convertible<py::tuple, CoefficientFunction>();
   py::implicitly_convertible<py::list, CoefficientFunction>();
 
+  
+  
 
   
   if(have_numpy)
