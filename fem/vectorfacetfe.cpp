@@ -16,7 +16,7 @@ namespace ngfem
   void VectorFacetVolumeFE<ET>::
   T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const
   {
-    throw ExceptionNOSIMD("VectorFacet::T_CalcShape missing"+ToString(ET));
+    throw ExceptionNOSIMD("VectorFacetVolume::T_CalcShape missing element "+ToString(ET));
   }
 
   template <> template<typename Tx, typename TFA>  
@@ -37,8 +37,31 @@ namespace ngfem
                                    shape[first+nr] = uDv (val, xi);
                                  }));
   }
-  
 
+
+  template<> template<typename Tx, typename TFA>  
+  void VectorFacetVolumeFE<ET_TET> ::
+  T_CalcShape (Tx hx[DIM], int fanr, TFA & shape ) const
+  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx lami[4] = { x, y, z, 1-x-y-z };
+
+    INT<4> fav = ET_T::GetFaceSort (fanr, vnums);
+
+    Tx adxi = lami[fav[0]]-lami[fav[2]];
+    Tx adeta = lami[fav[1]]-lami[fav[2]];
+
+    size_t ii = first_facet_dof[fanr];
+    DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
+                       SBLambda([shape,&ii,adxi,adeta] (size_t nr, auto val)
+                                {
+                                  shape[ii] = uDv(Tx(val), adxi); ii++;
+                                  shape[ii] = uDv(Tx(val), adeta); ii++;
+                                }));
+  }
+
+  
+  
   template <ELEMENT_TYPE ET>
   void VectorFacetVolumeFE<ET>::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
@@ -92,14 +115,19 @@ namespace ngfem
     for (size_t i = 0; i < mir.Size(); i++)
       {
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        Vec<DIM,SIMD<double>> vali = values.Col(i);
+        
         T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
-                     SBLambda ([&] (size_t j, auto s)
+                     SBLambda ([vali,coefs] (size_t j, auto s)
                                {
+                                 /*
                                  auto shape = s.Value();
                                  SIMD<double> sum = 0.0;
                                  for (int k = 0; k < DIM; k++)
                                    sum += shape(k) * values(k,i);
                                  coefs(j) += HSum(sum);
+                                 */
+                                 coefs(j) += HSum(InnerProduct(s.Value(), vali));
                                }));
       }
   }
@@ -107,12 +135,34 @@ namespace ngfem
   
   /* **************************** Facet Segm ********************************* */
 
-
-  template<>
-  void VectorFacetFacetFE<ET_SEGM>::CalcShape(const IntegrationPoint & ip,
-                                                SliceMatrix<> shape) const
+  template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>  
+  void VectorFacetFacetFE<ET>::
+  T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const
   {
-    AutoDiff<1> x (ip(0),0);
+    throw ExceptionNOSIMD("VectorFacetFacet::T_CalcShape missing"+ToString(ET));
+  }
+
+
+  
+  template<ELEMENT_TYPE ET>
+  void VectorFacetFacetFE<ET>::CalcShape(const IntegrationPoint & ip,
+                                         SliceMatrix<> shape) const
+  {
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
+    T_CalcShape (tip,
+                 SBLambda([shape] (size_t i, auto val)
+                          {
+                            shape.Row(i) = val.Value();
+                          }));
+  }
+  
+  template<> template <typename Tx, typename TFA>
+  void VectorFacetFacetFE<ET_SEGM>::T_CalcShape(TIP<DIM,Tx> tip,
+                                                TFA & shape) const
+  {
+    // AutoDiff<1> x (ip(0),0);
+    /*
+    Tx x = tip.x;
     ArrayMem<double, 10>  polx(order_inner[0]+1);
     // orient
     if ( vnums[0] > vnums[1])
@@ -123,6 +173,15 @@ namespace ngfem
     LegendrePolynomial (order_inner[0], 2*x.Value()-1, polx);
     for ( int i = 0; i <= order_inner[0]; i++ )
       shape(ii++,0) = 2 * polx[i] * x.DValue(0);
+    */
+    Tx x = tip.x;
+    if ( vnums[0] > vnums[1]) x = 1-x;
+    Tx sx = 2*x-1;
+    LegendrePolynomial (order_inner[0], sx,
+                        SBLambda([&] (size_t i, Tx val)
+                                 {
+                                   shape[i] = uDv(val, sx);
+                                 }));
   }
 
   template<>
@@ -134,10 +193,11 @@ namespace ngfem
 
   /* **************************** Facet Trig ********************************* */
 
-  template<>
-  void VectorFacetFacetFE<ET_TRIG>::CalcShape(const IntegrationPoint & ip,
-					  SliceMatrix<> shape) const
+  template<> template <typename Tx, typename TFA>
+  void VectorFacetFacetFE<ET_TRIG>::T_CalcShape(TIP<DIM,Tx> tip, 
+                                                TFA &  shape) const
   {
+    /*
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
 
@@ -174,6 +234,28 @@ namespace ngfem
 	  shape(ii,1) = val * adeta.DValue(1);  // lami[fav[1]].DValue(1);
 	  ii++;
 	}
+    */
+    auto x = tip.x;
+    auto y = tip.y;
+
+    int p = order_inner[0];
+    int ii = 0;
+
+    Tx lami[3] = { x, y, 1-x-y };
+    int fav[3] = { 0, 1, 2};
+    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
+    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
+
+    AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
+    AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
+
+    DubinerBasis::Eval(order_inner[0], lami[fav[1]].Value(), lami[fav[0]].Value(),
+                       SBLambda([&] (size_t nr, Tx val)
+                                {
+                                  shape[ii] = uDv(Tx(val), adxi); ii++;
+                                  shape[ii] = uDv(Tx(val), adeta); ii++;
+                                }));
   }
 
   template<>
@@ -407,13 +489,15 @@ namespace ngfem
     double eta = lami[fav[1]].Value();
 
     int p = facet_order[fanr][0];
+    int ii = first_facet_dof[fanr];
+
+    /*
+    cout << "VERY SLOW" << endl;
     ArrayMem< double, 10> polx(p+1), poly(p+1);
     Matrix<> polsy(p+1, p+1);
-    int ii = first_facet_dof[fanr];
 
     // ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
     LegendrePolynomial::EvalScaled (p, 2*xi+eta-1, 1-eta, polx);
-
     DubinerJacobiPolynomials<1,0> (p, 2*eta-1, polsy);
 
     for (int i = 0; i <= facet_order[fanr][0]; i++)
@@ -429,6 +513,25 @@ namespace ngfem
 	  shape(ii,2) = val * adeta.DValue(2);
 	  ii++;
 	}
+    cout << "old: " << shape.Rows(first_facet_dof[fanr], first_facet_dof[fanr+1]);
+    */
+    typedef AutoDiff<3> Tx;
+    ii = first_facet_dof[fanr];    
+    DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
+                       SBLambda([&] (size_t nr, double val)
+                                {
+                                  // shape[ii] = uDv(Tx(val), adxi); ii++;
+                                  // shape[ii] = uDv(Tx(val), adeta); ii++;
+                                  shape(ii,0) = val * adxi.DValue(0);
+                                  shape(ii,1) = val * adxi.DValue(1);
+                                  shape(ii,2) = val * adxi.DValue(2);
+                                  ii++;
+                                  shape(ii,0) = val * adeta.DValue(0);
+                                  shape(ii,1) = val * adeta.DValue(1);
+                                  shape(ii,2) = val * adeta.DValue(2);
+                                  ii++;
+                                }));
+    // cout << "new: " << shape.Rows(first_facet_dof[fanr], first_facet_dof[fanr+1]);      
   }
 
   template<>
@@ -803,6 +906,10 @@ namespace ngfem
     first_facet_dof[4] = ndof;
   }
 
+  
+  template class VectorFacetFacetFE<ET_SEGM>;
+  template class VectorFacetFacetFE<ET_TRIG>;
+  
   // template class VectorFacetVolumeFE<ET_SEGM>;
   template class VectorFacetVolumeFE<ET_TRIG>;
   template class VectorFacetVolumeFE<ET_QUAD>;

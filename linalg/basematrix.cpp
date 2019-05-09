@@ -113,10 +113,15 @@ namespace ngla
 
   void BaseMatrix :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
   {
+    /*
     stringstream err;
     err << "BaseMatrix::MultAdd (Complex) called, type = " 
 	<< typeid(*this).name();
     throw Exception (err.str());
+    */
+    auto temp = y.CreateVector();
+    Mult (x, *temp);
+    y += s * *temp;
   }
   
   void BaseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -144,6 +149,17 @@ namespace ngla
     throw Exception (err.str());
   }
 
+  void BaseMatrix :: MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    auto tmpx = x.CreateVector();
+    auto tmpy = y.CreateVector();
+    tmpx.FV<Complex>() = Conj(x.FV<Complex>());
+    tmpy.FV<Complex>() = Conj(y.FV<Complex>());
+    MultTransAdd (Conj(s), tmpx, tmpy);
+    y.FV<Complex>() = Conj(tmpy.FV<Complex>());
+    // throw Exception(string("MultHermitianAdd not overloaded for type ")+typeid(*this).name());
+  }
+  
    // to split mat x vec for symmetric matrices
   void BaseMatrix :: MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 			       const BitArray * ainner,
