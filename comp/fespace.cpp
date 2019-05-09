@@ -1433,15 +1433,72 @@ lot of new non-zero entries in the matrix!\n" << endl;
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
     size_t nd = GetNDof();
-    TableCreator<int> creator;
 
+    bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
+    auto freedofs = GetFreeDofs(eliminate_internal);
+
+    FilteredTableCreator creator(GetFreeDofs().get());
+
+    /*
     for ( ; !creator.Done(); creator++)
       {
 	for (size_t i = 0; i < nd; i++)
-	  if (!IsDirichletDof(i))
+	  if (freedofs->Test(i))
 	    creator.Add (i, i);
       }
+    */
 
+    Array<DofId> dofs;
+    for ( ; !creator.Done(); creator++)
+      {
+        // VEFI
+
+        for (size_t i : Range(ma->GetNV()))
+          {
+            GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+            for (auto d : dofs)
+              if (IsRegularDof(d))              
+                creator.Add (i, d);
+          }
+        for (size_t i : Range(ma->GetNEdges()))        
+          {
+            Ng_Node<1> edge = ma->GetNode<1> (i);
+            
+            GetDofNrs (NodeId(NT_EDGE, i), dofs);
+            for (auto d : dofs)
+              if (IsRegularDof(d))
+                for (int k = 0; k < 2; k++)
+                  creator.Add (edge.vertices[k], d);
+          }
+
+        for (size_t i : Range(ma->GetNFaces()))        
+          {
+            Ng_Node<2> face = ma->GetNode<2> (i);
+            
+            GetDofNrs (NodeId(NT_FACE, i), dofs);
+            for (auto d : dofs)
+              if (IsRegularDof(d))
+                for (int k = 0; k < face.vertices.Size(); k++)
+                  creator.Add (face.vertices[k], d);
+          }
+      }
+    /*
+                 
+                 for (int i = 0; i < nfa; i++)
+                 {
+                 Ng_Node<2> face = ma->GetNode<2> (i);
+                 for (int k = 0; k < face.vertices.Size(); k++)
+                 creator.Add (face.vertices[k], GetFaceDofs(i));
+                 }
+                 
+                 for (int i = 0; i < ni; i++)
+                 for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
+                 creator.Add (v, GetElementDofs(i));
+                 
+                 break; 
+               */
+               
+        
     return make_shared<Table<int>> (creator.MoveTable());
   }
 
@@ -1662,7 +1719,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   
-  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
+  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
@@ -1674,6 +1731,91 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
+  shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
+  {
+    LocalHeap lh(10000000);
+    Array<short> classnr(ma->GetNE());
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+    
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+
+    shared_ptr<BaseMatrix> sum;
+  
+    size_t ne = ma->GetNE();
+  
+    for (auto elclass_inds : table)
+      {
+        HeapReset hr(lh);
+        if (elclass_inds.Size() == 0) continue;
+        
+        ElementId ei(VOL,elclass_inds[0]);
+        auto & fel = GetFE (ei, lh);
+        auto & fel_l2 = l2space->GetFE (ei, lh);
+        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        MixedFiniteElement fel_mixed(fel, fel_l2);
+        auto evaluator = GetEvaluator(VOL);
+        auto l2evaluator = l2space->GetEvaluator(VOL);
+
+        auto trial = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                                false, false, evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto trial_l2 = make_shared<ProxyFunction>(l2space, 
+                                                   false, false, l2evaluator,
+                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test_l2  = make_shared<ProxyFunction>(l2space,
+                                                   true, false, l2evaluator,
+                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+        shared_ptr<BilinearFormIntegrator> bfi_mass_mixed =
+          make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test_l2), VOL, VOL);
+        shared_ptr<BilinearFormIntegrator> bfi_mass_l2 =
+          make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial_l2,test_l2), VOL, VOL);
+
+        Matrix<> mass_l2(fel_l2.GetNDof(), fel_l2.GetNDof());
+        Matrix<> mass_mixed(fel_l2.GetNDof(), fel.GetNDof());
+        bfi_mass_l2->CalcElementMatrix (fel_l2, trafo, mass_l2, lh);
+        bfi_mass_mixed->CalcElementMatrix (fel_mixed, trafo, mass_mixed, lh);
+
+        CalcInverse (mass_l2);
+        Matrix<> trans = mass_l2 * mass_mixed;
+
+        Table<DofId> xdofs(elclass_inds.Size(), fel.GetNDof()),
+          ydofs(elclass_inds.Size(), fel_l2.GetNDof());
+        
+        Array<DofId> dnumsx, dnumsy;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            GetDofNrs(ei, dnumsx);
+            l2space->GetDofNrs(ei, dnumsy);
+            xdofs[i] = dnumsx;
+            ydofs[i] = dnumsy;
+          }
+
+        auto mat = make_shared<ConstantElementByElementMatrix>
+          (l2space->GetNDof(), this->GetNDof(),
+           trans, std::move(ydofs), std::move(xdofs));
+
+        if (sum)
+          sum = make_shared<SumMatrix>(sum, mat);
+        else
+          sum = mat;
+      }
+    return sum;    
+  }
+
+
+  
   void FESpace :: UpdateParallelDofs ( )
   {
     if (ma->GetCommunicator().Size() == 1) return;
@@ -2890,13 +3032,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   
 
-  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,
+  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                                  LocalHeap & lh) const
   {
     for (size_t i = 0; i < spaces.Size(); i++)
       {
         auto veci = vec.Range (GetRange(i));
-        spaces[i] -> SolveM (rho, veci, lh);
+        spaces[i] -> SolveM (rho, veci, definedon, lh);
       }
   }
     
@@ -3018,7 +3160,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     prod = v;
     if (inverse)
-      fes->SolveM(rho.get(), prod, lh);
+      fes->SolveM(rho.get(), prod, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), prod, definedon.get(), lh);
   }
@@ -3028,7 +3170,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto hv = prod.CreateVector();
     hv = v;
     if (inverse)    
-      fes->SolveM(rho.get(), hv, lh);
+      fes->SolveM(rho.get(), hv, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;
@@ -3039,7 +3181,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto hv = prod.CreateVector();
     hv = v;
     if (inverse)
-      fes->SolveM(rho.get(), hv, lh);
+      fes->SolveM(rho.get(), hv, definedon.get(), lh);
     else
       fes->ApplyM(rho.get(), hv, definedon.get(), lh);
     prod += val * hv;

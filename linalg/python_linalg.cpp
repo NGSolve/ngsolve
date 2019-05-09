@@ -645,6 +645,7 @@ inverse : string
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
 
     .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); }, "Return transpose of matrix")
+    .def_property_readonly("H", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<ConjTrans> (m); }, "Return conjugate transpose of matrix (WIP, only partially supported)")
     .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<ProductMatrix> (ma, mb); }, py::arg("mat"))
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
@@ -840,6 +841,17 @@ inverse : string
     .def(py::init<size_t, bool>(),
          py::arg("size"), py::arg("complex")=false)
     ;
+
+  py::class_<PermutationMatrix, shared_ptr<PermutationMatrix>, BaseMatrix> (m, "PermutationMatrix")
+    .def(py::init([](size_t w, std::vector<size_t> ind)
+                  {
+                    Array<size_t> inda(ind.size());
+                    for (size_t i = 0; i < inda.Size(); i++)
+                      inda[i] = ind[i];
+                    return make_shared<PermutationMatrix> (w, move(inda)); 
+                  }),
+         py::arg("w"), py::arg("ind"))
+    ;
   
   py::class_<Embedding, shared_ptr<Embedding>, BaseMatrix> (m, "Embedding")
     .def(py::init<size_t, IntRange>(),
@@ -862,21 +874,21 @@ inverse : string
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
     ;
 
-  m.def("CGSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
+  m.def("CGSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
                                           bool iscomplex, bool printrates, 
                                           double precision, int maxsteps)
                                        {
-                                         KrylovSpaceSolver * solver;
-                                         if(mat.IsComplex()) iscomplex = true;
+                                         shared_ptr<KrylovSpaceSolver> solver;
+                                         if(mat->IsComplex()) iscomplex = true;
                                          
                                          if (iscomplex)
-                                           solver = new CGSolver<Complex> (mat, pre);
+                                           solver = make_shared<CGSolver<Complex>> (mat, pre);
                                          else
-                                           solver = new CGSolver<double> (mat, pre);
+                                           solver = make_shared<CGSolver<double>> (mat, pre);
                                          solver->SetPrecision(precision);
                                          solver->SetMaxSteps(maxsteps);
                                          solver->SetPrintRates (printrates);
-                                         return shared_ptr<KrylovSpaceSolver>(solver);
+                                         return solver;
                                        },
            py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
         py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
@@ -905,22 +917,22 @@ maxsteps : int
 )raw_string"))
     ;
 
-  m.def("GMRESSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
-                                           bool printrates, 
-                                           double precision, int maxsteps)
-                                        {
-                                          KrylovSpaceSolver * solver;
-                                          if (!mat.IsComplex())
-                                            solver = new GMRESSolver<double> (mat, pre);
-                                          else
-                                            solver = new GMRESSolver<Complex> (mat, pre);                                            
-                                          solver->SetPrecision(precision);
-                                          solver->SetMaxSteps(maxsteps);
-                                          solver->SetPrintRates (printrates);
-                                          return shared_ptr<KrylovSpaceSolver>(solver);
-                                        },
-           py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+  m.def("GMRESSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
+                          bool printrates, 
+                          double precision, int maxsteps)
+        {
+          shared_ptr<KrylovSpaceSolver> solver;
+          if (!mat->IsComplex())
+            solver = make_shared<GMRESSolver<double>> (mat, pre);
+          else
+            solver = make_shared<GMRESSolver<Complex>> (mat, pre);                                            
+          solver->SetPrecision(precision);
+          solver->SetMaxSteps(maxsteps);
+          solver->SetPrintRates (printrates);
+          return shared_ptr<KrylovSpaceSolver>(solver);
+        },
+        py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+        py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
 A General Minimal Residuum (GMRES) Solver.
 
 Parameters:
@@ -963,22 +975,22 @@ maxsteps : int
   py::class_<QMRSolver<Complex>, shared_ptr<QMRSolver<Complex>>, BaseMatrix> (m, "QMRSolverC")
     ;
 
-  m.def("QMRSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
-                                           bool printrates, 
-                                           double precision, int maxsteps)
-                                        {
-                                          KrylovSpaceSolver * solver;
-                                          if (!mat.IsComplex())
-                                            solver = new QMRSolver<double> (mat, pre);
-                                          else
-                                            solver = new QMRSolver<Complex> (mat, pre);                                            
-                                          solver->SetPrecision(precision);
-                                          solver->SetMaxSteps(maxsteps);
-                                          solver->SetPrintRates (printrates);
-                                          return shared_ptr<KrylovSpaceSolver>(solver);
-                                        },
-           py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+  m.def("QMRSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
+                        bool printrates, 
+                        double precision, int maxsteps)
+        {
+          shared_ptr<KrylovSpaceSolver> solver;
+          if (!mat->IsComplex())
+            solver = make_shared<QMRSolver<double>> (mat, pre);
+          else
+            solver = make_shared<QMRSolver<Complex>> (mat, pre);                                            
+          solver->SetPrecision(precision);
+          solver->SetMaxSteps(maxsteps);
+          solver->SetPrintRates (printrates);
+          return solver;
+        },
+        py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+        py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
 A Quasi Minimal Residuum (QMR) Solver.
 
 Parameters:
@@ -1001,19 +1013,20 @@ maxsteps : int
 )raw_string"))
     ;
   
-  m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
+  m.def("ArnoldiSolver", [](shared_ptr<BaseMatrix> mata, shared_ptr<BaseMatrix> matm,
+                            shared_ptr<BitArray> freedofs,
                             py::list vecs, Complex shift)
         {
           int nev;
           {
             py::gil_scoped_acquire acq;
-            if (py::len(vecs) > mata.Height())
+            if (py::len(vecs) > mata->Height())
               throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
                                + " is greater than matrix dimension "
-                               + ToString(mata.Height()));
+                               + ToString(mata->Height()));
             nev = py::len(vecs);
           }
-          if (mata.IsComplex())
+          if (mata->IsComplex())
             {
               Arnoldi<Complex> arnoldi (mata, matm, freedofs);
               arnoldi.SetShift (shift);

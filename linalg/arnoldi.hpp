@@ -26,13 +26,13 @@ namespace ngla
   template <typename SCAL>
   class NGS_DLL_HEADER Arnoldi
   {
-    const BaseMatrix & a;
-    const BaseMatrix & b;
+    shared_ptr<BaseMatrix> a;
+    shared_ptr<BaseMatrix> b;
     shared_ptr<BitArray> freedofs;
     SCAL shift;
 
   public:
-    Arnoldi (const BaseMatrix & aa, const BaseMatrix & ab, shared_ptr<BitArray> afreedofs = nullptr)
+    Arnoldi (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ab, shared_ptr<BitArray> afreedofs = nullptr)
       : a(aa), b(ab), freedofs(afreedofs)
     { 
       shift = 1.0;
@@ -43,7 +43,7 @@ namespace ngla
 
     void Calc (int numval, Array<Complex> & lam, int nev, 
                Array<shared_ptr<BaseVector>> & evecs, 
-               const BaseMatrix * pre = NULL) const;
+               shared_ptr<BaseMatrix> pre = nullptr) const;
   };
 }
 

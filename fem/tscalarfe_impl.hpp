@@ -825,24 +825,26 @@ namespace ngfem
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
                {
-                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
-                 // GetTIP(mir[i], adp);
+                 // Directional derivative
+                 Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
+
+                 const auto &ip = mir[i].IP();
+                 TIP<DIM,AutoDiffRec<1,SIMD<double>>>adp;
+                 if constexpr(DIM>0)
+                     adp.x = AutoDiffRec<1, SIMD<double>>( ip(0), jac_dir(0) );
+                 if constexpr(DIM>1)
+                     adp.y = AutoDiffRec<1, SIMD<double>>( ip(1), jac_dir(1) );
+                 if constexpr(DIM>2)
+                     adp.z = AutoDiffRec<1, SIMD<double>>( ip(2), jac_dir(2) );
+
                  double * pcoef = &coefs(0);
                  size_t dist = coefs.Dist();
-                 Vec<DIMSPACE,SIMD<double>> vals = values.Col(i);
                  this->T_CalcShape (adp,
-                                    SBLambda ([dist,vals,&pcoef] (size_t j, auto shape)
-                                        {
-                                          /*
-                                          auto grad = ::GetGradient(shape);
-                                          SIMD<double> sum = 0.0;
-                                          for (size_t k = 0; k < DIMSPACE; k++)
-                                            sum += grad(k) * vals(k); 
-                                          *pcoef += HSum(sum);
-                                          */
-                                          *pcoef += HSum(InnerProduct(ngbla::GetGradient(shape), vals));
-                                          pcoef += dist;
-                                        }));
+                                    SBLambda ([dist,&pcoef] (size_t j, auto shape)
+                                              {
+                                                *pcoef += HSum(shape.DValue(0));
+                                                pcoef += dist;
+                                              }));
                }
            }
        });

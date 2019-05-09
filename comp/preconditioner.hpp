@@ -18,6 +18,9 @@ namespace ngcomp
   */
   class NGS_DLL_HEADER Preconditioner : public NGS_Object, public BaseMatrix
   {
+  private:
+    weak_ptr<BilinearForm> bf;
+    bool is_registered = false;
   protected:
     bool test;
     bool timing;
