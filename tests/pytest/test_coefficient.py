@@ -24,7 +24,7 @@ def test_mesh_size_cf(unit_mesh_3d, unit_mesh_2d):
         bfi += SymbolicBFI( fes.TrialFunction()*(specialcf.mesh_size - specialcf.mesh_size.Compile(True, wait=True))*fes.TestFunction(), element_boundary=True)
         bfi.Assemble()
         v = bfi.mat.AsVector().FV().NumPy()
-        assert v == approx(0,abs=1e-14)
+        assert all(v == approx(0,abs=1e-14))
 
 def test_real(unit_mesh_2d):
     cf = CoefficientFunction(1+2j)
