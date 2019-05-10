@@ -1893,11 +1893,39 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
       Mat<DIM_SPC,DIM_SPC> trans = 1/(mip.GetJacobiDet())*mip.GetJacobian();
 
-
       for (int i = 0; i < DIM_SPC; i++)
         for (int j = 0; j < DIM_SPC; j++)
           for (int k = 0; k < DIM_SPC; k++)
             mat.Row(i*DIM_SPC+j).Range(k*ndofi, (k+1)*ndofi) = trans(i,k) * grad.Col(j);
+
+      FlatVector<> val (ndofi, lh);
+      feli.CalcShape(mip.IP(), val);
+
+      // 1/J ( H - (F^{-T}:H) F ) 
+      if (!mip.GetTransformation().IsCurvedElement())
+        return;
+
+      auto jac = mip.GetJacobian();
+      auto inv = mip.GetJacobianInverse();
+      auto invJ = 1/mip.GetJacobiDet();
+      Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC>> hesse;
+      mip.CalcHesse(hesse);
+
+      Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC>> invjac_hesse;
+      for (int i = 0; i < DIM_SPC; i++)
+        invjac_hesse(i) = Trans(inv) * hesse(i);
+      
+      Vec<DIM_SPC> inv_hesse = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        for (int j = 0; j < DIM_SPC; j++)
+          inv_hesse(i) += invjac_hesse(j)(j,i);
+      inv_hesse = Trans(inv) * inv_hesse;
+      
+      for (int i = 0; i < DIM_SPC; i++)
+        for (int j = 0; j < DIM_SPC; j++)
+          for (int k = 0; k < DIM_SPC; k++)
+            mat.Row(i*DIM_SPC+j).Range(k*ndofi, (k+1)*ndofi) +=
+              invJ * (invjac_hesse(i)(j,k)-inv_hesse(j)*jac(i,k)) * val;
     }
 
     /*
@@ -1984,6 +2012,42 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           
       for (size_t k = 0; k < DIM_SPC; k++)
         feli.AddGradTrans (mir, grad.Rows(k*DIM_SPC, (k+1)*DIM_SPC), x.Range(k*ndofi, (k+1)*ndofi));
+
+      if (!mir.GetTransformation().IsCurvedElement())
+        return;
+
+      STACK_ARRAY(SIMD<double>, mem2, DIM_SPC*mir.Size());
+      FlatMatrix<SIMD<double>> val(DIM_SPC, mir.Size(), &mem2[0]);
+      val = SIMD<double>(0.0);
+
+      for (size_t ip = 0; ip < mir.Size(); ip++)
+        {
+          auto jac = mir[ip].GetJacobian();
+          auto inv = mir[ip].GetJacobianInverse();
+          auto invJ = 1/mir[ip].GetJacobiDet();
+          Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC,SIMD<double>>> hesse;
+          mir[ip].CalcHesse(hesse);
+          
+          Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC,SIMD<double>>> invjac_hesse;
+          for (int i = 0; i < DIM_SPC; i++)
+            invjac_hesse(i) = Trans(inv) * hesse(i);
+          
+          Vec<DIM_SPC,SIMD<double>> inv_hesse = SIMD<double>(0.0);
+          for (int i = 0; i < DIM_SPC; i++)
+            for (int j = 0; j < DIM_SPC; j++)
+              inv_hesse(i) += invjac_hesse(j)(j,i);
+          inv_hesse = Trans(inv) * inv_hesse;
+          
+          for (int i = 0; i < DIM_SPC; i++)
+            for (int j = 0; j < DIM_SPC; j++)
+              for (int k = 0; k < DIM_SPC; k++)
+                val(k,ip) +=
+                  invJ * (invjac_hesse(i)(j,k)-inv_hesse(j)*jac(i,k)) *
+                  y(i*DIM_SPC+j,ip);
+        }
+
+      for (size_t k = 0; k < DIM_SPC; k++)
+        feli.AddTrans (mir.IR(), val.Row(k), x.Range(k*ndofi, (k+1)*ndofi));
     }    
   };
 
