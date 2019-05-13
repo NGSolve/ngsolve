@@ -571,6 +571,8 @@ printrates : bool = True
     H = []
     Q.append(b.CreateVector())
     r_norm = norm(r)
+    if abs(r_norm) < tol:
+        return x
     Q[0].data = 1./r_norm * r
     beta = ngsolve.Vector(m+1, is_complex)
     beta[:] = 0
