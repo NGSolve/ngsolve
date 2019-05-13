@@ -1909,14 +1909,16 @@ diffop : ngsolve.fem.DifferentialOperator
     .def(py::init<VorB>())
     .def("__call__", [](DifferentialSymbol & self, bool element_boundary,
                         VorB element_vb,
-                        shared_ptr<Region> definedon)
+                        shared_ptr<Region> definedon,
+                        int bonus_intorder)
          {
            BitArray defon;
            if (definedon)
              defon = definedon->Mask();
            if (element_boundary) element_vb = BND;
-           return DifferentialSymbol(self.vb, element_vb, defon);
-         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL, py::arg("definedon")=nullptr)
+           return DifferentialSymbol(self.vb, element_vb, defon, bonus_intorder);
+         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL,
+         py::arg("definedon")=nullptr, py::arg("bonus_intorder")=0)
     ;
 
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -1934,6 +1936,7 @@ diffop : ngsolve.fem.DifferentialOperator
             return faccf;
           })
     .def ("Derive", &SumOfIntegrals::Derive)
+    .def ("Compile", &SumOfIntegrals::Compile)
     ;
 
   
@@ -2055,6 +2058,7 @@ integrator : ngsolve.fem.BFI
                else
                  bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (icf->cf, dx.vb, !dx.skeleton);
                bfi->SetDefinedOn(dx.definedon);
+               bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
                self += bfi;
              }
            return self;
@@ -2280,7 +2284,12 @@ integrator : ngsolve.fem.LFI
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
            for (auto icf : sum->icfs)
-             *self += make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+             {
+               auto & dx = icf->dx;
+               auto lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+               lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               *self += lfi;
+             }
            return self;
          })
 

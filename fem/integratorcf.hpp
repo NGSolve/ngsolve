@@ -9,9 +9,11 @@ namespace ngfem
     VorB element_vb = VOL;
     bool skeleton = false;
     BitArray definedon;
+    int bonus_intorder = 0;
     DifferentialSymbol (VorB _vb) : vb(_vb) { ; }
-    DifferentialSymbol (VorB _vb, VorB _element_vb, const BitArray & _definedon)
-      : vb(_vb), element_vb(_element_vb), definedon(_definedon) { ; } 
+    DifferentialSymbol (VorB _vb, VorB _element_vb, const BitArray & _definedon,
+                        int _bonus_intorder)
+      : vb(_vb), element_vb(_element_vb), definedon(_definedon), bonus_intorder(_bonus_intorder) { ; } 
   };
   
 
@@ -47,6 +49,15 @@ namespace ngfem
       for (auto & icf : icfs)
         deriv->icfs += make_shared<Integral> (icf->cf->Derive(var.get(), dir), icf->dx);
       return deriv;
+    }
+
+    shared_ptr<SumOfIntegrals>
+    Compile (bool realcompile, bool wait) const
+    {
+      auto compiled = make_shared<SumOfIntegrals>();
+      for (auto & icf : icfs)
+        compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait), icf->dx);
+      return compiled;
     }
   };
 }
