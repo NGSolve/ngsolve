@@ -1762,7 +1762,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
         ElementId ei(VOL,elclass_inds[0]);
         auto & fel = GetFE (ei, lh);
         auto & fel_l2 = l2space->GetFE (ei, lh);
-        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        FE_ElementTransformation<2,2> trafo2d(ET_TRIG);
+        FE_ElementTransformation<3,3> trafo3d(ET_TET);
+        ElementTransformation & trafo = (fel.Dim() == 2) ?
+          (ElementTransformation&)trafo2d :
+          (ElementTransformation&)trafo3d;
         MixedFiniteElement fel_mixed(fel, fel_l2);
         auto evaluator = GetEvaluator(VOL);
         auto l2evaluator = l2space->GetEvaluator(VOL);
