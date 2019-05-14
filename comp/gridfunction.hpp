@@ -126,7 +126,7 @@ namespace ngcomp
     /// the actual data, array for multi-dim 
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
-    shared_ptr<GridFunctionCoefficientFunction> derivcf;
+    weak_ptr<GridFunctionCoefficientFunction> derivcf;
   public:
     /// 
     GridFunction (shared_ptr<FESpace> afespace, 
@@ -200,16 +200,18 @@ namespace ngcomp
 
     shared_ptr<GridFunctionCoefficientFunction> GetDeriv()
     {
-      if (!derivcf)
-        {
-          derivcf =
+      auto res = derivcf.lock();
+      if(res) return res;
+
+      // derivcf is not set -> initialize it
+      res =
             make_shared<GridFunctionCoefficientFunction> (dynamic_pointer_cast<GridFunction> (shared_from_this()),
                                                           GetFESpace()->GetFluxEvaluator(),
                                                           GetFESpace()->GetFluxEvaluator(BND),
                                                           GetFESpace()->GetFluxEvaluator(BBND));
-          derivcf -> generated_from_deriv = true;
-        }
-      return derivcf;
+      res -> generated_from_deriv = true;
+      derivcf = res;
+      return res;
     }
 
     ///
