@@ -1750,7 +1750,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
-    shared_ptr<BaseMatrix> sum;
+    shared_ptr<BaseMatrix> sum = nullptr;
   
     size_t ne = ma->GetNE();
   
@@ -1816,6 +1816,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
         else
           sum = mat;
       }
+
+    if (sum == nullptr) {
+      // return dummy op for empty FESpace
+      // sum = make_shared<IdentityMatrix>(0 , IsComplex());
+      if(IsComplex())
+	sum = make_shared<SparseMatrix<Complex>>(0 , 0);
+      else
+	sum = make_shared<SparseMatrix<double>>(0 , 0);
+    }
+
     return sum;    
   }
 
