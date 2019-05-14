@@ -493,7 +493,7 @@ namespace ngfem
 
     Vec<3,T> DivShape()
     {
-      Vec<3,T> div_Id_v=0;
+      Vec<3,T> div_Id_v;
       for (int i=0; i<3; i++)
 	div_Id_v(i) = v.DValue(i);
       return div_Id_v;

@@ -128,21 +128,23 @@ namespace ngcomp
 
     virtual void VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const override
     {
-      double eps = 1e-6;
-      Mat<2*DIMS,DIMS,SIMD<double>> pnts;
+      double eps = 1e-4;
+      Mat<4*DIMS,DIMS,SIMD<double>> pnts;
       for (int i = 0; i < DIMS; i++)
         {
           for (int j = 0; j < DIMS; j++)
-            pnts(2*i,j) = pnts(2*i+1, j) = ip(j);
+	    pnts(2*i,j) = pnts(2*i+1, j) = pnts(2*(i+DIMS), j) = pnts(2*(i+DIMS)+1, j)= ip(j); 
           pnts(2*i,i) += eps;
           pnts(2*i+1,i) -= eps;
+	  pnts(2*(i+DIMS),i) += 2*eps;
+	  pnts(2*(i+DIMS)+1,i) -= 2*eps;
         }
 
-      Mat<2*DIMS,DIMR,SIMD<double>> x;
-      Mat<2*DIMS,DIMR*DIMS,SIMD<double>> dx;
+      Mat<4*DIMS,DIMR,SIMD<double>> x;
+      Mat<4*DIMS,DIMR*DIMS,SIMD<double>> dx;
 
       mesh->mesh.MultiElementTransformation <DIMS,DIMR>
-        (elnr, 2*DIMS,
+        (elnr, 4*DIMS,
          &pnts(0,0).Data(), &pnts(1,0)-&pnts(0,0), 
          &x(0,0).Data(), &x(1,0)-&x(0,0), 
          &dx(0,0).Data(), &dx(1,0)-&dx(0,0));
@@ -150,7 +152,8 @@ namespace ngcomp
       for (int i = 0; i < DIMR; i++)
         for (int j = 0; j < DIMS; j++)
           for (int k = 0; k < DIMS; k++)
-            hesse[i*DIMS*DIMS + j*DIMS + k] = (dx(2*j, i*DIMS+k) - dx(2*j+1, i*DIMS+k) ) / (2*eps);
+	    hesse[i*DIMS*DIMS + j*DIMS + k] = (8.0*dx(2*j, i*DIMS+k) - 8.0*dx(2*j+1, i*DIMS+k) - dx(2*(j+DIMS), i*DIMS+k) + dx(2*(j+DIMS)+1, i*DIMS+k)) / (12.0*eps);
+      //hesse[i*DIMS*DIMS + j*DIMS + k] = (dx(2*j, i*DIMS+k) - dx(2*j+1, i*DIMS+k) ) / (2*eps);
     }
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const override

@@ -366,10 +366,17 @@ namespace ngcomp
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-
+        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);      
       fel.CalcMappedDivShape (sip, Trans(mat));
-      }
+    }
+    
+    
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {      
+      dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
+    }
     
     /*
     
