@@ -900,6 +900,18 @@ namespace ngstd
   INLINE ngstd::SIMD<double,N> asin (ngstd::SIMD<double,N> a) {
     return ngstd::SIMD<double,N>([&](int i)->double { return asin(a[i]); } );
   }
+
+  using std::sinh;
+  template <int N>      
+  INLINE ngstd::SIMD<double,N> sinh (ngstd::SIMD<double,N> a) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return sinh(a[i]); } );
+  }
+  
+  using std::cosh;
+  template <int N>        
+  INLINE ngstd::SIMD<double,N> cosh (ngstd::SIMD<double,N> a) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return cosh(a[i]); } );
+  }
   
 
   template <int D, typename T>

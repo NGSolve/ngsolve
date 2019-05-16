@@ -599,6 +599,39 @@ INLINE AutoDiffDiff<D,SCAL> asin (AutoDiffDiff<D,SCAL> x)
 }
 
 
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> sinh (AutoDiffDiff<D, SCAL> x)
+{
+  AutoDiffDiff<D, SCAL> res;
+  SCAL sh = sinh(x.Value());
+  SCAL ch = cosh(x.Value());
+  
+  res.Value() = sh;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * ch;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = sh * x.DValue(k) * x.DValue(l) + ch * x.DDValue(k,l);
+  return res;
+}
+
+
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> cosh (AutoDiffDiff<D, SCAL> x)
+{
+  AutoDiffDiff<D, SCAL> res;
+  SCAL sh = sinh(x.Value());
+  SCAL ch = cosh(x.Value());
+  
+  res.Value() = ch;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = sh * x.DValue(k);
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = ch * x.DValue(k) * x.DValue(l) + sh * x.DDValue(k,l);
+  return res;
+}
+
 using std::floor;
 template<int D, typename SCAL>
 INLINE AutoDiffDiff<D,SCAL> floor (const AutoDiffDiff<D,SCAL> & x)

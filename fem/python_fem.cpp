@@ -169,6 +169,16 @@ struct GenericTan {
   static string Name() { return "tan"; }
   void DoArchive(Archive& ar) {}
 };
+struct GenericSinh {
+  template <typename T> T operator() (T x) const { return sinh(x); }
+  static string Name() { return "sinh"; }
+  void DoArchive(Archive& ar) {}
+};
+struct GenericCosh {
+  template <typename T> T operator() (T x) const { return cosh(x); }
+  static string Name() { return "cosh"; }
+  void DoArchive(Archive& ar) {}
+};
 struct GenericExp {
   template <typename T> T operator() (T x) const { return exp(x); }
   static string Name() { return "exp"; }
@@ -605,6 +615,8 @@ direction : int
   ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
   ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
   ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
+  ExportStdMathFunction<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
+  ExportStdMathFunction<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
   ExportStdMathFunction<GenericExp>(m, "exp", "Exponential function");
   ExportStdMathFunction<GenericLog>(m, "log", "Logarithm function");
   ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
