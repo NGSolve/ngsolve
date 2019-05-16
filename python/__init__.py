@@ -69,6 +69,10 @@ for classname in all_classes:
 # MPIManager.InitMPI()
 mpi_world = MPI_Init()
 
+if mpi_world.size>1 and mpi_world.rank==0:
+    import ngsolve
+    print("importing NGSolve-" + ngsolve.__version__)
+
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
 BaseVector.data = property(__expr.Expr, __expr.expr_data)
