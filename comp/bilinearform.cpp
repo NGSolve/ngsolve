@@ -4050,19 +4050,6 @@ namespace ngcomp
 	    
 	    //cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << ", " << mpi_facet_parts.Size() << " total parts " << endl;
 
-	    /**
-	       TODO:
-		 - convert ranks to ngs_comm-ranks and send via that comm
-		 - make integrators that are not defined everywhere working
-		   (this requires checking DefinedOn on el-indices on both sides of the facet!
-	     **/
-
-            /*
-	    MPI_Comm mcomm = ma->GetCommunicator();
-	    int mrank, mnp;
-	    MPI_Comm_rank(mcomm, &mrank);
-	    MPI_Comm_size(mcomm, &mnp);
-            */
             int mrank = comm.Rank();
             int mnp = comm.Size();
 	    Array<int> cnt_in(mnp), cnt_per(mnp);
@@ -4190,7 +4177,8 @@ namespace ngcomp
 		MyMPI_WaitAll(reqr);
 	      }
 	    }
-	  }	    
+	    if(reqs.Size()) MyMPI_WaitAll(reqs);
+	  }
 #endif
         
 
