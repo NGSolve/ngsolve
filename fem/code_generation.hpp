@@ -41,6 +41,8 @@ namespace ngfem
     string top;
     string header;
     string body;
+
+    string res_type;
     bool is_simd;
     int deriv;
     std::vector<string> link_flags;
