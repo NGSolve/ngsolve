@@ -403,22 +403,42 @@ namespace ngla
   
   AutoVector ParallelMatrix :: CreateRowVector () const
   {
-    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
-      throw Exception("ParallelMatrix::CreateRowVector only implemented for sparse matrices!");
-    if (row_paralleldofs==nullptr)
-      return make_shared<VVector<double>> (mat->Width());
-    return make_shared<ParallelVVector<double>> (mat->Width(), row_paralleldofs);
-    return shared_ptr<BaseVector>();
+    if (IsComplex()) {
+      if (row_paralleldofs == nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
+    else {
+      if (row_paralleldofs == nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
   }
   
   AutoVector ParallelMatrix :: CreateColVector () const
   {
-    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
-      throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
-    if (col_paralleldofs==nullptr)
-      return make_shared<VVector<double>> (mat->Height());
-    return make_shared<ParallelVVector<double>> (mat->Height(), col_paralleldofs);
-    return shared_ptr<BaseVector>();
+    if (IsComplex()) {
+      if (col_paralleldofs==nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Height(), col_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
+    else {
+      if (col_paralleldofs==nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Height(), col_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
   }
 
 
@@ -451,9 +471,14 @@ namespace ngla
     if(row_paralleldofs != col_paralleldofs) {
       throw Exception("ParallelMatrix::CreateVector called for nonsymmetric case (use CreateRowVector of CreateColVector)!");
     }
-    if (dynamic_cast<const SparseMatrix<double>*> (mat.get()))
-      return make_shared<ParallelVVector<double>> (mat->Height(), paralleldofs);
-    throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
+    if (IsComplex()) {
+      return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	(mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+    }
+    else {
+      return make_shared<S_ParallelBaseVectorPtr<double>>
+	(mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+    }
   }
 
   ostream & ParallelMatrix :: Print (ostream & ost) const
@@ -480,7 +505,6 @@ namespace ngla
     inv = InverseMatrixTM<Complex> (subset);  if (inv) return inv;
     inv = InverseMatrixTM<Mat<2> > (subset);   if (inv) return inv;
     inv = InverseMatrixTM<Mat<3> > (subset);   if (inv) return inv;
-
     inv = InverseMatrixTM<Mat<2,2,Complex> > (subset);   if (inv) return inv;
     inv = InverseMatrixTM<Mat<3,3,Complex> > (subset);   if (inv) return inv;
 
