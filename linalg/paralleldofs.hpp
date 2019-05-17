@@ -43,7 +43,9 @@ namespace ngla
     
     /// am I the master process ?
     BitArray ismasterdof;
-    
+
+    /// entry-size
+    int es;
   public:
     /**
        setup parallel dofs.
@@ -55,7 +57,7 @@ namespace ngla
 
     shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
       
-    virtual ~ParallelDofs()  { ; }
+    virtual ~ParallelDofs();
 
     int GetNTasks() const { return exchangedofs.Size(); }
 
@@ -83,6 +85,8 @@ namespace ngla
 
     const NgsMPI_Comm & GetCommunicator () const { return comm; }
 
+    int GetEntrySize () const { return es; }
+    
     int GetMasterProc (int dof) const
     {
       int m = comm.Rank();
@@ -148,6 +152,8 @@ namespace ngla
     
     template <typename T>
     void AllReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
+
+    int GetEntrySize () const { return -1; }
   };
   
 #endif
