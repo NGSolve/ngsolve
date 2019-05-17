@@ -4804,8 +4804,12 @@ namespace ngcomp
     shared_ptr<BaseMatrix> mat = spmat;
 
     if (this->GetFESpace()->IsParallel())
-      mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
-
+      if(this->GetFESpace2())
+	mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs(),
+					   this->GetFESpace2()->GetParallelDofs());
+      else
+	mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
+    
     this->mats.Append (mat);
 
     delete graph;
@@ -4950,8 +4954,12 @@ namespace ngcomp
     shared_ptr<BaseMatrix> mat = spmat;
 
     if (this->GetFESpace()->IsParallel())
-      mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
-
+      if(this->GetFESpace2())
+	mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs(),
+					   this->GetFESpace2()->GetParallelDofs());
+      else
+	mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
+    
     this->mats.Append (mat);
 
     delete graph;
@@ -5823,7 +5831,7 @@ namespace ngcomp
   {
     auto afespace = this->GetTrialSpace();
     if (afespace->IsParallel())
-      throw Exception("S_BilinearFormNonAssemble::CreateRowVector in parallel is missing");
+      return make_shared<S_ParallelBaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension(), afespace->GetParallelDofs(), DISTRIBUTED);
     return make_shared<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
   }
   
@@ -5833,7 +5841,7 @@ namespace ngcomp
   {
     auto afespace = this->GetTestSpace();
     if (afespace->IsParallel())
-      throw Exception("S_BilinearFormNonAssemble::CreateRowVector in parallel is missing");
+      return make_shared<S_ParallelBaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension(), afespace->GetParallelDofs(), DISTRIBUTED);
     return make_shared<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
   }
   
