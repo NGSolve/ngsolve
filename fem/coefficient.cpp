@@ -50,10 +50,7 @@ namespace ngfem
     }
     )CODE_";
     auto values = Var("values", index);
-    string scal_type = IsComplex() ? "Complex" : "double";
-    scal_type = code.is_simd ? "SIMD<"+scal_type+">" : scal_type;
-    if(code.deriv==1) scal_type = "AutoDiff<1,"+scal_type+">";
-    if(code.deriv==2) scal_type = "AutoDiffDiff<1,"+scal_type+">";
+    string scal_type = code.res_type;
     string rows = ToString(Dimension());
     string cols = "mir.IR().Size()";
 
@@ -275,11 +272,7 @@ namespace ngfem
   
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string type = "double";
-    if(code.is_simd) type = "SIMD<double>";
-    if(code.deriv==1) type = "AutoDiff<1,"+type+">";
-    if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
-    code.body += Var(index).Declare(type);
+    code.body += Var(index).Declare(code.res_type);
     code.body += Var(index).Assign(Var(val), false);
   }
   
@@ -353,13 +346,9 @@ namespace ngfem
 
   void ParameterCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string type = "double";
-    if(code.is_simd) type = "SIMD<double>";
-    if(code.deriv==1) type = "AutoDiff<1,"+type+">";
-    if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
     stringstream s;
     s << "*reinterpret_cast<double*>(" << code.AddPointer(&val) << ")";
-    code.body += Var(index).Declare(type);
+    code.body += Var(index).Declare(code.res_type);
     code.body += Var(index).Assign(s.str(), false);
   }
 
@@ -3445,13 +3434,19 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
+      auto cast_value = [&] (int i) {
+          return code.res_type + "(" + Var(inputs[i]).S() + ")";
+      };
+
       auto var_if = Var(inputs[0]);
       TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
-          code.body += Var(index,i,j).Declare("decltype("+Var(inputs[1]).S()+")");
+          code.body += Var(index,i,j).Declare(code.res_type);
       });
+
       if(code.is_simd) {
         TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign("IfPos("+Var(inputs[0]).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+")", false);
+            // cast all input parameters of IfPos to enforce the right overload (f.i. intermediate results could be double instead of AutoDiff<>)
+            code.body += Var(index,i,j).Assign("IfPos("+cast_value(0) + ',' + cast_value(1) + ',' + cast_value(2)+')', false);
         });
       } else {
         code.body += "if (" + var_if.S() + ">0.0) {\n";
@@ -4125,6 +4120,13 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             Code code;
             code.is_simd = simd;
             code.deriv = deriv;
+
+            string res_type = cf->IsComplex() ? "Complex" : "double";
+            if(simd) res_type = "SIMD<" + res_type + ">";
+            if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
+            if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
+            code.res_type = res_type;
+
             for (auto i : Range(steps)) {
               auto& step = *steps[i];
               cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
@@ -4136,10 +4138,6 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
             // set results
             string scal_type = cf->IsComplex() ? "Complex" : "double";
-            string res_type = scal_type;
-            if(simd) res_type = "SIMD<" + res_type + ">";
-            if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
-            if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
             int ii = 0;
             TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
                  code.body += Var(steps.Size(),i,j).Declare(res_type);
