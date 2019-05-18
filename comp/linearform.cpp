@@ -144,7 +144,7 @@ namespace ngcomp
 	else
 	  {
 	    this->GetVector() = TSCAL(0);
-	    this->GetVector().Distribute();
+	    this->GetVector().SetParallelStatus(DISTRIBUTED);
 	  }
 
 
