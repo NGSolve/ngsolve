@@ -1909,14 +1909,16 @@ diffop : ngsolve.fem.DifferentialOperator
     .def(py::init<VorB>())
     .def("__call__", [](DifferentialSymbol & self, bool element_boundary,
                         VorB element_vb,
-                        shared_ptr<Region> definedon)
+                        shared_ptr<Region> definedon,
+                        int bonus_intorder)
          {
            BitArray defon;
            if (definedon)
              defon = definedon->Mask();
            if (element_boundary) element_vb = BND;
-           return DifferentialSymbol(self.vb, element_vb, defon);
-         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL, py::arg("definedon")=nullptr)
+           return DifferentialSymbol(self.vb, element_vb, defon, bonus_intorder);
+         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL,
+         py::arg("definedon")=nullptr, py::arg("bonus_intorder")=0)
     ;
 
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -1934,6 +1936,7 @@ diffop : ngsolve.fem.DifferentialOperator
             return faccf;
           })
     .def ("Derive", &SumOfIntegrals::Derive)
+    .def ("Compile", &SumOfIntegrals::Compile)
     ;
 
   
@@ -2055,6 +2058,7 @@ integrator : ngsolve.fem.BFI
                else
                  bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (icf->cf, dx.vb, !dx.skeleton);
                bfi->SetDefinedOn(dx.definedon);
+               bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
                self += bfi;
              }
            return self;
@@ -2280,7 +2284,12 @@ integrator : ngsolve.fem.LFI
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
            for (auto icf : sum->icfs)
-             *self += make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+             {
+               auto & dx = icf->dx;
+               auto lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+               lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               *self += lfi;
+             }
            return self;
          })
 
@@ -2842,14 +2851,14 @@ element_wise: bool = False
   
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
-             bool skeleton, py::object definedon,
-             IntegrationRule ir, int bonus_intorder, py::object definedonelem,
+             bool skeleton, optional<variant<Region, py::list>> definedon,
+             IntegrationRule ir, int bonus_intorder, shared_ptr<BitArray> definedonelem,
              bool simd_evaluate, VorB element_vb,
              shared_ptr<GridFunction> deformation) 
            {
-             py::extract<Region> defon_region(definedon);
-             if (defon_region.check())
-               vb = VorB(defon_region());
+             if(definedon.has_value())
+               if(auto defregion = get_if<Region>(&*definedon); defregion)
+                 vb = VorB(*defregion);
 
              if (element_boundary) element_vb = BND;
 
@@ -2859,19 +2868,21 @@ element_wise: bool = False
              else
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
              
-             if (py::extract<py::list> (definedon).check())
+             if(definedon.has_value())
                {
-                 Array<int> defon = makeCArray<int> (definedon);
-                 for (int & d : defon) d--;
-                 lfi -> SetDefinedOn (defon); 
+                 if(auto defpylist = get_if<py::list>(&*definedon); defpylist)
+                   {
+                     Array<int> defon = makeCArray<int> (*defpylist);
+                     for (int & d : defon) d--;
+                     lfi -> SetDefinedOn (defon);
+                   }
+                 if(auto defregion = get_if<Region>(&*definedon); defregion)
+                   lfi->SetDefinedOn(defregion->Mask());
                }
 
              lfi->SetSimdEvaluate (simd_evaluate);
              lfi->SetDeformation (deformation);
-             // lfi -> SetDefinedOn (makeCArray<int> (definedon));
 
-             if (defon_region.check())
-               lfi->SetDefinedOn(defon_region().Mask());
              lfi -> SetBonusIntegrationOrder(bonus_intorder);
 	     if (ir.Size())
                {
@@ -2880,8 +2891,8 @@ element_wise: bool = False
 		   (lfi)->SetIntegrationRule(ir);                   
                }
 
-             if (! py::extract<DummyArgument> (definedonelem).check())
-               lfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+             if (definedonelem)
+               lfi -> SetDefinedOnElements (definedonelem);
 
              return shared_ptr<LinearFormIntegrator>(lfi);
            },
@@ -2889,10 +2900,10 @@ element_wise: bool = False
            py::arg("VOL_or_BND")=VOL,
            py::arg("element_boundary")=false,
            py::arg("skeleton")=false,           
-           py::arg("definedon")=DummyArgument(),
+           py::arg("definedon")=nullptr,
 	   py::arg("intrule")=IntegrationRule(),
            py::arg("bonus_intorder")=0,
-           py::arg("definedonelements")=DummyArgument(),
+           py::arg("definedonelements")=nullptr,
            py::arg("simd_evaluate")=true,
            py::arg("element_vb")=VOL,
            py::arg("deformation")=shared_ptr<GridFunction>(),
@@ -2939,14 +2950,14 @@ deformation : ngsolve.comp.GridFunction
 
   m.def("SymbolicBFI",
           [](spCF cf, VorB vb, bool element_boundary,
-             bool skeleton, py::object definedon,
-             IntegrationRule ir, int bonus_intorder, py::object definedonelem,
+             bool skeleton, optional<variant<Region, py::list>> definedon,
+             IntegrationRule ir, int bonus_intorder, shared_ptr<BitArray> definedonelem,
              bool simd_evaluate, VorB element_vb, bool geom_free,
              shared_ptr<GridFunction> deformation)
            {
-             py::extract<Region> defon_region(definedon);
-             if (defon_region.check())
-               vb = VorB(defon_region());
+             if(definedon.has_value())
+               if(auto defregion = get_if<Region>(&*definedon); defregion)
+                 vb = VorB(*defregion);
 
              if (element_boundary) element_vb = BND;
              // check for DG terms
@@ -2968,17 +2979,18 @@ deformation : ngsolve.comp.GridFunction
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);
              bfi->geom_free = geom_free;
-             if (py::extract<py::list> (definedon).check())
+             if(definedon.has_value())
                {
-                 Array<int> defon = makeCArray<int> (definedon);
-                 for (int & d : defon) d--;
-                 bfi -> SetDefinedOn (defon); 
+                 if(auto defpylist = get_if<py::list>(&*definedon); defpylist)
+                   {
+                     Array<int> defon = makeCArray<int> (*defpylist);
+                     for (int & d : defon) d--;
+                     bfi -> SetDefinedOn (defon);
+                   }
+                 if(auto defregion = get_if<Region>(&*definedon); defregion)
+                   bfi->SetDefinedOn(defregion->Mask());
                }
-             // bfi -> SetDefinedOn (makeCArray<int> (definedon));
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
-             if (defon_region.check())
-               bfi->SetDefinedOn(defon_region().Mask());
-
              if (ir.Size())
                {
                  cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
@@ -2991,17 +3003,17 @@ deformation : ngsolve.comp.GridFunction
 
              bfi->SetSimdEvaluate (simd_evaluate);
              bfi->SetDeformation (deformation);
-             if (! py::extract<DummyArgument> (definedonelem).check())
-               bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+             if (definedonelem)
+               bfi -> SetDefinedOnElements (definedonelem);
              return shared_ptr<BilinearFormIntegrator>(bfi);
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("element_boundary")=false,
         py::arg("skeleton")=false,
-        py::arg("definedon")=DummyArgument(),
+        py::arg("definedon")=nullptr,
         py::arg("intrule")=IntegrationRule(),
         py::arg("bonus_intorder")=0,
-        py::arg("definedonelements")=DummyArgument(),
+        py::arg("definedonelements")=nullptr,
         py::arg("simd_evaluate")=true,
         py::arg("element_vb")=VOL,
         py::arg("geom_free")=false,        

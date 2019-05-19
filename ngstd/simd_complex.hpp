@@ -165,6 +165,12 @@ namespace ngstd
 
   inline SIMD<Complex> atan (SIMD<Complex> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return atan(c); }); }
+
+  inline SIMD<Complex> cosh (SIMD<Complex> x)
+  { return SIMDComplexWrapper (x, [](Complex c) { return cosh(c); }); }
+  
+  inline SIMD<Complex> sinh (SIMD<Complex> x)
+  { return SIMDComplexWrapper (x, [](Complex c) { return sinh(c); }); }
   
   inline SIMD<Complex> exp (SIMD<Complex> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return exp(c); }); }

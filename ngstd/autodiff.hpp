@@ -477,6 +477,30 @@ template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> tan (AutoDiff<D,SCAL> x)
 { return sin(x) / cos(x); }
 
+using std::sinh;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> sinh (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = sinh(x.Value());
+  SCAL ch = cosh(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * ch;
+  return res;
+}
+
+using std::cosh;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> cosh (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = cosh(x.Value());
+  SCAL sh = sinh(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * sh;
+  return res;
+}
+
 using std::floor;
 template<int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> floor (const AutoDiff<D,SCAL> & x)

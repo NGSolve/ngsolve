@@ -308,6 +308,26 @@ namespace ngfem
 
   }
 
+  template <int DIMS, int DIMR, typename SCAL>
+    void MappedIntegrationPoint<DIMS,DIMR,SCAL>::
+    CalcHesse (Vec<DIMR,Mat<DIMS,DIMS>> & ddx) const
+  {
+    double eps = 1e-6;
+    Mat<DIMR,DIMS> jacr, jacl;
+    for (int dir = 0; dir < DIMS; dir++)
+      {
+        IntegrationPoint ipr = this->IP();
+        IntegrationPoint ipl = this->IP();
+        ipr(dir) += eps;
+        ipl(dir) -= eps;
+        this->eltrans->CalcJacobian (ipr, jacr);    
+        this->eltrans->CalcJacobian (ipl, jacl);    
+        
+        for (int j = 0; j < DIMS; j++)
+          for (int k = 0; k < DIMR; k++)
+            ddx(k)(dir,j) = (jacr(k,j) - jacl(k,j) ) / (2*eps);
+      }
+  }
   
 
   template class MappedIntegrationPoint<0,0>;

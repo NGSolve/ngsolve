@@ -601,8 +601,13 @@ namespace ngcomp
               string shared = scan->GetStringValue();
 	      scan->ReadNext();
 
-#ifdef HAVE_DLFCN_H 
+              
+#ifdef HAVE_DLFCN_H
+#ifdef __APPLE__
+	      shared += ".dylib";
+#else
 	      shared += ".so";
+#endif
               cout << IM(1) << "load shared library '" << shared << "'" << endl;
 
               void * handle = dlopen (shared.c_str(), RTLD_LAZY | RTLD_GLOBAL);

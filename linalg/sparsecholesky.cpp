@@ -130,7 +130,6 @@ namespace ngla
   { 
     static Timer t("SparseCholesky - total");
     static Timer ta("SparseCholesky - allocate");
-    static Timer tf("SparseCholesky - fill factor");
     RegionTimer reg(t);
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
@@ -233,7 +232,6 @@ namespace ngla
     Allocate (mdo->order,  mdo->vertices, &mdo->blocknr[0]);
     ta.Stop();
 
-    tf.Start();
     delete mdo;
     mdo = 0;
 
@@ -253,76 +251,7 @@ namespace ngla
 	     << double (endtime - starttime) / CLOCKS_PER_SEC << " secs" << endl;
     
     starttime = endtime;
-
-    /*
-    TM id;
-    id = 0.0;
-    SetIdentity(id);
-    
-    for (int i = 0; i < n; i++)
-      if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
-	SetOrig (i, i, id);
-    */
-
-    if (!inner && !cluster)
-      // for (int i = 0; i < n; i++)
-      ParallelFor 
-        (Range(n), [&](int i)
-         {
-           for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-             {
-               int col = a.GetRowIndices(i)[j];
-               if (col <= i)
-                 SetOrig (i, col, a.GetRowValues(i)[j]);
-             }
-         });
-    
-    else if (inner)
-      // for (int i = 0; i < n; i++)
-      ParallelFor 
-        (Range(n), [&](int i)
-         {
-           if (inner->Test(i))
-             for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-               {
-                 int col = a.GetRowIndices(i)[j];
-                 if (col <= i)
-                   {
-                     if (inner->Test(col))
-                       SetOrig (i, col, a.GetRowValues(i)[j]);
-                     /*
-                       else
-                       if (i==col)
-                       SetOrig (i, col, id);
-                     */
-                   }
-               }
-         }, TasksPerThread(5));
-    else
-      for (int i = 0; i < n; i++)
-	{
-	  FlatArray<int> row = a.GetRowIndices(i);
-	  for (int j = 0; j < row.Size(); j++)
-	    {
-	      int col = row[j];
-	      if (col <= i)
-		if ( ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i])
-                     // || i == col 
-                     )
-                  SetOrig (i, col, a.GetRowValues(i)[j]);
-              /*
-              if (col == i && (*cluster)[i] == 0)
-                SetOrig (i, i, id);
-              */
-	    }
-	}
-
-    tf.Stop();
-    
-    if (printstat)
-      cout << IM(4) << "do factor " << flush;
-
-    FactorSPD();
+    FactorNew(a);
     /*
 #ifdef LAPACK
     if (a.IsSPD())
@@ -592,50 +521,54 @@ namespace ngla
   void SparseCholeskyTM<TM> :: 
   FactorNew (const SparseMatrix<TM> & a)
   {
+    static Timer tf("SparseCholesky - fill factor");
+    tf.Start();
     if ( height != a.Height() )
       {
 	cout << IM(4) << "SparseCholesky::FactorNew called with matrix of different size." << endl;
 	return;
       }
-
-    TM id;
-    id = 0.0;
-    SetIdentity(id);
-
-    // for (size_t i = 0; i < nze; i++) lfact[i] = 0.0;
     lfact = TM(0.0);
 
     if (!inner && !cluster)
       ParallelFor 
-        (Range(height), [&](int i)
+        (Range(height), [&](auto i)
          {
            auto rowind = a.GetRowIndices(i);
            auto rowvals = a.GetRowValues(i);
            
-           for (size_t j = 0; j < rowind.Size(); j++)
+           for (auto j : Range(rowind.Size()))
              if (rowind[j] <= i)
                SetOrig (i, rowind[j], rowvals[j]);
          });
-    
+        else if (inner)
+      ParallelFor 
+        (Range(height), [&](auto i)
+         {
+           if (inner->Test(i))
+             for (auto j : Range(a.GetRowIndices(i)))
+               {
+                 auto col = a.GetRowIndices(i)[j];
+                 if (col <= i)
+                   {
+                     if (inner->Test(col))
+                       SetOrig (i, col, a.GetRowValues(i)[j]);
+                   }
+               }
+         }, TasksPerThread(5));
     else
-      
-      for (int i = 0; i < height; i++)
-        for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-          {
-            int col = a.GetRowIndices(i)[j];
-            
-            if ((!inner && !cluster) || 
-                (inner && inner->Test(i) && inner->Test(col)) ||
-	      (!inner && cluster && (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) )
-              {
-                if ( col <= i ) SetOrig (i, col, a.GetRowValues(i)[j]);
-              }
-            /*
-              else if (i == col)
-              SetOrig (i, i, id);
-            */
-          }
-    
+      for (auto i : Range(height))
+	{
+	  auto row = a.GetRowIndices(i);
+	  for (auto j : Range(row.Size()))
+	    {
+	      auto col = row[j];
+	      if (col <= i)
+		if (((*cluster)[i] == (*cluster)[col] && (*cluster)[i]))
+                  SetOrig (i, col, a.GetRowValues(i)[j]);
+	    }
+	}
+    tf.Stop();
     FactorSPD(); 
   }
  
