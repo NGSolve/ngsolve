@@ -474,7 +474,12 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     for (Ngs_Element el : ma->Elements<VOL>())
       if (DefinedOn(el))
         fine_facet[el.Facets()] = true;
-      
+
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn(el))
+        fine_facet[el.Facets()] = true;
+
+    
     if (!AllDofsTogether())
       {
         for(int facet = 0; facet < ma->GetNFacets(); facet++)
