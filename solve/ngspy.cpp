@@ -72,7 +72,7 @@ PYBIND11_MODULE(ngslib, m)
   cout << "importing NGSolve-" << ngsolve_version << endl;
 #endif
 
-  try
+    try
     {
         m.attr("__version__") = ngsolve_version;
         py::module ngstd = m.def_submodule("ngstd", "pybind ngstd");
