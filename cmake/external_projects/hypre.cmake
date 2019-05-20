@@ -9,10 +9,7 @@ ExternalProject_Add(project_hypre
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
   URL "http://computation.llnl.gov/projects/hypre-scalable-linear-solvers-multigrid-methods/download/hypre-2.11.1.tar.gz"
   URL_MD5 3f02ef8fd679239a6723f60b7f796519
-  CONFIGURE_COMMAND cmake src
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+  CONFIGURE_COMMAND cmake src -DCMAKE_C_FLAGS=-fPIC
   BUILD_IN_SOURCE 1
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   PATCH_COMMAND ""
