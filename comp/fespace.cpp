@@ -1750,7 +1750,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
-    shared_ptr<BaseMatrix> sum = nullptr;
+    shared_ptr<BaseMatrix> sum;
   
     size_t ne = ma->GetNE();
   
