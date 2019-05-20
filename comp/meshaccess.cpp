@@ -2062,7 +2062,10 @@ namespace ngcomp
   public:
     BoundaryFromVolumeCoefficientFunction() = default;
     BoundaryFromVolumeCoefficientFunction (shared_ptr<CoefficientFunction> avol_cf)
-      : BASE(avol_cf->Dimension(), avol_cf->IsComplex()), vol_cf(avol_cf) { ; }
+      : BASE(avol_cf->Dimension(), avol_cf->IsComplex()), vol_cf(avol_cf)
+    {
+      SetDimensions(avol_cf->Dimensions());
+    }
 
     ~BoundaryFromVolumeCoefficientFunction() { ; }
     
