@@ -46,6 +46,8 @@ namespace ngla
 
     /// entry-size
     int es;
+    bool complex;
+    
   public:
     /**
        setup parallel dofs.
@@ -86,6 +88,7 @@ namespace ngla
     const NgsMPI_Comm & GetCommunicator () const { return comm; }
 
     int GetEntrySize () const { return es; }
+    bool IsComplex () const { return complex; }
     
     int GetMasterProc (int dof) const
     {
