@@ -1819,13 +1819,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (sum == nullptr) {
       // return dummy op for empty FESpace
-      // sum = make_shared<IdentityMatrix>(0 , IsComplex());
-      if(IsComplex())
-	sum = make_shared<SparseMatrix<Complex>>(0 , 0);
-      else
-	sum = make_shared<SparseMatrix<double>>(0 , 0);
+      Table<DofId> xdofs(0, 0), ydofs(0, 0);
+      Matrix<> mat(0,0);
+      sum = make_shared<ConstantElementByElementMatrix>
+	(l2space->GetNDof(), this->GetNDof(),
+	 mat, std::move(ydofs), std::move(xdofs));
     }
-
+    
     return sum;    
   }
 
