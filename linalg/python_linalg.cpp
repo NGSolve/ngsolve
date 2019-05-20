@@ -109,13 +109,21 @@ void ExportSparseMatrix(py::module m)
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
-  py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel ")
+  py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel statuses")
     .value("DISTRIBUTED", DISTRIBUTED)
     .value("CUMULATED", CUMULATED)
     .value("NOT_PARALLEL", NOT_PARALLEL)
     .export_values()
     ;
-    
+
+  py::enum_<PARALLEL_OP>(m, "PARALLEL_OP", "enum of possible parallel ops")
+    .value("C2C", C2C)
+    .value("C2D", C2D)
+    .value("D2C", D2C)
+    .value("D2D", D2D)
+    .export_values()
+    ;
+
   py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
 #ifdef PARALLEL
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
@@ -157,18 +165,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           "size"_a, "complex"_a=false, "entrysize"_a=1);
 
     m.def("CreateParallelVector",
-          [] (shared_ptr<ParallelDofs> pardofs, bool is_complex, int es) -> shared_ptr<BaseVector>
+          [] (shared_ptr<ParallelDofs> pardofs) -> shared_ptr<BaseVector>
           {
 #ifdef PARALLEL
-	    if(is_complex)
-	      return make_shared<ParallelVVector<Complex>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+	    if(pardofs->IsComplex())
+	      return make_shared<S_ParallelBaseVectorPtr<double>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, DISTRIBUTED);
 	    else
-	      return make_shared<ParallelVVector<double>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+	      return make_shared<S_ParallelBaseVectorPtr<Complex>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, DISTRIBUTED);
 #else
-	    return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+	    if(pardofs->IsComplex())
+	      return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+	    else
+	      return make_shared<VVector<Complex>>(pardofs->GetNDofLocal());
 #endif
 	  },
-          py::arg("pardofs"), "complex"_a=false, "entrysize"_a=1);
+          py::arg("pardofs"));
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
@@ -176,17 +187,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
          "size"_a, "complex"_a=false, "entrysize"_a=1)
+    .def_property_readonly("local_vec", [](shared_ptr<BaseVector> self) -> shared_ptr<BaseVector> {
 #ifdef PARALLEL
-    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
-	auto * pv = dynamic_cast_ParallelBaseVector (&self);
-	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
-	return pv->GetLocalVector();
-      } )
+	auto pv = dynamic_cast_ParallelBaseVector (self.get());
+	return (pv==nullptr) ? self : pv->GetLocalVector();
 #else
-    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
-	throw Exception("Only ParallelVectors have a local Vector!");
-      } )
+	return self;
 #endif
+      } )
+// #ifdef PARALLEL
+//     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+// 	auto * pv = dynamic_cast_ParallelBaseVector (&self);
+// 	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
+// 	return pv->GetLocalVector();
+//       } )
+// #else
+//     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+// 	throw Exception("Only ParallelVectors have a local Vector!");
+//       } )
+// #endif
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
@@ -764,10 +783,10 @@ inverse : string
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
-    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>(),
-	 py::arg("mat"),py::arg("pardofs"))
-    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
-	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"))
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, PARALLEL_OP>(),
+	 py::arg("mat"),py::arg("pardofs"), py::arg("op"))
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>, PARALLEL_OP>(),
+	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"), py::arg("op"))
     .def_property_readonly("row_pardofs", [](ParallelMatrix & mat) { return mat.GetRowParallelDofs(); })
     .def_property_readonly("col_pardofs", [](ParallelMatrix & mat) { return mat.GetColParallelDofs(); })
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
