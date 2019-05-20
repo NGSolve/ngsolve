@@ -980,7 +980,7 @@ namespace ngla
   template class MumpsInverse<Mat<3,3,double> >;
   template class MumpsInverse<Mat<3,3,Complex> >;
 #endif
-#if MAX_SYS_DIM >= 5
+#if MAX_SYS_DIM >= 4
   template class MumpsInverse<Mat<4,4,double> >;
   template class MumpsInverse<Mat<4,4,Complex> >;
 #endif
