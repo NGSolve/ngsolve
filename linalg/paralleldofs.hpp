@@ -124,10 +124,14 @@ namespace ngla
   {
   protected:
     int ndof;
+    int es;
+    bool complex;
     
   public:
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
-		  int dim = 1, bool iscomplex = false) { ; }
+		  int dim = 1, bool iscomplex = false)
+      : es(dim), complex(iscomplex)
+    { ; }
     
     int GetNDofLocal () const { return ndof; }
     int GetNDofGlobal () const { return ndof; }
@@ -156,7 +160,8 @@ namespace ngla
     template <typename T>
     void AllReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
 
-    int GetEntrySize () const { return -1; }
+    int GetEntrySize () const { return es; }
+    bool IsComplex () const { return complex; }
   };
   
 #endif
