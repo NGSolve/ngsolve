@@ -169,14 +169,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           {
 #ifdef PARALLEL
 	    if(pardofs->IsComplex())
-	      return make_shared<S_ParallelBaseVectorPtr<double>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, DISTRIBUTED);
-	    else
 	      return make_shared<S_ParallelBaseVectorPtr<Complex>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, DISTRIBUTED);
+	    else
+	      return make_shared<S_ParallelBaseVectorPtr<double>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, DISTRIBUTED);
 #else
 	    if(pardofs->IsComplex())
-	      return make_shared<VVector<double>>(pardofs->GetNDofLocal());
-	    else
 	      return make_shared<VVector<Complex>>(pardofs->GetNDofLocal());
+	    else
+	      return make_shared<VVector<double>>(pardofs->GetNDofLocal());
 #endif
 	  },
           py::arg("pardofs"));
