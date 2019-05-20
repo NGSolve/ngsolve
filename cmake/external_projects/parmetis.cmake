@@ -11,13 +11,11 @@ ExternalProject_Add(project_parmetis
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   PATCH_COMMAND patch -p1 -i ${CMAKE_CURRENT_LIST_DIR}/parmetis.patch
   CMAKE_ARGS
-	 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+         -DCMAKE_C_FLAGS=-fPIC
          -DMPI_INCLUDE_PATH=${MPI_HDIR}
 	 -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
          -DMETIS_PATH=${PARMETIS_SRC_DIR}/metis/
          -DCMAKE_INSTALL_PREFIX=${PARMETIS_DIR}
-         -DCMAKE_C_COMPILER=${MPI_C_COMPILER}
-         -DCMAKE_CXX_COMPILER=${MPI_CXX_COMPILER}
          -DMETIS_INSTALL=ON
   UPDATE_COMMAND "" # Disable update
   )
