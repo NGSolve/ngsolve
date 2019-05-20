@@ -382,10 +382,12 @@ namespace ngla
   
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
 				    shared_ptr<ParallelDofs> arpardofs,
-				    shared_ptr<ParallelDofs> acpardofs)
+				    shared_ptr<ParallelDofs> acpardofs,
+				    PARALLEL_OP aop)
     : BaseMatrix((arpardofs==acpardofs) ? arpardofs : nullptr), mat(amat),
       row_paralleldofs(arpardofs), col_paralleldofs(acpardofs)
   {
+    op = aop;
     if(row_paralleldofs==col_paralleldofs)
       mat->SetParallelDofs (arpardofs);
 #ifdef USE_MUMPS
@@ -396,7 +398,8 @@ namespace ngla
   }
 
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
-				    shared_ptr<ParallelDofs> apardofs)
+				    shared_ptr<ParallelDofs> apardofs,
+				    PARALLEL_OP aop)
     : ParallelMatrix(amat, apardofs, apardofs)
   { }
 
@@ -449,16 +452,32 @@ namespace ngla
 
   void ParallelMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    x.Cumulate();
-    y.Distribute();
-    mat->MultAdd (s, x, y);
+    const auto & xpar = dynamic_cast_ParallelBaseVector(x);
+    auto & ypar = dynamic_cast_ParallelBaseVector(y);
+    if (op & char(2))
+      x.Cumulate();
+    else
+      x.Distribute();
+    if (op & char(1))
+      y.Cumulate();
+    else
+      y.Distribute();
+    mat->MultAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
   }
 
   void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    x.Cumulate();
-    y.Distribute();
-    mat->MultTransAdd (s, x, y);
+    const auto & xpar = dynamic_cast_ParallelBaseVector(x);
+    auto & ypar = dynamic_cast_ParallelBaseVector(y);
+    if (op & char(1))
+      x.Distribute();
+    else
+      x.Cumulate();
+    if (op & char(2))
+      y.Distribute();
+    else
+      y.Cumulate();
+    mat->MultTransAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
   }
 
   shared_ptr<BaseMatrix> ParallelMatrix :: CreateMatrix () const
