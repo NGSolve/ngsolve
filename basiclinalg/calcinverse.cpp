@@ -215,27 +215,36 @@ namespace ngbla
 
 
 
+#if MAX_SYS_DIM >= 1
   template void CalcInverse (FlatMatrix<Mat<1,1,double> > inv, INVERSE_LIB il);
-  template void CalcInverse (FlatMatrix<Mat<2,2,double> > inv, INVERSE_LIB il);
-  template void CalcInverse (FlatMatrix<Mat<3,3,double> > inv, INVERSE_LIB il);
-  template void CalcInverse (FlatMatrix<Mat<4,4,double> > inv, INVERSE_LIB il);
-
   template void CalcInverse (FlatMatrix<Mat<1,1,Complex> > inv, INVERSE_LIB il);
+#endif
+#if MAX_SYS_DIM >= 2
+  template void CalcInverse (FlatMatrix<Mat<2,2,double> > inv, INVERSE_LIB il);
   template void CalcInverse (FlatMatrix<Mat<2,2,Complex> > inv, INVERSE_LIB il);
+#endif
+#if MAX_SYS_DIM >= 3
+  template void CalcInverse (FlatMatrix<Mat<3,3,double> > inv, INVERSE_LIB il);
   template void CalcInverse (FlatMatrix<Mat<3,3,Complex> > inv, INVERSE_LIB il);
+#endif
+#if MAX_SYS_DIM >= 4
+  template void CalcInverse (FlatMatrix<Mat<4,4,double> > inv, INVERSE_LIB il);
   template void CalcInverse (FlatMatrix<Mat<4,4,Complex> > inv, INVERSE_LIB il);
-
-
-
+#endif
 #if MAX_SYS_DIM >= 5
-  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv, INVERSE_LIB il);
-  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv, INVERSE_LIB il);
-  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv, INVERSE_LIB il);
-  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv, INVERSE_LIB il);
-
   template void CalcInverse (FlatMatrix<Mat<5,5,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv, INVERSE_LIB il);
+#endif
+#if MAX_SYS_DIM >= 6
+  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv, INVERSE_LIB il);
   template void CalcInverse (FlatMatrix<Mat<6,6,Complex> > inv, INVERSE_LIB il);
+#endif
+#if MAX_SYS_DIM >= 7
+  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv, INVERSE_LIB il);
   template void CalcInverse (FlatMatrix<Mat<7,7,Complex> > inv, INVERSE_LIB il);
+#endif
+#if MAX_SYS_DIM >= 8
+  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv, INVERSE_LIB il);
   template void CalcInverse (FlatMatrix<Mat<8,8,Complex> > inv, INVERSE_LIB il);
 #endif
 
