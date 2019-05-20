@@ -10,6 +10,10 @@
 namespace ngla
 {
 
+  enum PARALLEL_OP : char { D2D = 0,   // 00
+			    D2C = 1,   // 01
+			    C2D = 2,   // 10
+			    C2C = 3 }; // 11
 
   class ParallelMatrix : public BaseMatrix
   {
@@ -18,13 +22,16 @@ namespace ngla
 
     shared_ptr<ParallelDofs> row_paralleldofs, col_paralleldofs;
 
+    PARALLEL_OP op;
+    
   public:
-    ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs);
+    ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs,
+		    PARALLEL_OP op = C2D);
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 
     ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> arpardofs,
-		    shared_ptr<ParallelDofs> acpardofs);
+		    shared_ptr<ParallelDofs> acpardofs, PARALLEL_OP op = C2D);
 
     virtual ~ParallelMatrix () override;
     virtual bool IsComplex() const override { return mat->IsComplex(); } 
