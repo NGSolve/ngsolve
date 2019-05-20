@@ -4951,11 +4951,8 @@ namespace ngcomp
     shared_ptr<BaseMatrix> mat = spmat;
 
     if (this->GetFESpace()->IsParallel())
-      if(this->GetFESpace2())
-	mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs(),
-					   this->GetFESpace2()->GetParallelDofs());
-      else
-	mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
+					 this->GetTestSpace()->GetParallelDofs());
     
     this->mats.Append (mat);
 
