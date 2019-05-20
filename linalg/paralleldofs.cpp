@@ -20,7 +20,7 @@ namespace ngla
   
   ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
-    : comm(acomm), dist_procs(adist_procs), es(dim)
+    : comm(acomm), dist_procs(adist_procs), es(dim), complex(iscomplex)
     
   {
     int ntasks = comm.Size();
