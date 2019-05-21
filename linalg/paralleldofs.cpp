@@ -20,7 +20,7 @@ namespace ngla
   
   ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
-    : comm(acomm), dist_procs(adist_procs)
+    : comm(acomm), dist_procs(adist_procs), es(dim), complex(iscomplex)
     
   {
     int ntasks = comm.Size();
@@ -74,10 +74,10 @@ namespace ngla
     mpi_type = iscomplex ?
       MyGetMPIType<Complex>() : MyGetMPIType<double>(); 
     
-    if (dim != 1)
+    if (es != 1)
       {
 	MPI_Datatype htype;
-	MPI_Type_contiguous (dim, mpi_type, &htype);
+	MPI_Type_contiguous (es, mpi_type, &htype);
 	mpi_type = htype;
       }
     
@@ -107,6 +107,12 @@ namespace ngla
     for (int i = 0; i < ndof; i++)
       if (ismasterdof.Test(i)) nlocal++;
     global_ndof = comm.AllReduce (nlocal, MPI_SUM);
+  }
+
+  ParallelDofs :: ~ParallelDofs()  {
+    for (auto dest : Range(mpi_t.Size()))
+      if ( IsExchangeProc(dest) )
+	MPI_Type_free(&mpi_t[dest]);
   }
 
   shared_ptr<ParallelDofs> ParallelDofs :: SubSet (shared_ptr<BitArray> take_dofs) const

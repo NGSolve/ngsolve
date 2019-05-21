@@ -12,16 +12,11 @@ import netgen.meshing as netgen
 from ngsolve import *
 
 # initialize MPI
-comm = MPI_Init()
+comm = mpi_world
 rank = comm.rank
 np = comm.size
 
 do_vtk = False
-
-# DISTRIBUTED/CUMULATED describes the parallel status of a
-# parallel vector
-from ngsolve.la import DISTRIBUTED
-from ngsolve.la import CUMULATED
 
 print("Hello from rank "+str(rank)+" of "+str(np))
 
