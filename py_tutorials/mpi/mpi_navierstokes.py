@@ -3,10 +3,8 @@ from netgen.geom2d import SplineGeometry
 
 
 from ngsolve import *
-from ngsolve.la import DISTRIBUTED
-from ngsolve.la import CUMULATED
 
-comm = MPI_Init()
+comm = mpi_world
 rank = comm.rank
 np = comm.size
 
