@@ -402,10 +402,12 @@ namespace ngla
   
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
 				    shared_ptr<ParallelDofs> arpardofs,
-				    shared_ptr<ParallelDofs> acpardofs)
+				    shared_ptr<ParallelDofs> acpardofs,
+				    PARALLEL_OP aop)
     : BaseMatrix((arpardofs==acpardofs) ? arpardofs : nullptr), mat(amat),
       row_paralleldofs(arpardofs), col_paralleldofs(acpardofs)
   {
+    op = aop;
     if(row_paralleldofs==col_paralleldofs)
       mat->SetParallelDofs (arpardofs);
 #ifdef USE_MUMPS
@@ -416,29 +418,50 @@ namespace ngla
   }
 
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
-				    shared_ptr<ParallelDofs> apardofs)
+				    shared_ptr<ParallelDofs> apardofs,
+				    PARALLEL_OP aop)
     : ParallelMatrix(amat, apardofs, apardofs)
   { }
 
   
   AutoVector ParallelMatrix :: CreateRowVector () const
   {
-    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
-      throw Exception("ParallelMatrix::CreateRowVector only implemented for sparse matrices!");
-    if (row_paralleldofs==nullptr)
-      return make_shared<VVector<double>> (mat->Width());
-    return make_shared<ParallelVVector<double>> (mat->Width(), row_paralleldofs);
-    return shared_ptr<BaseVector>();
+    if (IsComplex()) {
+      if (row_paralleldofs == nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
+    else {
+      if (row_paralleldofs == nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
   }
   
   AutoVector ParallelMatrix :: CreateColVector () const
   {
-    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
-      throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
-    if (col_paralleldofs==nullptr)
-      return make_shared<VVector<double>> (mat->Height());
-    return make_shared<ParallelVVector<double>> (mat->Height(), col_paralleldofs);
-    return shared_ptr<BaseVector>();
+    if (IsComplex()) {
+      if (col_paralleldofs==nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	  (mat->Height(), col_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
+    else {
+      if (col_paralleldofs==nullptr)
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+      else
+	return make_shared<S_ParallelBaseVectorPtr<double>>
+	  (mat->Height(), col_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+    }
   }
 
 
@@ -449,16 +472,32 @@ namespace ngla
 
   void ParallelMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    x.Cumulate();
-    y.Distribute();
-    mat->MultAdd (s, x, y);
+    const auto & xpar = dynamic_cast_ParallelBaseVector(x);
+    auto & ypar = dynamic_cast_ParallelBaseVector(y);
+    if (op & char(2))
+      x.Cumulate();
+    else
+      x.Distribute();
+    if (op & char(1))
+      y.Cumulate();
+    else
+      y.Distribute();
+    mat->MultAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
   }
 
   void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    x.Cumulate();
-    y.Distribute();
-    mat->MultTransAdd (s, x, y);
+    const auto & xpar = dynamic_cast_ParallelBaseVector(x);
+    auto & ypar = dynamic_cast_ParallelBaseVector(y);
+    if (op & char(1))
+      x.Distribute();
+    else
+      x.Cumulate();
+    if (op & char(2))
+      y.Distribute();
+    else
+      y.Cumulate();
+    mat->MultTransAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
   }
 
   shared_ptr<BaseMatrix> ParallelMatrix :: CreateMatrix () const
@@ -471,9 +510,14 @@ namespace ngla
     if(row_paralleldofs != col_paralleldofs) {
       throw Exception("ParallelMatrix::CreateVector called for nonsymmetric case (use CreateRowVector of CreateColVector)!");
     }
-    if (dynamic_cast<const SparseMatrix<double>*> (mat.get()))
-      return make_shared<ParallelVVector<double>> (mat->Height(), paralleldofs);
-    throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
+    if (IsComplex()) {
+      return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	(mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+    }
+    else {
+      return make_shared<S_ParallelBaseVectorPtr<double>>
+	(mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
+    }
   }
 
   ostream & ParallelMatrix :: Print (ostream & ost) const
@@ -500,7 +544,6 @@ namespace ngla
     inv = InverseMatrixTM<Complex> (subset);  if (inv) return inv;
     inv = InverseMatrixTM<Mat<2> > (subset);   if (inv) return inv;
     inv = InverseMatrixTM<Mat<3> > (subset);   if (inv) return inv;
-
     inv = InverseMatrixTM<Mat<2,2,Complex> > (subset);   if (inv) return inv;
     inv = InverseMatrixTM<Mat<3,3,Complex> > (subset);   if (inv) return inv;
 

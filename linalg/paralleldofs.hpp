@@ -43,6 +43,10 @@ namespace ngla
     
     /// am I the master process ?
     BitArray ismasterdof;
+
+    /// entry-size
+    int es;
+    bool complex;
     
   public:
     /**
@@ -55,7 +59,7 @@ namespace ngla
 
     shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
       
-    virtual ~ParallelDofs()  { ; }
+    virtual ~ParallelDofs();
 
     int GetNTasks() const { return exchangedofs.Size(); }
 
@@ -83,6 +87,9 @@ namespace ngla
 
     const NgsMPI_Comm & GetCommunicator () const { return comm; }
 
+    int GetEntrySize () const { return es; }
+    bool IsComplex () const { return complex; }
+    
     int GetMasterProc (int dof) const
     {
       int m = comm.Rank();
@@ -117,10 +124,14 @@ namespace ngla
   {
   protected:
     int ndof;
+    int es;
+    bool complex;
     
   public:
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
-		  int dim = 1, bool iscomplex = false) { ; }
+		  int dim = 1, bool iscomplex = false)
+      : es(dim), complex(iscomplex)
+    { ; }
     
     int GetNDofLocal () const { return ndof; }
     int GetNDofGlobal () const { return ndof; }
@@ -148,6 +159,9 @@ namespace ngla
     
     template <typename T>
     void AllReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
+
+    int GetEntrySize () const { return es; }
+    bool IsComplex () const { return complex; }
   };
   
 #endif
