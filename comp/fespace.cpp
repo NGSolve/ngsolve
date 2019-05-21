@@ -1816,6 +1816,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
         else
           sum = mat;
       }
+
+    if (sum == nullptr) {
+      // return dummy op for empty FESpace
+      Table<DofId> xdofs(0, 0), ydofs(0, 0);
+      Matrix<> mat(0,0);
+      sum = make_shared<ConstantElementByElementMatrix>
+	(l2space->GetNDof(), this->GetNDof(),
+	 mat, std::move(ydofs), std::move(xdofs));
+    }
+    
     return sum;    
   }
 

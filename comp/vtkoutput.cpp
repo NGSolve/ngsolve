@@ -418,10 +418,10 @@ namespace ngcomp
       filenamefinal << "_" << output_cnt;
     filenamefinal << ".vtk";
     fileout = make_shared<ofstream>(filenamefinal.str());
-    cout << " Writing VTK-Output";
+    cout << IM(4) << " Writing VTK-Output";
     if (output_cnt > 0)
-      cout << " ( " << output_cnt << " )";
-    cout << ":" << flush;
+      cout << IM(4) << " ( " << output_cnt << " )";
+    cout << IM(4) << ":" << flush;
     
     output_cnt++;
 
@@ -545,7 +545,7 @@ namespace ngcomp
     PrintCellTypes(vb,drawelems);
     PrintFieldData();
       
-    cout << " Done." << endl;
+    cout << IM(4) << " Done." << endl;
   }    
 
   NumProcVTKOutput::NumProcVTKOutput (shared_ptr<PDE> apde, const Flags & flags)
