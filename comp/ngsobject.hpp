@@ -462,7 +462,49 @@ namespace ngcomp
 
 
 
-#if MAX_SYS_DIM >= 5
+#if MAX_SYS_DIM == 5
+
+#define CreateMatObject2S(dest, Object, dim1, dim2, SCAL, arg, arg2)    \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2); break;                    \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2); break;          \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2); break;          \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2); break;          \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2); break;          \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 6
+
+#define CreateMatObject2S(dest, Object, dim1, dim2, SCAL, arg, arg2)    \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2); break;                    \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2); break;          \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2); break;          \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2); break;          \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2); break;          \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2); break;          \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 7
+
+#define CreateMatObject2S(dest, Object, dim1, dim2, SCAL, arg, arg2)    \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2); break;                    \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2); break;          \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2); break;          \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2); break;          \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2); break;          \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2); break;          \
+  case 7: dest = new Object<Mat<7,7,SCAL> >(arg, arg2); break;          \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM >= 8
 
 #define CreateMatObject2S(dest, Object, dim1, dim2, SCAL, arg, arg2)    \
   switch (dim1) {                                                       \
@@ -530,7 +572,49 @@ namespace ngcomp
 #endif
 
 
-#if MAX_SYS_DIM >= 5
+#if MAX_SYS_DIM == 5
+
+#define CreateSymMatObject2S(dest, Object, dim1, SCAL, arg, arg2)       \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2); break;                    \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2); break;          \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2); break;          \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2); break;          \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2); break;          \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 6
+
+#define CreateSymMatObject2S(dest, Object, dim1, SCAL, arg, arg2)       \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2); break;                    \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2); break;          \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2); break;          \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2); break;          \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2); break;          \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2); break;          \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 7
+
+#define CreateSymMatObject2S(dest, Object, dim1, SCAL, arg, arg2)       \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2); break;                    \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2); break;          \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2); break;          \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2); break;          \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2); break;          \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2); break;          \
+  case 7: dest = new Object<Mat<7,7,SCAL> >(arg, arg2); break;          \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM >= 8
 
 #define CreateSymMatObject2S(dest, Object, dim1, SCAL, arg, arg2)       \
   switch (dim1) {                                                       \
@@ -621,7 +705,49 @@ namespace ngcomp
 
 
 
-#if MAX_SYS_DIM >= 5
+#if MAX_SYS_DIM == 5
+
+#define CreateMatObject3S(dest, Object, dim1, dim2, SCAL, arg, arg2, arg3) \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2, arg3); break;              \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2, arg3); break;    \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2, arg3); break;    \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2, arg3); break;    \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2, arg3); break;    \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 6
+
+#define CreateMatObject3S(dest, Object, dim1, dim2, SCAL, arg, arg2, arg3) \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2, arg3); break;              \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2, arg3); break;    \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2, arg3); break;    \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2, arg3); break;    \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2, arg3); break;    \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2, arg3); break;    \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 7
+
+#define CreateMatObject3S(dest, Object, dim1, dim2, SCAL, arg, arg2, arg3) \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2, arg3); break;              \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2, arg3); break;    \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2, arg3); break;    \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2, arg3); break;    \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2, arg3); break;    \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2, arg3); break;    \
+  case 7: dest = new Object<Mat<7,7,SCAL> >(arg, arg2, arg3); break;    \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM >= 8
 
 #define CreateMatObject3S(dest, Object, dim1, dim2, SCAL, arg, arg2, arg3) \
   switch (dim1) {                                                       \
@@ -688,8 +814,49 @@ namespace ngcomp
 
 #endif
 
+#if MAX_SYS_DIM == 5
 
-#if MAX_SYS_DIM >= 5
+#define CreateSymMatObject3S(dest, Object, dim1, SCAL, arg, arg2, arg3) \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2, arg3); break;              \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2, arg3); break;    \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2, arg3); break;    \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2, arg3); break;    \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2, arg3); break;    \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 6
+
+#define CreateSymMatObject3S(dest, Object, dim1, SCAL, arg, arg2, arg3) \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2, arg3); break;              \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2, arg3); break;    \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2, arg3); break;    \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2, arg3); break;    \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2, arg3); break;    \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2, arg3); break;    \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM == 7
+
+#define CreateSymMatObject3S(dest, Object, dim1, SCAL, arg, arg2, arg3) \
+  switch (dim1) {                                                       \
+  case 1: dest = new Object<SCAL>(arg, arg2, arg3); break;              \
+  case 2: dest = new Object<Mat<2,2,SCAL> >(arg, arg2, arg3); break;    \
+  case 3: dest = new Object<Mat<3,3,SCAL> >(arg, arg2, arg3); break;    \
+  case 4: dest = new Object<Mat<4,4,SCAL> >(arg, arg2, arg3); break;    \
+  case 5: dest = new Object<Mat<5,5,SCAL> >(arg, arg2, arg3); break;    \
+  case 6: dest = new Object<Mat<6,6,SCAL> >(arg, arg2, arg3); break;    \
+  case 7: dest = new Object<Mat<7,7,SCAL> >(arg, arg2, arg3); break;    \
+  } 
+
+#endif
+
+#if MAX_SYS_DIM >= 8
 
 #define CreateSymMatObject3S(dest, Object, dim1, SCAL, arg, arg2, arg3) \
   switch (dim1) {                                                       \
