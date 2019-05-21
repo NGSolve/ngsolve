@@ -113,16 +113,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .value("DISTRIBUTED", DISTRIBUTED)
     .value("CUMULATED", CUMULATED)
     .value("NOT_PARALLEL", NOT_PARALLEL)
-    .export_values()
     ;
 
-  py::enum_<PARALLEL_OP>(m, "PARALLEL_OP", "enum of possible parallel ops")
-    .value("C2C", C2C)
-    .value("C2D", C2D)
-    .value("D2C", D2C)
-    .value("D2D", D2D)
-    .export_values()
-    ;
 
   py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
 #ifdef PARALLEL
@@ -195,17 +187,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	return self;
 #endif
       } )
-// #ifdef PARALLEL
-//     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
-// 	auto * pv = dynamic_cast_ParallelBaseVector (&self);
-// 	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
-// 	return pv->GetLocalVector();
-//       } )
-// #else
-//     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
-// 	throw Exception("Only ParallelVectors have a local Vector!");
-//       } )
-// #endif
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
@@ -779,14 +760,32 @@ inverse : string
     ;
 
 
+#ifndef PARALLEL
+
+  m.def("ParallelMatrix", [](py::object mat, py::object row_pardofs, py::object col_pardofs, py::object op) {
+      throw Exception("Sorry, ParallelMatrix only available in MPI version!");
+    }, py::arg("mat")=py::none(), py::arg("row_pardofs")=py::none(), py::arg("col_pardofs")=py::none(), py::arg("op")=py::none());
+  m.def("ParallelMatrix", [](py::object mat, py::object pardofs, py::object op) {
+      throw Exception("Sorry, ParallelMatrix only available in MPI version!");
+    }, py::arg("mat")=py::none(), py::arg("pardofs")=py::none(), py::arg("op")=py::none());
+    
+#else
   
-#ifdef PARALLEL
-  py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
-    (m, "ParallelMatrix", "MPI-distributed matrix")
-    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, PARALLEL_OP>(),
-	 py::arg("mat"),py::arg("pardofs"), py::arg("op"))
+  auto parmat = py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
+    (m, "ParallelMatrix", "MPI-distributed matrix");
+
+  py::enum_<PARALLEL_OP>(parmat, "PARALLEL_OP", "enum of possible parallel ops")
+    .value("C2C", C2C)
+    .value("C2D", C2D)
+    .value("D2C", D2C)
+    .value("D2D", D2D)
+    .export_values()
+    ;
+
+  parmat.def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, PARALLEL_OP>(),
+	     py::arg("mat"), py::arg("pardofs"), py::arg("op")=C2D)
     .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>, PARALLEL_OP>(),
-	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"), py::arg("op"))
+	 py::arg("mat"), py::arg("row_pardofs"), py::arg("col_pardofs"), py::arg("op")=C2D)
     .def_property_readonly("row_pardofs", [](ParallelMatrix & mat) { return mat.GetRowParallelDofs(); })
     .def_property_readonly("col_pardofs", [](ParallelMatrix & mat) { return mat.GetColParallelDofs(); })
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
