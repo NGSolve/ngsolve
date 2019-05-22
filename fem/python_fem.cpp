@@ -1512,7 +1512,7 @@ weights : list
 
   py::implicitly_convertible<MeshPoint, BaseMappedIntegrationPoint>();
 
-  py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
+  auto eltrans_class = py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
     .def(py::init([] (ELEMENT_TYPE et, py::list vertices)
         -> shared_ptr<ElementTransformation>
         {
@@ -1548,10 +1548,24 @@ weights : list
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, IntegrationPoint & ip)
            {
              return &(*self)(ip, global_alloc);
-           },
-          py::arg("ip"),
-          py::return_value_policy::reference)
+           }, py::arg("ip"), py::return_value_policy::reference)
     ;
+
+  if(have_numpy)
+    {
+      eltrans_class.def("__call__", [](ElementTransformation& self, IntegrationRule& ir)
+                                    {
+                                      Array<MeshPoint> pts;
+                                      pts.SetAllocSize(ir.Size());
+                                      for(auto& ip : ir)
+                                        pts.Append(MeshPoint{ip(0), ip(1),
+                                                             ip(2),
+                                                             (ngcomp::MeshAccess*) self.GetMesh(),
+                                                             self.VB(),
+                                                             self.GetElementNr()});
+                                      return MoveToNumpyArray(pts);
+                                    });
+    }
 
 
   py::class_<DifferentialOperator, shared_ptr<DifferentialOperator>>
