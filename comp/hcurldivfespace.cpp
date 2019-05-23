@@ -673,6 +673,8 @@ namespace ngcomp
 	      offset = 1;
 	    }
 	  break;
+        default:
+          throw Exception("ElementType "+ToString(ma->GetElType(e))+" not implemented for H(CurlDiv)");
 	}
       
       
