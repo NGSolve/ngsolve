@@ -845,72 +845,78 @@ namespace ngstd
   using std::exp;
   template <int N>
   INLINE ngstd::SIMD<double,N> exp (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double>([&](int i)->double { return exp(a[i]); } );
+    return ngstd::SIMD<double>([a](int i)->double { return exp(a[i]); } );
   }
 
   using std::log;
   template <int N>  
   INLINE ngstd::SIMD<double,N> log (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return log(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return log(a[i]); } );
   }
 
   using std::pow;
   template <int N>    
   INLINE ngstd::SIMD<double,N> pow (ngstd::SIMD<double,N> a, double x) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return pow(a[i],x); } );
+    return ngstd::SIMD<double,N>([a,x](int i)->double { return pow(a[i],x); } );
   }
 
   template <int N>
   INLINE ngstd::SIMD<double,N> pow (ngstd::SIMD<double,N> a, ngstd::SIMD<double,N> b) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return pow(a[i],b[i]); } );
+    return ngstd::SIMD<double,N>([a,b](int i)->double { return pow(a[i],b[i]); } );
   }
 
   using std::sin;
   template <int N>      
   INLINE ngstd::SIMD<double,N> sin (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return sin(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return sin(a[i]); } );
   }
   
   using std::cos;
   template <int N>        
   INLINE ngstd::SIMD<double,N> cos (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return cos(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return cos(a[i]); } );
   }
 
   using std::tan;
   template <int N>        
   INLINE ngstd::SIMD<double,N> tan (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return tan(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return tan(a[i]); } );
   }
 
   using std::atan;
   template <int N>          
   INLINE ngstd::SIMD<double,N> atan (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return atan(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return atan(a[i]); } );
+  }
+
+  using std::atan2;
+  template <int N>          
+  INLINE ngstd::SIMD<double,N> atan2 (ngstd::SIMD<double,N> y, ngstd::SIMD<double,N> x) {
+    return ngstd::SIMD<double,N>([y,x](int i)->double { return atan2(y[i], x[i]); } );
   }
 
   using std::acos;
   template <int N>          
   INLINE ngstd::SIMD<double,N> acos (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return acos(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return acos(a[i]); } );
   }
 
   using std::asin;
   template <int N>          
   INLINE ngstd::SIMD<double,N> asin (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return asin(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return asin(a[i]); } );
   }
 
   using std::sinh;
   template <int N>      
   INLINE ngstd::SIMD<double,N> sinh (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return sinh(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return sinh(a[i]); } );
   }
   
   using std::cosh;
   template <int N>        
   INLINE ngstd::SIMD<double,N> cosh (ngstd::SIMD<double,N> a) {
-    return ngstd::SIMD<double,N>([&](int i)->double { return cosh(a[i]); } );
+    return ngstd::SIMD<double,N>([a](int i)->double { return cosh(a[i]); } );
   }
   
 
