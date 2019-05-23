@@ -2013,6 +2013,7 @@ namespace ngbla
           "5 ... y = A*x,   A = n*m\n"
           "6 ... y = A^t*x,   A = n*m\n"
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
+          "11 .. C += A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
@@ -2185,6 +2186,37 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 11)
+      {
+        // C=A*B
+        Matrix<> a(n,m), b(m,k), c(n,k);
+        a = 1; b = 2;
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < m; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (int i = 0; i < m; i++)
+          for (int j = 0; j < k; j++)
+            b(i,j) = cos(i+3) * cos(j);
+        c = 0.0;
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        // MultMatMat(a,b,c);
+        {
+          Timer t("C += A*B");
+          t.Start();
+          if (!lapack)
+            for (int j = 0; j < its; j++)
+              c += a*b;
+          else
+            for (int j = 0; j < its; j++)
+              c += a*b | Lapack;
+          t.Stop();
+          cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
+        }
+      }
+
+    
     if (what == 0 || what == 50)
       {
         // C=A*B^t
