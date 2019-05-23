@@ -137,11 +137,6 @@ struct GenericBSpline {
   AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiffDiff for bspline not supported"); }
   void DoArchive(Archive& ar) { ar & sp; }
 };
-struct GenericSin {
-  template <typename T> T operator() (T x) const { return sin(x); }
-  static string Name() { return "sin"; }
-  void DoArchive(Archive& ar) {}
-};
 struct GenericIdentity {
   template <typename T> T operator() (T x) const { return x; }
   static string Name() { return  " "; }
@@ -158,7 +153,11 @@ cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var,
   return hcf;
 }
 
-
+struct GenericSin {
+  template <typename T> T operator() (T x) const { return sin(x); }
+  static string Name() { return "sin"; }
+  void DoArchive(Archive& ar) {}
+};
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
   static string Name() { return "cos"; }
@@ -248,8 +247,9 @@ struct GenericConj {
 };
 
 struct GenericATan2 {
-  double operator() (double x, double y) const { return atan2(x,y); }
-  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
+  double operator() (double y, double x) const { return atan2(y,x); }
+  SIMD<double> operator() (SIMD<double> y, SIMD<double> x) const { return atan2(y,x); }
+  template <typename T1, typename T2> T1 operator() (T1 y, T2 x) const
   { throw Exception (string("atan2 not available for type ")+typeid(T1).name());  }
   static string Name() { return "atan2"; }
   void DoArchive(Archive& ar) {}
@@ -267,6 +267,19 @@ struct GenericPow {
 };
 
 
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericSin>::Derive(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  return UnaryOpCF(c1, GenericCos(), "cos") * c1->Derive(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericCos>::Derive(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Derive(var, dir);
+}
 
 
 
@@ -628,7 +641,7 @@ direction : int
   ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
   ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
-  ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians");
+  ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians", "y", "x");
   ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
 
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
