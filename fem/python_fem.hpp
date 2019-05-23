@@ -33,7 +33,7 @@ namespace ngfem
 
 
   template <typename FUNC>
-  void ExportStdMathFunction2(py::module &m, string name, string description)
+  void ExportStdMathFunction2(py::module &m, string name, string description, string arg0="x", string arg1="y")
   {
     static RegisterClassForArchive<cl_BinaryOpCF<FUNC>, CoefficientFunction> regbinopcf;
 
@@ -52,7 +52,7 @@ namespace ngfem
              py::extract<Complex> cx(x), cy(y);
              if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
              throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
-           }, py::arg("x"), py::arg("y"), description.c_str());
+           }, py::arg(arg0.c_str()), py::arg(arg1.c_str()), description.c_str());
   }
 
 
