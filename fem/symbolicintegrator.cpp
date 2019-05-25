@@ -236,13 +236,13 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate (const BaseMappedIntegrationRule & ir,
-            FlatMatrix<Complex> result) const
+            BareSliceMatrix<Complex> result) const
   {
     size_t dim = Dimension();
     STACK_ARRAY(double, hmem, ir.Size()*dim);
     FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
     Evaluate (ir, temp);
-    result = temp;
+    result.AddSize(ir.Size(), dim) = temp;
   }
   
 

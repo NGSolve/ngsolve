@@ -356,12 +356,12 @@ namespace ngfem
 
     template <class MIR>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-                         FlatVector<Complex> x, FlatMatrix<Complex> y,
+                         FlatVector<Complex> x, SliceMatrix<Complex> y,
 			 LocalHeap & lh)
     {
       Cast(fel).Evaluate (mir.IR(),
                           SliceMatrix<double> (fel.GetNDof(), 2, 2, reinterpret_cast<double*> (&x(0))),
-                          SliceMatrix<double> (mir.Size(), 2, 2, reinterpret_cast<double*> (&y(0))));
+                          SliceMatrix<double> (mir.Size(), 2, 2*y.Dist(), reinterpret_cast<double*> (&y(0))));
     }
 
     // using ApplySIMDIR;

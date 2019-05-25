@@ -59,7 +59,7 @@ namespace ngcomp
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   BareSliceMatrix<double> values) const override;
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-			   FlatMatrix<Complex> values) const override;
+			   BareSliceMatrix<Complex> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
     /*

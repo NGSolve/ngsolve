@@ -156,22 +156,23 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationRule & bmir,
          FlatVector<Complex> x, 
-         FlatMatrix<Complex> flux,
+         BareSliceMatrix<Complex> flux,
          LocalHeap & lh) const
   {
+    auto fluxsize = flux.AddSize(bmir.Size(), DIFFOP::DIM_DMAT);
     if (bmir.IsComplex())
       {
         const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex> & mir =
           static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex>&> (bmir);
 
-        GenerateMatrix_PMLWrapper<DIFFOP::SUPPORT_PML>::template ApplyIR<DIFFOP> (bfel, mir, x, flux, lh);
+        GenerateMatrix_PMLWrapper<DIFFOP::SUPPORT_PML>::template ApplyIR<DIFFOP> (bfel, mir, x, fluxsize, lh);
         // DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
       }
     else
       {
         const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
           static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-        DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
+        DIFFOP::ApplyIR (bfel, mir, x, fluxsize, lh);
       }
     
 

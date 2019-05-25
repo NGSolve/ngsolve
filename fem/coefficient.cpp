@@ -187,10 +187,10 @@ namespace ngfem
 
   
   void CoefficientFunction :: 
-  Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const
   {
     for (int i = 0; i < ir.Size(); i++)
-      Evaluate (ir[i], values.Row(i)); 
+      Evaluate (ir[i], values.Row(i).AddSize(Dimension())); 
   }
 
   /*
@@ -255,9 +255,9 @@ namespace ngfem
   }
 
   void ConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
-                                                FlatMatrix<Complex> values) const
+                                                BareSliceMatrix<Complex> values) const
   {
-    values = val;
+    values.AddSize(ir.Size(), 1) = val;
   }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -301,9 +301,11 @@ namespace ngfem
     values = val;
   }
   
-  void ConstantCoefficientFunctionC :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  void ConstantCoefficientFunctionC :: Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const
   {
-    values = val;
+    // values = val;
+    for (auto i : Range(ir.Size()))
+      values(i, 0) = val;
   }
   
   void ConstantCoefficientFunctionC :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
@@ -396,11 +398,11 @@ namespace ngfem
   }
   
 
-  void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
     CheckRange (elind);            
-    values = val[elind]; 
+    values.AddSize(ir.Size(), 1) = val[elind]; 
   }
 
   void DomainConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -1076,10 +1078,10 @@ public:
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<Complex> values) const override
+                         BareSliceMatrix<Complex> values) const override
   {
     c1->Evaluate (ir, values);
-    values *= scal;
+    values.AddSize(ir.Size(), Dimension()) *= scal;
   }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
@@ -1158,10 +1160,10 @@ public:
     result *= scal;
   }
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<Complex> result) const override
+                        BareSliceMatrix<Complex> result) const override
   {
     c1->Evaluate (ir, result);
-    result *= scal;
+    result.AddSize(ir.Size(), Dimension()) *= scal;
   }
 
   
@@ -1250,7 +1252,7 @@ public:
   }
 
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<Complex> result) const override
+                        BareSliceMatrix<Complex> result) const override
   {
     STACK_ARRAY(double, hmem1, 2*ir.Size());
     FlatMatrix<Complex> temp1(ir.Size(), 1, reinterpret_cast<Complex*> (&hmem1[0]));
@@ -1258,7 +1260,7 @@ public:
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, result);
     for (int i = 0; i < ir.Size(); i++)
-      result.Row(i) *= temp1(i,0);
+      result.Row(i).AddSize(Dimension()) *= temp1(i,0);
   }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -1581,7 +1583,7 @@ public:
   }  
   
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<Complex> result) const override
+                        BareSliceMatrix<Complex> result) const override
   {
     STACK_ARRAY(double, hmem1, 2*ir.Size()*DIM);
     FlatMatrix<Complex> temp1(ir.Size(), DIM, (Complex*)hmem1);
@@ -2850,13 +2852,13 @@ public:
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<Complex> result) const override
+                         BareSliceMatrix<Complex> result) const override
   {
     // int dim1 = c1->Dimension();
     STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
     FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
     c1->Evaluate (ir, temp);
-    result.Col(0) = temp.Col(comp);
+    result.Col(0).AddSize(ir.Size()) = temp.Col(comp);
   }  
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -3023,13 +3025,13 @@ public:
       ci[matindex] -> Evaluate (ip, result);
   }
 
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
   {
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
     else
-      values = 0.0;
+      values.AddSize(ir.Size(), Dimension()) = 0.0;
   }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -3176,7 +3178,7 @@ public:
   }
   */
   
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
   {
     if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
     c1->Evaluate (*ir.GetOtherMIR(), values);    
@@ -3822,7 +3824,7 @@ public:
   }
 
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<Complex> result) const override
+                        BareSliceMatrix<Complex> result) const override
   {
     int base = 0;
     for (auto cf : ci)
@@ -3831,7 +3833,7 @@ public:
         STACK_ARRAY(double, hmem, 2*ir.Size()*dimi);
         FlatMatrix<Complex> temp(ir.Size(), dimi, (Complex*)hmem);
         cf->Evaluate(ir, temp);
-        result.Cols(base,base+dimi) = temp;
+        result.Cols(base,base+dimi).AddSize(ir.Size(), dimi) = temp;
         base += dimi;
       }
   }
@@ -3930,12 +3932,12 @@ public:
           result(i,0) = pnts(i).real();
       }
     }
-    */
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
 			  FlatMatrix<Complex> result) const override
     {
       result.Col(0) = ir.GetPoints().Col(dir);
     }
+    */
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
         auto v = Var(index);
@@ -4614,7 +4616,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       */
     }
 
-    void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
     {
       if(compiled_function_complex)
       {

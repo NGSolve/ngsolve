@@ -129,7 +129,7 @@ public:
                                         BareSliceMatrix<> result) const override;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<Complex> result) const override;
+                                        BareSliceMatrix<Complex> result) const override;
 
   // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
   // AFlatMatrix<double> values) const;
