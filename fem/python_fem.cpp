@@ -353,12 +353,12 @@ cl_UnaryOpCF<GenericCos>::Derive(const CoefficientFunction * var,
       }
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const override 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
     {
       if (ir[0].Dim() != D)
 	throw Exception("illegal dim of normal vector");
       for (int i = 0; i < ir.Size(); i++)
-	res.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+	res.Row(i).AddSize(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
         string miptype;

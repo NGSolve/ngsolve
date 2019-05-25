@@ -270,7 +270,7 @@ namespace ngfem
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<Complex> x, 
-	   FlatMatrix<Complex> flux,
+	   BareSliceMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
@@ -479,7 +479,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<Complex> x, 
-	   FlatMatrix<Complex> flux,
+	   BareSliceMatrix<Complex> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
