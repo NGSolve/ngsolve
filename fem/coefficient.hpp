@@ -1350,7 +1350,8 @@ public:
   {
     int dim1 = c1->Dimension();
     int dim2 = c2->Dimension();
-    if (dim1 != dim2) throw Exception ("Dimensions don't match");
+    if (!(c1->Dimensions() == c2->Dimensions()))
+      throw Exception ("Dimensions don't match, op = "+opname + " dims1 = " + ToString(c1->Dimensions()) + ", dims2 = " + ToString(c2->Dimensions()));
     is_complex = c1->IsComplex() || c2->IsComplex();
     this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     SetDimensions (c1->Dimensions());
@@ -1641,6 +1642,12 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> InverseCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> DeterminantCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef);

@@ -281,6 +281,19 @@ cl_UnaryOpCF<GenericCos>::Derive(const CoefficientFunction * var,
   return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Derive(var, dir);
 }
 
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericExp>::Derive(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  return UnaryOpCF(c1, GenericExp(), "exp") * c1->Derive(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericLog>::Derive(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  return c1->Derive(var, dir) / c1;
+}
 
 
   template <int D>
@@ -959,6 +972,8 @@ wait : bool
     ;
 
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
+  m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
+  m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
 
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();

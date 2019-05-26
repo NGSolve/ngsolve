@@ -93,6 +93,8 @@ namespace ngstd
   { a.real()+=b.real(); a.imag()+=b.imag(); return a; }
   INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
   { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
+  INLINE SIMD<Complex> operator- (SIMD<Complex> a)
+  { return SIMD<Complex> (-a.real(), -a.imag()); }
   INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
     { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
                             a.real()*b.imag()+a.imag()*b.real()); }

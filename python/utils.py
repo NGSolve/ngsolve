@@ -110,7 +110,7 @@ def Id(dim):
 def Trace(mat):
     return sum( [mat[i,i] for i in range(mat.dims[0]) ])
 
-def Det(mat):
+def PyDet(mat):
     if mat.dims[0] == 1:
         return mat[0,0]
     elif mat.dims[0] == 2:
@@ -142,10 +142,10 @@ def Cof(m):
                      -m[0,0]*m[1,2]+m[1,0]*m[0,2], 
                       m[0,0]*m[1,1]-m[1,0]*m[0,1] ), dims=(3,3) )
 
-def Inv(m):
+def PyInv(m):
     return 1/Det(m)*Cof(m).trans
 
-def Sym(m):
+def PySym(m):
     return 0.5*(m+m.trans)
 
 def Skew(m):
@@ -154,6 +154,6 @@ def Skew(m):
 def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
 ## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
-__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof', 'Inv', 'Sym', 'Skew', 'OuterProduct']
+__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct']
 
 
