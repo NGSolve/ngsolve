@@ -116,7 +116,7 @@ namespace ngfem
   Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     if (var == this)
-      return dir; // make_shared<ConstantCoefficientFunction>(1);
+      return dir;
     else
       {
         if (Dimension() == 1)
@@ -1599,7 +1599,9 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
-    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+    if (this == var) return dir;
+    return InnerProduct(c1->Derive(var,dir),c2) + InnerProduct(c1,c2->Derive(var,dir));
+    // return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
   }
   
 
@@ -2134,6 +2136,14 @@ public:
             // row_c = pw_mult (row_a, row_b);
           }
   }
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (var == this) return dir;
+    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+  }
+  
 };
 
 
@@ -2474,6 +2484,359 @@ public:
 
 
 
+template <int D>
+class InverseCoefficientFunction : public T_CoefficientFunction<InverseCoefficientFunction<D>>
+{
+  shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<InverseCoefficientFunction<D>>;
+public:
+  InverseCoefficientFunction() = default;
+  InverseCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : T_CoefficientFunction<InverseCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
+  {
+    this->SetDimensions (ngstd::INT<2> (D,D));
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    throw Exception("InverseCF::GenerateCode missing");
+    /*
+      FlatArray<int> hdims = Dimensions();        
+      for (int i : Range(hdims[0]))
+        for (int j : Range(hdims[1]))
+          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
+    */
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+  {
+    nonzero = true;
+    nonzero_deriv = true;
+    nonzero_dderiv = true;
+    /*
+    FlatArray<int> hdims = Dimensions();    
+    Vector<bool> v1(D*D), d1(D*D), dd1(D*D);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &v1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero(0));
+      m2 = Trans(m1);
+    }
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &d1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_deriv(0));
+      m2 = Trans(m1);
+    }
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &dd1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_dderiv(0));
+      m2 = Trans(m1);
+    }
+    */
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    AutoDiffDiff<1,bool> add(true);
+    add.DValue(0) = true;
+    add.DDValue(0,0) = true;
+    values = add;
+    /*
+    FlatArray<int> hdims = Dimensions();    
+    auto in0 = input[0];
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < hdims[1]; k++)
+        values(j*hdims[1]+k) = in0(k*hdims[0]+j);
+    */
+  }
+  using T_CoefficientFunction<InverseCoefficientFunction<D>>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    throw Exception ("InverseCF:: scalar evaluate for matrix called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const override
+  {
+    throw Exception ("InverseCF:: ip evaluate  called");
+    /*
+    FlatArray<int> hdims = Dimensions();        
+    VectorMem<20> input(result.Size());
+    c1->Evaluate (ip, input);    
+    FlatMatrix<> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
+    FlatMatrix<> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
+    reshape2 = Trans(reshape1);
+    */
+    /*
+    c1->Evaluate (ip, result);
+    static Timer t("Transpose - evaluate");
+    RegionTimer reg(t);
+    FlatMatrix<> reshape(dims[1], dims[0], &result(0));  // source matrix format
+    Matrix<> tmp = Trans(reshape);
+    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
+    reshape2 = tmp;
+    */
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const override
+  {
+    throw Exception ("InverseCF:: ip evaluate called");
+    /*
+    FlatArray<int> hdims = Dimensions();        
+    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
+    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
+    c1->Evaluate (ip, input);    
+    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
+    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
+    reshape2 = Trans(reshape1);
+    */
+    //cout << "Transpose: complex not implemented" << endl;
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & mir,
+                   BareSliceMatrix<T,ORD> result) const
+  {
+    c1->Evaluate (mir, result);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = result(j*D+k, i);
+        hm = Inv(hm);
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            result(j*D+k, i) = hm(j,k);
+      }
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    size_t np = ir.Size();
+    auto in0 = input[0];
+
+    for (size_t i = 0; i < np; i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = in0(j*D+k, i);
+        hm = Inv(hm);
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            values(j*D+k, i) = hm(j,k);
+      }
+  }
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return (-1)*c1 * c1->Derive(var,dir) * c1;
+  }  
+};
+
+
+
+
+
+template <int D>
+class DeterminantCoefficientFunction : public T_CoefficientFunction<DeterminantCoefficientFunction<D>>
+{
+  shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<DeterminantCoefficientFunction<D>>;
+public:
+  DeterminantCoefficientFunction() = default;
+  DeterminantCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : T_CoefficientFunction<DeterminantCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
+  {
+    ;
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    throw Exception("DeterminantCF::GenerateCode missing");
+    /*
+      FlatArray<int> hdims = Dimensions();        
+      for (int i : Range(hdims[0]))
+        for (int j : Range(hdims[1]))
+          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
+    */
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+  {
+    nonzero = true;
+    nonzero_deriv = true;
+    nonzero_dderiv = true;
+    /*
+    FlatArray<int> hdims = Dimensions();    
+    Vector<bool> v1(D*D), d1(D*D), dd1(D*D);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &v1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero(0));
+      m2 = Trans(m1);
+    }
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &d1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_deriv(0));
+      m2 = Trans(m1);
+    }
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &dd1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_dderiv(0));
+      m2 = Trans(m1);
+    }
+    */
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    AutoDiffDiff<1,bool> add(true);
+    add.DValue(0) = true;
+    add.DDValue(0,0) = true;
+    values = add;
+    /*
+    FlatArray<int> hdims = Dimensions();    
+    auto in0 = input[0];
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < hdims[1]; k++)
+        values(j*hdims[1]+k) = in0(k*hdims[0]+j);
+    */
+  }
+  using T_CoefficientFunction<DeterminantCoefficientFunction<D>>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    throw Exception ("DeterminantCF:: scalar evaluate for matrix called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const override
+  {
+    throw Exception ("DeterminantCF:: ip evaluate  called");
+    /*
+    FlatArray<int> hdims = Dimensions();        
+    VectorMem<20> input(result.Size());
+    c1->Evaluate (ip, input);    
+    FlatMatrix<> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
+    FlatMatrix<> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
+    reshape2 = Trans(reshape1);
+    */
+    /*
+    c1->Evaluate (ip, result);
+    static Timer t("Transpose - evaluate");
+    RegionTimer reg(t);
+    FlatMatrix<> reshape(dims[1], dims[0], &result(0));  // source matrix format
+    Matrix<> tmp = Trans(reshape);
+    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
+    reshape2 = tmp;
+    */
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const override
+  {
+    throw Exception ("DeterminantCF:: ip evaluate called");
+    /*
+    FlatArray<int> hdims = Dimensions();        
+    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
+    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
+    c1->Evaluate (ip, input);    
+    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
+    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
+    reshape2 = Trans(reshape1);
+    */
+    //cout << "Transpose: complex not implemented" << endl;
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & mir,
+                   BareSliceMatrix<T,ORD> result) const
+  {
+    STACK_ARRAY(T, hmem, mir.Size()*D*D);
+    FlatMatrix<T,ORD> hv(D*D, mir.Size(), &hmem[0]);
+    c1->Evaluate (mir, hv);
+    
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = hv(j*D+k, i);
+        result(0,i) = Det(hm);
+      }
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    size_t np = ir.Size();
+    auto in0 = input[0];
+
+    for (size_t i = 0; i < np; i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = in0(j*D+k, i);
+        values(0,i) = Det(hm);        
+      }
+  }
+
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return DeterminantCF(c1) * InnerProduct( TransposeCF(InverseCF(c1)), c1->Derive(var,dir) );
+  }  
+};
+
+
+
+
+
+
+
 
 
 
@@ -2652,13 +3015,14 @@ shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPlus>::Derive(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
+  if (var == this) return dir;
   return c1->Derive(var,dir) + c2->Derive(var,dir);
 }
 
-  shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
-  {
-    return BinaryOpCF (c1, c2, gen_plus, "+");
-  }
+shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+{
+  return BinaryOpCF (c1, c2, gen_plus, "+");
+}
 
 
 template <> 
@@ -2666,19 +3030,21 @@ shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericMinus>::Derive(const CoefficientFunction * var,
                                     shared_ptr<CoefficientFunction> dir) const
 {
+  if (var == this) return dir;      
   return c1->Derive(var,dir) - c2->Derive(var,dir);
 }
 
-  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
-  {
-    return BinaryOpCF (c1, c2, gen_minus, "-");
-  }
+shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+{
+  return BinaryOpCF (c1, c2, gen_minus, "-");
+}
 
 template <> 
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericMult>::Derive(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
+  if (var == this) return dir;    
   return c1->Derive(var,dir)*c2 + c1*c2->Derive(var,dir);
 }
 
@@ -2763,6 +3129,37 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   {
     return make_shared<TransposeCoefficientFunction> (coef);
   }
+
+  shared_ptr<CoefficientFunction> InverseCF (shared_ptr<CoefficientFunction> coef)
+  {
+    auto dims = coef->Dimensions();
+    if (dims.Size() != 2) throw Exception("Inverse of non-matrix");
+    if (dims[0] != dims[1]) throw Exception("Inverse of non-quadratic matrix");
+    switch (dims[0])
+      {
+      case 1: return make_shared<InverseCoefficientFunction<1>> (coef);
+      case 2: return make_shared<InverseCoefficientFunction<2>> (coef);
+      case 3: return make_shared<InverseCoefficientFunction<3>> (coef);
+      default:
+        throw Exception("Inverse of matrix of size "+ToString(dims[0]) + " not available");
+      }
+  }
+
+  shared_ptr<CoefficientFunction> DeterminantCF (shared_ptr<CoefficientFunction> coef)
+  {
+    auto dims = coef->Dimensions();
+    if (dims.Size() != 2) throw Exception("Inverse of non-matrix");
+    if (dims[0] != dims[1]) throw Exception("Inverse of non-quadratic matrix");
+    switch (dims[0])
+      {
+      case 1: return make_shared<DeterminantCoefficientFunction<1>> (coef);
+      case 2: return make_shared<DeterminantCoefficientFunction<2>> (coef);
+      case 3: return make_shared<DeterminantCoefficientFunction<3>> (coef);
+      default:
+        throw Exception("Determinant of matrix of size "+ToString(dims[0]) + " not available");
+      }
+  }
+
 
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef)
   {
@@ -5061,6 +5458,12 @@ static RegisterClassForArchive<MultMatMatCoefficientFunction, CoefficientFunctio
 static RegisterClassForArchive<MultMatVecCoefficientFunction, CoefficientFunction> regmultmatveccf;
 static RegisterClassForArchive<TransposeCoefficientFunction, CoefficientFunction> regtransposecf;
 static RegisterClassForArchive<SymmetricCoefficientFunction, CoefficientFunction> regsymmetriccf;
+static RegisterClassForArchive<InverseCoefficientFunction<1>, CoefficientFunction> reginversecf1;
+static RegisterClassForArchive<InverseCoefficientFunction<2>, CoefficientFunction> reginversecf2;
+static RegisterClassForArchive<InverseCoefficientFunction<3>, CoefficientFunction> reginversecf3;
+static RegisterClassForArchive<DeterminantCoefficientFunction<1>, CoefficientFunction> regdetcf1;
+static RegisterClassForArchive<DeterminantCoefficientFunction<2>, CoefficientFunction> regdetcf2;
+static RegisterClassForArchive<DeterminantCoefficientFunction<3>, CoefficientFunction> regdetcf3;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericPlus>, CoefficientFunction> regcfplus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction> regcfminus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;

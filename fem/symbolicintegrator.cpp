@@ -612,6 +612,29 @@ namespace ngfem
   }
 
 
+  shared_ptr<CoefficientFunction>
+  ProxyFunction :: Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
+  {
+    if (var == this)
+      return dir;
+    else
+      {
+        if (Dimension() == 1)
+          return make_shared<ConstantCoefficientFunction>(0);
+        else
+          {
+            auto zero1 = make_shared<ConstantCoefficientFunction>(0);
+            Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
+            for (auto & z : zero_array)
+              z = zero1;
+            auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
+            zerovec->SetDimensions(Dimensions());
+            return zerovec;
+          }
+      }
+  }
+
+  
   SymbolicLinearFormIntegrator ::
   SymbolicLinearFormIntegrator(shared_ptr<CoefficientFunction> acf, VorB avb,
                                VorB aelement_vb)
