@@ -1350,7 +1350,8 @@ public:
   {
     int dim1 = c1->Dimension();
     int dim2 = c2->Dimension();
-    if (!(c1->Dimensions() == c2->Dimensions()))
+    // if (!(c1->Dimensions() == c2->Dimensions()))  // too critical ???
+    if (dim1 != dim2)
       throw Exception ("Dimensions don't match, op = "+opname + " dims1 = " + ToString(c1->Dimensions()) + ", dims2 = " + ToString(c2->Dimensions()));
     is_complex = c1->IsComplex() || c2->IsComplex();
     this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();

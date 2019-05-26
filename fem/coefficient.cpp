@@ -2653,7 +2653,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
-    return (-1)*c1 * c1->Derive(var,dir) * c1;
+    return (-1)*InverseCF(c1) * c1->Derive(var,dir) * InverseCF(c1);
   }  
 };
 
