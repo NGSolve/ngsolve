@@ -299,7 +299,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericSqrt>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
-  return 0.5*GenericDiv(1,UnaryOpCF(c1, GenericSqrt(), "sqrt")) * c1->Derive(var, dir);
+  return make_shared<ConstantCoefficientFunction>(0.5)/UnaryOpCF(c1, GenericSqrt(), "sqrt") * c1->Derive(var, dir);
 }
 
 template <> shared_ptr<CoefficientFunction>
