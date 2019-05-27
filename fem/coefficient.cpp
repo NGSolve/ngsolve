@@ -2578,6 +2578,7 @@ public:
     */
   }
   using T_CoefficientFunction<InverseCoefficientFunction<D>>::Evaluate;
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     throw Exception ("InverseCF:: scalar evaluate for matrix called");
@@ -2586,40 +2587,19 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const override
   {
-    throw Exception ("InverseCF:: ip evaluate  called");
-    /*
-    FlatArray<int> hdims = Dimensions();        
-    VectorMem<20> input(result.Size());
-    c1->Evaluate (ip, input);    
-    FlatMatrix<> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = Trans(reshape1);
-    */
-    /*
-    c1->Evaluate (ip, result);
-    static Timer t("Transpose - evaluate");
-    RegionTimer reg(t);
-    FlatMatrix<> reshape(dims[1], dims[0], &result(0));  // source matrix format
-    Matrix<> tmp = Trans(reshape);
-    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
-    reshape2 = tmp;
-    */
+    Mat<D,D> mat;
+    c1->Evaluate (ip, FlatVector<> (D*D, &mat(0,0)));
+    Mat<D,D> inv = Inv(mat);
+    result = FlatVector<> (D*D, &inv(0,0));
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override
   {
-    throw Exception ("InverseCF:: ip evaluate called");
-    /*
-    FlatArray<int> hdims = Dimensions();        
-    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
-    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
-    c1->Evaluate (ip, input);    
-    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = Trans(reshape1);
-    */
-    //cout << "Transpose: complex not implemented" << endl;
+    Mat<D,D,Complex> mat;
+    c1->Evaluate (ip, FlatVector<Complex> (D*D, &mat(0,0)));
+    Mat<D,D, Complex> inv = Inv(mat);
+    result = FlatVector<Complex> (D*D, &inv(0,0));
   }  
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -2765,40 +2745,17 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const override
   {
-    throw Exception ("DeterminantCF:: ip evaluate  called");
-    /*
-    FlatArray<int> hdims = Dimensions();        
-    VectorMem<20> input(result.Size());
-    c1->Evaluate (ip, input);    
-    FlatMatrix<> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = Trans(reshape1);
-    */
-    /*
-    c1->Evaluate (ip, result);
-    static Timer t("Transpose - evaluate");
-    RegionTimer reg(t);
-    FlatMatrix<> reshape(dims[1], dims[0], &result(0));  // source matrix format
-    Matrix<> tmp = Trans(reshape);
-    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
-    reshape2 = tmp;
-    */
+    Mat<D,D> mat;
+    c1->Evaluate (ip, FlatVector<> (D*D, &mat(0,0)));
+    result(0) = Det(mat);
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override
   {
-    throw Exception ("DeterminantCF:: ip evaluate called");
-    /*
-    FlatArray<int> hdims = Dimensions();        
-    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
-    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
-    c1->Evaluate (ip, input);    
-    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = Trans(reshape1);
-    */
-    //cout << "Transpose: complex not implemented" << endl;
+    Mat<D,D,Complex> mat;
+    c1->Evaluate (ip, FlatVector<Complex> (D*D, &mat(0,0)));
+    result(0) = Det(mat);
   }  
 
   template <typename MIR, typename T, ORDERING ORD>
