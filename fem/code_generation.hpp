@@ -88,6 +88,7 @@ namespace ngfem
 
     operator string () { return code; }
     CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToLiteral(i) + ')' ); }
+    CodeExpr operator ()(int i, int j) { return CodeExpr( S() + '(' + ToLiteral(i) + ',' + ToLiteral(j) + ')' ); }
     CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
     CodeExpr Call(string s, string args="") { return CodeExpr( S()+'.'+ s + "(" + args + ")"); }
     string Assign (CodeExpr other, bool declare = true)

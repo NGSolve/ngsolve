@@ -2510,13 +2510,20 @@ public:
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    throw Exception("InverseCF::GenerateCode missing");
-    /*
-      FlatArray<int> hdims = Dimensions();        
-      for (int i : Range(hdims[0]))
-        for (int j : Range(hdims[1]))
-          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
-    */
+    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    auto mat_var = Var("mat", index);
+    auto inv_var = Var("inv", index);
+    code.body += mat_var.Declare(mat_type);
+    code.body += inv_var.Declare(mat_type);
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
+
+    code.body += inv_var.Assign(mat_var.Func("Inv"), false);
+
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        code.body += Var(index, j, k).Assign(inv_var(j,k));
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
