@@ -1100,6 +1100,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return scal * c1->Derive(var, dir);
   }
   
@@ -1297,6 +1298,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
   }
   
@@ -2320,6 +2322,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
   }
   
@@ -2478,6 +2481,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return TransposeCF (c1->Derive(var, dir));
   }  
 };
@@ -2653,6 +2657,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return (-1)*InverseCF(c1) * c1->Derive(var,dir) * InverseCF(c1);
   }  
 };
@@ -2827,6 +2832,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return DeterminantCF(c1) * InnerProduct( TransposeCF(InverseCF(c1)), c1->Derive(var,dir) );
   }  
 };
@@ -3053,6 +3059,7 @@ shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericDiv>::Derive(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
+  if (var == this) return dir;
   return (c1->Derive(var,dir)*c2 - c1*c2->Derive(var,dir)) / (c2*c2);
 }
 
@@ -3283,6 +3290,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     return MakeComponentCoefficientFunction (c1->Derive(var, dir), comp);
   }  
   
@@ -4238,6 +4246,7 @@ public:
   shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
+    if (this == var) return dir;
     Array<shared_ptr<CoefficientFunction>> diff_ci;
     for (auto & cf : ci)
       if (cf)
