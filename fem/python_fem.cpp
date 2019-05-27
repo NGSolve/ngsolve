@@ -271,6 +271,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericSin>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
+  if (this == var) return dir;
   return UnaryOpCF(c1, GenericCos(), "cos") * c1->Derive(var, dir);
 }
 
@@ -278,6 +279,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericCos>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
+  if (this == var) return dir;
   return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Derive(var, dir);
 }
 
@@ -285,6 +287,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericExp>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
+  if (this == var) return dir;
   return UnaryOpCF(c1, GenericExp(), "exp") * c1->Derive(var, dir);
 }
 
@@ -292,6 +295,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericLog>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
+  if (this == var) return dir;
   return c1->Derive(var, dir) / c1;
 }
 
@@ -299,6 +303,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericSqrt>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
+  if (this == var) return dir;
   return make_shared<ConstantCoefficientFunction>(0.5)/UnaryOpCF(c1, GenericSqrt(), "sqrt") * c1->Derive(var, dir);
 }
 
@@ -306,6 +311,7 @@ template <> shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPow>::Derive(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
+  if (this == var) return dir;
   return UnaryOpCF(c1,GenericLog(),"log")*c2->Derive(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Derive(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
 
