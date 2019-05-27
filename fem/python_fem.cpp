@@ -295,6 +295,20 @@ cl_UnaryOpCF<GenericLog>::Derive(const CoefficientFunction * var,
   return c1->Derive(var, dir) / c1;
 }
 
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericSqrt>::Derive(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  return 0.5*GenericDiv(1,UnaryOpCF(c1, GenericSqrt(), "sqrt")) * c1->Derive(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericPow>::Derive(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  return UnaryOpCF(c1,GenericLog(),"log")*c2->Derive(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Derive(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+}
+
 
   template <int D>
   class NormalVectorCF : public CoefficientFunctionNoDerivative
