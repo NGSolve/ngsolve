@@ -772,7 +772,6 @@ namespace ngcomp
     : mesh(amesh)
   {
     // the connection to netgen global variables
-    ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
 
     mesh.SelectMesh();
@@ -785,7 +784,6 @@ namespace ngcomp
     : mesh(filename, amesh_comm)
   {
     // the connection to netgen global variables
-    ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
 
     UpdateBuffers();

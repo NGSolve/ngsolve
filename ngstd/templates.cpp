@@ -12,7 +12,6 @@ namespace ngstd
 {
   MPI_Comm ngs_comm;
 
-  ostream * testout = &cout;
   int printmessage_importance = 5;
   bool NGSOStream :: glob_active = true;
   const string ngsolve_version = NGSOLVE_VERSION;
