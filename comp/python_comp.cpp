@@ -167,6 +167,7 @@ public:
   void SetTestoutFile(string filename) 
   {
     // cout << "set testout-file to " << filename << endl;
+    delete testout;
     testout = new ofstream(filename);
   }
   
@@ -592,6 +593,7 @@ size : int
   m.def("SetTestoutFile",
         [](string filename)
         {
+          delete testout;
           testout = new ofstream (filename);
         }, py::arg("file"), docu_string(R"raw_string(
 Enable some logging into file with given filename

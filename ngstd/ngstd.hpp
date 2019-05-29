@@ -80,7 +80,6 @@ inline void * operator new[] (size_t cnt)
 
 namespace ngstd
 {
-  NGS_DLL_HEADER extern ::std::ostream * testout;
   NGS_DLL_HEADER extern int printmessage_importance;
   NGS_DLL_HEADER extern const std::string ngsolve_version;
 }

@@ -948,7 +948,11 @@ namespace ngcomp
 
     string_constants.Set (name.c_str(), new string(val));
 
-    if (name == "testout") testout = new ofstream (val.c_str());
+    if (name == "testout")
+      {
+        delete testout;
+        testout = new ofstream (val.c_str());
+      }
   }
 
   void PDE :: AddVariable (const string & name, double val, int im)
