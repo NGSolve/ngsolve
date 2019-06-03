@@ -2870,14 +2870,13 @@ public:
     cout << "non-zero result " << nonzero << endl;    
   }
 
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    cout << "nonzero, inout" << endl;
     int hd = Dimensions()[0];    
     auto in0 = input[0];
-    cout << "input " << in0 << endl;
     for (int i = 0; i < hd; i++)
       for (int j = 0; j < hd; j++)
         {
@@ -2885,7 +2884,6 @@ public:
           int jj = j*hd+i;
           values(ii) = in0(ii)+in0(jj);   // logical or 
         }
-    cout << "result : " << values << endl;
   }
   using T_CoefficientFunction<SymmetricCoefficientFunction>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override

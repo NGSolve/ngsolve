@@ -10,10 +10,12 @@ namespace ngfem
     bool skeleton = false;
     BitArray definedon;
     int bonus_intorder = 0;
+    shared_ptr<ngcomp::GridFunction> deformation;
+    
     DifferentialSymbol (VorB _vb) : vb(_vb) { ; }
-    DifferentialSymbol (VorB _vb, VorB _element_vb, const BitArray & _definedon,
+    DifferentialSymbol (VorB _vb, VorB _element_vb, bool _skeleton, const BitArray & _definedon,
                         int _bonus_intorder)
-      : vb(_vb), element_vb(_element_vb), definedon(_definedon), bonus_intorder(_bonus_intorder) { ; } 
+      : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), definedon(_definedon), bonus_intorder(_bonus_intorder) { ; } 
   };
   
 
