@@ -1910,7 +1910,7 @@ diffop : ngsolve.fem.DifferentialOperator
   py::class_<DifferentialSymbol>(m, "DifferentialSymbol")
     .def(py::init<VorB>())
     .def("__call__", [](DifferentialSymbol & self, bool element_boundary,
-                        VorB element_vb,
+                        VorB element_vb, bool skeleton,
                         shared_ptr<Region> definedon,
                         int bonus_intorder)
          {
@@ -1918,8 +1918,8 @@ diffop : ngsolve.fem.DifferentialOperator
            if (definedon)
              defon = definedon->Mask();
            if (element_boundary) element_vb = BND;
-           return DifferentialSymbol(self.vb, element_vb, defon, bonus_intorder);
-         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL,
+           return DifferentialSymbol(self.vb, element_vb, skeleton, defon, bonus_intorder);
+         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL, py::arg("skeleton")=false,
          py::arg("definedon")=nullptr, py::arg("bonus_intorder")=0)
     ;
 
@@ -2288,7 +2288,12 @@ integrator : ngsolve.fem.LFI
            for (auto icf : sum->icfs)
              {
                auto & dx = icf->dx;
-               auto lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, icf->dx.vb, VOL);
+               shared_ptr<LinearFormIntegrator> lfi;
+               if (!dx.skeleton)
+                 lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
+               else
+                 lfi = make_shared<SymbolicFacetLinearFormIntegrator> (icf->cf, dx.vb);
+               lfi->SetDefinedOn(dx.definedon);               
                lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
                *self += lfi;
              }
