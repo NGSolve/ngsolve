@@ -1929,7 +1929,7 @@ diffop : ngsolve.fem.DifferentialOperator
              }
            return dx;
          },
-         py::arg("definedon"),
+         py::arg("definedon")=nullptr,
          py::arg("element_boundary")=false,
          py::arg("element_vb")=VOL,
          py::arg("skeleton")=false,
