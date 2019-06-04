@@ -1909,18 +1909,31 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<DifferentialSymbol>(m, "DifferentialSymbol")
     .def(py::init<VorB>())
-    .def("__call__", [](DifferentialSymbol & self, bool element_boundary,
+    .def("__call__", [](DifferentialSymbol & self,
+                        optional<variant<Region,string>> definedon,
+                        bool element_boundary,
                         VorB element_vb, bool skeleton,
-                        shared_ptr<Region> definedon,
                         int bonus_intorder)
          {
-           BitArray defon;
-           if (definedon)
-             defon = definedon->Mask();
+           // BitArray defon;
+           // if (definedon)
+           // defon = definedon->Mask();
            if (element_boundary) element_vb = BND;
-           return DifferentialSymbol(self.vb, element_vb, skeleton, defon, bonus_intorder);
-         }, py::arg("element_boundary")=false, py::arg("element_vb")=VOL, py::arg("skeleton")=false,
-         py::arg("definedon")=nullptr, py::arg("bonus_intorder")=0)
+           auto dx = DifferentialSymbol(self.vb, element_vb, skeleton, /* defon, */ bonus_intorder);
+           if (definedon)
+             {
+               if (auto definedon_region = get_if<Region>(&*definedon); definedon_region)
+                 dx.definedon = definedon_region->Mask();
+               if (auto definedon_string = get_if<string>(&*definedon); definedon_string)
+                 dx.definedon = *definedon_string;
+             }
+           return dx;
+         },
+         py::arg("definedon"),
+         py::arg("element_boundary")=false,
+         py::arg("element_vb")=VOL,
+         py::arg("skeleton")=false,
+         py::arg("bonus_intorder")=0)
     ;
 
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -2059,7 +2072,17 @@ integrator : ngsolve.fem.BFI
                  bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
                else
                  bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (icf->cf, dx.vb, !dx.skeleton);
-               bfi->SetDefinedOn(dx.definedon);
+               if (dx.definedon)
+                 {
+                   if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
+                     bfi->SetDefinedOn(*definedon_bitarray);
+                   if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+                     {
+                       Region reg(self.GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+                       bfi->SetDefinedOn(reg.Mask());
+                     }
+                 }
+               bfi->SetDeformation(dx.deformation);               
                bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
                self += bfi;
              }
@@ -2293,7 +2316,18 @@ integrator : ngsolve.fem.LFI
                  lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
                else
                  lfi = make_shared<SymbolicFacetLinearFormIntegrator> (icf->cf, dx.vb);
-               lfi->SetDefinedOn(dx.definedon);               
+               // lfi->SetDefinedOn(dx.definedon);
+               if (dx.definedon)
+                 {
+                   if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
+                     lfi->SetDefinedOn(*definedon_bitarray);
+                   if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+                     {
+                       Region reg(self->GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+                       lfi->SetDefinedOn(reg.Mask());
+                     }
+                 }
+               lfi->SetDeformation(dx.deformation);
                lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
                *self += lfi;
              }
