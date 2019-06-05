@@ -15,7 +15,6 @@
 #include "../fem/h1lofe.hpp"
 #include <parallelngs.hpp>
 
-
 using namespace ngmg;
 
 namespace ngcomp
