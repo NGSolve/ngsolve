@@ -3297,15 +3297,23 @@ namespace ngfem
     for (int i = 0; i < hmips.Size(); i++)
       {
         auto & mip = hmips[i];
+        /*
         Mat<DIM_ELEMENT,DIM_SPACE,SIMD<double>> inv_jac = mip.GetJacobianInverse();
         SIMD<double> det = mip.GetMeasure();
         Vec<DIM_SPACE,SIMD<double>> normal = det * Trans (inv_jac) * normal_ref;
         SIMD<double> len = L2Norm (normal);       // that's the surface measure
         normal *= SIMD<double>(1.0)/len;                           // normal vector on physical element
+        */
+
+        Vec<DIM_SPACE,SIMD<double>> normal = mip.GetJacobianCofactor() * normal_ref;
+        SIMD<double> len = L2Norm (normal);
+        SIMD<double> sign = IfPos(mip.GetJacobiDet(), SIMD<double>(1), SIMD<double>(-1));
+        normal *= sign/len;    
+        
         // SIMD<double> len = 1.0;
         // mip.SetNV(normal);
         mip.SetMeasure (len);
-
+        
         if (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
@@ -3508,11 +3516,11 @@ namespace ngfem
       default:
         throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
       } 
-    
-    for (int i = 0; i < irfacet.Size(); i++)
+
+    for (int i = 0; i < hirfacet.Size(); i++)
       {
-        irvol[i].SetFacetNr(fnr, vb);
-        irvol[i].Weight() = irfacet[i].Weight();
+        hirvol[i].SetFacetNr(fnr, vb);
+        hirvol[i].Weight() = hirfacet[i].Weight();
       }
 
 

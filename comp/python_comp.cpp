@@ -1263,7 +1263,8 @@ rho : ngsolve.fem.CoefficientFunction
   
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   
-  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
+  // ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
+  ExportFESpace<VectorFacetFESpace> (m, "TangentialFacetFESpace");
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
   
@@ -1382,6 +1383,63 @@ used_idnrs : list of int = None
     ;
 
 
+
+  py::class_<DiscontinuousFESpace, shared_ptr<DiscontinuousFESpace>, FESpace>(m, "Discontinuous",
+	docu_string(R"delimiter(Discontinuous Finite Element Spaces.
+...
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes)
+                  {
+                    Flags flags = fes->GetFlags();
+                    auto dcfes = make_shared<DiscontinuousFESpace>(fes, flags);
+                    dcfes->Update(glh);
+                    dcfes->FinalizeUpdate(glh);
+                    return dcfes;
+                  }), py::arg("fespace"))
+    /*
+    .def(py::pickle([](const PeriodicFESpace* per_fes)
+                    {
+                      py::list idnrs;
+                      for (auto idnr : *per_fes->GetUsedIdnrs())
+                        idnrs.append(idnr);
+                      auto quasiper_fes = dynamic_cast<const QuasiPeriodicFESpace*>(per_fes);
+                      if(quasiper_fes)
+                        {
+                          py::list fac;
+                          for(auto factor : *quasiper_fes->GetFactors())
+                            fac.append(factor);
+                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
+                        }
+                      return py::make_tuple(per_fes->GetBaseSpace(),idnrs);
+                    },
+                    [] (py::tuple state) -> shared_ptr<PeriodicFESpace>
+                    {
+                      auto idnrs = make_shared<Array<int>>();
+                      for (auto id : state[1].cast<py::list>())
+                        idnrs->Append(id.cast<int>());
+                      if(py::len(state)==3)
+                        {
+                          auto facs = make_shared<Array<Complex>>();
+                          for (auto fac : state[2].cast<py::list>())
+                            facs->Append(fac.cast<Complex>());
+                          auto fes = make_shared<QuasiPeriodicFESpace>
+                            (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
+                          fes->Update(glh);
+                          fes->FinalizeUpdate(glh);
+                          return fes;
+                        }
+                      auto fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
+                                                              Flags(),idnrs);
+                      fes->Update(glh);
+                      fes->FinalizeUpdate(glh);
+                      return fes;
+                    }))
+    */
+    ;
+
+
+
+  
   py::class_<CompressedFESpace, shared_ptr<CompressedFESpace>, FESpace>(m, "Compress",
 	docu_string(R"delimiter(Wrapper Finite Element Spaces.
 The compressed fespace is a wrapper around a standard fespace which removes

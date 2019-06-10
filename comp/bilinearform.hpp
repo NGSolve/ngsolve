@@ -402,6 +402,7 @@ namespace ngcomp
   protected:
     /// assemble matrix
     virtual void DoAssemble (LocalHeap & lh) = 0;
+    void AssembleGF (LocalHeap & lh);
 
     /// allocates (sparse) matrix data-structure
     virtual void AllocateMatrix () = 0;
@@ -527,7 +528,6 @@ namespace ngcomp
 
     ///
     virtual void DoAssemble (LocalHeap & lh);
-    void AssembleGF (LocalHeap & lh);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
