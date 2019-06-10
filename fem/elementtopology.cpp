@@ -389,8 +389,8 @@ namespace ngfem
     //  in 3d:  area of parallelogramm (sum of intweights = 1(quad), 1/2 trig)
     // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
 
-    static double point_normals [][0] = 
-      { };
+    static double point_normals [][1] = 
+      { { 1 } };  // only to avoid 0-size array
     
     static double segm_normals [][1] = 
     { { 1 },
