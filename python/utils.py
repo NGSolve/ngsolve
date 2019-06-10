@@ -16,7 +16,6 @@ def Laplace (coef):
 def Mass (coef):
     return BFI("mass", coef=coef)
 
-
 def Source (coef):
     return LFI("source", coef=coef)
 
@@ -25,45 +24,15 @@ def Neumann (coef):
 
 
 
-#def H1(mesh, **args):
-#    """
-#    Create H1 finite element space.
-#    documentation of arguments is available in FESpace.
-#    """
-#    fes = FESpace("h1ho", mesh, **args)
-#    return fes
-
-
-#def VectorH1(mesh, **args):
-#    """ Create vector-valued H1 finite element space. """
-#    fes = FESpace("VectorH1", mesh, **args)
-#    return fes
-
-#def L2(mesh, **args):
-#    """ Create L2 finite element space. """
-#    return FESpace("l2ho", mesh, **args)
-
-#def VectorL2(mesh, **args):
-#    """ Create vector-valued L2 finite element space. """
-#    fes = FESpace("VectorL2", mesh, **args)
-#    return fes
-
-#def SurfaceL2(mesh, **args):
-#    """ Create L2(boundary) finite element space. """
-#    return FESpace("l2surf", mesh, **args)
-
-#def FacetFESpace(mesh, **args):
-#    """ Create Facet finite element space. """
-#    return FESpace("facet", mesh, **args)
-
-#def HDivDiv(mesh, **args):
-#    """ Create H(div-div) finite element space. """
-#    return FESpace("hdivdiv", mesh, **args)
-
 #def NumberSpace(mesh, **args):
 #    """ Create space of real or complex numbers. """
 #    return FESpace("number", mesh, **args)
 
+
+# VectorFacet = TangentialFacetFESpace
+def VectorFacet (mesh, **args):
+    print ("deprecated warning: VectorFacet is renamed to TangentialFacetFESpace")
+    return TangentialFacetFESpace(mesh, **args)
 
 def grad(func):
     if func.derivname == "grad":
@@ -154,6 +123,6 @@ def Skew(m):
 def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
 ## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
-__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct']
+__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct', 'VectorFacet']
 
 

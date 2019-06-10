@@ -263,7 +263,7 @@ public:
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
       remember_cf_first(0, nullptr), remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
   { ; }
-  ProxyUserData (int ntrial, int ncf, LocalHeap & lh)
+  ProxyUserData (size_t ntrial, size_t ncf, LocalHeap & lh)
     : remember_first(ntrial, lh), remember_second(ntrial, lh),
       remember_asecond(ntrial, lh),
       remember_cf_first(ncf, lh), remember_cf_asecond(ncf, lh),
@@ -273,9 +273,9 @@ public:
   ProxyUserData (int ntrial, LocalHeap & lh)
     : ProxyUserData (ntrial, 0, lh) { ; } 
   
-  void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
+  void AssignMemory (const ProxyFunction * proxy, size_t h, size_t w, LocalHeap & lh)
   {
-    for (int i = 0; i < remember_first.Size(); i++)
+    for (size_t i = 0; i < remember_first.Size(); i++)
       {
         if (remember_first[i] == nullptr)
           {
@@ -288,9 +288,9 @@ public:
     throw Exception ("no space for userdata - memory available");
   }
 
-  void AssignMemory (const CoefficientFunction * cf, int h, int w, LocalHeap & lh)
+  void AssignMemory (const CoefficientFunction * cf, size_t h, size_t w, LocalHeap & lh)
   {
-    for (int i = 0; i < remember_cf_first.Size(); i++)
+    for (size_t i = 0; i < remember_cf_first.Size(); i++)
       {
         if (remember_cf_first[i] == nullptr)
           {

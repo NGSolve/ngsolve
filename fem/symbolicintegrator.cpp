@@ -3168,7 +3168,9 @@ namespace ngfem
             // RegionTracer rtapply(TaskManager::GetThreadId(), tapply);                        
             for (ProxyFunction * proxy : trial_proxies)
               {
-                IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+                IntRange trial_range  = proxy->IsOther() ?
+                  IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) :
+                  IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
                 
                 if (proxy->IsOther())
                   proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy));

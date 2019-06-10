@@ -1760,6 +1760,15 @@ namespace ngstd
         }
     }
 
+    INLINE const Mat<DIMR,DIMS,SIMD<double>> GetJacobianCofactor() const 
+    { 
+      if (DIMS == DIMR)
+        return Cof (dxdxi);
+      else
+        return det * Trans(GetJacobianInverse());
+    }
+
+    
     INLINE operator Vec<DIMS, AutoDiff<DIMR,SIMD<double>>> () const
     {
       Vec<DIMS, AutoDiff<DIMR, SIMD<double>> > adp;
