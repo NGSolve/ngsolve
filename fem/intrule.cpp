@@ -3439,8 +3439,9 @@ namespace ngfem
 
 
 
-  SIMD_IntegrationRule & Facet2ElementTrafo :: operator() (int fnr, const SIMD_IntegrationRule & irfacet, LocalHeap & lh)
+  const SIMD_IntegrationRule & Facet2ElementTrafo :: operator() (int fnr, const SIMD_IntegrationRule & irfacet, LocalHeap & lh)
   {
+    if (vb == VOL) return irfacet;
     SIMD_IntegrationRule & irvol = *new (lh) SIMD_IntegrationRule (irfacet.GetNIP(), lh);
 
     FlatArray<SIMD<IntegrationPoint>> hirfacet = irfacet;

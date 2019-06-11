@@ -959,7 +959,9 @@ namespace ngfem
 
     size_t GetNFacets () const
     {
-      if (vb == BND)
+      if (vb == VOL)
+        return 1;
+      else if (vb == BND)
         return ElementTopology::GetNFacets(eltype);
       else
         {
@@ -1119,7 +1121,7 @@ namespace ngfem
     }
 
 
-    class SIMD_IntegrationRule & operator() (int fnr, const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
+    const class SIMD_IntegrationRule & operator() (int fnr, const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
 
   };
 
