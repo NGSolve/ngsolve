@@ -904,7 +904,7 @@ namespace ngfem
                 }
             }
           else
-            if (nodecf.StoreUserData())
+            if (nodecf.StoreUserData() && !gridfunction_cfs.Contains(&nodecf))
               gridfunction_cfs.Append (&nodecf);
         });
 
@@ -2215,7 +2215,7 @@ namespace ngfem
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
               // NgProfiler::StartThreadTimer(tir, tid);
               const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
-              SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+              const SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
               SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure(eltype, k);
               // NgProfiler::StopThreadTimer(tir, tid);
@@ -2541,14 +2541,14 @@ namespace ngfem
                           void * precomputed,
                           LocalHeap & lh) const
   {
-    static Timer t("symbolicbfi - Apply EB", 2);
-    static Timer tir("symbolicbfi - Apply EB, intrule", 2);
-    static Timer teval("symbolicbfi - Apply EB, evaluate", 2);
-    static Timer td("symbolicbfi - Apply EB, evaluate D", 2);
-    static Timer ttrans("symbolicbfi - Apply EB, trans", 2);
+    // static Timer t("symbolicbfi - Apply EB", 2);
+    // static Timer tir("symbolicbfi - Apply EB, intrule", 2);
+    // static Timer teval("symbolicbfi - Apply EB, evaluate", 2);
+    // static Timer td("symbolicbfi - Apply EB, evaluate D", 2);
+    // static Timer ttrans("symbolicbfi - Apply EB, trans", 2);
     
     size_t tid = TaskManager::GetThreadId();    
-    ThreadRegionTimer reg(t, tid);
+    // ThreadRegionTimer reg(t, tid);
     
     ely = 0;
 
@@ -2567,16 +2567,16 @@ namespace ngfem
           for (int k = 0; k < nfacet; k++)
             {
               HeapReset hr(lh);
-              NgProfiler::StartThreadTimer(tir, tid);                              
+              // NgProfiler::StartThreadTimer(tir, tid);                              
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
               const SIMD_IntegrationRule & ir_facet =
                 GetSIMDIntegrationRule(etfacet,fel_trial.Order()+fel_test.Order()+bonus_intorder);
               auto & ir_facet_vol = transform(k, ir_facet, lh);
               auto & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure (eltype, k);
-              NgProfiler::StopThreadTimer(tir, tid);
+              // NgProfiler::StopThreadTimer(tir, tid);
 
-              NgProfiler::StartThreadTimer(teval, tid);                                            
+              // NgProfiler::StartThreadTimer(teval, tid);                                            
               ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);              
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
               ud.fel = &fel_trial;
@@ -2589,11 +2589,11 @@ namespace ngfem
               for (ProxyFunction * proxy : trial_proxies)
                 proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetAMemory(proxy)); 
           
-              NgProfiler::StopThreadTimer(teval, tid);
+              // NgProfiler::StopThreadTimer(teval, tid);
               for (auto proxy : test_proxies)
                 {
                   HeapReset hr(lh);
-                  NgProfiler::StartThreadTimer(td, tid);
+                  // NgProfiler::StartThreadTimer(td, tid);
                   FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
                   for (int k = 0; k < proxy->Dimension(); k++)
                     {
@@ -2608,11 +2608,11 @@ namespace ngfem
                       for (size_t j = 0; j < row.Size(); j++)
                         row(j) *= mir[j].GetWeight(); //  * simd_ir[j].Weight();
                     }
-                  NgProfiler::StopThreadTimer(td, tid);
+                  // NgProfiler::StopThreadTimer(td, tid);
                   
-                  NgProfiler::StartThreadTimer(ttrans, tid);
+                  // NgProfiler::StartThreadTimer(ttrans, tid);
                   proxy->Evaluator()->AddTrans(fel_test, mir, simd_proxyvalues, ely);
-                  NgProfiler::StopThreadTimer(ttrans, tid);                                                  
+                  // NgProfiler::StopThreadTimer(ttrans, tid);                                                  
                 }
             }
           return;
@@ -2794,7 +2794,7 @@ namespace ngfem
                 }
             }
           else
-            if (nodecf.StoreUserData())
+            if (nodecf.StoreUserData() && !gridfunction_cfs.Contains(&nodecf))
               gridfunction_cfs.Append (&nodecf);
         });
 

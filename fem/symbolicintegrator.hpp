@@ -318,6 +318,22 @@ public:
     throw Exception ("no space for userdata - memory available");
   }
 
+  void AssignMemory (const CoefficientFunction * cf, FlatMatrix<SIMD<double>> mat)
+  {
+    for (size_t i = 0; i < remember_cf_first.Size(); i++)
+      {
+        if (remember_cf_first[i] == nullptr || remember_cf_first[i] == cf)
+          {
+            remember_cf_first[i] = cf;
+            new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (mat);
+            remember_cf_computed[i] = true;            
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+
+  
 
   bool HasMemory (const ProxyFunction * proxy) const
   {
