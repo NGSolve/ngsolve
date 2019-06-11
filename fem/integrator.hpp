@@ -186,8 +186,8 @@ namespace ngfem
       return integration_order;
     }
 
-    void SetBonusIntegrationOrder (int bo)
-    { bonus_intorder = bo; }
+    void SetBonusIntegrationOrder (int bo) { bonus_intorder = bo; }
+    int GetBonusIntegrationOrder() const   { return bonus_intorder; }
     
     /// benefit from constant coefficient
     void SetConstantCoefficient (bool acc = 1)
