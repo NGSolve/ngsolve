@@ -288,6 +288,21 @@ public:
     throw Exception ("no space for userdata - memory available");
   }
 
+  void AssignMemory (const ProxyFunction * proxy, FlatMatrix<SIMD<double>> mat)
+  {
+    for (size_t i = 0; i < remember_first.Size(); i++)
+      {
+        if (remember_first[i] == nullptr || remember_first[i] == proxy)
+          {
+            remember_first[i] = proxy;
+            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (mat);
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+
+  
   void AssignMemory (const CoefficientFunction * cf, size_t h, size_t w, LocalHeap & lh)
   {
     for (size_t i = 0; i < remember_cf_first.Size(); i++)
@@ -328,9 +343,9 @@ public:
   {
     return remember_cf_computed[remember_cf_first.PosSure(cf)];
   }
-  void SetComputed (const CoefficientFunction * cf) const
+  void SetComputed (const CoefficientFunction * cf, bool val = true) const
   {
-    remember_cf_computed[remember_cf_first.PosSure(cf)] = true;
+    remember_cf_computed[remember_cf_first.PosSure(cf)] = val;
   }
 };
 
@@ -598,6 +613,7 @@ public:
                                                    VorB aelement_boundary);
 
     virtual VorB VB() const override { return vb; }
+    virtual VorB ElementVB() const { return element_vb; }
     virtual xbool IsSymmetric() const override { return is_symmetric ? xbool(true) : xbool(maybe); } 
     virtual string Name () const override { return string ("Symbolic BFI"); }
 
@@ -676,7 +692,10 @@ public:
                                  void * precomputed,
                                  LocalHeap & lh) const;
 
-
+    const auto & GetCoefficientFunction() { return cf; }
+    const auto & TrialProxies() { return trial_proxies; } 
+    const auto & TestProxies() { return test_proxies; } 
+    const auto & GridFunctionCoefficients() { return gridfunction_cfs; } 
   };
 
 

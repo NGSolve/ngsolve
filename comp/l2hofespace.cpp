@@ -700,9 +700,25 @@ global system.
     GetDofNrs (elnr, dnums); 
   }
 
-#if __has_include("applymassl2.hpp")
+
 #include "applymassl2.hpp"
-#else
+
+  shared_ptr<BaseMatrix> L2HighOrderFESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const
+  {
+    if (rho->ElementwiseConstant() && all_dofs_together && order_policy == CONSTANT_ORDER)
+      {
+        return make_shared<ApplyMassL2Const>
+          (dynamic_pointer_cast<FESpace>(const_cast<L2HighOrderFESpace*>(this)->shared_from_this()),
+           rho, defon, lh);    
+      }
+    
+    return FESpace::GetMassOperator(rho, defon, lh);
+  }
+
+  /*
   shared_ptr<BaseMatrix> L2HighOrderFESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
                    shared_ptr<Region> defon,
@@ -710,7 +726,8 @@ global system.
   {
     return FESpace::GetMassOperator(rho, defon, lh);
   }
-#endif
+  */
+
   
   
   void L2HighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
@@ -2393,7 +2410,41 @@ One can evaluate the vector-valued function, and one can take the gradient.
   }
 
 
-#ifndef FASTDG  
+  shared_ptr<BaseMatrix> VectorL2FESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const
+  {
+    /*
+    cout << "VectorL2, GetMassOp" << endl
+         << "rho = " << *rho << endl
+         << "elwiseconst = " << rho->ElementwiseConstant() << endl;
+    */
+    if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER)
+      // && (covariant || piola || (rho && rho->Dimension() > 1) )
+      {
+        // cout << "optimized vector-apply-mass" << endl;
+        switch (ma->GetDimension())
+          {
+          case 1:
+            return make_shared<ApplyMassVectorL2Const<1>>
+              (dynamic_pointer_cast<FESpace>(const_cast<VectorL2FESpace*>(this)->shared_from_this()),
+               rho, defon, lh);    
+          case 2:
+            return make_shared<ApplyMassVectorL2Const<2>>
+              (dynamic_pointer_cast<FESpace>(const_cast<VectorL2FESpace*>(this)->shared_from_this()),
+               rho, defon, lh);    
+          case 3:
+            return make_shared<ApplyMassVectorL2Const<3>>
+              (dynamic_pointer_cast<FESpace>(const_cast<VectorL2FESpace*>(this)->shared_from_this()),
+               rho, defon, lh);    
+          }
+      }
+    return FESpace::GetMassOperator(rho, defon, lh);
+  }
+
+  
+  /*
   shared_ptr<BaseMatrix> VectorL2FESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
                    shared_ptr<Region> defon,
@@ -2401,7 +2452,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
   {
     return FESpace::GetMassOperator(rho, defon, lh);
   }
-#endif
+  */
   
   
   void VectorL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,

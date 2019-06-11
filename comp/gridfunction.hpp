@@ -94,6 +94,7 @@ namespace ngcomp
     bool generated_from_deriv = false;
     string generated_from_operator;
     shared_ptr<GridFunction> GetGridFunctionPtr() const { return gf_shared_ptr; }
+    const auto & GetDifferentialOperator (VorB vb) const { return diffop[vb]; } 
   };
 
 

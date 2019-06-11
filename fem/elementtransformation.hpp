@@ -64,6 +64,7 @@ namespace ngfem
     // void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
     /// return element number
     int GetElementNr () const { return elnr; }
+    void SetElementNr (int _elnr) { elnr = _elnr; }
     ///
     ElementId GetElementId () const { return ElementId(VB(), elnr); }
     /// return element index
