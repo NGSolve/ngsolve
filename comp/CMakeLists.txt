@@ -30,6 +30,7 @@ install( FILES
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
         pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hypre_ams_precond.hpp facetsurffespace.hpp compressedfespace.hpp
+        python_comp.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
