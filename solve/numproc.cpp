@@ -304,7 +304,8 @@ namespace ngsolve
                      bool aapplyd,
                      bool auseall)
       : bfa(abfa), gfu(agfu), applyd(aapplyd), useall(auseall), label(alabel)
-    { 
+    {
+      ma = gfu->GetMeshAccess();
       Array<shared_ptr<BilinearFormIntegrator>> bfi2d, bfi3d;
 
       for (int i = 0; i < bfa->NumIntegrators(); i++)
