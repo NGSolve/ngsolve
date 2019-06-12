@@ -14,7 +14,7 @@ namespace ngbla
   template <int S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
-  template <class T> class Vector;
+  template <class T = double> class Vector;
   template <class T = double, class TIND = size_t> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
 
@@ -29,7 +29,7 @@ namespace ngbla
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T = double>
+  template <typename T>
   class FlatVector : public CMCPMatExpr<FlatVector<T> > 
   {
   protected:
@@ -459,7 +459,7 @@ namespace ngbla
   /**
      A Vector class with memory allocation/deallocation
   */
-  template <typename T = double>
+  template <typename T>
   class Vector : public FlatVector<T>
   {
     // using FlatVector<T>::data;
