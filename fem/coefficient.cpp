@@ -1472,6 +1472,20 @@ public:
     nonzero_deriv = nzd;
     nonzero_dderiv = nzdd;
   }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    auto v2 = input[1];
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < dim1; i++)
+      sum += v1(i)*v2(i);
+    values(0) = sum;
+  }
+
+  
 };
 
 template <int DIM>
