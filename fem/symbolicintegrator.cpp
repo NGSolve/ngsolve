@@ -2505,7 +2505,8 @@ namespace ngfem
       proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetMemory(proxy), lh);
     
     ely = 0;
-    FlatVector<> ely1(ely.Size(), lh);
+    // FlatVector<> ely1(ely.Size(), lh);
+    FlatVector ely1(ely.Size(), lh);   // can we really skip the <>  ???
 
     FlatMatrix<> val(mir.Size(), 1,lh);
     for (auto proxy : test_proxies)

@@ -24,7 +24,7 @@ namespace ngbla
   template <int S, typename T> class Vec;
 
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
-  template <class T> class FlatVector;
+  template <class T = double> class FlatVector;
 
   
   template <typename T, typename TELEM=typename T::TELEM>
