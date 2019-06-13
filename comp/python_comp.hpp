@@ -5,7 +5,6 @@
 
 namespace ngcomp
 {
-  namespace py = pybind11;
   // TODO: use Archive structure to pickle fespaces
   auto fesPickle = [](const FESpace& fes)
                    {
