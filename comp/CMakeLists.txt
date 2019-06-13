@@ -16,7 +16,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         periodic.cpp discontinuous.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
         )
 
-target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd)      
 
 target_link_libraries (ngcomp PUBLIC nglib ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE ngmg ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
 target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
@@ -30,6 +30,7 @@ install( FILES
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
         pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hypre_ams_precond.hpp facetsurffespace.hpp compressedfespace.hpp
+        python_comp.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
