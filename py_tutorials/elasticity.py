@@ -1,5 +1,5 @@
 #
-# geometric non-linear elasticity with Neo-Hook hyperelastic material
+# geometric non-linear elasticity with Neo-Hooke hyperelastic material
 #
 # featuring automatic differentiation in SymbolicEnergy
 #
@@ -19,28 +19,29 @@ mu  = E / 2 / (1+nu)
 lam = E * nu / ((1+nu)*(1-2*nu))
 
 fes = H1(mesh, order=2, dirichlet="left", dim=mesh.dim)
+# fes = VectorH1(mesh, order=2, dirichlet="left")
 
 u  = fes.TrialFunction()
 
 force = CoefficientFunction( (0,1) )
 
 I = Id(mesh.dim)
-F = I + u.Deriv()   # attention: row .. component, col .. derivative
-C = F * F.trans  
+F = I + Grad(u)
+C = F.trans * F
 E = 0.5 * (C-I)
 
 def Pow(a, b):
     return a**b  # exp (log(a)*b)
   
-def NeoHook (C):
-    return 0.5 * mu * (Trace(C-I) + 2*mu/lam * Pow(Det(C), -lam/2/mu) - 1)
+def NeoHooke (C):
+    return 0.5 * mu * (Trace(C-I) + 2*mu/lam * Pow(Det(C),-lam/2/mu) - 1)
 
 
 
 factor = Parameter(0.1)
 
 a = BilinearForm(fes, symmetric=False)
-a += SymbolicEnergy(  NeoHook (C).Compile() )
+a += SymbolicEnergy(  NeoHooke (C).Compile() )
 a += SymbolicEnergy(  (-factor * InnerProduct(force,u) ).Compile() )
 
 
@@ -51,10 +52,10 @@ res = u.vec.CreateVector()
 w = u.vec.CreateVector()
 
 
-for loadstep in range(50):
+for loadstep in range(10):
     
     print ("loadstep", loadstep)
-    factor.Set ((loadstep+1)/10)
+    factor.Set (loadstep+1)
     
     for it in range(5):
         print ("Newton iteration", it)

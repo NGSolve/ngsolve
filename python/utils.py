@@ -44,6 +44,15 @@ def grad(func):
     raise Exception("cannot form grad")
     # return func.Deriv()
 
+def Grad(func):
+    """ Jacobi-matrix"""
+    try:
+        return func.Operator("Grad")
+    except:
+        return grad(func).trans
+    
+
+
 def curl(func):
     if func.derivname == "curl":
         return func.Deriv()
@@ -123,6 +132,6 @@ def Skew(m):
 def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
 ## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
-__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct', 'VectorFacet']
+__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'Grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct', 'VectorFacet']
 
 
