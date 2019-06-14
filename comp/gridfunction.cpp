@@ -2232,6 +2232,7 @@ namespace ngcomp
             bool isdefined = false;
 	    for(int j = 0; j < bfi2d.Size(); j++)
 	      {
+                HeapReset hr(lh);
                 if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
                 isdefined = true;
 
@@ -2258,6 +2259,7 @@ namespace ngcomp
                 bool isdefined = false;
                 for(int j = 0; j < bfi2d.Size(); j++)
                   {
+                    HeapReset hr(lh);                    
                     if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
                     isdefined = true;
                     FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
@@ -2275,6 +2277,7 @@ namespace ngcomp
                 bool isdefined = false;
                 for(int j = 0; j < bfi2d.Size(); j++)
                   {
+                    HeapReset hr(lh);                    
                     if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
                     isdefined = true;
                     
