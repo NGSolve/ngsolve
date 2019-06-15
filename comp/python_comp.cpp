@@ -22,39 +22,6 @@ typedef GridFunction GF;
 
 
 
-
-/*
-static size_t global_heapsize = 1000000;
-static LocalHeap glh(global_heapsize, "python-comp lh", true);
-*/
-
-/*
-template <> class cl_NonElement<ElementId>
-{
-public:
-  static ElementId Val() { return ElementId(VOL,-1); }
-};
-*/
-
-
-
-/*
-namespace pybind11
-{
-  // would like to replace MakePyTuple by this cast, but doesn't work
-  template <typename T>
-  py::tuple cast (const BaseArrayObject<T> & ao)
-  {
-    size_t s = ao.Size();
-    py::tuple tup(s);
-    for (size_t i = 0; i < s; i++)
-      tup[i] = ao[i];
-    return tup;
-  }
-}
-*/
-
-
 class PyNumProc : public NumProc
 {
 public:
@@ -274,19 +241,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  /*
-    // where do we need that ? 
-  py::class_<FlatArray<NodeId> > class_flatarrayNI (m, "FlatArrayNI");
-  PyDefVector<FlatArray<NodeId>, NodeId>(m, class_flatarrayNI);
-  PyDefToString<FlatArray<NodeId> >(m, class_flatarrayNI);
-  class_flatarrayNI.def(py::init<size_t, NodeId *>());
-
-  py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
-    .def(py::init<size_t>())
-    ;
-  */
-  
-
   py::class_<FESpace::Element,Ngs_Element>(m, "FESpaceElement")
     .def_property_readonly("dofs",
                            [](FESpace::Element & el) 
@@ -294,15 +248,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                            "degrees of freedom of element"
                            )
 
-    /*
-      // don't give LocalHeap to Python !
-    .def("GetLH",[](FESpace::Element & el) -> LocalHeap & 
-                                  {
-                                    return el.GetLH();
-                                  },
-         py::return_value_policy::reference
-         )
-    */
     
     .def("GetFE",[](FESpace::Element & el)
          {
@@ -331,12 +276,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .def_property("testout", 
                  &GlobalDummyVariables::GetTestoutFile,
                   &GlobalDummyVariables::SetTestoutFile, "testout file")
-    /*
-    .def_property_readonly("pajetrace",
-		  &GlobalDummyVariables::GetTestoutFile,
-		 [] (GlobalDummyVariables&, bool use)
-				  { TaskManager::SetPajeTrace(use); });
-    */
+
     .def_property("pajetrace",
 		  &GlobalDummyVariables::GetTestoutFile,
 		 [] (GlobalDummyVariables&, int size)
@@ -353,7 +293,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 				  {
                                     TaskManager::SetNumThreads (numthreads);
                                   })
-    // &GlobalDummyVariables::SetTestoutFile)
     ;
 
   m.attr("ngsglobals") = py::cast(&globvar);
@@ -365,7 +304,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
   
   py::class_<NGS_Object, shared_ptr<NGS_Object>>(m, "NGS_Object")
-    // .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
     .def_property("name", &NGS_Object::GetName, &NGS_Object::SetName)
     .def_property_readonly("__memory__",
                            [] (const NGS_Object & self)
@@ -435,80 +373,6 @@ when building the system matrices.
            return l;
          },"returns list of available differential operators")
     ;
-
-
-
-  /*
-  struct OrderProxy 
-  {
-    FESpace & fes;
-    OrderProxy (FESpace & afes) : fes(afes) { ; }
-  };
-
-
-  py::class_<OrderProxy> (m, "OrderProxy")
-    .def("__setitem__",
-         [] (OrderProxy & self, ElementId ei, int o) 
-          {
-            cout << "set order of el " << ei << " to order " << o << endl;
-            cout << "(not implemented)" << endl;
-          })
-
-    .def("__setitem__",
-         [] (OrderProxy & self, ELEMENT_TYPE et, int o) 
-          {
-            cout << "set order of eltype " << et << " to order " << o << endl;
-            self.fes.SetBonusOrder (et, o - self.fes.GetOrder());
-
-            LocalHeap lh (100000, "FESpace::Update-heap", true);
-            self.fes.Update(lh);
-            self.fes.FinalizeUpdate(lh);
-          })
-    
-    .def("__setitem__",
-         [] (OrderProxy & self, NODE_TYPE nt, int o) 
-          {
-            cout << "set order of nodetype " << int(nt) << " to order " << o << endl;
-            nt = StdNodeType (nt, self.fes.GetMeshAccess()->GetDimension());
-            cout << "canonical nt = " << int(nt) << endl;
-            int bonus = o-self.fes.GetOrder();
-            switch (nt)
-              {
-              case 1: 
-                self.fes.SetBonusOrder(ET_SEGM, bonus); break;
-              case 2: 
-                self.fes.SetBonusOrder(ET_QUAD, bonus); 
-                self.fes.SetBonusOrder(ET_TRIG, bonus); break;
-              case 3: 
-                self.fes.SetBonusOrder(ET_TET, bonus); 
-                self.fes.SetBonusOrder(ET_PRISM, bonus);
-                self.fes.SetBonusOrder(ET_PYRAMID, bonus);
-                self.fes.SetBonusOrder(ET_HEX, bonus); break;
-              default: ;
-              }
-
-            LocalHeap lh (100000, "FESpace::Update-heap", true);
-            self.fes.Update(lh);
-            self.fes.FinalizeUpdate(lh);
-          })
-
-    .def("__setitem__",
-         [] (OrderProxy & self, NODE_TYPE nt, int nr, int o) 
-          {
-            cout << "set order of " << nt << " " << nr << " to " << o << endl;
-            cout << "(not implemented)" << endl;
-          })
-
-    .def("__setitem__",
-         [] (OrderProxy & self, py::tuple tup, int o) 
-          {
-            NODE_TYPE nt = py::extract<NODE_TYPE>(tup[0])();
-            int nr = py::extract<int>(tup[1])();
-            cout << "set order of " << nt << " " << nr << " to " << o << endl;
-            cout << "(not implemented)" << endl;
-          })
-    ;
-  */
 
   m.def("SetHeapSize",
         [](size_t heapsize)
@@ -639,32 +503,6 @@ kwargs : kwargs
            for (auto & flagdoc : FESpace::GetDocu().arguments)
              flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
            return flags_doc;
-           /*
-           return py::dict
-             (
-              py::arg("order") = "int = 1\n"
-              "  order of finite element space",
-              py::arg("complex") = "bool = False\n"
-              "  Set if FESpace should be complex",
-              py::arg("dirichlet") = "regexpr\n"
-              "  Regular expression string defining the dirichlet boundary.\n"
-              "  More than one boundary can be combined by the | operator,\n"
-              "  i.e.: dirichlet = 'top|right'",
-              py::arg("definedon") = "Region or regexpr\n"
-              "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
-              "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
-              "  mesh.Materials('regexpr').",
-              py::arg("dim") = "int = 1\n"
-              "  Create multi dimensional FESpace (i.e. [H1]^3)",
-              py::arg("dgjumps") = "bool = False\n"
-              "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
-              "  since the dofs have a different coupling then and this changes the sparsity\n"
-              "  pattern of matrices.",
-              py::arg("low_order_space") = "bool = True\n"
-              "  Generate a lowest order space together with the high-order space,\n"
-              "  needed for some preconditioners."
-              );
-           */
          })
     .def_static("__special_treated_flags__", [] ()
                 {
@@ -798,8 +636,6 @@ kwargs : kwargs
                            [](shared_ptr<FESpace> self) -> shared_ptr<MeshAccess>
                            { return self->GetMeshAccess(); }, "mesh on which the FESpace is created")
 
-    // .def_property_readonly("order", [] (shared_ptr<FESpace> self) { return OrderProxy(*self); },
-    // "proxy to set order for individual nodes")
     .def_property_readonly("globalorder", [] (shared_ptr<FESpace> self) { return self->GetOrder(); },
                   "query global order of space")    
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
@@ -882,7 +718,7 @@ VOL_or_BND : ngsolve.comp.VorB
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
            Array<DofId> tmp; self->GetDofNrs(ei,tmp);
-           return MakePyTuple(tmp);           
+           return MakePyTuple(tmp);
          }, py::arg("ei"), docu_string(R"raw_string(
 
 Parameters:
@@ -986,14 +822,6 @@ ei : ngsolve.comp.ElementId
    input element id
 
 )raw_string"))
-
-    /*
-    .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei, LocalHeap & lh)
-          {
-            return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
-          },
-          py::return_value_policy::reference)
-    */
     
     .def("FreeDofs",
          [] (const shared_ptr<FESpace>self, bool coupling)
@@ -1765,69 +1593,6 @@ VOL_or_BND : ngsolve.comp.VorB
            return py::module::import("ngsolve").attr("CoefficientFunction").attr("__call__")(self, *args, **kwargs);
          })
     
-    /*
-    .def("D", 
-         [](shared_ptr<GF> self, const double &x, const double &y, const double &z)
-          {
-            HeapReset hr(glh);
-            const FESpace & space = *self->GetFESpace();
-            IntegrationPoint ip;
-            int dim_mesh = space.GetMeshAccess()->GetDimension();
-            auto evaluator = space.GetFluxEvaluator();
-            cout << evaluator->Name() << endl;
-            int dim = evaluator->Dim();
-            int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
-            ElementId ei(VOL, elnr);
-            Array<int> dnums;
-            space.GetDofNrs(ei, dnums);
-            const FiniteElement & fel = space.GetFE(ei, glh);
-            if (space.IsComplex())
-              {
-                Vector<Complex> elvec;
-                Vector<Complex> values(dim);
-                elvec.SetSize(fel.GetNDof());
-                self->GetElementVector(dnums, elvec);
-                if (dim_mesh == 2)
-                  {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
-                    evaluator->Apply(fel, mip, elvec, values, glh);
-                  }
-                else if (dim_mesh == 3)
-                  {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
-                    evaluator->Apply(fel, mip, elvec, values, glh);
-                  }
-                if (dim > 1)
-                  return py::cast(values);
-                else
-                  return py::cast(values(0));
-              }
-            else
-              {
-                Vector<> elvec;
-                Vector<> values(dim);
-                elvec.SetSize(fel.GetNDof());
-                self->GetElementVector(dnums, elvec);
-                ElementId ei(VOL, elnr);
-                if (dim_mesh == 2)
-                  {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
-                    evaluator->Apply(fel, mip, elvec, values, glh);
-                  }
-                else if (dim_mesh == 3)
-                  {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
-                    evaluator->Apply(fel, mip, elvec, values, glh);
-                  }
-                if (dim > 1)
-                  return py::cast(values);
-                else
-                  return py::cast(values(0));
-              }
-          },
-         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
-    */
-
     .def("CF", 
          [](shared_ptr<GF> self, shared_ptr<DifferentialOperator> diffop) -> spCF
           {
@@ -1909,11 +1674,9 @@ diffop : ngsolve.fem.DifferentialOperator
                         optional<variant<Region,string>> definedon,
                         bool element_boundary,
                         VorB element_vb, bool skeleton,
-                        int bonus_intorder)
+                        int bonus_intorder,
+                        shared_ptr<GridFunction> deformation)
          {
-           // BitArray defon;
-           // if (definedon)
-           // defon = definedon->Mask();
            if (element_boundary) element_vb = BND;
            auto dx = DifferentialSymbol(self.vb, element_vb, skeleton, /* defon, */ bonus_intorder);
            if (definedon)
@@ -1923,13 +1686,15 @@ diffop : ngsolve.fem.DifferentialOperator
                if (auto definedon_string = get_if<string>(&*definedon); definedon_string)
                  dx.definedon = *definedon_string;
              }
+           dx.deformation = deformation;
            return dx;
          },
          py::arg("definedon")=nullptr,
          py::arg("element_boundary")=false,
          py::arg("element_vb")=VOL,
          py::arg("skeleton")=false,
-         py::arg("bonus_intorder")=0)
+         py::arg("bonus_intorder")=0,
+         py::arg("deformation")=nullptr)
     ;
 
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -1968,27 +1733,22 @@ space : ngsolve.FESpace
 
 )raw_string"));
   bf_class
-    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, /* bool check_unused, */
-                              py::kwargs kwargs)
+    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
                     auto biform = CreateBilinearForm (fespace, "biform_from_py", flags);
-                    // biform -> SetCheckUnused (check_unused);
                     return biform;
                   }),
          py::arg("space"))
-    .def(py::init([bf_class](shared_ptr<FESpace> trial_space,
-                             shared_ptr<FESpace> test_space, 
-                             /* bool check_unused, */ py::kwargs kwargs)
+    .def(py::init([bf_class](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, 
+                             py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
                     auto biform = CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
-                    // biform -> SetCheckUnused (check_unused);
                     return biform;
                   }),
          py::arg("trialspace"),
          py::arg("testspace"))
-    // py::arg("check_unused")=true
 
     .def_static("__flags_doc__", [] ()
                 {
@@ -2059,7 +1819,6 @@ integrator : ngsolve.fem.BFI
                                           if (dynamic_cast<ProxyFunction&> (cf).IsOther())
                                             has_other = true;
                                       });
-               // if (has_other && !element_boundary && !skeleton)
                if (has_other && (dx.element_vb != BND) && !dx.skeleton)
                  throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
 
@@ -2312,7 +2071,6 @@ integrator : ngsolve.fem.LFI
                  lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
                else
                  lfi = make_shared<SymbolicFacetLinearFormIntegrator> (icf->cf, dx.vb);
-               // lfi->SetDefinedOn(dx.definedon);
                if (dx.definedon)
                  {
                    if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
@@ -2428,13 +2186,6 @@ integrator : ngsolve.fem.LFI
     ;
 
   py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
-    /*
-    .def("__init__",
-         [](NumProc *instance, shared_ptr<PDE> pde, Flags & flags)
-                           {
-                             new (instance) PyNumProc(pde, flags);
-                           })
-    */
     .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
                      { return new PyNumProc(pde, flags); }), py::arg("pde"), py::arg("flags"))
     .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); }, "PDE of the NumProc")
