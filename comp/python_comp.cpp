@@ -1705,6 +1705,13 @@ diffop : ngsolve.fem.DifferentialOperator
             for (auto & ci : c2->icfs) sum->icfs += ci;
             return sum;
           })
+    .def ("__sub__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
+          {
+            auto sum = make_shared<SumOfIntegrals>();
+            for (auto & ci : c1->icfs) sum->icfs += ci;
+            for (auto & ci : c2->icfs) sum->icfs += make_shared<Integral>(-1*(*ci));
+            return sum;
+          })
     .def ("__rmul__", [] (shared_ptr<SumOfIntegrals> c1, double fac)
           {
             auto faccf = make_shared<SumOfIntegrals>();
@@ -1712,9 +1719,13 @@ diffop : ngsolve.fem.DifferentialOperator
             return faccf;
           })
     .def ("Derive", &SumOfIntegrals::Derive)
-    .def ("Compile", &SumOfIntegrals::Compile)
+    .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     ;
 
+  py::class_<Variation> (m, "Variation")
+    .def(py::init<shared_ptr<SumOfIntegrals>>())
+    ;
+  
   
   typedef BilinearForm BF;
   auto bf_class = py::class_<BF, shared_ptr<BilinearForm>, NGS_Object>(m, "BilinearForm",
@@ -1827,6 +1838,30 @@ integrator : ngsolve.fem.BFI
                  bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
                else
                  bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (icf->cf, dx.vb, !dx.skeleton);
+               if (dx.definedon)
+                 {
+                   if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
+                     bfi->SetDefinedOn(*definedon_bitarray);
+                   if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+                     {
+                       Region reg(self.GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+                       bfi->SetDefinedOn(reg.Mask());
+                     }
+                 }
+               bfi->SetDeformation(dx.deformation);               
+               bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               self += bfi;
+             }
+           return self;
+         })
+    
+    .def("__iadd__", [](BF & self, Variation variation) -> BilinearForm& 
+         {
+           for (auto icf : variation.igls->icfs)
+             {
+               auto & dx = icf->dx;
+
+               auto bfi = make_shared<SymbolicEnergy> (icf->cf, dx.vb, dx.element_vb);
                if (dx.definedon)
                  {
                    if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)

@@ -62,4 +62,13 @@ namespace ngfem
       return compiled;
     }
   };
+
+
+  class Variation
+  {
+  public:
+    shared_ptr<SumOfIntegrals> igls;
+    Variation (shared_ptr<SumOfIntegrals> _igls) : igls(_igls) { ; } 
+  };
+  
 }
