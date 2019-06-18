@@ -2671,6 +2671,32 @@ element_wise: bool = False
 )raw",
         py::call_guard<py::gil_scoped_release>())
     ;
+
+
+  m.def ("Integrate",
+         [] (const SumOfIntegrals & igls, const MeshAccess & ma) -> py::object
+         {
+           bool iscomplex = false;
+           for (auto & ci : igls.icfs)
+             iscomplex |= ci->cf->IsComplex();
+
+           if (iscomplex)
+             {
+               Complex sum = 0;
+               for (auto & ci : igls.icfs)
+                 sum += ci->Integrate<Complex>(ma);
+               return py::cast(sum);
+             }
+           else
+             {
+               double sum = 0;
+               for (auto & ci : igls.icfs)
+                 sum += ci->Integrate<double>(ma);
+               return py::cast(sum);
+             }
+             
+         }, py::arg("igls"), py::arg("mesh"));
+
   
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,

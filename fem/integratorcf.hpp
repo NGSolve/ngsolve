@@ -26,7 +26,10 @@ namespace ngfem
     DifferentialSymbol dx;
     Integral (shared_ptr<CoefficientFunction> _cf,
               DifferentialSymbol _dx)
-      : cf(_cf), dx(_dx) { ; } 
+      : cf(_cf), dx(_dx) { ; }
+
+    template <typename TSCAL>
+    TSCAL Integrate (const ngcomp::MeshAccess & ma);
   };
   
   inline Integral operator* (double fac, const Integral & cf)

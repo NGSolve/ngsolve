@@ -356,7 +356,7 @@ namespace ngcomp
     template <typename TFUNC>
     void IterateElements (VorB vb, 
                           LocalHeap & clh, 
-                          const TFUNC & func)
+                          const TFUNC & func) const
     {
       if (task_manager)
         {
