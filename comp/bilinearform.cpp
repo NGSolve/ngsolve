@@ -2678,6 +2678,8 @@ namespace ngcomp
 
     static mutex addelmatboundary1_mutex;
 
+    lin.Cumulate();
+
     RegionTimer reg (timer);
     ma->PushStatus ("Assemble Linearization");
 
