@@ -1067,10 +1067,6 @@ namespace ngcomp
 
 
 
-
-
-
-
   /*
 
     // not supported anymore. required fixed-order elements
@@ -1229,3 +1225,70 @@ namespace ngcomp
 */
   
 }
+
+
+
+#include <variant>
+#include "../fem/integratorcf.hpp"
+
+namespace ngfem
+{
+  using namespace ngcomp;
+  
+  template <typename TSCAL>
+  TSCAL Integral :: Integrate (const ngcomp::MeshAccess & ma)
+  {
+    LocalHeap glh(1000000, "integrate-lh");
+    bool use_simd = true;
+    TSCAL sum = 0.0;
+    
+    ma.IterateElements
+      (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+       {
+         // if(!mask.Test(el.GetIndex())) return;
+         auto & trafo = ma.GetTrafo (el, lh);
+         TSCAL hsum = 0.0;
+         
+         bool this_simd = use_simd;
+         int order = 5;
+         
+         if (this_simd)
+           {
+             try
+               {
+                 SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                 auto & mir = trafo(ir, lh);
+                 FlatMatrix<SIMD<double>> values(1, ir.Size(), lh);
+                 cf -> Evaluate (mir, values);
+                 SIMD<double> vsum = 0.0;
+                 for (size_t i = 0; i < values.Width(); i++)
+                   vsum += mir[i].GetWeight() * values(0,i);
+                 hsum = HSum(vsum);
+               }
+             catch (ExceptionNOSIMD e)
+               {
+                 this_simd = false;
+                 use_simd = false;
+                 hsum = 0.0;
+               }
+           }
+         if (!this_simd)
+           {
+             IntegrationRule ir(trafo.GetElementType(), order);
+             BaseMappedIntegrationRule & mir = trafo(ir, lh);
+             FlatMatrix<> values(ir.Size(), 1, lh);
+             cf -> Evaluate (mir, values);
+             for (int i = 0; i < values.Height(); i++)
+               hsum += mir[i].GetWeight() * values(i,0);
+           }
+         MyAtomicAdd(sum, hsum);
+       });
+    
+    return sum;
+  }
+
+
+  template double Integral :: Integrate<double> (const ngcomp::MeshAccess & ma);
+  template Complex Integral :: Integrate<Complex> (const ngcomp::MeshAccess & ma);
+}
+
