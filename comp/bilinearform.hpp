@@ -207,11 +207,10 @@ namespace ngcomp
     void ApplyMatrix (const BaseVector & x,
 		      BaseVector & y, LocalHeap & lh) const
     {
+      x.Cumulate();
       y = 0;
       AddMatrix (1, x, y, lh);
-#ifdef PARALLEL
       y.SetParallelStatus(DISTRIBUTED);
-#endif
     }
 
     /// y += val * Mat * x
