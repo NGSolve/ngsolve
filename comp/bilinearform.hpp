@@ -477,6 +477,9 @@ namespace ngcomp
     virtual void AddMatrix (double val, const BaseVector & x,
                            BaseVector & y, LocalHeap & lh) const
     {
+      x.Cumulate();
+      y.Distribute();
+
       AddMatrix1 (val, x, y, lh);
     }
 
@@ -486,6 +489,9 @@ namespace ngcomp
     virtual void AddMatrix (Complex val, const BaseVector & x,
                            BaseVector & y, LocalHeap & lh) const
     {
+      x.Cumulate();
+      y.Distribute();
+
       AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }
 
@@ -507,6 +513,10 @@ namespace ngcomp
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const
     {
+      lin.Cumulate();
+      x.Cumulate();
+      y.Distribute();
+
       ApplyLinearizedMatrixAdd1 (val, lin, x, y, lh);
     }
   
@@ -515,6 +525,10 @@ namespace ngcomp
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const
     {
+      lin.Cumulate();
+      x.Cumulate();
+      y.Distribute();
+
       ApplyLinearizedMatrixAdd1 (ConvertTo<SCAL> (val), lin, x, y, lh);
     }
   
