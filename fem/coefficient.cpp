@@ -3390,6 +3390,18 @@ public:
     return Array<shared_ptr<CoefficientFunction>>(cfa);
   } 
   
+  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    Array<shared_ptr<CoefficientFunction>> ci_deriv;
+    for (auto & cf : ci)
+      if (cf)
+        ci_deriv.Append (cf->Derive(var, dir));
+      else
+        ci_deriv.Append (nullptr);
+    return make_shared<DomainWiseCoefficientFunction> (move (ci_deriv));
+  }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
