@@ -307,7 +307,19 @@ namespace ngfem
 				FlatVector<double> ely,
 				LocalHeap & lh) const
   {
-    ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
+    static atomic<int> cnt(0);
+    static mutex m;
+    if (cnt < 3)
+      {
+        lock_guard<mutex> guard(m);
+        if (cnt < 3)
+          cout << "WARNING: call baseclass ApplyLinearizedElementMatrix, type = " << typeid(*this).name() << endl;
+	if (cnt == 2) cout << "(further warnings suppressed)" << endl;
+	cnt++;
+      }
+    FlatMatrix<double> mat(elx.Size(), lh);
+    CalcLinearizedElementMatrix (fel, eltrans, ellin, mat, lh);
+    ely = mat * elx;
   }
 
   void BilinearFormIntegrator :: 
@@ -318,7 +330,19 @@ namespace ngfem
 				FlatVector<Complex> ely,
 				LocalHeap & lh) const
   {
-    ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
+    static atomic<int> cnt(0);
+    static mutex m;
+    if (cnt < 3)
+      {
+        lock_guard<mutex> guard(m);
+        if (cnt < 3)
+          cout << "WARNING: call baseclass ApplyLinearizedElementMatrix, type = " << typeid(*this).name() << endl;
+	if (cnt == 2) cout << "(further warnings suppressed)" << endl;
+	cnt++;
+      }
+    FlatMatrix<Complex> mat(elx.Size(), lh);
+    CalcLinearizedElementMatrix (fel, eltrans, ellin, mat, lh);
+    ely = mat * elx;
   }
 
 
