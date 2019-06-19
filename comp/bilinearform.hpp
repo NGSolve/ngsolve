@@ -962,13 +962,11 @@ namespace ngcomp
                                        LocalHeap & alh);
 
     ///
-      using BilinearFormApplication::Mult;
-    virtual void Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
     ///
-      using BilinearFormApplication::MultAdd;
-    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
   };
 
 
