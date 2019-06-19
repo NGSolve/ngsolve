@@ -893,7 +893,8 @@ cf : ngsolve.CoefficientFunction
           "Evaluate on other element, as needed for DG jumps")
 
     .def ("Derive", &CoefficientFunction::Derive,
-          "Compute derivative with respect to argument")
+          "Compute directional derivative with respect to variable",
+          py::arg("variable"), py::arg("direction")=1.0)
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now

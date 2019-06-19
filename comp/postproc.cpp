@@ -9,6 +9,8 @@
 */
 
 #include <comp.hpp>
+#include <variant>
+#include <optional>
 
 namespace ngcomp
 { 
@@ -1228,7 +1230,6 @@ namespace ngcomp
 
 
 
-#include <variant>
 #include "../fem/integratorcf.hpp"
 
 namespace ngfem
