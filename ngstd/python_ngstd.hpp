@@ -479,7 +479,7 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
 Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs& kwargs, py::list info = py::list());
 
 // replace docu links with plain text for help function
-const char* docu_string(const char* str);
+NGS_DLL_HEADER const char* docu_string(const char* str);
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
