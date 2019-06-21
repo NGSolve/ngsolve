@@ -136,21 +136,15 @@ namespace ngbla
 
 
 
-  inline int gemm(char *transa, char *transb, integer *m, integer *
+  NGS_DLL_HEADER int gemm(char *transa, char *transb, integer *m, integer *
 		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
 		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
-		  integer *ldc)
-  {
-    return dgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
-  }
+		  integer *ldc);
 
-  inline int gemm(char *transa, char *transb, integer *m, integer *
+  NGS_DLL_HEADER int gemm(char *transa, char *transb, integer *m, integer *
 		    n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda, 
 		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
-		    c__, integer *ldc)
-  {
-    return zgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
-  }
+		    c__, integer *ldc);
 
 
   template <typename SCAL>
@@ -502,7 +496,7 @@ namespace ngbla
     integer ldb = b.Dist();
     integer ldc = c.Dist();
 
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
  
@@ -520,7 +514,7 @@ namespace ngbla
     integer lda = a.Dist();
     integer ldb = b.Dist();
     integer ldc = c.Dist();
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
   inline void LapackMultAtB (ngbla::FlatMatrix<double> a, 
@@ -538,7 +532,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Dist(); // c.Width();
 
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
   inline void LapackMultAtBt (ngbla::FlatMatrix<double> a, 
@@ -556,7 +550,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
   inline void LapackMultABt (ngbla::FlatMatrix<ngbla::Complex> a, 
@@ -576,7 +570,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    zgemm_ (&transa, &transb, &n, &m, &k, &alpha,  
+    zgemm (&transa, &transb, &n, &m, &k, &alpha,  
             &b(0,0), &ldb, 
             &a(0,0), &lda, &beta, 
             &c(0,0), &ldc);
@@ -601,7 +595,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -621,7 +615,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
   inline void LapackMultAddAtB (ngbla::FlatMatrix<double> a, 
@@ -640,7 +634,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+    dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -661,7 +655,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
+    zgemm (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
             &a(0,0), &lda, &beta, 
             &c(0,0), &ldc);
@@ -686,7 +680,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
+    zgemm (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
             &a(0,0), &lda, &beta, 
             &c(0,0), &ldc);
@@ -711,7 +705,7 @@ namespace ngbla
     integer ldb = b.Width();
     integer ldc = c.Width();
 
-    zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
+    zgemm (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
             &a(0,0), &lda, &beta, 
             &c(0,0), &ldc);
