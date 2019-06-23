@@ -1718,7 +1718,8 @@ diffop : ngsolve.fem.DifferentialOperator
             for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
             return faccf;
           })
-    .def ("Derive", &SumOfIntegrals::Derive)
+    .def ("Diff", &SumOfIntegrals::Diff)
+    .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     ;
 

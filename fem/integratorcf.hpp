@@ -47,12 +47,12 @@ namespace ngfem
     { icfs += icf; }
 
     shared_ptr<SumOfIntegrals>
-    Derive (shared_ptr<CoefficientFunction> var,
-            shared_ptr<CoefficientFunction> dir) const
+    Diff (shared_ptr<CoefficientFunction> var,
+          shared_ptr<CoefficientFunction> dir) const
     {
       auto deriv = make_shared<SumOfIntegrals>();
       for (auto & icf : icfs)
-        deriv->icfs += make_shared<Integral> (icf->cf->Derive(var.get(), dir), icf->dx);
+        deriv->icfs += make_shared<Integral> (icf->cf->Diff(var.get(), dir), icf->dx);
       return deriv;
     }
 
