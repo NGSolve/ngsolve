@@ -613,7 +613,7 @@ namespace ngfem
 
 
   shared_ptr<CoefficientFunction>
-  ProxyFunction :: Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
+  ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     if (var == this)
       return dir;

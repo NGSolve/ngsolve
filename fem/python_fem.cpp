@@ -144,11 +144,11 @@ struct GenericIdentity {
 };
 template <>
 shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericIdentity>::Derive(const CoefficientFunction * var,
+cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
                                       shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;
-  auto hcf = c1->Derive(var, dir);
+  auto hcf = c1->Diff(var, dir);
   hcf->SetDimensions(Dimensions());
   return hcf;
 }
@@ -268,51 +268,51 @@ struct GenericPow {
 
 
 template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSin>::Derive(const CoefficientFunction * var,
+cl_UnaryOpCF<GenericSin>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericCos(), "cos") * c1->Derive(var, dir);
+  return UnaryOpCF(c1, GenericCos(), "cos") * c1->Diff(var, dir);
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericCos>::Derive(const CoefficientFunction * var,
+cl_UnaryOpCF<GenericCos>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Derive(var, dir);
+  return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Diff(var, dir);
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericExp>::Derive(const CoefficientFunction * var,
+cl_UnaryOpCF<GenericExp>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericExp(), "exp") * c1->Derive(var, dir);
+  return UnaryOpCF(c1, GenericExp(), "exp") * c1->Diff(var, dir);
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericLog>::Derive(const CoefficientFunction * var,
+cl_UnaryOpCF<GenericLog>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return c1->Derive(var, dir) / c1;
+  return c1->Diff(var, dir) / c1;
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSqrt>::Derive(const CoefficientFunction * var,
+cl_UnaryOpCF<GenericSqrt>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(0.5)/UnaryOpCF(c1, GenericSqrt(), "sqrt") * c1->Derive(var, dir);
+  return make_shared<ConstantCoefficientFunction>(0.5)/UnaryOpCF(c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericPow>::Derive(const CoefficientFunction * var,
+cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1,GenericLog(),"log")*c2->Derive(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Derive(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
 
 
@@ -892,9 +892,13 @@ cf : ngsolve.CoefficientFunction
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
 
-    .def ("Derive", &CoefficientFunction::Derive,
+    .def ("Derive", &CoefficientFunction::Diff,
+          "depricated: use 'Diff' instead", 
+          py::arg("variable"), py::arg("direction")=1.0)
+    .def ("Diff", &CoefficientFunction::Diff,
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=1.0)
+
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now

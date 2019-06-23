@@ -332,7 +332,7 @@ namespace ngfem
     virtual string GetDescription () const;
 
     virtual shared_ptr<CoefficientFunction>
-      Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
+      Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
     { return Array<shared_ptr<CoefficientFunction>>(); }
@@ -503,7 +503,7 @@ namespace ngfem
     }
     
     virtual shared_ptr<CoefficientFunction>
-      Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+      Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
   };
 
 
@@ -1268,7 +1268,7 @@ public:
   }
 
   virtual shared_ptr<CoefficientFunction>
-  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -1527,7 +1527,7 @@ public:
   }
 
   virtual shared_ptr<CoefficientFunction>
-  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
