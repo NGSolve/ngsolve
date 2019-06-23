@@ -107,13 +107,13 @@ namespace ngfem
   }    
 
   shared_ptr<CoefficientFunction> CoefficientFunction ::
-  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     throw Exception(string("Deriv not implemented for CF ")+typeid(*this).name());
   }
 
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
-  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     if (var == this)
       return dir;
@@ -1097,11 +1097,11 @@ public:
     values = input[0];
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return scal * c1->Derive(var, dir);
+    return scal * c1->Diff(var, dir);
   }
   
 };
@@ -1295,11 +1295,11 @@ public:
         values(j,i) = in0(0,i) * in1(j,i);
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+    return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
   }
   
   
@@ -1612,12 +1612,12 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return InnerProduct(c1->Derive(var,dir),c2) + InnerProduct(c1,c2->Derive(var,dir));
-    // return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+    return InnerProduct(c1->Diff(var,dir),c2) + InnerProduct(c1,c2->Diff(var,dir));
+    // return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
   }
   
 
@@ -2153,11 +2153,11 @@ public:
           }
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (var == this) return dir;
-    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+    return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
   }
   
 };
@@ -2197,6 +2197,10 @@ public:
     BASE::DoArchive(ar);
     ar.Shallow(c1).Shallow(c2) & inner_dim;
   }
+
+  virtual string GetDescription () const override
+  { return "Matrix-Vector multiply"; }
+
   
   // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   // virtual int Dimension() const { return dims[0]; }
@@ -2333,11 +2337,11 @@ public:
   }
 
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return c1->Derive(var,dir)*c2 + c1 * c2->Derive(var,dir);
+    return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
   }
   
   
@@ -2367,6 +2371,9 @@ public:
     BASE::DoArchive(ar);
     ar.Shallow(c1);
   }
+
+  virtual string GetDescription () const override
+  { return "Matrix transpose"; }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
@@ -2492,11 +2499,11 @@ public:
           values(j*hdims[1]+k, i) = in0(k*hdims[0]+j, i);
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return TransposeCF (c1->Derive(var, dir));
+    return TransposeCF (c1->Diff(var, dir));
   }  
 };
 
@@ -2655,11 +2662,11 @@ public:
       }
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return (-1)*InverseCF(c1) * c1->Derive(var,dir) * InverseCF(c1);
+    return (-1)*InverseCF(c1) * c1->Diff(var,dir) * InverseCF(c1);
   }  
 };
 
@@ -2808,11 +2815,11 @@ public:
       }
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return DeterminantCF(c1) * InnerProduct( TransposeCF(InverseCF(c1)), c1->Derive(var,dir) );
+    return DeterminantCF(c1) * InnerProduct( TransposeCF(InverseCF(c1)), c1->Diff(var,dir) );
   }  
 };
 
@@ -2995,11 +3002,11 @@ public:
 
 template <> 
 shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericPlus>::Derive(const CoefficientFunction * var,
+cl_BinaryOpCF<GenericPlus>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;
-  return c1->Derive(var,dir) + c2->Derive(var,dir);
+  return c1->Diff(var,dir) + c2->Diff(var,dir);
 }
 
 shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -3010,11 +3017,11 @@ shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, s
 
 template <> 
 shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericMinus>::Derive(const CoefficientFunction * var,
+cl_BinaryOpCF<GenericMinus>::Diff(const CoefficientFunction * var,
                                     shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;      
-  return c1->Derive(var,dir) - c2->Derive(var,dir);
+  return c1->Diff(var,dir) - c2->Diff(var,dir);
 }
 
 shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -3024,20 +3031,20 @@ shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, s
 
 template <> 
 shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericMult>::Derive(const CoefficientFunction * var,
+cl_BinaryOpCF<GenericMult>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;    
-  return c1->Derive(var,dir)*c2 + c1*c2->Derive(var,dir);
+  return c1->Diff(var,dir)*c2 + c1*c2->Diff(var,dir);
 }
 
 template <> 
 shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericDiv>::Derive(const CoefficientFunction * var,
+cl_BinaryOpCF<GenericDiv>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;
-  return (c1->Derive(var,dir)*c2 - c1*c2->Derive(var,dir)) / (c2*c2);
+  return (c1->Diff(var,dir)*c2 - c1*c2->Diff(var,dir)) / (c2*c2);
 }
 
 
@@ -3264,11 +3271,11 @@ public:
     values.Row(0).AddSize(ir.Size()) = in0.Row(comp);
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return MakeComponentCoefficientFunction (c1->Derive(var, dir), comp);
+    return MakeComponentCoefficientFunction (c1->Diff(var, dir), comp);
   }  
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
@@ -3390,14 +3397,14 @@ public:
     return Array<shared_ptr<CoefficientFunction>>(cfa);
   } 
   
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
     Array<shared_ptr<CoefficientFunction>> ci_deriv;
     for (auto & cf : ci)
       if (cf)
-        ci_deriv.Append (cf->Derive(var, dir));
+        ci_deriv.Append (cf->Diff(var, dir));
       else
         ci_deriv.Append (nullptr);
     return make_shared<DomainWiseCoefficientFunction> (move (ci_deriv));
@@ -4091,7 +4098,7 @@ public:
         elementwise_constant = false;
     // dims = Array<int> ( { dimension } ); 
   }
-
+  
   void DoArchive(Archive& ar) override
   {
     BASE::DoArchive(ar);
@@ -4102,6 +4109,9 @@ public:
       ar.Shallow(cf);
     ar & dimi;
   }
+
+  virtual string GetDescription () const override
+  { return "VectorialCoefficientFunction"; }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
 
@@ -4232,14 +4242,14 @@ public:
       }
   }
 
-  shared_ptr<CoefficientFunction> Derive (const CoefficientFunction * var,
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
     Array<shared_ptr<CoefficientFunction>> diff_ci;
     for (auto & cf : ci)
       if (cf)
-        diff_ci.Append (cf->Derive(var, dir));
+        diff_ci.Append (cf->Diff(var, dir));
       else
         diff_ci.Append (nullptr);
     auto veccf = make_shared<VectorialCoefficientFunction> (move(diff_ci));
@@ -4459,6 +4469,51 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
     }
 
+
+  void PrintReport (ostream & ost) const override
+  {
+    ost << "Compiled CF:" << endl;
+    for (int i : Range(steps))
+      {
+        auto & cf = steps[i];
+        ost << "Step " << i << ": " << cf->GetDescription();
+        if (cf->Dimensions().Size() == 1)
+          ost << ", dim=" << cf->Dimension();
+        else if (cf->Dimensions().Size() == 2)
+          ost << ", dims = " << cf->Dimensions()[0] << " x " << cf->Dimensions()[1];
+        ost << endl;
+        if (inputs[i].Size() > 0)
+          {
+            ost << "     input: ";
+            for (auto innr : inputs[i])
+              ost << innr << " ";
+            ost << endl;
+          }
+      }
+    /*
+    for (auto cf : steps)
+      ost << cf -> GetDescription() << endl;
+    ost << "inputs = " << endl << inputs << endl;
+    */
+    
+      /*
+    for (int i = 0; i < 2*level; i++)
+      ost << ' ';
+    ost << "coef " << GetDescription() << ","
+        << (IsComplex() ? " complex" : " real");
+    if (Dimensions().Size() == 1)
+      ost << ", dim=" << Dimension();
+    else if (Dimensions().Size() == 2)
+      ost << ", dims = " << Dimensions()[0] << " x " << Dimensions()[1];
+    ost << endl;
+
+    Array<shared_ptr<CoefficientFunction>> input = InputCoefficientFunctions();
+    for (int i = 0; i < input.Size(); i++)
+      input[i] -> PrintReportRec (ost, level+1);
+    */
+  }
+
+    
     void DoArchive(Archive& ar) override
     {
       CoefficientFunction::DoArchive(ar);

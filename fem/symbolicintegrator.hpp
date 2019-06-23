@@ -237,7 +237,7 @@ public:
   }
 
   virtual shared_ptr<CoefficientFunction>
-  Derive (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
 };
 
 class ProxyUserData
