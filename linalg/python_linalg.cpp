@@ -495,6 +495,23 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         else
           BaseMatrix::Mult(x,y);
       }
+
+      void MultTrans (const BaseVector & x, BaseVector & y) const override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "MultTrans");
+        if (overload) {
+	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
+					   NOOP_Deleter);
+	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
+					   NOOP_Deleter);
+          overload(sx,sy);
+        }
+        else
+          BaseMatrix::MultTrans(x,y);
+      }
+
       void MultAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultAdd");
