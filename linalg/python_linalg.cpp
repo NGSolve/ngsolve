@@ -33,7 +33,7 @@ namespace pybind11::detail {
       // Construct a shared_ptr to the py::object
       auto py_obj_ptr = std::shared_ptr<object>{
           new object{py_obj},
-          [](auto py_object_ptr) {
+          [](object * py_object_ptr) {
               // It's possible that when the shared_ptr dies we won't have the
               // gil (if the last holder is in a non-Python thread), so we
               // make sure to acquire it in the deleter.
