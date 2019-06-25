@@ -13,8 +13,6 @@
 
 namespace ngbla 
 {
-  // Interface to lapack functions
-
 
 #ifdef LAPACK
 
@@ -44,6 +42,33 @@ namespace ngbla
 #include "clapack.h"
   }
 
+
+  // Interface to lapack functions
+  NGS_DLL_HEADER int dgemm(char *transa, char *transb, integer *m, integer *
+		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
+		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
+		  integer *ldc);
+
+  NGS_DLL_HEADER int zgemm(char *transa, char *transb, integer *m, integer *
+		    n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda, 
+		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
+		    c__, integer *ldc);
+
+  inline int gemm(char *transa, char *transb, integer *m, integer *
+      n, integer *k, doublereal *alpha, doublereal *a, integer *lda,
+      doublereal *b, integer *ldb, doublereal *beta, doublereal *c__,
+      integer *ldc)
+  {
+    return dgemm (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
+
+  inline int gemm(char *transa, char *transb, integer *m, integer *
+      n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda,
+      doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
+      c__, integer *ldc)
+  {
+    return zgemm (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
 
   
   // BLAS 1
@@ -136,15 +161,6 @@ namespace ngbla
 
 
 
-  NGS_DLL_HEADER int gemm(char *transa, char *transb, integer *m, integer *
-		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
-		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
-		  integer *ldc);
-
-  NGS_DLL_HEADER int gemm(char *transa, char *transb, integer *m, integer *
-		    n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda, 
-		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
-		    c__, integer *ldc);
 
 
   template <typename SCAL>
