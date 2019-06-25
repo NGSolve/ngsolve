@@ -2992,6 +2992,8 @@ namespace ngcomp
     
 
 
+  template class NGS_DLL_HEADER T_GridFunction<double>;
+
   /*
   template class T_GridFunction<double>;
   template class T_GridFunction<Vec<2> >;
@@ -2999,8 +3001,8 @@ namespace ngcomp
   template class T_GridFunction<Vec<4> >;
   */
 
-  template class S_GridFunction<double>;
-  template class S_GridFunction<Complex>;
+  template class NGS_DLL_HEADER S_GridFunction<double>;
+  template class NGS_DLL_HEADER S_GridFunction<Complex>;
 
   template class  VisualizeGridFunction<double>;
   template class  VisualizeGridFunction<Complex>;
