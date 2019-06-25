@@ -185,6 +185,8 @@ namespace ngfem
     { 
       if (blockdim == 1)
         dimensions = Array<int> ( { dim } );
+      else if (dim == 1)
+        dimensions = Array<int> ( { blockdim } );
       else
         dimensions = Array<int> ( { dim/blockdim, blockdim });
     }
