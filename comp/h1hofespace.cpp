@@ -86,6 +86,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
+      mat = 0.0;
       static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
     }
     template <typename AFEL, typename MIP, typename MAT,
@@ -95,6 +96,31 @@ namespace ngcomp
     {
       // fel.CalcDualShape (mip, mat);
       throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
+    }
+  };
+
+  template <int DIM_SPC, VorB VB = VOL>
+  class DiffOpDualVectorH1 : public DiffOp<DiffOpDualVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-VB };
+    enum { DIM_DMAT = DIM_SPC };
+    enum { DIFFORDER = 0 };
+    static bool SupportsVB (VorB checkvb) { return true; }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[i]);
+          feli.CalcDualShape (mip, mat.Row(i).Range(fel.GetRange(i)));
+        }
     }
   };
 
@@ -2014,7 +2040,8 @@ into the wirebasket.
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>();
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
-          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());           
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2>>> ());
           break;
           
         case 3:
@@ -2023,7 +2050,8 @@ into the wirebasket.
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();          
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
-          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());                     
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3>>> ());
           break;
         }
     }
