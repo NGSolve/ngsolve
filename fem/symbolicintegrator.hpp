@@ -641,25 +641,25 @@ public:
     
     virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
 
-    virtual void 
+    NGS_DLL_HEADER virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<double> elmat,
 		       LocalHeap & lh) const override;
 
-    virtual void 
+    NGS_DLL_HEADER virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<Complex> elmat,
 		       LocalHeap & lh) const override;    
 
-    virtual void 
+    NGS_DLL_HEADER virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<double> elmat,
                           LocalHeap & lh) const override;
     
-    virtual void 
+    NGS_DLL_HEADER virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<Complex> elmat,
@@ -678,7 +678,7 @@ public:
                                    FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const;
     
-    virtual void 
+    NGS_DLL_HEADER virtual void 
     CalcLinearizedElementMatrix (const FiniteElement & fel,
                                  const ElementTransformation & trafo, 
 				 FlatVector<double> elveclin,
@@ -692,7 +692,7 @@ public:
                                           FlatMatrix<double> elmat,
                                           LocalHeap & lh) const;
     
-    virtual void 
+    NGS_DLL_HEADER virtual void 
     ApplyElementMatrix (const FiniteElement & fel, 
 			const ElementTransformation & trafo, 
 			const FlatVector<double> elx, 
@@ -732,7 +732,7 @@ public:
     virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                      const ElementTransformation & seltrans,
@@ -785,7 +785,7 @@ public:
                                FlatVector<double> vec, FlatMatrix<double> elmat,
                                LocalHeap & lh) const;
     
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
                       const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                       const FiniteElement & volumefel2, int LocalFacetNr2,
@@ -793,19 +793,19 @@ public:
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 		     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 		     FlatVector<double> & trace, FlatVector<double> elx, LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 			  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			  FlatVector<double> trace,
 			  FlatVector<double> elx, FlatVector<double> ely, 
 			  LocalHeap & lh) const;
     
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                       const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
