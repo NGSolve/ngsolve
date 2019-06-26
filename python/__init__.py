@@ -52,18 +52,21 @@ from . import timing
 
 
 # add flags docu to docstring
-all_classes = comp.__dict__
-for classname in all_classes:
-    instance = all_classes[classname]
-    try:
-        flags_doc = instance.__flags_doc__()
-        if instance.__doc__ == None:
-            instance.__doc__ = ""
-        instance.__doc__ += "\n Keyword arguments can be:\n"
-        for name in flags_doc:
-            instance.__doc__ += name + ": " + flags_doc[name] + "\n"
-    except AttributeError:
-        pass
+def _add_flags_doc(module):
+    all_classes = module.__dict__
+    for classname in all_classes:
+        instance = all_classes[classname]
+        try:
+            flags_doc = instance.__flags_doc__()
+            if instance.__doc__ == None:
+                instance.__doc__ = ""
+            instance.__doc__ += "\n Keyword arguments can be:\n"
+            for name in flags_doc:
+                instance.__doc__ += name + ": " + flags_doc[name] + "\n"
+        except AttributeError:
+            pass
+
+_add_flags_doc(comp)
 
 # from ngsolve.ngstd import MPIManager
 # MPIManager.InitMPI()
