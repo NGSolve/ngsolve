@@ -495,7 +495,7 @@ namespace ngcomp
 	  {
 	    // fes.GetNodeDofNrs (NTYPE, master_nodes[i], dnums);
             fes.GetDofNrs (NodeId(NTYPE, master_nodes[i]), dnums); 
-	    Vector<SCAL> elvec(dnums.Size());
+	    Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 	    
 	    for (int j = 0; j < elvec.Size(); j++)
 	      elvec(j) = loc_data[cnt++];
@@ -552,9 +552,9 @@ namespace ngcomp
 	  }
 	first_node_dof[nnodes] = ndofs;
 	
-	Array<SCAL> node_data(ndofs);     
+	Array<SCAL> node_data(ndofs*fes.GetDimension());     
 
-	for (int i = 0; i < ndofs; i++)
+	for (int i = 0; i < ndofs*fes.GetDimension(); i++)
 	  if (ist.good())
 	    LoadBin<SCAL> (ist, node_data[i]);
 	
@@ -566,7 +566,7 @@ namespace ngcomp
 	    for (int i = 0; i < nodenums_proc.Size(); i++)
 	      {
 		int node = inverse_index[nodenums_proc[i]];
-		loc_data.Append (node_data.Range (first_node_dof[node], first_node_dof[node+1]));
+		loc_data.Append (node_data.Range (fes.GetDimension()*first_node_dof[node], fes.GetDimension()*first_node_dof[node+1]));
 	      }
 	    comm.Send(loc_data,proc,13); 		
 	  }
@@ -719,10 +719,10 @@ namespace ngcomp
 	    
 	    nodenums.Append(points);
 	    
-	    Vector<SCAL> elvec(dnums.Size());
+	    Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 	    GetElementVector (dnums, elvec);
 	    
-	    for (int j = 0; j < dnums.Size(); j++)
+	    for (int j = 0; j < elvec.Size(); j++)
 	      data.Append(elvec(j));
 	  }    
 
@@ -786,8 +786,8 @@ namespace ngcomp
 	tw.Start();
 	for (int i = 0; i < points.Size(); i++)
 	  {
-	    int start = positions[index[i]][0];
-	    int end = positions[index[i]][1];
+	    int start = fes.GetDimension() * positions[index[i]][0];
+	    int end = fes.GetDimension() * positions[index[i]][1];
 	    
 	    for (int j = 0; j < end; j++)
 	      SaveBin<SCAL>(ost, data[start++]);
