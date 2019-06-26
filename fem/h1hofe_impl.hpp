@@ -317,32 +317,7 @@ namespace ngfem
       }
     //inner shapes
     if (ip.VB() == VOL && order_cell[0][0] >= 4)
-      {
-	int p = order_cell[0][0] - 4;
-	LegendrePolynomial leg;
-	JacobiPolynomialAlpha jac1(1);    
-	leg.EvalScaled1Assign 
-	  (p, lam[2]-lam[3], lam[2]+lam[3],
-	   SBLambda ([&](size_t k, double polz) LAMBDA_INLINE
-		     {
-		       // JacobiPolynomialAlpha jac(2*k+1);
-		       JacobiPolynomialAlpha jac2(2*k+2);
-		       
-		       jac1.EvalScaledMult1Assign
-			 (p-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-			  SBLambda ([&] (size_t j, double polsy) LAMBDA_INLINE
-				    {
-				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
-				      jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
-						    SBLambda([&](size_t j, double val) LAMBDA_INLINE
-							     {
-							       shape[ii++] = 1.0/mip.GetMeasure()*val;
-							     }));
-				      jac2.IncAlpha2();
-				    }));
-		       jac1.IncAlpha2();
-		     }));
-      }
+      DubinerBasis3D::EvalMult (order_cell[0][0]-4, lam[0], lam[1], lam[2], 1.0/mip.GetMeasure(), shape+ii);
   }
 
 
