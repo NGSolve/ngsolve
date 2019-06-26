@@ -86,6 +86,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
+      mat = 0.0;
       static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
     }
     template <typename AFEL, typename MIP, typename MAT,
