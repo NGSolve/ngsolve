@@ -32,7 +32,7 @@ namespace ngcomp
      or
      - a wirebasket degree of freedom
   */
-  enum COUPLING_TYPE : char {  UNUSED_DOF = 0,
+  enum COUPLING_TYPE : int {  UNUSED_DOF = 0,
 			HIDDEN_DOF = 1,
 			LOCAL_DOF = 2,
 			CONDENSABLE_DOF = 3,
