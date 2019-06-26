@@ -68,6 +68,8 @@ namespace ngla
     shared_ptr<BitArray> inner;
     shared_ptr<const Array<int>> cluster;
 
+    shared_ptr<NgMPI_Comm> onlyme_comm;
+
   public:
     ///
     MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
