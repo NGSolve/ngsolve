@@ -137,6 +137,17 @@ struct GenericBSpline {
   AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiffDiff for bspline not supported"); }
   void DoArchive(Archive& ar) { ar & sp; }
 };
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
+                                   shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return UnaryOpCF(c1, GenericBSpline(lam.sp->Differentiate())) * c1->Diff(var, dir);
+}
+
+
+
 struct GenericIdentity {
   template <typename T> T operator() (T x) const { return x; }
   static string Name() { return  " "; }
