@@ -184,6 +184,9 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE static void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) 
     { ; }
+
+    INLINE void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+    { ; }
   };
 
   extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;
