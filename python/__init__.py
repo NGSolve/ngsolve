@@ -15,15 +15,15 @@ from ngsolve.ngslib import *
 from ngsolve.ngslib import __version__
 
 def TmpRedraw(*args, **kwargs):
-    solve._Redraw(*args, **kwargs)
-    try:
-        import netgen
-        import tkinter
-        cnt = 0
-        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT) and cnt < 100):
-            cnt += 1
-    except:
-        pass
+    if solve._Redraw(*args, **kwargs):
+        try:
+            import netgen
+            import tkinter
+            cnt = 0
+            while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT) and cnt < 100):
+                cnt += 1
+        except:
+            pass
 
 solve.Redraw = TmpRedraw
 del TmpRedraw
