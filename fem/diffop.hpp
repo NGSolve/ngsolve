@@ -185,6 +185,8 @@ namespace ngfem
     { 
       if (blockdim == 1)
         dimensions = Array<int> ( { dim } );
+      else if (dim == 1)
+        dimensions = Array<int> ( { blockdim } );
       else
         dimensions = Array<int> ( { dim/blockdim, blockdim });
     }
@@ -343,7 +345,7 @@ namespace ngfem
                              adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), dim(adim), comp(acomp) { ; }
 
-    virtual ~BlockDifferentialOperator ();
+    NGS_DLL_HEADER virtual ~BlockDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
@@ -369,7 +371,7 @@ namespace ngfem
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
@@ -389,13 +391,13 @@ namespace ngfem
                 FlatVector<Complex> x, 
                 LocalHeap & lh) const override;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const override;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<Complex>> flux,

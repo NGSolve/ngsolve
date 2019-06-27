@@ -4,6 +4,22 @@
 namespace ngbla
 {
 
+  int dgemm(char *transa, char *transb, integer *m, integer *
+		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
+		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
+		  integer *ldc)
+  {
+    return dgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
+
+  int zgemm(char *transa, char *transb, integer *m, integer *
+		    n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda, 
+		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
+		    c__, integer *ldc)
+  {
+    return zgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
+
 #include "matkernel.hpp"
 
 
