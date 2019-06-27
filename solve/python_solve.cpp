@@ -27,7 +27,9 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                  {
                    Ng_Redraw(blocking);
                    last_time = std::chrono::system_clock::now();
+                   return true;
                  }
+               return false;
              }),
            py::arg("blocking")=false, py::arg("fr") = 25, docu_string(R"raw_string(
 Redraw all
