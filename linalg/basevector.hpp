@@ -216,7 +216,7 @@ namespace ngla
     */
 
     virtual double InnerProductD (const BaseVector & v2) const;
-    virtual Complex InnerProductC (const BaseVector & v2) const;
+    virtual Complex InnerProductC (const BaseVector & v2, bool conjuagte = false) const;
 
     virtual double L2Norm () const;
     virtual bool IsComplex() const { return false; }
@@ -438,9 +438,9 @@ namespace ngla
       return vec->InnerProductD (v2);
     }
 
-    virtual Complex InnerProductC (const BaseVector & v2) const
+    virtual Complex InnerProductC (const BaseVector & v2, bool conjugate) const
     {
-      return vec->InnerProductC (v2);
+      return vec->InnerProductC (v2, conjugate);
     }
 
     virtual double L2Norm () const
@@ -564,10 +564,10 @@ namespace ngla
     virtual bool IsComplex() const 
     { return typeid(SCAL) == typeid(Complex); }
 
-    virtual SCAL InnerProduct (const BaseVector & v2) const;
+    virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;
 
     virtual double InnerProductD (const BaseVector & v2) const;
-    virtual Complex InnerProductC (const BaseVector & v2) const;
+    virtual Complex InnerProductC (const BaseVector & v2, bool conjugate = false) const;
 
 
     virtual FlatVector<double> FVDouble () const;
@@ -589,7 +589,7 @@ namespace ngla
 
 
   template <>
-  double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const;
+  double S_BaseVector<double> :: InnerProduct (const BaseVector & v2, bool conjugate) const;
 
 
 #if not defined(FILE_BASEVECTOR_CPP)
@@ -1010,13 +1010,15 @@ namespace ngla
   template <> inline Complex 
   S_InnerProduct<ComplexConjugate> (const BaseVector & v1, const BaseVector & v2)
   {
-    return InnerProduct( v1.FVComplex(), Conj(v2.FVComplex()) );
+    return v2.InnerProductC(v1, true);
+    // return InnerProduct( v1.FVComplex(), Conj(v2.FVComplex()) );
   }
 
   template <>
   inline Complex S_InnerProduct<ComplexConjugate2> (const BaseVector & v1, const BaseVector & v2)
   {
-    return InnerProduct( v2.FVComplex(), Conj(v1.FVComplex()) );
+    return v1.InnerProductC(v1, true);
+    // return InnerProduct( v2.FVComplex(), Conj(v1.FVComplex()) );
   }
 
   ///
