@@ -857,6 +857,7 @@ inverse : string
     .def_property_readonly("row_pardofs", [](ParallelMatrix & mat) { return mat.GetRowParallelDofs(); })
     .def_property_readonly("col_pardofs", [](ParallelMatrix & mat) { return mat.GetColParallelDofs(); })
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
+    .def_property_readonly("op_type", [](ParallelMatMatrix & mat) { return mat.GetOpType(); })
     ;
 
 
