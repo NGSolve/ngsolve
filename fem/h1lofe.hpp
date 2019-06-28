@@ -35,7 +35,24 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape);
 
-    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
+    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+    {
+      if (ORDER == 0)
+        {
+          if (mip.VB() == VOL)
+            shape[0] = 1;
+          else
+            shape[0] = 0;
+        }
+      else if (ORDER == 1)
+        {
+          shape = 0.0;
+          if (mip.VB() == ET_trait<ET>::DIM)
+            shape[mip.IP().FacetNr()] = 1;
+        }
+      else
+        throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
+    }
   };
   
   /*
