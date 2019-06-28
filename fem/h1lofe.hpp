@@ -34,6 +34,8 @@ namespace ngfem
 
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape);
+
+    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
   };
   
   /*
