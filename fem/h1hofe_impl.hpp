@@ -309,8 +309,8 @@ namespace ngfem
       {
 	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
 	  {
-	    INT<4> f = GetVertexOrientedFace (0);
-	    DubinerBasis::EvalMult (order_face[0][0]-3, 
+	    INT<4> f = GetVertexOrientedFace (i);
+	    DubinerBasis::EvalMult (order_face[i][0]-3, 
 				     lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
 	  }
 	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
