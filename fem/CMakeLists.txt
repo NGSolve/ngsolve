@@ -32,7 +32,7 @@ if(USE_CUDA)
     target_link_libraries(ngfem ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
 endif(USE_CUDA)
 
-target_link_libraries(ngfem PUBLIC ngbla ngstd)
+target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE netgen_python)
 target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 install( TARGETS ngfem ${ngs_install_dir} )
 
