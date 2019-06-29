@@ -810,7 +810,7 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
     R"raw_string(radial pml transformation
 
-origin is a list/tuple determining the dimenson)raw_string");
+origin is a list/tuple with as many entries as dimenson)raw_string");
 
   m.def("Custom", [](shared_ptr<CF> trafo, shared_ptr<CF> jac) -> shared_ptr<PML>{
       switch (trafo->Dimension())

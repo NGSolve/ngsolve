@@ -576,7 +576,7 @@ kwargs : kwargs
                      );
                      return special;
                      })
-    .def(py::pickle(fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
+    .def(py::pickle(&fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
     .def("Update", [](shared_ptr<FESpace> self)
          { 
            self->Update(glh);
