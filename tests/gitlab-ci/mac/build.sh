@@ -6,6 +6,8 @@ mkdir -p $SRC_DIR
 cp -a . $SRC_DIR/
 cd $BUILD_DIR
 
+pip3 install git+https://github.com/sizmailov/pybind11-stubgen.git
+
 cmake $SRC_DIR \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
       -DCMAKE_BUILD_TYPE=Release \
