@@ -284,9 +284,12 @@ if (USE_MUMPS)
 endif (USE_MUMPS)
 
 #######################################################################
+add_library(netgen_python INTERFACE )
+# install( TARGETS netgen_python ${ngs_install_dir} )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
-    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+    target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+    target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
     "${CMAKE_CURRENT_BINARY_DIR}/python/config.py"
