@@ -266,6 +266,16 @@ struct GenericATan2 {
   void DoArchive(Archive& ar) {}
 };
 
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericATan2>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+{
+  if (var == this) return dir;    
+  return (c1->Diff(var,dir)*c2 - c2->Diff(var,dir)*c1) / (c1*c1+c2*c2);
+}
+
+
 struct GenericPow {
   double operator() (double x, double y) const { return pow(x,y); }
   Complex operator() (Complex x, Complex y) const { return pow(x,y); }
