@@ -6,13 +6,13 @@
 namespace ngcomp
 {
   // TODO: use Archive structure to pickle fespaces
-  auto fesPickle = [](const FESpace& fes)
-                   {
-                     auto flags = fes.GetFlags();
-                     auto mesh = fes.GetMeshAccess();
-                     auto type = fes.type;
-                     return py::make_tuple(type,mesh,flags);
-                   };
+  inline py::tuple fesPickle (const FESpace& fes)
+  {
+    auto flags = fes.GetFlags();
+    auto mesh = fes.GetMeshAccess();
+    auto type = fes.type;
+    return py::make_tuple(type,mesh,flags);
+  }
   
   template<typename FESPACE>
   shared_ptr<FESPACE> fesUnpickle(py::tuple state)
@@ -47,7 +47,7 @@ namespace ngcomp
                       return fes;
                     }),py::arg("mesh"))
     
-      .def(py::pickle(fesPickle,
+      .def(py::pickle(&fesPickle,
                       (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
       ;
 
