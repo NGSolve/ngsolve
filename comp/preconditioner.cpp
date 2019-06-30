@@ -731,6 +731,13 @@ namespace ngcomp
       return *jacobi;
     }
     
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
+    {
+      if (!jacobi)
+        ThrowPreconditionerNotReady();
+      return jacobi;
+    }
+
     ///
     virtual const BaseMatrix & GetAMatrix() const
     {

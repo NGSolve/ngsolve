@@ -56,6 +56,8 @@ namespace ngla
     shared_ptr<ParallelDofs> GetRowParallelDofs () const { return row_paralleldofs; }
     shared_ptr<ParallelDofs> GetColParallelDofs () const { return col_paralleldofs; }
 
+    PARALLEL_OP GetOpType () const { return op; }
+
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const override;
     template <typename TM>
     shared_ptr<BaseMatrix> InverseMatrixTM (shared_ptr<BitArray> subset = 0) const;
