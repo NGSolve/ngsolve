@@ -2678,6 +2678,17 @@ namespace ngcomp
 
     static mutex addelmatboundary1_mutex;
 
+    lin.Cumulate();
+
+    if (nonassemble) {
+      auto app = make_shared<LinearizedBilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), &lin, clh);
+      if (this->mats.Size() < this->ma->GetNLevels())
+	mats.Append (app);
+      else // we might be using a different vector now
+	mats.Last() = app;
+      return;
+    }
+
     RegionTimer reg (timer);
     ma->PushStatus ("Assemble Linearization");
 
@@ -5921,20 +5932,20 @@ namespace ngcomp
   }
 
   void  LinearizedBilinearFormApplication :: 
-  Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
+  Mult (const BaseVector & v, BaseVector & prod) const
   {
     prod = 0;
     bf->ApplyLinearizedMatrixAdd (1, *veclin, v, prod, lh);
   }
 
   void LinearizedBilinearFormApplication :: 
-  MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
+  MultAdd (double val, const BaseVector & v, BaseVector & prod) const
   {
     bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod, lh);
   }
 
   void LinearizedBilinearFormApplication :: 
-  MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
+  MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
   {
     bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod, lh);
   }

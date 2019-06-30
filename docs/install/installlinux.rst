@@ -10,9 +10,9 @@ Prerequisites
 
 Make sure that you have the following packages installed:
 
-- You need a recent compiler, we advise gcc in version 6 or higher. 
+- You need a recent compiler (GCC 7 or later)
 - We advise to have Python installed, in version 3.4 or higher (you can compile
-  netgen/ngsolve also without python support). Make sure to install
+  Netgen/NGSolve also without python support). Make sure to install
   according packages in their "dev"-version to have the suitable header
   files installed. 
 - You will need tcl / tk in version >=8.5 Make sure to
