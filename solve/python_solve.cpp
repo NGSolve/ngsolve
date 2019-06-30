@@ -43,10 +43,17 @@ fr : double
 )raw_string")
              );
 
+    
     m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
-                 int sd, bool autoscale, double min, double max,
-                      bool draw_vol, bool draw_surf, py::kwargs kwargs)
+                      int sd, bool autoscale, double min, double max,
+                      bool draw_vol, bool draw_surf, bool reset, py::kwargs kwargs)
               {
+                if (reset)
+                  {
+                    Ng_TclCmd ("set ::visoptions.deformation 0;\n");
+                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");
+                    Ng_ClearSolutionData();
+                  }
                 ma->SelectMesh();
                 netgen::SolutionData * vis;
                 if(dynamic_cast<ProlongateCoefficientFunction *>(cf.get()))
@@ -96,7 +103,10 @@ fr : double
               py::arg("cf"),py::arg("mesh"),py::arg("name"),
               py::arg("sd")=2,py::arg("autoscale")=true,
 	      py::arg("min")=0.0,py::arg("max")=1.0,
-              py::arg("draw_vol")=true,py::arg("draw_surf")=true, docu_string(R"raw_string(
+              py::arg("draw_vol")=true,
+           py::arg("draw_surf")=true,
+           py::arg("reset")=false,
+           docu_string(R"raw_string(
 Parameters:
 
 cf : ngsolve.comp.CoefficientFunction
