@@ -113,7 +113,7 @@ nr : int
     .def_property_readonly("vertices", [](MeshNode & node) -> py::tuple
                            {
                              auto& mesh = node.Mesh();
-                             switch (node.GetType())
+                             switch (StdNodeType(node.GetType(), mesh.GetDimension()))
                                {
                                case NT_EDGE:
                                  return MakePyTuple(Substitute(ArrayObject(mesh.GetEdgePNums(node.GetNr())), Nr2Vert));
@@ -129,7 +129,7 @@ nr : int
     .def_property_readonly("edges",[](MeshNode & node) -> py::tuple
                            {
                              auto& mesh = node.Mesh();
-                             switch(node.GetType())
+                             switch(StdNodeType(node.GetType(), mesh.GetDimension()))
                                {
                                case NT_VERTEX:
                                  {
@@ -153,7 +153,7 @@ nr : int
     .def_property_readonly("faces", [](MeshNode & node) -> py::tuple
                            {
                              auto & mesh = node.Mesh();
-                             if (node.GetType() == NT_VERTEX)  
+                             if (StdNodeType(node.GetType(), mesh.GetDimension()) == NT_VERTEX)  
                                {
                                  Array<int> fnums;
                                  for (auto el : mesh.GetVertexElements(node.GetNr()))
