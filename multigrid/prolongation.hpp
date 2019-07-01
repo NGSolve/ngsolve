@@ -332,7 +332,7 @@ namespace ngmg
 
 
   /// Product space prolongation, combination of elementary prolongations 
-  class CompoundProlongation : public Prolongation
+  class NGS_DLL_HEADER CompoundProlongation : public Prolongation
   {
   protected:
     ///
