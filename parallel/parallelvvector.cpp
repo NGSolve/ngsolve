@@ -164,27 +164,24 @@ namespace ngla
 
 
   template <class SCAL>
-  SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
+  SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2, bool conjugate) const
   {
     const ParallelBaseVector * parv2 = dynamic_cast_ParallelBaseVector(&v2);
 
-    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
-      return ngbla::InnerProduct (this->FVScal(), 
-				  dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
-
     // two distributed vectors -- cumulate one
-    else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+    if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
       Cumulate();
     
     // two cumulated vectors -- distribute one
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-      this->Distribute();
+      Distribute();
     
     SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
 					 dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
+    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+      return localsum;
 
-    // return MyMPI_AllReduce (localsum, MPI_SUM, paralleldofs->GetCommunicator());
     return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
   }
 
@@ -192,34 +189,26 @@ namespace ngla
 
 
   template <>
-  Complex S_ParallelBaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
+  Complex S_ParallelBaseVector<Complex> :: InnerProduct (const BaseVector & v2, bool conjugate) const
   {
     const ParallelBaseVector * parv2 = dynamic_cast_ParallelBaseVector(&v2);
   
-    // not parallel
-    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
-      return ngbla::InnerProduct (FVScal(), 
-				  dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVScal());
     // two distributed vectors -- cumulate one
-    else if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+    if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
       Cumulate();
 
     // two cumulated vectors -- distribute one
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
       Distribute();
 
-    Complex localsum = ngbla::InnerProduct (FVComplex(), 
-                                            dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
+    Complex localsum = conjugate ?
+      ngbla::InnerProduct (Conj(FVComplex()), dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex()) :
+      ngbla::InnerProduct (FVComplex(), dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
 
-    /*    
-    Complex globalsum = 0;
-#ifdef PARALLEL
-    MPI_Allreduce (&localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, ngs_comm);
-#else
-    globalsum = localsum;
-#endif
-    return globalsum;
-    */
+    // not parallel
+    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+      return localsum;
+
     return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
   }
 

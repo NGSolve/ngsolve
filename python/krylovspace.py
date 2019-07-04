@@ -544,7 +544,7 @@ printrates : bool = True
     # is_complex = isinstance(b.FV(), ngsolve.bla.FlatVectorC)
     is_complex = b.is_complex
     if not pre:
-        assert freedofs
+        assert freedofs is not None
         pre = ngsolve.Projector(freedofs, True)
     n = len(b)
     m = maxsteps

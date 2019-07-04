@@ -51,6 +51,9 @@ namespace ngcomp {
       }
     first_element_dof[ma->GetNE()] = ndof;
     SetNDof(ndof);
+
+    ctofdof.SetSize(ndof);
+    ctofdof = LOCAL_DOF;
   }
            
   FiniteElement& DiscontinuousFESpace :: GetFE (ElementId ei, Allocator & alloc) const

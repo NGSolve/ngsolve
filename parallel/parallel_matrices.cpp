@@ -452,7 +452,7 @@ namespace ngla
 	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
       else
 	return make_shared<S_ParallelBaseVectorPtr<Complex>>
-	  (mat->Height(), col_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
     }
     else {
       if (col_paralleldofs==nullptr)
@@ -460,7 +460,7 @@ namespace ngla
 	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
       else
 	return make_shared<S_ParallelBaseVectorPtr<double>>
-	  (mat->Height(), col_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
+	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
     }
   }
 

@@ -176,10 +176,10 @@ namespace ngla
       InnerProduct (v2);
   }
   
-  Complex BaseVector :: InnerProductC (const BaseVector & v2) const
+  Complex BaseVector :: InnerProductC (const BaseVector & v2, bool conjugate) const
   {
     return dynamic_cast<const S_BaseVector<Complex>&> (*this) . 
-      InnerProduct (v2);
+      InnerProduct (v2, conjugate);
   }
 
 
@@ -332,7 +332,7 @@ namespace ngla
   {
     return InnerProduct(v2);
   }
-  template<> Complex S_BaseVector<double> :: InnerProductC (const BaseVector & v2) const
+  template<> Complex S_BaseVector<double> :: InnerProductC (const BaseVector & v2, bool conjugate) const
   {
     throw Exception ("InnerProductC for real vector");
   }
@@ -341,9 +341,9 @@ namespace ngla
   {
     throw Exception ("InnerProductD for complex vector");
   }
-  template<> Complex S_BaseVector<Complex> :: InnerProductC (const BaseVector & v2) const
+  template<> Complex S_BaseVector<Complex> :: InnerProductC (const BaseVector & v2, bool conjugate) const
   {
-    return InnerProduct(v2);
+    return InnerProduct(v2, conjugate);
   }
 
 
@@ -641,19 +641,22 @@ namespace ngla
   }
   
   template <class SCAL>
-  SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
+  SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2, bool conjugate) const
   {
     static Timer t("S_BaseVector::InnerProduct");
     RegionTimer reg(t);
 
-    return ngbla::InnerProduct (FVScal(), v2.FV<SCAL>());
+    if (conjugate)
+      return ngbla::InnerProduct (Conj(FVScal()), v2.FV<SCAL>());
+    else
+      return ngbla::InnerProduct (FVScal(), v2.FV<SCAL>());
     // dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
 
 
 
   template <>
-  double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const
+  double S_BaseVector<double> :: InnerProduct (const BaseVector & v2, bool conjugate) const
   {
     static Timer t("BaseVector::InnerProduct (taskhandler)");
     RegionTimer reg(t);

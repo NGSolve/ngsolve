@@ -787,14 +787,14 @@ namespace ngla
 
     if (!disjoint_cols)
       {
-        Array<MyMutex> locks(w);
+        Array<MyMutex> locks(h);
         size_t nblocks = row_dnums.Size();
         Array<int> col(nblocks);
         col = -1;
 
         int maxcolor = 0;
         int basecol = 0;
-        Array<unsigned int> mask(w);
+        Array<unsigned int> mask(h);
 
         atomic<int> found(0);
         size_t cnt = row_dnums.Size();

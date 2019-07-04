@@ -207,11 +207,10 @@ namespace ngcomp
     void ApplyMatrix (const BaseVector & x,
 		      BaseVector & y, LocalHeap & lh) const
     {
+      x.Cumulate();
       y = 0;
       AddMatrix (1, x, y, lh);
-#ifdef PARALLEL
       y.SetParallelStatus(DISTRIBUTED);
-#endif
     }
 
     /// y += val * Mat * x
@@ -478,6 +477,9 @@ namespace ngcomp
     virtual void AddMatrix (double val, const BaseVector & x,
                            BaseVector & y, LocalHeap & lh) const
     {
+      x.Cumulate();
+      y.Distribute();
+
       AddMatrix1 (val, x, y, lh);
     }
 
@@ -487,6 +489,9 @@ namespace ngcomp
     virtual void AddMatrix (Complex val, const BaseVector & x,
                            BaseVector & y, LocalHeap & lh) const
     {
+      x.Cumulate();
+      y.Distribute();
+
       AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }
 
@@ -508,6 +513,10 @@ namespace ngcomp
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const
     {
+      lin.Cumulate();
+      x.Cumulate();
+      y.Distribute();
+
       ApplyLinearizedMatrixAdd1 (val, lin, x, y, lh);
     }
   
@@ -516,6 +525,10 @@ namespace ngcomp
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const
     {
+      lin.Cumulate();
+      x.Cumulate();
+      y.Distribute();
+
       ApplyLinearizedMatrixAdd1 (ConvertTo<SCAL> (val), lin, x, y, lh);
     }
   
@@ -949,13 +962,11 @@ namespace ngcomp
                                        LocalHeap & alh);
 
     ///
-      using BilinearFormApplication::Mult;
-    virtual void Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
     ///
-      using BilinearFormApplication::MultAdd;
-    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
   };
 
 

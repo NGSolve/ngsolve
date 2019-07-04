@@ -28,13 +28,13 @@ Prerequisites
   Command Line Tools by ``xcode-select --install``.
 
 * You need to have ``cmake`` installed. You can either download and
-  install cmake from source or install the CMake App from
-  http://www.cmake.org. If you install the CMake App, make sure to
-  install the command line tools. Open CMake, click on "How to Install For Command Line Use"
+  install `CMake <http://www.cmake.org>`_. Make sure to
+  install the command line tools: Open CMake, click on "How to Install For Command Line Use"
   in the "Tools" menu and execute one of the suggested options.
 
 * Install |Python|_
 
+* On MacOS 10.14, you need to download the SDK for 10.9 (for instance from `here <https://github.com/phracker/MacOSX-SDKs>`_  )
 
 Getting the source
 ******************
@@ -78,6 +78,15 @@ Change into the directory for builds and call cmake with a link to the source di
 
    cd $NGROOT/ngsolve-build
    cmake $NGROOT/ngsolve-src
+
+
+In case you are running MacOS 10.14, use the following commands instead to instruct CMake to use the downloaded SDK:
+.. code:: bash
+
+   cd $NGROOT/ngsolve-build
+   export MACOSX_DEPLOYMENT_TARGET=10.9
+   cmake $NGROOT/ngsolve-src -DCMAKE_OSX_SYSROOT=path_to_your_sdk
+
 
 Building
 ========
