@@ -152,7 +152,7 @@ namespace ngla
       virtual public ParallelBaseVector
   {
   protected:
-    virtual SCAL InnerProduct (const BaseVector & v2) const;
+    virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;
     virtual BaseVector & SetScalar (double scal)
     { return ParallelBaseVector::SetScalar(scal); }
   };

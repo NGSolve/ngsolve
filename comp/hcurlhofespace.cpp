@@ -3447,7 +3447,8 @@ namespace ngcomp
     }
     fesh1->UpdateDofTables();
     fesh1->UpdateCouplingDofArray();
-      
+    fesh1->FinalizeUpdate(lh);
+
     return fesh1;
   }
 
