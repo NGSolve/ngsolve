@@ -1102,9 +1102,9 @@ namespace ngcore {
 namespace std
 {
   // structured binding support
-  template <int N, typename T>
+  template <auto N, typename T>
   struct tuple_size<ngstd::INT<N,T>> : std::integral_constant<std::size_t, N> {};
-  template<size_t N, int M, typename T> struct tuple_element<N,ngstd::INT<M,T>> { using type = T; };
+  template<size_t N, auto M, typename T> struct tuple_element<N,ngstd::INT<M,T>> { using type = T; };
 }
 
 #endif
