@@ -84,7 +84,7 @@ namespace ngstd
 
   
 
-
+  /*
   template <typename T>
   class AlignedAlloc
   {
@@ -120,15 +120,14 @@ namespace ngstd
     void operator delete[] (void * p) { aligned_free(p); }
   };
 
-  /*
+
 #else
-  
+  */  
   // it's only a dummy without AVX
   template <typename T>
   class AlignedAlloc { ; };
 
-#endif
-  */
+  // #endif
 
   
 #ifdef __AVX__
