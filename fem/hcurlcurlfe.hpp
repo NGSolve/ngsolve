@@ -19,29 +19,20 @@ namespace ngfem
     using FiniteElement::ndof;
     using FiniteElement::order;
 
-    // old style
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            BareSliceMatrix<double> shape) const = 0;
-
-
-    // new implementation
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
-      BareSliceMatrix<double> shape) const = 0;
-
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
-    virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
-    virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceVector<> coefs,
                                   BareSliceMatrix<SIMD<double>> values) const = 0;
 
-    virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const = 0;
 
@@ -165,14 +156,15 @@ namespace ngfem
                                         u.Value()*v.DDValue(0,1) + 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
     Vec<2,T> CurlShape()
     {
-      /*T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
       T ux = u.DValue(0), uy = u.DValue(1);
       T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
       T vx = v.DValue(0), vy = v.DValue(1);
       
-      return -0.5 * Vec<2,T> (uyy*vx - uxy*vy + uy*vxy - ux*vyy,
+      /*return -0.5 * Vec<2,T> (uyy*vx - uxy*vy + uy*vxy - ux*vyy,
       -uxy*vx + uxx*vy - uy*vxx + ux*vxy);*/
-      throw Exception("curl shape not implemented for Eps_u_Gradv");
+      return 0.5 * Vec<2,T>(ux*vxy - uy*vxx - uxy*vx + uxx*vy,
+                            ux*vyy + uxy*vy - uyy*vx - uy*vxy);
     }
   };
   
@@ -190,13 +182,11 @@ namespace ngfem
                                       u.DDValue(1,1)*v.Value(),  (u.DDValue(1,0)*v.Value()));}
     Vec<2,T> CurlShape()
     {
-      /*T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      // T ux = u.DValue(0), uy = u.DValue(1);
-      // T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
       T vx = v.DValue(0), vy = v.DValue(1);
 
-      return Vec<2,T> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);*/
-      throw Exception("curl shape not implemented for Eps_u_Gradv");
+      //return Vec<2,T> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);
+      return Vec<2,T> (uxy*vx - vy*uxx, uyy*vx - uxy*vy);
     }
   };
   
@@ -248,33 +238,8 @@ namespace ngfem
       cout << "Error, T_HCurlCurlFE<ET>:: ComputeNDof not available, only for ET == TRIG" << endl;
     }
 
-    // old style
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            BareSliceMatrix<double> shape) const override
-    {
-      Vec<DIM, AutoDiffDiff<DIM>> adp;
-      for ( int i=0; i<DIM; i++)
-        adp(i) = AutoDiff<DIM>(ip(i),i);
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-                                          }));
-    }
 
-
-    // new style
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const override
-    {
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-                                          }));
-    }
-
-
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
@@ -299,7 +264,7 @@ namespace ngfem
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
-      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
       {
         Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
         {
@@ -313,7 +278,7 @@ namespace ngfem
     }
 
     template <int DIMSPACE>
-    void CalcMappedShape_Matrix2 (const SIMD_MappedIntegrationRule<DIM,DIMSPACE> & mir, 
+    void CalcMappedShape2 (const SIMD_MappedIntegrationRule<DIM,DIMSPACE> & mir, 
                                  BareSliceMatrix<SIMD<double>> shapes) const
     {
       for (size_t i = 0; i < mir.Size(); i++)
@@ -347,59 +312,23 @@ namespace ngfem
     }
 
       
-    virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & bmir, 
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const override
     {
       Iterate<4-DIM>
         ([this, &bmir, shapes](auto CODIM) LAMBDA_INLINE
          {
-           constexpr int CD = CODIM.value;
-           constexpr int DIMSPACE = DIM+CD;
+           constexpr int DIMSPACE = DIM+CODIM.value;
            if (bmir.DimSpace() == DIMSPACE)
              {
                auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-               this->CalcMappedShape_Matrix2 (mir, shapes);
-
-#ifdef XXX
-               
-               for (size_t i = 0; i < mir.Size(); i++)
-                 {
-                   auto jacI = mir[i].GetJacobianInverse();
-           
-                   Vec<DIM_STRESS,SIMD<double>> hv;
-                   Mat<DIM,DIM,SIMD<double>> mat;
-                   SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
-                   FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
-                   for (int k = 0; k < DIM_STRESS; k++)
-                     {
-                       hv = SIMD<double>(0.0);
-                       hv(k) = SIMD<double>(1.0);
-                       VecToSymMat<DIM> (hv, mat);
-                       Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * mat * jacI;
-                       trans.Col(k) = physmat;
-                     }
-                   
-          
-                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
-                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-
-                   this->Cast() -> T_CalcShape (addp,
-                                                SBLambda ([i,shapes,trans] (size_t j, auto val) LAMBDA_INLINE
-                                                    {
-                                                      
-                                                      Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
-                                                      transvec = trans * val.Shape();
-                                                      for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                                                        shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
-                                                    }));
-                 }
-#endif
+               this->CalcMappedShape2 (mir, shapes);
              }
          });
     }
 
 
-    virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & bmir,
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir,
                                   BareSliceVector<> coefs,
                                   BareSliceMatrix<SIMD<double>> values) const override
     {
@@ -438,7 +367,7 @@ namespace ngfem
         }
     }
 
-    virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & bmir,
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & bmir,
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const override
     {
@@ -518,23 +447,29 @@ namespace ngfem
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y;
+      Tx llami[4] ={x, y, 1-x-y};
       typedef decltype(x.Value()+x.Value()) T;      
       AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
       AutoDiff<2,T> ddlami[3] ={ xx, yy, 1-xx-yy };
       int ii = 0;
 
+      int maxorder_facet =
+        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+      ArrayMem<Tx,20> ha(maxorder_facet+1);
+      ArrayMem<Tx,20> u(order_inner[0]+2), v(order_inner[0]+2);
+      
       for (int i = 0; i < 3; i++)
         {
           INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort(i,vnums);
-	  AutoDiff<2,T> ls = ddlami[e[0]], le = ddlami[e[1]];
-	  
-          Vec<3,AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
+	  Tx ls = llami[e[0]], le = llami[e[1]];
+          
+          // edge functions are all curl-free!
+          IntegratedLegendreMonomialExt::CalcTrigExt(maxorder_facet+2,
+                                                     le-ls, 1-le-ls, ha);
 
-          LegendrePolynomial::EvalScaled(order_facet[i][0], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
-                            {
-                              shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
-                            }));
+          for (int l = 0; l <= order_facet[i][0]; l++)
+            shape[ii++] = EpsGrad (ha[l]);
         }
 
 
@@ -550,9 +485,9 @@ namespace ngfem
 	  DubinerBasis3::Eval(order_inner[0]-1, ls,le,
 			      SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
 				       {
-					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic1);
-					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic2);
-					 shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic3);
+					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic1);
+					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic2);
+					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic3);
 				       }));
 	}
       
@@ -669,7 +604,6 @@ namespace ngfem
 
           
           for (int l = 0; l <= order_facet[i][0]; l++)
-            // shape[ii++] = SigmaGrad (eta*u[l]);
             shape[ii++] = Eps_u_Gradv (eta, u[l]);
         }
 
@@ -1806,10 +1740,7 @@ namespace ngfem
     using FiniteElement::ndof;
     using FiniteElement::order;
 
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-      BareSliceMatrix<double> shape) const = 0;
-
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
@@ -1859,20 +1790,7 @@ namespace ngfem
       cout << "Error, T_HCurlCurlSurfaceFE<ET>:: ComputeNDof not available for base class" << endl;
     }
 
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const override
-    {
-      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp);
-      
-      Cast() -> T_CalcShape (addp, SBLambda([shape] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-                                          }));
-    }
-
-
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
                             BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
