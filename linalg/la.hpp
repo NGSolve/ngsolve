@@ -33,6 +33,7 @@ namespace ngla
 #include "vvector.hpp"
 #include "basematrix.hpp"
 #include "sparsematrix.hpp"
+#include "sparsematrix_dyn.hpp"
 #include "order.hpp"
 #include "sparsecholesky.hpp"
 #include "pardisoinverse.hpp"

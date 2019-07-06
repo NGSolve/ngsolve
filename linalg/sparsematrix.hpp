@@ -309,8 +309,8 @@ namespace ngla
 
     int Height() const { return size; }
     int Width() const { return width; }
-    virtual int VHeight() const { return size; }
-    virtual int VWidth() const { return width; }
+    virtual int VHeight() const override { return size; }
+    virtual int VWidth() const override { return width; }
 
     TM & operator[] (int i)  { return data[i]; }
     const TM & operator[] (int i) const { return data[i]; }
@@ -345,28 +345,28 @@ namespace ngla
                                            BareSliceMatrix<TSCAL> elmat,
                                            bool use_atomic = false);
     
-    virtual BaseVector & AsVector() 
+    virtual BaseVector & AsVector() override
     {
       // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       return asvec; 
     }
 
-    virtual const BaseVector & AsVector() const
+    virtual const BaseVector & AsVector() const override
     { 
       const_cast<VFlatVector<TSCAL>&> (asvec).
 	AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
       return asvec; 
     }
 
-    virtual void SetZero();
+    virtual void SetZero() override;
 
 
     ///
-    virtual ostream & Print (ostream & ost) const;
+    virtual ostream & Print (ostream & ost) const override;
 
     ///
-    virtual Array<MemoryUsage> GetMemoryUsage () const;    
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;    
   };
   
 

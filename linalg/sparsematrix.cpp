@@ -3014,4 +3014,50 @@ namespace ngla
   template class SparseMatrix<double, Vec<15,Complex>, Vec<15,Complex> >;
 #endif
 #endif
+
+  template <typename TSCAL>
+  void SparseMatrixDynamic<TSCAL> :: Mult (const BaseVector & x, BaseVector & y) const 
+  {
+    auto fx = x.FV<TSCAL>();
+    auto fy = y.FV<TSCAL>();
+
+    for (size_t i = 0; i < Height(); i++)
+      {
+        auto rowind = GetRowIndices(i);
+        TSCAL * pmat = &data[bs*firsti[i]];
+        FlatVector<TSCAL> yi(bh, &fy(i*bh));
+        yi = TSCAL(0.0);
+        for (auto j : rowind)
+          {
+            FlatVector<TSCAL> xi(bw, &fx(j*bw));
+            FlatMatrix<TSCAL> mi(bh, bw, pmat);
+            yi += mi * xi;
+            pmat += bs;
+          }
+      }
+  }
+  
+  template <typename TSCAL>
+  void SparseMatrixDynamic<TSCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
+  {
+    auto fx = x.FV<TSCAL>();
+    auto fy = y.FV<TSCAL>();
+
+    for (size_t i = 0; i < Height(); i++)
+      {
+        auto rowind = GetRowIndices(i);
+        TSCAL * pmat = &data[bs*firsti[i]];
+        FlatVector<TSCAL> yi(bh, &fy(i*bh));
+        for (auto j : rowind)
+          {
+            FlatVector<TSCAL> xi(bw, &fx(j*bw));
+            FlatMatrix<TSCAL> mi(bh, bw, pmat);
+            yi += s * mi * xi;
+            pmat += bs;
+          }
+      }
+  }
+  
+
+  template class SparseMatrixDynamic<double>;
 }
