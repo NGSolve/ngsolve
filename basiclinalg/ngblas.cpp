@@ -54,6 +54,15 @@ namespace ngbla
     KernelMatVec<SX,SET> (y.Size(), &a(0), a.Dist(), &x(0), &y(0));
   }
 
+
+  template <int SX>
+  void MultAddMatVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    KernelAddMatVec<SX> (s, y.Size(), &a(0), a.Dist(), &x(0), &y(0));
+  }
+
+
+  
   
   NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
@@ -98,7 +107,10 @@ namespace ngbla
   }
 
 
-
+  NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    y += s * a * x;
+  }
 
  pmult_matvec dispatch_matvec[25] =
     {
@@ -109,6 +121,17 @@ namespace ngbla
       &MultMatVecShort<16>, &MultMatVecShort<17>, &MultMatVecShort<18>, &MultMatVecShort<19>,
       &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
       &MultMatVecShort<24>
+    };
+
+ pmultadd_matvec dispatch_addmatvec[25] =
+    {
+      &MultAddMatVecShort<0>, &MultAddMatVecShort<1>, &MultAddMatVecShort<2>, &MultAddMatVecShort<3>,
+      &MultAddMatVecShort<4>, &MultAddMatVecShort<5>, &MultAddMatVecShort<6>, &MultAddMatVecShort<7>,
+      &MultAddMatVecShort<8>, &MultAddMatVecShort<9>, &MultAddMatVecShort<10>, &MultAddMatVecShort<11>,
+      &MultAddMatVecShort<12>, &MultAddMatVecShort<13>, &MultAddMatVecShort<14>, &MultAddMatVecShort<15>,
+      &MultAddMatVecShort<16>, &MultAddMatVecShort<17>, &MultAddMatVecShort<18>, &MultAddMatVecShort<19>,
+      &MultAddMatVecShort<20>, &MultAddMatVecShort<21>, &MultAddMatVecShort<22>, &MultAddMatVecShort<23>,
+      &MultAddMatVecShort<24>
     };
 
   

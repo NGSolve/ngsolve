@@ -2258,19 +2258,25 @@ namespace ngla
   {
     auto fx = x.FV<TSCAL>();
     auto fy = y.FV<TSCAL>();
-
+    auto matvecfunc = dispatch_addmatvec[bw];
+    fy = TSCAL(0.0);
     for (size_t i = 0; i < Height(); i++)
       {
         auto rowind = GetRowIndices(i);
         TSCAL * pmat = &data[bs*firsti[i]];
-        FlatVector<TSCAL> yi(bh, &fy(i*bh));
-        yi = TSCAL(0.0);
+        size_t my_bw = bw;
+        size_t my_bh = bh;
+        size_t my_bs = bs;
+
+        FlatVector<TSCAL> yi(my_bh, &fy(i*my_bh));
         for (auto j : rowind)
           {
-            FlatVector<TSCAL> xi(bw, &fx(j*bw));
-            FlatMatrix<TSCAL> mi(bh, bw, pmat);
-            yi += mi * xi;
-            pmat += bs;
+            FlatVector<TSCAL> xi(my_bw, &fx(j*bw));
+            FlatMatrix<TSCAL> mi(my_bh, my_bw, pmat);
+            // yi += mi * xi;
+            // yi = mi * xi;
+            (*matvecfunc) (1, mi, xi, yi);
+            pmat += my_bs;
           }
       }
   }
@@ -2281,16 +2287,22 @@ namespace ngla
     auto fx = x.FV<TSCAL>();
     auto fy = y.FV<TSCAL>();
 
+    auto matvecfunc = dispatch_addmatvec[bw];
+
     for (size_t i = 0; i < Height(); i++)
       {
         auto rowind = GetRowIndices(i);
         TSCAL * pmat = &data[bs*firsti[i]];
         FlatVector<TSCAL> yi(bh, &fy(i*bh));
+        size_t my_bw = bw;
+        size_t my_bh = bh;
+        size_t my_bs = bs;
         for (auto j : rowind)
           {
-            FlatVector<TSCAL> xi(bw, &fx(j*bw));
-            FlatMatrix<TSCAL> mi(bh, bw, pmat);
-            yi += s * mi * xi;
+            FlatVector<TSCAL> xi(my_bw, &fx(j*my_bw));
+            FlatMatrix<TSCAL> mi(my_bh, my_bw, pmat);
+            // yi += s * mi * xi;
+            (*matvecfunc) (1, mi, xi, yi);            
             pmat += bs;
           }
       }
