@@ -880,6 +880,22 @@ inverse : string
   ExportSparseMatrix<Mat<2,2,Complex>>(m);
   ExportSparseMatrix<Mat<3,3,double>>(m);
   ExportSparseMatrix<Mat<3,3,Complex>>(m);
+
+
+  py::class_<SparseMatrixDynamic<double>, shared_ptr<SparseMatrixDynamic<double>>, BaseMatrix>
+    (m, "SparseMatrixDynamic")
+    .def(py::init([] (const BaseMatrix & mat) -> shared_ptr<SparseMatrixDynamic<double>>
+                  {
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<double>*> (&mat); ptr)
+                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<2,2>>*> (&mat); ptr)
+                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<3,3>>*> (&mat); ptr)
+                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
+                    return nullptr;
+                  })
+         )
+         ;
   
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
