@@ -985,6 +985,143 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
 
 
 
+void GenerateAddMatVec (ostream & out, int wa)
+{
+  out << "template <> INLINE void KernelAddMatVec<" << wa << ">" << endl
+      << "(double s, size_t ha, double * pa, size_t da, double * x, double * y) {" << endl;
+
+  int SW = SIMD<double>::Size();  // generate optimal code for my host
+  int i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ");" << endl;
+  
+  if (SW == 4 && (wa % SW == 1))
+    {
+      out << "double x" << i << " = x[" << i*SW << "];" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
+    {
+      out << "SIMD<double,2> x" << i << "(x+" << i*SW << ");" << endl;      
+    }
+  else if (wa % SW)  // do the mask load :-(
+    {
+      out << "SIMD<mask64," << SW << "> mask(" << wa%SW << "UL);" << endl;
+      out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ", mask);" << endl;
+    }
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+4 <= ha; i+=4, pa += 4*da) {" << endl;
+  out << "SIMD<double," << SW << "> sum0(0.0), sum1(0.0), sum2(0.0), sum3(0.0);" << endl;
+  i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    {
+      out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum2 += SIMD<double," << SW << ">(pa+2*da+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum3 += SIMD<double," << SW << ">(pa+3*da+" << i*SW << ") * x" << i << ";" << endl;
+    }
+
+  if (SW == 4 && (wa % SW == 1))
+    {
+      /*
+      for (int k = 0; k < 4; k++)
+        out << "sum"<<k<< " += SIMD<double,4> (pa[" << k << "*da+" << i*SW << "] * x" << i << ", 0,0,0);" << endl;
+      */
+      ;
+    }
+  else if (SW == 4 && (wa % SW == 2))
+    {
+      out << "SIMD<double,2> zero(0.0);" << endl;
+      out << "sum0 += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum1 += SIMD<double,4> (SIMD<double,2>(pa+da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum2 += SIMD<double,4> (SIMD<double,2>(pa+2*da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum3 += SIMD<double,4> (SIMD<double,2>(pa+3*da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+    }
+  else if (wa % SW)
+    {
+      out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum2 += SIMD<double," << SW << ">(pa+2*da+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum3 += SIMD<double," << SW << ">(pa+3*da+" << i*SW << ", mask) * x" << i << ";" << endl;
+    }
+  out << "SIMD<double,4> vsum = HSum(sum0,sum1,sum2,sum3);" << endl;
+
+  if (SW == 4 && (wa % SW == 1))
+    {
+      out << "vsum += x" << i << "*SIMD<double,4> ("
+          << "pa[0*da+" << i*SW << "], "
+          << "pa[1*da+" << i*SW << "], "
+          << "pa[2*da+" << i*SW << "], "
+          << "pa[3*da+" << i*SW << "]);" << endl;
+    }
+
+  out << "vsum *= SIMD<double,4>(s);" << endl;
+  out << "vsum += SIMD<double,4>(y+i);" << endl;
+  out << "vsum.Store(y+i);" << endl;
+  out << "}" << endl;
+
+
+  out << "if (ha & 2) {" << endl;
+  out << "SIMD<double," << SW << "> sum0(0.0), sum1(0.0);" << endl;
+  i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    {
+      out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ") * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ") * x" << i << ";" << endl;
+    }
+  
+  if (SW == 4 && (wa % SW == 1))
+    {
+      for (int k = 0; k < 2; k++)
+        out << "sum"<<k<< " += SIMD<double,4> (pa[" << k << "*da+" << i*SW << "] * x" << i << ", 0,0,0);" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
+    {
+      out << "SIMD<double,2> zero(0.0);" << endl;
+      out << "sum0 += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
+      out << "sum1 += SIMD<double,4> (SIMD<double,2>(pa+da+" << i*SW << ") * x" << i << ", zero);" << endl;      
+    }
+  else if (wa % SW)
+    {
+      out << "sum0 += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
+      out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
+    }
+  out << "SIMD<double,2> vsum = HSum(sum0,sum1);" << endl;
+  out << "vsum *= SIMD<double,2>(s);" << endl;
+  out << "vsum += SIMD<double,2>(y+i);" << endl;
+  out << "vsum.Store(y+i);" << endl;
+  out << "i += 2; pa += 2*da;" << endl;
+  out << "}" << endl;
+  
+  
+  out << "if (ha & 1) {" << endl;
+  out << "SIMD<double," << SW << "> sum(0.0);" << endl;
+  i = 0;
+  for ( ; SW*(i+1) <= wa; i++)
+    out << "sum += SIMD<double," << SW << ">(pa+" << i*SW << ") * x" << i << ";" << endl;
+
+  
+  if (SW == 4 && (wa % SW == 1))
+    {
+      out << "sum += SIMD<double,4> (pa[" << i*SW << "] * x" << i << ", 0,0,0);" << endl;      
+    }
+  else if (SW == 4 && (wa % SW == 2))
+    {
+      out << "SIMD<double,2> zero(0.0);" << endl;
+      out << "sum += SIMD<double,4> (SIMD<double,2>(pa+" << i*SW << ") * x" << i << ", zero);" << endl;      
+    }
+  else if (wa % SW)
+    out << "sum += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
+  out << "y[i] += s*HSum(sum);" << endl;
+
+  out << "} }" << endl;
+}
+
+
+
+
+
+
+
 
 
 int main ()
@@ -1132,4 +1269,12 @@ int main ()
       << "(size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
   for (int i = 0; i <= 24; i++)
     GenerateMatVec (out, i, SET);
+
+
+  out << "// y += s * A * x,  with fix width" << endl;
+  out << "template <size_t WA>" << endl
+      << "inline void KernelAddMatVec" << endl
+      << "(double s, size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
+  for (int i = 0; i <= 24; i++)
+    GenerateAddMatVec (out, i);
 }

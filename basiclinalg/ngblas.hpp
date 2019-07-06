@@ -24,6 +24,21 @@ namespace ngbla
       MultMatVec_intern (a, x, y);
   }
 
+
+  extern NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  typedef void (*pmultadd_matvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmatvec[25];
+  INLINE void MultAddMatVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    size_t sx = x.Size();
+    if (sx <= 24)
+      (*dispatch_addmatvec[sx])  (s, a, x, y);
+    else
+      MultAddMatVec_intern (s, a, x, y);
+  }
+
+
+
   
   extern NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
   typedef void (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
