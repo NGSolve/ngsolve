@@ -583,12 +583,9 @@ namespace ngfem
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y;
-      typedef decltype(x.Value()+x.Value()) T;
-      AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
-      AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
-      Tx lx[4] ={1-x, x, x, 1-x};
+      Tx lx[4] = {1-x, x, x, 1-x};
       Tx ly[4] = {1-y, 1-y, y, y};
-      AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
+      
       int ii = 0;
 
 
@@ -1422,39 +1419,16 @@ namespace ngfem
           Vec<6, AutoDiff<3,T>> symdyadic4 = ll*li*SymDyadProd(lj,lk);
           Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
           Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
-
-
-          LegendrePolynomial leg;
-          JacobiPolynomialAlpha jac1(1);    
-          leg.EvalScaled1Assign 
-            (p-2, lam[2]-lam[3], lam[2]+lam[3],
-             SBLambda ([&lam,&p,&jac1, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-                       {
-                         // JacobiPolynomialAlpha jac(2*k+1);
-                         JacobiPolynomialAlpha jac2(2*k+2);
-                         
-                         jac1.EvalScaledMult1Assign
-                           (p-2-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-                            SBLambda ([k,&p,&lam,&jac2, &ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-                                      {
-                                        // JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                        jac2.EvalMult(p-2 - k - j, 2 * lam[0] - 1, polsy, 
-                                                      SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val) LAMBDA_INLINE
-                                                               {
-                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
-                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
-                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
-                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
-                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
-                                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);
-                                                               }));
-                                        jac2.IncAlpha2();
-                                      }));
-                         jac1.IncAlpha2();
-                       }));
+          
+          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val) LAMBDA_INLINE
+                                                                                   {
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);                                                                                                                                                   }));
         }
-      
-
     };
 
     template <typename MIP, typename TFA>
@@ -1518,19 +1492,19 @@ namespace ngfem
                   F.Cols(0,1) = adxi;
                   F.Cols(1,2) = adeta;
 		 
-                  Mat<2> Ftmp;
+                  Matrix<> Ftmp(2,2);
                   Ftmp = Trans(F)*F;
                   auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
                                               
                   DubinerBasis3::Eval (p, xi, eta,
                                        SBLambda([&] (size_t nr, T val)
                                                 {
-                                                  Mat<3,3> tmpmat = F*Matrix<>({{1,0},{0,0}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
-                                                  tmpmat = F*Matrix<>({{0,0},{0,1}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
-                                                  tmpmat = F*Matrix<>({{0,1},{1,0}})*Trans(F);
-                                                  shape[ii++] = 1/det*val*SymMatToVec<3>(tmpmat);
+                                                  Mat<3,3> tmpmat = mip.GetJacobian()*F*Matrix<>({{1,0},{0,0}})*Trans(mip.GetJacobian()*F);
+                                                  shape[ii++] = 1/(det*mip.GetMeasure())*val*SymMatToVec<3>(tmpmat);
+                                                  tmpmat = mip.GetJacobian()*F*Matrix<>({{0,0},{0,1}})*Trans(mip.GetJacobian()*F);
+                                                  shape[ii++] = 1/(det*mip.GetMeasure())*val*SymMatToVec<3>(tmpmat);
+                                                  tmpmat = mip.GetJacobian()*F*Matrix<>({{0,1},{1,0}})*Trans(mip.GetJacobian()*F);
+                                                  shape[ii++] = 1/(det*mip.GetMeasure())*val*SymMatToVec<3>(tmpmat);
                                                 }));
                 }
               else
@@ -1543,50 +1517,25 @@ namespace ngfem
             ii += 3*(order_facet[i][0])*(order_facet[i][0]+1)/2;
         }
       
-      if (ip.VB() == VOL)
+      if (ip.VB() == VOL && order_inner[0] >= 2)
         {
-          auto p = order_inner[0]-2;
-          if( p >= 0 )
-            {
-              LegendrePolynomial leg;
-              JacobiPolynomialAlpha jac1(1);    
-              leg.EvalScaled1Assign 
-                (p, lam[2]-lam[3], lam[2]+lam[3],
-                 SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
-                           {
-                             // JacobiPolynomialAlpha jac(2*k+1);
-                             JacobiPolynomialAlpha jac2(2*k+2);
-                             
-                             jac1.EvalScaledMult1Assign
-                               (p-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-                                SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
-                                          {
-                                            // JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                            jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
-                                                          SBLambda([&](size_t j, T val) LAMBDA_INLINE
-                                                                   {
-                                                                     Mat<3,3> tmpmat = Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
-                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
-                                                                     tmpmat = Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
-                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
-                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
-                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
-                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
-                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
-                                                                     tmpmat = Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
-                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
-                                                                     tmpmat = Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
-                                                                     shape[ii++] = val*SymMatToVec<3>(tmpmat);
-                                                                   }));
-                                            jac2.IncAlpha2();
-                                          }));
-		       jac1.IncAlpha2();
-                           }));
-            
-            }
-            }
+          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&](size_t j, T val) LAMBDA_INLINE
+                                                                                   {
+                                                                                     Mat<3,3> tmpmat = Matrix<>({{1,0,0},{0,0,0},{0,0,0}});
+                                                                                     shape[ii++] = 1/mip.GetMeasure()*val*SymMatToVec<3>(tmpmat);
+                                                                                     tmpmat = Matrix<>({{0,0,0},{0,1,0},{0,0,0}});
+                                                                                     shape[ii++] = 1/mip.GetMeasure()*val*SymMatToVec<3>(tmpmat);
+                                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,0},{0,0,1}});
+                                                                                     shape[ii++] = 1/mip.GetMeasure()*val*SymMatToVec<3>(tmpmat);
+                                                                                     tmpmat = Matrix<>({{0,0,0},{0,0,1},{0,1,0}});
+                                                                                     shape[ii++] = 1/mip.GetMeasure()*val*SymMatToVec<3>(tmpmat);
+                                                                                     tmpmat = Matrix<>({{0,0,1},{0,0,0},{1,0,0}});
+                                                                                     shape[ii++] = 1/mip.GetMeasure()*val*SymMatToVec<3>(tmpmat);
+                                                                                     tmpmat = Matrix<>({{0,1,0},{1,0,0},{0,0,0}});
+                                                                                     shape[ii++] = 1/mip.GetMeasure()*val*SymMatToVec<3>(tmpmat);                                                                                                              }));
+          
+        }
     }
-      
   };
   
 
