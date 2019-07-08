@@ -202,6 +202,48 @@ namespace ngfem
       }
   }
 
+  template<>
+  inline void H1HighOrderFE_Shape<ET_QUAD> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    auto & ip = mip.IP();
+    shape = 0.0;
+    size_t ii = 4;
+    double hx[2] = { ip(0), ip(1) };
+
+    if (ip.VB() == BBND)
+      {
+	for (size_t i = 0; i < 4; i++)
+	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
+      }
+    
+
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      if (order_edge[i] >= 2)
+	{
+          if (ip.VB() == BND && ip.FacetNr() == i)
+            {
+              auto xi = ET_trait<ET_QUAD>::XiEdge(i, hx, this->vnums);
+          
+              EdgeOrthoPol::EvalMult (order_edge[i]-2, xi, 1.0/mip.GetMeasure(), shape+ii);
+            }
+          ii += order_edge[i]-1;
+	}
+
+    INT<2> p = order_face[0];
+    if (ip.VB() == VOL && p[0] >= 2 && p[1] >= 2)
+      {
+        Vec<2,double> xi = ET_trait<ET_QUAD>::XiFace(0, hx, this->vnums);
+
+        QuadOrthoPol::EvalMult1Assign(p[0]-2, xi(0), 1.0/mip.GetMeasure(),
+          SBLambda ([&](int i, auto val) LAMBDA_INLINE 
+                    {  
+                      QuadOrthoPol::EvalMult (p[1]-2, xi(1), val, shape+ii);
+                      ii += p[1]-1;
+                    }));
+      }
+  }
+
 
   /* *********************** Tetrahedron  **********************/
 
