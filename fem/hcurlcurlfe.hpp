@@ -594,8 +594,8 @@ namespace ngfem
       for (int i = 0; i < 4; i++)
         {
           INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
-          Tx xi = lx[e[0]]+ly[e[0]]-lx[e[1]]-ly[e[1]];
-          Tx eta = lx[e[1]]*ly[e[1]]+lx[e[0]]*ly[e[0]];
+          Tx xi = lx[e[1]]+ly[e[1]]-lx[e[0]]-ly[e[0]];
+          Tx eta = lx[e[0]]*ly[e[0]]+lx[e[1]]*ly[e[1]];
 
 	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
 
