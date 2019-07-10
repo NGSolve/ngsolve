@@ -2159,7 +2159,7 @@ integrator : ngsolve.fem.LFI
   
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
-  auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");
+  auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix, NGS_Object>(m, "Preconditioner");
   prec_class
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
@@ -2333,6 +2333,16 @@ integrator : ngsolve.fem.LFI
 				  string name = "np_from_py" + ToString(cnt);
                                   self->AddNumProc (name, np);
                                 }, py::arg("np"))
+
+      .def("Add", [](shared_ptr<PDE> self, shared_ptr<CoefficientFunction> cf, const string& name)
+                  {
+                    self->AddCoefficientFunction(name, cf);
+                  }, py::arg("cf"), py::arg("name"))
+
+      .def("Add", [](shared_ptr<PDE> self, const string& other)
+                  {
+                    LoadPDE(self, other);
+                  }, py::arg("pde"))
 
     .def("Add", [](shared_ptr<PDE> self, const py::list &l)
                                 {
