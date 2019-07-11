@@ -1087,17 +1087,7 @@ namespace ngcomp
     // void LoadMesh (const string & filename);
     // void LoadMesh (istream & str);
     void SaveMesh (ostream & str) const;
-    void DoArchive(Archive& ar)
-    {
-      auto mshptr = mesh.GetMesh();
-      ar.Shallow(mshptr);
-      if(ar.Input())
-        {
-          // Create the Ngx_Mesh interface
-          mesh = {mshptr};
-          UpdateBuffers();
-        }
-    }
+    void DoArchive(Archive& ar);
     // void LoadMeshFromString(const string & str);
 
     // void PrecomputeGeometryData(int intorder);
