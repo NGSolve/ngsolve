@@ -1,3 +1,4 @@
+from ngsolve.ngstd import Timer
 from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.comp import DifferentialSymbol
@@ -131,7 +132,19 @@ def Skew(m):
 
 def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
+
+def TimeFunction(func, name=None):
+    name = name or func.__name__
+    timer = Timer(name)
+    def retfunc(*args,**kwargs):
+        with timer:
+            ret = func(*args, **kwargs)
+        return ret
+    return retfunc
+
+
 ## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
-__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'Grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct', 'VectorFacet']
+__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'Grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct', 'VectorFacet', 'TimeFunction']
+
 
 
