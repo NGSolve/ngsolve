@@ -1,9 +1,10 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
-from ngsolve import Projector, Norm
-from ngsolve.ngstd import Timer
+from ngsolve import Projector, Norm, TimeFunction
 import ngsolve
 
+
+@TimeFunction
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method
 
@@ -45,9 +46,6 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
       Solution vector of the CG method.
 
     """
-
-    timer = Timer("CG-Solver")
-    timer.Start()
     u = sol if sol else rhs.CreateVector()
     d = rhs.CreateVector()
     w = rhs.CreateVector()
@@ -88,13 +86,11 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
         if err < tol*err0: break
     else:
         print("Warning: CG did not converge to TOL")
-
-    timer.Stop()
     return u
 
 
 
-
+@TimeFunction
 def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printrates = True, initialize = True, ep = 1.0, tol = 1e-7):
     """Quasi Minimal Residuum method
 
@@ -282,6 +278,7 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
 
 
 #Source: Michael Kolmbauer https://www.numa.uni-linz.ac.at/Teaching/PhD/Finished/kolmbauer-diss.pdf
+@TimeFunction
 def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
     """Minimal Residuum method
 
@@ -419,7 +416,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
     return u
 
 
-
+@TimeFunction
 def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-8, dampfactor=1.0, printing=True):
     """ Preconditioned Richardson Iteration
 
