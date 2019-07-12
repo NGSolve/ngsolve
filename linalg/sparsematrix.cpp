@@ -2284,28 +2284,36 @@ namespace ngla
   template <typename TSCAL>
   void SparseMatrixDynamic<TSCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
   {
-    auto fx = x.FV<TSCAL>();
-    auto fy = y.FV<TSCAL>();
+    // for (size_t i = 0; i < Height(); i++)
+    ParallelForRange
+      (Height(), [&] (IntRange r)
+       {
+         auto fx = x.FV<TSCAL>();
+         auto fy = y.FV<TSCAL>();
+         auto matvecfunc = dispatch_addmatvec[bw];
 
-    auto matvecfunc = dispatch_addmatvec[bw];
+         size_t my_bw = bw;
+         size_t my_bh = bh;
+         size_t my_bs = bs;
+         double my_s = s;
 
-    for (size_t i = 0; i < Height(); i++)
-      {
-        auto rowind = GetRowIndices(i);
-        TSCAL * pmat = &data[bs*firsti[i]];
-        FlatVector<TSCAL> yi(bh, &fy(i*bh));
-        size_t my_bw = bw;
-        size_t my_bh = bh;
-        size_t my_bs = bs;
-        for (auto j : rowind)
-          {
-            FlatVector<TSCAL> xi(my_bw, &fx(j*my_bw));
-            FlatMatrix<TSCAL> mi(my_bh, my_bw, pmat);
-            // yi += s * mi * xi;
-            (*matvecfunc) (1, mi, xi, yi);            
-            pmat += bs;
-          }
-      }
+         TSCAL * pmat = &data[bs*firsti[r.First()]];
+         TSCAL * py = &fy(r.First()*my_bh);
+         for (auto i : r)
+           {
+             auto rowind = GetRowIndices(i);
+             FlatVector<TSCAL> yi(my_bh, py); 
+             for (auto j : rowind)
+               {
+                 FlatVector<TSCAL> xi(my_bw, &fx(j*my_bw));
+                 FlatMatrix<TSCAL> mi(my_bh, my_bw, pmat);
+                 // yi += s * mi * xi;
+                 (*matvecfunc) (my_s, mi, xi, yi);            
+                 pmat += my_bs;
+               }
+             py += my_bh;
+           }
+       });
   }
   
 
