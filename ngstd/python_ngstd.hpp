@@ -45,6 +45,7 @@
 #pragma clang diagnostic pop
 #endif
 
+#include <core/python_ngcore.hpp>
 #include <ngstd.hpp>
 #include <thread>
 #include <iostream>
