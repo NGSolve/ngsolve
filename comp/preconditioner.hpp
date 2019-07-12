@@ -16,7 +16,7 @@ namespace ngcomp
   /**
      Base class for preconditioners.
   */
-  class NGS_DLL_HEADER Preconditioner : public NGS_Object, public BaseMatrix
+  class NGS_DLL_HEADER Preconditioner : public BaseMatrix, public NGS_Object
   {
   private:
     weak_ptr<BilinearForm> bf;
