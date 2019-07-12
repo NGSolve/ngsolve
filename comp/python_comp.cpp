@@ -2339,10 +2339,10 @@ integrator : ngsolve.fem.LFI
                     self->AddCoefficientFunction(name, cf);
                   }, py::arg("cf"), py::arg("name"))
 
-      .def("Add", [](shared_ptr<PDE> self, const string& other)
+      .def("AddPDE_File", [](shared_ptr<PDE> self, const string& other)
                   {
                     LoadPDE(self, other);
-                  }, py::arg("pde"))
+                  }, py::arg("filename"), "Adds definitions of other PDE file into existing one")
 
     .def("Add", [](shared_ptr<PDE> self, const py::list &l)
                                 {
