@@ -132,10 +132,11 @@ namespace ngla
 
     size_t NZE() const { return nze; }
 
-    FlatArray<int> GetRowIndices(int i) const
+    FlatArray<int> GetRowIndices(size_t i) const
       // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
       // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
-    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
+      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
+    { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }      
 
     size_t First (int i) const { return firsti[i]; }
     FlatArray<size_t> GetFirstArray () const  { return firsti; } 
