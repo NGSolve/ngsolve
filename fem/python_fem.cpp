@@ -1,4 +1,5 @@
 #ifdef NGS_PYTHON
+#include <core/python_ngcore.hpp>
 #include "../ngstd/python_ngstd.hpp"
 #include "python_fem.hpp"
 #include "../ngstd/bspline.hpp"
