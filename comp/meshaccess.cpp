@@ -8,6 +8,7 @@
    Access to fe mesh
 */
 
+#include <core/python_ngcore.hpp>
 #include <ngstd.hpp>
 #include <nginterface.h>
 
@@ -815,6 +816,18 @@ namespace ngcomp
   void MeshAccess :: SaveMesh (ostream & str) const
   {
     mesh.SaveMesh (str);
+  }
+
+  void MeshAccess :: DoArchive(Archive& ar)
+  {
+    auto mshptr = mesh.GetMesh();
+    ar.Shallow(mshptr);
+    if(ar.Input())
+      {
+        // Create the Ngx_Mesh interface
+        mesh = {mshptr};
+        UpdateBuffers();
+      }
   }
 
   void MeshAccess :: SelectMesh() const
