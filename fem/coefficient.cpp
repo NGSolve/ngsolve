@@ -11,6 +11,7 @@
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
+#include <core/python_ngcore.hpp> // for shallow archive
 
 namespace ngstd
 {
