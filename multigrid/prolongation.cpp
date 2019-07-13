@@ -106,7 +106,7 @@ namespace ngmg
               fv(parents[0]) += 0.5 * fv(i);
               fv(parents[1]) += 0.5 * fv(i);
             }
-          fv.Range(nf, fv.Size()) = 0;          
+          fv.Range(nc, fv.Size()) = 0;          
         }
       else
         {
@@ -117,7 +117,7 @@ namespace ngmg
               fv(parents[0]) += 0.5 * fv(i);
               fv(parents[1]) += 0.5 * fv(i);
             }
-          fv.Range(nf, fv.Size()) = 0;
+          fv.Range(nc, fv.Size()) = 0;
         }
       /*
       for (size_t i = nf; i < fv.Size(); i++)
