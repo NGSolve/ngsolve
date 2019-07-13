@@ -8,7 +8,7 @@
    Access to fe mesh
 */
 
-// #include <core/python_ngcore.hpp>
+#include <core/python_ngcore.hpp>
 #include <ngstd.hpp>
 #include <nginterface.h>
 
