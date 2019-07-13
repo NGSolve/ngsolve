@@ -8,18 +8,14 @@
 
 #include <la.hpp>
 
-#include "concurrentqueue.h" 
+#include <core/concurrentqueue.h>
+#include <core/taskmanager.hpp>
 
 
 typedef moodycamel::ConcurrentQueue<int> TQueue; 
 typedef moodycamel::ProducerToken TPToken; 
 typedef moodycamel::ConsumerToken TCToken; 
 
-
-namespace ngstd
-{
-  bool ProcessTask();
-}
 
 namespace ngla
 {
@@ -83,7 +79,7 @@ namespace ngla
            {
              if (cnt_final >= num_final) break;
 
-             while (ProcessTask()); // do the nested tasks
+             while (TaskManager::ProcessTask()); // do the nested tasks
              
              int nr;
              if(!queue.try_dequeue_from_producer(ptoken, nr)) 

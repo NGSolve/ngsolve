@@ -15,7 +15,5 @@ namespace ngstd
   int printmessage_importance = 5;
   bool NGSOStream :: glob_active = true;
   const string ngsolve_version = NGSOLVE_VERSION;
-
-  template class Array<int>;
 }
 

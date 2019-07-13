@@ -3,7 +3,8 @@ using namespace ngcomp;
 
 
 
-#include "../linalg/concurrentqueue.h"
+#include <core/concurrentqueue.h>
+
 typedef moodycamel::ConcurrentQueue<size_t> TQueue; 
 typedef moodycamel::ProducerToken TPToken; 
 typedef moodycamel::ConsumerToken TCToken; 

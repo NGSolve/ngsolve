@@ -103,7 +103,7 @@ namespace ngcomp
     {
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+      fel.CalcMappedShape (mip,Trans(mat));
     }
 
     template <typename FEL,typename SIP,typename MAT>
@@ -114,7 +114,7 @@ namespace ngcomp
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape_Matrix(sip,shape);
+      fel.CalcMappedShape(sip,shape);
       for(int i=0; i<nd; i++)
         for(int j = 0; j <DIM_DMAT; j++)
           mat(j,i) = shape(i,j);
@@ -124,21 +124,21 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape (mir, mat);      
     }
 
     using DiffOp<DiffOpIdHCurlCurl<D> >::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).Evaluate (mir, x, y);
     }
 
     using DiffOp<DiffOpIdHCurlCurl<D> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans (mir, y, x);
     }
   };
 
@@ -275,22 +275,22 @@ namespace ngcomp
   {
   public:
     enum { DIM = 1 };
-    enum { DIM_SPACE = D+1 };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = (D+1)*(D+1) };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 0 };
 
-    static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
     static auto & Cast (const FiniteElement & fel) 
-    { return static_cast<const HCurlCurlSurfaceFiniteElement<D>&> (fel); }
+    { return static_cast<const HCurlCurlSurfaceFiniteElement<D-1>&> (fel); }
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       
-      Cast(bfel).CalcMappedShape_Matrix (mip,Trans(mat));
+      Cast(bfel).CalcMappedShape (mip,Trans(mat));
     }
 
     template <typename FEL,typename SIP,typename MAT>
@@ -300,10 +300,40 @@ namespace ngcomp
       auto & fel = Cast(bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape_Matrix(sip,shape);
+      fel.CalcMappedShape(sip,shape);
       mat = Trans(shape);
 
     }
+
+    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      cout << "B" << endl;
+            
+      Cast(fel).CalcMappedShape (mir, mat); 
+      cout << "Bend" << endl;     
+    }
+
+    using DiffOp<DiffOpIdBoundaryHCurlCurl<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      cout << "C" << endl;
+
+      Cast(bfel).Evaluate (mir, x, y);
+      cout << "Cend" << endl;
+    }
+
+    using DiffOp<DiffOpIdBoundaryHCurlCurl<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      cout << "D" << endl;
+
+      Cast(bfel).AddTrans (mir, y, x);
+      cout << "Dend" << endl;
+      }*/
   };
 
 
@@ -352,10 +382,10 @@ namespace ngcomp
         iprr(j) += 2*eps;
         MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
 
-        fel_u.CalcMappedShape_Matrix (sipl, shape_ul);
-        fel_u.CalcMappedShape_Matrix (sipr, shape_ur);
-        fel_u.CalcMappedShape_Matrix (sipll, shape_ull);
-        fel_u.CalcMappedShape_Matrix (siprr, shape_urr);
+        fel_u.CalcMappedShape (sipl, shape_ul);
+        fel_u.CalcMappedShape (sipr, shape_ur);
+        fel_u.CalcMappedShape (sipll, shape_ull);
+        fel_u.CalcMappedShape (siprr, shape_urr);
 
         dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
         
@@ -448,19 +478,19 @@ namespace ngcomp
 
               SIMD_IntegrationRule ir1(1, &ipts[2]);
               SIMD_MappedIntegrationRule<D,D> mirl1(ir1, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl1, shape_u_tmp);
+              fel.CalcMappedShape (mirl1, shape_u_tmp);
               dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
               SIMD_IntegrationRule ir2(1, &ipts[3]);
               SIMD_MappedIntegrationRule<D,D> mirl2(ir2, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl2, shape_u_tmp);
+              fel.CalcMappedShape (mirl2, shape_u_tmp);
               dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
               SIMD_IntegrationRule ir3(1, &ipts[0]);
               SIMD_MappedIntegrationRule<D,D> mirl3(ir3, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl3, shape_u_tmp);
+              fel.CalcMappedShape (mirl3, shape_u_tmp);
               dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
               SIMD_IntegrationRule ir4(1, &ipts[1]);
               SIMD_MappedIntegrationRule<D,D> mirl4(ir4, eltrans, lh);
-              fel.CalcMappedShape_Matrix (mirl4, shape_u_tmp);
+              fel.CalcMappedShape (mirl4, shape_u_tmp);
               dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
               
               for (size_t l = 0; l < D*D; l++)
@@ -526,7 +556,7 @@ namespace ngcomp
                     irl[k](j) -= eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-                fel_u.Evaluate_Matrix(mirl, x, hxl);
+                fel_u.Evaluate(mirl, x, hxl);
               }
               {
                 HeapReset hr(lh);
@@ -537,7 +567,7 @@ namespace ngcomp
                     irr[k](j) += eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-                fel_u.Evaluate_Matrix (mirr, x, hxr);
+                fel_u.Evaluate (mirr, x, hxr);
               }
               {
                 HeapReset hr(lh);
@@ -548,7 +578,7 @@ namespace ngcomp
                     irll[k](j) -= 2*eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirll(irll, trafo, lh);
-                fel_u.Evaluate_Matrix (mirll, x, hxll);
+                fel_u.Evaluate (mirll, x, hxll);
               }
               {
                 HeapReset hr(lh);
@@ -559,7 +589,7 @@ namespace ngcomp
                     irrr[k](j) += 2*eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirrr(irrr, trafo, lh);
-                fel_u.Evaluate_Matrix (mirrr, x, hxrr);
+                fel_u.Evaluate (mirrr, x, hxrr);
               }
               // hx = 1.0/(2*eps()) * (hxr-hxl);
               // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
@@ -626,7 +656,7 @@ namespace ngcomp
                     irl[k](j) -= eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-                fel_u.AddTrans_Matrix (mirl, hx1, y);
+                fel_u.AddTrans (mirl, hx1, y);
                 irl.NothingToDelete();
               }
               {
@@ -639,7 +669,7 @@ namespace ngcomp
                     irr[k](j) += eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-                fel_u.AddTrans_Matrix (mirr, hx1, y);
+                fel_u.AddTrans (mirr, hx1, y);
               }
               {
                 HeapReset hr(lh);
@@ -650,7 +680,7 @@ namespace ngcomp
                     irl[k](j) -= 2*eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-                fel_u.AddTrans_Matrix (mirl, hx2, y);
+                fel_u.AddTrans (mirl, hx2, y);
               }
               {
                 HeapReset hr(lh);
@@ -662,7 +692,7 @@ namespace ngcomp
                     irr[k](j) += 2*eps();
                   }
                 SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-                fel_u.AddTrans_Matrix (mirr, hx2, y);
+                fel_u.AddTrans (mirr, hx2, y);
               }
             }
         }
@@ -784,7 +814,7 @@ namespace ngcomp
       typedef typename TVX::TSCAL TSCAL;
       int nd_u = bfel.GetNDof();
       FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
-      bfel.CalcMappedShape_Matrix (mip, bmat);
+      bfel.CalcMappedShape (mip, bmat);
       
       Vec<D*D,TSCAL> hv = Trans(bmat) * x;
       Mat<D,D,TSCAL> defmat = hv;
@@ -838,14 +868,14 @@ namespace ngcomp
 
     if(ma->GetDimension() == 2)
     {
-      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<1>>>();
+      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<2>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<2>>>();
       integrator[VOL] = make_shared<HCurlCurlMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<2>>>();
     }
     else
     {
-      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<2>>>();
+      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<3>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<3>>>();
       integrator[VOL] = make_shared<HCurlCurlMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<3>>>();

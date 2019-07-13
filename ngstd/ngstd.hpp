@@ -133,14 +133,10 @@ namespace ngstd { using namespace ngcore; }
 #include "ngs_utils.hpp"
 #include "ngsstream.hpp"  
 #include "templates.hpp"
-#include "localheap.hpp"
 
 #include "simd.hpp"
 #include "simd_complex.hpp"
-#include "tuple.hpp"
 
-#include "array.hpp"
-#include "taskmanager.hpp"
 #include "xbool.hpp"
 
 #include "table.hpp"

@@ -42,21 +42,6 @@ INLINE T max3 (T a, T b, T c)
 }
 
 
-/// swap 2 elements. 
-template <class T>
-INLINE void Swap (T & a, T & b)
-{
-  /*
-  T temp = a;
-  a = b;
-  b = temp;
-  */
-  T temp = move(a);
-  a = move(b);
-  b = move(temp);
-}
-
-
 /// sign of value (+1, 0, -1)
 template <class T>
 INLINE int sgn (T a)
