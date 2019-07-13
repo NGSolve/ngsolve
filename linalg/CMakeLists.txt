@@ -17,7 +17,7 @@ target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 #    target_include_directories(ngla PUBLIC $<TARGET_PROPERTY:${UMFPACK_LIBRARIES},INTERFACE_INCLUDE_DIRECTORIES>)
 #endif()
 
-target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE ${NETGEN_PYTHON_LIBRARIES}
+target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE netgen_python
 ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
 target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 install( TARGETS ngla ${ngs_install_dir} )
@@ -38,7 +38,8 @@ endif(USE_CUDA)
 install( FILES
         basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp 
         chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
-        pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp sparsematrix_spec.hpp
+        pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
+        sparsematrix_spec.hpp sparsematrix_impl.hpp sparsematrix_dyn.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp     
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp cuda_linalg.hpp

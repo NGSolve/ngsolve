@@ -84,7 +84,7 @@ namespace ngstd
 
   
 
-
+  /*
   template <typename T>
   class AlignedAlloc
   {
@@ -120,15 +120,14 @@ namespace ngstd
     void operator delete[] (void * p) { aligned_free(p); }
   };
 
-  /*
+
 #else
-  
+  */  
   // it's only a dummy without AVX
   template <typename T>
   class AlignedAlloc { ; };
 
-#endif
-  */
+  // #endif
 
   
 #ifdef __AVX__
@@ -242,7 +241,7 @@ namespace ngstd
     
   public:
     static constexpr int Size() { return 1; }
-    SIMD () = default;
+    SIMD () {}
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
     SIMD (double val) { data = val; }
@@ -281,7 +280,7 @@ namespace ngstd
     
   public:
     static constexpr int Size() { return 2; }
-    SIMD () = default;
+    SIMD () {}
     SIMD (const SIMD &) = default;
     SIMD (double v0, double v1) { data = _mm_set_pd(v1,v0); }
     
@@ -354,7 +353,7 @@ namespace ngstd
     
   public:
     static constexpr int Size() { return 4; }
-    SIMD () = default;
+    SIMD () {}
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
 
@@ -403,7 +402,7 @@ namespace ngstd
     
   public:
     static constexpr int Size() { return 4; }
-    SIMD () = default;
+    SIMD () {}
     SIMD (const SIMD &) = default;
     SIMD (SIMD<double,2> lo, SIMD<double,2> hi) : data{lo,hi} { ; }
     SIMD (double v0, double v1, double v2, double v3)
@@ -474,7 +473,7 @@ namespace ngstd
     __m512d data;
   public:
     static constexpr int Size() { return 8; }
-    SIMD () = default;
+    SIMD () {}
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
 

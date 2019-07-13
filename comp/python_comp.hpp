@@ -1,3 +1,5 @@
+#ifndef NGSOLVE_PYTHON_COMP_HPP
+#define NGSOLVE_PYTHON_COMP_HPP
 
 #include <python_ngstd.hpp>
 
@@ -64,3 +66,4 @@ namespace ngcomp
     return pyspace;
   }
 }
+#endif // NGSOLVE_PYTHON_COMP_HPP

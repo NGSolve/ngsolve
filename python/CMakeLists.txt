@@ -6,4 +6,18 @@ if(NETGEN_USE_PYTHON)
             DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve
             COMPONENT ngsolve
             )
+
+# build stub files for pybind11 packages
+if(BUILD_STUB_FILES)
+find_program(PYBIND11_STUBS NAMES pybind11-stubgen)
+if(PYBIND11_STUBS)
+  message("-- Found pybind11-stubgen: ${PYBIND11_STUBS}")
+  install(CODE "execute_process(COMMAND ${PYBIND11_STUBS} --no-setup-py ngsolve)")
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../stubs/ngsolve-stubs/ DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/)
+else(PYBIND11_STUBS)
+  message(WARNING "pybind11-stubgen not found, if you want to create stub files
+for better autocompletion support install it with pip.")
+endif(PYBIND11_STUBS)
+endif(BUILD_STUB_FILES)
+
 endif(NETGEN_USE_PYTHON)
