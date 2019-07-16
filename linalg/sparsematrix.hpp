@@ -106,6 +106,8 @@ namespace ngla
     MatrixGraph (int as, int max_elsperrow);    
     /// shadow matrix graph
     MatrixGraph (const MatrixGraph & graph, bool stealgraph);
+    /// move-constuctor
+    MatrixGraph (MatrixGraph && graph);
     /// 
     MatrixGraph (int size, int width,
                  const Table<int> & rowelements, const Table<int> & colelements, bool symmetric);
@@ -188,6 +190,10 @@ namespace ngla
       : BaseMatrix(amat), MatrixGraph (amat, 0)
     { ; }   
 
+    BaseSparseMatrix (BaseSparseMatrix && amat)
+      : BaseMatrix(amat), MatrixGraph (move(amat))
+    { ; }
+
     virtual ~BaseSparseMatrix ();
 
     BaseSparseMatrix & operator= (double s)
@@ -265,6 +271,7 @@ namespace ngla
     TM nul;
 
   public:
+    typedef TM TENTRY;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     SparseMatrixTM (int as, int max_elsperrow)
@@ -301,6 +308,12 @@ namespace ngla
       data(nze), nul(TSCAL(0))
     { 
       AsVector() = amat.AsVector(); 
+    }
+
+    SparseMatrixTM (SparseMatrixTM && amat)
+      : BaseSparseMatrix (move(amat)), nul(TSCAL(0))
+    {
+      data.Swap(amat.data);
     }
 
     static shared_ptr<SparseMatrixTM> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
@@ -409,6 +422,9 @@ namespace ngla
 
     SparseMatrix (const SparseMatrixTM<TM> & amat)
       : SparseMatrixTM<TM> (amat) { ; }
+
+    SparseMatrix (SparseMatrixTM<TM> && amat)
+      : SparseMatrixTM<TM> (move(amat)) { ; }
 
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
