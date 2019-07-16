@@ -6,7 +6,10 @@ enable_language(Fortran)
 find_package(MPI REQUIRED)
 
 if(NOT PARMETIS_DIR)
-  include(${CMAKE_CURRENT_LIST_DIR}/parmetis.cmake)
+  find_package(PARMETIS REQUIRED)
+  if (NOT PARMETIS_DIR)
+    message(FATAL_ERROR "Do not have a PARMETIS_DIR for MUMPS!")
+  endif(NOT PARMETIS_DIR)
 endif(NOT PARMETIS_DIR)
 
 set(MUMPS_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_mumps)
