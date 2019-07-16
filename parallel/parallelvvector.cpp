@@ -112,28 +112,28 @@ namespace ngla
     if (status != DISTRIBUTED) return;
     
     int ntasks = paralleldofs->GetNTasks();
-    Array<int> exprocs;
-    for (int i = 0; i < ntasks; i++)
-      if (paralleldofs -> GetExchangeDofs (i).Size())
-	exprocs.Append(i);
+    auto exprocs = paralleldofs->GetDistantProcs();
     
     int nexprocs = exprocs.Size();
     
     ParallelBaseVector * constvec = const_cast<ParallelBaseVector * > (this);
     
-    Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
-
     for (int idest = 0; idest < nexprocs; idest ++ ) 
-      constvec->ISend (exprocs[idest], sendrequest[idest] );
+      constvec->ISend (exprocs[idest], sreqs[idest] );
     for (int isender=0; isender < nexprocs; isender++)
-      constvec -> IRecvVec (exprocs[isender], recvrequest[isender] );
+      constvec -> IRecvVec (exprocs[isender], rreqs[isender] );
     
-    MyMPI_WaitAll (sendrequest);
+    // if (rreqs.Size()) { // apparently Startall with 0 requests fails b/c invalid request ??
+    //   MPI_Startall(rreqs.Size(), &rreqs[0]);
+    //   MPI_Startall(sreqs.Size(), &sreqs[0]);
+    // }
+
+    MyMPI_WaitAll (sreqs);
     
     // cumulate
     for (int cntexproc=0; cntexproc < nexprocs; cntexproc++)
       {
-	int isender = MyMPI_WaitAny (recvrequest);
+	int isender = MyMPI_WaitAny (rreqs);
 	constvec->AddRecvValues(exprocs[isender]);
       } 
 
@@ -271,6 +271,18 @@ namespace ngla
       exdofs[i] = this->es * this->paralleldofs->GetExchangeDofs(i).Size();
     delete this->recvvalues;
     this -> recvvalues = new Table<TSCAL> (exdofs);
+
+    // Initiate persistent send/recv requests for vector cumulate operation
+    auto dps = paralleldofs->GetDistantProcs();
+    this->sreqs.SetSize(dps.Size());
+    this->rreqs.SetSize(dps.Size());
+    // for (auto k : Range(dps)) {
+    //   auto p = dps[k];
+    //   MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(p);
+    //   MPI_Send_init( this->Memory(), 1, mpi_t, p, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &sreqs[k]);
+    //   MPI_Recv_init( &( (*recvvalues)[p][0]), (*recvvalues)[p].Size(), MyGetMPIType<TSCAL> (),
+    // 		     p, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &rreqs[k]);
+    // }
   }
 
 
@@ -280,11 +292,24 @@ namespace ngla
     if (status != CUMULATED) return;
     this->SetStatus(DISTRIBUTED);
 
-    for ( int dof = 0; dof < paralleldofs->GetNDofLocal(); dof ++ )
-      if ( ! paralleldofs->IsMasterDof ( dof ) )
-	(*this)(dof) = 0;
-  }
+    auto rank = paralleldofs->GetCommunicator().Rank();
 
+    if (paralleldofs->GetEntrySize() == 1) {
+      // this is a bit faster for BS = 1
+      auto fv = this->template FV<double>();
+      for (auto p : paralleldofs->GetDistantProcs())
+	if (p < rank)
+	  for (auto dof : paralleldofs->GetExchangeDofs(p))
+	    fv[dof] = 0;
+    }
+    else {
+      for (auto p : paralleldofs->GetDistantProcs())
+	if (p < rank)
+	  for (auto dof : paralleldofs->GetExchangeDofs(p))
+	    (*this)(dof) = 0;
+    }
+
+  }
 
 
   template < class SCAL >
