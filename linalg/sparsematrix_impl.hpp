@@ -200,8 +200,8 @@ namespace ngla
     static Timer timer ("SparseMatrix::MultTransAdd");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX>(); 
-    FlatVector<TVX> fy = y.FV<TVY>(); 
+    FlatVector<TVY> fx = x.FV<TVY>();
+    FlatVector<TVX> fy = y.FV<TVX>();
     
     for (int i = 0; i < this->Height(); i++)
       AddRowTransToVector (i, s*fx(i), fy);
@@ -233,8 +233,8 @@ namespace ngla
     static Timer timer("SparseMatrix::MultTransAdd Complex");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX>(); //  (x.Size(), x.Memory());
-    FlatVector<TVY> fy = y.FV<TVY>(); // (y.Size(), y.Memory());
+    FlatVector<TVY> fx = x.FV<TVY>(); //  (x.Size(), x.Memory());
+    FlatVector<TVX> fy = y.FV<TVX>(); // (y.Size(), y.Memory());
     
     for (int i = 0; i < this->Height(); i++)
       AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
@@ -247,8 +247,8 @@ namespace ngla
     static Timer timer("SparseMatrix::MultTransAdd Complex");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX>(); //  (x.Size(), x.Memory());
-    FlatVector<TVY> fy = y.FV<TVY>(); // (y.Size(), y.Memory());
+    FlatVector<TVY> fx = x.FV<TVY>(); //  (x.Size(), x.Memory());
+    FlatVector<TVX> fy = y.FV<TVX>(); // (y.Size(), y.Memory());
     
     for (int i = 0; i < this->Height(); i++)
       AddRowConjTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
