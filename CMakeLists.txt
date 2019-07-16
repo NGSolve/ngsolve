@@ -246,6 +246,14 @@ if (USE_CUDA)
 endif (USE_CUDA)
 
 #######################################################################
+set(MAX_SYS_DIM "3" CACHE STRING "Maximum compile-time size of SparseMatrix entries.")
+if (NOT MAX_SYS_DIM)
+   set(MAX_SYS_DIM "3")
+endif (NOT MAX_SYS_DIM)
+message(STATUS "MAX_SYS_DIM = ${MAX_SYS_DIM}")
+list (APPEND NGSOLVE_COMPILE_OPTIONS -DMAX_SYS_DIM=${MAX_SYS_DIM})
+
+#######################################################################
 if (USE_MKL)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
