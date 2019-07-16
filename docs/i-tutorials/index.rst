@@ -58,6 +58,7 @@ main folder containing the i-tutorials, and start
    unit-1.5-subdomains/subdomains.ipynb
    unit-1.6-adaptivity/adaptivity.ipynb
    unit-1.7-helmholtz/helmholtz.ipynb
+   unit-1.7-helmholtz/pml.ipynb
    unit-1.8-meshtopology/meshtopology.ipynb
    
 2. Advanced Topics
@@ -72,11 +73,14 @@ main folder containing the i-tutorials, and start
    unit-2.2-eigenvalues/pinvit.ipynb
    unit-2.3-hcurlhdiv/hcurlhdiv.ipynb
    unit-2.4-Maxwell/Maxwell.ipynb
+   unit-2.4-Maxwell/Maxwellevp.ipynb
    unit-2.5-mixed/mixed.ipynb
    unit-2.6-stokes/stokes.ipynb
    unit-2.7-hybrid/hybrid.ipynb
    unit-2.8-DG/DG.ipynb
    unit-2.9-fourthorder/fourthorder.ipynb
+   unit-2.10-dualbasis/dualbasis.ipynb
+   unit-2.11-matrixfree/matrixfree.ipynb
 
 3. Time-dependent and non-linear problems
 ==========================================
@@ -87,6 +91,7 @@ main folder containing the i-tutorials, and start
    unit-3.1-parabolic/parabolic.ipynb
    unit-3.2-navierstokes/navierstokes.ipynb
    unit-3.3-scalardg/scalardg.ipynb
+   unit-3.3.1-wavedg/wavedg.ipynb
    unit-3.4-simplehyp/shallow2D.ipynb
    unit-3.5-surfacehdg/surfacehdg.ipynb
    unit-3.6-opsplit/opsplit.ipynb

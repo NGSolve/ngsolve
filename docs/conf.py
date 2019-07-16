@@ -51,7 +51,7 @@ nbsphinx_allow_errors = True
 
 # This is processed by Jinja2 and inserted before each notebook
 nbsphinx_prolog = r"""
-{% set docname = env.doc2path(env.docname, base='').replace('i-tutorials', 'jupyter-files') %}
+{% set docname = env.doc2path(env.docname, base='').replace('i-tutorials/', '') %}
 
 .. only:: html
 
@@ -62,7 +62,7 @@ nbsphinx_prolog = r"""
 
         This page was generated from `{{ docname }}`__.
 
-    __ https://ngsolve.org/docu/{{docname}}
+    __ ../../jupyter-files/{{docname}}
 """
 
 # END nbsphinx stuff
