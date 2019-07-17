@@ -20,6 +20,14 @@ namespace ngbla
     return zgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
   }
 
+  int dger(integer *m, integer *n, doublereal *alpha,
+                   doublereal *x, integer *incx, doublereal *y, integer *incy,
+                   doublereal *a, integer *lda)
+  {
+    return dger_ (m, n, alpha, y, incx, x, incy, a, lda);
+  }
+
+
 #include "matkernel.hpp"
 
 
