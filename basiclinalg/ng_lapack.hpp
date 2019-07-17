@@ -54,6 +54,10 @@ namespace ngbla
 		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
 		    c__, integer *ldc);
 
+  NGS_DLL_HEADER int dger(integer *m, integer *n, doublereal *alpha,
+                   doublereal *x, integer *incx, doublereal *y, integer *incy,
+                   doublereal *a, integer *lda);
+
   inline int gemm(char *transa, char *transb, integer *m, integer *
       n, integer *k, doublereal *alpha, doublereal *a, integer *lda,
       doublereal *b, integer *ldb, doublereal *beta, doublereal *c__,
@@ -139,11 +143,6 @@ namespace ngbla
   }
 
 
-  /*
-  extern "C"
-  void dger_ (int & m, int & n, double & alpha, double & x, int & incx, double & y, int & incy, double & a, int & lda);
-  */
-
   inline void LapackAddxyt (ngbla::FlatMatrix<double> a,
                             double fac,
                             ngbla::FlatVector<double> x,
@@ -156,7 +155,7 @@ namespace ngbla
     integer incx = 1;
     integer incy = 1;
 
-    dger_ (&m, &n, &alpha, &y(0), &incx, &x(0), &incy, &a(0,0), &lda);
+    dger (&m, &n, &alpha, &y(0), &incx, &x(0), &incy, &a(0,0), &lda);
   }
 
 
