@@ -57,6 +57,11 @@ namespace ngbla
   NGS_DLL_HEADER int dger(integer *m, integer *n, doublereal *alpha,
                    doublereal *x, integer *incx, doublereal *y, integer *incy,
                    doublereal *a, integer *lda);
+  
+  NGS_DLL_HEADER int dgetrf(integer* n, integer* m, double* a, integer* lda, integer* ipiv, integer* info);
+  NGS_DLL_HEADER int dgetri(integer* n, double* a, integer* lda, integer* ipiv,
+                            double* hwork, integer* lwork, integer* info);
+
 
   inline int gemm(char *transa, char *transb, integer *m, integer *
       n, integer *k, doublereal *alpha, doublereal *a, integer *lda,
@@ -767,15 +772,15 @@ namespace ngbla
     ArrayMem<integer,100> ipiv(n);
     integer info;
     
-    dgetrf_ (&n, &m, &a(0,0), &lda, &ipiv[0], &info);
+    dgetrf(&n, &m, &a(0,0), &lda, &ipiv[0], &info);
 
     double hwork;
     integer lwork = -1;
-    dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &hwork, &lwork, &info);
+    dgetri(&n, &a(0,0), &lda, &ipiv[0], &hwork, &lwork, &info);
     lwork = integer(hwork);
 
     ArrayMem<double,1000> work(lwork);
-    dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
+    dgetri(&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
   }
 
 
