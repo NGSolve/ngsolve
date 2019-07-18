@@ -419,8 +419,13 @@ namespace ngla
     
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
-    { 
-      return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> (*this, inner);
+    {
+      if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
+      else if constexpr(mat_traits<TM>::HEIGHT > MAX_SYS_DIM) {
+	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
+	  return nullptr;
+	}
+      else return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> (*this, inner);
     }
     
     virtual shared_ptr<BaseBlockJacobiPrecond>
@@ -429,7 +434,12 @@ namespace ngla
                                 bool parallel = 1,
                                 shared_ptr<BitArray> freedofs = NULL) const override
     { 
-      return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks );
+      if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
+      else if constexpr(mat_traits<TM>::HEIGHT > MAX_SYS_DIM) {
+	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
+	  return nullptr;
+	}
+      else return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks );
     }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
