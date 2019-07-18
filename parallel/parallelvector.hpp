@@ -24,6 +24,9 @@ namespace ngla
     shared_ptr<ParallelDofs> paralleldofs;    
     shared_ptr<BaseVector> local_vec;
     
+    Array<MPI_Request> sreqs;
+    Array<MPI_Request> rreqs;
+
   public:
     ParallelBaseVector ()
     { ; }
@@ -167,6 +170,9 @@ namespace ngla
     typedef SCAL TSCAL;
     using ParallelBaseVector :: status;
     using ParallelBaseVector :: paralleldofs;
+
+    using ParallelBaseVector :: sreqs;
+    using ParallelBaseVector :: rreqs;
 
     Table<SCAL> * recvvalues;
 
