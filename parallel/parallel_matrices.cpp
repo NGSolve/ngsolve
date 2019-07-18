@@ -540,12 +540,21 @@ namespace ngla
   shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (shared_ptr<BitArray> subset) const
   {
     shared_ptr<BaseMatrix> inv;
-    inv = InverseMatrixTM<double> (subset);   if (inv) return inv;
-    inv = InverseMatrixTM<Complex> (subset);  if (inv) return inv;
-    inv = InverseMatrixTM<Mat<2> > (subset);   if (inv) return inv;
-    inv = InverseMatrixTM<Mat<3> > (subset);   if (inv) return inv;
-    inv = InverseMatrixTM<Mat<2,2,Complex> > (subset);   if (inv) return inv;
-    inv = InverseMatrixTM<Mat<3,3,Complex> > (subset);   if (inv) return inv;
+
+    Iterate<MAX_SYS_DIM> ( [&](auto i) -> void {
+	constexpr int N = 1+i.value;
+	if (inv) return;
+	if constexpr(N == 1) {
+	    inv = InverseMatrixTM<double> (subset); if (inv) return;
+	    inv = InverseMatrixTM<Complex> (subset); if (inv) return;
+	  }
+	else {
+	  inv = InverseMatrixTM<Mat<N> > (subset); if (inv) return;
+	  inv = InverseMatrixTM<Mat<N,N,Complex> > (subset); if (inv) return;
+	}
+      });
+
+    if (inv) return inv;
 
     throw Exception ("ParallelMatrix::Inverse(BitArray) not available, typeid(mat) = " 
 		     + ToString (typeid(mat).name()));
