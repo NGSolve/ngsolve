@@ -35,6 +35,11 @@ is a good idea to install them as well:
 -  pip3 install scipy
 -  pip3 install matplotlib
 
+i-tutorials on Youtube
+----------------------
+
+We have recorded the tutorial sessions from the 3rd NGSolve Usermeeting in which most of these tutorial files were presented. You can watch the presentations on the `NGSolve Youtube channel <https://www.youtube.com/playlist?list=PL_5FauasEdy01ftt2BH9XCsDjgW_moaBi>`__.
+
 Starting
 ~~~~~~~~
 
