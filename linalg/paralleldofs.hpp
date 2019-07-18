@@ -92,10 +92,8 @@ namespace ngla
     
     int GetMasterProc (int dof) const
     {
-      int m = comm.Rank();
-      for (int p : GetDistantProcs(dof))
-	m = min2(p, m);
-      return m;
+      auto dps = GetDistantProcs(dof);
+      return (dps.Size() > 0) ? min2(comm.Rank(), dps[0]) : comm.Rank();
     }
 
     void EnumerateGlobally (shared_ptr<BitArray> freedofs, Array<int> & globnum, int & num_glob_dofs) const;
