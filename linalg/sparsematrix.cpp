@@ -128,6 +128,19 @@ namespace ngla
     CalcBalancing ();
   }
 
+  MatrixGraph :: MatrixGraph (MatrixGraph && graph)
+  {
+    if (!graph.owner) {
+      throw Exception("Matrix-Graph Move-constructor with graph that is now owner ... is that valid?");
+    }
+    size = move(graph.size);
+    width = move(graph.width);
+    nze = move(graph.nze);
+    owner = true;
+    firsti.Swap (graph.firsti);
+    colnr.Swap (graph.colnr);
+    CalcBalancing ();
+  }
 
 
   /*
