@@ -49,6 +49,7 @@ set(NGSOLVE_USE_PYTHON @NETGEN_USE_PYTHON@)
 set(NGSOLVE_USE_UMFPACK     @USE_UMFPACK@)
 set(NGSOLVE_USE_VT          @USE_VT@)
 set(NGSOLVE_USE_VTUNE       @USE_VTUNE@)
+set(NGSOLVE_MAX_SYS_DIM       @MAX_SYS_DIM@)
 
 set(NGSOLVE_COMPILE_FLAGS "@ngscxx_define_flags@" CACHE STRING "Preprocessor definitions of ngscxx")
 set(NGSOLVE_LINK_FLAGS "@ngsld_flags@" CACHE STRING "Link flags set in ngsld")
