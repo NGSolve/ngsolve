@@ -27,6 +27,16 @@ namespace ngbla
     return dger_ (m, n, alpha, y, incx, x, incy, a, lda);
   }
 
+  int dgetri(integer* n, double* a, integer* lda, integer* ipiv,
+             double* hwork, integer* lwork, integer* info)
+  {
+    return dgetri_(n,a,lda,ipiv,hwork,lwork,info);
+  }
+
+  int dgetrf(integer* n, integer* m, double* a, integer* lda, integer* ipiv, integer* info)
+  {
+    return dgetrf_(n,m,a,lda,ipiv,info);
+  }
 
 #include "matkernel.hpp"
 
