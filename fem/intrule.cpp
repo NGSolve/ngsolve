@@ -3795,15 +3795,13 @@ namespace ngfem
         {
           Vec<2> p1 = points (edges[fnr][0]);
           Vec<2> p2 = points (edges[fnr][1]);
-          Vec<2> deltainv;
-          deltainv(0) = p1(0)-p2(0);
-          deltainv(1) = p1(1)-p2(1);
+          double deltainv = p1(0)-p2(0); // +1 or -1, do not need to invert!
           for (int i = 0; i < hir.Size(); i++)
             {
               auto ip = hir[i];
               auto & ipinv = hirinv[i];
-              for (int k = 0; k < 2; k++)
-                ipinv(k) = deltainv(k)*(ip(k) - p2(k));
+              ipinv(0) = deltainv*(ip(0) - p2(0));
+              ipinv(1) = 0.0;
               ipinv(2) = 0.0;
             }
           break;
@@ -3907,15 +3905,13 @@ namespace ngfem
         {
           Vec<2> p1 = points (edges[fnr][0]);
           Vec<2> p2 = points (edges[fnr][1]);
-          Vec<2> deltainv;
-          deltainv(0) = p1(0)-p2(0);
-          deltainv(1) = p1(1)-p2(1);
+          double deltainv = p1(0)-p2(0); // +1 or -1, do not need to invert!
           for (int i = 0; i < hir.Size(); i++)
             {
               auto ip = hir[i];
               auto & ipinv = hirinv[i];
-              for (int k = 0; k < 2; k++)
-                ipinv(k) = deltainv(k)*(ip(k) - p2(k));
+              ipinv(0) = deltainv*(ip(0) - p2(0));
+              ipinv(1) = 0.0;
               ipinv(2) = 0.0;
             }
           break;
