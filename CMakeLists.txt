@@ -33,6 +33,8 @@ endif(NOT WIN32 AND NOT INTEL_MIC)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 include (${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake)
 
 if(APPLE)
