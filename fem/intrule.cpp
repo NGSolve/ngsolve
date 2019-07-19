@@ -3757,7 +3757,7 @@ namespace ngfem
 	  }
 
       default:
-        throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
+        throw Exception ("undefined facet type in SIMD_Facet2SurfaceElementTrafo()\n");
       } 
     
     for (int i = 0; i < irfacet.Size(); i++)
@@ -3790,22 +3790,22 @@ namespace ngfem
           irvol[0](2) = 0.0;
           break;
         }
+        */
       case ET_SEGM:
         {
           Vec<2> p1 = points (edges[fnr][0]);
           Vec<2> p2 = points (edges[fnr][1]);
-          Vec<2> delta = p1-p2;
-          for (int i = 0; i < hirfacet.Size(); i++)
+          double deltainv = p1(0)-p2(0); // +1 or -1, do not need to invert!
+          for (int i = 0; i < hir.Size(); i++)
             {
-              auto ip = hirfacet[i];
-              auto & ipvol = hirvol[i];              
-              for (int k = 0; k < 2; k++)
-                ipvol(k) = p2(k) + delta(k) * ip(0);
-              ipvol(2) = 0.0;
+              auto ip = hir[i];
+              auto & ipinv = hirinv[i];
+              ipinv(0) = deltainv*(ip(0) - p2(0));
+              ipinv(1) = 0.0;
+              ipinv(2) = 0.0;
             }
           break;
         }
-        */
       case ET_TRIG:
         {
           Vec<3> p0 = points(faces[fnr][0]);
@@ -3865,7 +3865,7 @@ namespace ngfem
 	}
         
       default:
-        throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
+        throw Exception ("undefined facet type in SIMD_Facet2SurfaceElementTrafo()\n");
       } 
     
     for (int i = 0; i < ir.Size(); i++)
@@ -3900,22 +3900,22 @@ namespace ngfem
           irvol[0](2) = 0.0;
           break;
         }
+        */
       case ET_SEGM:
         {
           Vec<2> p1 = points (edges[fnr][0]);
           Vec<2> p2 = points (edges[fnr][1]);
-          Vec<2> delta = p1-p2;
-          for (int i = 0; i < hirfacet.Size(); i++)
+          double deltainv = p1(0)-p2(0); // +1 or -1, do not need to invert!
+          for (int i = 0; i < hir.Size(); i++)
             {
-              auto ip = hirfacet[i];
-              auto & ipvol = hirvol[i];              
-              for (int k = 0; k < 2; k++)
-                ipvol(k) = p2(k) + delta(k) * ip(0);
-              ipvol(2) = 0.0;
+              auto ip = hir[i];
+              auto & ipinv = hirinv[i];
+              ipinv(0) = deltainv*(ip(0) - p2(0));
+              ipinv(1) = 0.0;
+              ipinv(2) = 0.0;
             }
           break;
         }
-        */
       case ET_TRIG:
         {
           Vec<3> p0 = points(faces[fnr][0]);
@@ -3973,7 +3973,7 @@ namespace ngfem
 	  break;
 	}
       default:
-        throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
+        throw Exception ("undefined facet type in SIMD_Facet2SurfaceElementTrafo()\n");
       } 
     
     for (int i = 0; i < ir.Size(); i++)
