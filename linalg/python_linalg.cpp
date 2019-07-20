@@ -892,6 +892,18 @@ inverse : string
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
                     if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<3,3>>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
+#if MAX_SYS_DIM >= 4
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<4,4>>*> (&mat); ptr)
+                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
+#endif
+#if MAX_SYS_DIM >= 5                    
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<5,5>>*> (&mat); ptr)
+                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
+#endif
+#if MAX_SYS_DIM >= 6                    
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<6,6>>*> (&mat); ptr)
+                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
+#endif                    
                     return nullptr;
                   })
          )
