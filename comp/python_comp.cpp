@@ -49,8 +49,12 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                bool testfunction,
                                const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
+  if (auto periodicspace = dynamic_pointer_cast<PeriodicFESpace>(fes))
+    return MakeProxyFunction2 (periodicspace->GetBaseSpace(), testfunction, addblock);
   if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
     return MakeProxyFunction2 (compressedspace->GetBaseSpace(), testfunction, addblock);
+  if (auto reorderedspace = dynamic_pointer_cast<ReorderedFESpace>(fes))
+    return MakeProxyFunction2 (reorderedspace->GetBaseSpace(), testfunction, addblock);
   
   auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
   if (compspace && !fes->GetEvaluator())
@@ -1161,6 +1165,59 @@ used_idnrs : list of int = None
                     dcfes->Update(glh);
                     dcfes->FinalizeUpdate(glh);
                     return dcfes;
+                  }), py::arg("fespace"))
+    /*
+    .def(py::pickle([](const PeriodicFESpace* per_fes)
+                    {
+                      py::list idnrs;
+                      for (auto idnr : *per_fes->GetUsedIdnrs())
+                        idnrs.append(idnr);
+                      auto quasiper_fes = dynamic_cast<const QuasiPeriodicFESpace*>(per_fes);
+                      if(quasiper_fes)
+                        {
+                          py::list fac;
+                          for(auto factor : *quasiper_fes->GetFactors())
+                            fac.append(factor);
+                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
+                        }
+                      return py::make_tuple(per_fes->GetBaseSpace(),idnrs);
+                    },
+                    [] (py::tuple state) -> shared_ptr<PeriodicFESpace>
+                    {
+                      auto idnrs = make_shared<Array<int>>();
+                      for (auto id : state[1].cast<py::list>())
+                        idnrs->Append(id.cast<int>());
+                      if(py::len(state)==3)
+                        {
+                          auto facs = make_shared<Array<Complex>>();
+                          for (auto fac : state[2].cast<py::list>())
+                            facs->Append(fac.cast<Complex>());
+                          auto fes = make_shared<QuasiPeriodicFESpace>
+                            (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
+                          fes->Update(glh);
+                          fes->FinalizeUpdate(glh);
+                          return fes;
+                        }
+                      auto fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
+                                                              Flags(),idnrs);
+                      fes->Update(glh);
+                      fes->FinalizeUpdate(glh);
+                      return fes;
+                    }))
+    */
+    ;
+
+  py::class_<ReorderedFESpace, shared_ptr<ReorderedFESpace>, FESpace>(m, "Reorder",
+	docu_string(R"delimiter(Reordered Finite Element Spaces.
+...
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes)
+                  {
+                    Flags flags = fes->GetFlags();
+                    auto refes = make_shared<ReorderedFESpace>(fes, flags);
+                    refes->Update(glh);
+                    refes->FinalizeUpdate(glh);
+                    return refes;
                   }), py::arg("fespace"))
     /*
     .def(py::pickle([](const PeriodicFESpace* per_fes)

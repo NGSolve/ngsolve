@@ -13,7 +13,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp h1amg.cpp
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
-        periodic.cpp discontinuous.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
+        periodic.cpp discontinuous.cpp reorderedfespace.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
         )
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd)      
@@ -29,7 +29,7 @@ install( FILES
         l2hofespace.hpp hdivdivsurfacespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
         pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
-        discontinuous.hpp hypre_ams_precond.hpp facetsurffespace.hpp compressedfespace.hpp
+        discontinuous.hpp reorderedfespace.hpp hypre_ams_precond.hpp facetsurffespace.hpp compressedfespace.hpp
         python_comp.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

@@ -2269,6 +2269,9 @@ namespace ngla
   template <typename TSCAL>
   void SparseMatrixDynamic<TSCAL> :: Mult (const BaseVector & x, BaseVector & y) const 
   {
+    y = 0.0;
+    MultAdd (1, x, y);
+    /*    
     auto fx = x.FV<TSCAL>();
     auto fy = y.FV<TSCAL>();
     auto matvecfunc = dispatch_addmatvec[bw];
@@ -2292,6 +2295,7 @@ namespace ngla
             pmat += my_bs;
           }
       }
+    */
   }
   
   template <typename TSCAL>

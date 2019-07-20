@@ -74,6 +74,7 @@ namespace ngcomp
 #include "vectorfacetfespace.hpp"
 #include "periodic.hpp"
 #include "discontinuous.hpp"
+#include "reorderedfespace.hpp"
 
 #include "facetsurffespace.hpp"
 
