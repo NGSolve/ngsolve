@@ -216,6 +216,8 @@ max : float
                                        Ng_TclCmd ("set ::selectvisual mesh;\n");
                                      }, py::arg("mesh")
              );
+    // Draw other objects (for example geometries)
+    m.def("Draw",[](py::object obj) { obj.attr("Draw")(); });
 
 
     m.def("SetVisualization",
