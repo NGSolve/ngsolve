@@ -143,7 +143,7 @@ namespace ngmg
   
   AutoVector GSSmoother :: CreateVector(int level) const
   {
-    return biform.GetMatrix(level).CreateVector();
+    return biform.GetMatrix(level).CreateColVector();
   }
 
 
@@ -222,7 +222,7 @@ namespace ngmg
   AutoVector AnisotropicSmoother :: 
   CreateVector(int level) const
   {
-    return biform.GetMatrix(level).CreateVector();
+    return biform.GetMatrix(level).CreateColVector();
   }
 
 
@@ -918,7 +918,7 @@ namespace ngmg
   
   AutoVector BlockSmoother :: CreateVector(int level) const
   {
-    return biform.GetMatrix(level).CreateVector();
+    return biform.GetMatrix(level).CreateColVector();
   }
 
   Array<MemoryUsage> BlockSmoother :: GetMemoryUsage () const

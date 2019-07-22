@@ -1987,7 +1987,7 @@ reallocate : bool
                            
     .def("__call__", [](BF & self, const GridFunction & u, const GridFunction & v)
           {
-            auto au = self.GetMatrix().CreateVector();
+            auto au = self.GetMatrix().CreateColVector();
             au = self.GetMatrix() * u.GetVector();
             return InnerProduct (au, v.GetVector());
           }, py::arg("gfu"), py::arg("gfv"))

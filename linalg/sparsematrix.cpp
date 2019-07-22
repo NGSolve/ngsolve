@@ -4,9 +4,6 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-/* 
-   bilinear-form and linear-form integrators
-*/
 
 #define FILE_SPARSEMATRIX_CPP
 
@@ -2266,73 +2263,4 @@ namespace ngla
 #endif
 #endif
 
-  template <typename TSCAL>
-  void SparseMatrixDynamic<TSCAL> :: Mult (const BaseVector & x, BaseVector & y) const 
-  {
-    y = 0.0;
-    MultAdd (1, x, y);
-    /*    
-    auto fx = x.FV<TSCAL>();
-    auto fy = y.FV<TSCAL>();
-    auto matvecfunc = dispatch_addmatvec[bw];
-    fy = TSCAL(0.0);
-    for (size_t i = 0; i < Height(); i++)
-      {
-        auto rowind = GetRowIndices(i);
-        TSCAL * pmat = &data[bs*firsti[i]];
-        size_t my_bw = bw;
-        size_t my_bh = bh;
-        size_t my_bs = bs;
-
-        FlatVector<TSCAL> yi(my_bh, &fy(i*my_bh));
-        for (auto j : rowind)
-          {
-            FlatVector<TSCAL> xi(my_bw, &fx(j*bw));
-            FlatMatrix<TSCAL> mi(my_bh, my_bw, pmat);
-            // yi += mi * xi;
-            // yi = mi * xi;
-            (*matvecfunc) (1, mi, xi, yi);
-            pmat += my_bs;
-          }
-      }
-    */
-  }
-  
-  template <typename TSCAL>
-  void SparseMatrixDynamic<TSCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const 
-  {
-    // for (size_t i = 0; i < Height(); i++)
-    ParallelForRange
-      (Height(), [&] (IntRange r)
-       {
-         auto fx = x.FV<TSCAL>();
-         auto fy = y.FV<TSCAL>();
-         auto matvecfunc = dispatch_addmatvec[bw];
-
-         size_t my_bw = bw;
-         size_t my_bh = bh;
-         size_t my_bs = bs;
-         double my_s = s;
-
-         TSCAL * pmat = &data[bs*firsti[r.First()]];
-         TSCAL * py = &fy(r.First()*my_bh);
-         for (auto i : r)
-           {
-             auto rowind = GetRowIndices(i);
-             FlatVector<TSCAL> yi(my_bh, py); 
-             for (auto j : rowind)
-               {
-                 FlatVector<TSCAL> xi(my_bw, &fx(j*my_bw));
-                 FlatMatrix<TSCAL> mi(my_bh, my_bw, pmat);
-                 // yi += s * mi * xi;
-                 (*matvecfunc) (my_s, mi, xi, yi);            
-                 pmat += my_bs;
-               }
-             py += my_bh;
-           }
-       });
-  }
-  
-
-  template class SparseMatrixDynamic<double>;
 }

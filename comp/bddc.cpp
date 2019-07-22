@@ -456,7 +456,7 @@ namespace ngcomp
     
     virtual AutoVector CreateVector () const
     {
-      return bfa->GetMatrix().CreateVector();
+      return bfa->GetMatrix().CreateColVector();
     }
 
     virtual int VHeight() const { return bfa->GetMatrix().VHeight(); }

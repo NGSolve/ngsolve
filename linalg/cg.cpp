@@ -73,7 +73,7 @@ namespace ngla
  
   AutoVector KrylovSpaceSolver :: CreateVector () const
   {
-    return a->CreateVector();
+    return a->CreateColVector();
   }
 
 

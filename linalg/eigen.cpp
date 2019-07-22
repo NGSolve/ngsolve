@@ -64,11 +64,11 @@ namespace ngla
   int EigenSystem :: Calc ()
   {
     int retval = 0;
-    
-    auto v = a->CreateVector();
-    auto u = a->CreateVector();
-    auto w = a->CreateVector();
-    auto cv = a->CreateVector();
+
+    auto v = a->CreateColVector();
+    auto u = a->CreateColVector();
+    auto w = a->CreateColVector();
+    auto cv = a->CreateColVector();
 
     int it;
     double gamma, err;

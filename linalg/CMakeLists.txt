@@ -4,7 +4,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         linalg_kernels.cu basematrix.cpp basevector.cpp 
         blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp	     
         jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp	     
-        sparsematrix.cpp special_matrix.cpp superluinverse.cpp		     
+        sparsematrix.cpp sparsematrix_dyn.cpp special_matrix.cpp superluinverse.cpp		     
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp   
         python_linalg.cpp umfpackinverse.cpp
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 

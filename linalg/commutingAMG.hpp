@@ -29,19 +29,27 @@ namespace ngla
     virtual ~CommutingAMG () 
     { ; }
 
-    virtual bool IsComplex() const { return false; }
+    virtual bool IsComplex() const override { return false; }
 
     virtual void ComputeMatrices (const BaseSparseMatrix & mat) = 0;
-    virtual void Mult (const BaseVector & x, BaseVector & y) const = 0;
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override = 0;
 
 
-    virtual int VHeight() const { return pmat->Height(); }
-    virtual int VWidth() const { return pmat->Width(); }
+    virtual int VHeight() const override { return pmat->Height(); }
+    virtual int VWidth() const override { return pmat->Width(); }
 
-    virtual size_t NZE() const = 0;
-    virtual AutoVector CreateVector () const
+    virtual size_t NZE() const override = 0;
+    virtual AutoVector CreateVector () const override
     {
-      return pmat->CreateVector();
+      return pmat->CreateColVector();
+    }
+    virtual AutoVector CreateColVector () const override
+    {
+      return pmat->CreateRowVector();
+    }
+    virtual AutoVector CreateRowVector () const override 
+    {
+      return pmat->CreateColVector();
     }
   };
 

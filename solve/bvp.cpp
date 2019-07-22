@@ -576,7 +576,7 @@ namespace ngsolve
 
     virtual AutoVector CreateVector () const
     {
-      return a1->CreateVector();
+      return a1->CreateColVector();
     }
 
     virtual int VHeight() const { return a1->VHeight(); }
