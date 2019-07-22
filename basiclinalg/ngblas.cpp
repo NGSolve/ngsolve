@@ -242,7 +242,113 @@ namespace ngbla
     };
   
 
-  
+
+
+  // ************************** Mult Add transpose Mat * vec, indirect ***************
+
+
+  template <int SX>
+  void MultAddMatTransVecShortI (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y,
+                                 FlatArray<int> ind)
+  {
+    KernelAddMatTransVecI<SX> (s, ind.Size(), &a(0,0), a.Dist(), &x(0), &y(0), &ind[0]);
+  }
+
+  NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y,
+                                                         FlatArray<int> ind)
+  {
+    constexpr int BS = 24;
+    int i = 0;
+    for (i = 0; i+BS <= y.Size(); i += BS)
+      MultAddMatTransVecIndirect (s, a.Cols(i, i+BS), x, y.Range(i,i+BS), ind);
+    MultAddMatTransVecIndirect (s, a.Cols(i, y.Size()), x, y.Range(i,y.Size()), ind);
+    
+    /*
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = ind.Size();
+    size_t w = y.Size();
+    size_t dist = a.Dist();
+
+    size_t i = 0;
+    for ( ; i+SW <= w; i+= SW)
+      {
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(ind[j])) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(ind[j+1])) * SIMD<double>(pa+dist);
+            s2 += SIMD<double>(x(ind[j+2])) * SIMD<double>(pa+2*dist);
+            s3 += SIMD<double>(x(ind[j+3])) * SIMD<double>(pa+3*dist);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(ind[j])) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(ind[j+1])) * SIMD<double>(pa+dist);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(ind[j])) * SIMD<double>(pa);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum = SIMD<double>(&y(i)) + SIMD<double>(s) * sum;
+        sum.Store(&y(i));
+      }
+    
+    if (i < w)
+      {
+        SIMD<mask64> mask(w % SW);
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(ind[j])) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(ind[j+1])) * SIMD<double>(pa+dist, mask);
+            s2 += SIMD<double>(x(ind[j+2])) * SIMD<double>(pa+2*dist, mask);
+            s3 += SIMD<double>(x(ind[j+3])) * SIMD<double>(pa+3*dist, mask);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(ind[j])) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(ind[j+1])) * SIMD<double>(pa+dist, mask);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(ind[j])) * SIMD<double>(pa, mask);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum = SIMD<double>(&y(i), mask) + SIMD<double>(s) * sum;        
+        sum.Store(&y(i), mask);
+      }
+    */
+  }
+
+  pmultadd_mattransvecind dispatch_addmattransvecI[25] =
+    {
+      &MultAddMatTransVecShortI<0>,
+      &MultAddMatTransVecShortI<1>,
+      &MultAddMatTransVecShortI<2>,
+      &MultAddMatTransVecShortI<3>,
+      &MultAddMatTransVecShortI<4>,
+      &MultAddMatTransVecShortI<5>,
+      &MultAddMatTransVecShortI<6>,
+      &MultAddMatTransVecShortI<7>,
+      &MultAddMatTransVecShortI<8>,
+      &MultAddMatTransVecShortI<9>,
+      &MultAddMatTransVecShortI<10>,
+      &MultAddMatTransVecShortI<11>,
+      &MultAddMatTransVecShortI<12>,
+      &MultAddMatTransVecShortI<13>,
+      &MultAddMatTransVecShortI<14>,
+      &MultAddMatTransVecShortI<15>,
+      &MultAddMatTransVecShortI<16>,
+      &MultAddMatTransVecShortI<17>,
+      &MultAddMatTransVecShortI<18>,
+      &MultAddMatTransVecShortI<19>,
+      &MultAddMatTransVecShortI<20>,
+      &MultAddMatTransVecShortI<21>,
+      &MultAddMatTransVecShortI<22>,
+      &MultAddMatTransVecShortI<23>,
+      &MultAddMatTransVecShortI<24>
+    };
 
   
   /* *********************** C = A * B ********************************* */
@@ -2069,6 +2175,7 @@ namespace ngbla
           "3 ... A = B^t, A = n*m, \n"
           "5 ... y = A*x,   A = n*m\n"
           "6 ... y = A^t*x,   A = n*m\n"
+          "7 ... y += A^t*x(ind),   A = n*m\n"
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           "11 .. C += A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
@@ -2203,6 +2310,28 @@ namespace ngbla
           t.Stop();
           cout << "MultMatTransVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultMatVec", 1e-9 * n*m*its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 7)
+      {
+        // y = A*x
+        Matrix<> a(n,m);
+        Vector<> x(1000), y(m);
+        Array<int> index(n);
+        for (int i = 0; i < n; i++)
+          index[i] = (17*i)%1000;
+        a = 1; x = 2; y = 0;
+        double tot = n*m;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("y = A*x");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MultAddMatTransVecIndirect(1, a,x,y, index);
+          t.Stop();
+          cout << "MultAddMatTransVecIndirect GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultAddMatVecIndirect", 1e-9 * n*m*its / t.GetTime()));
         }
       }
 

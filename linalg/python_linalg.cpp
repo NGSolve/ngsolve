@@ -908,6 +908,18 @@ inverse : string
                   })
          )
          ;
+
+
+  py::class_<SparseMatrixVariableBlocks<double>, shared_ptr<SparseMatrixVariableBlocks<double>>, BaseMatrix>
+    (m, "SparseMatrixVariableBlocks")
+    .def(py::init([] (const BaseMatrix & mat)
+                  {
+                    if (auto ptr = dynamic_cast<const SparseMatrixTM<double>*> (&mat); ptr)
+                      return make_shared<SparseMatrixVariableBlocks<double>> (*ptr);
+                    throw Exception("cannot create SparseMatrixVariableBlocks");
+                  }))
+    ;
+
   
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
