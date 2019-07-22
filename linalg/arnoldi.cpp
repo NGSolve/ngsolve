@@ -26,10 +26,10 @@ namespace ngla
 
     RegionTimer reg(t);
 
-    auto hv  = a->CreateVector();
-    auto hv2 = a->CreateVector();
-    auto hva = a->CreateVector();
-    auto hvm = a->CreateVector();
+    auto hv  = a->CreateColVector();
+    auto hv2 = a->CreateColVector();
+    auto hva = a->CreateColVector();
+    auto hvm = a->CreateColVector();
    
     int n = hv.template FV<SCAL>().Size();    
     int m = min2 (numval, n);
@@ -38,7 +38,7 @@ namespace ngla
     Matrix<SCAL> matH(m);
     Array<shared_ptr<BaseVector>> abv(m);
     for (int i = 0; i < m; i++)
-      abv[i] = a->CreateVector();
+      abv[i] = a->CreateColVector();
 
     auto mat_shift = a->CreateMatrix();
     mat_shift->AsVector() = a->AsVector() - shift*b->AsVector();  
@@ -147,7 +147,7 @@ namespace ngla
 	for (int i = 0; i< nout; i++)
 	  {
             if (a->IsComplex())
-              hevecs[i] = a->CreateVector();
+              hevecs[i] = a->CreateColVector();
             else // real biform and system-vecors not yet supported
               hevecs[i] =  make_shared<VVector<Complex>> (a->Height());
             

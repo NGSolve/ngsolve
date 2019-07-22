@@ -95,7 +95,7 @@ namespace ngmg
 	      const BaseVector & f, int incsm = 1) const;
     ///
     virtual AutoVector CreateVector () const override
-    { return biform.GetMatrix().CreateVector(); }
+    { return biform.GetMatrix().CreateColVector(); }
   
     ///
     const Smoother & GetSmoother() const

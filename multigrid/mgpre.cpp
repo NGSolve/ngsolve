@@ -320,8 +320,8 @@ namespace ngmg
   void TwoLevelMatrix :: Mult (const BaseVector & f, BaseVector & u) const
   {
     // to be changed to shared_ptr
-    auto cres = cpre->CreateVector();
-    auto cw = cpre->CreateVector();
+    auto cres = cpre->CreateColVector();
+    auto cw = cpre->CreateColVector();
     auto res = CreateVector();
 
     /*
@@ -367,7 +367,7 @@ namespace ngmg
 
   AutoVector TwoLevelMatrix :: CreateVector () const
   {
-    return mat->CreateVector();
+    return mat->CreateColVector();
   }
 
   ostream & TwoLevelMatrix :: Print (ostream & s) const

@@ -90,6 +90,7 @@ namespace ngla
     /// creates a matching vector, size = height
     virtual AutoVector CreateColVector () const;
     /// creates a matching vector (for square matrices)
+    [[deprecated("use CreateRowVector or CreateColVector instead")]]
     virtual AutoVector CreateVector () const;
 
     /// y = matrix * x. 

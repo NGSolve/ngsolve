@@ -122,8 +122,8 @@ namespace ngcomp
 	  }
 
         Matrix<Complex> mat(n_elim), mat2(n_elim), ev(n_elim);
-        BaseVector & v1 = *amat.CreateVector();
-        BaseVector & v2 = *amat.CreateVector();
+        BaseVector & v1 = *amat.CreateColVector();
+        BaseVector & v2 = *amat.CreateColVector();
         FlatVector<Complex> fv1 = v1.FVComplex();
         // FlatVector<Complex> fv2 = v2.FVComplex();
         
@@ -175,8 +175,8 @@ namespace ngcomp
     double time;
     starttime = clock();
 
-    BaseVector & vecf = *pre.CreateVector();
-    BaseVector & vecu = *pre.CreateVector();
+    BaseVector & vecf = *pre.CreateColVector();
+    BaseVector & vecu = *pre.CreateColVector();
 
     vecf = 1;
     int steps = 0;

@@ -254,12 +254,12 @@ namespace ngsolve
 	  dynamic_cast<const BaseSparseMatrix&> (bfm->GetMatrix()); 
 
         
-        BaseVector & hv = *mata.CreateVector();
-        BaseVector & hva = *mata.CreateVector();
-        BaseVector & hvm = *mata.CreateVector();
-        BaseVector & hwa = *mata.CreateVector();
-        BaseVector & hwm = *mata.CreateVector();
-        BaseVector & w = *mata.CreateVector();
+        BaseVector & hv = *mata.CreateColVector();
+        BaseVector & hva = *mata.CreateColVector();
+        BaseVector & hvm = *mata.CreateColVector();
+        BaseVector & hwa = *mata.CreateColVector();
+        BaseVector & hwm = *mata.CreateColVector();
+        BaseVector & w = *mata.CreateColVector();
 
         FlatVector<Complex> hvc = hv.FVComplex();
         FlatVector<Complex> hvmc = hvm.FVComplex();

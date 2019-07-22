@@ -607,8 +607,8 @@ namespace ngcomp
           {
             Timer timer("bftimer");
 
-            auto vecf = mats.Last()->CreateVector();
-            auto vecu = mats.Last()->CreateVector();
+            auto vecf = mats.Last()->CreateColVector();
+            auto vecu = mats.Last()->CreateColVector();
           
             *vecu = 1;
             do
@@ -676,8 +676,8 @@ namespace ngcomp
         double time;
         double starttime = WallTime();
       
-        auto vecf = mats.Last()->CreateVector();
-        auto vecu = mats.Last()->CreateVector();
+        auto vecf = mats.Last()->CreateColVector();
+        auto vecu = mats.Last()->CreateRowVector();
       
         vecu = 1;
         int steps = 0;

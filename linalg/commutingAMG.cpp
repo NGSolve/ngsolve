@@ -294,9 +294,9 @@ namespace ngla
 	return;
       }
 
-    auto hv = pmat->CreateVector();
-    auto wc = coarsemat->CreateVector();
-    auto dc = coarsemat->CreateVector();
+    auto hv = pmat->CreateColVector();
+    auto wc = coarsemat->CreateColVector();
+    auto dc = coarsemat->CreateColVector();
 
     y = 0;
     jacobi->GSSmooth (y, x);
@@ -1147,13 +1147,13 @@ namespace ngla
 	return;
       }
 
-    auto hv = pmat->CreateVector();
-    auto res = pmat->CreateVector();
-    auto wc = coarsemat->CreateVector();
-    auto dc = coarsemat->CreateVector();
+    auto hv = pmat->CreateColVector();
+    auto res = pmat->CreateColVector();
+    auto wc = coarsemat->CreateColVector();
+    auto dc = coarsemat->CreateColVector();
 
-    auto wh1 = h1mat->CreateVector();
-    auto dh1 = h1mat->CreateVector();
+    auto wh1 = h1mat->CreateColVector();
+    auto dh1 = h1mat->CreateColVector();
     
     y = 0;
     res = x;
