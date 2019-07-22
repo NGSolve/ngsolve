@@ -54,6 +54,26 @@ namespace ngbla
   }
 
 
+
+  extern NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern
+  (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y, FlatArray<int> ind);
+  typedef void (*pmultadd_mattransvecind)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>, FlatArray<int>);
+  extern NGS_DLL_HEADER pmultadd_mattransvecind dispatch_addmattransvecI[25];
+  
+  INLINE void MultAddMatTransVecIndirect (double s, BareSliceMatrix<> a,
+                                          FlatVector<> x, FlatVector<> y, FlatArray<int> ind)
+  {
+    size_t sy = y.Size();
+    if (sy <= 24)
+      (*dispatch_addmattransvecI[sy])  (s, a, x, y, ind);
+    else
+      MultAddMatTransVecIndirect_intern (s, a, x, y, ind);
+  }
+
+
+
+
+  
     
   template <typename TA, typename TB, typename TC>
   INLINE void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)

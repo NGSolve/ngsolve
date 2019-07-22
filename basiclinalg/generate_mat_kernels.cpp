@@ -1119,6 +1119,128 @@ void GenerateAddMatVec (ostream & out, int wa)
 
 
 
+void GenerateAddMatTransVecI (ostream & out, int wa)
+{
+  out << "template <>" << endl
+      << "inline void KernelAddMatTransVecI<" << wa << ">" << endl
+      << "(double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind) {" << endl;
+
+  int SW = SIMD<double>::Size();  // generate optimal code for my host
+
+  int nfull = wa / SW;
+  int rest = wa % SW;
+  int unroll = 1;
+  if (nfull <= 4) unroll = 2;
+  if (nfull <= 1) unroll = 4;
+
+  for (int j = 0; j < unroll; j++)
+    {
+      for (int i = 0; i < nfull; i++)
+        out << "SIMD<double> sy" << i << j << "(0);" << endl;
+      if (rest)
+        {
+          if (rest == 1)
+            out << "SIMD<double,1> syrest" << j << "(0);" << endl;
+          else if (rest == 2 && SW==4)
+            out << "SIMD<double,2> syrest" << j << "(0);" << endl;
+          else
+            {
+              out << "SIMD<double> syrest" << j << "(0);" << endl;
+              if (j == 0)
+                out << "SIMD<mask64> mask(" << rest << ");" << endl;
+            }
+        }
+    }
+
+  out << "size_t i;" << endl;
+  out << "for (i = 0; i+" << unroll << "<= ha; i+=" << unroll << ") {" << endl;
+  // out << "for (int j = 0; j < " << unroll << "; j++) {" << endl;
+  for (int j = 0; j < unroll; j++)
+    {
+      out << "SIMD<double> sx" << j << "(x[ind[i+" << j << "]]);" << endl;
+      for (int i = 0; i < nfull; i++)
+        out << "sy" << i << j << " += SIMD<double>(pa+" << i*SW << ") * sx"<<j<<";" << endl;
+      if (rest)
+        {
+          if (rest == 1)
+            out << "syrest" << j << " += SIMD<double,1>(pa+" << nfull*SW << ") * sx"<<j<<"[0];" << endl;
+          else if (rest == 2 && SW==4)
+            out << "syrest" << j << " += SIMD<double,2>(pa+" << nfull*SW << ") * sx"<<j<<".Lo();" << endl;
+          else
+            out << "syrest" << j << " += SIMD<double>(pa+" << nfull*SW << ", mask) * sx"<<j<<";" << endl;
+        }
+      out << "pa += da;" << endl;
+    }
+  out << "}" << endl;
+
+  /*
+  out << "for (  ; i < ha; i++) {" << endl;
+  out << "SIMD<double> sx(x[ind[i]]);" << endl;
+  for (int i = 0; i < nfull; i++)
+    out << "sy" << i << "0 += SIMD<double>(pa+" << i*SW << ") * sx;" << endl;
+  if (rest)
+    {
+      if (rest == 1)
+        out << "syrest0 += SIMD<double,1>(pa+" << nfull*SW << ") * sx[0];" << endl;
+      else
+        out << "syrest0 += SIMD<double>(pa+" << nfull*SW << ", mask) * sx;" << endl;
+    }
+  out << "pa += da;" << endl;
+  out << "}" << endl;
+  */
+
+  out << "switch (ha-i) {" << endl;
+  for (int j = unroll-1; j >= 1; j--)
+    {
+      out << "case " << j << ": {" << endl;
+      out << "SIMD<double> sx(x[ind[i]]);" << endl;
+      for (int i = 0; i < nfull; i++)
+        out << "sy" << i << j << " += SIMD<double>(pa+" << i*SW << ") * sx;" << endl;
+      if (rest)
+        {
+          if (rest == 1)
+            out << "syrest" << j << " += SIMD<double,1>(pa+" << nfull*SW << ") * sx[0];" << endl;
+          else if (rest == 2 && SW==4)
+            out << "syrest" << j << " += SIMD<double,2>(pa+" << nfull*SW << ") * sx.Lo();" << endl;
+          else
+            out << "syrest" << j << " += SIMD<double>(pa+" << nfull*SW << ", mask) * sx;" << endl;
+        }
+      out << "pa += da; i++; }" << endl;
+    }
+  out << "default: ;}; " << endl;
+  
+  if (unroll > 1)
+    {
+      for (int i = 0; i < nfull; i++)
+        {
+          out << "sy" << i << "0 += ";
+          for (int j = 1; j < unroll-1; j++)
+            out << "sy" << i << j << "+";
+          out << "sy" << i << unroll-1 << ";" << endl;
+        }
+      if (rest)
+        {
+          out << "syrest0 += ";
+          for (int j = 1; j < unroll-1; j++)
+            out << "syrest" << j << "+";
+          out << "syrest" << unroll-1 << ";" << endl;
+        }
+    }
+      
+  for (int i = 0; i < nfull; i++)
+    out << "(s * sy" << i << "0 + SIMD<double>(y+" << i*SW << ")).Store(y+" << i*SW << ");" << endl;
+  if (rest)
+    {
+      if (rest == 1)
+        out << "(s * syrest0 + SIMD<double,1>(y+" << nfull*SW << ")).Store(y+" << nfull*SW << ");" << endl;        
+      else if (rest == 2 && SW==4)
+        out << "(s * syrest0 + SIMD<double,2>(y+" << nfull*SW << ")).Store(y+" << nfull*SW << ");" << endl;        
+      else
+        out << "(s * syrest0 + SIMD<double>(y+" << nfull*SW << ",mask)).Store(y+" << nfull*SW << ",mask);" << endl;
+    }
+  out << "; }" << endl;
+}
+
 
 
 
@@ -1277,4 +1399,12 @@ int main ()
       << "(double s, size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
   for (int i = 0; i <= 24; i++)
     GenerateAddMatVec (out, i);
+
+
+  out << "// y += s * A^t * x(ind),  with fix width" << endl;
+  out << "template <size_t WA>" << endl
+      << "inline void KernelAddMatTransVecI" << endl
+      << "(double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind);" << endl;
+  for (int i = 0; i <= 24; i++)
+    GenerateAddMatTransVecI (out, i);
 }
