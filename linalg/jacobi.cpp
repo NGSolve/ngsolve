@@ -92,7 +92,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   AutoVector JacobiPrecond<TM,TV_ROW,TV_COL> :: CreateVector () const 
   {
-    return mat.CreateVector();
+    return mat.CreateColVector();
   }
 
 
