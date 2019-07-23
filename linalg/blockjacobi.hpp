@@ -139,7 +139,7 @@ namespace ngla
     ///
     virtual AutoVector CreateVector () const 
     {
-      return mat.CreateVector();
+      return mat.CreateColVector();
     }
 
 
@@ -247,7 +247,7 @@ namespace ngla
     ///
     virtual AutoVector CreateVector () const 
     {
-      return mat.CreateVector();
+      return mat.CreateColVector();
     }
 
 
