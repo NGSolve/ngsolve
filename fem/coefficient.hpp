@@ -1373,10 +1373,15 @@ public:
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         int i2,j2;
         GetIndex(c2->Dimensions(), ind, i2, j2);
-        code.body += Var(index,i,j).Assign(   Var(inputs[0],i,j).S()
-                                            + opname
-                                            + Var(inputs[1],i2,j2).S()
-                                          );
+        string expr;
+        auto op1 = Var(inputs[0],i,j).S();
+        auto op2 = Var(inputs[1],i2,j2).S();
+
+        if(opname.size()>2) // atan2, pow, etc.
+            expr = opname + '(' + op1 + ',' + op2 + ')';
+        else // +,-,*,/, etc.
+            expr = op1 + ' ' + opname + ' ' + op2;
+        code.body += Var(index,i,j).Assign( expr );
     });
   }
 
