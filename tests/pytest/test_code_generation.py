@@ -7,7 +7,8 @@ def test_code_generation_volume_terms(unit_mesh_3d):
     fes = L2(unit_mesh_3d, order=5)
     gfu = GridFunction(fes)
 
-    functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2]
+    # piecewise polynomials - also test interpolation on L2 space and the resulting GridFunction
+    functions = [x,y,x*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2]
 
     for cf in functions:
         gfu.Set(cf)
@@ -16,6 +17,17 @@ def test_code_generation_volume_terms(unit_mesh_3d):
 
         for f in cfs:
             assert Integrate( (cf-f)*(cf-f), unit_mesh_3d) == approx(0)
+
+    functions = [sin(x)*y, exp(x)+y*y*y, (1+x)**(1+y)]
+    for cf in functions:
+        cfs = [ cf.Compile(), cf.Compile(True, wait=True)]
+        for f in cfs:
+            assert Integrate( (cf-f)*(cf-f), unit_mesh_3d) == approx(0)
+
+    cf = atan2(1+x,1+y)
+    cfs = [ cf.Compile(), cf.Compile(True, wait=True, maxderiv=0)]
+    for f in cfs:
+        assert Integrate( (cf-f)*(cf-f), unit_mesh_3d) == approx(0)
 
 def test_code_generation_boundary_terms(unit_mesh_3d):
     functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size]
