@@ -1136,7 +1136,7 @@ namespace ngfem
       if (plus) ninner += order_inner[0]*2;
       */
       order = max2(order, order_inner[0]);
-      order += 5;
+      order += 1;
       ndof += ninner;
 
     }
@@ -2108,13 +2108,13 @@ namespace ngfem
       for (int i=0; i<6; i++)
       {
         ndof += (order_facet[i][0]+1)*(order_facet[i][0]+1);
-        order = max2(order, order_facet[i][0]);
+        order = max2(order, order_facet[i][0]+1);
       }
       int p = order_inner[0];
       int ninner = 3*p*(p+2)*(p+2) + 3*(p+2)*(p+1)*(p+1);
       ndof += ninner; 
 
-      order = max2(order, p);
+      order = max2(order, p+1);
 
     }
 
