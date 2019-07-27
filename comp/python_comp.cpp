@@ -155,7 +155,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   ExportNgcompMesh(m);
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  static size_t global_heapsize = 1000000;
+  static size_t global_heapsize = 10000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
 
   
