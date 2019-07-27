@@ -3173,6 +3173,8 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
+    if (c2->Dimensions().Size() == 0 && c1->Dimensions().Size() > 0)
+      return (make_shared<ConstantCoefficientFunction>(1.0)/c2)*c1;
     return BinaryOpCF (c1, c2, gen_div, "/");
   }
 
