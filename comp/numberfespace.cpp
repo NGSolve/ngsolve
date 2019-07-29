@@ -77,6 +77,14 @@ namespace ngcomp
       evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BBBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+
+
+    if (dimension > 1)
+      {
+        for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
+          evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+      }
+      
       is_atomic_dof = BitArray(1);
       is_atomic_dof = true;
     }
