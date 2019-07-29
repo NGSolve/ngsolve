@@ -3,7 +3,8 @@ from math import sqrt
 from ngsolve import Projector, Norm
 
 
-def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, printing=True):
+def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", \
+               dirichletvalues=None, dampfactor=1, printing=True, callback=None):
     """
     Newton's method for solving non-linear problems of the form A(u)=0.
 
@@ -46,17 +47,32 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", damp
     numit = 0
     inv   = None
     
+    if freedofs is None:
+        freedofs = u.space.FreeDofs(a.condense)
+
+        
+    if dirichletvalues is not None:
+        a.AssembleLinearization(u.vec)
+        inv = a.mat.Inverse(freedofs, inverse=inverse)
+        
+        w.data = dirichletvalues-u.vec
+        r.data = a.mat * w
+        w.data -= inv*r
+        u.vec.data += w
+
+        
     for it in range(maxit):
         numit += 1
         if printing:
             print("Newton iteration ", it)
-        a.Apply(u.vec, r)
+
         a.AssembleLinearization(u.vec)
+        a.Apply(u.vec, r)
 
         if inverse == "sparsecholesky" and inv:
             inv.Update()
         else:
-            inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(a.condense), inverse=inverse)
+            inv = a.mat.Inverse(freedofs, inverse=inverse)
 
         if a.condense:
             r.data += a.harmonic_extension_trans * r
@@ -71,6 +87,9 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", damp
             print("err = ", err)
 
         u.vec.data -= min(1, numit*dampfactor)*w
+
+        if callback is not None:
+            callback(it, err)
         
         if abs(err) < maxerr: break
     else:
@@ -134,8 +153,8 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
         if printing:
             print("Newton iteration ", it)
             print ("energy = ", a.Energy(u.vec))
-        a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
+        a.Apply(u.vec, r)
 
         if inverse == "sparsecholesky" and inv:
             inv.Update()
