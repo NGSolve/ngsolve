@@ -2045,6 +2045,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
 	// ndlevel.Append (ndof);
         SetNDof(ndof);
+
+        for (int i = 0; i < ma->GetNLevels()-1; i++)
+          ndof_level[i] = ma->GetNVLevel(i);
       }
 
       prol->Update(*this);

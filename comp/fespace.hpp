@@ -205,7 +205,6 @@ ANY                  1 1 1 1 | 15
 
     
     // move ndof and ndof_level to FESpace base class
-  private:
     size_t ndof;
     Array<size_t> ndof_level;
   protected:

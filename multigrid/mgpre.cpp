@@ -83,6 +83,12 @@ namespace ngmg
 
   void MultigridPreconditioner :: Update ()
   {
+    bool haveall;
+    for (int i = 0; i < biform.GetNLevels(); i++)
+      if (!biform.GetMatrixPtr(i)) haveall = false;
+    if (!haveall && biform.GetNLevels() > 1 && biform.GetMatrixPtr())
+      const_cast<BilinearForm&>(biform).GalerkinProjection();
+    
     if ( smoother )
       smoother->Update(update_always);
     if (prolongation)
@@ -94,7 +100,7 @@ namespace ngmg
 
     //cout << "updateall " << updateall << endl;
 
-    if (biform.GetNLevels() == 1 || updateall)
+    if (biform.GetNLevels() == 1 || updateall || coarsegridpre == nullptr)
       {
 	//cout << coarsetype << " ?= " << EXACT_COARSE << ", id=" << id << endl;
 
@@ -245,7 +251,6 @@ namespace ngmg
 	    // smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
 	    smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
 	    
-
 	    auto dt = d.Range (0, fespace.GetNDofLevel(level-1));
 	    auto wt = w.Range (0, fespace.GetNDofLevel(level-1));
 
@@ -257,9 +262,7 @@ namespace ngmg
 	    u.Range (0,w.Size()) += w;
 	    smoother->Residuum (level, u, f, d);
 	    */
-
 	    prolongation->RestrictInline (level, d);
-
 	    w = 0;
 	    for (int j = 1; j <= cycle; j++)
 	      MGM (level-1, wt, dt, incsm * incsmooth);
