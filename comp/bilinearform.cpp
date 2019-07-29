@@ -558,7 +558,9 @@ namespace ngcomp
     if (nonassemble)
       {
         // mats.Append (make_shared<BilinearFormApplication> (shared_ptr<BilinearForm>(this, NOOP_Deleter)), lh);
-        mats.Append (make_shared<BilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), lh)); 
+
+        mats.SetSize(ma->GetNLevels());
+        mats.Last() = make_shared<BilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), lh); 
       
         if (precompute)
           {
@@ -772,7 +774,9 @@ namespace ngcomp
               sum = mat;
           }
 
-        mats.Append(sum);
+        // mats.Append(sum);
+        mats.SetSize (ma->GetNLevels());
+        mats.Last() = sum;
   }
 
   
@@ -4951,8 +4955,10 @@ namespace ngcomp
     if (this->GetFESpace()->IsParallel())
       mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
 					 this->GetTestSpace()->GetParallelDofs());
-    
-    this->mats.Append (mat);
+
+    this->mats.SetSize(this->ma->GetNLevels());
+    this->mats.Last() = mat;
+    // this->mats.Append (mat);
 
     delete graph;
 
@@ -5729,18 +5735,12 @@ namespace ngcomp
     SparseMatrix<double>* prolMat = NULL;
 
     if ( !low_order_bilinear_form )
-      for (int i = GetNLevels()-1; i>0; i--)
+      for (int finelevel = ma->GetNLevels()-1; finelevel>0; finelevel--)
         {
-          prolMat = prol->CreateProlongationMatrix( i );
+          prolMat = prol->CreateProlongationMatrix (finelevel);
           
-          /*
-            GetMatrix( i-1 ) = 
-            *( dynamic_cast< const BaseSparseMatrix& >( GetMatrix( i ) ).
-            Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
-            ( GetMatrix( i-1 ) ) ) ) );
-          */
-          mats[i-1] = dynamic_cast< const BaseSparseMatrix& >(GetMatrix(i)).
-            Restrict(*prolMat,dynamic_pointer_cast<BaseSparseMatrix>(GetMatrixPtr(i-1)));
+          mats[finelevel-1] = dynamic_cast< const BaseSparseMatrix& >(GetMatrix(finelevel)).
+            Restrict(*prolMat,dynamic_pointer_cast<BaseSparseMatrix>(GetMatrixPtr(finelevel-1)));
           
           delete prolMat;
         }

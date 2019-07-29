@@ -28,9 +28,14 @@ namespace ngmg
   
   void LinearProlongation :: Update (const FESpace & fes)
   {
+    /*
     if (ma->GetNLevels() > nvlevel.Size())
       nvlevel.Append (ma->GetNV());
-
+    */
+    nvlevel.SetSize(ma->GetNLevels());
+    for (auto i : Range(nvlevel))
+      nvlevel[i] = ma->GetNVLevel(i);
+    
     if (nvlevel.Size() > 1)
       {
         // if we have a transitive dependency within one level

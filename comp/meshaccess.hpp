@@ -925,7 +925,7 @@ namespace ngcomp
 
     /// number of multigrid levels
     int GetNLevels() const { return nlevels; }  
-
+    auto GetNVLevel(int level) const { return mesh.GetNVLevel(level); }
     int GetHPElementLevel(ElementId ei) const { return mesh.GetHPElementLevel(ei.Nr(),1); }
 
     /// the two parent vertices of a vertex. -1 for coarse-grid vertices
