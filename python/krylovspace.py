@@ -5,7 +5,7 @@ import ngsolve
 
 
 @TimeFunction
-def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
+def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None):
     """preconditioned conjugate gradient method
 
 
@@ -83,6 +83,8 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
         err = sqrt(abs(wd))
         if printrates:
             print ("it = ", it, " err = ", err)
+        if callback is not None:
+            callback(it,err)
         if err < tol*err0: break
     else:
         print("Warning: CG did not converge to TOL")
