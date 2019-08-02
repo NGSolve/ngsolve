@@ -800,15 +800,9 @@ val : can be one of the following:
     .def_property_readonly("dim",
          [] (CF& self) { return self.Dimension(); } ,
                   "number of components of CF")
-
-    /*
-    .def_property_readonly("dims",
-         [] (PyCF self) { return self->Dimensions(); } ,
-                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
-    */
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
-                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } , py::arg("tuple"),
+                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
     
     .def_property_readonly("is_complex",
@@ -2077,13 +2071,5 @@ alpha : double
   m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
 
 }
-
-
-PYBIND11_MODULE(libngfem, m) {
-  m.attr("__name__") = "fem";
-  ExportNgfem(m);
-}
-
-
 
 #endif
