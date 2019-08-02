@@ -55,13 +55,11 @@ namespace ngcomp
 
     pyspace.def_static("__flags_doc__", [docu]()
                                         {
-                                          auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                                              attr("FESpace").
-                                                                              attr("__flags_doc__")());
-                                          for (auto & flagdoc : docu.arguments)
+                                          py::dict flags_doc;
+                                          for (auto & flagdoc : FES::GetDocu().arguments)
                                             flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
                                           return flags_doc;
-                                        });
+                                         });
       
     return pyspace;
   }
