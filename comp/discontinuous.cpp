@@ -13,11 +13,18 @@ namespace ngcomp {
   DiscontinuousFESpace :: DiscontinuousFESpace (shared_ptr<FESpace> aspace, const Flags & flags)
     : FESpace(aspace->GetMeshAccess(), flags), space(aspace)
   {
-    type = "Discontinuous" + space->type;
-    evaluator[VOL] = space->GetEvaluator(VOL);
-    flux_evaluator[VOL] = space->GetFluxEvaluator(VOL);
-    integrator[VOL] = space->GetIntegrator(VOL);
+
+    DefineDefineFlag("BND");
+    vb = flags.GetDefineFlag("BND") ? BND : VOL; 
     
+    type = "Discontinuous" + space->type;
+
+    for (VorB vorb : {VOL,BND,BBND})
+    {
+      evaluator[vorb] = space->GetEvaluator(vorb);
+      flux_evaluator[vorb] = space->GetFluxEvaluator(vorb);
+      integrator[vorb] = space->GetIntegrator(vorb);
+    }    
     iscomplex = space->IsComplex();
     /*
       // not yet implemented ...
@@ -35,21 +42,21 @@ namespace ngcomp {
     space->Update (lh);
     FESpace::Update(lh);
     
-    first_element_dof.SetSize(ma->GetNE()+1);
-    for (ElementId ei : ma->Elements(VOL))
+    first_element_dof.SetSize(ma->GetNE(vb)+1);
+    for (ElementId ei : ma->Elements(vb))
       {
         HeapReset hr(lh);
         first_element_dof[ei.Nr()] = space->GetFE(ei, lh).GetNDof();
       }
 
     size_t ndof = 0;
-    for (size_t i : Range(ma->GetNE()))
+    for (size_t i : Range(ma->GetNE(vb)))
       {
         size_t nd = first_element_dof[i];
         first_element_dof[i] = ndof;
         ndof += nd;
       }
-    first_element_dof[ma->GetNE()] = ndof;
+    first_element_dof[ma->GetNE(vb)] = ndof;
     SetNDof(ndof);
 
     ctofdof.SetSize(ndof);
@@ -58,7 +65,7 @@ namespace ngcomp {
            
   FiniteElement& DiscontinuousFESpace :: GetFE (ElementId ei, Allocator & alloc) const
     {
-      if (ei.IsVolume())
+      if (ei.VB() == vb)
         return space->GetFE(ei,alloc);
 
       ELEMENT_TYPE et = ma->GetElType(ei);
@@ -70,7 +77,7 @@ namespace ngcomp {
   void DiscontinuousFESpace :: GetDofNrs(ElementId ei, Array<DofId> & dnums) const
   {
     dnums.SetSize0();
-    if (ei.IsVolume())
+    if (ei.VB() == vb)
       dnums += IntRange(first_element_dof[ei.Nr()], first_element_dof[ei.Nr()+1]);
   }
 
