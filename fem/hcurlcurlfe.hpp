@@ -39,7 +39,7 @@ namespace ngfem
     virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const = 0;
   };
 
-  template <int D,typename VEC,typename MAT>
+  /*template <int D,typename VEC,typename MAT>
   void VecToSymMat(const VEC & vec,MAT & mat)
   {
     switch(D)
@@ -58,7 +58,7 @@ namespace ngfem
       mat(5) = mat(7) = vec(3);
       break;
     }
-  }
+    }*/
 
   template <int D,typename MAT>
   Vec<D*D-D> SymMatToVec(MAT & mat)
