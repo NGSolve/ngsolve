@@ -1154,13 +1154,22 @@ used_idnrs : list of int = None
 
 
 
-  py::class_<DiscontinuousFESpace, shared_ptr<DiscontinuousFESpace>, FESpace>(m, "Discontinuous",
+  auto disc_class = py::class_<DiscontinuousFESpace, shared_ptr<DiscontinuousFESpace>, FESpace, NGS_Object>(m, "Discontinuous",
 	docu_string(R"delimiter(Discontinuous Finite Element Spaces.
-...
-)delimiter"))
-    .def(py::init([] (shared_ptr<FESpace> & fes)
+FESpace that splits up all dofs that are shared by several (volume or surface) elements. Every element gets a single copy of that dof. Basis functions become element-local.
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+
+BND : boolean or None
+    separate across surface elements instead of volume elements (for surface FESpaces)
+)delimiter"), py::dynamic_attr());
+  disc_class
+    .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
-                    Flags flags = fes->GetFlags();
+                    auto flags = CreateFlagsFromKwArgs(disc_class,kwargs);          
                     auto dcfes = make_shared<DiscontinuousFESpace>(fes, flags);
                     dcfes->Update(glh);
                     dcfes->FinalizeUpdate(glh);
