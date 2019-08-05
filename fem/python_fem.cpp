@@ -3,6 +3,8 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "python_fem.hpp"
 #include "../ngstd/bspline.hpp"
+
+#include "hdivdivfe.hpp"
 #include <fem.hpp>
 #include <comp.hpp>
 #include <mutex>
@@ -1275,6 +1277,29 @@ mip : ngsolve.BaseMappedIntegrationPoint
   input mapped integration point
 
 )raw_string"))
+        .def("CalcDShape",
+         [] (const BaseScalarFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcDShape(ip, mat);
+           return mat;
+          },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0,docu_string(R"raw_string(
+Computes derivative of the shape in an integration point.
+
+Parameters:
+
+x : double
+  input x value
+
+y : double
+  input y value
+
+z : double
+  input z value
+
+)raw_string"))
     ;
 
 
@@ -1308,7 +1333,51 @@ mip : ngsolve.BaseMappedIntegrationPoint
          py::arg("mip"))
     ;
 
+    py::class_<BaseHDivFiniteElement, shared_ptr<BaseHDivFiniteElement>, 
+             FiniteElement>
+    (m, "HDivFE", "an H(div) finite element")
+    .def("CalcShape",
+         [] (const BaseHDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+     .def("CalcDivShape",
+         [] (const BaseHDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Vector<> v(fe.GetNDof());
+           fe.CalcDivShape(ip,v);
+           return v;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+    ;
 
+    py::class_<BaseHDivDivFiniteElement, shared_ptr<BaseHDivDivFiniteElement>, 
+               FiniteElement>
+      (m, "HDivDivFE", "an H(div div) finite element")
+      .def("CalcShape",
+         [] (const BaseHDivDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim()*(1+fe.Dim())/2);
+           fe.CalcShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+     .def("CalcDivShape",
+         [] (const BaseHDivDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcDivShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+    ;
 
 
 

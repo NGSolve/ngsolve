@@ -67,7 +67,6 @@ namespace ngfem
 #include "vectorfacetfe.hpp"
 
 
-
 #include "specialelement.hpp"
 #include "code_generation.hpp"
 #include "coefficient.hpp"
