@@ -3,6 +3,8 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "python_fem.hpp"
 #include "../ngstd/bspline.hpp"
+
+#include "hdivdivfe.hpp"
 #include <fem.hpp>
 #include <comp.hpp>
 #include <mutex>

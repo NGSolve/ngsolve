@@ -10,6 +10,7 @@
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
