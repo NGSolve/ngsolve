@@ -815,7 +815,13 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 
             auto hcurlfe = dynamic_pointer_cast<BaseHCurlFiniteElement> (fe);
             if (hcurlfe) return py::cast(hcurlfe);
-            
+
+            auto hdivfe = dynamic_pointer_cast<BaseHDivFiniteElement> (fe);
+            if (hdivfe) return py::cast(hdivfe);
+
+            auto hdivdivfe = dynamic_pointer_cast<BaseHDivDivFiniteElement> (fe);
+            if (hdivdivfe) return py::cast(hdivdivfe);
+
             return py::cast(fe);
           }, py::arg("ei"), docu_string(R"raw_string(
 Get the finite element to corresponding element id.

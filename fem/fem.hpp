@@ -66,6 +66,8 @@ namespace ngfem
 #include "facetfe.hpp" 
 #include "vectorfacetfe.hpp"
 
+#include "hdivdivfe.hpp" 
+
 
 
 #include "specialelement.hpp"

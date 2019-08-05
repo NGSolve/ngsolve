@@ -14,8 +14,24 @@ namespace ngfem
      Finite Elements for H(div)
      Raviart-Thomas, BDM, BDFM
   */
+
+
+  class NGS_DLL_HEADER  BaseHDivFiniteElement : public FiniteElement
+  {
+  public:
+    INLINE BaseHDivFiniteElement () { ; } 
+    INLINE BaseHDivFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder) { ; }
+
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    SliceMatrix<> shape) const = 0;
+
+    virtual void CalcDivShape (const IntegrationPoint & ip,
+			       SliceVector<> divshape) const = 0;
+  };
+
   template <int D>
-  class NGS_DLL_HEADER HDivFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER HDivFiniteElement : public BaseHDivFiniteElement
   {
   public:
     enum { DIM = D };
@@ -23,7 +39,7 @@ namespace ngfem
   public:
     ///
     INLINE HDivFiniteElement (int andof, int aorder)
-      : FiniteElement (andof, aorder) { ; } 
+      : BaseHDivFiniteElement (andof, aorder) { ; } 
 
     ///
     INLINE HDivFiniteElement () { ; }
