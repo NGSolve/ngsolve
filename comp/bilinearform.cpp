@@ -384,6 +384,7 @@ namespace ngcomp
 	for(VorB vb : {VOL, BND, BBND})
 	  {
             size_t shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV+neB);
+            bool condensation_allowed = (vb == VOL) || ((neV==0) && (vb == BND));
 	    ParallelForRange
               (ma->GetNE(vb), [&](IntRange r)
                {
@@ -393,9 +394,9 @@ namespace ngcomp
                      auto eid = ElementId(vb,i);
                      if (!fespace->DefinedOn (vb, ma->GetElIndex(eid))) continue;
                      
-                     if (vb == VOL && eliminate_internal)
+                     if (condensation_allowed && eliminate_internal)
                        fespace->GetDofNrs (eid, dnums, EXTERNAL_DOF);
-                     else if (vb == VOL && eliminate_hidden)
+                     else if (condensation_allowed && eliminate_hidden)
                        fespace->GetDofNrs (eid, dnums, VISIBLE_DOF);
                      else
                        fespace->GetDofNrs (eid, dnums);
