@@ -298,8 +298,10 @@ public:
       }
 
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
+    uniform_order_facet = int (flags.GetNumFlag ("orderfacet", -1));
 
     *testout << "uniform_order_inner = " << uniform_order_inner << endl;
+
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
            
     auto one = make_shared<ConstantCoefficientFunction> (1);
@@ -366,60 +368,59 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     first_facet_dof.SetSize(nfa+1);
     first_inner_dof.SetSize(nel+1);
 
-    //order_facet.SetSize(nfa);
+    order_facet.SetSize(nfa);
     order_inner.SetSize(nel);
-    order_inner = INT<3> (0,0,0); 
-    //order_facet = order;
-    //order_inner = order;
+
+    if(uniform_order_inner > -1)
+      order_inner = uniform_order_inner;
+    else
+      order_inner = order;
+    if(uniform_order_facet > -1)
+      order_facet = uniform_order_facet;
+    else
+      order_facet = order;
     
-    /////////////// old ///////////////
-    /*
-    order_facet = pc;
-    order_inner = p;
+    fine_facet.SetSize(nfa); 
     fine_facet = 0; //!!!! 
 
 
-    for (auto el : ma->Elements(VOL))
+    for (auto el : ma->Elements(BND))
       {
         if (!DefinedOn (el))
           {
             order_inner[el.Nr()] = 0;
-            order_inner_curl[el.Nr()] = 0;
+            // order_inner_curl[el.Nr()] = 0;
             continue;
           }
           
 	ELEMENT_TYPE eltype = el.GetType();
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
-	
-	// Array<int> elfacets; 
-	// ma->GetElFacets (el.Nr(), elfacets); 
-	// auto elfacets = ma->GetElFacets (el);
-        auto elfacets = el.Facets();
-        
+        auto elfacets = el.Edges();
+
         fine_facet[elfacets] = true;
 	
-	if(!var_order) continue; 
+	// if(!var_order) continue; 
 	
-	INT<3> el_orders = ma->GetElOrders(el.Nr());  
+	// INT<3> el_orders = ma->GetElOrders(el.Nr());  
 	
-        int i = el.Nr();
-	for(int k=0;k<dim;k++)
-	  {
-	    order_inner_curl[i][k]= max2(el_orders[k] + rel_curl_order,0);
-	    order_inner[i][k] = max2(el_orders[k]+rel_order,0);
-	  }
+        // int i = el.Nr();
+	// for(int k=0;k<dim;k++)
+	//   {
+	//     // order_inner_curl[i][k]= max2(el_orders[k] + rel_curl_order,0);
+	//     order_inner[i][k] = max2(el_orders[k]+rel_order,0);
+	//   }
 
-	if(dim==2)
-	  {
-	    const EDGE * edges = ElementTopology::GetEdges (eltype);
-	    for(int j=0; j<elfacets.Size(); j++)
-	      for(int k=0;k<2;k++)
-		if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		  { 
-		    order_facet[elfacets[j]][0] = max2(el_orders[k]+rel_curl_order, order_facet[elfacets[j]][0]);
-		    break; 
-		  }
-	  }
+	// if(dim==2)
+	//   {
+	//     const EDGE * edges = ElementTopology::GetEdges (eltype);
+	//     for(int j=0; j<elfacets.Size(); j++)
+	//       for(int k=0;k<2;k++)
+	// 	if(points[edges[j][0]][k] != points[edges[j][1]][k])
+	// 	  { 
+	// 	    order_facet[elfacets[j]][0] = max2(el_orders[k]+rel_curl_order, order_facet[elfacets[j]][0]);
+	// 	    break; 
+	// 	  }
+	//   }
       }
 
     
@@ -431,18 +432,17 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 	*testout << " order_facet (hdivho) " << order_facet << endl; 
 	*testout << " order_inner (hdivho) " << order_inner << endl; 	
       }
-    */
 
-    for (int i = 0; i < nel; i++)
-      {
-	order_inner[i] = INT<3> (order,order,order);
-      }
+    // for (int i = 0; i < nel; i++)
+    //   {
+    //     order_inner[i] = INT<3> (order,order,order);
+    //   }
 
-    if(uniform_order_inner>-1) 
-      order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner);
+    // if(uniform_order_inner>-1) 
+    //   order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner);
 
     UpdateDofTables(); 
-    //UpdateCouplingDofArray();
+    UpdateCouplingDofArray();
   }
 
   void HDivHighOrderSurfaceFESpace :: UpdateDofTables()
@@ -459,10 +459,10 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 	for (auto i : Range(nfa))
           {
             first_facet_dof[i] = ndof;
-	    ndof += order;
-            //int inc = fine_facet[i] ? order_facet[i][0] : 0;
+	    // ndof += order;
+            int inc = fine_facet[i] ? order_facet[i][0] : 0;
 	    //if (highest_order_dc && !boundary_facet[i]) inc--;
-            //if (inc > 0) ndof += inc;            
+            if (inc > 0) ndof += inc;            
           }
 
         first_facet_dof[nfa] = ndof;
@@ -549,7 +549,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 
   void HDivHighOrderSurfaceFESpace :: UpdateCouplingDofArray()
   {
-    throw Exception("This is copy paste! Not updated yet!!!");
+    // throw Exception("This is copy paste! Not updated yet!!!");
     ctofdof.SetSize(ndof);
     if(discont) 
       {
@@ -559,14 +559,16 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     
     ctofdof = WIREBASKET_DOF;
     
-    for (auto facet : Range(ma->GetNFacets()))
+    for (auto facet : Range(ma->GetNEdges()))
       {
         ctofdof[facet] = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
         ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
       }
     
-    for (auto el : Range (ma->GetNE()))
+    for (auto el : Range (ma->GetNE(BND)))
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;
+
+    // cout << ctofdof << endl;
   }
 
 
