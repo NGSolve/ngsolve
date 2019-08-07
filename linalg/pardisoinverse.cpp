@@ -7,6 +7,9 @@
 #include <la.hpp>
 #include "pardisoinverse.hpp"
 
+#ifdef USE_MKL
+#include <mkl.h>
+#endif // USE_MKL
 
 // #include "/opt/intel/mkl/include/mkl_service.h"
 
@@ -60,12 +63,12 @@ extern  integer F77_FUNC(pardisoinit)
 }
 
 
-#ifdef MKL
+#ifdef USE_MKL
 namespace ngstd
 {
     extern int mkl_max_threads;
 }
-#endif // MKL
+#endif // USE_MKL
 
 
 
@@ -242,18 +245,18 @@ namespace ngla
 
     if (task_manager) task_manager -> StopWorkers();
 
-#ifdef MKL
+#ifdef USE_MKL
     mkl_set_num_threads_local(mkl_max_threads);
-#endif // MKL
+#endif // USE_MKL
 
     // retvalue = 
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
 			reinterpret_cast<double *>(&matrix[0]),
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
-#ifdef MKL
+#ifdef USE_MKL
     mkl_set_num_threads_local(1);
-#endif // MKL
+#endif // USE_MKL
     
     if (task_manager) task_manager -> StartWorkers();
 
@@ -489,9 +492,9 @@ namespace ngla
     if(task_manager)
       task_manager->SuspendWorkers(1000);
 
-#ifdef MKL
+#ifdef USE_MKL
     mkl_set_num_threads_local(mkl_max_threads);
-#endif // MKL
+#endif // USE_MKL
 
     if (compressed)
       {
@@ -521,9 +524,9 @@ namespace ngla
 			    static_cast<double *>((void*)fy.Data()), &error );
       }
 
-#ifdef MKL
+#ifdef USE_MKL
     mkl_set_num_threads_local(1);
-#endif // MKL
+#endif // USE_MKL
 
     if(task_manager)
       task_manager->ResumeWorkers();
@@ -567,9 +570,9 @@ namespace ngla
     if(task_manager)
       task_manager->SuspendWorkers(1000);
 
-#ifdef MKL
+#ifdef USE_MKL
     mkl_set_num_threads_local(mkl_max_threads);
-#endif // MKL
+#endif // USE_MKL
 
     F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
 			&maxfct, &mnum, const_cast<integer *>(&matrixtype),
@@ -578,9 +581,9 @@ namespace ngla
 			&rowstart[0], &indices[0],
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
 			&error );
-#ifdef MKL
+#ifdef USE_MKL
       mkl_set_num_threads_local(1);
-#endif // MKL
+#endif // USE_MKL
 
     if(task_manager)
       task_manager->ResumeWorkers();
