@@ -95,7 +95,7 @@ namespace ngla
 			throw Exception ("SparseMatrixTM::AddElementMatrix: illegal dnums");
 		    }
                   if (use_atomic)
-                    MyAtomicAdd (rowvals(k), elmat(i,j));
+                    AtomicAdd (rowvals(k), elmat(i,j));
                   else
                     rowvals(k) += elmat(i,j);
 		}
@@ -643,7 +643,7 @@ namespace ngla
                   if (k >= rowind.Size())
                     throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
                 }
-              MyAtomicAdd (rowvals(k), elmat_row(0, map[j1]));
+              AtomicAdd (rowvals(k), elmat_row(0, map[j1]));
             }
         }
     else

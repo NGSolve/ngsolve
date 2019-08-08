@@ -121,48 +121,6 @@ namespace std
     enum { value = 1 };
   };
 
-
-
- /*
-  INLINE void MyAtomicAdd(atomic<double> & sum, double val) {
-    auto current = sum.load();
-    while (!sum.compare_exchange_weak(current, current + val))
-      ;
-  }
-  */
-  INLINE atomic<double> & operator+= (atomic<double> & sum, double val) {
-    auto current = sum.load();
-    while (!sum.compare_exchange_weak(current, current + val))
-      ;
-    return sum;
-  }
-
-  INLINE atomic<double> & operator-= (atomic<double> & sum, double val) {
-    auto current = sum.load();
-    while (!sum.compare_exchange_weak(current, current - val))
-      ;
-    return sum;
-  }
-
-  template<typename T>
-  INLINE atomic<T> & AsAtomic (T & d)
-  {
-    return reinterpret_cast<atomic<T>&> (d);
-  }
-  
-  INLINE void MyAtomicAdd (double & sum, double val)
-  {
-    AsAtomic(sum) += val;
-    /*
-    auto & asum = reinterpret_cast<atomic<double>&>(sum);
-    auto current = asum.load();
-    while (!asum.compare_exchange_weak(current, current + val))
-      ;
-    */
-  }
-
-  
-
   class MyMutex
   {
     atomic<bool> m;

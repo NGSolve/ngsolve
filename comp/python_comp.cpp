@@ -2591,9 +2591,9 @@ integrator : ngsolve.fem.LFI
                          hsum += mir[i].GetWeight() * values.Row(i);
                      }
                    for(size_t i = 0; i<dim;i++)
-                     AsAtomic(sum(i)) += hsum(i);
+                     AtomicAdd(sum(i), hsum(i));
                    if(region_wise)
-                     AsAtomic(region_sum(el.GetIndex())) += hsum(0);
+                     AtomicAdd(region_sum(el.GetIndex()), hsum(0));
                    if (element_wise)
                      element_sum(el.Nr()) = hsum(0);
                  });
@@ -2680,9 +2680,9 @@ integrator : ngsolve.fem.LFI
                          hsum += mir[i].GetWeight() * values.Row(i);
                      }
                    for(size_t i = 0; i<dim; i++)
-                     MyAtomicAdd (sum(i), hsum(i));
+                     AtomicAdd (sum(i), hsum(i));
                    if(region_wise)
-                     MyAtomicAdd (region_sum(el.GetIndex()), hsum(0));
+                     AtomicAdd (region_sum(el.GetIndex()), hsum(0));
                    if (element_wise)
                      element_sum(el.Nr()) = hsum(0);
                  });

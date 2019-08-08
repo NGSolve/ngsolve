@@ -164,7 +164,7 @@ namespace ngcomp
       ParallelFor (num_edges, [&] (size_t i)
                    {
                      for (size_t j = 0; j < 2; j++) 
-                       AsAtomic(sum_vertex_weights[e2v[i][j]]) += edge_weights[i];
+                       AtomicAdd(sum_vertex_weights[e2v[i][j]], edge_weights[i]);
                    });
     
       ParallelFor (num_edges, [&] (size_t i)
@@ -356,19 +356,19 @@ namespace ngcomp
       ParallelFor(e2ce.Size(), [&] (int e)
                   {
                     if (e2ce[e] != -1) 
-                      AsAtomic(coarse_edge_weights[e2ce[e]]) += edge_weights[e];
+                      AtomicAdd(coarse_edge_weights[e2ce[e]], edge_weights[e]);
                     int v0 = e2v[e][0], v1 = e2v[e][1];
                     bool free0 = (*freedofs)[v0], free1 = (*freedofs)[v1];
                     if (free0 && !free1)
-                      AsAtomic(coarse_vertex_weights[v2cv[v0]]) += edge_weights[e];
+                      AtomicAdd(coarse_vertex_weights[v2cv[v0]], edge_weights[e]);
                     if (free1 && !free0)
-                      AsAtomic(coarse_vertex_weights[v2cv[v1]]) += edge_weights[e];
+                      AtomicAdd(coarse_vertex_weights[v2cv[v1]], edge_weights[e]);
                   });
       
       ParallelFor(v2cv.Size(), [&] (int v)
                   {
                     if (v2cv[v] != -1) 
-                      AsAtomic(coarse_vertex_weights[v2cv[v]]) += vertex_weights[v];
+                      AtomicAdd(coarse_vertex_weights[v2cv[v]], vertex_weights[v]);
                   });
       
 
