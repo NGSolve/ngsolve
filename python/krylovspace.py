@@ -1,10 +1,79 @@
-from ngsolve.la import InnerProduct
-from math import sqrt
-from ngsolve import Projector, Norm, TimeFunction
-import ngsolve
+
+from ngsolve import Projector, Norm, TimeFunction, BaseMatrix, Preconditioner, InnerProduct, \
+    Norm, sqrt, Vector, Matrix, BaseVector, BitArray
+from typing import Optional, Callable
+import logging
+
+class CGSolver(BaseMatrix):
+    def __init__(self, mat : BaseMatrix, pre : Optional[Preconditioner] = None,
+                 freedofs : Optional[BitArray] = None,
+                 conjugate : bool = False, tol : float = 1e-12, maxsteps : int = 100,
+                 callback : Optional[Callable[[int, float], None]] = None):
+        super().__init__()
+        self.mat = mat
+        assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
+        self.pre = pre if pre else Projector(freedofs, True)
+        self.conjugate = conjugate
+        self.tol = tol
+        self.maxsteps = maxsteps
+        self.callback = callback
+        self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
+        self.logger = logging.getLogger("CGSolver")
+        self.errors = []
+        self.iterations = 0
+
+    def IsComplex(self) -> bool:
+        return self.mat.IsComplex()
+
+    def Mult(self, x : BaseVector, y : BaseVector) -> None:
+        self.Solve(rhs=x, sol=y, initialize=True)
+
+    @TimeFunction
+    def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
+              initialize : bool = True) -> None:
+        self.sol = sol if sol else mat.CreateRowVector()
+        d, w, s = self._tmp_vecs
+        u, mat, pre, conjugate, tol, maxsteps, callback = self.sol, self.mat, self.pre, self.conjugate, \
+            self.tol, self.maxsteps, self.callback
+        if initialize:
+            u[:] = 0
+        d.data = rhs - mat * u
+        w.data = pre * d if pre else d
+        s.data = w
+        wdn = w.InnerProduct(d, conjugate=conjugate)
+        err0 = sqrt(abs(wdn))
+        self.errors.append(err0)
+        if wdn==0:
+            return u
+
+        for it in range(maxsteps):
+            self.iterations = it
+            w.data = mat * s
+            wd = wdn
+            as_s = s.InnerProduct(w, conjugate=conjugate)        
+            alpha = wd / as_s
+            u.data += alpha * s
+            d.data += (-alpha) * w
+
+            w.data = pre*d if pre else d
+
+            wdn = w.InnerProduct(d, conjugate=conjugate)
+            beta = wdn / wd
+
+            s *= beta
+            s.data += w
+
+            err = sqrt(abs(wd))
+            self.errors.append(err)
+            self.logger.info("iteration", it, " error =", err)
+            if callback is not None:
+                callback(it,err)
+            if err < tol*err0: break
+        else:
+            self.logger.warning("CG did not converge to tol")
+        
 
 
-@TimeFunction
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None):
     """preconditioned conjugate gradient method
 
@@ -46,49 +115,10 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
       Solution vector of the CG method.
 
     """
-    u = sol if sol else rhs.CreateVector()
-    d = rhs.CreateVector()
-    w = rhs.CreateVector()
-    s = rhs.CreateVector()
-
-    if initialize: u[:] = 0.0
-    d.data = rhs - mat * u
-    w.data = pre * d if pre else d
-    err0 = sqrt(abs(InnerProduct(d,w)))
-    s.data = w
-    # wdn = InnerProduct (w,d)
-    wdn = w.InnerProduct(d, conjugate=conjugate)
-
-    if wdn==0:
-        return u
-    
-    for it in range(maxsteps):
-        w.data = mat * s
-        wd = wdn
-        # as_s = InnerProduct (s, w)
-        as_s = s.InnerProduct(w, conjugate=conjugate)        
-        alpha = wd / as_s
-        u.data += alpha * s
-        d.data += (-alpha) * w
-
-        w.data = pre*d if pre else d
-        
-        # wdn = InnerProduct (w, d)
-        wdn = w.InnerProduct(d, conjugate=conjugate)
-        beta = wdn / wd
-
-        s *= beta
-        s.data += w
-
-        err = sqrt(abs(wd))
-        if printrates:
-            print ("it = ", it, " err = ", err)
-        if callback is not None:
-            callback(it,err)
-        if err < tol*err0: break
-    else:
-        print("Warning: CG did not converge to TOL")
-    return u
+    solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxsteps=maxsteps,
+                      callback=callback)
+    solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
+    return solver.sol
 
 
 
@@ -537,14 +567,13 @@ printrates : bool = True
 
     if not innerproduct:
         innerproduct = lambda x,y: y.InnerProduct(x, conjugate=True)
-        norm = ngsolve.Norm
+        norm = Norm
     else:
-        norm = lambda x: ngsolve.sqrt(innerproduct(x,x).real)
-    # is_complex = isinstance(b.FV(), ngsolve.bla.FlatVectorC)
+        norm = lambda x: sqrt(innerproduct(x,x).real)
     is_complex = b.is_complex
     if not pre:
         assert freedofs is not None
-        pre = ngsolve.Projector(freedofs, True)
+        pre = Projector(freedofs, True)
     n = len(b)
     m = maxsteps
     if not x:
@@ -556,8 +585,8 @@ printrates : bool = True
         xstart.data = x
     else:
         xstart = None
-    sn = ngsolve.Vector(m, is_complex)
-    cs = ngsolve.Vector(m, is_complex)
+    sn = Vector(m, is_complex)
+    cs = Vector(m, is_complex)
     sn[:] = 0
     cs[:] = 0
 
@@ -573,7 +602,7 @@ printrates : bool = True
     if abs(r_norm) < tol:
         return x
     Q[0].data = 1./r_norm * r
-    beta = ngsolve.Vector(m+1, is_complex)
+    beta = Vector(m+1, is_complex)
     beta[:] = 0
     beta[0] = r_norm
 
@@ -581,7 +610,7 @@ printrates : bool = True
         q = b.CreateVector()
         tmp.data = A * Q[k]
         q.data = pre * tmp
-        h = ngsolve.Vector(m+1, is_complex)
+        h = Vector(m+1, is_complex)
         h[:] = 0
         for i in range(k+1):
             h[i] = innerproduct(Q[i],q)
@@ -598,7 +627,7 @@ printrates : bool = True
         elif v1 == 0:
             return 0,v2/abs(v2)
         else:
-            t = ngsolve.sqrt((v1.conjugate()*v1+v2.conjugate()*v2).real)
+            t = sqrt((v1.conjugate()*v1+v2.conjugate()*v2).real)
             cs = abs(v1)/t
             sn = v1/abs(v1) * v2.conjugate()/t
             return cs,sn
@@ -613,10 +642,10 @@ printrates : bool = True
         h[k+1] = 0
 
     def calcSolution(k):
-        mat = ngsolve.Matrix(k+1,k+1, is_complex)
+        mat = Matrix(k+1,k+1, is_complex)
         for i in range(k+1):
             mat[:,i] = H[i][:k+1]
-        rs = ngsolve.Vector(k+1, is_complex)
+        rs = Vector(k+1, is_complex)
         rs[:] = beta[:k+1]
         y = mat.I * rs
         if xstart:
