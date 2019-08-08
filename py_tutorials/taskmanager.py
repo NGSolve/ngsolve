@@ -6,8 +6,9 @@ for l in range(3):
     mesh.Refine()
 
 fes = H1(mesh, order=3)
+u,v = fes.TnT()
 a = BilinearForm(fes)
-a += Laplace(1)
+a += grad(u) * grad(v) * dx
 
 
 print('sequential assembly...')
