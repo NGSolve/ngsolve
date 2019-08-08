@@ -5,11 +5,12 @@ ngsglobals.msg_level = 1
 
 mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))
 V = H1(mesh, order=3, dirichlet=[1,2,3,4])
+u,v = V.TnT()
 
 f = LinearForm (V)
-f += Source (32 * (y*(1-y)+x*(1-x)))
+f += 32 * (y*(1-y)+x*(1-x)) * v * dx
 a = BilinearForm (V, symmetric=False)
-a += Laplace (1)
+a += grad(u) * grad(v) * dx
 
 a.Assemble()
 f.Assemble()
