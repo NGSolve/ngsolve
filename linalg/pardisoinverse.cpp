@@ -8,7 +8,7 @@
 #include "pardisoinverse.hpp"
 
 #ifdef USE_MKL
-#include <mkl.h>
+#include <mkl_service.h>
 #endif // USE_MKL
 
 // #include "/opt/intel/mkl/include/mkl_service.h"
