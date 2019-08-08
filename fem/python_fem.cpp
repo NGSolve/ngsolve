@@ -36,23 +36,23 @@ namespace ngfem
 
     if (py::isinstance<py::list>(val))
       {
-        py::list el(val);
-        Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
-        for (int i : Range(cflist))
+        auto el = py::cast<py::list>(val);
+        cout << "is list, len = " << el.size() << endl;
+        Array<shared_ptr<CoefficientFunction>> cflist(el.size());
+        for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(el[i]);
+        cout << "return domainwise cf" << endl;
         return MakeDomainWiseCoefficientFunction(move(cflist));
       }
 
     if (py::isinstance<py::tuple>(val))
       {
-        py::tuple et(val);
-        Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
-        for (int i : Range(cflist))
+        auto et = py::cast<py::tuple>(val);
+        Array<shared_ptr<CoefficientFunction>> cflist(et.size());
+        for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(et[i]);
         return MakeVectorialCoefficientFunction(move(cflist));
       }
-
-
     throw Exception ("cannot make coefficient");
   }
 
@@ -745,7 +745,7 @@ val : can be one of the following:
                     ar & cf;
                     return cf;
                   }))
-    .def(py::init([] (py::object val, py::object dims)
+    .def(py::init([] (py::object val, optional<py::tuple> dims)
         {
           shared_ptr<CoefficientFunction> coef;
           
@@ -754,17 +754,14 @@ val : can be one of the following:
             coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
           else
             coef = MakeCoefficient(val);
-          if(dims)
+          if(dims.has_value())
             {
-              try {
-                Array<int> cdims = makeCArray<int> (dims);
-                coef->SetDimensions(cdims);
-              }
-              catch (py::type_error){ }
+              auto cdims = makeCArray<int> (*dims);
+              coef->SetDimensions(cdims);
             }
           return coef;
         }),
-        py::arg("coef"),py::arg("dims")=DummyArgument(),
+      py::arg("coef"),py::arg("dims")=nullptr,
          "Construct a CoefficientFunction from either one of\n"
          "  a scalar (float or complex)\n"
          "  a tuple of scalars and or CFs to define a vector-valued CF\n"
@@ -1746,7 +1743,7 @@ kwargs : kwargs
                       string filename, py::kwargs kwargs)
         -> shared_ptr<BilinearFormIntegrator>
         {
-          auto flags = CreateFlagsFromKwArgs(bfi_class,kwargs);
+          auto flags = CreateFlagsFromKwArgs(kwargs, bfi_class);
           Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
           auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
