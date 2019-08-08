@@ -1552,7 +1552,7 @@ namespace ngla
     for (int j : Range(extdofs))
       {
         auto val = temp(j);
-        MyAtomicAdd (hy(extdofs[j]), -val);
+        AtomicAdd (hy(extdofs[j]), -val);
       }
   }
 
@@ -1755,7 +1755,7 @@ namespace ngla
                                    }
                                  
                                  for (size_t j : Range(extdofs))
-                                   MyAtomicAdd (hy(extdofs[j]), -temp(j));
+                                   AtomicAdd (hy(extdofs[j]), -temp(j));
                                }
                              
                              else if (task.type == MicroTask::L_BLOCK)
@@ -1799,7 +1799,7 @@ namespace ngla
                                        }
                                      
                                      for (size_t j : Range(extdofs))
-                                       MyAtomicAdd (hy(extdofs[j]), -temp(j));
+                                       AtomicAdd (hy(extdofs[j]), -temp(j));
                                    }
                                }
 
@@ -1908,7 +1908,7 @@ namespace ngla
                                          TVX val(0.0);
                                          for (auto j : Range(extdofs))
                                            val += ext_lfact(myr.begin()+j) * temp(j);
-                                         MyAtomicAdd (hy(i), -val);
+                                         AtomicAdd (hy(i), -val);
                                        }
                                    }
                                }

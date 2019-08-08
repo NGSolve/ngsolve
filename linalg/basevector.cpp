@@ -553,7 +553,7 @@ namespace ngla
           {
             for (int i = 0; i < ind.Size(); i++)
               if (IsRegularIndex(ind[i]))
-                MyAtomicAdd (lsv(ind[i]), v(i));
+                AtomicAdd (lsv(ind[i]), v(i));
             // lsv(ind[i]) += v(i);
           }
       }
@@ -586,7 +586,7 @@ namespace ngla
           {
             for (int i = 0; i < ind.Size(); i++)
               if (IsRegularIndex(ind[i]))
-                MyAtomicAdd (fv(ind[i]), v(i));
+                AtomicAdd (fv(ind[i]), v(i));
           }
       }
     else

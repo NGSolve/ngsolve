@@ -277,7 +277,7 @@ namespace ngla
                   {
                       double &res = vy(rdi[j]);
                       double t = s*hv1(j);
-                      AsAtomic(res) += t;
+                      AtomicAdd(res, t);
                   }
                   
                   timer.AddFlops (cdi.Size()*rdi.Size());
@@ -448,7 +448,7 @@ namespace ngla
                         {
                           double &res = vy(cdi[j]);
                           double t = s * hv2(j);
-                          AsAtomic(res) += t;
+                          AtomicAdd(res, t);
                         }
                       
                       timer.AddFlops (cdi.Size()*rdi.Size());
