@@ -28,13 +28,13 @@ namespace ngbla
   inline double fabs (Complex v) { return std::abs (v); }
 #endif
 
-  using ngstd::MyAtomicAdd;
-  inline void MyAtomicAdd (Complex & x, Complex y)
+  using ngcore::AtomicAdd;
+  inline void AtomicAdd (Complex & x, Complex y)
   {
     auto real = y.real();
-    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[0], real);
+    ngstd::AtomicAdd (reinterpret_cast<double(&)[2]>(x)[0], real);
     auto imag = y.imag();
-    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[1], imag);
+    ngstd::AtomicAdd (reinterpret_cast<double(&)[2]>(x)[1], imag);
   }
 
   inline bool IsComplex(double v) { return false; }
