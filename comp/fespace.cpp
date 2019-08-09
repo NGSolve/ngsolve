@@ -1036,7 +1036,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else
         for (auto d : alldnums)
-	  if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
+	  if ( IsRegularDof(d) && ((ctofdof[d] & ctype) != 0) )
             dnums.Append(d);
       }
 
