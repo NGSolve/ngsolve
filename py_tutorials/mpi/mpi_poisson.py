@@ -6,7 +6,7 @@
 # netgen-imports
 #from netgen.geom2d import unit_square
 from netgen.csg import unit_cube
-import netgen.meshing as netgen
+import netgen.meshing
 
 # ngsolve-imports
 from ngsolve import *
@@ -30,7 +30,7 @@ if rank==0:
 comm.Barrier()
 
 # now load mesh from file
-ngmesh = netgen.Mesh(dim=3, comm=comm)
+ngmesh = netgen.meshing.Mesh(dim=3, comm=comm)
 ngmesh.Load("some_mesh.vol")
 
 #refine once?
