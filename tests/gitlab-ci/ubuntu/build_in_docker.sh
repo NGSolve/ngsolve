@@ -52,12 +52,10 @@ cmake ../../src/ngsolve \
   -DNG_INSTALL_DIR_LIB=lib/netgen \
   -DNG_INSTALL_DIR_INCLUDE=include/netgen \
   -DCMAKE_INSTALL_PREFIX=/usr \
-  -DCPACK_PACKAGING_INSTALL_PREFIX=/usr \
   $CMAKE_ARGS
 
 make -j12
 make install
-make package
 cd ngsolve
 
 if [ "$IMAGE_NAME" == "latest" ]
@@ -65,8 +63,9 @@ then
   ## build and upload docu to server
   apt-get install -y rsync
 
+  export NGS_NUM_THREADS=4
   echo "build docu"
-  make docs
+  make docs > out
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files
   zip -r docs/html/i-tutorials.zip docs/html/jupyter-files
