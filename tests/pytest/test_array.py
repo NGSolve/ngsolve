@@ -1,5 +1,5 @@
 import pytest
-from ngsolve import *
+from ngsolve.ngstd import ArrayI
 
 def getArray():
     a = ArrayI(10)
