@@ -42,7 +42,7 @@ def test_load_ngs_sub1():
 #load netgen-mesh, then make ngsolve-mesh
 def test_load_ng():
     comm = MPI_Init()
-    import netgen
+    import netgen.meshing
     ngmesh = netgen.meshing.Mesh(dim=2)
     ngmesh.Load('square.vol.gz')
     mesh = Mesh(ngmesh)
@@ -54,7 +54,7 @@ def test_load_ng_sub1():
     assert comm.size>=5
     groups = [[0,2,3,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
-    import netgen
+    import netgen.meshing
     ngmesh = netgen.meshing.Mesh(dim=2, comm=sub_comm)
     ngmesh.Load('square.vol.gz')
     # communicator now wrapped on netgen-side!
@@ -69,7 +69,7 @@ def test_load_ng_sub1():
 def test_load_dist():
     comm = MPI_Init()
     mecomm = comm.SubComm([comm.rank])
-    import netgen
+    import netgen.meshing
     ngmesh = netgen.meshing.Mesh(dim=2, comm=mecomm)
     if comm.rank == 0:
         ngmesh.Load('square.vol.gz')
@@ -85,7 +85,7 @@ def test_load_dist_sub():
     groups = [[2,3,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
     mecomm = comm.SubComm([comm.rank])
-    import netgen
+    import netgen.meshing
     ngmesh = netgen.meshing.Mesh(dim=2, comm=mecomm)
     if sub_comm.rank == 0:
         ngmesh.Load('square.vol.gz')
@@ -100,7 +100,7 @@ def test_load_dist_sub():
 #mesh on master and then distribute
 def test_mesh_dist():
     comm = MPI_Init()
-    import netgen
+    import netgen.meshing
     if comm.rank==0:
         from netgen.geom2d import unit_square
         ngmesh2d = unit_square.GenerateMesh(maxh=0.1)
@@ -123,7 +123,7 @@ def test_mesh_dist_sub1():
     groups = [[0,1,3,4]]
     assert comm.size>=5
     sub_comm = comm.SubComm(find_group(comm, groups))
-    import netgen
+    import netgen.meshing
     ngmesh2d = netgen.meshing.Mesh(dim=2)
     if sub_comm.rank==0:
         from netgen.geom2d import unit_square
