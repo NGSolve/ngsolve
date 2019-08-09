@@ -1768,17 +1768,17 @@ namespace ngbla
   
   
   template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (Vec<DIM,SCAL> & x, TANY y)
+  inline void AtomicAdd (Vec<DIM,SCAL> & x, TANY y)
   {
     for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
+      AtomicAdd (x(i), y(i));
   }
   
   template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
+  inline void AtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
   {
     for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
+      AtomicAdd (x(i), y(i));
   }
   
 

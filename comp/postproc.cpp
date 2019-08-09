@@ -1282,7 +1282,7 @@ namespace ngfem
              for (int i = 0; i < values.Height(); i++)
                hsum += mir[i].GetWeight() * values(i,0);
            }
-         MyAtomicAdd(sum, hsum);
+         AtomicAdd(sum, hsum);
        });
     
     return sum;

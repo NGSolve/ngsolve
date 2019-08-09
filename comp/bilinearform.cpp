@@ -4767,7 +4767,7 @@ namespace ngcomp
   {
     static Timer t("BilinearForm::Energy"); RegionTimer reg(t);
     
-    atomic<double> energy(0.0);
+    double energy = 0.0;
 
     if (!MixedSpaces())
       {
@@ -4797,7 +4797,7 @@ namespace ngcomp
                      energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
                    }
                  
-                 energy += energy_T;
+                 AtomicAdd(energy, energy_T);
                });
         
         
@@ -4878,7 +4878,7 @@ namespace ngcomp
             FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace()->GetDimension(), lh);
             x.GetIndirect (dnums, elvecx);
           
-            energy += el.Energy (elvecx, lh);
+            AtomicAdd(energy, el.Energy (elvecx, lh));
           }
       }
     return energy;
