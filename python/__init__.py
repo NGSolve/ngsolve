@@ -10,9 +10,7 @@ ngsolve.fem .... finite elements and integrators
 ngsolve.comp ... function spaces, forms
 """
 import netgen
-
-from ngsolve.ngslib import *
-from ngsolve.ngslib import __version__
+from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
 def TmpRedraw(*args, **kwargs):
     if solve._Redraw(*args, **kwargs):
@@ -28,28 +26,35 @@ def TmpRedraw(*args, **kwargs):
 solve.Redraw = TmpRedraw
 del TmpRedraw
 
+from .ngstd import BitArray, Timers, TaskManager, SetNumThreads, Timer
+from .bla import Matrix, Vector, InnerProduct, Norm
+from .la import BaseMatrix, BaseVector, BlockVector, BlockMatrix, \
+    CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
+    Projector, IdentityMatrix, Embedding, PermutationMatrix, \
+    ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
+from .fem import BFI, LFI, CoefficientFunction, Parameter, ET, \
+    POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
+    VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
+    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Inv, Det, \
+    specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
+    IntegrationRule, IfPos
+from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
+    BilinearForm, LinearForm, GridFunction, Preconditioner, \
+    MultiGridPreconditioner, ElementId, FESpace, H1, HCurl, \
+    HDiv, L2, VectorH1, VectorL2, SurfaceL2, HDivDiv, HCurlCurl, HCurlDiv, \
+    HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
+    FacetSurface, NumberSpace, Periodic, Discontinuous, Compress, \
+    CompressCompound, BoundaryFromVolumeCF, Variation, \
+    NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
+    SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
+    SetTestoutFile, ngsglobals, pml, MPI_Init
+from .solve import Redraw, BVP, CalcFlux, Draw, DrawFlux, \
+    SetVisualization
+from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, Trace, \
+    PyDet, Cross, Cof, PyInv, PySym, Skew, OuterProduct, TimeFunction
 
 
-ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads', 'Timer']
-bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
-la.__all__ = ['BaseMatrix', 'BaseVector', 'BlockVector', 'BlockMatrix', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector', 'IdentityMatrix', 'Embedding', 'PermutationMatrix', 'ConstEBEMatrix', 'ParallelMatrix', 'PARALLEL_STATUS']
-fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'MixedFE', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'acos', 'asin', 'sinh', 'cosh', 'exp', 'log', 'sqrt', 'floor', 'ceil', 'Conj', 'atan2', 'pow', 'Sym', 'Inv', 'Det', 'specialcf', \
-           'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'BSpline', \
-           'IntegrationRule', 'IfPos' \
-           ]
-# TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'Region', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','Discontinuous','H1','VectorH1','L2','VectorL2','SurfaceL2','HDivDiv','HCurlCurl','HCurlDiv','HDivDivSurface','TangentialFacetFESpace','FacetFESpace','FacetSurface','HDiv','NumberSpace','HDivSurface','HCurl','Compress','CompressCompound','BoundaryFromVolumeCF', 'Variation', 'MPI_Init']
-solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
-
-from ngsolve.ngstd import *
-from ngsolve.bla import *
-from ngsolve.la import *
-from ngsolve.fem import *
-from ngsolve.comp import *
-from ngsolve.solve import *
-from ngsolve.utils import *
-from . import timing
-
+from .timing import Timing
 
 # add flags docu to docstring
 def _add_flags_doc(module):
@@ -86,30 +91,5 @@ BaseMatrix.data = property(__expr.Expr, __expr.expr_data)
 BaseMatrix.__mul__ = __expr.expr_mul
 # BaseMatrix.__rmul__ = __expr.expr_rmul
 # BaseMatrix.__neg__ = __expr.expr_neg
-
-Timing = timing.Timing
-
-fem.__doc__ = \
-"""Finite Elements
-===============
-
-finite element shape functions, and element-matrix/vector integrators
-"""
-
-# Uncomment this to use patched version of pickle (to regain data pickled somewhere between ~ Feb-Dez 2018)
-
-# register our own memory pickler
-# import pickle
-# import ngsolve
-# pickle._Pickler.dispatch[ngsolve.ngstd._MemoryView] = ngsolve.ngstd._PickleMemory
-# pickle._Unpickler.dispatch[b"\xf0"[0]] = ngsolve.ngstd._UnpickleMemory
-# # use the python pickler and not cPickle one (cause we can't patch it)
-# pickle.Pickler, pickle.Unpickler = pickle._Pickler, pickle._Unpickler
-# pickle.dump, pickle.dumps, pickle.load, pickle.loads = pickle._dump, pickle._dumps, pickle._load, pickle._loads
-
-
-__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing", "solvers", "meshes", "mpi_world"]
-
-
 
 

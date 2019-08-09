@@ -24,12 +24,6 @@ def Neumann (coef):
     return LFI("neumann", coef=coef)
 
 
-
-#def NumberSpace(mesh, **args):
-#    """ Create space of real or complex numbers. """
-#    return FESpace("number", mesh, **args)
-
-
 # VectorFacet = TangentialFacetFESpace
 def VectorFacet (mesh, **args):
     print ("deprecated warning: VectorFacet is renamed to TangentialFacetFESpace")
@@ -141,10 +135,6 @@ def TimeFunction(func, name=None):
             ret = func(*args, **kwargs)
         return ret
     return retfunc
-
-
-## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
-__all__ = ['x', 'y', 'z', 'dx', 'ds', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'Grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'PyDet', 'Cross', 'Cof', 'PyInv', 'PySym', 'Skew', 'OuterProduct', 'VectorFacet', 'TimeFunction']
 
 
 
