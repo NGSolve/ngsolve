@@ -53,7 +53,7 @@ surfacespaces = {"h1ho" :          { "vorb" : [BND,BBND,BBBND], "order" : [3], "
 
 # 2d tests
 def test_2DGetFE(quads=False):
-    mesh = Mesh(unit_square.GenerateMesh(quad_dominated=quads))
+    mesh = Mesh(unit_square.GenerateMesh(quad=quads))
     for spacename in spaces2d.keys():
         if quads and spaces2d[spacename]["quad"]:
             for order in spaces2d[spacename]["order"]:
@@ -88,7 +88,7 @@ def test_SurfaceGetFE(quads=False):
         surface.AddSegment(geopts[p1],geopts[p2],bc)
     geo.AddSplineSurface(surface)
     
-    mesh = Mesh(geo.GenerateMesh(perfstepsend=meshing.MeshingStep.MESHSURFACE,quad_dominated=quads))
+    mesh = Mesh(geo.GenerateMesh(perfstepsend=meshing.MeshingStep.MESHSURFACE,quad=quads))
     
     for spacename in surfacespaces.keys():
         if quads and spaces2d[spacename]["quad"]:

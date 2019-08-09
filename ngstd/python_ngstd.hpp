@@ -330,35 +330,6 @@ template<> struct PyTraits<string> {typedef py::str type;};
 template<> struct PyTraits<bool> {typedef py::bool_ type;};
 template<> struct PyTraits<int> {typedef py::int_ type;};
 
-template<typename T>
-Array<T> makeCArray(const py::tuple & obj)
-{     
-  Array<T> C_vdL(py::len(obj));   
-  for (int i = 0; i < py::len(obj); i++)    
-    C_vdL[i] = T(typename PyTraits<T>::type(obj[i]));
-  return std::move(C_vdL);
-}
-
-
-template<typename T>
-Array<T> makeCArray(const py::list & obj)
-{     
-  Array<T> C_vdL(py::len(obj));   
-  for (int i = 0; i < py::len(obj); i++)    
-    C_vdL[i] = T(typename PyTraits<T>::type(obj[i]));        
-  return std::move(C_vdL);
-}
-
-template<typename T>
-Array<T> makeCArray(const py::object & obj)
-{     
-  if (py::isinstance<py::list>(obj))
-    return makeCArray<T>(obj.cast<py::list>());
-  if (py::isinstance<py::tuple>(obj))
-    return makeCArray<T>(obj.cast<py::tuple>());
-  throw py::type_error("Cannot convert Python object to C Array");
-}
-
 template <typename T>
 Table<T> makeCTable (py::list obj)
 {
@@ -375,23 +346,6 @@ Table<T> makeCTable (py::list obj)
       tab[i] = makeCArray<T> (obji);
     }
   return tab;
-}
-
-template<typename T>
-Array<T> makeCArraySharedPtr(const py::list & obj)
-{
-  Array<T> C_vdL(py::len(obj));
-  for (int i = 0; i < py::len(obj); i++)
-    C_vdL[i] = py::extract<T>(obj[i])();
-  return std::move(C_vdL);
-}
-template<typename T>
-Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const py::list & obj)
-{
-  Array<decltype(std::declval<T>().Get())> C_vdL(py::len(obj));
-  for (int i = 0; i < py::len(obj); i++)
-    C_vdL[i] = py::extract<T>(obj[i])().Get();
-  return std::move(C_vdL);
 }
 
 template <typename T>
@@ -475,9 +429,6 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
                                          }, py::arg("pos"))
     ;
 }
-
-// Parse python kwargs to flags
-Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs& kwargs, py::list info = py::list());
 
 // replace docu links with plain text for help function
 NGS_DLL_HEADER const char* docu_string(const char* str);

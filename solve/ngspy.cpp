@@ -27,6 +27,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m);
 
 PYBIND11_MODULE(ngslib, m)
 {
+  py::module::import("pyngcore");
   m.attr("__name__") = "ngsolve";
   /*
   py::object module(py::handle<>(py::borrowed(PyImport_AddModule("ngsolve"))));
