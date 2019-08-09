@@ -8,7 +8,7 @@
 # circular convection; time-DG with skeleton-formulation
 
 from netgen.geom2d import unit_square
-import netgen.meshing as netgen
+import netgen.meshing
 
 
 from ngsolve import *
@@ -23,7 +23,7 @@ if rank==0:
     ngmesh = unit_square.GenerateMesh(maxh=0.05)
     ngmesh.Distribute(comm)
 else:
-    ngmesh = netgen.Mesh.Receive(comm)
+    ngmesh = netgen.meshing.Mesh.Receive(comm)
 mesh = Mesh(ngmesh)
 
 # build L2-FESpace

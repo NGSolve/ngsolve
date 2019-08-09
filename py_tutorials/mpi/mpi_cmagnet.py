@@ -1,5 +1,5 @@
 from netgen.csg import *
-import netgen.meshing as netgen
+import netgen.meshing
 
 from ngsolve import *
 
@@ -36,7 +36,7 @@ if rank==0:
     ngmesh.Distribute(comm)
 else:
     # worker procs receive mesh
-    ngmesh = netgen.Mesh.Receive(comm)
+    ngmesh = netgen.meshing.Mesh.Receive(comm)
     # and then manually set the geometry
     ngmesh.SetGeometry(geom)
 mesh = Mesh(ngmesh)
