@@ -1,4 +1,4 @@
-import netgen.meshing as netgen
+import netgen.meshing
 from netgen.geom2d import SplineGeometry
 
 
@@ -25,7 +25,7 @@ if rank==0:
     ngmesh = geo.GenerateMesh(maxh=0.08)
     ngmesh.Distribute(comm)
 else:
-    ngmesh = netgen.Mesh.Receive(comm)
+    ngmesh = netgen.meshing.Mesh.Receive(comm)
     ngmesh.SetGeometry(geo)
     
 mesh = Mesh(ngmesh)

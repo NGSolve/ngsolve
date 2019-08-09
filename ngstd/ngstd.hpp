@@ -137,8 +137,6 @@ namespace ngstd { using namespace ngcore; }
 #include "simd.hpp"
 #include "simd_complex.hpp"
 
-#include "xbool.hpp"
-
 #include "table.hpp"
 #include "hashtable.hpp"
 #include "bitarray.hpp"
@@ -146,7 +144,6 @@ namespace ngstd { using namespace ngcore; }
 #include "blockalloc.hpp"
 #include "autoptr.hpp"
 #include "memusage.hpp"
-#include "flags.hpp"
 
 #include "evalfunc.hpp"
 #include "sample_sort.hpp"
