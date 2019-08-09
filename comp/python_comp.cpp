@@ -459,7 +459,7 @@ kwargs : kwargs
     .def(py::init([fes_class] (py::list lspaces, py::kwargs kwargs)
                   {
 		    py::list info;
-		    auto flags = CreateFlagsFromKwArgs(fes_class, kwargs, info);
+		    auto flags = CreateFlagsFromKwArgs(kwargs, fes_class, info);
                     Array<shared_ptr<FESpace>> spaces;
                     for (auto fes : lspaces )
                       spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
@@ -491,7 +491,7 @@ kwargs : kwargs
                   {
                     py::list info;
                     info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(fes_class, kwargs, info);
+                    auto flags = CreateFlagsFromKwArgs(kwargs, fes_class, info);
                     auto fes = CreateFESpace (type, ma, flags);
                     fes->Update(glh);
                     fes->FinalizeUpdate(glh);
@@ -1176,7 +1176,7 @@ BND : boolean or None
   disc_class
     .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
-                    auto flags = CreateFlagsFromKwArgs(disc_class,kwargs);          
+                    auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
                     auto dcfes = make_shared<DiscontinuousFESpace>(fes, flags);
                     dcfes->Update(glh);
                     dcfes->FinalizeUpdate(glh);
@@ -1408,7 +1408,7 @@ active_dofs : BitArray or None
     .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name,
                                  py::kwargs kwargs)
     {
-      auto flags = CreateFlagsFromKwArgs(gf_class, kwargs);
+      auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
@@ -1820,7 +1820,7 @@ space : ngsolve.FESpace
   bf_class
     .def(py::init([bf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
                   {
-                    auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
+                    auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
                     auto biform = CreateBilinearForm (fespace, "biform_from_py", flags);
                     return biform;
                   }),
@@ -1828,7 +1828,7 @@ space : ngsolve.FESpace
     .def(py::init([bf_class](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, 
                              py::kwargs kwargs)
                   {
-                    auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
+                    auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
                     auto biform = CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
                     return biform;
                   }),
@@ -2127,7 +2127,7 @@ flags : dict
   lf_class
     .def(py::init([lf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
                   {
-                    auto flags = CreateFlagsFromKwArgs(lf_class,kwargs);
+                    auto flags = CreateFlagsFromKwArgs(kwargs, lf_class);
                     auto f = CreateLinearForm (fespace, "lff_from_py", flags);
                     f->AllocateVector();
                     return f;
@@ -2236,7 +2236,7 @@ integrator : ngsolve.fem.LFI
   prec_class
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
-           auto flags = CreateFlagsFromKwArgs(prec_class,kwargs);
+           auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");
@@ -2268,7 +2268,7 @@ integrator : ngsolve.fem.LFI
   prec_multigrid
     .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, py::kwargs kwargs)
                   {
-                    auto flags = CreateFlagsFromKwArgs(prec_multigrid, kwargs);
+                    auto flags = CreateFlagsFromKwArgs(kwargs, prec_multigrid);
                     return make_shared<MGPreconditioner>(bfa,flags);
                   }), py::arg("bf"))
     .def_static("__flags_doc__", [prec_class] ()
@@ -3126,7 +3126,7 @@ deformation : ngsolve.comp.GridFunction
   
    m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> shared_ptr<FESpace>
             {
-              auto spaces = makeCArraySharedPtr<shared_ptr<FESpace>> (spaces_list);
+              auto spaces = makeCArray<shared_ptr<FESpace>> (spaces_list);
               if(spaces.Size() == 2)
               {
                 shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces, flags ) );
@@ -3348,7 +3348,7 @@ deformation : ngsolve.comp.GridFunction
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
-             = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (coefs_list);
+             = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
            Array<string > names
              = makeCArray<string> (names_list);
            shared_ptr<BaseVTKOutput> ret;
