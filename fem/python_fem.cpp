@@ -37,11 +37,9 @@ namespace ngfem
     if (py::isinstance<py::list>(val))
       {
         auto el = py::cast<py::list>(val);
-        cout << "is list, len = " << el.size() << endl;
         Array<shared_ptr<CoefficientFunction>> cflist(el.size());
         for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(el[i]);
-        cout << "return domainwise cf" << endl;
         return MakeDomainWiseCoefficientFunction(move(cflist));
       }
 
