@@ -65,7 +65,7 @@ class CGSolver(BaseMatrix):
 
             err = sqrt(abs(wd))
             self.errors.append(err)
-            self.logger.info("iteration", it, " error =", err)
+            self.logger.info("iteration " + str(it) + " error = " + str(err))
             if callback is not None:
                 callback(it,err)
             if err < tol*err0: break
