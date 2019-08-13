@@ -83,55 +83,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
 
 
-
-
-  
-  py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD", py::buffer_protocol());
-  class_flatarrayd.def(py::init<size_t, double *>());
-  PyDefVector<FlatArray<double>, double>(m, class_flatarrayd);
-  PyDefVecBuffer<FlatArray<double>,double>(class_flatarrayd);  
-  PyDefToString<FlatArray<double>>(m, class_flatarrayd);
-  
-  py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init([] (int n) { return new Array<double>(n); }), py::arg("n"), "Makes array of given length")
-    .def(py::init([] (std::vector<double> const & x)
-                  {
-                    int s = x.size();
-                    Array<double> a(s);
-                    for (int i = 0; i < s; i++)
-                      a[i] = x[i];
-                    return a;
-                  }), py::arg("vec"), "Makes array with given vector")
-    .def("__rand__" ,  []( Array<double> & a, shared_ptr<Archive> & arch )
-                                         { cout << "output d array" << endl;
-                                           *arch & a; return arch; })
-    .def("print", [](Array<double> &a) { cout << a << endl; }, "print the array" )
-    ;
-
-  py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI", py::buffer_protocol());
-  PyDefVector<FlatArray<int>, int>(m, class_flatarrayi);
-  PyDefToString<FlatArray<int> >(m, class_flatarrayi);
-  PyDefVecBuffer<FlatArray<int>,int>(class_flatarrayi);
-  class_flatarrayi.def(py::init<size_t, int *>());
-
-  py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init([] (int n) { return new Array<int>(n); }),py::arg("n"), "Makes array of given length")
-    .def(py::init([] (std::vector<int> const & x)
-                  {
-                    int s = x.size();
-                    Array<int> tmp(s);
-                    for (int i = 0; i < s; i++)
-                      tmp[i] = x[i]; 
-                    return tmp;
-                  }), py::arg("vec"), "Makes array with given vector")
-    ;
-
-  py::class_<FlatArray<size_t> > class_flatarrayst (m, "FlatArray_sizet", py::buffer_protocol());
-  PyDefVector<FlatArray<size_t>, size_t>(m, class_flatarrayst);
-  PyDefToString<FlatArray<size_t> >(m, class_flatarrayst);
-  PyDefVecBuffer<FlatArray<size_t>, size_t>(class_flatarrayst);
-  class_flatarrayst.def(py::init<size_t, size_t *>());
-  
   py::class_<ngstd::LocalHeap> (m, "LocalHeap", "A heap for fast memory allocation")
      .def(py::init<size_t,const char*>(), "size"_a=1000000, "name"_a="PyLocalHeap")
     ;
