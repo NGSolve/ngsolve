@@ -11,29 +11,6 @@
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-// BEGIN EVIL HACK: Patch PyThread_get_key_value/PyThread_tss_get inside pybind11 to avoid deadlocks
-// see https://github.com/pybind/pybind11/pull/1211 (please merge!)
-#if defined(__GNUG__) && !defined(__clang__)
-#  pragma GCC diagnostic ignored "-Wattributes"
-#endif
-#include <Python.h>
-#include <pythread.h>
-#include <pybind11/cast.h>
-#undef PYBIND11_TLS_GET_VALUE
-#if PY_VERSION_HEX >= 0x03070000
-    inline void * PYBIND11_TLS_GET_VALUE(Py_tss_t *state) {
-        PyThreadState *tstate = (PyThreadState *) PyThread_tss_get(state);
-        if (!tstate) tstate = PyGILState_GetThisThreadState();
-        return tstate;
-    }
-#else
-    inline void * PYBIND11_TLS_GET_VALUE(int state) {
-        PyThreadState *tstate = (PyThreadState *) PyThread_get_key_value(state);
-        if (!tstate) tstate = PyGILState_GetThisThreadState();
-        return tstate;
-    }
-#endif
-// END EVIL HACK
 #include <pybind11/pybind11.h>
 #include <pybind11/eval.h>
 #include <pybind11/operators.h>
@@ -74,28 +51,24 @@ namespace ngstd {
 using namespace ngstd;
 
 namespace pybind11 {
-template<typename T>
-bool CheckCast( py::handle obj ) {
-  try{
-    obj.cast<T>();
-    return true;
-  }
-  catch (py::cast_error &e) {
-    return false;
-  }
-  catch (py::error_already_set &e) {
-    return false;
-  }
-}
-
-
 template <typename T>
 struct extract
 {
   py::handle obj;
   extract( py::handle aobj ) : obj(aobj) {}
 
-  bool check() { return CheckCast<T>(obj); }
+  bool check() {
+      try
+      {
+        obj.cast<T>();
+      }
+      catch(const std::runtime_error &e)
+      {
+        return false;
+      }
+      return true;
+  }
+
   T operator()() { return obj.cast<T>(); }
 };
 }
@@ -142,23 +115,6 @@ public:
     file.close();
     exec(output);
   }
-  
-  
-
-  //  py::exec_file(file.c_str(), main_namespace, main_namespace);
-  //  return;
-  //  try{
-  //    py::exec_file(file.c_str(), main_namespace, main_namespace);
-  //  }
-  //  catch(py::error_already_set const &) {
-  //    PyErr_Print();
-  //  }
-  //  catch (...) {
-  //      cout << "caught!" << endl;
-  //  }
-  //}
-
-  
 };
 
 
@@ -452,68 +408,6 @@ namespace ngstd
     void* Ptr() const { return ptr; }
   };
 }
-
-
-
-class PyOutArchive : public Archive
-{
-  py::list list;
-public:
-  PyOutArchive () : Archive(true) {  }
-  py::list GetList() const { return list; }
-  const VersionInfo& GetVersion(const std::string& library)
-  { return GetLibraryVersions()[library]; }
-
-  using Archive::operator&;
-  virtual Archive & operator & (double & d) { list.append(py::cast(d)); return *this; }
-  virtual Archive & operator & (int & i) { list.append(py::cast(i)); return *this; }
-  virtual Archive & operator & (short & i) { list.append(py::cast(i)); return *this; }
-  virtual Archive & operator & (long & i) { list.append(py::cast(i)); return *this; }
-  virtual Archive & operator & (size_t & i) { list.append(py::cast(i)); return *this; }
-  virtual Archive & operator & (unsigned char & i) { list.append(py::cast(i)); return *this; }
-  virtual Archive & operator & (bool & b) { list.append(py::cast(b)); return *this; }
-  virtual Archive & operator & (string & str) { list.append(py::cast(str)); return *this; }
-  virtual Archive & operator & (char *& str) { list.append(py::cast(string(str))); return *this; }
-};
-
-
-class PyInArchive : public Archive
-  {
-    py::list list;
-    // decltype(list.begin())auto iter;
-    size_t iter;
-  public:
-    PyInArchive (py::list alist) : Archive(false), list(alist), iter(0)
-    {
-    }
-    const VersionInfo& GetVersion(const std::string& library) { return GetLibraryVersions()[library]; }
-
-    using Archive::operator&;
-    virtual Archive & operator & (double & d) { d = py::cast<double> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (int & d) { d = py::cast<int> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (short & d) { d = py::cast<short> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (long & d) { d = py::cast<long> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (size_t & d) { d = py::cast<size_t> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (unsigned char & d) { d = py::cast<unsigned char> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (bool & d) { d = py::cast<bool> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (string & d) { d = py::cast<string> (list[iter]); iter++; return *this; }
-    virtual Archive & operator & (char *& d) { throw Exception("unpickl char* not implemented"); }    // do a string copy ...
-
-    /*
-    virtual Archive & operator & (int & i);
-    virtual Archive & operator & (short & i);
-    virtual Archive & operator & (long & i);
-    virtual Archive & operator & (size_t & i);
-    virtual Archive & operator & (unsigned char & i);
-    virtual Archive & operator & (bool & b);
-    virtual Archive & operator & (string & str);
-    virtual Archive & operator & (char *& str);
-    */
-  };
-
-
-
-
 
 #endif // NGS_PYTHON
 #endif // PYTHON_NGSTD_HPP___
