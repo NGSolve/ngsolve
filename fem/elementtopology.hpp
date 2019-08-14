@@ -92,7 +92,7 @@ namespace ngfem
 
 
 
-  enum VorB : uint8_t { VOL, BND, BBND, BBBND, MAX_CODIM=BBBND };
+  enum VorB : uint8_t { VOL, BND, BBND, BBBND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
   inline ostream & operator<< (ostream & ost, VorB vb)
   {
