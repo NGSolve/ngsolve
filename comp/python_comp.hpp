@@ -37,7 +37,7 @@ namespace ngcomp
     auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docuboth.c_str());
 
     pyspace
-      .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+      .def(py::init([pyspace](shared_ptr<MeshAccess> ma, bool autoupdate, py::kwargs kwargs)
                     {
                       py::list info;
                       info.append(ma);
@@ -46,8 +46,18 @@ namespace ngcomp
                       LocalHeap glh(10000000, "init-fes-lh");                    
                       fes->Update(glh);
                       fes->FinalizeUpdate(glh);
+                      if(autoupdate)
+                        {
+                          auto fesptr = fes.get();
+                          ma->updateSignal.connect(fesptr, [fesptr]()
+                                     {
+                                       LocalHeap lh(1000000);
+                                       fesptr->Update(lh);
+                                       fesptr->FinalizeUpdate(lh);
+                                     });
+                        }
                       return fes;
-                    }),py::arg("mesh"))
+                    }),py::arg("mesh"), py::arg("autoupdate")=false)
     
       .def(py::pickle(&fesPickle,
                       (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))

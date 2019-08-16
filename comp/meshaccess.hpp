@@ -242,8 +242,9 @@ namespace ngcomp
     shared_ptr<Array<Array<INT<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>()};
-
   public:
+    Signal<> updateSignal;
+
     /// for achiving ...
     MeshAccess ();
     /// connects to Netgen - mesh

@@ -1914,6 +1914,7 @@ namespace ngcomp
     nlevels = std::numeric_limits<int>::max();
     mesh.Refine(NG_REFINE_H, &NGSolveTaskManager, &NGSolveTracer);
     UpdateBuffers();
+    updateSignal.emit();
   }
 
   void MeshAccess :: Curve (int order)

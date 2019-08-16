@@ -1405,15 +1405,20 @@ active_dofs : BitArray or None
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
   gf_class
-    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name,
+    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name, bool autoupdate,
                                  py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
+      if(autoupdate)
+        {
+          auto gfptr = gf.get();
+          fes->updateSignal.connect(gfptr, [gfptr]() { gfptr->Update(); });
+        }
       return gf;
-    }), py::arg("space"), py::arg("name")="gfu",
+    }), py::arg("space"), py::arg("name")="gfu", py::arg("autoupdate")=false,
          "creates a gridfunction in finite element space")
     .def_static("__flags_doc__", [] ()
                 {
