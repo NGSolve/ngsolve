@@ -1374,18 +1374,16 @@ namespace ngla
         if (c <= i)
           cnt[i]++;
 
-    auto full = make_shared<SparseMatrixSymmetric<double>>(cnt);
-    cnt = 0;
+    auto symm = make_shared<SparseMatrixSymmetric<double>>(cnt);
 
     for (int i = 0; i < mat.Height(); i++)
-      for (int ci : Range(mat.GetRowIndices(i)))
+      for (int ci : Range(symm->GetRowIndices(i)))
         {
-          full -> GetRowIndices(i)[cnt[i]] = mat.GetRowIndices(i)[ci];
-          full -> GetRowValues(i)[cnt[i]] = mat.GetRowValues(i)[ci];
-          cnt[i] ++;
+            symm -> GetRowIndices(i)[ci] = mat.GetRowIndices(i)[ci];
+            symm -> GetRowValues(i)[ci] = mat.GetRowValues(i)[ci];
         }
 
-    return full;    
+    return symm;    
   }
 
 
