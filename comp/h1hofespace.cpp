@@ -714,14 +714,19 @@ into the wirebasket.
        });
 
     if (ma->GetDimension() == 3)
+    {
+      COUPLING_TYPE face_dof_type = INTERFACE_DOF;
+      if (ma->GetNE(VOL) == 0)
+        face_dof_type = LOCAL_DOF;
       // for (auto face : Range (ma->GetNFaces()))
       ParallelFor
         (ma->GetNFaces(),
          [&] (size_t face)
          {
-           ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
+           ctofdof[GetFaceDofs(face)] = face_dof_type;
          });
-
+    }
+    
     // for (auto el : Range(ma->GetNE()))
     ParallelFor
       (ma->GetNE(),

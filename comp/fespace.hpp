@@ -110,7 +110,7 @@ ANY                  1 1 1 1 | 15
     int level_updated;
 
     /// on which subdomains is the space defined ?
-    Array<bool> definedon[3];
+    Array<bool> definedon[4];
 
     /// prototype: what are the Dirichlet boundaries ?
     BitArray dirichlet_boundaries;

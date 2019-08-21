@@ -330,11 +330,12 @@ auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
     auto c = py::class_<TVEC >(m, name, py::buffer_protocol());
     PyDefVector<TVEC, TSCAL>(m, c);
     PyVecAccess< TVEC, TNEW >(m, c);
-    PyDefToString<TVEC >(m, c);
     PyDefVecBuffer<TVEC>(c);
     c.def(py::self+=py::self);
     c.def(py::self-=py::self);
     c.def(py::self*=TSCAL());
+    c.def("__str__", &ToString<TVEC>);
+    c.def("__repr__", &ToString<TVEC>);
     return c;
   }
 
@@ -457,7 +458,6 @@ vals : tuple
     typedef FlatMatrix<double> FMD;
     py::class_<FlatMatrix<double> > class_FMD(m, "FlatMatrixD", py::buffer_protocol());
         PyMatAccess<FMD, Matrix<double> >(class_FMD);
-        PyDefToString<FMD>(m, class_FMD);
         class_FMD.def(py::self+=py::self);
         class_FMD.def(py::self-=py::self);
         class_FMD.def(py::self*=double());
@@ -465,13 +465,16 @@ vals : tuple
 	    CalcInverse(self,inv); return;
 	  });
         class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { return Inv(self); } ) );        
+        class_FMD.def("__str__", &ToString<FMD>);
+        class_FMD.def("__repr__", &ToString<FMD>);
         PyDefMatBuffer<FMD>(class_FMD);
 
 
     typedef FlatMatrix<Complex> FMC;
     auto class_FMC = py::class_<FlatMatrix<Complex> > (m, "FlatMatrixC", py::buffer_protocol());
         PyMatAccess<FMC, Matrix<Complex> >(class_FMC);
-        PyDefToString<FMC>(m, class_FMC);
+        class_FMC.def("__str__", &ToString<FMC>);
+        class_FMC.def("__repr__", &ToString<FMC>);
         class_FMC.def(py::self+=py::self)
         .def(py::self-=py::self)
         .def(py::self*=Complex())

@@ -11,13 +11,30 @@
 namespace ngfem
 {
 
-  template <int DIM>
-  class HDivDivFiniteElement : public FiniteElement
+  class BaseHDivDivFiniteElement : public FiniteElement
   {
   public:
-    using FiniteElement::FiniteElement;
+
     using FiniteElement::ndof;
     using FiniteElement::order;
+
+    INLINE BaseHDivDivFiniteElement () { ; } 
+    INLINE BaseHDivDivFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder) { ; }
+
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcDivShape (const IntegrationPoint & ip,
+			       BareSliceMatrix<double> divshape) const = 0;
+  };
+  template <int DIM>
+  class HDivDivFiniteElement : public BaseHDivDivFiniteElement
+  {
+  public:
+    using BaseHDivDivFiniteElement::BaseHDivDivFiniteElement;
+    using BaseHDivDivFiniteElement::ndof;
+    using BaseHDivDivFiniteElement::order;
 
     // old style
     virtual void CalcShape (const IntegrationPoint & ip, 

@@ -2295,11 +2295,11 @@ namespace ngbla
 
 
   template <int H, int W, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (Mat<H,W,SCAL> & x, TANY y)
+  inline void AtomicAdd (Mat<H,W,SCAL> & x, TANY y)
   {
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W; j++)
-        MyAtomicAdd (x(i,j), y(i,j));
+        AtomicAdd (x(i,j), y(i,j));
   }
 
 }

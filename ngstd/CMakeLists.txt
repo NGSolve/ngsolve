@@ -1,7 +1,7 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngstd ${NGS_LIB_TYPE}
-        table.cpp bitarray.cpp flags.cpp
+        table.cpp bitarray.cpp
         blockalloc.cpp evalfunc.cpp templates.cpp
         stringops.cpp
         cuda_ngstd.cpp python_ngstd.cpp
@@ -28,12 +28,12 @@ install( TARGETS ngstd ${ngs_install_dir} )
 install( FILES
         autodiffdiff.hpp autodiff.hpp autoptr.hpp    
         bessel.hpp bitarray.hpp blockalloc.hpp evalfunc.hpp
-        flags.hpp hashtable.hpp memusage.hpp ngstd.hpp	      
+        hashtable.hpp memusage.hpp ngstd.hpp	      
         stringops.hpp table.hpp templates.hpp
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp sockets.hpp cuda_ngstd.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
-        bspline.hpp xbool.hpp simd.hpp
+        bspline.hpp simd.hpp
         simd_complex.hpp sample_sort.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
