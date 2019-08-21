@@ -1415,7 +1415,7 @@ active_dofs : BitArray or None
       if(autoupdate)
         {
           auto gfptr = gf.get();
-          fes->updateSignal.connect(gfptr, [gfptr]() { gfptr->Update(); });
+          fes->updateSignal.Connect(gfptr, [gfptr]() { gfptr->Update(); });
         }
       return gf;
     }), py::arg("space"), py::arg("name")="gfu", py::arg("autoupdate")=false,

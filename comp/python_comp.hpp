@@ -49,7 +49,7 @@ namespace ngcomp
                       if(autoupdate)
                         {
                           auto fesptr = fes.get();
-                          ma->updateSignal.connect(fesptr, [fesptr]()
+                          ma->updateSignal.Connect(fesptr, [fesptr]()
                                      {
                                        LocalHeap lh(1000000);
                                        fesptr->Update(lh);

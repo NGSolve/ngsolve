@@ -712,7 +712,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
        
     level_updated = ma->GetNLevels();
     if (timing) Timing();
-    updateSignal.emit();
+    updateSignal.Emit();
     // CheckCouplingTypes();
   }
 
