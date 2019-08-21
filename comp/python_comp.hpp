@@ -41,7 +41,7 @@ namespace ngcomp
                     {
                       py::list info;
                       info.append(ma);
-                      auto flags = CreateFlagsFromKwArgs(pyspace, kwargs, info);
+                      auto flags = CreateFlagsFromKwArgs(kwargs, pyspace, info);
                       auto fes = make_shared<FES>(ma,flags);
                       LocalHeap glh(10000000, "init-fes-lh");                    
                       fes->Update(glh);

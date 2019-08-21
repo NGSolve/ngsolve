@@ -3,6 +3,8 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "python_fem.hpp"
 #include "../ngstd/bspline.hpp"
+
+#include "hdivdivfe.hpp"
 #include <fem.hpp>
 #include <comp.hpp>
 #include <mutex>
@@ -27,31 +29,29 @@ namespace ngfem
     if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
       return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
-    if(py::CheckCast<double>(val))
-      return make_shared<ConstantCoefficientFunction> (val.cast<double>());
-    if(py::CheckCast<Complex>(val))
-      return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
+    try { return make_shared<ConstantCoefficientFunction> (val.cast<double>()); }
+    catch(py::cast_error) {}
+    try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
+    catch(py::cast_error) {}
 
     if (py::isinstance<py::list>(val))
       {
-        py::list el(val);
-        Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
-        for (int i : Range(cflist))
+        auto el = py::cast<py::list>(val);
+        Array<shared_ptr<CoefficientFunction>> cflist(el.size());
+        for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(el[i]);
         return MakeDomainWiseCoefficientFunction(move(cflist));
       }
 
     if (py::isinstance<py::tuple>(val))
       {
-        py::tuple et(val);
-        Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
-        for (int i : Range(cflist))
+        auto et = py::cast<py::tuple>(val);
+        Array<shared_ptr<CoefficientFunction>> cflist(et.size());
+        for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(et[i]);
         return MakeVectorialCoefficientFunction(move(cflist));
       }
-
-
-    throw Exception ("cannot make coefficient");
+    throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(val.get_type())));
   }
 
   Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
@@ -336,6 +336,23 @@ cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
   if (this == var) return dir;
   return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericASin>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return make_shared<ConstantCoefficientFunction>(1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1 * c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
+}
+
 
 
   template <int D>
@@ -743,7 +760,7 @@ val : can be one of the following:
                     ar & cf;
                     return cf;
                   }))
-    .def(py::init([] (py::object val, py::object dims)
+    .def(py::init([] (py::object val, optional<py::tuple> dims)
         {
           shared_ptr<CoefficientFunction> coef;
           
@@ -752,17 +769,14 @@ val : can be one of the following:
             coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
           else
             coef = MakeCoefficient(val);
-          if(dims)
+          if(dims.has_value())
             {
-              try {
-                Array<int> cdims = makeCArray<int> (dims);
-                coef->SetDimensions(cdims);
-              }
-              catch (py::type_error){ }
+              auto cdims = makeCArray<int> (*dims);
+              coef->SetDimensions(cdims);
             }
           return coef;
         }),
-        py::arg("coef"),py::arg("dims")=DummyArgument(),
+      py::arg("coef"),py::arg("dims")=nullptr,
          "Construct a CoefficientFunction from either one of\n"
          "  a scalar (float or complex)\n"
          "  a tuple of scalars and or CFs to define a vector-valued CF\n"
@@ -1269,6 +1283,29 @@ mip : ngsolve.BaseMappedIntegrationPoint
   input mapped integration point
 
 )raw_string"))
+        .def("CalcDShape",
+         [] (const BaseScalarFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcDShape(ip, mat);
+           return mat;
+          },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0,docu_string(R"raw_string(
+Computes derivative of the shape in an integration point.
+
+Parameters:
+
+x : double
+  input x value
+
+y : double
+  input y value
+
+z : double
+  input z value
+
+)raw_string"))
     ;
 
 
@@ -1302,7 +1339,51 @@ mip : ngsolve.BaseMappedIntegrationPoint
          py::arg("mip"))
     ;
 
+    py::class_<BaseHDivFiniteElement, shared_ptr<BaseHDivFiniteElement>, 
+             FiniteElement>
+    (m, "HDivFE", "an H(div) finite element")
+    .def("CalcShape",
+         [] (const BaseHDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+     .def("CalcDivShape",
+         [] (const BaseHDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Vector<> v(fe.GetNDof());
+           fe.CalcDivShape(ip,v);
+           return v;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+    ;
 
+    py::class_<BaseHDivDivFiniteElement, shared_ptr<BaseHDivDivFiniteElement>, 
+               FiniteElement>
+      (m, "HDivDivFE", "an H(div div) finite element")
+      .def("CalcShape",
+         [] (const BaseHDivDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim()*(1+fe.Dim())/2);
+           fe.CalcShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+     .def("CalcDivShape",
+         [] (const BaseHDivDivFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcDivShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+    ;
 
 
 
@@ -1671,7 +1752,7 @@ kwargs : kwargs
                       string filename, py::kwargs kwargs)
         -> shared_ptr<BilinearFormIntegrator>
         {
-          auto flags = CreateFlagsFromKwArgs(bfi_class,kwargs);
+          auto flags = CreateFlagsFromKwArgs(kwargs, bfi_class);
           Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
           auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 

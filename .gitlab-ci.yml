@@ -164,7 +164,6 @@ ubuntu_avx512_test:
 ubuntu_debug_test:
   <<: *ubuntu_debug
   <<: *test_linux
-  allow_failure: true
 
 ubuntu_mpi_test:
   <<: *ubuntu_mpi

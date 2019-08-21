@@ -17,6 +17,7 @@ namespace ngcomp
   protected:
     Array<DofId> first_element_dof; 
     shared_ptr<FESpace> space;
+    VorB vb;
     
   public:
     DiscontinuousFESpace (shared_ptr<FESpace> space, const Flags & flags);
