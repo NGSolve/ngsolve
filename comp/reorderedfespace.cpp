@@ -29,10 +29,10 @@ namespace ngcomp {
     */
     }
     
-  void ReorderedFESpace :: Update (LocalHeap & lh)
+  void ReorderedFESpace :: Update()
   {      
-    space->Update (lh);
-    FESpace::Update(lh);
+    space->Update();
+    FESpace::Update();
 
     SetNDof(space->GetNDof());
     size_t ndof = space->GetNDof();

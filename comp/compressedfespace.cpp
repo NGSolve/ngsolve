@@ -17,7 +17,7 @@ namespace ngcomp
     iscomplex = space->IsComplex();
   }
 
-  void CompressedFESpace::Update(LocalHeap & lh)
+  void CompressedFESpace::Update()
   { 
     //space->Update(lh); // removed as it may override changed doftypes
 
@@ -58,7 +58,7 @@ namespace ngcomp
       (*testout) << i << " -> " << comp2all[i] << endl;
 
     SetNDof(ndof);
-    FESpace::FinalizeUpdate (lh);
+    FESpace::FinalizeUpdate();
   }
 
   FiniteElement & CompressedFESpace::GetFE (ElementId ei, Allocator & lh) const

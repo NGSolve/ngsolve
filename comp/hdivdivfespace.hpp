@@ -34,7 +34,7 @@ namespace ngcomp
       return "HDivDivFESpace";
     }
 
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
 
     virtual size_t GetNDof () const throw() override { return ndof; }
 

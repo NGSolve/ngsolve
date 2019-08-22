@@ -147,8 +147,8 @@ namespace ngcomp
     LocalHeap lh(100009, "PDE - Loadsolution");
     for (int i = 0; i < spaces.Size(); i++)
       {
-	spaces[i]->Update(lh);
-	spaces[i]->FinalizeUpdate(lh);
+	spaces[i]->Update();
+	spaces[i]->FinalizeUpdate();
       }
     for (int i = 0; i < gridfunctions.Size(); i++)
       {
@@ -653,8 +653,8 @@ namespace ngcomp
 		     << "Update " << fes -> GetClassName()
 		     << " " << fes -> GetName () << flush;
 
-		fes -> Update(lh);
-		fes -> FinalizeUpdate(lh);
+		fes -> Update();
+		fes -> FinalizeUpdate();
 
 		int ndof = fes->GetNDofGlobal();
 		AddVariable (string("fes.")+fes->GetName()+".ndof", ndof, 6);
@@ -891,7 +891,7 @@ namespace ngcomp
             auto fes = CreateFESpace (type, mas[0], flags);
 
             fes -> DoArchive(archive);
-            fes -> FinalizeUpdate (lh);
+            fes -> FinalizeUpdate ();
             spaces.Set (name, fes);
             todo.Append(fes);
 	    cout << "space " << i << " complete" << endl;

@@ -30,10 +30,10 @@ namespace ngcomp {
         }
     }
     
-  void PeriodicFESpace :: Update (LocalHeap & lh)
+  void PeriodicFESpace :: Update()
     {      
-      space->Update (lh);
-      FESpace::Update(lh);
+      space->Update();
+      FESpace::Update();
       dofmap.SetSize (space->GetNDof());
       vertex_map.SetSize(ma->GetNV());
       for (int i = 0; i < dofmap.Size(); i++)
@@ -173,13 +173,13 @@ namespace ngcomp {
     iscomplex = true;
   }
 
-  void QuasiPeriodicFESpace :: Update (LocalHeap & lh)
+  void QuasiPeriodicFESpace :: Update()
   {
-    space->Update(lh);
+    space->Update();
     dof_factors.SetSize(space->GetNDof());
     for (auto i : Range(dof_factors.Size()))
       dof_factors[i] = Complex(1.0,0.0);
-    PeriodicFESpace::Update(lh);
+    PeriodicFESpace::Update();
   }
   void QuasiPeriodicFESpace :: VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const
   {

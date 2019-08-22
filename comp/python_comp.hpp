@@ -22,10 +22,8 @@ namespace ngcomp
     auto fes = CreateFESpace(state[0].cast<string>(),
                              state[1].cast<shared_ptr<MeshAccess>>(),
                              state[2].cast<Flags>());
-
-    LocalHeap glh(10000000, "Unpickl-lh");
-    fes->Update(glh);
-    fes->FinalizeUpdate(glh);
+    fes->Update();
+    fes->FinalizeUpdate();
     return dynamic_pointer_cast<FESPACE>(fes);
   };
 
@@ -43,17 +41,15 @@ namespace ngcomp
                       info.append(ma);
                       auto flags = CreateFlagsFromKwArgs(kwargs, pyspace, info);
                       auto fes = make_shared<FES>(ma,flags);
-                      LocalHeap glh(10000000, "init-fes-lh");                    
-                      fes->Update(glh);
-                      fes->FinalizeUpdate(glh);
+                      fes->Update();
+                      fes->FinalizeUpdate();
                       if(autoupdate)
                         {
                           auto fesptr = fes.get();
                           ma->updateSignal.Connect(fesptr, [fesptr]()
                                      {
-                                       LocalHeap lh(1000000);
-                                       fesptr->Update(lh);
-                                       fesptr->FinalizeUpdate(lh);
+                                       fesptr->Update();
+                                       fesptr->FinalizeUpdate();
                                      });
                         }
                       return fes;

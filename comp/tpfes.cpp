@@ -210,23 +210,23 @@ namespace ngcomp
     }
   }
   
-  void TPHighOrderFESpace::FinalizeUpdate(LocalHeap & lh) 
+  void TPHighOrderFESpace::FinalizeUpdate()
   {
-    space_x->FinalizeUpdate(lh);
+    space_x->FinalizeUpdate();
     for(auto fes : spaces_y)
-      fes->FinalizeUpdate(lh);
-    FESpace::FinalizeUpdate(lh);
+      fes->FinalizeUpdate();
+    FESpace::FinalizeUpdate();
     element_coloring[VOL] = Table<int>(nel,1);
     for (int i : Range(nel))
       element_coloring[VOL][i][0] = i;
   }
 
-  void TPHighOrderFESpace::Update(LocalHeap & lh)
+  void TPHighOrderFESpace::Update()
   {
-    space_x->Update(lh);
+    space_x->Update();
     for (auto fes : spaces_y)
-      fes->Update(lh);
-    FESpace::Update(lh);
+      fes->Update();
+    FESpace::Update();
   }
   
   void TPHighOrderFESpace::UpdateDofTables()

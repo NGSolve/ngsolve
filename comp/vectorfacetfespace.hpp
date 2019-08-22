@@ -54,7 +54,7 @@ namespace ngcomp
       return "VectorFacetFESpace";
     }
 
-    virtual void Update (LocalHeap& lh) override;
+    void Update() override;
     virtual void UpdateCouplingDofArray() override;
 
     virtual void SetOrder (NodeId ni, int order) override;
