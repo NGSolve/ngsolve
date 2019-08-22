@@ -254,9 +254,9 @@ namespace ngcomp
       }
   }
   
-  void HDivHighOrderFESpace :: Update(LocalHeap & lh)
+  void HDivHighOrderFESpace :: Update()
   {
-    FESpace::Update(lh);
+    FESpace::Update();
     // In discontinuous spaces the order on edges and faces  
     // are also set to the maximal order of adjacent elements  
     // and not to the element order (Motivation: Equilibrated_EE) 
@@ -269,7 +269,7 @@ namespace ngcomp
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
     if (low_order_space)
-      low_order_space -> Update(lh);
+      low_order_space -> Update();
     
     // int nv = ma->GetNV();
     size_t nel = ma->GetNE();

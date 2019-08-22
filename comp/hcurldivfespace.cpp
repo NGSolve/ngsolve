@@ -504,7 +504,7 @@ namespace ngcomp
     }
   }
 
-  void HCurlDivFESpace :: Update(LocalHeap & lh)
+  void HCurlDivFESpace :: Update()
   {
     first_facet_dof.SetSize (ma->GetNFacets()+1);
     first_element_dof.SetSize (ma->GetNE()+1);

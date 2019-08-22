@@ -37,17 +37,14 @@ namespace ngcomp {
     */
     }
     
-  void DiscontinuousFESpace :: Update (LocalHeap & lh)
+  void DiscontinuousFESpace :: Update()
   {      
-    space->Update (lh);
-    FESpace::Update(lh);
+    space->Update();
+    FESpace::Update();
     
     first_element_dof.SetSize(ma->GetNE(vb)+1);
-    for (ElementId ei : ma->Elements(vb))
-      {
-        HeapReset hr(lh);
-        first_element_dof[ei.Nr()] = space->GetFE(ei, lh).GetNDof();
-      }
+    for (auto el : space->Elements(vb))
+      first_element_dof[el.Nr()] = el.GetFE().GetNDof();
 
     size_t ndof = 0;
     for (size_t i : Range(ma->GetNE(vb)))

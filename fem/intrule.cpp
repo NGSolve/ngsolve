@@ -2753,9 +2753,9 @@ namespace ngfem
       if (ira -> Size() < order+1)
 	{
 	  int oldsize = ira -> Size();
-	  ira -> SetSize (order+1);
+	  ira -> SetAllocSize (order+1);
 	  for (int i = oldsize; i < order+1; i++)
-	    (*ira)[i] = 0;
+	    ira -> Append(nullptr);
 	}
 
       if ( (*ira)[order] == 0)
@@ -3124,9 +3124,9 @@ namespace ngfem
         if (order >= ira->Size())
           {
             int oldsize = ira->Size();
-            ira->SetSize(order+2);
+            ira -> SetAllocSize(order+2);
             for (int i = oldsize; i < order+2; i++)
-              (*ira)[i] = nullptr;
+                ira -> Append(nullptr);
           }
 
         if ( (*ira)[order] == nullptr)

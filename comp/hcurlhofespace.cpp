@@ -521,9 +521,9 @@ namespace ngcomp
   }
 
   
-  void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
+  void HCurlHighOrderFESpace :: Update()
   {
-    FESpace :: Update (lh);
+    FESpace::Update();
 
     int dim = ma->GetDimension(); 
 
@@ -531,7 +531,7 @@ namespace ngcomp
       throw Exception("HCurlHighOrderFESpace::Update() order < 0 !" ) ;
     
     if (low_order_space)
-      low_order_space -> Update(lh);
+      low_order_space -> Update();
 
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
@@ -630,8 +630,8 @@ namespace ngcomp
           }
         */
         ma -> IterateElements
-          (VOL, lh,
-           [&](auto el, LocalHeap & lh)
+          (VOL,
+           [&](auto el)
            {
              if (gradientdomains[el.GetIndex()]) 
                {
@@ -885,7 +885,8 @@ namespace ngcomp
                   {
                   case ET_TET:
                     {
-                      ndof += (pl[0] * pl[0] - 1)*(pl[0] - 2) / 2;
+                      if (pl[0] > 2)
+                        ndof += (pl[0] * pl[0] - 1)*(pl[0] - 2) / 2;
                       break;
                     }
                   case ET_HEX:
@@ -3411,8 +3412,8 @@ namespace ngcomp
     // if(ma->GetDimension()==3) nfa = ma->GetNFaces();
 
     LocalHeap lh(100008, "HCurlHOFeSpace::CreateGradient");
-    fesh1->Update(lh);
-    fesh1->FinalizeUpdate(lh);
+    fesh1->Update();
+    fesh1->FinalizeUpdate();
 
     for(int i=0; i < ne; i++){
       ElementId ei(VOL,i);
@@ -3447,7 +3448,7 @@ namespace ngcomp
     }
     fesh1->UpdateDofTables();
     fesh1->UpdateCouplingDofArray();
-    fesh1->FinalizeUpdate(lh);
+    fesh1->FinalizeUpdate();
 
     return fesh1;
   }

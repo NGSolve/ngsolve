@@ -357,9 +357,9 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
           fu(f1) = 0.0;
       }
   }
-  void HDivHighOrderSurfaceFESpace :: Update(LocalHeap & lh)
+  void HDivHighOrderSurfaceFESpace :: Update()
   {
-    FESpace::Update(lh);
+    FESpace::Update();
 
     size_t nel = ma->GetNSE();
     size_t nfa = ma->GetNEdges();

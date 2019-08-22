@@ -97,7 +97,7 @@ namespace ngsolve
     *testout << " ************ ZZ ErrorEstimator fesflux " << endl; 
 
     shared_ptr<FESpace> fesflux = make_shared<H1HighOrderFESpace> (ma, fesflags);
-    fesflux -> Update(lh);
+    fesflux -> Update();
 
     shared_ptr<GridFunction> flux = CreateGridFunction (fesflux, "fluxzz", 
                                                         Flags().SetFlag("novisual"));
@@ -392,7 +392,7 @@ namespace ngsolve
       fesflags.SetFlag ("complex");
 
     auto fesflux = make_shared<HDivHighOrderFESpace> (ma, fesflags);
-    fesflux -> Update(lh);
+    fesflux -> Update();
 
     // Flags flags;
     // flags.SetFlag ("novisual");

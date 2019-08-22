@@ -88,7 +88,7 @@ namespace ngcomp
     }
 
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
     ///
     virtual void DoArchive (Archive & archive) override;
     ///
