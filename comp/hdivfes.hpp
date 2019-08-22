@@ -36,7 +36,7 @@ namespace ngcomp
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///

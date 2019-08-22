@@ -478,8 +478,8 @@ kwargs : kwargs
                       flags.SetFlag ("complex");
                     shared_ptr<FESpace>
                       fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
+                    fes->Update();
+                    fes->FinalizeUpdate();
                     return fes;
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
@@ -493,8 +493,8 @@ kwargs : kwargs
                     info.append(ma);
                     auto flags = CreateFlagsFromKwArgs(kwargs, fes_class, info);
                     auto fes = CreateFESpace (type, ma, flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
+                    fes->Update();
+                    fes->FinalizeUpdate();
                     return fes;
                   }),
                   py::arg("type"), py::arg("mesh"),
@@ -584,20 +584,20 @@ kwargs : kwargs
     .def(py::pickle(&fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
     .def("Update", [](shared_ptr<FESpace> self)
          { 
-           self->Update(glh);
-           self->FinalizeUpdate(glh);
+           self->Update();
+           self->FinalizeUpdate();
          },
          "update space after mesh-refinement")
      .def("UpdateDofTables", [](shared_ptr<FESpace> self)
          {
            self->UpdateDofTables();
            self->UpdateCouplingDofArray();
-           self->FinalizeUpdate(glh);
+           self->FinalizeUpdate();
          },
          "update dof-tables after changing polynomial order distribution")
      .def("FinalizeUpdate", [](shared_ptr<FESpace> self)
          { 
-           self->FinalizeUpdate(glh);
+           self->FinalizeUpdate();
          },
          "finalize update")
      .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
@@ -624,7 +624,7 @@ kwargs : kwargs
                if (doftype != UNUSED_DOF)
                  space->SetDofCouplingType(d,HIDDEN_DOF);
              }
-           self->FinalizeUpdate(glh); //Update FreeDofs
+           self->FinalizeUpdate(); //Update FreeDofs
          }, py::arg("component")=DummyArgument(), 
          "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
@@ -999,8 +999,8 @@ rho : ngsolve.fem.CoefficientFunction
                       auto fes = make_shared<CompoundFESpace>
                         (spaces[0]->GetMeshAccess(), spaces, state[1].cast<Flags>());
                       LocalHeap lh (1000000, "FESpace::Update-heap");
-                      fes->Update(lh);
-                      fes->FinalizeUpdate(lh);
+                      fes->Update();
+                      fes->FinalizeUpdate();
                       py::cast(fes).attr("__dict__") = state[2];
                       return fes;
                     }))
@@ -1115,8 +1115,8 @@ used_idnrs : list of int = None
                       }
                     else
                       throw Exception("Periodic FESpace needs a list of complex castable values as parameter 'phase'");
-                    perfes->Update(glh);
-                    perfes->FinalizeUpdate(glh);
+                    perfes->Update();
+                    perfes->FinalizeUpdate();
                     return perfes;
                   }), py::arg("fespace"), py::arg("phase")=DummyArgument(),
                   py::arg("use_idnrs")=py::list())
@@ -1147,14 +1147,14 @@ used_idnrs : list of int = None
                             facs->Append(fac.cast<Complex>());
                           auto fes = make_shared<QuasiPeriodicFESpace>
                             (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
-                          fes->Update(glh);
-                          fes->FinalizeUpdate(glh);
+                          fes->Update();
+                          fes->FinalizeUpdate();
                           return fes;
                         }
                       auto fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
                                                               Flags(),idnrs);
-                      fes->Update(glh);
-                      fes->FinalizeUpdate(glh);
+                      fes->Update();
+                      fes->FinalizeUpdate();
                       return fes;
                     }))
     ;
@@ -1178,8 +1178,8 @@ BND : boolean or None
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
                     auto dcfes = make_shared<DiscontinuousFESpace>(fes, flags);
-                    dcfes->Update(glh);
-                    dcfes->FinalizeUpdate(glh);
+                    dcfes->Update();
+                    dcfes->FinalizeUpdate();
                     return dcfes;
                   }), py::arg("fespace"))
     /*
@@ -1231,8 +1231,8 @@ BND : boolean or None
                   {
                     Flags flags = fes->GetFlags();
                     auto refes = make_shared<ReorderedFESpace>(fes, flags);
-                    refes->Update(glh);
-                    refes->FinalizeUpdate(glh);
+                    refes->Update();
+                    refes->FinalizeUpdate();
                     return refes;
                   }), py::arg("fespace"))
     /*
@@ -1304,8 +1304,8 @@ active_dofs : BitArray or None
                     shared_ptr<BitArray> actdofs = nullptr;
                     if (! py::extract<DummyArgument> (active_dofs).check())
                       dynamic_pointer_cast<CompressedFESpace>(ret)->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
-                    ret->Update(glh);
-                    ret->FinalizeUpdate(glh);
+                    ret->Update();
+                    ret->FinalizeUpdate();
                     return ret;                    
                   }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
     .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
@@ -1326,8 +1326,8 @@ active_dofs : BitArray or None
                       auto fes = make_shared<CompressedFESpace>(state[0].cast<shared_ptr<FESpace>>());
                       if (state[1].cast<shared_ptr<BitArray>>())
                         fes->SetActiveDofs(state[1].cast<shared_ptr<BitArray>>());
-                      fes->Update(glh);
-                      fes->FinalizeUpdate(glh);
+                      fes->Update();
+                      fes->FinalizeUpdate();
                       return fes;
                     }))
     ;
@@ -1346,8 +1346,8 @@ active_dofs : BitArray or None
                 for (int i = 0; i < compspace->GetNSpaces(); i++)
                   spaces[i] = make_shared<CompressedFESpace> ((*compspace)[i]);
                 auto ret = make_shared<CompoundFESpace>(compspace->GetMeshAccess(),spaces, compspace->GetFlags());
-                ret->Update(glh);
-                ret->FinalizeUpdate(glh);
+                ret->Update();
+                ret->FinalizeUpdate();
                 return ret;
               }
              }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
@@ -1405,15 +1405,20 @@ active_dofs : BitArray or None
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
   gf_class
-    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name,
+    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name, bool autoupdate,
                                  py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
+      if(autoupdate)
+        {
+          auto gfptr = gf.get();
+          fes->updateSignal.Connect(gfptr, [gfptr]() { gfptr->Update(); });
+        }
       return gf;
-    }), py::arg("space"), py::arg("name")="gfu",
+    }), py::arg("space"), py::arg("name")="gfu", py::arg("autoupdate")=false,
          "creates a gridfunction in finite element space")
     .def_static("__flags_doc__", [] ()
                 {

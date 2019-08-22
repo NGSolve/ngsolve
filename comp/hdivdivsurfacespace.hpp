@@ -33,16 +33,16 @@ namespace ngcomp
     static DocInfo GetDocu ();
     
 
-    virtual string GetClassName () const
+    string GetClassName () const override
     {
       return "HDivSymSurfaceSpace";
     }
 
-    virtual void Update(LocalHeap & lh);
+    void Update() override;
 
-    virtual void UpdateCouplingDofArray();
+    void UpdateCouplingDofArray() override;
   
-    virtual size_t GetNDof () const
+    size_t GetNDof () const override
     {
       return ndof;
     }
@@ -50,20 +50,20 @@ namespace ngcomp
     int GetFirstFaceDof (const int f) const { return first_face_dof[f]; }
     int GetFirstCellDof (const int c) const { return first_element_dof[c]; }
 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
-    virtual void GetDofNrs(ElementId id, Array<int> & dnums) const;
+    FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
+    void GetDofNrs(ElementId id, Array<int> & dnums) const override;
 
     virtual void GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
     { dnums.SetSize(0); }
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const
+    void GetVertexDofNrs (int vnr, Array<int> & dnums) const override
     { dnums.SetSize(0); }
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const
+    void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override
     { dnums = IntRange(first_face_dof[ednr],first_face_dof[ednr+1]); }
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const
+    void GetFaceDofNrs (int fanr, Array<int> & dnums) const override
     { dnums.SetSize(0); }
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
+    void GetInnerDofNrs (int elnr, Array<int> & dnums) const override
     { GetDofNrs (elnr, dnums); }
-    virtual std::shared_ptr<ngmg::Prolongation> GetProlongation() const
+    std::shared_ptr<ngmg::Prolongation> GetProlongation() const override
     { return 0; }
   };
 

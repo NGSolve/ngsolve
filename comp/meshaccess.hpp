@@ -242,8 +242,9 @@ namespace ngcomp
     shared_ptr<Array<Array<INT<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>()};
-
   public:
+    Signal<> updateSignal;
+
     /// for achiving ...
     MeshAccess ();
     /// connects to Netgen - mesh
@@ -388,12 +389,29 @@ namespace ngcomp
         }
     }
 
+    template <typename TFUNC>
+    void IterateElements (VorB vb,const TFUNC & func) const
+    {
+      if (task_manager)
+        {
+          SharedLoop sl(GetNE(vb));
 
-
-
-
-
-
+          task_manager -> CreateJob
+            ( [&] (const TaskInfo & ti)
+              {
+                for (size_t mynr : sl)
+                  {
+                    ElementId ei(vb, mynr);
+                    func (GetElement(ei));
+                  }
+              } );
+        }
+      else
+        {
+          for (auto ei : Elements(vb))
+            func (GetElement(ei));
+        }
+    }
 
     /// the geometry type of the element
     [[deprecated("Use GetElType with ElementId(VOL, elnr) instead!")]]            

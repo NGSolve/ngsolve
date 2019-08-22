@@ -273,9 +273,9 @@ namespace ngcomp
   }
 
 
-  void HDivDivSurfaceSpace::Update(LocalHeap & lh)
+  void HDivDivSurfaceSpace::Update()
   {
-    FESpace::Update(lh);
+    FESpace::Update();
 
     nel = ma->GetNSE();
     ndof = 0;

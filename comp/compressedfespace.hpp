@@ -21,7 +21,7 @@ namespace ngcomp
   public:
     CompressedFESpace (shared_ptr<FESpace> bfes);
     virtual ~CompressedFESpace () {};
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
 
     void WrapDofs(Array<DofId> & dnums) const
@@ -64,10 +64,10 @@ namespace ngcomp
     }
 
     /// update element coloring
-    virtual void FinalizeUpdate(LocalHeap & lh) override
+    void FinalizeUpdate() override
     {
-      space->FinalizeUpdate (lh);
-      FESpace::FinalizeUpdate (lh);
+      space->FinalizeUpdate();
+      FESpace::FinalizeUpdate();
     }
 
 

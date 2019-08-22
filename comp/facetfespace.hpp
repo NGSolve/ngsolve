@@ -60,7 +60,7 @@ namespace ngcomp
     }
   
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
   
     //  virtual void UpdateDofTables();
     virtual void UpdateCouplingDofArray() override;    
