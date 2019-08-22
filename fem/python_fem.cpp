@@ -29,10 +29,10 @@ namespace ngfem
     if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
       return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
-    if(py::CheckCast<double>(val))
-      return make_shared<ConstantCoefficientFunction> (val.cast<double>());
-    if(py::CheckCast<Complex>(val))
-      return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
+    try { return make_shared<ConstantCoefficientFunction> (val.cast<double>()); }
+    catch(py::cast_error) {}
+    try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
+    catch(py::cast_error) {}
 
     if (py::isinstance<py::list>(val))
       {
@@ -51,7 +51,7 @@ namespace ngfem
           cflist[i] = MakeCoefficient(et[i]);
         return MakeVectorialCoefficientFunction(move(cflist));
       }
-    throw Exception ("cannot make coefficient");
+    throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(val.get_type())));
   }
 
   Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)

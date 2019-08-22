@@ -885,7 +885,8 @@ namespace ngcomp
                   {
                   case ET_TET:
                     {
-                      ndof += (pl[0] * pl[0] - 1)*(pl[0] - 2) / 2;
+                      if (pl[0] > 2)
+                        ndof += (pl[0] * pl[0] - 1)*(pl[0] - 2) / 2;
                       break;
                     }
                   case ET_HEX:
