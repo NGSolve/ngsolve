@@ -309,7 +309,7 @@ into the wirebasket.
   }
 
   
-  void H1HighOrderFESpace :: Update(LocalHeap & lh)
+  void H1HighOrderFESpace :: Update()
   {
     static Timer timer ("H1HighOrderFESpace::Update");
     // static Timer timer1 ("H1HighOrderFESpace::Update 1");
@@ -318,7 +318,7 @@ into the wirebasket.
     RegionTimer reg(timer);
 
     // timer1.Start();
-    FESpace :: Update (lh);
+    FESpace::Update();
 
     if (order_policy == CONSTANT_ORDER)
       fixed_order = true;
@@ -326,7 +326,7 @@ into the wirebasket.
     TORDER maxorder = 0;
     TORDER minorder = 99; 
 
-    if (low_order_space) low_order_space -> Update(lh);
+    if (low_order_space) low_order_space -> Update();
     
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();

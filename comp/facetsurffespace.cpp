@@ -254,9 +254,9 @@ namespace ngcomp
   { ; }
 
 
-  void FacetSurfaceFESpace :: Update(LocalHeap & lh)
+  void FacetSurfaceFESpace :: Update()
   {
-    FESpace :: Update (lh);
+    FESpace::Update();
     
     if(print) 
       *testout << " FacetSurfaceFEspace with order " << order << " rel_order " << rel_order << " var_order " << var_order << endl; 

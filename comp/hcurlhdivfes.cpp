@@ -80,7 +80,7 @@ namespace ngcomp
 
 
   
-  void NedelecFESpace :: Update(LocalHeap & lh)
+  void NedelecFESpace :: Update()
   {
     // size_t ne = ma->GetNE();
     // size_t nse = ma->GetNSE();
@@ -114,8 +114,7 @@ namespace ngcomp
     */
     for (VorB vb : { VOL, BND })
       ma -> IterateElements
-        (vb, lh,
-         [&] (auto el, LocalHeap & lh)
+        (vb, [&] (auto el)
          {
            if (this->DefinedOn (el)) 
              finelevelofedge[el.Edges()] = level-1;         
@@ -928,10 +927,10 @@ namespace ngcomp
     //delete low_order_space;
   }
 
-  void NedelecFESpace2 :: Update(LocalHeap & lh)
+  void NedelecFESpace2 :: Update()
   {
     if (low_order_space)
-      low_order_space -> Update(lh);
+      low_order_space -> Update();
 
     int i, j;
 

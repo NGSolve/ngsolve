@@ -1026,7 +1026,7 @@ namespace ngcomp
         // only if it is periodic
         if (mesh.GetIdentificationType(idnr)!=2) continue;
         auto pv_buffer = mesh.GetPeriodicVertices(idnr);
-        auto pidnr = periodic_node_pairs[NT_VERTEX]->Append(Array<INT<2,int>>(pv_buffer.Size(), (INT<2,int>*) pv_buffer.Release(), true))-1;
+        auto pidnr = periodic_node_pairs[NT_VERTEX]->Append(Array<INT<2,int>>(pv_buffer.Size(), (INT<2,int>*) pv_buffer.Release(), true));
 
         // build vertex map for idnr
         Array<int> vertex_map(GetNV());
@@ -1914,6 +1914,7 @@ namespace ngcomp
     nlevels = std::numeric_limits<int>::max();
     mesh.Refine(NG_REFINE_H, &NGSolveTaskManager, &NGSolveTracer);
     UpdateBuffers();
+    updateSignal.Emit();
   }
 
   void MeshAccess :: Curve (int order)

@@ -628,7 +628,7 @@ namespace ngcomp
     return docu;
   }
 
-  void HDivDivFESpace :: Update(LocalHeap & lh)
+  void HDivDivFESpace :: Update()
   {
     // use order k+1 for certain inner or boundary shapes
     // see hdivdivfe.hpp

@@ -914,9 +914,8 @@ namespace ngcomp
       {
         if (this->GetFESpace()->GetLevelUpdated() < this->ma->GetNLevels())
           {
-            LocalHeap llh (1000000, "gridfunction update");
-            this->GetFESpace()->Update (llh);
-            this->GetFESpace()->FinalizeUpdate (llh);
+            this->GetFESpace()->Update();
+            this->GetFESpace()->FinalizeUpdate();
           }
 
 

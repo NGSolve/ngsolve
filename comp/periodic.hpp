@@ -24,11 +24,12 @@ namespace ngcomp
     PeriodicFESpace (shared_ptr<FESpace> space, const Flags & flags, shared_ptr<Array<int>> aused_idnrs);
     
     virtual ~PeriodicFESpace () { ; }
-    virtual void Update (LocalHeap & lh) override;
+    void Update() override;
     
-    virtual void FinalizeUpdate (LocalHeap & lh) override {
-      space->FinalizeUpdate(lh);
-      FESpace::FinalizeUpdate(lh);
+    void FinalizeUpdate() override
+    {
+      space->FinalizeUpdate();
+      FESpace::FinalizeUpdate();
     }
 
     shared_ptr<Array<int>> GetUsedIdnrs() const { return used_idnrs; }
@@ -83,7 +84,7 @@ namespace ngcomp
   public:
     QuasiPeriodicFESpace (shared_ptr<FESpace> fespace, const Flags & flag, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors);
 
-    virtual void Update (LocalHeap & lh) override;
+    void Update() override;
 
     shared_ptr<Array<Complex>> GetFactors() const { return factors; }
 

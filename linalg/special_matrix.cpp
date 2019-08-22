@@ -32,7 +32,11 @@ namespace ngla
             sy(i) += s * sx(i);
       }
   }
-
+  
+  void Projector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    return MultAdd (s, x, y);
+  }
 
   void Projector :: Project (BaseVector & x) const
   {

@@ -116,9 +116,9 @@ namespace ngcomp
     return docu;
   }
 
-  void VectorFacetFESpace :: Update(LocalHeap& lh)
+  void VectorFacetFESpace :: Update()
   {
-    FESpace::Update(lh);
+    FESpace::Update();
     if ( print ) 
       *testout << "VectorFacetFESpace, order " << order << endl 
 	       << "rel_order " << rel_order << ", var_order " << var_order << endl;
@@ -127,7 +127,7 @@ namespace ngcomp
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
     if ( low_order_space ) 
-      low_order_space -> Update(lh);
+      low_order_space -> Update();
 
     size_t nel = ma->GetNE();
     size_t nfacets = ma->GetNFacets();

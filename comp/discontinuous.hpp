@@ -23,11 +23,12 @@ namespace ngcomp
     DiscontinuousFESpace (shared_ptr<FESpace> space, const Flags & flags);
     
     virtual ~DiscontinuousFESpace () { ; }
-    virtual void Update (LocalHeap & lh) override;
+    void Update () override;
     
-    virtual void FinalizeUpdate (LocalHeap & lh) override {
-      space->FinalizeUpdate(lh);
-      FESpace::FinalizeUpdate(lh);
+    void FinalizeUpdate() override
+    {
+      space->FinalizeUpdate();
+      FESpace::FinalizeUpdate();
     }
 
     virtual string GetClassName() const override { return "Discontinuous" + space->GetClassName(); }
