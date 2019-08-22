@@ -20,12 +20,13 @@ namespace ngla
     Projector (shared_ptr<BitArray> abits, bool akeep_values = true)
       : bits(abits), keep_values(akeep_values) { ; }
 
-    virtual bool IsComplex() const { return false; } 
+    virtual bool IsComplex() const override { return false; } 
 
-    virtual int VHeight() const { return bits->Size(); }
-    virtual int VWidth() const { return bits->Size(); }
+    virtual int VHeight() const override { return bits->Size(); }
+    virtual int VWidth() const override { return bits->Size(); }
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;    
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void Project (BaseVector & x) const;    
   };
 
