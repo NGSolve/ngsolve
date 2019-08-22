@@ -39,6 +39,8 @@ extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax","sphinx.ext.todo",
 
 
 # START nbsphinx stuff
+#increase timeout for cell execution, since some files take long to execute
+nbsphinx_timeout = 600
 
 # Don't add .txt suffix to source files (available for Sphinx >= 1.5):
 html_sourcelink_suffix = ''
