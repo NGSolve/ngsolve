@@ -389,12 +389,29 @@ namespace ngcomp
         }
     }
 
+    template <typename TFUNC>
+    void IterateElements (VorB vb,const TFUNC & func) const
+    {
+      if (task_manager)
+        {
+          SharedLoop sl(GetNE(vb));
 
-
-
-
-
-
+          task_manager -> CreateJob
+            ( [&] (const TaskInfo & ti)
+              {
+                for (size_t mynr : sl)
+                  {
+                    ElementId ei(vb, mynr);
+                    func (GetElement(ei));
+                  }
+              } );
+        }
+      else
+        {
+          for (auto ei : Elements(vb))
+            func (GetElement(ei));
+        }
+    }
 
     /// the geometry type of the element
     [[deprecated("Use GetElType with ElementId(VOL, elnr) instead!")]]            

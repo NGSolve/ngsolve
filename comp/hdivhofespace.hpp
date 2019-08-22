@@ -83,7 +83,7 @@ namespace ngcomp
     void Average (BaseVector & vec) const;
     
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
     ///
     // virtual size_t GetNDof () const throw() override;
     ///

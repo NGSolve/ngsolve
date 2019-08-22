@@ -231,9 +231,9 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     return docu;
   }
   
-  void FacetFESpace :: Update(LocalHeap & lh)
+  void FacetFESpace :: Update()
   {
-    FESpace :: Update (lh);
+    FESpace::Update();
     
     if(print) 
       *testout << " FacetFEspace with order " << order << " rel_order " << rel_order << " var_order " << var_order << endl; 
@@ -242,7 +242,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
     if (low_order_space)
-      low_order_space -> Update(lh);
+      low_order_space -> Update();
 
     nel = ma->GetNE();
     nfa = ma->GetNFacets(); 

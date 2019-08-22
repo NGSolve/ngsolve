@@ -89,7 +89,7 @@ namespace ngcomp
       is_atomic_dof = true;
     }
 
-  void NumberFESpace::Update(LocalHeap & lh)
+  void NumberFESpace::Update()
     {
       SetNDof(1);
     }

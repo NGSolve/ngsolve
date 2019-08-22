@@ -78,8 +78,8 @@ namespace ngcomp
       return nfacets;
     }    
     ///
-    virtual void FinalizeUpdate(LocalHeap & lh) override;
-    virtual void Update(LocalHeap & lh) override;
+    void FinalizeUpdate() override;
+    void Update() override;
     /// 
     virtual void UpdateDofTables() override;
     ///

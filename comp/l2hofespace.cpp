@@ -226,10 +226,10 @@ global system.
   }  
 
   
-  void L2HighOrderFESpace :: Update(LocalHeap & lh)
+  void L2HighOrderFESpace :: Update()
   {
-    FESpace::Update(lh);
-    if(low_order_space) low_order_space -> Update(lh);
+    FESpace::Update();
+    if(low_order_space) low_order_space -> Update();
 
     nel = ma->GetNE();
 
@@ -1313,7 +1313,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     return make_shared<L2SurfaceHighOrderFESpace> (ma, flags, true);
   }
 
-  void L2SurfaceHighOrderFESpace :: Update(LocalHeap & lh)
+  void L2SurfaceHighOrderFESpace :: Update()
   {
     nel = ma->GetNSE();
 

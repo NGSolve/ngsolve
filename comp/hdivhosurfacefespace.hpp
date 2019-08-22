@@ -49,7 +49,7 @@ namespace ngcomp
     
     void Average (BaseVector & vec) const;
     
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
 
     virtual void UpdateDofTables() override; 
     virtual void UpdateCouplingDofArray() override;   

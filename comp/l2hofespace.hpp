@@ -59,7 +59,7 @@ namespace ngcomp
 
     bool AllDofsTogether(){return all_dofs_together;};
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
     /// 
     virtual void UpdateDofTables() override;
     ///
@@ -173,7 +173,7 @@ namespace ngcomp
     }
 
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
     /// 
     virtual void UpdateCouplingDofArray() override;    
     //virtual void UpdateDofTables() override;

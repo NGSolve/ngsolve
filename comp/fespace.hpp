@@ -229,13 +229,13 @@ ANY                  1 1 1 1 | 15
     static DocInfo GetDocu ();
     
     /// update dof-table
-    virtual void Update(LocalHeap & lh);
+    virtual void Update();
 
     virtual void UpdateDofTables() { ; } 
     virtual void UpdateCouplingDofArray() { ; } 
 
     /// update element coloring
-    virtual void FinalizeUpdate(LocalHeap & lh);
+    virtual void FinalizeUpdate();
 
     /// highest level where update/finalize was called
     int GetLevelUpdated() const { return level_updated; }
@@ -967,7 +967,7 @@ ANY                  1 1 1 1 | 15
     }
 
     ///
-    virtual void Update (LocalHeap & lh) override;
+    void Update () override;
     
     virtual void DoArchive (Archive & archive) override;
 
@@ -1008,7 +1008,7 @@ ANY                  1 1 1 1 | 15
     { return "Nonconforming FESpace"; }
 
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
@@ -1042,7 +1042,7 @@ ANY                  1 1 1 1 | 15
     }
 
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
     /// 
     virtual void DoArchive (Archive & archive) override;
 
@@ -1090,7 +1090,7 @@ ANY                  1 1 1 1 | 15
     { return "SurfaceElement"; }
 
     ///
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
 
     ///
     // virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
@@ -1142,20 +1142,20 @@ ANY                  1 1 1 1 | 15
     void AddSpace (shared_ptr<FESpace> fes);
 
     ///
-    virtual string GetClassName () const
+    string GetClassName () const override
     {
       return "CompoundFESpace";
     }
 
     /// updates also components
-    virtual void Update(LocalHeap & lh);
+    void Update() override;
     /// updates also components
-    virtual void FinalizeUpdate(LocalHeap & lh);
+    void FinalizeUpdate() override;
 
     /// copies dofcoupling from components
-    virtual void UpdateCouplingDofArray();
+    void UpdateCouplingDofArray() override;
     
-    virtual void SetDefinedOn (VorB vb, const BitArray& defon);
+    void SetDefinedOn (VorB vb, const BitArray& defon) override;
     /// 
     // virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
     ///
@@ -1170,23 +1170,23 @@ ANY                  1 1 1 1 | 15
     shared_ptr<FESpace> operator[] (int i) const { return spaces[i]; }
 
     /// returns a compound finite element
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
+    FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
-    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
-    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+    void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+    void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
+    void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const override;
     ///
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
-    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
-    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
+    void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+    void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
-    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
-                        LocalHeap & lh) const;
-    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
-                        LocalHeap & lh) const;
+    void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                        LocalHeap & lh) const override;
+    void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                        LocalHeap & lh) const override;
     
     template <class T> NGS_DLL_HEADER
       void T_TransformMat (ElementId ei, 
@@ -1196,14 +1196,14 @@ ANY                  1 1 1 1 | 15
       void T_TransformVec (ElementId ei, 
                          SliceVector<T> vec, TRANSFORM_TYPE tt) const;
 
-    virtual void VTransformMR (ElementId ei,
-			       SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformMC (ElementId ei,
-                               SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVR (ElementId ei,
-                               SliceVector<double> vec, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVC (ElementId ei, 
-                               SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
+    void VTransformMR (ElementId ei,
+                       SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override;
+    void VTransformMC (ElementId ei,
+                       SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override;
+    void VTransformVR (ElementId ei,
+                       SliceVector<double> vec, TRANSFORM_TYPE tt) const override;
+    void VTransformVC (ElementId ei, 
+                       SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override;
 
     /// number of component spaces
     inline int GetNSpaces () const { return spaces.Size(); } 
