@@ -337,7 +337,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ndof_level.Last() = ndof;
   }
   
-  void FESpace :: Update(LocalHeap & lh)
+  void FESpace :: Update()
   {
     if (print)
       {
@@ -397,7 +397,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  void FESpace :: FinalizeUpdate(LocalHeap & lh)
+  void FESpace :: FinalizeUpdate()
   {
     static Timer timer ("FESpace::FinalizeUpdate");
     /*
@@ -408,7 +408,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
     static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
     */
-    if (low_order_space) low_order_space -> FinalizeUpdate(lh);
+    if (low_order_space) low_order_space -> FinalizeUpdate();
 
     RegionTimer reg (timer);
     // timer1.Start();
@@ -712,6 +712,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
        
     level_updated = ma->GetNLevels();
     if (timing) Timing();
+    updateSignal.Emit();
     // CheckCouplingTypes();
   }
 
@@ -2027,10 +2028,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  void NodalFESpace :: Update(LocalHeap & lh)
+  void NodalFESpace :: Update()
   {
-    FESpace :: Update (lh);
-    if (low_order_space) low_order_space -> Update(lh);
+    FESpace::Update();
+    if (low_order_space) low_order_space -> Update();
 
     // if (ma->GetNLevels() > ndlevel.Size())
       {
@@ -2235,7 +2236,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  void NonconformingFESpace :: Update(LocalHeap & lh)
+  void NonconformingFESpace :: Update()
   {
     ctofdof.SetSize (ma->GetNFacets());
     ctofdof = UNUSED_DOF;
@@ -2366,7 +2367,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-  void ElementFESpace :: Update(LocalHeap & lh)
+  void ElementFESpace :: Update()
   {
     /*
     while (ma->GetNLevels() > ndlevel.Size())
@@ -2524,7 +2525,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-  void SurfaceElementFESpace :: Update(LocalHeap & lh)
+  void SurfaceElementFESpace :: Update()
   {
     // const MeshAccess & ma = GetMeshAccess();
     /*
@@ -2723,17 +2724,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
     FESpace::SetDefinedOn (vb, defon);
   }
     
-  void CompoundFESpace :: Update(LocalHeap & lh)
+  void CompoundFESpace :: Update()
   {
-    FESpace :: Update (lh);
+    FESpace::Update();
     if (low_order_space)
-      low_order_space->Update (lh);
+      low_order_space->Update();
     
     cummulative_nd.SetSize (spaces.Size()+1);
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
       {
-	spaces[i] -> Update(lh);
+	spaces[i] -> Update();
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
@@ -2818,12 +2819,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
+  void CompoundFESpace :: FinalizeUpdate()
   {
     for (int i = 0; i < spaces.Size(); i++)
-      spaces[i] -> FinalizeUpdate(lh);
+      spaces[i] -> FinalizeUpdate();
 
-    FESpace::FinalizeUpdate (lh);
+    FESpace::FinalizeUpdate();
 
 
     // dirichlet-dofs from sub-spaces

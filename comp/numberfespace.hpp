@@ -15,7 +15,7 @@ namespace ngcomp
   {
   public:
     NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
-    virtual void Update(LocalHeap & lh) override;
+    void Update() override;
 
     // virtual size_t GetNDof() const { return 1; }
 

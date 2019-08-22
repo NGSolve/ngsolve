@@ -44,7 +44,7 @@ def MakeGeometry():
 mesh = Mesh(MakeGeometry().GenerateMesh (maxh=0.2))
 
 
-fes = H1(mesh, order=3, dirichlet=[1])
+fes = H1(mesh, order=3, dirichlet=[1], autoupdate=True)
 u = fes.TrialFunction()
 v = fes.TestFunction()
 
@@ -58,19 +58,17 @@ a += SymbolicBFI(lam*grad(u)*grad(v))
 f = LinearForm(fes)
 f += SymbolicLFI(CoefficientFunction([0, 0, 1])*v)
 
-c = Preconditioner(a, type="multigrid", inverse = "sparsecholesky")
+c = MultiGridPreconditioner(a, inverse = "sparsecholesky")
 
-gfu = GridFunction(fes)
+gfu = GridFunction(fes, autoupdate=True)
 Draw (gfu)
 
 # finite element space and gridfunction to represent
 # the heatflux:
-space_flux = HDiv(mesh, order=2)
-gf_flux = GridFunction(space_flux, "flux")
+space_flux = HDiv(mesh, order=2, autoupdate=True)
+gf_flux = GridFunction(space_flux, "flux", autoupdate=True)
 
 def SolveBVP():
-    fes.Update()
-    gfu.Update()
     a.Assemble()
     f.Assemble()
     inv = CGSolver(a.mat, c.mat)
@@ -82,9 +80,6 @@ def SolveBVP():
 l = []
 
 def CalcError():
-    space_flux.Update()
-    gf_flux.Update()
-
     flux = lam * grad(gfu)
     # interpolate finite element flux into H(div) space:
     gf_flux.Set (flux)

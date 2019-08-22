@@ -891,7 +891,7 @@ namespace ngcomp
     return docu;
   }
 
-  void HCurlCurlFESpace :: Update(LocalHeap & lh)
+  void HCurlCurlFESpace :: Update()
   {
     int dim = ma->GetDimension();
 

@@ -22,10 +22,8 @@ namespace ngcomp
     auto fes = CreateFESpace(state[0].cast<string>(),
                              state[1].cast<shared_ptr<MeshAccess>>(),
                              state[2].cast<Flags>());
-
-    LocalHeap glh(10000000, "Unpickl-lh");
-    fes->Update(glh);
-    fes->FinalizeUpdate(glh);
+    fes->Update();
+    fes->FinalizeUpdate();
     return dynamic_pointer_cast<FESPACE>(fes);
   };
 
@@ -37,17 +35,25 @@ namespace ngcomp
     auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docuboth.c_str());
 
     pyspace
-      .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+      .def(py::init([pyspace](shared_ptr<MeshAccess> ma, bool autoupdate, py::kwargs kwargs)
                     {
                       py::list info;
                       info.append(ma);
                       auto flags = CreateFlagsFromKwArgs(kwargs, pyspace, info);
                       auto fes = make_shared<FES>(ma,flags);
-                      LocalHeap glh(10000000, "init-fes-lh");                    
-                      fes->Update(glh);
-                      fes->FinalizeUpdate(glh);
+                      fes->Update();
+                      fes->FinalizeUpdate();
+                      if(autoupdate)
+                        {
+                          auto fesptr = fes.get();
+                          ma->updateSignal.Connect(fesptr, [fesptr]()
+                                     {
+                                       fesptr->Update();
+                                       fesptr->FinalizeUpdate();
+                                     });
+                        }
                       return fes;
-                    }),py::arg("mesh"))
+                    }),py::arg("mesh"), py::arg("autoupdate")=false)
     
       .def(py::pickle(&fesPickle,
                       (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))

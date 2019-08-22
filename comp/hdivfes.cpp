@@ -97,7 +97,7 @@ namespace ngcomp
   }
 
   
-  void RaviartThomasFESpace :: Update(LocalHeap & lh)
+  void RaviartThomasFESpace :: Update()
   {
     shared_ptr<MeshAccess> ma = GetMeshAccess();
     int level = ma->GetNLevels();

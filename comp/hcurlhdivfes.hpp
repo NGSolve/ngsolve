@@ -43,7 +43,7 @@ public:
   static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
   ///
-  virtual void Update(LocalHeap & lh) override;
+  void Update() override;
   ///
   virtual void DoArchive (Archive & archive) override;
   /// 
@@ -212,7 +212,7 @@ public:
 
 
   ///
-  virtual void Update(LocalHeap & lh) override;
+  void Update() override;
 
   ///
   virtual size_t GetNDof () const throw() override;
