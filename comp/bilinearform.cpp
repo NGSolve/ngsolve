@@ -2393,11 +2393,9 @@ namespace ngcomp
             ma->PopStatus ();
           }
 
-        else
+        else // MixedSpaces()
 
           {
-            // mixed spaces
-
             cout << IM(3) << "assemble mixed bilinearform" << endl;
       
             BaseMatrix & mat = GetMatrix();
@@ -2474,7 +2472,18 @@ namespace ngcomp
                      }
                  });
 
+
+            if (VB_parts[BND].Size()) throw Exception ("mixed biforms don't support boundary terms");
+            if (VB_parts[BBND].Size()) throw Exception ("mixed biforms don't support bboundary terms");
+            if (VB_parts[BBBND].Size()) throw Exception ("mixed biforms don't support bbboundary terms");
+
+            if (facetwise_skeleton_parts[VOL].Size()) throw Exception ("mixed biforms don't support skeleton terms");
+            if (facetwise_skeleton_parts[BND].Size()) throw Exception ("mixed biforms don't support skeleton terms");
+            if (elementwise_skeleton_parts.Size()) throw Exception ("mixed biforms don't support elementwise skeleton terms");
+            
             if (print) *testout << "mat = " << mat << endl;
+
+            
             
             cout << endl;
           }
