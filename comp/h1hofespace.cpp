@@ -1878,7 +1878,177 @@ into the wirebasket.
 
 
 
+  template <class Tx, class T>
+  inline void LowEnergyVertexPolynomials2D  (int n, Tx x, T & values)
+  {
+    JacobiPolynomial (n, x, 0, -1, values);
+    Tx sum1 = 0.0, sum2 = 0.0;
+    for (int i = 1; i <= n; i++)
+      {
+	sum1 += 1.0/i;
+	sum2 += values[i] / i;
+	values[i] = sum2/sum1;
+      }
+    values[0] = 1;
+  }
 
+  template <class Tx, class T>
+  inline void LowEnergyVertexPolynomials3D  (int n, Tx x, T & values)
+  {
+    JacobiPolynomial (n, x, 1, -1, values);
+    Tx sum = 0.0;
+    for (int i = 1; i <= n; i++)
+      {
+	sum += (2.0*i+1)/(i+1) * values[i];
+	values[i] = 1.0/(i*(i+2)) * sum;
+      }
+    values[0] = 1;
+  }
+
+
+  class LowEnergyTrig : public ScalarFiniteElement<2>
+  {
+  public:
+    LowEnergyTrig (int order)
+      : ScalarFiniteElement<2> (3, order) { ; }
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            BareSliceVector<> shape) const
+    { T_CalcShape (ip(0), ip(1), shape); }
+  
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+                             BareSliceMatrix<> dshape) const
+    {
+      AutoDiff<2> adx (ip(0), 0);
+      AutoDiff<2> ady (ip(1), 1);
+      Vector<AutoDiff<2> > shapearray(ndof);
+      T_CalcShape<AutoDiff<2>> (adx, ady, shapearray);
+      for (int i = 0; i < ndof; i++)
+        {
+          dshape(i, 0) = shapearray[i].DValue(0);
+          dshape(i, 1) = shapearray[i].DValue(1);
+        }
+    }
+
+  private:
+    template <class T>
+    void T_CalcShape (const T & x, const T & y, BareSliceVector<T> shape) const
+    {
+      T lami[3] = { x, y, 1-x-y };
+      ArrayMem<T,100> allvalues(order+1);
+      for (int i = 0; i < 3; i++)
+        {
+          LowEnergyVertexPolynomials3D  (order, lami[i], allvalues);
+          shape[i] = allvalues[order];
+        }
+    }
+  };
+
+
+  class LowEnergyTet : public ScalarFiniteElement<3>
+  {
+  public:
+    LowEnergyTet (int order)
+      : ScalarFiniteElement<3> (4, order) { ; }
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
+
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            BareSliceVector<> shape) const
+    { T_CalcShape (ip(0), ip(1), ip(2), shape); }
+  
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+                             BareSliceMatrix<> dshape) const
+    {
+      AutoDiff<3> adx (ip(0), 0);
+      AutoDiff<3> ady (ip(1), 1);
+      AutoDiff<3> adz (ip(2), 2);      
+      Vector<AutoDiff<3> > shapearray(ndof);
+      T_CalcShape<AutoDiff<3>> (adx, ady, adz, shapearray);
+      for (int i = 0; i < ndof; i++)
+        {
+          dshape(i, 0) = shapearray[i].DValue(0);
+          dshape(i, 1) = shapearray[i].DValue(1);
+          dshape(i, 2) = shapearray[i].DValue(2);
+        }
+    }
+
+  private:
+    template <class T>
+    void T_CalcShape (const T & x, const T & y, const T & z, BareSliceVector<T> shape) const
+    {
+      T lami[4] = { x, y, z, 1-x-y-z };
+      ArrayMem<T,100> allvalues(order+1);
+      for (int i = 0; i < 4; i++)
+        {
+          LowEnergyVertexPolynomials3D  (order, lami[i], allvalues);
+          shape[i] = allvalues[order];
+        }
+    }
+  };
+
+  
+
+  class LowEnergyVertexFESpace : public FESpace
+  {
+    int order;
+  public:
+    LowEnergyVertexFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
+      : FESpace (ama, flags)
+    {
+      order = int(flags.GetNumFlag ("order", 2));
+      if (ma->GetDimension() == 2)
+        {
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+        }
+      else
+        {
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+        }
+        
+    }
+
+    virtual string GetClassName () const
+    {
+      return "LowEnergyVertexFESpace";
+    }
+
+    virtual void Update()
+    {
+      SetNDof(ma->GetNV());
+    }
+
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const
+    {
+      dnums.SetSize0();
+      dnums += ma->GetElement(ei).Vertices();
+    }
+    
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const
+    {
+      switch (ma->GetElement(ei).GetType())
+        {
+        case ET_TRIG: return *new(alloc) LowEnergyTrig(order);
+        case ET_TET: return *new(alloc) LowEnergyTet(order);
+        default: throw Exception("not supported");
+        }
+    }
+  };
+
+  static RegisterFESpace<LowEnergyVertexFESpace> initle ("lowenergyvertex");
+
+
+
+
+
+
+  
 
 
   template <int DIM_SPC>

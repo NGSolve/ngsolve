@@ -57,6 +57,38 @@ namespace ngla
   }
 
 
+
+
+
+  void DiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    FlatSysVector<> sx = x.SV<double>();
+    FlatSysVector<> sy = y.SV<double>();
+    for (size_t i : Range(diag))
+      sy(i) += s * diag(i)*sx(i);
+  }
+  
+  void DiagonalMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    return MultAdd (s, x, y);
+  }
+
+
+  AutoVector DiagonalMatrix :: CreateRowVector () const 
+  {
+    return CreateBaseVector(diag.Size(), false, 1);
+  }
+    
+  AutoVector DiagonalMatrix :: CreateColVector () const 
+  {
+    return CreateBaseVector(diag.Size(), false, 1);
+  }
+
+
+
+
+
+  
   void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     auto fvx = x.FV<double>();
