@@ -30,6 +30,28 @@ namespace ngla
     virtual void Project (BaseVector & x) const;    
   };
 
+  
+  class DiagonalMatrix : public BaseMatrix
+  {
+    Vector<double> diag;
+  public:
+    DiagonalMatrix (const Vector<double> & diag_)
+      : diag(diag_) { } 
+
+    bool IsComplex() const override { return false; } 
+
+    int VHeight() const override { return diag.Size(); }
+    int VWidth() const override { return diag.Size(); }
+
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
+
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+  };
+
+
+  
   class PermutationMatrix : public BaseMatrix
   {
     size_t width;

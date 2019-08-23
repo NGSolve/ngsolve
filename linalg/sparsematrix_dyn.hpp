@@ -63,10 +63,13 @@ namespace ngla
   public:
     SparseMatrixVariableBlocks (const SparseMatrixTM<TSCAL> & mat);
 
-    virtual int VHeight() const override { return height; }
-    virtual int VWidth() const override { return width; }
+    int VHeight() const override { return height; }
+    int VWidth() const override { return width; }
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
   };
 
 
