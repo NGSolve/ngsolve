@@ -117,7 +117,13 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
     """
     solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxsteps=maxsteps,
                       callback=callback)
+    if printrates:
+        handler = logging.StreamHandler()
+        solver.logger.addHandler(handler)
+        solver.logger.setLevel(logging.INFO)
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
+    if printrates:
+        solver.logger.removeHandler(handler)
     return solver.sol
 
 

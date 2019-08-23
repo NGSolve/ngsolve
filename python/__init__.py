@@ -52,6 +52,7 @@ from .solve import Redraw, BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, Trace, \
     PyDet, Cross, Cof, PyInv, PySym, Skew, OuterProduct, TimeFunction
+from . import solvers
 
 
 from .timing import Timing
