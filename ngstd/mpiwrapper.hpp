@@ -363,8 +363,6 @@ public:
   INLINE void MyMPI_Bcast (string & s, MPI_Comm comm) { ; }
   */
   
-  INLINE void MyMPI_WaitAll (FlatArray<MPI_Request> requests) { ; }
-
   class MyMPI
   {
   public:
