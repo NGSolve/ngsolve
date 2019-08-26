@@ -47,6 +47,7 @@ if (NETGEN_USE_GUI)
     install( TARGETS ngsolve ${ngs_install_dir} )
 
     if(WIN32)
+        target_link_libraries( ngsolve PRIVATE ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY} )
         set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
     endif(WIN32)
 endif (NETGEN_USE_GUI)
