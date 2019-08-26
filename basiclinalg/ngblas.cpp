@@ -2184,6 +2184,7 @@ namespace ngbla
           "52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag\n"
           "61 .. C = A^t B,  A=n*k, B=n*m, C = k*m\n"
+          "70 .. C += A B^t,  A=n*k, B=m*k, C = n*m, A,B SIMD\n"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
@@ -2519,6 +2520,29 @@ namespace ngbla
           t.Stop();
           cout << "MultAtB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+    
+    if (what == 0 || what == 70)
+      {
+        // C=A*B^t
+        if (k % SW != 0)
+          cout << "k should be a multiple of " << SW << endl;
+        size_t ks = k/SW;
+        Matrix<SIMD<double>> a(n,ks), b(m,ks);
+        Matrix<> c(n,m);
+        a = SIMD<double>(1); b = SIMD<double>(2);
+        c = 0.0;
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C += A*Bt, sym");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            AddABtSym(a, b, c);
+          t.Stop();
+          cout << "AddABt, sym GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
         }
       }
 
