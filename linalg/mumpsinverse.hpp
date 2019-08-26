@@ -68,7 +68,7 @@ namespace ngla
     shared_ptr<BitArray> inner;
     shared_ptr<const Array<int>> cluster;
 
-    shared_ptr<NgMPI_Comm> onlyme_comm;
+    NgMPI_Comm comm;
 
   public:
     ///
