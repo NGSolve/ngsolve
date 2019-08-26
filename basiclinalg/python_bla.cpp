@@ -727,9 +727,4 @@ complex : bool
                               }, py::arg("n"), py::arg("m"), py::arg("k"));
              }
 
-PYBIND11_MODULE(libngbla, m) {
-  m.attr("__name__") = "bla";
-  ExportNgbla(m);
-}
-
 #endif // NGS_PYTHON

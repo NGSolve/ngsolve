@@ -10,10 +10,12 @@
 namespace ngla
 {
 
-  enum PARALLEL_OP : char { D2D = 0,   // 00
-			    D2C = 1,   // 01
-			    C2D = 2,   // 10
-			    C2C = 3 }; // 11
+  // enum with char type issue in pybind11:
+  // https://github.com/pybind/pybind11/issues/1820
+  enum PARALLEL_OP : uint8_t { D2D = 0,   // 00
+                               D2C = 1,   // 01
+                               C2D = 2,   // 10
+                               C2C = 3 }; // 11
 
   class ParallelMatrix : public BaseMatrix
   {

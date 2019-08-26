@@ -3407,12 +3407,4 @@ deformation : ngsolve.comp.GridFunction
   /////////////////////////////////////////////////////////////////////////////////////
 }
 
-
-
-
-PYBIND11_MODULE(libngcomp, m) {
-  m.attr("__name__") = "comp";
-  ExportNgcomp(m);
-}
-
 #endif // NGS_PYTHON
