@@ -384,11 +384,4 @@ threads : int
 
 }
 
-
-PYBIND11_MODULE(libngstd, m) {
-  m.attr("__name__") = "ngstd";
-  ExportNgstd(m);
-}
-
-
 #endif // NGS_PYTHON
