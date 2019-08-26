@@ -1753,7 +1753,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     shared_ptr<BaseMatrix> sum;
   
     size_t ne = ma->GetNE();
-  
+
+    // scaling for multiple dofs (if actually not an L2 space)
+    Array<int> cnt(l2space->GetNDof());
+    cnt = 0;
+    
     for (auto elclass_inds : table)
       {
         HeapReset hr(lh);
@@ -1803,6 +1807,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
             ElementId ei(VOL, elclass_inds[i]);
             GetDofNrs(ei, dnumsx);
             l2space->GetDofNrs(ei, dnumsy);
+            for (auto d : dnumsy)
+              cnt[d]++;
             xdofs[i] = dnumsx;
             ydofs[i] = dnumsy;
           }
@@ -1825,6 +1831,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	(l2space->GetNDof(), this->GetNDof(),
 	 mat, std::move(ydofs), std::move(xdofs));
     }
+
+    bool multiple = false;
+    for (auto c : cnt)
+      if (c > 1) multiple = true;
+
+    if (multiple)
+      {
+        Vector<> scaling(cnt.Size());
+        for (auto i : Range(cnt))
+          scaling(i) = cnt[i] ? 1.0/cnt[i] : 0;
+        auto diagmat = make_shared<DiagonalMatrix> (scaling);
+        sum = make_shared<ProductMatrix> (diagmat, sum);
+      }
     
     return sum;    
   }
