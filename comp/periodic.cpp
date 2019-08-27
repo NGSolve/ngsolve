@@ -177,8 +177,11 @@ namespace ngcomp {
   {
     space->Update();
     dof_factors.SetSize(space->GetNDof());
-    for (auto i : Range(dof_factors.Size()))
-      dof_factors[i] = Complex(1.0,0.0);
+
+    dof_factors = Complex(1.0,0.0);
+    master_dofs.SetSize(space->GetNDof());
+    for(auto& md : master_dofs)
+      md = {};
     PeriodicFESpace::Update();
   }
   void QuasiPeriodicFESpace :: VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const
@@ -228,7 +231,14 @@ namespace ngcomp {
 
   void QuasiPeriodicFESpace :: DofMapped(size_t from, size_t to, size_t idnr)
   {
-    dof_factors[from] *= (*factors)[idnr];
+    // if the same dofs are mapped twice by different identification numbers only multiply once with
+    // the factor!
+    auto& md = master_dofs[from];
+    if(md.find(to) == md.end())
+      {
+        dof_factors[from] *= (*factors)[idnr];
+        md.insert(to);
+      }
   }
 
 }
