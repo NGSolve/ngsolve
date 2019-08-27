@@ -442,7 +442,7 @@ namespace ngcomp
         ? 1 : -1;
 
 
-    if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL))
+    if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL) || (tt & TRANSFORM_SOL_INVERSE))
       {
 	for (int k = 0; k < dimension; k++)
 	  for (int i = 0; i < ned; i++)
