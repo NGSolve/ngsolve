@@ -4203,8 +4203,8 @@ namespace ngcomp
 	      else if(loop==1) {
 		for(auto dp:Range(mnp))
 		  if(send_table[dp].Size()) {
-		    reqs.Append(MyMPI_ISend(send_table[dp], dp, MPI_TAG_SOLVE, comm));
-		    reqr.Append(MyMPI_IRecv(recv_table[dp], dp, MPI_TAG_SOLVE, comm));
+		    reqs.Append(comm.ISend(send_table[dp], dp, MPI_TAG_SOLVE));
+		    reqr.Append(comm.IRecv(recv_table[dp], dp, MPI_TAG_SOLVE));
 		  }
 		MyMPI_WaitAll(reqr);
 	      }
