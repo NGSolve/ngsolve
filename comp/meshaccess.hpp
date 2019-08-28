@@ -1282,8 +1282,8 @@ namespace ngcomp
     for (auto i : cnt.Range())
       if (cnt[i])
 	{
-	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
-	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (comm.ISend(dist_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (comm.IRecv(recv_data[i], i, MPI_TAG_SOLVE));
 	}
     MyMPI_WaitAll (requests);
     
