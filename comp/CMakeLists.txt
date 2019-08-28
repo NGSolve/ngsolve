@@ -15,11 +15,12 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         periodic.cpp discontinuous.cpp reorderedfespace.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
+        ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp ../multigrid/smoother.cpp
         )
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd)      
 
-target_link_libraries (ngcomp PUBLIC nglib ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE ngmg netgen_python ${HYPRE_LIBRARIES})
+target_link_libraries (ngcomp PUBLIC nglib ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${HYPRE_LIBRARIES})
 target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 install( TARGETS ngcomp ${ngs_install_dir} )
 
