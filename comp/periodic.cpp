@@ -216,14 +216,16 @@ namespace ngcomp {
     PeriodicFESpace::VTransformVC(ei, vec, tt);
     Array<int> dofnrs;
     space->GetDofNrs(ei, dofnrs);
-    for (int i : Range(dofnrs.Size()))
+    for (auto i : Range(dofnrs))
       {
 	if (dofnrs[i] != dofmap[dofnrs[i]])
 	  {
 	    if (tt == TRANSFORM_RHS)
 	      vec[i] *= conj(dof_factors[dofnrs[i]]);
-	    else
+	    else if (tt == TRANSFORM_SOL)
 	      vec[i] *= dof_factors[dofnrs[i]];
+            else // TRANSFORM_SOL_INVERSE
+              vec[i] /= dof_factors[dofnrs[i]];
 	  }
       }
     
