@@ -949,11 +949,4 @@ void ExportVisFunctions(py::module &m) {
           });
 }
 
-
-PYBIND11_MODULE(libngsolve, m) {
-  m.attr("__name__") = "ngsolve";
-  ExportNgsolve(m);
-}
-
-
 #endif

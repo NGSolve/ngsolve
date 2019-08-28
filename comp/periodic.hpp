@@ -7,6 +7,8 @@
 /* Date:   Feb. 2017                                                 */
 /*********************************************************************/
 
+#include <set>
+
 namespace ngcomp
 {
 
@@ -80,6 +82,7 @@ namespace ngcomp
   {
     shared_ptr<Array<Complex>> factors;
     Array<Complex> dof_factors;
+    Array<set<size_t>> master_dofs;
 
   public:
     QuasiPeriodicFESpace (shared_ptr<FESpace> fespace, const Flags & flag, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors);
