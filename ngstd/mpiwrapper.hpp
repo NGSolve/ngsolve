@@ -189,8 +189,7 @@ namespace ngstd
     static Timer t ("dummy - Gather");
     RegionTimer r(t);
 
-    MPI_Gather( &d, 1, MyGetMPIType<T>(),
-		recv.Size()?&recv[0]:NULL, 1, MyGetMPIType<T>(), root, comm);
+    MPI_Gather( &d, 1, MyGetMPIType<T>(), recv.Data(), 1, MyGetMPIType<T>(), root, comm);
   }
 
   template <typename T, NGSMPI_ENABLE_FOR_STD>
@@ -199,8 +198,7 @@ namespace ngstd
     static Timer t("dummy - AllGather");
     RegionTimer r(t);
 
-    MPI_Allgather (&d, 1, MyGetMPIType<T>(), 
-		   &recv[0], 1, MyGetMPIType<T>(), comm);
+    MPI_Allgather (&d, 1, MyGetMPIType<T>(), recv.Data(), 1, MyGetMPIType<T>(), comm);
   }
   
   template <typename T, NGSMPI_ENABLE_FOR_STD>
@@ -209,8 +207,8 @@ namespace ngstd
     static Timer t("dummy - AlltoAll");
     RegionTimer r(t);
 
-    MPI_Alltoall (&send[0], 1, MyGetMPIType<T>(), 
-		  &recv[0], 1, MyGetMPIType<T>(), comm);
+    MPI_Alltoall (send.Data(), 1, MyGetMPIType<T>(), 
+		  recv.Data(), 1, MyGetMPIType<T>(), comm);
   }
 
 
@@ -224,7 +222,7 @@ namespace ngstd
     int len = s.length();
     MyMPI_Bcast (len, comm);
     if (MyMPI_GetId(comm) != 0) s.resize (len);
-    MPI_Bcast (&s[0], len, MPI_CHAR, root, comm);
+    MPI_Bcast (s.Data(), len, MPI_CHAR, root, comm);
   }
 #endif
   
