@@ -265,7 +265,7 @@ namespace ngcomp
       for (size_t i = 0; i < num_vertices; i++)
         if (sum_vertex_weights[i] == vertex_weights[i] ||
             (*freedofs)[i] == false)
-          isolated_verts.Set(i);
+          isolated_verts.SetBit(i);
       
       // vertex 2 coarse vertex
       Array<size_t> v2cv(num_vertices);
@@ -434,7 +434,7 @@ namespace ngcomp
       ParallelFor(v2cv.Size(), [&] (int v)
                   {
                     if (v2cv[v] != -1)
-                      coarse_freedofs->Set(v2cv[v]);
+                      coarse_freedofs->SetBitAtomic(v2cv[v]);
                   });
       
       if (num_coarse_vertices < 10)

@@ -568,8 +568,8 @@ namespace ngla
     for (auto k:Range(h))
       for (auto j:Range(w))
 	if (mats[k][j]!=nullptr) {
-	  rowhas.Set(k);
-	  colhas.Set(j);
+	  rowhas.SetBit(k);
+	  colhas.SetBit(j);
 	}
     if (rowhas.NumSet()!=h)
       throw Exception("BlockMatrix needs at least one block per row");
