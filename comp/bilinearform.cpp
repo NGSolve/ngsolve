@@ -1631,7 +1631,7 @@ namespace ngcomp
                 for (int i = 0; i < ne; ++i)
                   {
                     auto elfacets = ma->GetElFacets(ElementId(VOL,i));
-                    for (auto f : elfacets) fine_facet.Set(f);
+                    for (auto f : elfacets) fine_facet.SetBit(f);
                   }
                 
                 ProgressOutput progress(ma,string("assemble inner facet"), nf);
