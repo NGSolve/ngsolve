@@ -1246,14 +1246,6 @@ if(is_pardiso_available)
 #endif
   cout << "Running parallel using " << TaskManager::GetMaxThreads() << " thread(s)" << endl;
 
-#ifdef VTRACE
-  cout << "Vampirtrace - enabled" << endl;
-  if (MyMPI_GetNTasks(MPI_COMM_WORLD) == 1 && TaskManager::GetMaxThreads() > 1)
-    {
-      cout << " ... thus setting number of threads to 1" << endl;
-      TaskManager::SetNumThreads (1);
-    }
-#endif
 
 
   
