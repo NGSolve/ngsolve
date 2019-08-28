@@ -12,7 +12,6 @@ endif(WIN32)
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
-option( USE_VT           "enable vampirtrace")
 # option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_HYPRE        "enable HYPRE support")
@@ -231,12 +230,6 @@ if (USE_LAPACK)
     endif()
 endif (USE_LAPACK)
 
-#######################################################################
-if (USE_VT)
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS VTRACE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
-    list(APPEND NGSOLVE_COMPILE_OPTIONS -t:inst manual)
-endif (USE_VT)
 
 # Pybind11 2.3 Issue https://github.com/pybind/pybind11/issues/1604
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation")
@@ -575,7 +568,6 @@ message("
     PARDISO: ........... ${USE_PARDISO}
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
-    VAMPIRTRACE: ....... ${USE_VT}
 
 
   Building:
