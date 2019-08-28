@@ -169,15 +169,17 @@ namespace ngla
 
     else
       {
-	cout << "create masterinverse" << endl;
+	cout << IM(3) << "create masterinverse" << endl;
 
 	bool symmetric = (dynamic_cast<const SparseMatrixSymmetric<TM>*>(&mat) != NULL);
-	cout << "symmetric? " << symmetric << endl;
+	cout << IM(4) << "symmetric? " << symmetric << endl;
 
 	Array<int> rows, cols;
 	Array<TM> vals;
 	HashTable<INT<1>, int> ht_globdofs(100000);
 	// int num_globdofs = 0; 
+
+	cout << IM(4) << "collect data" << flush;
 
 	for (int src = 1; src < ntasks; src++)
 	  {
@@ -210,16 +212,16 @@ namespace ngla
 		vals.Append (hvals[i]);
 	      }
 
-	    cout << "\rmaster: got data from " << src << flush;
+	    cout << IM(5) << "\rmaster: got data from " << src << flush;
 	  }
-	cout << endl;
+	cout << IM(5) << endl;
 
 
-	cout << "now build graph" << endl;
+	cout << IM(4) << "now build graph" << endl;
 
 	// build matrix
 	DynamicTable<int> graph(num_glob_dofs);
-	cout << "n = " << num_glob_dofs << endl;
+	cout << IM(3) << "n = " << num_glob_dofs << endl;
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
@@ -233,7 +235,7 @@ namespace ngla
 	for (int i = 0; i < num_glob_dofs; i++)
 	  els_per_row[i] = graph[i].Size();
 
-	cout << "now build matrix" << endl;
+	cout << IM(4) << "now build matrix" << endl;
 
 	// SparseMatrixSymmetric<TM> matrix(els_per_row);
         auto matrix = symmetric ? make_shared<SparseMatrixSymmetric<TM>> (els_per_row)
@@ -254,7 +256,7 @@ namespace ngla
 	    (*matrix)(r,c) += vals[i];
 	  }
 
-	cout << "have matrix, now invert" << endl;
+	cout << IM(4) << "have matrix, now invert" << endl;
 
 	matrix->SetInverseType (mat.GetInverseType());
 	inv = matrix->InverseMatrix ();
@@ -291,15 +293,16 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  lx[i] = fx(select[i]);
 	
-	MPI_Request request = MyMPI_ISend (lx, 0, MPI_TAG_SOLVE, comm);
+	MPI_Request request = comm.ISend (lx, 0, MPI_TAG_SOLVE);
 	MPI_Request_free (&request);
 
 	// only for MUMPS:
 	if (inv)
 	  y = (*inv) * x;
 	
-	request = MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE, comm);
+	request = comm.IRecv (lx, 0, MPI_TAG_SOLVE);
 	MPI_Wait (&request, MPI_STATUS_IGNORE);
+
 
 	for (int i = 0; i < select.Size(); i++)
 	  fy(select[i]) += s * lx[i];
@@ -343,7 +346,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 	    for (int j = 0; j < selecti.Size(); j++)
 	      exdata[src][j] = hy(selecti[j]);
-	    requ.Append (MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE, comm));
+	    requ.Append (comm.ISend (exdata[src], src, MPI_TAG_SOLVE));
 	  }
 	MyMPI_WaitAll (requ);
       }
