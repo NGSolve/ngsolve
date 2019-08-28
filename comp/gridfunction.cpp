@@ -745,11 +745,11 @@ namespace ngcomp
 
 	Table<Vec<N+1,int> > table_nodes(size_nodes);
 	for (int p = 1; p < ntasks; p++)
-	  requests.Append (MyMPI_IRecv (table_nodes[p], p, 22, comm));
+	  requests.Append (comm.IRecv (table_nodes[p], p, 22));
 
 	Table<SCAL> table_data(size_data);
 	for (int p = 1; p < ntasks; p++)
-	  requests.Append (MyMPI_IRecv (table_data[p], p, 23, comm));
+	  requests.Append (comm.IRecv (table_data[p], p, 23));
 	MyMPI_WaitAll (requests);
 
 	FlatArray<SCAL> data = table_data.AsArray();
