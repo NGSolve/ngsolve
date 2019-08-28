@@ -238,6 +238,9 @@ if (USE_VT)
     list(APPEND NGSOLVE_COMPILE_OPTIONS -t:inst manual)
 endif (USE_VT)
 
+# Pybind11 2.3 Issue https://github.com/pybind/pybind11/issues/1604
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation")
+
 #######################################################################
 if (USE_CUDA)
     find_package(CUDA)

@@ -1234,13 +1234,4 @@ shift : object
 }
 
 
-
-PYBIND11_MODULE(libngla, m) {
-  m.attr("__name__") = "la";
-  ExportNgla(m);
-}
-
-
-
-
 #endif // NGS_PYTHON
