@@ -101,7 +101,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           {
 	    int bnd = int(dbi-1);
 	    if (bnd >= 0 && bnd < dirichlet_boundaries.Size())
-	      dirichlet_boundaries.Set (bnd);
+	      dirichlet_boundaries.SetBit (bnd);
 	    // else
             //   cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
           }
@@ -430,7 +430,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
           for (int d : el.GetDofs())
-            if (IsRegularDof(d)) dirichlet_dofs.Set (d);
+            if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
 
     /*
     Array<DofId> dnums;
@@ -454,7 +454,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_VERTEX,i), dnums);
                for (DofId d : dnums)
-                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.SetBitAtomic (d);
              }
        });
     // timer2.Stop();
@@ -477,7 +477,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
              {
                GetDofNrs (NodeId(NT_EDGE,i), dnums);
                for (DofId d : dnums)
-                 if (IsRegularDof(d)) dirichlet_dofs.Set (d);
+                 if (IsRegularDof(d)) dirichlet_dofs.SetBitAtomic (d);
              }
        });
 
@@ -487,7 +487,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetFaceDofNrs (i, dnums);
 	  for (DofId d : dnums)
-	    if (IsRegularDof(d)) dirichlet_dofs.Set (d);
+	    if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
 	}
     
     // tcolbits.Start();
@@ -1422,7 +1422,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ctofdof.Size()>0)
       for (int i = 0; i < ndof; i++)
 	if ((ctofdof[i] & doffilter) != 0)
-	  output.Set(i);
+	  output.SetBit(i);
     if (freedofsonly && free_dofs->Size()) {
       output.And(*free_dofs);
     }
@@ -1895,7 +1895,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (reg.Mask().Test(el.GetIndex()))
         for (auto d : el.GetDofs())
           if (IsRegularDof(d))
-            ba.Set(d);
+            ba.SetBit(d);
     return ba;
   }
   
@@ -2079,7 +2079,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for (auto el : Elements(BND))
           if (dirichlet_boundaries[el.GetIndex()])
             for (DofId d : el.GetDofs())
-              if (IsRegularDof(d)) dirichlet_dofs.Set (d);
+              if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
       }
   }
 
@@ -2800,7 +2800,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               {
                 for (size_t j = 0; j < r.Size(); j++)
                   if (spacei.IsAtomicDof(j))
-                    is_atomic_dof.Set(r.begin()+j);
+                    is_atomic_dof.SetBit(r.begin()+j);
               }
           }       
       }
