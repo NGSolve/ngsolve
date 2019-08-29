@@ -89,12 +89,6 @@ win_avx_cleanup:
     - docker
     - avx
 
-.template_ubuntu_latest: &ubuntu_latest
-  <<: *ubuntu
-  variables:
-    IMAGE_NAME: "latest"
-    UBUNTU_VERSION: $UBUNTU_VERSION_LATEST
-
 .template_ubuntu_avx: &ubuntu_avx
   <<: *ubuntu
   variables:
@@ -121,16 +115,12 @@ win_avx_cleanup:
   <<: *ubuntu
   variables:
     IMAGE_NAME: "mpi"
-    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+    UBUNTU_VERSION: $UBUNTU_VERSION_LATEST
 
 .template_build_linux: &build_linux
   stage: build
   script:
     - source tests/gitlab-ci/ubuntu/build.sh
-
-ubuntu_latest_build:
-  <<: *ubuntu_latest
-  <<: *build_linux
 
 ubuntu_avx_build:
   <<: *ubuntu_avx
@@ -153,10 +143,6 @@ ubuntu_mpi_build:
   script:
     - source tests/gitlab-ci/ubuntu/test.sh
 
-ubuntu_latest_test:
-  <<: *ubuntu_latest
-  <<: *test_linux
-
 ubuntu_avx_test:
   <<: *ubuntu_avx
   <<: *test_linux
@@ -172,7 +158,6 @@ ubuntu_debug_test:
 ubuntu_mpi_test:
   <<: *ubuntu_mpi
   <<: *test_linux
-  allow_failure: true
 
 linux_cleanup:
   stage: cleanup
