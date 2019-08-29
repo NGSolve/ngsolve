@@ -56,6 +56,8 @@ win_cleanup:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_avx
     - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/W0 /EHsc /arch:AVX -DWIN32=1"
     - call tests\gitlab-ci\win\set_vars.bat
+  only:
+    - schedules
 
 win_avx_build:
   <<: *win_avx
