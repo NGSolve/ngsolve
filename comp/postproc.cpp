@@ -221,7 +221,7 @@ namespace ngcomp
     else
       {
 	domains.Clear();
-	domains.Set(domain);
+	domains.SetBit(domain);
       }
     
     CalcFluxProject(u,flux,bli,applyd,domains,lh);
@@ -754,7 +754,7 @@ namespace ngcomp
     else
       {
 	domains.Clear();
-	domains.Set(domain);
+	domains.SetBit(domain);
       }
 
     CalcError(u,flux,bli,err,domains,lh);    

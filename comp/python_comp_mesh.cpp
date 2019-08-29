@@ -540,7 +540,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             mask.Clear();
             for (auto i : domains)
               if (i >= 0 && i < mask.Size())
-                mask.Set(i);
+                mask.SetBit(i);
               else
                 throw Exception ("index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
             return Region (ma, VOL, mask);
@@ -572,7 +572,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             mask.Clear();
             for (auto i : bnds)
               if (i >= 0 && i < mask.Size())
-                mask.Set(i);
+                mask.SetBit(i);
               else
                 throw Exception ("boundary index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
             return Region (ma, BND, mask);

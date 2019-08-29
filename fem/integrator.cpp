@@ -69,7 +69,7 @@ namespace ngfem
 
     for (int val : regions)
       if (val >= 0)
-        definedon.Set (val);
+        definedon.SetBit (val);
       else
         throw Exception ("SetDefinedOn called with negative index");
   }

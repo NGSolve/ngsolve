@@ -99,7 +99,7 @@ namespace ngstd
 
    Generic container classes: FlatArray, Array, ArrayMem, Table, DynamicTable, HashTable, SymbolTable.
 
-Specific data types Exception, BitArray, Flags, LocalHeap, BlockAllocator, NgProfiler, AutoPtr, EvalFunction, AutoDiff, AutoDiffDiff
+Specific data types Exception, BlockAllocator, AutoPtr, EvalFunction, AutoDiff, AutoDiffDiff
 */
 namespace ngstd
 {
@@ -139,7 +139,6 @@ namespace ngstd { using namespace ngcore; }
 
 #include "table.hpp"
 #include "hashtable.hpp"
-#include "bitarray.hpp"
 
 #include "blockalloc.hpp"
 #include "autoptr.hpp"
