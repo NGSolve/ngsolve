@@ -1193,7 +1193,8 @@ namespace ngcomp
             result = 0;
             return;
           }
-        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(ei.VB(), elnr2), lh2);
+        // const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(ei.VB(), elnr2), lh2);
+        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(VOL, elnr2), lh2);
         return Evaluate (trafo2(rip, lh2), result);
       }
     
