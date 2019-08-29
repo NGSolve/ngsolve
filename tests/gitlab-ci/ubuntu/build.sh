@@ -12,6 +12,7 @@ docker run \
       -e CMAKE_ARGS="-DCPACK_DEBIAN_PACKAGE_NAME=ngsolve${PACKAGE_NAME_SUFFIX}" \
       -e CCACHE_DIR=/ccache \
       -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" \
+      -e RUN_SLOW_TESTS="$RUN_SLOW_TESTS" \
       -v /opt/intel:/opt/intel \
       -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
       bash /root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh
