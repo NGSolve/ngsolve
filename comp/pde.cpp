@@ -1046,7 +1046,7 @@ namespace ngcomp
 	dirbnds.Clear();
 	const Array<double> & array = flags.GetNumListFlag ("dirichletboundaries");
 	for (int i = 0; i < array.Size(); i++)
-	  dirbnds.Set (int(array[i])-1);
+	  dirbnds.SetBit (int(array[i])-1);
 	space->SetDirichletBoundaries (dirbnds);
       }
   
@@ -1056,7 +1056,7 @@ namespace ngcomp
 	definedon.Clear();
 	const Array<double> & domains = flags.GetNumListFlag ("domains");
 	for (int i = 0; i < domains.Size(); i++)
-	  definedon.Set (int(domains[i])-1);
+	  definedon.SetBit (int(domains[i])-1);
 	space->SetDefinedOn (definedon);
       }
 
@@ -1066,7 +1066,7 @@ namespace ngcomp
 	definedon.Clear();
 	const Array<double> & boundaries = flags.GetNumListFlag ("boundaries");
 	for (int i = 0; i < boundaries.Size(); i++)
-	  definedon.Set (int(boundaries[i])-1);
+	  definedon.SetBit (int(boundaries[i])-1);
 	space->SetDefinedOnBoundary (definedon);
       }
 

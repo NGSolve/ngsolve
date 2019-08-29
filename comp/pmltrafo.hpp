@@ -556,7 +556,7 @@ namespace ngcomp
         dims1(i)=_dims1(i);
         if (dims1(i)<1 || dims1(i)>DIM)
           throw Exception("CompoundPML::CompoundPML: dims1 vector is weird");
-        count.Set(dims1(i)-1);
+        count.SetBit(dims1(i)-1);
       }
       if (count.NumSet()<DIMA)
         throw Exception("CompoundPML::CompoundPML: dims1 vector is weird");
@@ -566,7 +566,7 @@ namespace ngcomp
         dims2(i)=_dims2(i);
         if (dims2(i)<1 || dims2(i)>DIM)
           throw Exception("CompoundPML::CompoundPML: dims2 vector is weird");
-        count.Set(dims2(i)-1);
+        count.SetBit(dims2(i)-1);
       }
       if (count.NumSet()<DIM)
         throw Exception("CompoundPML::CompoundPML: dims2 vector is weird");

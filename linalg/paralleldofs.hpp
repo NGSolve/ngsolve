@@ -241,9 +241,9 @@ namespace ngla
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (MyMPI_ISend (send_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (comm.ISend(send_data[i], i, MPI_TAG_SOLVE));
 	if (nrecv[i])
-	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (comm.IRecv(recv_data[i], i, MPI_TAG_SOLVE));
       }
 
     MyMPI_WaitAll (requests);
@@ -315,9 +315,9 @@ namespace ngla
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (MyMPI_ISend (send_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (comm.ISend (send_data[i], i, MPI_TAG_SOLVE));
 	if (nrecv[i])
-	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (comm.IRecv (recv_data[i], i, MPI_TAG_SOLVE));
       }
 
     MyMPI_WaitAll (requests);

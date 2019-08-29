@@ -39,6 +39,7 @@ win_test:
   script:
     - call tests\gitlab-ci\win\test.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
+  needs: ["win_build"]
 
 win_cleanup:
   <<: *win
@@ -47,6 +48,7 @@ win_cleanup:
     - call tests\gitlab-ci\win\cleanup.bat
   when: always
   allow_failure: true
+  needs: ["win_test"]
 
 .template_win_avx: &win_avx
   tags:
@@ -56,6 +58,8 @@ win_cleanup:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_avx
     - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/W0 /EHsc /arch:AVX -DWIN32=1"
     - call tests\gitlab-ci\win\set_vars.bat
+  only:
+    - schedules
 
 win_avx_build:
   <<: *win_avx
@@ -69,6 +73,7 @@ win_avx_test:
   stage: test
   script:
     - call tests\gitlab-ci\win\test.bat
+  needs: ["win_avx_build"]
 
 win_avx_cleanup:
   <<: *win_avx
@@ -77,6 +82,7 @@ win_avx_cleanup:
     - call tests\gitlab-ci\win\cleanup.bat
   when: always
   allow_failure: true
+  needs: ["win_avx_test"]
 
 ############################################
 # Linux
@@ -87,17 +93,13 @@ win_avx_cleanup:
     - docker
     - avx
 
-.template_ubuntu_latest: &ubuntu_latest
-  <<: *ubuntu
-  variables:
-    IMAGE_NAME: "latest"
-    UBUNTU_VERSION: $UBUNTU_VERSION_LATEST
-
 .template_ubuntu_avx: &ubuntu_avx
   <<: *ubuntu
   variables:
     IMAGE_NAME: "avx"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+  only:
+    - schedules
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
@@ -117,16 +119,12 @@ win_avx_cleanup:
   <<: *ubuntu
   variables:
     IMAGE_NAME: "mpi"
-    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+    UBUNTU_VERSION: $UBUNTU_VERSION_LATEST
 
 .template_build_linux: &build_linux
   stage: build
   script:
     - source tests/gitlab-ci/ubuntu/build.sh
-
-ubuntu_latest_build:
-  <<: *ubuntu_latest
-  <<: *build_linux
 
 ubuntu_avx_build:
   <<: *ubuntu_avx
@@ -149,26 +147,25 @@ ubuntu_mpi_build:
   script:
     - source tests/gitlab-ci/ubuntu/test.sh
 
-ubuntu_latest_test:
-  <<: *ubuntu_latest
-  <<: *test_linux
-
 ubuntu_avx_test:
   <<: *ubuntu_avx
   <<: *test_linux
+  needs: ["ubuntu_avx_build"]
 
 ubuntu_avx512_test:
   <<: *ubuntu_avx512
   <<: *test_linux
+  needs: ["ubuntu_avx512_build"]
 
 ubuntu_debug_test:
   <<: *ubuntu_debug
   <<: *test_linux
+  needs: ["ubuntu_debug_build"]
 
 ubuntu_mpi_test:
   <<: *ubuntu_mpi
   <<: *test_linux
-  allow_failure: true
+  needs: ["ubuntu_mpi_build"]
 
 linux_cleanup:
   stage: cleanup
@@ -213,6 +210,7 @@ mac_test:
   stage: test
   script:
     - source tests/gitlab-ci/mac/test.sh
+  needs: ["mac_build"]
 
 mac_cleanup:
   <<: *mac
@@ -221,6 +219,7 @@ mac_cleanup:
     - source tests/gitlab-ci/mac/cleanup.sh
   when: always
   allow_failure: true
+  needs: ["mac_test"]
 
 
 ############################################
