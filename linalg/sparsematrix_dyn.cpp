@@ -143,18 +143,23 @@ namespace ngla
   {
     auto fx = x.FV<TSCAL>();
     auto fy = y.FV<TSCAL>();
-    for (size_t i = 0; i < nblocks; i++)
-      {
-        TSCAL * pdata = &data[firsti_data[i]];
-        int firsti = firsti_colnr[i];
-        int nexti = firsti_colnr[i+1];
-        int * pcol = &colnr[firsti];
-        TSCAL * py = &fy(cum_block_size[i]);
-        int bs = cum_block_size[i+1]-cum_block_size[i];
-        FlatMatrix<TSCAL> mat(nexti-firsti, bs, pdata);
-        auto ind = colnr.Range(firsti, nexti);
-        MultAddMatTransVecIndirect (s, mat, fx, FlatVector(bs, py), ind);
-        
+    // for (size_t i = 0; i < nblocks; i++)
+    ParallelForRange
+      (nblocks, [&] (IntRange myrange)
+       {
+         for (size_t i : myrange)
+           {
+             TSCAL * pdata = &data[firsti_data[i]];
+             int firsti = firsti_colnr[i];
+             int nexti = firsti_colnr[i+1];
+             int * pcol = &colnr[firsti];
+             TSCAL * py = &fy(cum_block_size[i]);
+             int bs = cum_block_size[i+1]-cum_block_size[i];
+             FlatMatrix<TSCAL> mat(nexti-firsti, bs, pdata);
+             auto ind = colnr.Range(firsti, nexti);
+             MultAddMatTransVecIndirect (s, mat, fx, FlatVector(bs, py), ind);
+           }
+       }, TasksPerThread(4));
         /*
         for (size_t j = 0; j < nexti-firsti; j++, pcol++)
           {
@@ -163,7 +168,6 @@ namespace ngla
               py[k] += s * *pdata * hx; 
           }
         */
-      }
   }
 
   template <typename TSCAL>  
