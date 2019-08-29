@@ -58,7 +58,7 @@ make -j12
 make install
 cd ngsolve
 
-if [ "$IMAGE_NAME" == "latest" ]
+if [ "$IMAGE_NAME" == "avx" ]
 then
   ## build and upload docu to server
   apt-get install -y rsync

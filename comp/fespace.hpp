@@ -23,7 +23,8 @@ namespace ngcomp
 			TRANSFORM_MAT_RIGHT = 2,
 			TRANSFORM_MAT_LEFT_RIGHT = 3,
 			TRANSFORM_RHS = 4,
-			TRANSFORM_SOL = 8 };
+			TRANSFORM_SOL = 8,
+                        TRANSFORM_SOL_INVERSE = 16};
   /**
     coupling types: Each degree of freedom is either
      - an unused or hidden dof (invisible)

@@ -26,7 +26,8 @@ def TmpRedraw(*args, **kwargs):
 solve.Redraw = TmpRedraw
 del TmpRedraw
 
-from .ngstd import BitArray, Timers, TaskManager, SetNumThreads, Timer
+from pyngcore import BitArray
+from .ngstd import Timers, TaskManager, SetNumThreads, Timer
 from .bla import Matrix, Vector, InnerProduct, Norm
 from .la import BaseMatrix, BaseVector, BlockVector, BlockMatrix, \
     CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \

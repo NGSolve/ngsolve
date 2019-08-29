@@ -341,8 +341,6 @@ template <class T>
     }
   };
 
-  class BitArray;
-  
   class NGS_DLL_HEADER FilteredTableCreator : public TableCreator<int>
   {
   protected:

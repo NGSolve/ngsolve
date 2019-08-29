@@ -442,7 +442,7 @@ namespace ngcomp
         ? 1 : -1;
 
 
-    if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL))
+    if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL) || (tt & TRANSFORM_SOL_INVERSE))
       {
 	for (int k = 0; k < dimension; k++)
 	  for (int i = 0; i < ned; i++)
@@ -2439,7 +2439,7 @@ namespace ngcomp
 	    ma->GetClusterRepVertex (pnts[1]))
 	  {
 	    for (int l = 1; l < n_z_edge_dofs; l++)
-	      ba.Set (i + l * ned);
+	      ba.SetBit (i + l * ned);
 	  }
       }
 
@@ -2453,35 +2453,35 @@ namespace ngcomp
 
 	    if (order == 2 && zorder == 1)
 	      {
-		ba.Set (first);
+		ba.SetBit (first);
 	      }
 	  
 	    if (order == 2 && zorder == 2)
 	      {
-		ba.Set (first + 0);
-		ba.Set (first + 2);
-		ba.Set (first + 3);
+		ba.SetBit (first + 0);
+		ba.SetBit (first + 2);
+		ba.SetBit (first + 3);
 	      }
 
 	    if (order == 2 && zorder == 3)
 	      {
-		ba.Set (first + 0);
-		ba.Set (first + 1);
-		ba.Set (first + 5);
-		ba.Set (first + 6);
+		ba.SetBit (first + 0);
+		ba.SetBit (first + 1);
+		ba.SetBit (first + 5);
+		ba.SetBit (first + 6);
 	      }
 
 	    if (order == 3 && zorder == 1)
 	      {
-		ba.Set (first + 0);
-		ba.Set (first + 1);
+		ba.SetBit (first + 0);
+		ba.SetBit (first + 1);
 	      }
 
 	    if (order == 3 && zorder == 2)
 	      {
-		ba.Set (first + 0);
-		ba.Set (first + 3);
-		ba.Set (first + 4);
+		ba.SetBit (first + 0);
+		ba.SetBit (first + 3);
+		ba.SetBit (first + 4);
 
 		/*
 		  for (int l = 0; l < 7; l++)
@@ -2491,11 +2491,11 @@ namespace ngcomp
 
 	    if (order == 3 && zorder == 3)
 	      {
-		ba.Set (first + 0);
-		ba.Set (first + 1);
-		ba.Set (first + 6);
-		ba.Set (first + 7);
-		ba.Set (first + 8);
+		ba.SetBit (first + 0);
+		ba.SetBit (first + 1);
+		ba.SetBit (first + 6);
+		ba.SetBit (first + 7);
+		ba.SetBit (first + 8);
 	      }
 	  }
       }

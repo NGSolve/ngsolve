@@ -1662,7 +1662,7 @@ namespace ngcomp
 
     for (int i : Range(mask))
       if (regex_match(mesh->GetMaterial(vb,i), re_pattern))
-        mask.Set(i);
+        mask.SetBit(i);
   }      
 
   Region :: Region (const shared_ptr<MeshAccess> & amesh, VorB avb, const BitArray & amask)
