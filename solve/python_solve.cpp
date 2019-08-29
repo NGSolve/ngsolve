@@ -677,7 +677,7 @@ void ExportVisFunctions(py::module &m) {
                 fine_facet.Clear();
                 for(auto el : ma->Elements(VOL))
                   for(auto fnr : ma->GetElFacets(el))
-                    fine_facet.Set(fnr);
+                    fine_facet.SetBit(fnr);
 
                 Array<int> pnrs;
                 for(auto fnr : Range(ma->GetNFacets()))
@@ -751,7 +751,7 @@ void ExportVisFunctions(py::module &m) {
             fine_facet.Clear();
             for(auto el : ma->Elements(VOL))
               for(auto fnr : ma->GetElFacets(el))
-                fine_facet.Set(fnr);
+                fine_facet.SetBit(fnr);
             // position of facet in result array
             Array<int> position(nf);
             map<ngfem::ELEMENT_TYPE, int> count;
@@ -948,12 +948,5 @@ void ExportVisFunctions(py::module &m) {
             setlocale(LC_NUMERIC,"C");
           });
 }
-
-
-PYBIND11_MODULE(libngsolve, m) {
-  m.attr("__name__") = "ngsolve";
-  ExportNgsolve(m);
-}
-
 
 #endif

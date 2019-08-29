@@ -141,7 +141,7 @@ namespace ngcomp
       // *wb_free_dofs = wbdof;
       for (auto i : Range(ndof))
 	if (fes->GetDofCouplingType(i) == WIREBASKET_DOF)
-	  wb_free_dofs -> Set(i);
+	  wb_free_dofs -> SetBit(i);
 
 
       if (fes->GetFreeDofs())
