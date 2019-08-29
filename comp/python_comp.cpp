@@ -2290,6 +2290,11 @@ integrator : ngsolve.fem.LFI
                     "    'point': Gauss-Seidel-Smoother\n"
                     "    'line':  Anisotropic smoother\n"
                     "    'block': Block smoother";
+                  mg_flags["coarsetype"] = "string = direct\n"
+                    "  How to solve coarse problem.";
+                  mg_flags["coarsesmoothingsteps"] = "int = 1\n"
+                    "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
+                  mg_flags["updatealways"] = "bool = False\n";
                   return mg_flags;
                 })
     ;
