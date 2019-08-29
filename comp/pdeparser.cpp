@@ -1727,13 +1727,13 @@ namespace ngcomp
 			  if(partflags.NumFlagDefined ("definedon"))
 			    {
 			      int defon = int(partflags.GetNumFlag("definedon", 0))-1;
-			      if (defon < size) definedon.Set(defon);
+			      if (defon < size) definedon.SetBit(defon);
 			    }
 			  if(partflags.NumListFlagDefined("definedon"))
 			    for(int i=0; i<partflags.GetNumListFlag("definedon").Size(); i++)
 			      {
 				int defon = int(partflags.GetNumListFlag("definedon")[i])-1;
-				if (defon < size) definedon.Set(defon);
+				if (defon < size) definedon.SetBit(defon);
 			      }
 			  integrator->SetDefinedOn (definedon);
 			}
@@ -1932,13 +1932,13 @@ namespace ngcomp
 			  if(partflags.NumFlagDefined ("definedon"))
 			    {
 			      int defon = int(partflags.GetNumFlag("definedon", 0))-1;
-			      if (defon < size) definedon.Set(defon);
+			      if (defon < size) definedon.SetBit(defon);
 			    }
 			  if(partflags.NumListFlagDefined("definedon"))
 			    for(int i=0; i<partflags.GetNumListFlag("definedon").Size(); i++)
 			      {
 				int defon = int(partflags.GetNumListFlag("definedon")[i])-1;
-				if (defon < size) definedon.Set(defon);
+				if (defon < size) definedon.SetBit(defon);
 			      }
 
 			  integrator->SetDefinedOn (definedon);
