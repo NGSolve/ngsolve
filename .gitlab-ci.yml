@@ -39,6 +39,7 @@ win_test:
   script:
     - call tests\gitlab-ci\win\test.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
+  needs: ["win_build"]
 
 win_cleanup:
   <<: *win
@@ -47,6 +48,7 @@ win_cleanup:
     - call tests\gitlab-ci\win\cleanup.bat
   when: always
   allow_failure: true
+  needs: ["win_test"]
 
 .template_win_avx: &win_avx
   tags:
@@ -71,6 +73,7 @@ win_avx_test:
   stage: test
   script:
     - call tests\gitlab-ci\win\test.bat
+  needs: ["win_avx_build"]
 
 win_avx_cleanup:
   <<: *win_avx
@@ -79,6 +82,7 @@ win_avx_cleanup:
     - call tests\gitlab-ci\win\cleanup.bat
   when: always
   allow_failure: true
+  needs: ["win_avx_test"]
 
 ############################################
 # Linux
@@ -146,18 +150,22 @@ ubuntu_mpi_build:
 ubuntu_avx_test:
   <<: *ubuntu_avx
   <<: *test_linux
+  needs: ["ubuntu_avx_build"]
 
 ubuntu_avx512_test:
   <<: *ubuntu_avx512
   <<: *test_linux
+  needs: ["ubuntu_avx512_build"]
 
 ubuntu_debug_test:
   <<: *ubuntu_debug
   <<: *test_linux
+  needs: ["ubuntu_debug_build"]
 
 ubuntu_mpi_test:
   <<: *ubuntu_mpi
   <<: *test_linux
+  needs: ["ubuntu_mpi_build"]
 
 linux_cleanup:
   stage: cleanup
@@ -202,6 +210,7 @@ mac_test:
   stage: test
   script:
     - source tests/gitlab-ci/mac/test.sh
+  needs: ["mac_build"]
 
 mac_cleanup:
   <<: *mac
@@ -210,6 +219,7 @@ mac_cleanup:
     - source tests/gitlab-ci/mac/cleanup.sh
   when: always
   allow_failure: true
+  needs: ["mac_test"]
 
 
 ############################################
