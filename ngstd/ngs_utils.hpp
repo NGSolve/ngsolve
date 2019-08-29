@@ -121,34 +121,6 @@ namespace std
     enum { value = 1 };
   };
 
-  class MyMutex
-  {
-    atomic<bool> m;
-  public:
-    MyMutex() { m.store(false, memory_order_relaxed); }
-    void lock()
-    {
-      bool should = false;
-      while (!m.compare_exchange_weak(should, true))
-        {
-          should = false;
-          _mm_pause();
-        }
-    }
-    void unlock()
-    {
-      m = false;
-    }
-  };
-  
-  class MyLock
-  {
-    MyMutex & mutex;
-  public:
-    MyLock (MyMutex & amutex) : mutex(amutex) { mutex.lock(); }
-    ~MyLock () { mutex.unlock(); }
-  };
-  
 
 
   
