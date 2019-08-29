@@ -128,7 +128,7 @@ def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
 
 def TimeFunction(func, name=None):
-    name = name or func.__name__
+    name = name or func.__qualname__
     timer = Timer(name)
     def retfunc(*args,**kwargs):
         with timer:

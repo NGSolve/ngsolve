@@ -5501,11 +5501,9 @@ namespace ngcomp
 
   BilinearForm & ComponentBilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
-    cout << "adding a block-bfi integrator" << endl;
     auto block_bfi = make_shared<CompoundBilinearFormIntegrator> (bfi, comp);
     block_bfi->SetDefinedOn (bfi->GetDefinedOn());
     base_blf -> AddIntegrator (block_bfi);
-    cout << "comp is defined on : " << block_bfi->GetDefinedOn() << endl;
     return *this;
   }
 
