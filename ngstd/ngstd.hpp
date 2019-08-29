@@ -128,7 +128,11 @@ namespace ngstd
 
 // #include "mycomplex.hpp"  
 #include <core/ngcore.hpp>
-namespace ngstd { using namespace ngcore; }
+namespace ngstd
+{
+    using namespace ngcore;
+    using ngcore::INT;
+} // namespace ngstd
 
 #include "ngs_utils.hpp"
 #include "ngsstream.hpp"  

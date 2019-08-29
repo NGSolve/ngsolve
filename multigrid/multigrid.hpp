@@ -21,7 +21,7 @@ namespace ngmg
 {
   using namespace std;
   using namespace ngstd;
-  using ngstd::INT;
+  using ngcore::INT;
   using namespace ngla;
   using namespace ngfem;
   using namespace ngcomp;

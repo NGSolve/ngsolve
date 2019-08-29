@@ -30,7 +30,7 @@ namespace ngfem
 {
   using namespace std;
   using namespace ngstd;
-  using ngstd::INT;
+  using ngcore::INT;
   using namespace ngbla;
 }
 

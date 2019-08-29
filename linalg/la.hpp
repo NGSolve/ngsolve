@@ -20,11 +20,7 @@ namespace ngla
   using namespace ngstd;
   using namespace ngbla;
 
-  using ngstd::BitArray;
-  using ngstd::FlatArray;
-  using ngstd::Array;
-  using ngstd::Table;
-  using ngstd::INT;
+  using ngcore::INT;
 }
 
 
