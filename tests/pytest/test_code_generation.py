@@ -3,6 +3,7 @@ from meshes import *
 from ngsolve import *
 ngsglobals.msg_level = 7
 
+@pytest.mark.slow
 def test_code_generation_volume_terms(unit_mesh_3d):
     fes = L2(unit_mesh_3d, order=5)
     gfu = GridFunction(fes)
@@ -29,6 +30,7 @@ def test_code_generation_volume_terms(unit_mesh_3d):
     for f in cfs:
         assert Integrate( (cf-f)*(cf-f), unit_mesh_3d) == approx(0)
 
+@pytest.mark.slow
 def test_code_generation_boundary_terms(unit_mesh_3d):
     functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size]
     functions = [0.1*f for f in functions]
@@ -40,6 +42,7 @@ def test_code_generation_boundary_terms(unit_mesh_3d):
         for f in cfs:
             assert Integrate( (cf-f)*(cf-f), unit_mesh_3d, BND) == approx(0)
 
+@pytest.mark.slow
 def test_code_generation_volume_terms_complex(unit_mesh_3d):
     fes = L2(unit_mesh_3d, order=5, complex=True)
     gfu = GridFunction(fes)
@@ -55,6 +58,7 @@ def test_code_generation_volume_terms_complex(unit_mesh_3d):
         for f in cfs:
             assert Integrate((cf-f)*Conj(cf-f), unit_mesh_3d) == approx(0)
 
+@pytest.mark.slow
 def test_code_generation_derivatives(unit_mesh_3d):
     fes = H1(unit_mesh_3d, order=4, dim=2)
     gfu = GridFunction(fes)
