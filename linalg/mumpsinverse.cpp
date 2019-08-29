@@ -33,6 +33,7 @@ namespace ngla
                 shared_ptr<BitArray> ainner,
                 shared_ptr<const Array<int>> acluster,
                 bool asymmetric)
+    : comm(MPI_COMM_NULL, false)
   { 
     static Timer timer ("Mumps Inverse");
     static Timer timer_analysis ("Mumps Inverse - analysis");
@@ -44,19 +45,15 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
-    shared_ptr<NgMPI_Comm> sp_comm;
     auto pds = a.GetParallelDofs();
     if ( (pds != nullptr) && // if we are on an "only-me comm", take it
 	 (pds->GetCommunicator().Size() == 1) )
-      { onlyme_comm = make_shared<NgMPI_Comm>(pds->GetCommunicator()); }
-    else { // otherwise make an "only-me comm"
+      { comm = pds->GetCommunicator(); }
+    else { // otherwise make an "only-me comm" from world-communicator
       NgMPI_Comm wcomm(MPI_COMM_WORLD);
-      netgen::Array<int> procs(1); procs[0] = wcomm.Rank();
-      MPI_Comm subcomm = netgen::MyMPI_SubCommunicator(wcomm, procs);
-      onlyme_comm = make_shared<NgMPI_Comm>(subcomm, true);
+      Array<int> procs = { wcomm.Rank() };
+      comm = wcomm.SubCommunicator(procs);
     }
-    NgMPI_Comm comm(*onlyme_comm);
-
 
     int ntasks = comm.Size();
     int id = comm.Rank();
@@ -356,7 +353,6 @@ namespace ngla
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    NgMPI_Comm comm(*onlyme_comm);
     int id = comm.Rank();
 
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
