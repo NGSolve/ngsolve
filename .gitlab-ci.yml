@@ -100,6 +100,8 @@ win_avx_cleanup:
   variables:
     IMAGE_NAME: "avx"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+  only:
+    - schedules
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
