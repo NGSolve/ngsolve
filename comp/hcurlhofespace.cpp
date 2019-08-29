@@ -3392,7 +3392,7 @@ namespace ngcomp
       h1def.Clear();
     for(int i=0; i<definedon[VOL].Size(); i++)
       if(definedon[VOL][i] > 0)
-	h1def.Set(i);
+	h1def.SetBit(i);
     fesh1->SetDefinedOn(VOL,h1def);
 
     BitArray h1defb(ma->GetNBoundaries());
@@ -3402,7 +3402,7 @@ namespace ngcomp
       h1defb.Clear();
     for(int i=0; i<definedon[BND].Size(); i++)
       if(definedon[BND][i] > 0)
-	h1defb.Set(i);
+	h1defb.SetBit(i);
     fesh1->SetDefinedOn(BND,h1defb);
 
     int ne = ma -> GetNE();

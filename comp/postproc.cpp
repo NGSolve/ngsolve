@@ -221,7 +221,7 @@ namespace ngcomp
     else
       {
 	domains.Clear();
-	domains.Set(domain);
+	domains.SetBit(domain);
       }
     
     CalcFluxProject(u,flux,bli,applyd,domains,lh);
@@ -492,9 +492,10 @@ namespace ngcomp
                     {
                       FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
                       bli->CalcElementMatrix (fel, eltrans, elmat, lh);
-                      
-                      fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                      fes->TransformVec (ei, elflux, TRANSFORM_RHS);
+
+                      // Transform solution inverse instead
+                      // fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                      // fes->TransformVec (ei, elflux, TRANSFORM_RHS);
                       // if (fel.GetNDof() < 50)
                       if (true)
                         {
@@ -512,7 +513,7 @@ namespace ngcomp
                         }
                     }
                   
-                  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+                  fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
                   
                   u.GetElementVector (ei.GetDofs(), elflux);
                   elfluxi += elflux;
@@ -562,14 +563,12 @@ namespace ngcomp
 	      FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
-	      fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      fes->TransformVec (ei, elflux, TRANSFORM_RHS);
+              // Transform solution inverse instead
+	      // fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+	      // fes->TransformVec (ei, elflux, TRANSFORM_RHS);
               // if (fel.GetNDof() < 50)
               if (true)
                 {
-                  // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-                  // invelmat.Mult (elflux, elfluxi);
-
                   CalcLDL<SCAL,ColMajor> (Trans(elmat));
                   elfluxi = elflux;
                   SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
@@ -581,7 +580,7 @@ namespace ngcomp
                 }
 	    }
 
-	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+	  fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
 
           u.GetElementVector (ei.GetDofs(), elflux);
           elfluxi += elflux;
@@ -755,7 +754,7 @@ namespace ngcomp
     else
       {
 	domains.Clear();
-	domains.Set(domain);
+	domains.SetBit(domain);
       }
 
     CalcError(u,flux,bli,err,domains,lh);    

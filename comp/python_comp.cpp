@@ -1628,15 +1628,19 @@ VOL_or_BND : ngsolve.comp.VorB
                    }, "Name of canonical derivative of the space behind the GridFunction.")
 
     .def("__call__", 
-         [](shared_ptr<GF> self, double x, double y, double z)
+         [](shared_ptr<GF> self, double x, double y, double z, VorB vb)
           {
             HeapReset hr(glh);
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
             IntegrationPoint ip;
-            int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            int elnr = -1;
+            if (vb == VOL)
+              elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            else
+              elnr = space->GetMeshAccess()->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
-            ElementId ei(VOL, elnr);
+            ElementId ei(vb, elnr);
             
             const FiniteElement & fel = space->GetFE(ei, glh);
 
@@ -1663,7 +1667,7 @@ VOL_or_BND : ngsolve.comp.VorB
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
           },
-         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
+         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0, py::arg("VOL_or_BND") = VOL)
 
     // expose CF __call__ to GF, because pybind11 doesn't do that if a function gets overloaded
     .def("__call__", [](shared_ptr<GF> self, py::args args, py::kwargs kwargs)
@@ -3401,14 +3405,6 @@ deformation : ngsolve.comp.GridFunction
 	 });
 
   /////////////////////////////////////////////////////////////////////////////////////
-}
-
-
-
-
-PYBIND11_MODULE(libngcomp, m) {
-  m.attr("__name__") = "comp";
-  ExportNgcomp(m);
 }
 
 #endif // NGS_PYTHON

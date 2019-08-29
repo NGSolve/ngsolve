@@ -634,7 +634,7 @@ namespace ngla
 
 
         elmats[elnr].AssignMemory (sr, sc, &elmats[refelnr](0,0));
-	clone.Set(elnr);
+	clone.SetBitAtomic(elnr);
       }
     else
       throw Exception ("EBEMatrix::AddCloneElementMatrix, illegal elnr");
@@ -686,7 +686,7 @@ namespace ngla
       for (auto d : col)
         {
           if (used_col.Test(d)) disjoint_cols = false;
-          used_col.Set(d);
+          used_col.SetBit(d);
         }
 
     BitArray used_row(w);
@@ -695,7 +695,7 @@ namespace ngla
       for (auto d : row)
         {
           if (used_row.Test(d)) disjoint_rows = false;
-          used_row.Set(d);
+          used_row.SetBit(d);
         }
     
     // cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;

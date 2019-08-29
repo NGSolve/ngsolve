@@ -39,17 +39,15 @@ if (NETGEN_USE_GUI)
             ngsolve.cpp shapetester.cpp 
             )
 
-    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIB} ${UMFPACK_LIBRARIES} ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY})
+    target_link_libraries(ngsolve PUBLIC nglib gui ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIB} ${UMFPACK_LIBRARIES} )
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
 
     target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
     install( TARGETS ngsolve ${ngs_install_dir} )
 
-    if(NOT APPLE)
-        target_link_libraries( ngsolve PUBLIC gui)
-    endif()
     if(WIN32)
+        target_link_libraries( ngsolve PRIVATE ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY} )
         set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
     endif(WIN32)
 endif (NETGEN_USE_GUI)
