@@ -1,7 +1,6 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngstd ${NGS_LIB_TYPE}
-        table.cpp
         blockalloc.cpp evalfunc.cpp templates.cpp
         stringops.cpp
         cuda_ngstd.cpp python_ngstd.cpp
@@ -28,8 +27,8 @@ install( TARGETS ngstd ${ngs_install_dir} )
 install( FILES
         autodiffdiff.hpp autodiff.hpp autoptr.hpp    
         bessel.hpp blockalloc.hpp evalfunc.hpp
-        hashtable.hpp memusage.hpp ngstd.hpp	      
-        stringops.hpp table.hpp templates.hpp
+        memusage.hpp ngstd.hpp
+        stringops.hpp templates.hpp
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp sockets.hpp cuda_ngstd.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
