@@ -230,10 +230,6 @@ if (USE_LAPACK)
     endif()
 endif (USE_LAPACK)
 
-
-# Pybind11 2.3 Issue https://github.com/pybind/pybind11/issues/1604
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation")
-
 #######################################################################
 if (USE_CUDA)
     find_package(CUDA)

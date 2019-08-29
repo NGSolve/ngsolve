@@ -97,7 +97,7 @@ namespace ngstd
 /**
    namespace for standard data types and algorithms.
 
-   Generic container classes: FlatArray, Array, ArrayMem, Table, DynamicTable, HashTable, SymbolTable.
+   Generic container classes: FlatArray, Array, ArrayMem
 
 Specific data types Exception, BlockAllocator, AutoPtr, EvalFunction, AutoDiff, AutoDiffDiff
 */
@@ -128,7 +128,11 @@ namespace ngstd
 
 // #include "mycomplex.hpp"  
 #include <core/ngcore.hpp>
-namespace ngstd { using namespace ngcore; }
+namespace ngstd
+{
+    using namespace ngcore;
+    using ngcore::INT;
+} // namespace ngstd
 
 #include "ngs_utils.hpp"
 #include "ngsstream.hpp"  
@@ -136,9 +140,6 @@ namespace ngstd { using namespace ngcore; }
 
 #include "simd.hpp"
 #include "simd_complex.hpp"
-
-#include "table.hpp"
-#include "hashtable.hpp"
 
 #include "blockalloc.hpp"
 #include "autoptr.hpp"
