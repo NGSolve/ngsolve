@@ -2649,8 +2649,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
   };
 
-  //[[deprecated("Use DubinerBasis instead")]]
-  using DubinerBasis3 = DubinerBasis;
+  // using DubinerBasis3 = DubinerBasis;
   
 
 

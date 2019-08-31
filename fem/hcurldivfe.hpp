@@ -696,7 +696,7 @@ namespace ngfem
 	  //Vector<AutoDiffDiff<2, T> >  l2shape( (oi+1)*(oi+2) / 2 );
 	  
 	  Vector<Tx>  l2shape( (oi+1)*(oi+2) / 2);
-	  DubinerBasis3::Eval ( oi , ddlami[0], ddlami[1], l2shape);
+	  DubinerBasis::Eval ( oi , ddlami[0], ddlami[1], l2shape);
 
 	  Vector<Tx>  S(oi+1);
 
@@ -902,7 +902,7 @@ namespace ngfem
 
           AutoDiff<3,T> ls = ddlami[fav[0]], le = ddlami[fav[1]], lt = ddlami[fav[2]];
 	  
-	  DubinerBasis3::Eval (maxorder_facet, ls, le, ha);
+	  DubinerBasis::Eval (maxorder_facet, ls, le, ha);
 
           for (int l = 0; l < (order_facet[fa]+1)*(order_facet[fa]+2)/2.0; l++)
 	    {	      
@@ -1182,7 +1182,7 @@ namespace ngfem
             
       AutoDiffDiff<3> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
       
-      DubinerBasis3::Eval (order_inner, ls, le, ha);
+      DubinerBasis::Eval (order_inner, ls, le, ha);
 
       for (int l = 0; l < (order_inner+1)*(order_inner+2)/2.0; l++)
 	    {

@@ -1111,13 +1111,13 @@ namespace ngfem
           auto p = order_inner[0]-1;
           if( p >= 0 )
             {
-              DubinerBasis3::Eval (p, lam[0], lam[1],
-                                   SBLambda([&] (size_t nr, T val)
-                                            {
-                                              shape[ii++] = val*Vec<3,T>(1,0,0);
-                                              shape[ii++] = val*Vec<3,T>(0,1,0);
-                                              shape[ii++] = val*Vec<3,T>(0,0,1);
-                                            }));
+              DubinerBasis::Eval (p, lam[0], lam[1],
+                                  SBLambda([&] (size_t nr, T val)
+                                           {
+                                             shape[ii++] = val*Vec<3,T>(1,0,0);
+                                             shape[ii++] = val*Vec<3,T>(0,1,0);
+                                             shape[ii++] = val*Vec<3,T>(0,0,1);
+                                           }));
             }
         }
     }
