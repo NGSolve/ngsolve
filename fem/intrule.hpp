@@ -21,6 +21,9 @@ namespace ngfem
   class TIP
   {
   public:
+    int8_t facetnr;
+    VorB vb;
+
     // T x; // dummy
     TIP () = default;
     TIP (const TIP &) = default;
@@ -39,6 +42,9 @@ namespace ngfem
   class TIP<0,T>
   {
   public:
+    int8_t facetnr;
+    VorB vb;
+
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -59,6 +65,9 @@ namespace ngfem
   {
   public:
     T x;
+    int8_t facetnr;
+    VorB vb;
+    
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -79,6 +88,8 @@ namespace ngfem
   {
   public:
     T x, y;
+    int8_t facetnr;
+    VorB vb;
     
     TIP () = default;
     TIP (const TIP &) = default;
@@ -99,6 +110,9 @@ namespace ngfem
   {
   public:
     T x, y, z;
+    int8_t facetnr;
+    VorB vb;
+
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -143,7 +157,7 @@ namespace ngfem
     /// weight of integration point
     double weight;
     /// point is on facetnr, -1 for volume
-    int facetnr = -1;
+    int8_t facetnr = -1;
     /// co-dimension of point (0..vol, 1..bnd, 2..bbnd, 3..bbbnd=vertex)
     VorB vb = VOL;
     ///
@@ -244,7 +258,7 @@ namespace ngfem
     // INLINE int & FacetNr() { return facetnr; }
     void SetFacetNr (int afacetnr, VorB avb = BND)
     { facetnr = afacetnr; vb = avb; }
-    INLINE int FacetNr() const { return facetnr; }
+    INLINE auto FacetNr() const { return facetnr; }
     INLINE VorB VB() const { return vb; } 
     
     template <int DIM> 

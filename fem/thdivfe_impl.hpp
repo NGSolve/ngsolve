@@ -38,6 +38,8 @@ namespace ngfem
         adp.x.DValue(i) = jac(i,1);
         adp.y.DValue(i) = -jac(i,0);
       }
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
     return adp;
   }
   
@@ -55,6 +57,8 @@ namespace ngfem
         adp.x.DValue(i) = jac(i,1);
         adp.y.DValue(i) = -jac(i,0);
       }
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
     return adp;
   }
 

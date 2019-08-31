@@ -10,6 +10,7 @@
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "normalfacetfespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
@@ -1042,6 +1043,7 @@ rho : ngsolve.fem.CoefficientFunction
   
   // ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
   ExportFESpace<VectorFacetFESpace> (m, "TangentialFacetFESpace");
+  ExportFESpace<NormalFacetFESpace> (m, "NormalFacetFESpace");
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
   

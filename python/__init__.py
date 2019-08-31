@@ -44,6 +44,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     MultiGridPreconditioner, ElementId, FESpace, H1, HCurl, \
     HDiv, L2, VectorH1, VectorL2, SurfaceL2, HDivDiv, HCurlCurl, HCurlDiv, \
     HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
+    NormalFacetFESpace, \
     FacetSurface, NumberSpace, Periodic, Discontinuous, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
