@@ -1065,7 +1065,7 @@ namespace ngcomp
                             if (!bfi.DefinedOn (ma->GetElIndex (id))) continue;
                             if (!bfi.DefinedOnElement (i)) continue;
                             
-                            FlatVector<double> diag;
+                            FlatVector<double> diag(sum_diag.Size(), clh);
                             try
                               {
                                 bfi.CalcElementMatrixDiag (fel, eltrans, diag, clh);
@@ -5251,7 +5251,8 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
-    int ndof = this->fespace->GetNDof();
+    size_t ndof = this->fespace->GetNDof();
+    /*
     MatrixGraph * graph = new MatrixGraph (ndof, 1);
     for (int i = 0; i < ndof; i++)
       graph->CreatePosition (i, i);
@@ -5259,7 +5260,10 @@ namespace ngcomp
     // graphs.Append (graph);
     this->mats.Append (make_shared<SparseMatrixSymmetric<TM>> (*graph, 1));
     delete graph;
+    */
 
+    this->mats.Append (make_shared<DiagonalMatrix<TM>> (ndof));
+    
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         this->mats[i].reset();
@@ -5309,7 +5313,7 @@ namespace ngcomp
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         {
-          TM & mij = mat(dnums1[i], dnums1[i]);
+          TM & mij = mat(dnums1[i]); // , dnums1[i]);
           int hi = Height (mij);
           int wi = Width (mij);
           
@@ -5333,7 +5337,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += elmat(i, i);
+        mat(dnums1[i]) += elmat(i, i);
   }
 
 
@@ -5351,7 +5355,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += elmat(i, i);
+        mat(dnums1[i]) += elmat(i, i);
   }
 
 
@@ -5462,7 +5466,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += diag(i);
+        mat(dnums1[i]) += diag(i);
   }
 
   ///
@@ -5476,7 +5480,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += diag(i);
+        mat(dnums1[i]) += diag(i);
   }
 
 
