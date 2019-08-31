@@ -1838,10 +1838,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (multiple)
       {
-        Vector<> scaling(cnt.Size());
+        VVector<> scaling(cnt.Size());
         for (auto i : Range(cnt))
           scaling(i) = cnt[i] ? 1.0/cnt[i] : 0;
-        auto diagmat = make_shared<DiagonalMatrix> (scaling);
+        auto diagmat = make_shared<DiagonalMatrix<>> (scaling);
         sum = make_shared<ProductMatrix> (diagmat, sum);
       }
     

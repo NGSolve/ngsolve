@@ -218,12 +218,17 @@ namespace ngfem
 			     FlatVector<double> diag,
 			     LocalHeap & lh) const
   {
-    cout << "base class, assemble diag" << endl;
+    static bool first_time = true;
+    if (first_time)
+      {
+        cout << "WARNING: base class, assemble diag is highly inefficient" << endl;
+        first_time = false;
+      }
 
     FlatMatrix<> elmat(diag.Size(), lh);
     CalcElementMatrix (fel, eltrans, elmat, lh);
 
-    diag.AssignMemory (elmat.Height(), lh);
+    // diag.AssignMemory (elmat.Height(), lh);
     for (int i = 0; i < diag.Size(); i++)
       diag(i) = elmat(i,i);
   }
