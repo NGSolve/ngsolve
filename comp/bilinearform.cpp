@@ -4100,7 +4100,7 @@ namespace ngcomp
 	    Array<int> elfacets;
 	    for (int i = 0; i < ne; ++i) {
 	      auto elfacets = ma->GetElFacets(ElementId(VOL,i));
-	      for (auto f : elfacets) fine_facet.Set(f);
+	      for (auto f : elfacets) fine_facet.SetBit(f);
 	    }
 	    /** 
 		We can have surf-els without elements. If we just skip these, 
@@ -4111,7 +4111,7 @@ namespace ngcomp
 	    size_t nse = ma->GetNE(BND);
 	    for (int i = 0; i < nse; ++i) {
 	      auto selfacets = ma->GetElFacets(ElementId(BND, i));
-	      for (auto f : selfacets) fine_facet.Set(f);
+	      for (auto f : selfacets) fine_facet.SetBit(f);
 	    }
 
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
