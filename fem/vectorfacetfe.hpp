@@ -43,7 +43,7 @@ namespace ngfem
 
     VectorFacetFacetFE () { ; }
 
-    HD virtual ELEMENT_TYPE ElementType() const { return ELEMENT_TYPE(ET); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
     INLINE void SetOrder (int aorder)
     {
@@ -62,7 +62,7 @@ namespace ngfem
     virtual void ComputeNDof ();
 
     virtual void CalcShape(const IntegrationPoint & ip,
-         		    SliceMatrix<> shape) const;
+         		    SliceMatrix<> shape) const override;
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;

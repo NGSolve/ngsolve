@@ -482,7 +482,7 @@ namespace ngfem
 	  Vec<3,AutoDiff<2,T>> symdyadic2 = ls*SymDyadProd(lt,le);
 	  Vec<3,AutoDiff<2,T>> symdyadic3 = le*SymDyadProd(ls,lt);
           
-	  DubinerBasis3::Eval(order_inner[0]-1, ls,le,
+	  DubinerBasis::Eval(order_inner[0]-1, ls,le,
 			      SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
 				       {
 					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic1);
@@ -544,7 +544,7 @@ namespace ngfem
           auto p = order_inner[0]-1;
           if( p >= 0 )
             {
-              DubinerBasis3::Eval (p, lam[0], lam[1],
+              DubinerBasis::Eval (p, lam[0], lam[1],
                                    SBLambda([&] (size_t nr, T val)
                                             {
                                               shape[ii++] = val*Vec<3>(1,0,0);
@@ -1398,7 +1398,7 @@ namespace ngfem
               Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
               Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
               
-              DubinerBasis3::Eval(order_facet[fa][0]-1, ls,le,
+              DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
                                   SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
                                            {
                                              shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
@@ -1496,7 +1496,7 @@ namespace ngfem
                   Ftmp = Trans(F)*F;
                   auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
                                               
-                  DubinerBasis3::Eval (p, xi, eta,
+                  DubinerBasis::Eval (p, xi, eta,
                                        SBLambda([&] (size_t nr, T val)
                                                 {
                                                   Mat<3,3> tmpmat = mip.GetJacobian()*F*Matrix<>({{1,0},{0,0}})*Trans(mip.GetJacobian()*F);
@@ -1880,7 +1880,7 @@ namespace ngfem
           Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
           Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
           
-          DubinerBasis3::Eval(order_inner[0]-1, ls,le,
+          DubinerBasis::Eval(order_inner[0]-1, ls,le,
                               SBLambda([shape, &ii, symdyadic1, symdyadic2, symdyadic3] (size_t nr, auto val)
                                        {
                                          shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
@@ -1948,7 +1948,7 @@ namespace ngfem
               Matrix<T> tt1 = DyadProd(adxi,adxi);
               Matrix<T> tt2 = DyadProd(adeta,adeta);
               Matrix<T> tt3 = DyadProd(adxi,adeta)+DyadProd(adeta,adxi);
-              DubinerBasis3::Eval(p, xi,eta,
+              DubinerBasis::Eval(p, xi,eta,
                                   SBLambda([&] (size_t nr, auto val)
                                            {
                                              shape[ii++] = val.Value()*tt1;
@@ -2009,7 +2009,7 @@ namespace ngfem
                   
               auto F = mip.GetJacobian();
               auto det = mip.GetMeasure();
-              DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]],
+              DubinerBasis::Eval (p, lam[f[0]], lam[f[1]],
                                    SBLambda([&] (size_t nr, T val)
                                             {
                                               shape[ii++] = 1/det*val*F*Matrix<>({{1,0},{0,0}})*Trans(F);
