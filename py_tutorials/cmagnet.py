@@ -43,13 +43,13 @@ print ("nu_coef=", nu_coef)
 
 nu = CoefficientFunction(nu_coef)
 a = BilinearForm(fes, symmetric=True)
-a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
+a += nu*curl(u)*curl(v)*dx + 1e-6*nu*u*v*dx
 
 c = Preconditioner(a, type="bddc")
 # c = Preconditioner(a, type="multigrid", flags = { "smoother" : "block" } )
 
 f = LinearForm(fes)
-f += SymbolicLFI(CoefficientFunction((y,0.05-x,0)) * v, definedon=mesh.Materials("coil"))
+f += CoefficientFunction((y,0.05-x,0)) * v * dx("coil")
 
 u = GridFunction(fes)
 
