@@ -18,11 +18,11 @@ v = fes.TestFunction()
 
 # the right hand side
 f = LinearForm(fes)
-f += SymbolicLFI(32 * (y*(1-y)+x*(1-x)) * v)
+f += 32 * (y*(1-y)+x*(1-x)) * v * dx
 
 # the bilinear-form 
 a = BilinearForm(fes, symmetric=True)
-a += SymbolicBFI(grad(u)*grad(v))
+a += grad(u)*grad(v)*dx
 
 a.Assemble()
 f.Assemble()

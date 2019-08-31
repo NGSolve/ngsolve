@@ -41,8 +41,8 @@ def NeoHooke (C):
 factor = Parameter(0.1)
 
 a = BilinearForm(fes, symmetric=False)
-a += SymbolicEnergy(  NeoHooke (C).Compile() )
-a += SymbolicEnergy(  (-factor * InnerProduct(force,u) ).Compile() )
+a += Variation (NeoHooke(C).Compile()*dx)
+a += Variation ((-factor * InnerProduct(force,u) ).Compile()*dx)
 
 
 u = GridFunction(fes)
