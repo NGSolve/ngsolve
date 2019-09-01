@@ -1079,7 +1079,7 @@ inverse : string
     .def("__sub__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
          { return a-b; })
     .def("__neg__", [] (DynamicVectorExpression a) { return (-1.0)*a; })    
-    .def(float()*py::self)
+    .def(double()*py::self)
     .def("__rmul__", [] (DynamicVectorExpression a, Complex scal) { return scal*a; })    
   ;
 
