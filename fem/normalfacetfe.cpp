@@ -64,6 +64,37 @@ namespace ngfem
                                      }));
       }
   }
+
+  
+  template <> template<typename Tx, typename TFA>  
+  void NormalFacetVolumeFE_Shape<ET_TET>::
+  T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+  {
+    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
+    Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z } ;
+
+    for (int i = 0; i < 4; i++)
+      {
+        if (ip.facetnr != i)
+          {
+            for (int j : Range(first_facet_dof[i], first_facet_dof[i+1]))
+              shape[j] = Du_Cross_Dv (Tx(0.0), Tx(0.0));
+            continue;
+          }
+          
+        int first = first_facet_dof[ip.facetnr];
+        int p = facet_order[ip.facetnr][0];
+
+        INT<4> f = GetVertexOrientedFace (ip.facetnr);
+        auto xi = lam[f[0]]-lam[f[2]];
+        auto eta = lam[f[1]]-lam[f[2]];
+        DubinerBasis::Eval (p, lam[f[0]], lam[f[1]],
+                            SBLambda([&](int nr, auto val)
+                                     {
+                                       shape[first+nr] = wDu_Cross_Dv (xi, eta, val);
+                                     }));
+      }
+  }
     
     
 
@@ -642,7 +673,7 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       {
 	first_facet_dof[i] = ndof;
-	ndof += (facet_order[i][0]+1) * (facet_order[i][0]+2);
+	ndof += (facet_order[i][0]+1) * (facet_order[i][0]+2) / 2;
       }
     first_facet_dof[4] = ndof;
   }
