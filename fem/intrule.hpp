@@ -1832,6 +1832,8 @@ namespace ngfem
       adp.x.Value() = ip(0);
       for (int j = 0; j < DIMR; j++)
         adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
     }
 
   
@@ -1846,6 +1848,8 @@ namespace ngfem
         adp.x.DValue(j) = ijac(0,j);
       for (int j = 0; j < DIMR; j++)
         adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
     }
 
   
@@ -1863,6 +1867,8 @@ namespace ngfem
         adp.y.DValue(j) = ijac(1,j);
       for (int j = 0; j < DIMR; j++)
         adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
     }
 
 
@@ -1876,6 +1882,8 @@ namespace ngfem
     INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip) -> TIP<0,AutoDiffRec<DIMR,SIMD<double>>>
     {
       TIP<0,AutoDiffRec<DIMR,SIMD<double>>> adp;
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1888,6 +1896,8 @@ namespace ngfem
       adp.x.Value() = ip(0);
       for (int j = 0; j < DIMR; j++)
         adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1904,6 +1914,8 @@ namespace ngfem
         adp.x.DValue(j) = ijac(0,j);
       for (int j = 0; j < DIMR; j++)
         adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1923,6 +1935,8 @@ namespace ngfem
         adp.y.DValue(j) = ijac(1,j);
       for (int j = 0; j < DIMR; j++)
         adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1936,6 +1950,8 @@ namespace ngfem
   INLINE auto GetTIP( const MappedIntegrationPoint<0,DIMR> & mip) -> TIP<0,AutoDiffRec<DIMR>>
   {
     TIP<0,AutoDiffRec<DIMR>> adp;
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
     return adp;
   }
 
@@ -1948,6 +1964,8 @@ namespace ngfem
       adp.x.Value() = ip(0);
       for (int j = 0; j < DIMR; j++)
         adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1964,6 +1982,8 @@ namespace ngfem
         adp.x.DValue(j) = ijac(0,j);
       for (int j = 0; j < DIMR; j++)
         adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1983,6 +2003,8 @@ namespace ngfem
         adp.y.DValue(j) = ijac(1,j);
       for (int j = 0; j < DIMR; j++)
         adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 

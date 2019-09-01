@@ -425,28 +425,14 @@ namespace ngcomp
     
     if(ei.VB()==VOL)
       {
-    if (!highest_order_dc)
-      {
-	Array<int> fanums; // facet numbers
-	int first,next;
-	
-	fanums.SetSize(0);
-	
-	
-	if(ma->GetDimension() == 3)
-	  fanums = ma->GetElFaces (ei);
-	else // dim=2
-	  fanums = ma->GetElEdges (ei);
-	
-	for(int i=0; i<fanums.Size(); i++)
-	  {
-            dnums.Append(fanums[i]); // low_order
-	    first = first_facet_dof[fanums[i]];
-	    next = first_facet_dof[fanums[i]+1];
-	    for(int j=first ; j<next; j++)
-	      dnums.Append(j);
-	  }
-      }
+        if (!highest_order_dc)
+          {
+            for (auto facet : ma->GetElFacets(ei))
+              {
+                dnums += facet;
+                dnums += GetFacetDofs(facet);
+              }
+          }
     else
       {
 	if (ma->GetDimension() == 2)
@@ -564,8 +550,7 @@ namespace ngcomp
     else // 3D
       {
 	fanums[0] = ma->GetSElFace(ei.Nr());
-	dnums.Append( 2*fanums[0] );
-	dnums.Append( 2*fanums[0]+1 );
+	dnums.Append( fanums[0] );
 
 	first = first_facet_dof[fanums[0]];
 	next = first_facet_dof[fanums[0]+1];
