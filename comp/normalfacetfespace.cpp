@@ -531,37 +531,13 @@ namespace ngcomp
       
     // *testout << "dnums = " << endl << dnums << endl;
       }
-    if(ei.VB()==BND)
+
+    if (ei.VB() == BND)
       {
-    ArrayMem<int, 1> fanums(1);
-    int first, next;
-
-
-    if ( ma->GetDimension() == 2 )
-      {
-	auto fanums = ma->GetElEdges (ei);
-	dnums.Append(fanums[0]);
-
-	first = first_facet_dof[fanums[0]];
-	next = first_facet_dof[fanums[0]+1];
-	for ( int j = first; j < next; j++ )
-	  dnums.Append(j);
-      } 
-    else // 3D
-      {
-	fanums[0] = ma->GetSElFace(ei.Nr());
-	dnums.Append( fanums[0] );
-
-	first = first_facet_dof[fanums[0]];
-	next = first_facet_dof[fanums[0]+1];
-	for ( int j = first; j < next; j++ )
-	  dnums.Append(j);
-
+        auto facet = ma->GetElFacets(ei)[0];
+        dnums.Append (facet);
+        dnums += GetFacetDofs(facet);
       }
-
-      }
-    //if(ei.VB()==BBND)
-    //  dnums.SetSize(0);
   }
 
   void NormalFacetFESpace :: SetOrder (NodeId ni, int order) 

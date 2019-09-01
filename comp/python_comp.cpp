@@ -1880,9 +1880,14 @@ space : ngsolve.FESpace
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
                      "  preconditioner with a changing bilinearform.",
 		     py::arg("nonsym_storage") = "bool = False\n"
-		     " The full matrix is stored, even if the symmetric flag is set.",
+		     "  The full matrix is stored, even if the symmetric flag is set.",
+                     py::arg("diagonal") = "bool = False\n"
+                     "  Stores only the diagonal of the matrix.",
+                     py::arg("geom_free") = "bool = False\n"
+                     "  when element matrices are independent of geometry, we store them \n"
+                     "  only for the referecne elements",
                      py::arg("check_unused") = "bool = True\n"
-		     " If set prints warnings if not UNUSED_DOFS are not used."
+		     "  If set prints warnings if not UNUSED_DOFS are not used."
                      );
                 })
 

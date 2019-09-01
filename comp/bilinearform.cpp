@@ -5227,7 +5227,6 @@ namespace ngcomp
     : S_BilinearForm<TSCAL> (afespace, aname, flags) 
   { 
     this->diagonal = 1;
-    cout << " !!!!!!!!!!!!!!!!!! allocated diagonal matrix !!!!!!!!!!!!!" << endl;
 
     if (this->fespace->LowOrderFESpacePtr())
       {
