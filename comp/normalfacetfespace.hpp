@@ -61,6 +61,12 @@ namespace ngcomp
 
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
+    auto GetFacetDofs (size_t nr) const
+    {
+      return Range (first_facet_dof[nr], first_facet_dof[nr+1]);
+    }
+    
+
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     ///
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & precflags) const override;
