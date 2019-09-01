@@ -650,7 +650,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b) 
          { b.AddTo(-1, *a); return a; })
 
-    .def("__neg__", [] (shared_ptr<BaseVector> a) { return (-1)*a; })
+    .def("__neg__", [] (shared_ptr<BaseVector> a) { return (-1.0)*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, double scal) { return scal*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, Complex scal) { return scal*a; })
     
@@ -1078,6 +1078,7 @@ inverse : string
     .def(py::self-py::self)
     .def("__sub__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
          { return a-b; })
+    .def("__neg__", [] (DynamicVectorExpression a) { return (-1.0)*a; })    
     .def(float()*py::self)
     .def("__rmul__", [] (DynamicVectorExpression a, Complex scal) { return scal*a; })    
   ;
