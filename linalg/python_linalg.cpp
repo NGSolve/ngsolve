@@ -174,6 +174,7 @@ namespace ngla {
   {
     return DynamicVectorExpression(make_shared<DynamicSumExpression>(a.Ptr(),b.Ptr()));
   }
+  /*
   inline auto operator+ (DynamicVectorExpression a, shared_ptr<BaseVector> b)
   {
     return a+DynamicVectorExpression(b);
@@ -186,11 +187,12 @@ namespace ngla {
   {
     return DynamicVectorExpression(a)+DynamicVectorExpression(b);
   }
-
+  */
   inline auto operator- (DynamicVectorExpression a, DynamicVectorExpression b)
   {
     return DynamicVectorExpression(make_shared<DynamicSubExpression>(a.Ptr(),b.Ptr()));
   }
+  /*
   inline auto operator- (DynamicVectorExpression a, shared_ptr<BaseVector> b)
   {
     return a-DynamicVectorExpression(b);
@@ -203,6 +205,7 @@ namespace ngla {
   {
     return DynamicVectorExpression(a)-DynamicVectorExpression(b);
   }
+  */
 
   template <typename T>
   inline auto operator* (T s, DynamicVectorExpression v)
@@ -636,15 +639,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                       self->Set (1, **vec);
                   })
     
-    .def("__add__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
-         { return a+b; })
+  // .def("__add__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
+  // { return a+b; })
     .def("__add__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b)
          { return a+b; })
     .def("__iadd__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b) 
          { b.AddTo(1, *a); return a; })
     
-    .def("__sub__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
-         { return a-b; })
+  // .def("__sub__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
+  // { return a-b; })
     .def("__sub__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b)
          { return a-b; })
     .def("__isub__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b) 
@@ -1072,6 +1075,7 @@ inverse : string
     ;
 
   py::class_<DynamicVectorExpression> (m, "DynamicVectorExpression")
+    .def(py::init<shared_ptr<BaseVector>>())
     .def(py::self+py::self)
     .def("__add__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
          { return a+b; })
@@ -1087,7 +1091,7 @@ inverse : string
   m.def ("Sum", [](DynamicVectorExpression a, DynamicVectorExpression b)
            { return a+b; } );
 
-  py::implicitly_convertible<shared_ptr<BaseVector>, DynamicVectorExpression>();
+  py::implicitly_convertible<BaseVector, DynamicVectorExpression>();
   
 #ifndef PARALLEL
 
