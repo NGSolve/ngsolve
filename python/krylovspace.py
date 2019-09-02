@@ -31,7 +31,7 @@ class CGSolver(BaseMatrix):
     @TimeFunction
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
               initialize : bool = True) -> None:
-        self.sol = sol if sol else mat.CreateRowVector()
+        self.sol = sol if sol else self.mat.CreateRowVector()
         d, w, s = self._tmp_vecs
         u, mat, pre, conjugate, tol, maxsteps, callback = self.sol, self.mat, self.pre, self.conjugate, \
             self.tol, self.maxsteps, self.callback

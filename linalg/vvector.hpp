@@ -146,6 +146,12 @@ namespace ngla
       : S_BaseVectorPtr<TSCAL> (as, ES) 
     { ; }
 
+    explicit VVector (const VVector & v2)
+      : S_BaseVectorPtr<TSCAL> (v2.Size(), ES)
+    {
+      *this = v2;
+    }
+    
     // virtual ~VVector() { ; }
 
     VVector & operator= (TSCAL s1)

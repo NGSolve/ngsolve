@@ -59,34 +59,102 @@ namespace ngla
 
 
 
-
-  void DiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  template <typename TM>
+  void DiagonalMatrix<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    FlatSysVector<> sx = x.SV<double>();
-    FlatSysVector<> sy = y.SV<double>();
-    for (size_t i : Range(diag))
-      sy(i) += s * diag(i)*sx(i);
+    if (mat_traits<TM>::WIDTH == x.EntrySize())
+      {
+        typedef typename mat_traits<TM>::TV_ROW TV_ROW;
+        typedef typename mat_traits<TM>::TV_COL TV_COL;
+        
+        auto sx = x.FV<TV_ROW>();
+        auto sy = y.FV<TV_COL>();
+        
+        ParallelForRange
+          (Range(diag), [sx,sy,s,this] (IntRange myrange)
+           {
+             for (size_t i : myrange)
+               sy(i) += s * this->diag(i)*sx(i);
+           });
+      }
+    else
+      {
+        auto sx = x.SV<TSCAL>();
+        auto sy = y.SV<TSCAL>();
+        for (size_t i : Range(diag))
+          sy(i) += s * diag(i)*sx(i);
+      }
   }
-  
-  void DiagonalMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+
+  template <typename TM>  
+  void DiagonalMatrix<TM> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     return MultAdd (s, x, y);
   }
 
-
-  AutoVector DiagonalMatrix :: CreateRowVector () const 
+  template <typename TM>  
+  AutoVector DiagonalMatrix<TM> :: CreateRowVector () const 
   {
-    return CreateBaseVector(diag.Size(), false, 1);
-  }
-    
-  AutoVector DiagonalMatrix :: CreateColVector () const 
-  {
-    return CreateBaseVector(diag.Size(), false, 1);
+    return CreateBaseVector(diag.Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
   }
 
+  template <typename TM>    
+  AutoVector DiagonalMatrix<TM> :: CreateColVector () const 
+  {
+    return CreateBaseVector(diag.Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::HEIGHT);
+  }
+
+  template <typename TM>    
+  shared_ptr<BaseMatrix> DiagonalMatrix<TM> ::
+  InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    VVector<TM> v2(diag.Size());
+    if (subset)
+      {
+        for (size_t i = 0; i < diag.Size(); i++)
+          if (subset->Test(i))
+            {
+              v2(i) = diag(i);
+              CalcInverse(v2(i));
+            }
+          else
+            v2(i) = TM(0.0);
+      }
+    else
+      {
+        for (size_t i = 0; i < diag.Size(); i++)
+          {
+            v2(i) = diag(i);
+            CalcInverse(v2(i));
+          }
+      }
+    return make_shared<DiagonalMatrix<TM>> (v2);
+  }
+
+  template <typename TM>    
+  ostream & DiagonalMatrix<TM> :: Print (ostream & ost) const 
+  {
+    return ost << diag;
+  }
 
 
+  template class DiagonalMatrix<double>;
+  template class DiagonalMatrix<Complex>;
 
+
+#if MAX_SYS_DIM >= 1
+  template class DiagonalMatrix<Mat<1,1,double> >;
+  template class DiagonalMatrix<Mat<1,1,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 2
+  template class DiagonalMatrix<Mat<2,2,double> >;
+  template class DiagonalMatrix<Mat<2,2,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 3
+  template class DiagonalMatrix<Mat<3,3,double> >;
+  template class DiagonalMatrix<Mat<3,3,Complex> >;
+#endif
+  
 
   
   void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const

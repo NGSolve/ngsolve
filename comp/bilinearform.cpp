@@ -1065,7 +1065,7 @@ namespace ngcomp
                             if (!bfi.DefinedOn (ma->GetElIndex (id))) continue;
                             if (!bfi.DefinedOnElement (i)) continue;
                             
-                            FlatVector<double> diag;
+                            FlatVector<double> diag(sum_diag.Size(), clh);
                             try
                               {
                                 bfi.CalcElementMatrixDiag (fel, eltrans, diag, clh);
@@ -1139,7 +1139,7 @@ namespace ngcomp
                              (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
                              (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                              (*testout) << "dnums = " << dnums << endl;
-                             throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
+                             throw Exception ( string("Inconsistent number of degrees of freedom, vb="+ToString(vb)+" fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                            }
                          
                          int elmat_size = dnums.Size()*fespace->GetDimension();
@@ -4100,7 +4100,7 @@ namespace ngcomp
 	    Array<int> elfacets;
 	    for (int i = 0; i < ne; ++i) {
 	      auto elfacets = ma->GetElFacets(ElementId(VOL,i));
-	      for (auto f : elfacets) fine_facet.Set(f);
+	      for (auto f : elfacets) fine_facet.SetBit(f);
 	    }
 	    /** 
 		We can have surf-els without elements. If we just skip these, 
@@ -4111,7 +4111,7 @@ namespace ngcomp
 	    size_t nse = ma->GetNE(BND);
 	    for (int i = 0; i < nse; ++i) {
 	      auto selfacets = ma->GetElFacets(ElementId(BND, i));
-	      for (auto f : selfacets) fine_facet.Set(f);
+	      for (auto f : selfacets) fine_facet.SetBit(f);
 	    }
 
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
@@ -5227,7 +5227,6 @@ namespace ngcomp
     : S_BilinearForm<TSCAL> (afespace, aname, flags) 
   { 
     this->diagonal = 1;
-    cout << " !!!!!!!!!!!!!!!!!! allocated diagonal matrix !!!!!!!!!!!!!" << endl;
 
     if (this->fespace->LowOrderFESpacePtr())
       {
@@ -5251,7 +5250,8 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
-    int ndof = this->fespace->GetNDof();
+    size_t ndof = this->fespace->GetNDof();
+    /*
     MatrixGraph * graph = new MatrixGraph (ndof, 1);
     for (int i = 0; i < ndof; i++)
       graph->CreatePosition (i, i);
@@ -5259,7 +5259,10 @@ namespace ngcomp
     // graphs.Append (graph);
     this->mats.Append (make_shared<SparseMatrixSymmetric<TM>> (*graph, 1));
     delete graph;
+    */
 
+    this->mats.Append (make_shared<DiagonalMatrix<TM>> (ndof));
+    
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         this->mats[i].reset();
@@ -5309,7 +5312,7 @@ namespace ngcomp
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         {
-          TM & mij = mat(dnums1[i], dnums1[i]);
+          TM & mij = mat(dnums1[i]); // , dnums1[i]);
           int hi = Height (mij);
           int wi = Width (mij);
           
@@ -5333,7 +5336,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += elmat(i, i);
+        mat(dnums1[i]) += elmat(i, i);
   }
 
 
@@ -5351,7 +5354,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += elmat(i, i);
+        mat(dnums1[i]) += elmat(i, i);
   }
 
 
@@ -5462,7 +5465,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += diag(i);
+        mat(dnums1[i]) += diag(i);
   }
 
   ///
@@ -5476,7 +5479,7 @@ namespace ngcomp
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i], dnums1[i]) += diag(i);
+        mat(dnums1[i]) += diag(i);
   }
 
 

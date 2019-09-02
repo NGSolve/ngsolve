@@ -36,24 +36,37 @@ namespace ngla
 
   };
 
-  
+
+  template <typename TM=double>
   class DiagonalMatrix : public BaseMatrix
   {
-    Vector<double> diag;
+    VVector<TM> diag;
   public:
-    DiagonalMatrix (const Vector<double> & diag_)
+    // typedef typename mat_traits<TM>::TV_ROW TV_ROW;
+    // typedef typename mat_traits<TM>::TV_COL TV_COL;
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    
+    DiagonalMatrix(size_t h)
+      : diag(h) { }
+    DiagonalMatrix(const VVector<TM> & diag_)
       : diag(diag_) { } 
 
     bool IsComplex() const override { return false; } 
-
+    TM & operator() (size_t i) { return diag(i); }
+    const TM & operator() (size_t i) const { return diag(i); }
     int VHeight() const override { return diag.Size(); }
     int VWidth() const override { return diag.Size(); }
 
+    BaseVector & AsVector() override { return diag; }
+    ostream & Print (ostream & ost) const override;
+    
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
   };
 
 

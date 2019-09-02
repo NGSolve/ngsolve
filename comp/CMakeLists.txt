@@ -10,7 +10,8 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp 
         hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp hierarchicalee.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
-        preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp h1amg.cpp
+        preconditioner.cpp vectorfacetfespace.cpp
+        normalfacetfespace.cpp numberfespace.cpp bddc.cpp h1amg.cpp
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         periodic.cpp discontinuous.cpp reorderedfespace.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
@@ -27,7 +28,8 @@ install( FILES
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp		   	   
         l2hofespace.hpp hdivdivsurfacespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
-        postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
+        postproc.hpp preconditioner.hpp vectorfacetfespace.hpp
+        normalfacetfespace.hpp hypre_precond.hpp 
         pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp reorderedfespace.hpp hypre_ams_precond.hpp facetsurffespace.hpp compressedfespace.hpp
         python_comp.hpp

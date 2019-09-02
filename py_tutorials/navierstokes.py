@@ -25,7 +25,7 @@ v,q = X.TestFunction()
 
 stokes = nu*InnerProduct(grad(u), grad(v))+div(u)*q+div(v)*p - 1e-10*p*q
 a = BilinearForm(X)
-a += SymbolicBFI(stokes)
+a += stokes*dx
 a.Assemble()
 
 # nothing here ...
@@ -55,7 +55,7 @@ inv = mstar.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky")
 
 # the non-linear term 
 conv = BilinearForm(X, nonassemble = True)
-conv += SymbolicBFI( (grad(u) * u) * v)
+conv += (grad(u) * u) * v * dx
 
 # for visualization
 Draw (Norm(gfu.components[0]), mesh, "velocity", sd=3)

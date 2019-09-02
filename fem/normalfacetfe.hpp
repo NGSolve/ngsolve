@@ -1,26 +1,25 @@
-#ifndef VECTOR_FACET_FE_HPP__
-#define VECTOR_FACET_FE_HPP__
+#ifndef NORMAL_FACET_FE_HPP__
+#define NORMAL_FACET_FE_HPP__
 
 /*********************************************************************/
-/* File:   vectorfacetfe.hpp                                         */
-/* Author: A. Sinwel, (J. Schoeberl)                                 */
-/* Date:   2008                                                      */
+/* File:   normalfacetfe.hpp                                         */
+/* Author: J. Schoeberl                                              */
+/* Date:   2019                                                      */
 /*********************************************************************/
 
 
 #include <fem.hpp>
-#include <cassert>
+#include "thdivfe.hpp"
 
 namespace ngfem 
 {
   /*
-    facet element with tangential facet components.
-    to be changed similar to scalar facetfe
+    facet element with normal facet components.
   */
   
   template <ELEMENT_TYPE ET>
-  class VectorFacetFacetFE :
-    public HCurlFiniteElement<ET_trait<ET>::DIM>,
+  class NormalFacetFacetFE :
+    public HDivFiniteElement<ET_trait<ET>::DIM>,
     public VertexOrientedFE<ET>,
     public ET_trait<ET>
   {
@@ -28,20 +27,20 @@ namespace ngfem
     INT<2> order_inner;
     using VertexOrientedFE<ET>::vnums;
     using ET_trait<ET>::DIM;
-    using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
+    using HDivFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
 
-    VectorFacetFacetFE (int aorder)
+    NormalFacetFacetFE (int aorder)
     {
       order = aorder;
       order_inner = INT<2>(aorder,aorder);
       ComputeNDof();
     }
 
-    VectorFacetFacetFE () { ; }
+    NormalFacetFacetFE () { ; }
 
     HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
@@ -69,22 +68,27 @@ namespace ngfem
   };
 
 
+  
+
+  template <ELEMENT_TYPE ET> class NormalFacetVolumeFE_Shape;
+  
   template <ELEMENT_TYPE ET>
-  class VectorFacetVolumeFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
+  class NormalFacetVolumeFE : public T_HDivFiniteElement<NormalFacetVolumeFE_Shape<ET>, ET>,
+                              public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
     using ET_T = ET_trait<ET>;
     INT<2> facet_order[ET_T::N_FACET];
     int first_facet_dof[ET_T::N_FACET+1];
     bool highest_order_dc;
-    using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
+    using HDivFiniteElement<ET_trait<ET>::DIM>::order;
     using VertexOrientedFE<ET>::vnums;
     enum { DIM = ET_trait<ET>::DIM };
     
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
-    VectorFacetVolumeFE () { highest_order_dc=false; }
+    NormalFacetVolumeFE () { highest_order_dc=false; }
     
     HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
@@ -124,7 +128,8 @@ namespace ngfem
 
     INT<2> GetFacetOrder(int j) const { return facet_order[j]; }
     int GetVertexNumber(int j) const { return vnums[j]; }
-    
+
+    /*
     virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const override
     {
       int fnr = ip.FacetNr();
@@ -133,7 +138,7 @@ namespace ngfem
           CalcShape (ip, fnr, shape);
           return;
         }
-      throw Exception("VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
+      throw Exception("NormalFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
     }
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
@@ -144,7 +149,7 @@ namespace ngfem
     
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                            BareSliceVector<> coefs) const override;
-
+    */
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
     
@@ -183,6 +188,7 @@ namespace ngfem
             }
           else
             {
+              throw Exception ("NormalFacetFE with hodc not ready in 3D");
               for (int i=0; i < ET_T::N_FACET; i++)
                 {
                   int pos = first_facet_dof[i]-2;
