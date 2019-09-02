@@ -26,13 +26,14 @@ namespace ngla
     ///
     ChebyshevIteration (const BaseMatrix & aa, const BaseMatrix & ac, int steps);
     
-    virtual bool IsComplex() const { return a->IsComplex(); } 
+    bool IsComplex() const override { return a->IsComplex(); } 
     ///
     void SetBounds (double almin, double almax);
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    void Mult (const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual AutoVector CreateVector () const;
+    AutoVector CreateRowVector () const override { return a->CreateColVector(); }
+    AutoVector CreateColVector () const override { return a->CreateRowVector(); }
   };
 
 }

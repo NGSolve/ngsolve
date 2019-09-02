@@ -78,11 +78,4 @@ namespace ngla
 	  }
       }
   }
-
-  AutoVector ChebyshevIteration :: CreateVector () const
-  {
-    return a->CreateColVector();
-  }
-
-
 }

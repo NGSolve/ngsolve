@@ -70,14 +70,7 @@ namespace ngla
     useseed = false;
   }
 
- 
-  AutoVector KrylovSpaceSolver :: CreateVector () const
-  {
-    return a->CreateColVector();
-  }
-
-
-  template <class SCAL>
+    template <class SCAL>
   void BruteInnerProduct(const BaseVector & a, const BaseVector & b, Vector<SCAL> & result, const int start = 0)
   {
     const SCAL * pa;

@@ -132,33 +132,29 @@ namespace ngla
     virtual ~BlockJacobiPrecond ();
 
     int Height() const { return mat.Height(); }
-    virtual int VHeight() const { return mat.Height(); }
+    int VHeight() const override { return mat.Height(); }
     int Width() const { return mat.Width(); }
-    virtual int VWidth() const { return mat.Width(); }
+    int VWidth() const override { return mat.Width(); }
+
+    AutoVector CreateRowVector() const override { return mat.CreateColVector(); }
+    AutoVector CreateColVector() const override { return mat.CreateRowVector(); }
     
     ///
-    virtual AutoVector CreateVector () const 
-    {
-      return mat.CreateColVector();
-    }
+    void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
+
+    ///
+    void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
 
 
     ///
-    virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const; 
+    void GSSmooth (BaseVector & x, const BaseVector & b,
+                   int steps = 1) const override;
 
-    ///
-    virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
-
-
-    ///
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   int steps = 1) const;
-
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       int steps = 1) const;
+    void GSSmoothBack (BaseVector & x, const BaseVector & b,
+                       int steps = 1) const override;
   
-    virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
-				   BaseVector & res, int steps = 1) const 
+    void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
+                           BaseVector & res, int steps = 1) const  override
     {
       GSSmooth (x, b, 1);
       res = b - mat * x;
@@ -172,7 +168,7 @@ namespace ngla
       ;
     }
 
-    virtual Array<MemoryUsage> GetMemoryUsage () const
+    Array<MemoryUsage> GetMemoryUsage () const override
     {
       int nels = 0;
       for (int i = 0; i < blocktable->Size(); i++)
@@ -239,45 +235,43 @@ namespace ngla
     void ComputeBlockFactor (FlatArray<int> block, int bw, FlatBandCholeskyFactors<TM> & inv) const;
   
     ///
-    virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
+    void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
 
     ///
-    virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
+    void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
 
     ///
-    virtual AutoVector CreateVector () const 
-    {
-      return mat.CreateColVector();
-    }
+    AutoVector CreateRowVector () const override { return mat.CreateColVector(); }
+    AutoVector CreateColVector () const override { return mat.CreateRowVector(); }
 
 
     int Height() const { return mat.Height(); }
-    virtual int VHeight() const { return mat.Height(); }
+    int VHeight() const override { return mat.Height(); }
     int Width() const { return mat.Width(); }
-    virtual int VWidth() const { return mat.Width(); }
+    int VWidth() const override { return mat.Width(); }
 
 
     ///
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   int steps = 1) const;
+    void GSSmooth (BaseVector & x, const BaseVector & b,
+                   int steps = 1) const override;
   
-    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b,
-				  BaseVector & y) const;
+    void GSSmoothPartial (BaseVector & x, const BaseVector & b,
+                          BaseVector & y) const override;
   
 
 
     ///
-    virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
-				   BaseVector & res, int steps = 1) const;
+    void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
+                           BaseVector & res, int steps = 1) const override;
 
   
     ///
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       int steps = 1) const; 
+    void GSSmoothBack (BaseVector & x, const BaseVector & b,
+                       int steps = 1) const override;
  
 
-    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
-				      BaseVector & y) const; 
+    void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+                              BaseVector & y) const override;
  
 
 

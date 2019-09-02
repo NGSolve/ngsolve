@@ -77,15 +77,15 @@ namespace ngla
     throw Exception (string("BaseMatrix::CreateVector not overloaded, type = ")+typeid(*this).name());            
   }
 
-  AutoVector BaseMatrix :: CreateRowVector () const
-  {
-    return CreateVector();
-  }
+  // AutoVector BaseMatrix :: CreateRowVector () const
+  // {
+  //   return CreateVector();
+  // }
 
-  AutoVector BaseMatrix :: CreateColVector () const
-  {
-    return CreateVector();
-  }
+  // AutoVector BaseMatrix :: CreateColVector () const
+  // {
+  //   return CreateVector();
+  // }
 
 
 
