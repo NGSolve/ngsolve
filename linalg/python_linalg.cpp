@@ -212,12 +212,13 @@ namespace ngla {
   {
     return DynamicVectorExpression(make_shared<DynamicScaleExpression<T>>(s, v.Ptr()));
   }
+  /*
   template <typename T>  
   inline auto operator* (T s, shared_ptr<BaseVector> v)
   {
     return s*DynamicVectorExpression(v);
   }
-
+  */
   
 }
 
@@ -631,12 +632,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
     .def_property("data",
                   [](shared_ptr<BaseVector> self) { return DynamicVectorExpression(self); },
+                  /*
                   [](shared_ptr<BaseVector> self, variant<DynamicVectorExpression,shared_ptr<BaseVector>> v2)
                   {
                     if (auto dyn = get_if<DynamicVectorExpression>(&v2))
                       dyn->AssignTo(1, *self);
                     if (auto vec = get_if<shared_ptr<BaseVector>>(&v2))
                       self->Set (1, **vec);
+                  })
+                  */
+                  [](shared_ptr<BaseVector> self, DynamicVectorExpression v2)
+                  {
+                    v2.AssignTo(1, *self);
                   })
     
   // .def("__add__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
@@ -1077,11 +1084,11 @@ inverse : string
   py::class_<DynamicVectorExpression> (m, "DynamicVectorExpression")
     .def(py::init<shared_ptr<BaseVector>>())
     .def(py::self+py::self)
-    .def("__add__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
-         { return a+b; })
+    // .def("__add__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
+    // { return a+b; })
     .def(py::self-py::self)
-    .def("__sub__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
-         { return a-b; })
+    // .def("__sub__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
+    // { return a-b; })
     .def("__neg__", [] (DynamicVectorExpression a) { return (-1.0)*a; })    
     .def(double()*py::self)
     .def("__rmul__", [] (DynamicVectorExpression a, Complex scal) { return scal*a; })    
