@@ -513,9 +513,13 @@ namespace ngsolve
     
     virtual ~ConstrainedPrecondMatrix () { ; }
 
-    virtual int VHeight() const { return c1->VHeight(); }
-    virtual int VWidth() const { return c1->VWidth(); }
-    virtual bool IsComplex() const { return c1->IsComplex(); } 
+    int VHeight() const override { return c1->VHeight(); }
+    int VWidth() const override { return c1->VWidth(); }
+    bool IsComplex() const override { return c1->IsComplex(); }
+
+    AutoVector CreateRowVector() const override { return c1->CreateRowVector(); }
+    AutoVector CreateColVector() const override { return c1->CreateColVector(); }
+    
     void AddConstraint (shared_ptr<BaseVector> hv)
     {
       constraints.Append (hv);
@@ -537,7 +541,7 @@ namespace ngsolve
       // cout << "invprojection = " << endl << invprojection << endl;
     }
 
-    virtual void Mult (const BaseVector & x, BaseVector & y) const
+    void Mult (const BaseVector & x, BaseVector & y) const override
     {
       c1 -> Mult (x, y);
       Vector<double> hv1(ncnt), hv2(ncnt);
@@ -567,22 +571,20 @@ namespace ngsolve
     
     virtual ~ConstrainedMatrix () { ; }
 
-    virtual bool IsComplex() const { return a1 -> IsComplex(); } 
+    bool IsComplex() const override { return a1 -> IsComplex(); } 
     void AddConstraint (const BaseVector * hv)
     {
       constraints.Append (hv);
       ncnt = constraints.Size();
     }
 
-    virtual AutoVector CreateVector () const
-    {
-      return a1->CreateColVector();
-    }
+    AutoVector CreateRowVector() const override { return a1->CreateRowVector(); }
+    AutoVector CreateColVector() const override { return a1->CreateColVector(); }
 
-    virtual int VHeight() const { return a1->VHeight(); }
-    virtual int VWidth() const { return a1->VWidth(); }
+    int VHeight() const override { return a1->VHeight(); }
+    int VWidth() const override { return a1->VWidth(); }
 
-    virtual void Mult (const BaseVector & x, BaseVector & y) const
+    void Mult (const BaseVector & x, BaseVector & y) const override
     {
       a1 -> Mult (x, y);
       Vector<double> hv1(ncnt);
@@ -593,7 +595,7 @@ namespace ngsolve
 	y += hv1(i) * *constraints[i];
     }
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       a1 -> MultAdd (s, x, y);
       Vector<double> hv1(ncnt);

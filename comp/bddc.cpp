@@ -188,7 +188,7 @@ namespace ngcomp
       }
     }
 
-    virtual bool IsComplex() const { return pwbmat -> IsComplex(); }
+    bool IsComplex() const override { return pwbmat -> IsComplex(); }
     
     void AddMatrix (FlatMatrix<SCAL> elmat, FlatArray<int> dnums, 
 		    ElementId id, LocalHeap & lh)
@@ -453,17 +453,15 @@ namespace ngcomp
       delete tmp;
       delete tmp2;
     }
-    
-    virtual AutoVector CreateVector () const
-    {
-      return bfa->GetMatrix().CreateColVector();
-    }
 
-    virtual int VHeight() const { return bfa->GetMatrix().VHeight(); }
-    virtual int VWidth() const { return bfa->GetMatrix().VHeight(); }
+    AutoVector CreateRowVector() const override { return bfa->GetMatrix().CreateColVector(); }
+    AutoVector CreateColVector() const override { return bfa->GetMatrix().CreateRowVector(); }
+
+    int VHeight() const override { return bfa->GetMatrix().VHeight(); }
+    int VWidth() const override { return bfa->GetMatrix().VHeight(); }
 
     
-    virtual void Mult (const BaseVector & x, BaseVector & y) const
+    void Mult (const BaseVector & x, BaseVector & y) const override
     {
       static Timer timer ("Apply BDDC preconditioner");
       static Timer timerifs ("Apply BDDC preconditioner - apply ifs");

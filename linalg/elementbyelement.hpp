@@ -46,20 +46,18 @@ namespace ngla
                             bool isymmetric, bool adisjointrows, bool adisjointcols);
     
     ~ElementByElementMatrix();
-    virtual bool IsComplex() const { return typeid(SCAL)==typeid(Complex); }
+    bool IsComplex() const override { return typeid(SCAL)==typeid(Complex); }
 
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
-    virtual int VHeight() const { return height; }
-    virtual int VWidth() const { return width; }
+    int VHeight() const override { return height; }
+    int VWidth() const override { return width; }
 
-    virtual AutoVector CreateVector () const
-    {
-      return make_shared<VVector<double>> (height);
-    }
+    AutoVector CreateRowVector () const override { return make_shared<VVector<double>> (width); } 
+    AutoVector CreateColVector () const override { return make_shared<VVector<double>> (height); }
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     void AddElementMatrix (int elnr,
                            FlatArray<int> dnums1,
@@ -71,7 +69,7 @@ namespace ngla
 			   const FlatArray<int> & dnums2,
 			   int refelnr);
 
-    virtual BaseVector & AsVector() 
+    BaseVector & AsVector() override
     {
       throw Exception ("Cannot access ebe-matrix AsVector");
       // return *new VVector<double> (1);
@@ -95,7 +93,7 @@ namespace ngla
 	return coldnums[elnum]; 
     }
 
-    virtual ostream & Print (ostream & ost) const;
+    ostream & Print (ostream & ost) const override;
 
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
@@ -117,7 +115,7 @@ namespace ngla
       return nze;
     }
     
-    virtual size_t NZE () const { return GetNZE(); }
+    size_t NZE () const override { return GetNZE(); }
   };  
 
 
