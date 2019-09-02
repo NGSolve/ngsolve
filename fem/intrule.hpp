@@ -21,6 +21,9 @@ namespace ngfem
   class TIP
   {
   public:
+    int8_t facetnr;
+    VorB vb;
+
     // T x; // dummy
     TIP () = default;
     TIP (const TIP &) = default;
@@ -39,6 +42,9 @@ namespace ngfem
   class TIP<0,T>
   {
   public:
+    int8_t facetnr;
+    VorB vb;
+
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -59,6 +65,9 @@ namespace ngfem
   {
   public:
     T x;
+    int8_t facetnr;
+    VorB vb;
+    
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -79,6 +88,8 @@ namespace ngfem
   {
   public:
     T x, y;
+    int8_t facetnr;
+    VorB vb;
     
     TIP () = default;
     TIP (const TIP &) = default;
@@ -99,6 +110,9 @@ namespace ngfem
   {
   public:
     T x, y, z;
+    int8_t facetnr;
+    VorB vb;
+
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -143,7 +157,7 @@ namespace ngfem
     /// weight of integration point
     double weight;
     /// point is on facetnr, -1 for volume
-    int facetnr = -1;
+    int8_t facetnr = -1;
     /// co-dimension of point (0..vol, 1..bnd, 2..bbnd, 3..bbbnd=vertex)
     VorB vb = VOL;
     ///
@@ -244,7 +258,7 @@ namespace ngfem
     // INLINE int & FacetNr() { return facetnr; }
     void SetFacetNr (int afacetnr, VorB avb = BND)
     { facetnr = afacetnr; vb = avb; }
-    INLINE int FacetNr() const { return facetnr; }
+    INLINE auto FacetNr() const { return facetnr; }
     INLINE VorB VB() const { return vb; } 
     
     template <int DIM> 
@@ -1818,6 +1832,8 @@ namespace ngfem
       adp.x.Value() = ip(0);
       for (int j = 0; j < DIMR; j++)
         adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
     }
 
   
@@ -1832,6 +1848,8 @@ namespace ngfem
         adp.x.DValue(j) = ijac(0,j);
       for (int j = 0; j < DIMR; j++)
         adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
     }
 
   
@@ -1849,6 +1867,8 @@ namespace ngfem
         adp.y.DValue(j) = ijac(1,j);
       for (int j = 0; j < DIMR; j++)
         adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
     }
 
 
@@ -1862,6 +1882,8 @@ namespace ngfem
     INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip) -> TIP<0,AutoDiffRec<DIMR,SIMD<double>>>
     {
       TIP<0,AutoDiffRec<DIMR,SIMD<double>>> adp;
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1874,6 +1896,8 @@ namespace ngfem
       adp.x.Value() = ip(0);
       for (int j = 0; j < DIMR; j++)
         adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1890,6 +1914,8 @@ namespace ngfem
         adp.x.DValue(j) = ijac(0,j);
       for (int j = 0; j < DIMR; j++)
         adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1909,6 +1935,8 @@ namespace ngfem
         adp.y.DValue(j) = ijac(1,j);
       for (int j = 0; j < DIMR; j++)
         adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1922,6 +1950,8 @@ namespace ngfem
   INLINE auto GetTIP( const MappedIntegrationPoint<0,DIMR> & mip) -> TIP<0,AutoDiffRec<DIMR>>
   {
     TIP<0,AutoDiffRec<DIMR>> adp;
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
     return adp;
   }
 
@@ -1934,6 +1964,8 @@ namespace ngfem
       adp.x.Value() = ip(0);
       for (int j = 0; j < DIMR; j++)
         adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1950,6 +1982,8 @@ namespace ngfem
         adp.x.DValue(j) = ijac(0,j);
       for (int j = 0; j < DIMR; j++)
         adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 
@@ -1969,6 +2003,8 @@ namespace ngfem
         adp.y.DValue(j) = ijac(1,j);
       for (int j = 0; j < DIMR; j++)
         adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
       return adp;
     }
 

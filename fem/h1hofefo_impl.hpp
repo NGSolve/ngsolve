@@ -63,7 +63,7 @@ namespace ngfem
     if (ORDER >= 3)
       {
         INT<4> f = GetFaceSort (0, vnums);
-	DubinerBasis3::EvalMult (ORDER-3, 
+	DubinerBasis::EvalMult (ORDER-3, 
 				 lam[f[0]], lam[f[1]], 
 				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
       }
@@ -122,8 +122,8 @@ namespace ngfem
           INT<4> f = GetFaceSort (i, vnums);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
 
-	  DubinerBasis3::EvalScaledMult (ORDER-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
-					 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+	  DubinerBasis::EvalScaledMult (ORDER-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+                                        lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
 	  ii += (ORDER-2)*(ORDER-1)/2;
 	}
 

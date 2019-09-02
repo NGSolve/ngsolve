@@ -6,6 +6,219 @@ using namespace ngla;
 // include netgen-header to get access to PyMPI
 #include <myadt.hpp>
 
+namespace ngla {
+
+  
+  class DynamicBaseExpression 
+  {
+  protected:
+  public:
+    DynamicBaseExpression () { } 
+    virtual ~DynamicBaseExpression() { }
+    virtual void AssignTo (double s, BaseVector & v2) const = 0;
+    virtual void AddTo (double s, BaseVector & v2) const = 0;
+    virtual void AssignTo (Complex s, BaseVector & v2) const = 0;
+    virtual void AddTo (Complex s, BaseVector & v2) const = 0;
+  };
+
+
+  class DynamicVecExpression : public DynamicBaseExpression
+  {
+  protected:
+    shared_ptr<BaseVector> a;
+  public:
+    DynamicVecExpression (shared_ptr<BaseVector> aa) : a(aa) { ; }
+    void AssignTo (double s, BaseVector & v2) const override
+    { v2.Set (s, *a); }
+    void AddTo (double s, BaseVector & v2) const override
+    { v2.Add (s, *a); }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    { v2.Set (s, *a); }
+    void AddTo (Complex s, BaseVector & v2) const override
+    { v2.Add (s, *a); }
+  };
+
+  class DynamicSumExpression : public DynamicBaseExpression
+  {
+    shared_ptr<DynamicBaseExpression> a,b;
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(s, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(s, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(s, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(s, v2);
+    }
+  public:
+    DynamicSumExpression (shared_ptr<DynamicBaseExpression> aa,
+                          shared_ptr<DynamicBaseExpression> ab)
+      : a(aa), b(ab) { ; } 
+  };
+
+  class DynamicSubExpression : public DynamicBaseExpression
+  {
+    shared_ptr<DynamicBaseExpression> a,b;
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+  public:
+    DynamicSubExpression (shared_ptr<DynamicBaseExpression> aa,
+                          shared_ptr<DynamicBaseExpression> ab)
+      : a(aa), b(ab) { ; } 
+  };
+
+  template <typename T>
+  class DynamicScaleExpression : public DynamicBaseExpression
+  {
+    T scale;
+    shared_ptr<DynamicBaseExpression> a;
+    
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      a->AssignTo(s*scale, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      a->AddTo(s*scale, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      a->AssignTo(s*scale, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      a->AddTo(s*scale, v2);
+    }
+  public:
+    DynamicScaleExpression (T ascale, shared_ptr<DynamicBaseExpression> aa)
+      : scale(ascale), a(aa) { ; } 
+  };
+
+
+  class DynamicMatVecExpression : public DynamicBaseExpression
+  {
+    shared_ptr<BaseMatrix> m;
+    shared_ptr<BaseVector> v;
+    
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      m->Mult(*v, v2);
+      v2 *= s;
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      m->MultAdd (s, *v, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      m->Mult(*v, v2);
+      v2 *= s;
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      m->MultAdd (s, *v, v2);
+    }
+  public:
+    DynamicMatVecExpression (shared_ptr<BaseMatrix> am, shared_ptr<BaseVector> av)
+      : m(am), v(av) { } 
+  };
+
+  
+  
+  
+  class DynamicVectorExpression 
+  {
+    shared_ptr<DynamicBaseExpression> ve;
+  public:
+    DynamicVectorExpression() { } 
+    DynamicVectorExpression (shared_ptr<DynamicBaseExpression> ave) : ve(ave) { }
+    DynamicVectorExpression (shared_ptr<BaseVector> v)
+      : ve(make_shared<DynamicVecExpression>(v)) { } 
+    void AssignTo (double s, BaseVector & v2) const
+    { ve->AssignTo(s,v2); }
+    void AddTo (double s, BaseVector & v2) const
+    { ve->AddTo(s,v2); }
+    auto Ptr() const { return ve; }
+  };
+
+  inline auto operator+ (DynamicVectorExpression a, DynamicVectorExpression b)
+  {
+    return DynamicVectorExpression(make_shared<DynamicSumExpression>(a.Ptr(),b.Ptr()));
+  }
+  inline auto operator+ (DynamicVectorExpression a, shared_ptr<BaseVector> b)
+  {
+    return a+DynamicVectorExpression(b);
+  }
+  inline auto operator+ (shared_ptr<BaseVector> a, DynamicVectorExpression b)
+  {
+    return DynamicVectorExpression(a)+b;
+  }
+  inline auto operator+ (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
+  {
+    return DynamicVectorExpression(a)+DynamicVectorExpression(b);
+  }
+
+  inline auto operator- (DynamicVectorExpression a, DynamicVectorExpression b)
+  {
+    return DynamicVectorExpression(make_shared<DynamicSubExpression>(a.Ptr(),b.Ptr()));
+  }
+  inline auto operator- (DynamicVectorExpression a, shared_ptr<BaseVector> b)
+  {
+    return a-DynamicVectorExpression(b);
+  }
+  inline auto operator- (shared_ptr<BaseVector> a, DynamicVectorExpression b)
+  {
+    return DynamicVectorExpression(a)-b;
+  }
+  inline auto operator- (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
+  {
+    return DynamicVectorExpression(a)-DynamicVectorExpression(b);
+  }
+
+  template <typename T>
+  inline auto operator* (T s, DynamicVectorExpression v)
+  {
+    return DynamicVectorExpression(make_shared<DynamicScaleExpression<T>>(s, v.Ptr()));
+  }
+  template <typename T>  
+  inline auto operator* (T s, shared_ptr<BaseVector> v)
+  {
+    return s*DynamicVectorExpression(v);
+  }
+
+  
+}
+
+
 
 // Workaround to ensure same lifetime for C++ and Python objects
 // see https://github.com/pybind/pybind11/issues/1546
@@ -412,6 +625,35 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))
     .def("__itruediv__", [](BaseVector & self,  double scal) -> BaseVector& { self /= scal; return self;}, py::arg("value"))
     .def("__itruediv__", [](BaseVector & self,  Complex scal) -> BaseVector& { self /= scal; return self;}, py::arg("value"))
+
+    .def_property("data",
+                  [](shared_ptr<BaseVector> self) { return DynamicVectorExpression(self); },
+                  [](shared_ptr<BaseVector> self, variant<DynamicVectorExpression,shared_ptr<BaseVector>> v2)
+                  {
+                    if (auto dyn = get_if<DynamicVectorExpression>(&v2))
+                      dyn->AssignTo(1, *self);
+                    if (auto vec = get_if<shared_ptr<BaseVector>>(&v2))
+                      self->Set (1, **vec);
+                  })
+    
+    .def("__add__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
+         { return a+b; })
+    .def("__add__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b)
+         { return a+b; })
+    .def("__iadd__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b) 
+         { b.AddTo(1, *a); return a; })
+    
+    .def("__sub__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseVector> b)
+         { return a-b; })
+    .def("__sub__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b)
+         { return a-b; })
+    .def("__isub__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b) 
+         { b.AddTo(-1, *a); return a; })
+
+    .def("__neg__", [] (shared_ptr<BaseVector> a) { return (-1.0)*a; })
+    .def("__rmul__", [] (shared_ptr<BaseVector> a, double scal) { return scal*a; })
+    .def("__rmul__", [] (shared_ptr<BaseVector> a, Complex scal) { return scal*a; })
+    
     .def("InnerProduct", [](BaseVector & self, BaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
@@ -726,6 +968,8 @@ inverse : string
          { return make_shared<VScaleMatrix<Complex>> (ma, a); }, py::arg("value"))
     .def("__neg__", [](shared_ptr<BM> ma)->shared_ptr<BaseMatrix>
          { return make_shared<VScaleMatrix<double>> (ma, -1); })
+    .def("__mul__", [](shared_ptr<BaseMatrix> m, shared_ptr<BaseVector> v)
+         { return DynamicVectorExpression(make_shared<DynamicMatVecExpression>(m,v)); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
 
@@ -827,7 +1071,24 @@ inverse : string
     .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
 
+  py::class_<DynamicVectorExpression> (m, "DynamicVectorExpression")
+    .def(py::self+py::self)
+    .def("__add__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
+         { return a+b; })
+    .def(py::self-py::self)
+    .def("__sub__", [] (DynamicVectorExpression a, shared_ptr<BaseVector> b)
+         { return a-b; })
+    .def("__neg__", [] (DynamicVectorExpression a) { return (-1.0)*a; })    
+    .def(double()*py::self)
+    .def("__rmul__", [] (DynamicVectorExpression a, Complex scal) { return scal*a; })    
+  ;
 
+  // just for testing
+  m.def ("Sum", [](DynamicVectorExpression a, DynamicVectorExpression b)
+           { return a+b; } );
+
+  py::implicitly_convertible<shared_ptr<BaseVector>, DynamicVectorExpression>();
+  
 #ifndef PARALLEL
 
   m.def("ParallelMatrix", [](py::object mat, py::object row_pardofs, py::object col_pardofs, py::object op) {

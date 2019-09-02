@@ -51,12 +51,12 @@ v = fes.TestFunction()
 # one heat conductivity coefficient per sub-domain
 lam = CoefficientFunction([1, 1000, 10])
 a = BilinearForm(fes, symmetric=False)
-a += SymbolicBFI(lam*grad(u)*grad(v))
+a += lam*grad(u)*grad(v)*dx
 
 
 # heat-source in sub-domain 3
 f = LinearForm(fes)
-f += SymbolicLFI(CoefficientFunction([0, 0, 1])*v)
+f += CoefficientFunction([0, 0, 1])*v*dx
 
 c = MultiGridPreconditioner(a, inverse = "sparsecholesky")
 
