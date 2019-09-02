@@ -4,3 +4,6 @@
 *.so
 tests/pytest/code*.cpp
 py_tutorials/code*.cpp
+.vs
+out
+CMakeSettings.json
