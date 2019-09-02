@@ -244,20 +244,18 @@ namespace ngla
     ///
     virtual ~SparseCholesky () { ; }
     
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    void Mult (const BaseVector & x, BaseVector & y) const override;
 
-    virtual void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
+    void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const override
     {
       MultAdd (s, x, y);
     }
 
-    virtual AutoVector CreateVector () const
-    {
-      return make_shared<VVector<TV>> (height);
-    }
+    AutoVector CreateRowVector () const override { return make_shared<VVector<TV>> (height); }
+    AutoVector CreateColVector () const override { return make_shared<VVector<TV>> (height); }
 
-    virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
+    void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const override;
 
     void SolveBlock (int i, FlatVector<TV> hy) const;
     void SolveBlockT (int i, FlatVector<TV> hy) const;

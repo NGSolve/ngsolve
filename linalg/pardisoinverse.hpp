@@ -175,9 +175,14 @@ namespace ngla
 
     virtual ~PardisoInverse () { ; }
     ///
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    void Mult (const BaseVector & x, BaseVector & y) const override;
     ///
-    virtual AutoVector CreateVector () const
+
+    AutoVector CreateRowVector() const override
+    {
+      return make_shared<VVector<TV>> (height/entrysize);
+    }
+    AutoVector CreateColVector () const override
     {
       return make_shared<VVector<TV>> (height/entrysize);
     }

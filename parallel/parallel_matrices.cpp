@@ -15,7 +15,9 @@ namespace ngla
 
 #ifdef PARALLEL
   
-  template <typename TM> AutoVector MasterInverse<TM> :: CreateVector () const
+  template <typename TM> AutoVector MasterInverse<TM> :: CreateRowVector () const
+  { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  template <typename TM> AutoVector MasterInverse<TM> :: CreateColVector () const
   { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
   
   template <typename TM>

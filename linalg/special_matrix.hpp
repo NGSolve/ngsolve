@@ -27,7 +27,13 @@ namespace ngla
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void Project (BaseVector & x) const;    
+    virtual void Project (BaseVector & x) const;
+
+    AutoVector CreateRowVector() const override
+    { throw Exception("CreateRowVector not implemented for Projector!"); }
+    AutoVector CreateColVector() const override
+    { throw Exception("CreateColVector not implemented for Projector!"); }
+
   };
 
 
@@ -237,11 +243,16 @@ namespace ngla
     VVector<TVR> hx, hy;
   public:
     NGS_DLL_HEADER Real2ComplexMatrix (const BaseMatrix * arealmatrix = 0);
-    virtual bool IsComplex() const { return true; }     
+    bool IsComplex() const override { return true; }     
     void SetMatrix (const BaseMatrix * arealmatrix);
     const BaseMatrix & GetMatrix () const { return *realmatrix; }
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+
+    AutoVector CreateRowVector() const override
+    { return realmatrix->CreateRowVector(); }
+    AutoVector CreateColVector() const override
+    { throw Exception("CreateColVector not implemented for Real2ComplexMatrix!"); }
   };
 
 
@@ -274,11 +285,16 @@ namespace ngla
   public:
     Small2BigNonSymMatrix (const BaseMatrix * abasematrix = 0);
     void SetMatrix (const BaseMatrix * abasematrix);
-    virtual bool IsComplex() const { return base->IsComplex(); }     
+    bool IsComplex() const override { return base->IsComplex(); }
     const BaseMatrix & GetMatrix () const { return *base; }
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     //  virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    AutoVector CreateRowVector() const override
+    { throw Exception("CreateRowVector not implemented for Small2BigNonSymMatrix!"); }
+    AutoVector CreateColVector() const override
+    { throw Exception("CreateColVector not implemented for Small2BigNonSymMatrix!"); }
   };
 
 

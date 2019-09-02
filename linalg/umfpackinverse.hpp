@@ -107,13 +107,11 @@ namespace ngla
 
     virtual ~UmfpackInverse () { ; }
     ///
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    virtual void MultTrans (const BaseVector & x, BaseVector & y) const;
+    void Mult (const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;
     ///
-    virtual AutoVector CreateVector () const
-    {
-      return make_shared<VVector<TV>> (height/entrysize);
-    }
+    AutoVector CreateRowVector () const override { return make_shared<VVector<TV>> (height/entrysize); }
+    AutoVector CreateColVector () const override { return make_shared<VVector<TV>> (height/entrysize); }
   };
 
 }
