@@ -288,7 +288,7 @@ endif (USE_MUMPS)
 
 #######################################################################
 add_library(netgen_python INTERFACE )
-# install( TARGETS netgen_python ${ngs_install_dir} )
+install( TARGETS netgen_python ${ngs_install_dir} )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
