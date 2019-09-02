@@ -47,27 +47,29 @@ namespace ngla
     ///
     virtual ~JacobiPrecond ();
 
-    virtual int VHeight() const { return height; }
-    virtual int VWidth() const  { return height; }
+    int VHeight() const override { return height; }
+    int VWidth() const override { return height; }
   
     ///
-    virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
+    void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const
+    void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override
     { MultAdd (s, x, y); }
     ///
-    virtual AutoVector CreateVector () const;
+    AutoVector CreateRowVector() const override { return mat.CreateColVector(); }
+    AutoVector CreateColVector() const override { return mat.CreateRowVector(); }
     ///
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;
+    void GSSmooth (BaseVector & x, const BaseVector & b) const override;
 
     /// computes partial residual y
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const
+    void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const override
     {
       GSSmooth (x, b);
     }
 
+
     ///
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const;
+    void GSSmoothBack (BaseVector & x, const BaseVector & b) const override;
 
     ///
     virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,

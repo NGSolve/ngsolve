@@ -45,6 +45,11 @@ namespace ngla
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    AutoVector CreateRowVector() const override
+    { throw Exception("CreateRowVector not implemented for SparseMatrixDynamic!"); }
+    AutoVector CreateColVector() const override
+    { throw  Exception("CreateColVector not implemented for SparseMatrixDynamic!"); }
   };
 
 

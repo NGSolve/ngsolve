@@ -86,9 +86,9 @@ namespace ngla
     /// creates matrix of same type
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     /// creates a matching vector, size = width
-    virtual AutoVector CreateRowVector () const;
+    virtual AutoVector CreateRowVector () const = 0;
     /// creates a matching vector, size = height
-    virtual AutoVector CreateColVector () const;
+    virtual AutoVector CreateColVector () const = 0;
     /// creates a matching vector (for square matrices)
     [[deprecated("use CreateRowVector or CreateColVector instead")]]
     virtual AutoVector CreateVector () const;

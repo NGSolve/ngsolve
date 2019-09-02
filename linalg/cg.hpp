@@ -55,7 +55,7 @@ namespace ngla
     { c = ac; }
     ///
 
-    virtual bool IsComplex() const { return a->IsComplex(); }
+    bool IsComplex() const override { return a->IsComplex(); }
     /// 
     void SetMaxSteps (int amaxsteps)
     { maxsteps = amaxsteps; }
@@ -87,14 +87,14 @@ namespace ngla
     ///
     int GetSteps () const
     { return steps; }
+
     ///
-    NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
-    ///
-    NGS_DLL_HEADER virtual AutoVector CreateVector() const;
+    NGS_DLL_HEADER AutoVector CreateRowVector() const override { return a->CreateColVector(); }
+    NGS_DLL_HEADER AutoVector CreateColVector() const override { return a->CreateRowVector(); }
 
 
-    virtual int VHeight() const {return a->VWidth();}
-    virtual int VWidth() const {return a->VHeight();}
+    int VHeight() const override {return a->VWidth();}
+    int VWidth() const override {return a->VHeight();}
   };
   
 

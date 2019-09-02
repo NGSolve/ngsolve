@@ -325,7 +325,7 @@ namespace ngmg
     // to be changed to shared_ptr
     auto cres = cpre->CreateColVector();
     auto cw = cpre->CreateColVector();
-    auto res = CreateVector();
+    auto res = CreateColVector();
 
     /*
     cout << "type = " << typeid(cres).name() << endl;
@@ -366,11 +366,6 @@ namespace ngmg
       // delete res;
       // delete cw;
       // delete cres;
-  }
-
-  AutoVector TwoLevelMatrix :: CreateVector () const
-  {
-    return mat->CreateColVector();
   }
 
   ostream & TwoLevelMatrix :: Print (ostream & s) const
