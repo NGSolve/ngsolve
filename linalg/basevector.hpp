@@ -1027,6 +1027,168 @@ namespace ngla
     return v.L2Norm();
   }
 
+
+
+
+
+
+
+
+
+
+  class DynamicBaseExpression 
+  {
+  protected:
+  public:
+    DynamicBaseExpression () { } 
+    virtual ~DynamicBaseExpression() { }
+    virtual void AssignTo (double s, BaseVector & v2) const = 0;
+    virtual void AddTo (double s, BaseVector & v2) const = 0;
+    virtual void AssignTo (Complex s, BaseVector & v2) const = 0;
+    virtual void AddTo (Complex s, BaseVector & v2) const = 0;
+  };
+
+
+  class DynamicVecExpression : public DynamicBaseExpression
+  {
+  protected:
+    shared_ptr<BaseVector> a;
+  public:
+    DynamicVecExpression (shared_ptr<BaseVector> aa) : a(aa) { ; }
+    void AssignTo (double s, BaseVector & v2) const override
+    { v2.Set (s, *a); }
+    void AddTo (double s, BaseVector & v2) const override
+    { v2.Add (s, *a); }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    { v2.Set (s, *a); }
+    void AddTo (Complex s, BaseVector & v2) const override
+    { v2.Add (s, *a); }
+  };
+
+  class DynamicSumExpression : public DynamicBaseExpression
+  {
+    shared_ptr<DynamicBaseExpression> a,b;
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(s, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(s, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(s, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(s, v2);
+    }
+  public:
+    DynamicSumExpression (shared_ptr<DynamicBaseExpression> aa,
+                          shared_ptr<DynamicBaseExpression> ab)
+      : a(aa), b(ab) { ; } 
+  };
+
+  class DynamicSubExpression : public DynamicBaseExpression
+  {
+    shared_ptr<DynamicBaseExpression> a,b;
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      a->AssignTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      a->AddTo(s, v2);
+      b->AddTo(-s, v2);
+    }
+  public:
+    DynamicSubExpression (shared_ptr<DynamicBaseExpression> aa,
+                          shared_ptr<DynamicBaseExpression> ab)
+      : a(aa), b(ab) { ; } 
+  };
+
+  template <typename T>
+  class DynamicScaleExpression : public DynamicBaseExpression
+  {
+    T scale;
+    shared_ptr<DynamicBaseExpression> a;
+    
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      a->AssignTo(s*scale, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      a->AddTo(s*scale, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      a->AssignTo(s*scale, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      a->AddTo(s*scale, v2);
+    }
+  public:
+    DynamicScaleExpression (T ascale, shared_ptr<DynamicBaseExpression> aa)
+      : scale(ascale), a(aa) { ; } 
+  };
+
+
+
+  
+  class DynamicVectorExpression 
+  {
+    shared_ptr<DynamicBaseExpression> ve;
+  public:
+    DynamicVectorExpression() { } 
+    DynamicVectorExpression (shared_ptr<DynamicBaseExpression> ave) : ve(ave) { }
+    DynamicVectorExpression (shared_ptr<BaseVector> v)
+      : ve(make_shared<DynamicVecExpression>(v)) { } 
+    void AssignTo (double s, BaseVector & v2) const
+    { ve->AssignTo(s,v2); }
+    void AddTo (double s, BaseVector & v2) const
+    { ve->AddTo(s,v2); }
+    auto Ptr() const { return ve; }
+  };
+
+  inline auto operator+ (DynamicVectorExpression a, DynamicVectorExpression b)
+  {
+    return DynamicVectorExpression(make_shared<DynamicSumExpression>(a.Ptr(),b.Ptr()));
+  }
+
+  inline auto operator- (DynamicVectorExpression a, DynamicVectorExpression b)
+  {
+    return DynamicVectorExpression(make_shared<DynamicSubExpression>(a.Ptr(),b.Ptr()));
+  }
+
+  template <typename T>
+  inline auto operator* (T s, DynamicVectorExpression v)
+  {
+    return DynamicVectorExpression(make_shared<DynamicScaleExpression<T>>(s, v.Ptr()));
+  }
+
+
+
+
+
+  
 }
 
 #endif
