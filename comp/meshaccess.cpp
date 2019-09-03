@@ -244,17 +244,42 @@ namespace ngcomp
         deform(adeform) 
     {
       this->iscurved = true;
-      fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&deform->GetFESpace()->GetFE(ei, lh));
 
-      Array<int> dnums(fel->GetNDof(), lh);
-      deform->GetFESpace()->GetDofNrs(ei, dnums);
+      auto & bfel = deform->GetFESpace()->GetFE(ei, lh);
+      auto cfel = dynamic_cast<CompoundFiniteElement*> (&bfel);
+      if (cfel) // VectorH1
+        {
+          fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&(*cfel)[0]);
+          size_t nds = fel->GetNDof();
+          Array<int> dnums(cfel->GetNDof(), lh);
+          deform->GetFESpace()->GetDofNrs(ei, dnums);
+          
+          elvec.AssignMemory(dnums.Size(), lh);
 
-      elvec.AssignMemory(DIMR*dnums.Size(), lh);
-      deform->GetElementVector(dnums, elvec);
-
-      elvecs.AssignMemory(DIMR, dnums.Size(), lh);
-      for (int j = 0; j < DIMR; j++)
-        elvecs.Row(j) = elvec.Slice(j,DIMR);
+          FlatVector<> helvec(dnums.Size(), lh); // temporary
+          deform->GetElementVector(dnums, helvec);
+          for (int i = 0; i < DIMR; i++)
+            for (int j = 0; j < nds; j++)
+              elvec(j*DIMR+i) = helvec(i*nds+j);
+          
+          elvecs.AssignMemory(DIMR, dnums.Size(), lh);
+          for (int j = 0; j < DIMR; j++)
+            elvecs.Row(j) = elvec.Slice(j,DIMR);
+        }
+      else
+        {
+          fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&bfel);
+          
+          Array<int> dnums(fel->GetNDof(), lh);
+          deform->GetFESpace()->GetDofNrs(ei, dnums);
+          
+          elvec.AssignMemory(DIMR*dnums.Size(), lh);
+          deform->GetElementVector(dnums, elvec);
+          
+          elvecs.AssignMemory(DIMR, dnums.Size(), lh);
+          for (int j = 0; j < DIMR; j++)
+            elvecs.Row(j) = elvec.Slice(j,DIMR);
+        }
     }
 
     /*
