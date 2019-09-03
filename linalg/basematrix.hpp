@@ -238,6 +238,37 @@ namespace ngla
   }
 
 
+
+  class DynamicMatVecExpression : public DynamicBaseExpression
+  {
+    shared_ptr<BaseMatrix> m;
+    shared_ptr<BaseVector> v;
+    
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      m->Mult(*v, v2);
+      v2 *= s;
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      m->MultAdd (s, *v, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      m->Mult(*v, v2);
+      v2 *= s;
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      m->MultAdd (s, *v, v2);
+    }
+  public:
+    DynamicMatVecExpression (shared_ptr<BaseMatrix> am, shared_ptr<BaseVector> av)
+      : m(am), v(av) { } 
+  };
+
+  
+
   /* ************************** Transpose ************************* */
 
   /**
