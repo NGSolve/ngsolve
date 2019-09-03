@@ -1246,7 +1246,9 @@ namespace ngfem
       (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
        {
          // if(!mask.Test(el.GetIndex())) return;
-         auto & trafo = ma.GetTrafo (el, lh);
+         auto & trafo1 = ma.GetTrafo (el, lh);
+         auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
+         
          TSCAL hsum = 0.0;
          
          bool this_simd = use_simd;
