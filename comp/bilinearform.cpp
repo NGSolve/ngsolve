@@ -62,10 +62,6 @@ namespace ngcomp
 
 
 
-
-
-
-
   BilinearForm :: 
   BilinearForm (shared_ptr<FESpace> afespace,
                 const string & aname,
