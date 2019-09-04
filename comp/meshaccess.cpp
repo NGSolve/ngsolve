@@ -1438,7 +1438,9 @@ namespace ngcomp
     {
       if (def)
         {
-          if (dim  != def->GetFESpace()->GetDimension())
+          // if (dim  != def->GetFESpace()->GetDimension())
+          // now also VectorH1 is possible !
+          if (dim != def->Dimension())
             throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
         }
       deformation = def;
