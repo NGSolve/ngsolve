@@ -634,6 +634,9 @@ kwargs : kwargs
     .def_property_readonly ("ndofglobal",
                             [](shared_ptr<FESpace> self) { return self->GetNDofGlobal(); },
                             "global number of dofs on MPI-distributed mesh")
+    .def_property_readonly ("dim",
+                            [](shared_ptr<FESpace> self) { return self->GetDimension(); },
+                            "multi-dim of FESpace")
     .def("__str__", [] (shared_ptr<FESpace> self) { return ToString(*self); } )
     .def("__timing__", [] (shared_ptr<FESpace> self) { return py::cast(self->Timing()); })
     .def_property_readonly("lospace", [](shared_ptr<FESpace> self) -> shared_ptr<FESpace>
