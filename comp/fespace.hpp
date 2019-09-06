@@ -444,7 +444,7 @@ ANY                  1 1 1 1 | 15
         : ( (dof == NO_DOF_NR) ? UNUSED_DOF : HIDDEN_DOF ); }
     
     virtual void SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const;
-    
+    auto & CouplingTypes() { return ctofdof; }
     void CheckCouplingTypes() const;
       
     /// get dof-nrs of the element of certain coupling type

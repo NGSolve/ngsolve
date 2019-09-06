@@ -417,7 +417,8 @@ file : string
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-
+  ExportArray<COUPLING_TYPE> (m);
+  
   auto fes_class = py::class_<FESpace, shared_ptr<FESpace>, NGS_Object>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
 
@@ -810,6 +811,8 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 )raw_string")
          )
 
+    .def_property_readonly("couplingtype", [] (shared_ptr<FESpace> self)
+                           { return FlatArray<COUPLING_TYPE>(self->CouplingTypes()); })
     
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
