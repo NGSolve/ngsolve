@@ -176,53 +176,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                            *self & a; return self; }, py::arg("array"))
   ;
 
-  m.def("RunWithTaskManager", 
-          [](py::object lam)
-                           {
-                             cout << IM(3) << "running Python function with task-manager:" << endl;
-                             RunWithTaskManager ([&] () { lam(); });
-                           }, py::arg("lam"), docu_string(R"raw_string(
-Parameters:
-
-lam : object
-  input function
-
-)raw_string"))
-          ;
-
-  m.def("SetNumThreads", &TaskManager::SetNumThreads, py::arg("threads"), docu_string(R"raw_string(
-Set number of threads
-
-Parameters:
-
-threads : int
-  input number of threads
-
-)raw_string") );
-
-  // local TaskManager class to be used as context manager in Python
-  class ParallelContextManager {
-      int num_threads;
-    public:
-      ParallelContextManager() : num_threads(0) {};
-      ParallelContextManager(size_t pajesize) : num_threads(0) {
-        TaskManager::SetPajeTrace(pajesize > 0);
-        PajeTrace::SetMaxTracefileSize(pajesize);
-      }
-      void Enter() {num_threads = EnterTaskManager(); }
-      void Exit(py::object exc_type, py::object exc_value, py::object traceback) {
-          ExitTaskManager(num_threads);
-      }
-    };
-
-  py::class_<ParallelContextManager>(m, "TaskManager")
-    .def(py::init<>())
-    .def(py::init<size_t>(), "pajetrace"_a, "Run paje-tracer, specify buffersize in bytes")
-    .def("__enter__", &ParallelContextManager::Enter)
-    .def("__exit__", &ParallelContextManager::Exit)
-    .def("__timing__", &TaskManager::Timing)
-    ;
-
   m.def("_PickleMemory", [](py::object pickler, MemoryView& view)
         {
           py::buffer_info bi((char*) view.Ptr(), view.Size());
