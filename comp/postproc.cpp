@@ -1236,61 +1236,226 @@ namespace ngfem
   using namespace ngcomp;
   
   template <typename TSCAL>
-  TSCAL Integral :: Integrate (const ngcomp::MeshAccess & ma)
+  TSCAL Integral :: Integrate (const ngcomp::MeshAccess & ma,
+                               FlatVector<TSCAL> element_wise)
   {
-    LocalHeap glh(1000000, "integrate-lh");
+    LocalHeap glh(10000000, "integrate-lh");
     bool use_simd = true;
     TSCAL sum = 0.0;
-    
-    ma.IterateElements
-      (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
-       {
-         // if(!mask.Test(el.GetIndex())) return;
-         auto & trafo1 = ma.GetTrafo (el, lh);
-         auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
-         
-         TSCAL hsum = 0.0;
-         
-         bool this_simd = use_simd;
-         int order = 5;
-         
-         if (this_simd)
+
+    if (dx.element_vb == VOL)
+      {
+        ma.IterateElements
+          (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
            {
-             try
+             // if(!mask.Test(el.GetIndex())) return;
+             auto & trafo1 = ma.GetTrafo (el, lh);
+             auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
+             
+             TSCAL hsum = 0.0;
+             
+             bool this_simd = use_simd;
+             int order = 5;
+             
+             if (this_simd)
                {
+                 try
+                   {
+                     SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                     auto & mir = trafo(ir, lh);
+                     FlatMatrix<SIMD<double>> values(1, ir.Size(), lh);
+                     cf -> Evaluate (mir, values);
+                     SIMD<double> vsum = 0.0;
+                     for (size_t i = 0; i < values.Width(); i++)
+                       vsum += mir[i].GetWeight() * values(0,i);
+                     hsum = HSum(vsum);
+                     if (element_wise.Size())
+                       element_wise(el.Nr()) += hsum;
+                   }
+                 catch (ExceptionNOSIMD e)
+                   {
+                     this_simd = false;
+                     use_simd = false;
+                     hsum = 0.0;
+                   }
+               }
+             if (!this_simd)
+               {
+                 IntegrationRule ir(trafo.GetElementType(), order);
+                 BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                 FlatMatrix<> values(ir.Size(), 1, lh);
+                 cf -> Evaluate (mir, values);
+                 for (int i = 0; i < values.Height(); i++)
+                   hsum += mir[i].GetWeight() * values(i,0);
+                 if (element_wise.Size())
+                   element_wise(el.Nr()) += hsum;
+               }
+             AtomicAdd(sum, hsum);
+           });
+        
+        return sum;
+      }
+
+    
+    if (dx.element_vb == BND)
+      {
+        bool has_other = true;
+        
+        if (!has_other)
+          ma.IterateElements
+            (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+             {
+               // if(!mask.Test(el.GetIndex())) return;
+               auto & trafo1 = ma.GetTrafo (el, lh);
+               auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
+               
+               TSCAL hsum = 0.0;
+               
+               bool this_simd = false;  // use_simd;
+               int order = 5;
+               
+               /*
+                 if (this_simd)
+                 {
+                 try
+                 {
                  SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                  auto & mir = trafo(ir, lh);
                  FlatMatrix<SIMD<double>> values(1, ir.Size(), lh);
                  cf -> Evaluate (mir, values);
                  SIMD<double> vsum = 0.0;
                  for (size_t i = 0; i < values.Width(); i++)
-                   vsum += mir[i].GetWeight() * values(0,i);
+                 vsum += mir[i].GetWeight() * values(0,i);
                  hsum = HSum(vsum);
-               }
-             catch (ExceptionNOSIMD e)
-               {
-                 this_simd = false;
-                 use_simd = false;
-                 hsum = 0.0;
-               }
-           }
-         if (!this_simd)
-           {
-             IntegrationRule ir(trafo.GetElementType(), order);
-             BaseMappedIntegrationRule & mir = trafo(ir, lh);
-             FlatMatrix<> values(ir.Size(), 1, lh);
-             cf -> Evaluate (mir, values);
-             for (int i = 0; i < values.Height(); i++)
-               hsum += mir[i].GetWeight() * values(i,0);
-           }
-         AtomicAdd(sum, hsum);
-       });
-    
-    return sum;
+                 if (element_wise.Size())
+                 element_wise(el.Nr()) += hsum;
+                 }
+                 catch (ExceptionNOSIMD e)
+                 {
+                     this_simd = false;
+                     use_simd = false;
+                     hsum = 0.0;
+                     }
+                     }
+               */
+               
+               if (!this_simd)
+                 {
+                   auto eltype = trafo.GetElementType();
+                   
+                   Facet2ElementTrafo transform(eltype, dx.element_vb); 
+                   int nfacet = transform.GetNFacets();
+                   
+                   for (int k = 0; k < nfacet; k++)
+                     {
+                       HeapReset hr(lh);
+                       ngfem::ELEMENT_TYPE etfacet = transform.FacetType(k);
+                       IntegrationRule ir_facet(etfacet, order);
+                       IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+                       BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+                       mir.ComputeNormalsAndMeasure (eltype, k);
+                       
+                       FlatMatrix<> values(ir_facet.Size(), 1, lh);
+                       cf -> Evaluate (mir, values);
+                       for (int i = 0; i < values.Height(); i++)
+                         hsum += mir[i].GetWeight() * values(i,0);
+                       if (element_wise.Size())
+                         element_wise(el.Nr()) += hsum;
+                     }
+                 }
+               AtomicAdd(sum, hsum);
+             });
+
+        else // has_other
+
+          {
+            ma.IterateElements
+            (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+             {
+               auto & htrafo1 = ma.GetTrafo (el, lh);
+               auto & trafo1 = htrafo1.AddDeformation(this->dx.deformation.get(), lh);
+               auto eltype = trafo1.GetElementType();
+
+               auto vnums1 = el.Vertices();
+               auto fanums = el.Facets();
+               
+               TSCAL hsum = 0.0;
+               
+               bool this_simd = false;  // use_simd;
+               int order = 5;
+
+               if (!this_simd)
+                 {
+                   Facet2ElementTrafo transform1(eltype, vnums1);
+                   int nfacet = transform1.GetNFacets();
+                   
+                   for (int k = 0; k < nfacet; k++)
+                     {
+                       ArrayMem<int,2> els;
+                       ma.GetFacetElements(fanums[k], els);
+                       if (els.Size() == 1)
+                         continue;  // boundary facet
+                       if (els.Size() != 2)
+                         {
+                           cout << "fanums = " << fanums[k] << endl;
+                           cout << "illegal els.size, els = " << els << endl;
+                           continue;
+                         }
+                       
+                       ElementId ei2 = { VOL, els[0]+els[1]-el.Nr() };
+                       
+                       auto & htrafo2 = ma.GetTrafo (ei2, lh);
+                       auto & trafo2 = htrafo2.AddDeformation(this->dx.deformation.get(), lh);
+                       
+                       auto el2 = ma.GetElement(ei2);
+                       auto fanums2 = el2.Facets();
+                       int k2 = fanums2.Pos(fanums[k]);
+                       
+                       HeapReset hr(lh);
+
+                       
+                       ngfem::ELEMENT_TYPE etfacet = transform1.FacetType(k);
+                       IntegrationRule ir_facet(etfacet, order);
+                       
+                       
+                       auto eltype2 = trafo2.GetElementType();
+
+                       Facet2ElementTrafo transform2(eltype2, el2.Vertices()); 
+
+                       IntegrationRule & ir_facet_vol1 = transform1(k, ir_facet, lh);
+                       BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+                       mir1.ComputeNormalsAndMeasure (eltype, k);
+
+                       IntegrationRule & ir_facet_vol2 = transform2(k2, ir_facet, lh);
+                       BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+                       mir2.ComputeNormalsAndMeasure (eltype2, k2);
+
+                       mir1.SetOtherMIR(&mir2);
+                       mir2.SetOtherMIR(&mir1);
+                       
+                       
+                       FlatMatrix<> values(ir_facet.Size(), 1, lh);
+                       cf -> Evaluate (mir1, values);
+                       for (int i = 0; i < values.Height(); i++)
+                         hsum += mir1[i].GetWeight() * values(i,0);
+                       if (element_wise.Size())
+                         element_wise(el.Nr()) += hsum;
+                     }
+                 }
+               AtomicAdd(sum, hsum);
+             });
+          
+        
+        return sum;
+      }
+      }
+    throw Exception ("only vol and bnd integrals are supported");
   }
+  
 
-
-  template double Integral :: Integrate<double> (const ngcomp::MeshAccess & ma);
-  template Complex Integral :: Integrate<Complex> (const ngcomp::MeshAccess & ma);
+  template double Integral :: Integrate<double> (const ngcomp::MeshAccess & ma,
+                                                 FlatVector<double> element_wise);
+  template Complex Integral :: Integrate<Complex> (const ngcomp::MeshAccess & ma,
+                                                   FlatVector<Complex> element_wise);                                                   
 }
 

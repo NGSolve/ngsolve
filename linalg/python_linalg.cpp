@@ -415,7 +415,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
     .def_property("data",
                   [](shared_ptr<BaseVector> self)
-                  { return DynamicVectorExpression(self); },
+                  { return self; },
                   [](shared_ptr<BaseVector> self, DynamicVectorExpression v2)
                   { v2.AssignTo(1, *self); })
     
