@@ -29,7 +29,8 @@ namespace ngfem
       : cf(_cf), dx(_dx) { ; }
 
     template <typename TSCAL>
-    TSCAL Integrate (const ngcomp::MeshAccess & ma);
+    TSCAL Integrate (const ngcomp::MeshAccess & ma,
+                     FlatVector<TSCAL> element_wise);
   };
   
   inline Integral operator* (double fac, const Integral & cf)

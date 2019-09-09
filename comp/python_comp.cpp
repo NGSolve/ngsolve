@@ -2785,12 +2785,31 @@ element_wise: bool = False
 
 
   m.def ("Integrate",
-         [] (const SumOfIntegrals & igls, const MeshAccess & ma) -> py::object
+         [] (const SumOfIntegrals & igls, const MeshAccess & ma, bool element_wise) -> py::object
          {
            bool iscomplex = false;
            for (auto & ci : igls.icfs)
              iscomplex |= ci->cf->IsComplex();
 
+           auto integrate = [&] (auto tscal) 
+           {
+             typedef decltype(tscal) TSCAL;
+             
+             TSCAL sum = 0;
+             Vector<TSCAL> elvals(element_wise ? ma.GetNE() : 0);
+             elvals = TSCAL(0.0);
+             
+             for (auto & ci : igls.icfs)
+               sum += ci->Integrate<TSCAL>(ma, elvals);
+             if (element_wise) return py::cast(elvals);
+             return py::cast(sum);
+           };
+
+           if (iscomplex)
+             return integrate(Complex(0.0));
+           else
+             return integrate(double(0.0));
+           /*
            if (iscomplex)
              {
                Complex sum = 0;
@@ -2805,8 +2824,8 @@ element_wise: bool = False
                  sum += ci->Integrate<double>(ma);
                return py::cast(sum);
              }
-             
-         }, py::arg("igls"), py::arg("mesh"));
+           */
+         }, py::arg("igls"), py::arg("mesh"), py::arg("element_wise")=false);
 
   
   m.def("SymbolicLFI",
