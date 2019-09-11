@@ -624,8 +624,8 @@ namespace ngfem
       int maxorder_facet =
         max2(order_facet[0],max2(order_facet[1],order_facet[2]));      
 
-      ArrayMem<Tx,20> ha(maxorder_facet);
-      ArrayMem<Tx,20> v(oi), u(oi);
+      ArrayMem<Tx,20> ha(maxorder_facet+1);
+      ArrayMem<Tx,20> v(oi+1), u(oi+1);
 
       for (int i = 0; i < 3; i++)
         {
