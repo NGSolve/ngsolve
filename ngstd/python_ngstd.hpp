@@ -144,45 +144,6 @@ py::array_t<T> MoveToNumpyArray( Array<T> &a )
 }
 
 
-
-//////////////////////////////////////////////////////////////////////
-// Python class name type traits
-template <typename T>
-struct PyNameTraits {
-  static const string & GetName() { static const string name = typeid(T).name(); return name; }
-};
-
-
-template <typename T>
-string GetPyName(const char *prefix = 0) {
-  string s;
-  if(prefix) s = string(prefix);
-  s+= PyNameTraits<T>::GetName();
-  return s;
-}
-
-
-template<>
-struct PyNameTraits<int> {
-  static string GetName() { return "I"; }
-};
-
-template<>
-struct PyNameTraits<float> {
-  static string GetName() { return "F"; }
-};
-
-template<>
-struct PyNameTraits<double> {
-  static string GetName() { return "D"; }
-};
-
-template<typename T>
-struct PyNameTraits<shared_ptr<T>> {
-  static string GetName() { return string("sp_")+GetPyName<T>(); }
-};
-
-
 template<typename ... Args>
 inline py::object PyRange(Args ... i)
 {
