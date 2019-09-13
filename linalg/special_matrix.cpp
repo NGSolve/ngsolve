@@ -154,6 +154,26 @@ namespace ngla
   template class DiagonalMatrix<Mat<3,3,double> >;
   template class DiagonalMatrix<Mat<3,3,Complex> >;
 #endif
+#if MAX_SYS_DIM >= 4
+  template class DiagonalMatrix<Mat<4,4,double> >;
+  template class DiagonalMatrix<Mat<4,4,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 5
+  template class DiagonalMatrix<Mat<5,5,double> >;
+  template class DiagonalMatrix<Mat<5,5,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 6
+  template class DiagonalMatrix<Mat<6,6,double> >;
+  template class DiagonalMatrix<Mat<6,6,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 7
+  template class DiagonalMatrix<Mat<7,7,double> >;
+  template class DiagonalMatrix<Mat<7,7,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 8
+  template class DiagonalMatrix<Mat<8,8,double> >;
+  template class DiagonalMatrix<Mat<8,8,Complex> >;
+#endif
   
 
   
