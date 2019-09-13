@@ -78,6 +78,14 @@ else(NETGEN_DIR)
   add_custom_target(check_submodules_start ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   set (NETGEN_CMAKE_ARGS)
+
+  if (NOT METIS_DIR)
+    # hard-coded path to self-built metis
+    message(STATUS "PARMETIS/METIS will be built by superbuild")
+    set (METIS_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/parmetis)
+    set (SUPERBUILD_METIS 1)
+  endif (NOT METIS_DIR)
+
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
     CMAKE_CXX_COMPILER
@@ -95,7 +103,16 @@ else(NETGEN_DIR)
     USE_NATIVE_ARCH
     ENABLE_UNIT_TESTS
     BUILD_STUB_FILES
-  )
+
+    METIS_DIR
+    SUPERBUILD_METIS
+    )
+
+  if (SUPERBUILD_METIS)
+    # unset metis again
+    unset(METIS_DIR)
+  endif(SUPERBUILD_METIS)
+
   set_flags_vars(NETGEN_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
   ExternalProject_Add (netgen_project
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
@@ -184,7 +201,14 @@ if(USE_HYPRE AND NOT HYPRE_DIR)
 endif(USE_HYPRE AND NOT HYPRE_DIR)
 
 #######################################################################
+if(SUPERBUILD_METIS)
+  message(STATUS "configuring PARMETIS/METIS")
+  include(${CMAKE_CURRENT_LIST_DIR}/external_projects/parmetis.cmake)
+endif(SUPERBUILD_METIS)
+
+#######################################################################
 if(USE_MUMPS AND NOT MUMPS_DIR)
+  message(STATUS "configuring MUMPS")
   include(${CMAKE_CURRENT_LIST_DIR}/external_projects/mumps.cmake)
 endif(USE_MUMPS AND NOT MUMPS_DIR)
 
