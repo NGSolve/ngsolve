@@ -1766,6 +1766,7 @@ diffop : ngsolve.fem.DifferentialOperator
                         bool element_boundary,
                         VorB element_vb, bool skeleton,
                         int bonus_intorder,
+                        std::map<ELEMENT_TYPE,IntegrationRule> intrules,
                         shared_ptr<GridFunction> deformation)
          {
            if (element_boundary) element_vb = BND;
@@ -1778,6 +1779,9 @@ diffop : ngsolve.fem.DifferentialOperator
                  dx.definedon = *definedon_string;
              }
            dx.deformation = deformation;
+           for (auto both : intrules)
+             dx.userdefined_intrules[both.first] =
+               make_shared<IntegrationRule> (both.second.Copy());
            return dx;
          },
          py::arg("definedon")=nullptr,
@@ -1785,6 +1789,7 @@ diffop : ngsolve.fem.DifferentialOperator
          py::arg("element_vb")=VOL,
          py::arg("skeleton")=false,
          py::arg("bonus_intorder")=0,
+         py::arg("intrules")=std::map<ELEMENT_TYPE,IntegrationRule>{},
          py::arg("deformation")=nullptr)
     ;
 
@@ -1947,6 +1952,8 @@ integrator : ngsolve.fem.BFI
                  }
                bfi->SetDeformation(dx.deformation);               
                bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               for (auto both : dx.userdefined_intrules)
+                 bfi->SetIntegrationRule(both.first, *both.second);
                self += bfi;
              }
            return self;
@@ -2215,6 +2222,8 @@ integrator : ngsolve.fem.LFI
                  }
                lfi->SetDeformation(dx.deformation);
                lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               for (auto both : dx.userdefined_intrules)
+                 lfi->SetIntegrationRule(both.first, *both.second);
                *self += lfi;
              }
            return self;

@@ -11,6 +11,7 @@ namespace ngfem
     optional<variant<BitArray,string>> definedon;
     int bonus_intorder = 0;
     shared_ptr<ngcomp::GridFunction> deformation;
+    std::map<ELEMENT_TYPE,shared_ptr<IntegrationRule>> userdefined_intrules;
     
     DifferentialSymbol (VorB _vb) : vb(_vb) { ; }
     DifferentialSymbol (VorB _vb, VorB _element_vb, bool _skeleton, // const BitArray & _definedon,
