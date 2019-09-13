@@ -424,6 +424,14 @@ namespace ngla
   }
 
 
+  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateVector () const
+  { throw Exception("SparseMatrixTM::CreateVector"); }
+
+  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateRowVector () const
+  { throw Exception("SparseMatrixTM::CreateRowVector"); }
+
+  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateColVector () const
+  { throw Exception("SparseMatrixTM::CreateColVector"); }
 
 
   template <class TM, class TV_ROW, class TV_COL>
