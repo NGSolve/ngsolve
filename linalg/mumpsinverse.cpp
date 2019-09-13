@@ -947,7 +947,17 @@ namespace ngla
     return make_shared<ParallelVVector<TV>> (height, paralleldofs);
   }
 
+  template <class TM, class TV>
+  AutoVector ParallelMumpsInverse<TM,TV> :: CreateRowVector () const
+  {
+    return make_shared<ParallelVVector<TV>> (height, paralleldofs);
+  }
 
+  template <class TM, class TV>
+  AutoVector ParallelMumpsInverse<TM,TV> :: CreateColVector () const
+  {
+    return make_shared<ParallelVVector<TV>> (height, paralleldofs);
+  }
 
 
 
