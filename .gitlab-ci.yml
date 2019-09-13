@@ -60,6 +60,7 @@ win_cleanup:
     - call tests\gitlab-ci\win\set_vars.bat
   only:
     - schedules
+    - tags
 
 win_avx_build:
   <<: *win_avx
@@ -100,6 +101,7 @@ win_avx_cleanup:
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
   only:
     - schedules
+    - tags
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
