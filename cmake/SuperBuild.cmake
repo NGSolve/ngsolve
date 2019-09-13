@@ -79,12 +79,12 @@ else(NETGEN_DIR)
   add_custom_target(check_submodules_stop ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   set (NETGEN_CMAKE_ARGS)
 
-  if (NOT METIS_DIR)
+  if (USE_MPI AND NOT METIS_DIR)
     # hard-coded path to self-built metis
     message(STATUS "PARMETIS/METIS will be built by superbuild")
     set (METIS_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/parmetis)
     set (SUPERBUILD_METIS 1)
-  endif (NOT METIS_DIR)
+  endif (USE_MPI AND NOT METIS_DIR)
 
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
@@ -108,10 +108,10 @@ else(NETGEN_DIR)
     SUPERBUILD_METIS
     )
 
-  if (SUPERBUILD_METIS)
+  if (USE_MPI AND SUPERBUILD_METIS)
     # unset metis again
     unset(METIS_DIR)
-  endif(SUPERBUILD_METIS)
+  endif(USE_MPI AND SUPERBUILD_METIS)
 
   set_flags_vars(NETGEN_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
   ExternalProject_Add (netgen_project
