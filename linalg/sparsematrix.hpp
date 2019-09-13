@@ -381,6 +381,10 @@ namespace ngla
 
     ///
     virtual Array<MemoryUsage> GetMemoryUsage () const override;    
+
+    virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
   };
   
 
