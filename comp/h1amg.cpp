@@ -1,14 +1,14 @@
+#include <h1amg.hpp>
+
 #include <comp.hpp>
 using namespace ngcomp;
 
 
-
 #include <core/concurrentqueue.h>
 
-typedef moodycamel::ConcurrentQueue<size_t> TQueue; 
-typedef moodycamel::ProducerToken TPToken; 
-typedef moodycamel::ConsumerToken TCToken; 
-
+typedef moodycamel::ConcurrentQueue<size_t> TQueue;
+typedef moodycamel::ProducerToken TPToken;
+typedef moodycamel::ConsumerToken TCToken;
 
 
 namespace ngcomp
@@ -22,7 +22,7 @@ namespace ngcomp
   {
     Array<atomic<int>> cnt_dep(dag.Size());
 
-    for (auto & d : cnt_dep) 
+    for (auto & d : cnt_dep)
       d.store (0, memory_order_relaxed);
 
     static Timer t_cntdep("count dep");
@@ -33,7 +33,7 @@ namespace ngcomp
                    for (int j : dag[i])
                      cnt_dep[j]++;
                  });
-    t_cntdep.Stop();    
+    t_cntdep.Stop();
 
     atomic<size_t> num_ready(0), num_final(0);
     ParallelForRange (cnt_dep.Size(), [&] (IntRange r)
@@ -53,7 +53,7 @@ namespace ngcomp
     for (int j : Range(cnt_dep))
       if (cnt_dep[j] == 0) ready.Append(j);
 
-    
+
     if (!task_manager)
       // if (true)
       {
@@ -62,9 +62,9 @@ namespace ngcomp
             int size = ready.Size();
             int nr = ready[size-1];
             ready.SetSize(size-1);
-            
+
             func(nr);
-            
+
             for (int j : dag[nr])
               {
                 cnt_dep[j]--;
@@ -78,13 +78,13 @@ namespace ngcomp
     atomic<int> cnt_final(0);
     SharedLoop2 sl(Range(ready));
 
-    task_manager -> CreateJob 
+    task_manager -> CreateJob
       ([&] (const TaskInfo & ti)
        {
          size_t my_final = 0;
-         TPToken ptoken(queue); 
-         TCToken ctoken(queue); 
-        
+         TPToken ptoken(queue);
+         TCToken ctoken(queue);
+
          for (int i : sl)
            queue.enqueue (ptoken, ready[i]);
 
@@ -93,7 +93,7 @@ namespace ngcomp
              if (cnt_final >= num_final) break;
 
              int nr;
-             if(!queue.try_dequeue_from_producer(ptoken, nr)) 
+             if(!queue.try_dequeue_from_producer(ptoken, nr))
                if(!queue.try_dequeue(ctoken, nr))
                  {
                    if (my_final)
@@ -120,40 +120,22 @@ namespace ngcomp
   }
 
 
-
-
-
-
-
-
-  
-
-  template <class SCAL>
-  class H1AMG_Matrix : public BaseMatrix
+  template <typename SCAL>
+  H1AMG_Matrix<SCAL>::H1AMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> amat,
+                                   shared_ptr<BitArray> freedofs,
+                                   FlatArray<INT<2>> e2v,
+                                   FlatArray<double> edge_weights,
+                                   FlatArray<double> vertex_weights,
+                                   size_t level)
+  : mat(amat)
   {
-    size_t size;
-    shared_ptr<SparseMatrixTM<SCAL>> mat;
-    shared_ptr<BaseBlockJacobiPrecond> smoother;
-    shared_ptr<SparseMatrixTM<double>> prolongation, restriction;
-    shared_ptr<BaseMatrix> coarse_precond;
-    int smoothing_steps = 1;
-    
-  public:
-    H1AMG_Matrix (shared_ptr<SparseMatrixTM<SCAL>> amat,
-                  shared_ptr<BitArray> freedofs,
-                  FlatArray<INT<2>> e2v,
-                  FlatArray<double> edge_weights,
-                  FlatArray<double> vertex_weights,
-                  size_t level)
-      : mat(amat)
-    {
       static Timer t("H1AMG"); RegionTimer reg(t);
-      
+
       size_t num_edges = edge_weights.Size();
       size_t num_vertices = vertex_weights.Size();
 
       cout << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
-      
+
       size = mat->Height();
 
       Array<double> edge_collapse_weights(num_edges);
@@ -163,15 +145,15 @@ namespace ngcomp
 
       ParallelFor (num_edges, [&] (size_t i)
                    {
-                     for (size_t j = 0; j < 2; j++) 
+                     for (size_t j = 0; j < 2; j++)
                        AtomicAdd(sum_vertex_weights[e2v[i][j]], edge_weights[i]);
                    });
-    
+
       ParallelFor (num_edges, [&] (size_t i)
                    {
                      double vstr1 = sum_vertex_weights[e2v[i][0]];
                      double vstr2 = sum_vertex_weights[e2v[i][1]];
-                   
+
                      edge_collapse_weights[i] = edge_weights[i] * (vstr1+vstr2) / (vstr1 * vstr2);
                    });
 
@@ -182,7 +164,7 @@ namespace ngcomp
                    { indices[edge] = edge; });
 
       SampleSortI(edge_collapse_weights, indices);
-    
+
       Array<size_t> invindices(num_edges);
       ParallelFor (num_edges, [&] (size_t edge)
                    {
@@ -191,13 +173,13 @@ namespace ngcomp
       */
 
 
-      // which edges to collapse ? 
-    
+      // which edges to collapse ?
+
       Array<bool> vertex_collapse(num_vertices);
       Array<bool> edge_collapse(num_edges);
       edge_collapse = false;
       vertex_collapse = false;
-    
+
       TableCreator<int> v2e_creator(num_vertices);
       for ( ; !v2e_creator.Done(); v2e_creator++)
         ParallelFor (num_edges, [&] (size_t e)
@@ -224,10 +206,10 @@ namespace ngcomp
                                   return w1 < w2;
                                 } );
                    }, TasksPerThread(5));
-      
+
       // build edge dependency
       TableCreator<int> edge_dag_creator(num_edges);
-      for ( ; !edge_dag_creator.Done(); edge_dag_creator++)  
+      for ( ; !edge_dag_creator.Done(); edge_dag_creator++)
         ParallelFor (v2e.Size(), [&] (size_t vnr)
                      {
                        auto vedges = v2e[vnr];
@@ -235,7 +217,7 @@ namespace ngcomp
                          edge_dag_creator.Add (vedges[j+1], vedges[j]);
                      }, TasksPerThread(5));
       Table<int> edge_dag = edge_dag_creator.MoveTable();
-    
+
       RunParallelDependency (edge_dag,
                              [&] (int edgenr)
                              {
@@ -249,7 +231,7 @@ namespace ngcomp
                                  }
                              });
       edge_dag = Table<int>();
-      
+
       // collapse the larger vertex
       vertex_collapse = false;
       for (int e = 0; e < num_edges; e++)
@@ -266,11 +248,11 @@ namespace ngcomp
         if (sum_vertex_weights[i] == vertex_weights[i] ||
             (*freedofs)[i] == false)
           isolated_verts.SetBit(i);
-      
+
       // vertex 2 coarse vertex
       Array<size_t> v2cv(num_vertices);
       size_t num_coarse_vertices = 0;
-      v2cv = -1; 
+      v2cv = -1;
       for (size_t i = 0; i < num_vertices; i++)
         if (!vertex_collapse[i] && !isolated_verts.Test(i))
           v2cv[i] = num_coarse_vertices++;
@@ -284,12 +266,12 @@ namespace ngcomp
           }
 
       // edge to coarse edge
-      
+
       Array<size_t> e2ce(num_edges);
 
       ParallelHashTable<INT<2>, int> coarse_edge_ht;
-      
-      ParallelFor (num_edges, [&] (size_t edge) 
+
+      ParallelFor (num_edges, [&] (size_t edge)
                    {
                      size_t cv1 = v2cv[e2v[edge][0]];
                      size_t cv2 = v2cv[e2v[edge][1]];
@@ -300,8 +282,8 @@ namespace ngcomp
                        coarse_edge_ht.Do(INT<2>(cv1, cv2).Sort(), [](auto & val) { val = -1; });
                      }
                    });
-      
-      
+
+
       Array<int> prefixsums(coarse_edge_ht.NumBuckets());
       size_t num_coarse_edges = 0;
       for (size_t i = 0; i < coarse_edge_ht.NumBuckets(); i++)
@@ -326,7 +308,7 @@ namespace ngcomp
 
       ParallelFor (coarse_edge_ht.NumBuckets(),
                    [&] (size_t nr)
-                   {               
+                   {
                      coarse_edge_ht.Bucket(nr).Iterate
                        ([&coarse_e2v] (INT<2> key, int val)
                         {
@@ -339,23 +321,23 @@ namespace ngcomp
                     int vertex1 = v2cv[e2v[edge][0]];
                     int vertex2 = v2cv[e2v[edge][1]];
 
-                    if (vertex1 != -1 && vertex2 != -1 && vertex1 != vertex2) 
+                    if (vertex1 != -1 && vertex2 != -1 && vertex1 != vertex2)
                       e2ce[edge] = coarse_edge_ht.Get(INT<2>(vertex1, vertex2).Sort());
-                    else 
+                    else
                       e2ce[edge] = -1;
                   });
 
       coarse_edge_ht = ParallelHashTable<INT<2>, int>();
-      
+
       Array<double> coarse_edge_weights (num_coarse_edges);
       Array<double> coarse_vertex_weights (num_coarse_vertices);
 
       coarse_edge_weights = 0.0;
       coarse_vertex_weights = 0.0;
-      
+
       ParallelFor(e2ce.Size(), [&] (int e)
                   {
-                    if (e2ce[e] != -1) 
+                    if (e2ce[e] != -1)
                       AtomicAdd(coarse_edge_weights[e2ce[e]], edge_weights[e]);
                     int v0 = e2v[e][0], v1 = e2v[e][1];
                     bool free0 = (*freedofs)[v0], free1 = (*freedofs)[v1];
@@ -364,13 +346,13 @@ namespace ngcomp
                     if (free1 && !free0)
                       AtomicAdd(coarse_vertex_weights[v2cv[v1]], edge_weights[e]);
                   });
-      
+
       ParallelFor(v2cv.Size(), [&] (int v)
                   {
-                    if (v2cv[v] != -1) 
+                    if (v2cv[v] != -1)
                       AtomicAdd(coarse_vertex_weights[v2cv[v]], vertex_weights[v]);
                   });
-      
+
 
       // build smoother
       TableCreator<int> smoothing_blocks_creator(num_coarse_vertices);
@@ -399,7 +381,7 @@ namespace ngcomp
         {
           for (auto i : Range(num_vertices))
             nne[i] = 1+v2e[i].Size();
-          
+
           auto smoothprol = make_shared<SparseMatrix<double>> (nne, num_vertices);
           ParallelFor
             (num_vertices, [&] (auto i)
@@ -407,14 +389,14 @@ namespace ngcomp
                double sum = 0;
                for (auto e : v2e[i])
                  sum += edge_weights[e];
-               
+
                for (auto e : v2e[i])
                  {
                    auto v2 = e2v[e][0]+e2v[e][1]-i;
                    (*smoothprol)(i,v2) = 0.0;
                  }
                (*smoothprol)(i, i) = 0.0;
-               
+
                for (auto e : v2e[i])
                  {
                    auto v2 = e2v[e][0]+e2v[e][1]-i;
@@ -422,7 +404,7 @@ namespace ngcomp
                  }
                (*smoothprol)(i, i) = 0.5;
              });
-          
+
           prolongation = MatMult (*smoothprol, *prolongation);
         }
 
@@ -436,7 +418,7 @@ namespace ngcomp
                     if (v2cv[v] != -1)
                       coarse_freedofs->SetBitAtomic(v2cv[v]);
                   });
-      
+
       if (num_coarse_vertices < 10)
 	{
 	  coarsemat->SetInverseType(SPARSECHOLESKY);
@@ -450,17 +432,10 @@ namespace ngcomp
       restriction = TransposeMatrix (*prolongation);
     }
 
-    virtual int VHeight() const override { return size; }
-    virtual int VWidth() const override { return size; }
-
-    virtual AutoVector CreateRowVector () const override { return mat->CreateColVector(); }
-    virtual AutoVector CreateColVector () const override { return mat->CreateRowVector(); }
-    
-    
-
-    virtual void Mult (const BaseVector & b, BaseVector & x) const override
-    {
-      static Timer t("H1AMG::Mult"); RegionTimer reg(t);      
+  template <typename SCAL>
+  void H1AMG_Matrix<SCAL>::Mult (const BaseVector & b, BaseVector & x) const
+  {
+      static Timer t("H1AMG::Mult"); RegionTimer reg(t);
       x = 0;
 
       smoother->GSSmooth(x, b, smoothing_steps);
@@ -472,11 +447,10 @@ namespace ngcomp
 
       auto coarse_x = coarse_precond->CreateColVector();
       coarse_precond->Mult(coarse_residuum, coarse_x);
-    
+
       x += *prolongation * coarse_x;
       smoother->GSSmoothBack (x, b, smoothing_steps);
-    }
-  };
+  }
 
   template <class SCAL>
   class H1AMG_Preconditioner : public Preconditioner
@@ -486,9 +460,9 @@ namespace ngcomp
 
     ParallelHashTable<INT<2>,double> edge_weights_ht;
     ParallelHashTable<INT<1>,double> vertex_weights_ht;
-  
+
   public:
-  
+
     H1AMG_Preconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
                           const string aname = "H1AMG_cprecond")
       : Preconditioner (abfa, aflags, aname)
@@ -497,12 +471,12 @@ namespace ngcomp
     }
 
     H1AMG_Preconditioner (const PDE & pde, const Flags & aflags, const string & aname)
-      : H1AMG_Preconditioner (pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")), 
+      : H1AMG_Preconditioner (pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")),
                               aflags, aname)
     { ; }
 
-  
-    virtual void InitLevel (shared_ptr<BitArray> _freedofs) 
+
+    virtual void InitLevel (shared_ptr<BitArray> _freedofs)
     {
       freedofs = _freedofs;
     }
@@ -516,7 +490,7 @@ namespace ngcomp
 
       Array<double> edge_weights (num_edges);
       Array<INT<2> > e2v (num_edges);
-    
+
       edge_weights_ht.IterateParallel
         ([&edge_weights,&e2v] (size_t i, INT<2> key, double weight)
          {
@@ -524,7 +498,7 @@ namespace ngcomp
            e2v[i] = key;
          });
       edge_weights_ht = ParallelHashTable<INT<2>,double>();
-      
+
       Array<double> vertex_weights(num_vertices);
       vertex_weights = 0.0;
       vertex_weights_ht.IterateParallel
@@ -533,14 +507,14 @@ namespace ngcomp
            vertex_weights[i] = weight;
          });
       vertex_weights_ht = ParallelHashTable<INT<1>,double>();
-      
+
       mat = make_shared<H1AMG_Matrix<double>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
     }
 
 
     virtual void AddElementMatrix (FlatArray<int> dnums,
                                    const FlatMatrix<SCAL> & elmat,
-                                   ElementId id, 
+                                   ElementId id,
                                    LocalHeap & lh)
     {
       // vertex weights
@@ -548,15 +522,15 @@ namespace ngcomp
       static Timer t1("h1amg - addelmat calc v-schur");
       static Timer t3("h1amg - addelmat calc e-schur");
       static Timer t5("h1amg - addelmat invert");
-      
+
       ThreadRegionTimer reg (t, TaskManager::GetThreadId());
-      
+
       size_t ndof = dnums.Size();
       BitArray used(ndof, lh);
 
       FlatMatrix<SCAL> ext_elmat(ndof+1, ndof+1, lh);
 
-      
+
       {
       ThreadRegionTimer reg (t5, TaskManager::GetThreadId());
       ext_elmat.Rows(0,ndof).Cols(0,ndof) = elmat;
@@ -565,7 +539,7 @@ namespace ngcomp
       ext_elmat(ndof, ndof) = 0;
       CalcInverse (ext_elmat);
       }
-      
+
       {
       ThreadRegionTimer reg (t1, TaskManager::GetThreadId());
       for (size_t i = 0; i < dnums.Size(); i++)
@@ -598,7 +572,7 @@ namespace ngcomp
       }
 
 
-      
+
       /*
       FlatMatrix<SCAL> schur_vertex(1,1,lh);
       for (size_t i = 0; i < dnums.Size(); i++)
@@ -625,17 +599,16 @@ namespace ngcomp
       */
     }
 
-    virtual void Update () { ; } 
+    virtual void Update () { ; }
 
     virtual const BaseMatrix & GetMatrix() const
     {
       return *mat;
     }
 
-  
+
   };
 
 
   static RegisterPreconditioner<H1AMG_Preconditioner<double> > initpre ("h1amg");
 }
-
