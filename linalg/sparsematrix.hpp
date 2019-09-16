@@ -369,7 +369,7 @@ namespace ngla
     virtual const BaseVector & AsVector() const override
     { 
       const_cast<VFlatVector<TSCAL>&> (asvec).
-	AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
+	AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Data());
       return asvec; 
     }
 
