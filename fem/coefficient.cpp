@@ -2970,6 +2970,13 @@ public:
         for (size_t i = 0; i < np; i++)
           values(j*hd+k, i) = 0.5 * (in0(k*hd+j, i)+in0(j*hd+k, i));
   }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return 0.5*(c1->Diff(var, dir) + TransposeCF (c1->Diff(var, dir)));
+  }
 };
 
 
