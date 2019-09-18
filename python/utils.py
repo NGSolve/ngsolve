@@ -121,7 +121,7 @@ def PyInv(m):
 def PySym(m):
     return 0.5*(m+m.trans)
 
-def Skew(m):
+def PySkew(m):
     return 0.5*(m-m.trans)
 
 def OuterProduct(a, b):
