@@ -1027,6 +1027,7 @@ wait : bool
     ;
 
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
+  m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
 
