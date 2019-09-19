@@ -2876,10 +2876,10 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
-    cout << "nonzero, rec" << endl;
+    //cout << "nonzero, rec" << endl;
     int hd = Dimensions()[0];    
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-    cout << "non-zero input " << nonzero << endl;
+    //cout << "non-zero input " << nonzero << endl;
     for (int i = 0; i < hd; i++)
       for (int j = 0; j < hd; j++)
         {
@@ -2889,7 +2889,7 @@ public:
           nonzero_deriv(ii) |= nonzero_deriv(jj);
           nonzero_dderiv(ii) |= nonzero_dderiv(jj);
         }
-    cout << "non-zero result " << nonzero << endl;    
+    //cout << "non-zero result " << nonzero << endl;    
   }
 
   
