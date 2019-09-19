@@ -12,6 +12,16 @@
 namespace ngla
 {
 
+  void Projector :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y = x;
+    Project (y);
+  }
+  
+  void Projector :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    return Mult (x, y);
+  }
 
 
   void Projector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
