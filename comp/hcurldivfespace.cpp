@@ -504,6 +504,22 @@ namespace ngcomp
     }
   }
 
+    DocInfo HCurlDivFESpace :: GetDocu ()
+  {
+    DocInfo docu = FESpace::GetDocu();
+    //docu.short_docu = "TODO.";
+    //docu.long_docu =
+    //  R"raw_string(TODO
+    //)raw_string";      
+
+    
+    docu.Arg("discontinuous") = "bool = false\n"
+      "  Create discontinuous HCurlDiv space";
+    docu.Arg("ordertrace") = "int = -1\n"
+      "  Set order of trace bubbles";
+    return docu;
+  }
+
   void HCurlDivFESpace :: Update()
   {
     first_facet_dof.SetSize (ma->GetNFacets()+1);
