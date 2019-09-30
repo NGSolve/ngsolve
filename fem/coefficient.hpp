@@ -1659,6 +1659,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> SkewCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER

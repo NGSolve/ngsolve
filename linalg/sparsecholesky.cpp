@@ -1809,7 +1809,7 @@ namespace ngla
 
 
     // solve with the diagonal
-    const TM * hdiag = &diag[0];
+    const TM * hdiag = diag.Data();
     ParallelFor (hy.Size(), [&] (int i)
                  {
                    TVX tmp = hdiag[i] * hy[i];
