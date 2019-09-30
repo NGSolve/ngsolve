@@ -105,7 +105,6 @@ else(NETGEN_DIR)
     BUILD_STUB_FILES
 
     METIS_DIR
-    SUPERBUILD_METIS
     )
 
   if (USE_MPI AND SUPERBUILD_METIS)
@@ -204,6 +203,8 @@ endif(USE_HYPRE AND NOT HYPRE_DIR)
 if(SUPERBUILD_METIS)
   message(STATUS "configuring PARMETIS/METIS")
   include(${CMAKE_CURRENT_LIST_DIR}/external_projects/parmetis.cmake)
+  # we have to build parmetis (which also builds the metis library needed by netgen) before netgen
+  add_dependencies(netgen_project project_parmetis)
 endif(SUPERBUILD_METIS)
 
 #######################################################################
