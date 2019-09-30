@@ -128,7 +128,7 @@ namespace ngcomp
 		    IterateElements
 		      (*fespace,vb,clh, [&](FESpace::Element el, LocalHeap & lh)
 		       {
-			 if (lfi->DefinedOn(el.GetIndex()))
+                         if (lfi->DefinedOn(el.GetIndex()) && lfi->DefinedOnElement(el.Nr()))
 			   lfi->CheckElement(el.GetFE());
 		       });
 		    
@@ -223,6 +223,7 @@ namespace ngcomp
                          // if (parts[j]->SkeletonForm()) continue;
 			 // if (parts[j] -> IntegrationAlongCurve()) continue;
                          if(!lfip->DefinedOn(el.GetIndex())) continue;
+                         if(!lfip->DefinedOnElement(el.Nr())) continue;
                          
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
@@ -298,6 +299,7 @@ namespace ngcomp
 		      if (!parts[j] -> SkeletonForm()) continue;
 		      if (parts[j] -> VB()!=BND) continue;
 		      if (!parts[j] -> DefinedOn (ma->GetElIndex (sei))) continue;
+		      if (!parts[j] -> DefinedOnElement (i)) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
 		      int elvec_size = dnums.Size()*fespace->GetDimension();
@@ -561,6 +563,7 @@ namespace ngcomp
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
 	    if (!parts[0]->DefinedOn (ma->GetElIndex(sei))) continue;
+	    if (!parts[0]->DefinedOnElement (i)) continue;
 	    // (*testout) << "integrate surf el " << endl;
 	    
 	    const IntegrationRule & ir = SelectIntegrationRule (sfel.ElementType(), 5);
