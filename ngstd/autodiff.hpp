@@ -537,6 +537,19 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 }
 
 
+using std::atan2;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> atan2 (AutoDiff<D,SCAL> x, AutoDiff<D,SCAL> y)
+{
+  AutoDiff<D,SCAL> res;
+  SCAL a = atan2(x.Value(), y.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = (x.Value()*y.DValue(k)-y.Value()*x.DValue(k))/(y.Value()*y.Value()+x.Value()*x.Value());
+  return res;
+}
+
+
 using std::acos;
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> acos (AutoDiff<D,SCAL> x)
