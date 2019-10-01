@@ -1839,6 +1839,14 @@ public:
     values(0).DValue(0) = sum.DValue(0);
     values(0).DDValue(0) = sum.DValue(0) || sum.DDValue(0);
   }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (var == this) return dir;
+    return make_shared<ConstantCoefficientFunction>(1.0)/NormCF(c1) * InnerProduct(c1,c1->Diff(var,dir));
+  }
+
 };
 
 
