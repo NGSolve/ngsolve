@@ -1,3 +1,9 @@
+
+find_package(MPI REQUIRED)
+
+set(METIS_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_parmetis)
+set(METIS_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/parmetis)
+
 set(PARMETIS_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_parmetis)
 set(PARMETIS_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/parmetis)
 

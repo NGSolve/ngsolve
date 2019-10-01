@@ -95,6 +95,17 @@ namespace ngla
     {
       return make_shared<VVector<TV>> (height);
     }
+
+    virtual AutoVector CreateRowVector () const
+    {
+      return make_shared<VVector<TV>> (height);
+    }
+
+    virtual AutoVector CreateColVector () const
+    {
+      return make_shared<VVector<TV>> (height);
+    }
+
   };
 
 
@@ -143,6 +154,8 @@ namespace ngla
 
     ///
     virtual AutoVector CreateVector () const;
+    virtual AutoVector CreateRowVector () const;
+    virtual AutoVector CreateColVector () const;
     /*
     {
       return new ParallelVVector<TV> (height, paralleldofs);
