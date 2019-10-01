@@ -555,6 +555,21 @@ INLINE AutoDiffDiff<D, SCAL> atan (AutoDiffDiff<D, SCAL> x)
   return res;
 }
 
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> atan2 (AutoDiffDiff<D, SCAL> x,AutoDiffDiff<D, SCAL> y)
+{
+  AutoDiffDiff<D, SCAL> res;
+  SCAL a = atan2(x.Value(), y.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = (x.Value()*y.DValue(k)-y.Value()*x.DValue(k))/(y.Value()*y.Value()+x.Value()*x.Value());
+
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = (x.DValue(k)*y.DValue(l)+x.Value()*y.DDValue(l,k) - y.DValue(k)*x.DValue(l) - y.Value()*x.DDValue(l,k))/(y.Value()*y.Value()+x.Value()*x.Value()) - 2 * (x.Value()*y.DValue(k)-y.Value()*x.DValue(k)) * (x.Value()*x.DValue(k) + y.Value()*y.DValue(k))/( (y.Value()*y.Value()+x.Value()*x.Value()) * (y.Value()*y.Value()+x.Value()*x.Value()) );
+  return res;
+}
+
 
 
 using std::acos;
