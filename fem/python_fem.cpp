@@ -259,10 +259,9 @@ struct GenericConj {
 };
 
 struct GenericATan2 {
-  double operator() (double y, double x) const { return atan2(y,x); }
-  SIMD<double> operator() (SIMD<double> y, SIMD<double> x) const { return atan2(y,x); }
-  template <typename T1, typename T2> T1 operator() (T1 y, T2 x) const
-  { throw Exception (string("atan2 not available for type ")+typeid(T1).name());  }
+  template <typename T1, typename T2> T1 operator() (T1 y, T2 x) const { return atan2(y,x);  }
+  SIMD<Complex> operator() (SIMD<Complex> y,SIMD<Complex> x) const { throw Exception("atan not available for SIMD<complex>"); }
+  Complex operator() (Complex y,Complex x) const { throw Exception("atan not available for complex"); }
   static string Name() { return "atan2"; }
   void DoArchive(Archive& ar) {}
 };
