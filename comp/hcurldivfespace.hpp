@@ -43,6 +43,8 @@ namespace ngcomp
       return "HCurlDiv FESpace";
     }
 
+    static DocInfo GetDocu ();
+
     void Update() override;
 
     virtual size_t GetNDof () const throw() override { return ndof; }
