@@ -1839,6 +1839,14 @@ public:
     values(0).DValue(0) = sum.DValue(0);
     values(0).DDValue(0) = sum.DValue(0) || sum.DDValue(0);
   }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (var == this) return dir;
+    return make_shared<ConstantCoefficientFunction>(1.0)/NormCF(c1) * InnerProduct(c1,c1->Diff(var,dir));
+  }
+
 };
 
 
@@ -2876,10 +2884,10 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
-    cout << "nonzero, rec" << endl;
+    //cout << "nonzero, rec" << endl;
     int hd = Dimensions()[0];    
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-    cout << "non-zero input " << nonzero << endl;
+    //cout << "non-zero input " << nonzero << endl;
     for (int i = 0; i < hd; i++)
       for (int j = 0; j < hd; j++)
         {
@@ -2889,7 +2897,7 @@ public:
           nonzero_deriv(ii) |= nonzero_deriv(jj);
           nonzero_dderiv(ii) |= nonzero_dderiv(jj);
         }
-    cout << "non-zero result " << nonzero << endl;    
+    //cout << "non-zero result " << nonzero << endl;    
   }
 
   
