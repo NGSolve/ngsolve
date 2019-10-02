@@ -22,13 +22,10 @@ namespace ngcomp
     ReorderedFESpace (shared_ptr<FESpace> space, const Flags & flags);
     
     virtual ~ReorderedFESpace () { ; }
-    void Update() override;
-    
-    void FinalizeUpdate() override
-    {
-      space->FinalizeUpdate();
-      FESpace::FinalizeUpdate();
-    }
+
+    virtual void Update() override;
+
+    virtual void FinalizeUpdate() override;
 
     virtual string GetClassName() const override { return "Reordered" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
