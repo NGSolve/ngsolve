@@ -54,10 +54,37 @@ namespace ngcomp {
       ctofdof[dofmap[i]] = space->GetDofCouplingType(i);
   }
            
-  FiniteElement& ReorderedFESpace :: GetFE (ElementId ei, Allocator & alloc) const
-    {
-      return space->GetFE(ei,alloc);
+
+  void ReorderedFESpace :: FinalizeUpdate ()
+  {
+    space->FinalizeUpdate();
+    FESpace::FinalizeUpdate();
+
+    /**
+       If the underlying space is a CompoundFESpace, the CompoundFESpace's flags do
+       usually not contain information about dirichlet-boundaries, so we have to
+       set free_dofs manually.
+     **/
+    if (auto comp_fes = dynamic_pointer_cast<CompoundFESpace>(space)) {
+      auto space_free_dofs = comp_fes->GetFreeDofs();
+      free_dofs->Clear();
+      auto external_space_free_dofs = comp_fes->GetFreeDofs(true);
+      external_free_dofs->Clear();
+
+      for (auto k : Range(GetNDof())) {
+	if (space_free_dofs->Test(k))
+	  { free_dofs->Set(dofmap[k]); }
+	if (external_space_free_dofs->Test(k))
+	  { external_free_dofs->Set(dofmap[k]); }
+      }
     }
+  }
+
+
+  FiniteElement& ReorderedFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    return space->GetFE(ei,alloc);
+  }
 
   
   void ReorderedFESpace :: GetDofNrs(ElementId ei, Array<DofId> & dnums) const
@@ -69,21 +96,29 @@ namespace ngcomp {
 
   void ReorderedFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
   {
-    throw Exception ("ReorderedFESpace :: GetDofNrs(NodeId) not implemented");
+    space->GetDofNrs (ni, dnums);
+    for (auto & d : dnums)
+      d = dofmap[d];
   }
   
   void ReorderedFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
   {
-    throw Exception ("ReorderedFESpace :: GetVertexDofNrs not implemented");    
+    space->GetVertexDofNrs (vnr, dnums);
+    for (auto & d : dnums)
+      d = dofmap[d];
   }
   
   void ReorderedFESpace :: GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
   {
-    throw Exception ("ReorderedFESpace :: GetEdgeDofNrs not implemented");    
+    space->GetEdgeDofNrs (ednr, dnums);
+    for (auto & d : dnums)
+      d = dofmap[d];
   }
     
   void ReorderedFESpace :: GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
   {
-    throw Exception ("ReorderedFESpace :: GetFacetDofNrs not implemented");        
+    space->GetFaceDofNrs (fanr, dnums);
+    for (auto & d : dnums)
+      d = dofmap[d];
   }
 }
