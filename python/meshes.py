@@ -30,12 +30,15 @@ def Make1DMesh(n, mapping = None, periodic=False):
         if mapping:
             x = mapping(x)
         pids.append (mesh.Add (MeshPoint(Pnt(x, 0, 0))))
+
+    idx_inner = mesh.AddRegion("dom", dim=1)
+    idx_left = mesh.AddRegion("left", dim=0)
+    idx_right = mesh.AddRegion("right", dim=0)
+        
     for i in range(n):
-        mesh.Add(Element1D([pids[i],pids[i+1]],index=1))
-    mesh.Add (Element0D( pids[0], index=1))
-    mesh.Add (Element0D( pids[n], index=2))
-    mesh.SetBCName(0,"left")
-    mesh.SetBCName(1,"right")
+        mesh.Add(Element1D([pids[i],pids[i+1]],index=idx_inner))
+    mesh.Add (Element0D( pids[0], index=idx_left))
+    mesh.Add (Element0D( pids[n], index=idx_right))
     if periodic:
         mesh.AddPointIdentification(pids[0],pids[n],1,2)
     ngsmesh = ngsolve.Mesh(mesh)
@@ -105,7 +108,12 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
         for j in range(len(slavej)):        
             mesh.AddPointIdentification(masterj[j],slavej[j],identnr=2,type=2)                                       
 
-    mesh.Add(FaceDescriptor(surfnr=1,domin=1,bc=1))
+    # mesh.Add(FaceDescriptor(surfnr=1,domin=1,bc=1))
+    idx_dom = mesh.AddRegion("dom", dim=2)
+    idx_bottom = mesh.AddRegion("bottom", dim=1)
+    idx_right  = mesh.AddRegion("right", dim=1)
+    idx_top    = mesh.AddRegion("top", dim=1)
+    idx_left   = mesh.AddRegion("left", dim=1)
     
     for i in range(ny):
         for j in range(nx):
@@ -113,7 +121,7 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
             if quads:
                 pnum = [base,base+1,base+nx+2,base+nx+1]
                 elpids = [pids[p] for p in pnum]
-                el = Element2D(1,elpids)
+                el = Element2D(idx_dom,elpids)
                 if not mapping:
                     el.curved=False
                 mesh.Add(el)
@@ -122,22 +130,22 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
                 pnum2 = [base+1,base+nx+2,base+nx+1]
                 elpids1 = [pids[p] for p in pnum1]
                 elpids2 = [pids[p] for p in pnum2]
-                mesh.Add(Element2D(1,elpids1)) 
-                mesh.Add(Element2D(1,elpids2))                          
+                mesh.Add(Element2D(idx_dom,elpids1)) 
+                mesh.Add(Element2D(idx_dom,elpids2))                          
 
     for i in range(nx):
-        mesh.Add(Element1D([pids[i], pids[i+1]], index=1))
+        mesh.Add(Element1D([pids[i], pids[i+1]], index=idx_bottom))
     for i in range(ny):
-        mesh.Add(Element1D([pids[i*(nx+1)+nx], pids[(i+1)*(nx+1)+nx]], index=2))
+        mesh.Add(Element1D([pids[i*(nx+1)+nx], pids[(i+1)*(nx+1)+nx]], index=idx_right))
     for i in range(nx):
-        mesh.Add(Element1D([pids[ny*(nx+1)+i+1], pids[ny*(nx+1)+i]], index=3))
+        mesh.Add(Element1D([pids[ny*(nx+1)+i+1], pids[ny*(nx+1)+i]], index=idx_top))
     for i in range(ny):
-        mesh.Add(Element1D([pids[(i+1)*(nx+1)], pids[i*(nx+1)]], index=4))
+        mesh.Add(Element1D([pids[(i+1)*(nx+1)], pids[i*(nx+1)]], index=idx_left))
 
-    mesh.SetBCName(0, "bottom")        
-    mesh.SetBCName(1, "right")        
-    mesh.SetBCName(2, "top")        
-    mesh.SetBCName(3, "left")  
+    # mesh.SetBCName(0, "bottom")        
+    # mesh.SetBCName(1, "right")        
+    # mesh.SetBCName(2, "top")        
+    # mesh.SetBCName(3, "left")  
 
     mesh.Compress()       
     
