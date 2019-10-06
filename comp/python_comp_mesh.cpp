@@ -610,10 +610,16 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     // TODO: explain how to mark elements
     .def("Refine",
-         [](MeshAccess & ma)
+         [](MeshAccess & ma, bool mark_surface_elements)
           {
+            if (!mark_surface_elements)
+              {
+                for (ElementId ei : ma.Elements(BND))
+                  ma.SetRefinementFlag(ei, false);
+              }
             ma.Refine();
           },py::call_guard<py::gil_scoped_release>(),
+         py::arg("mark_surface_elements")=false,
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP",
