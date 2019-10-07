@@ -707,12 +707,24 @@ namespace ngcomp
     auto fesx = GetTrialSpace();
     auto fesy = GetTestSpace();
     auto ma = GetMeshAccess();
+
+
+    shared_ptr<BaseMatrix> sum;
     
-    Array<short> classnr(ma->GetNE());
-    ma->IterateElements
-      (VOL, lh, [&] (auto el, LocalHeap & llh)
-       {
-         classnr[el.Nr()] = 
+    for (VorB vb : {VOL, BND, BBND})
+      {
+        bool has_vb = false;
+        for (auto bfi : geom_free_parts)
+          if (bfi->VB() == vb)
+            has_vb = true;
+        if (!has_vb)
+          continue;
+        
+        Array<short> classnr(ma->GetNE(vb));
+        ma->IterateElements
+          (vb, lh, [&] (auto el, LocalHeap & llh)
+           {
+             classnr[el.Nr()] = 
                SwitchET<ET_TRIG,ET_TET>
                (el.GetType(),
                 [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
@@ -723,55 +735,56 @@ namespace ngcomp
           for (auto i : Range(classnr))
             creator.Add (classnr[i], i);
         Table<size_t> table = creator.MoveTable();
-
-        shared_ptr<BaseMatrix> sum;
         
+    
         for (auto elclass_inds : table)
           {
             if (elclass_inds.Size() == 0) continue;
             
             size_t nr = classnr[elclass_inds[0]];
-            ElementId ei(VOL,elclass_inds[0]);
+            ElementId ei(vb,elclass_inds[0]);
             auto & felx = GetTrialSpace()->GetFE (ei, lh);
             auto & fely = GetTestSpace()->GetFE (ei, lh);
             auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
             MixedFiniteElement fel(felx, fely);
-            
+        
             Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
             elmat = 0.0;
-
+        
             for (auto bfi : geom_free_parts)
-              bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
+              if (bfi->VB() == vb)
+                bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
             
             Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
               ydofs(elclass_inds.Size(), fely.GetNDof());
-
+            
             Array<DofId> dnumsx, dnumsy;
             for (auto i : Range(elclass_inds))
               {
-                ElementId ei(VOL, elclass_inds[i]);
+                ElementId ei(vb, elclass_inds[i]);
                 fesx->GetDofNrs(ei, dnumsx);
                 fesy->GetDofNrs(ei, dnumsy);
                 xdofs[i] = dnumsx;
                 ydofs[i] = dnumsy;
               }
-
+            
             // cout << "elmat = " << elmat << endl;
             // cout << "xdofs = " << xdofs << endl;
             // cout << "ydofs = " << ydofs << endl;
             auto mat = make_shared<ConstantElementByElementMatrix>
               (fesy->GetNDof(), fesx->GetNDof(),
                elmat, std::move(ydofs), std::move(xdofs));
-
+            
             if (sum)
               sum = make_shared<SumMatrix>(sum, mat);
             else
               sum = mat;
           }
-
+      }
+    
         // mats.Append(sum);
-        mats.SetSize (ma->GetNLevels());
-        mats.Last() = sum;
+    mats.SetSize (ma->GetNLevels());
+    mats.Last() = sum;
   }
 
   
@@ -2397,38 +2410,39 @@ namespace ngcomp
 
 
             bool hasbound = false;
-            
-            if (VB_parts[VOL].Size())
-              IterateElements 
-                (*fespace, VOL, clh,          // coloring for 1 space is enough
-                 [&] (ElementId ei, LocalHeap & lh)
-                 {
-                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
-                   const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
-                   
-                   Array<int> dnums1(fel1.GetNDof(), lh);
-                   Array<int> dnums2(fel2.GetNDof(), lh);
-                   const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-                   fespace->GetDofNrs (ei, dnums1);
-                   fespace2->GetDofNrs (ei, dnums2);
+
+	    for (VorB vb : { VOL, BND, BBND, BBBND })
+              if (VB_parts[vb].Size())
+                IterateElements 
+                  (*fespace, vb, clh,          // coloring for 1 space is enough
+                   [&] (ElementId ei, LocalHeap & lh)
+                   {
+                     const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+                     const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+                     
+                     Array<int> dnums1(fel1.GetNDof(), lh);
+                     Array<int> dnums2(fel2.GetNDof(), lh);
+                     const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                     fespace->GetDofNrs (ei, dnums1);
+                     fespace2->GetDofNrs (ei, dnums2);
           
-                   FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
-                   for (auto & bfi : VB_parts[VOL])
-                     {
-                       if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
-                       if (!bfi->DefinedOnElement (ei.Nr())) continue;
-                       
-                       MixedFiniteElement fel(fel1, fel2);
-                       bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
-                       /*
-                        fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                        fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
-                       */
-                       AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
-                     }
-                 });
-
-
+                     FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
+                     for (auto & bfi : VB_parts[vb])
+                       {
+                         if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
+                         if (!bfi->DefinedOnElement (ei.Nr())) continue;
+                         
+                         MixedFiniteElement fel(fel1, fel2);
+                         bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
+                         /*
+                           fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                           fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
+                         */
+                         AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
+                       }
+                   });
+            
+            /*
             if (hasbound)
               IterateElements 
                 (*fespace, BND, clh,          // coloring for 1 space is enough
@@ -2457,20 +2471,21 @@ namespace ngcomp
 
                        bfi.CalcElementMatrix (cfel, eltrans, elmat, lh);
 
-                       /*
-                        fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                        fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
-                       */
-
+  
+                       // fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                       // fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
+                       
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
-                     }
-                 });
+                       }
+                       });
+            */
 
-
+            /*
             if (VB_parts[BND].Size()) throw Exception ("mixed biforms don't support boundary terms");
             if (VB_parts[BBND].Size()) throw Exception ("mixed biforms don't support bboundary terms");
             if (VB_parts[BBBND].Size()) throw Exception ("mixed biforms don't support bbboundary terms");
-
+            */
+            
             if (facetwise_skeleton_parts[VOL].Size()) throw Exception ("mixed biforms don't support skeleton terms");
             if (facetwise_skeleton_parts[BND].Size()) throw Exception ("mixed biforms don't support skeleton terms");
             if (elementwise_skeleton_parts.Size()) throw Exception ("mixed biforms don't support elementwise skeleton terms");

@@ -11,7 +11,7 @@ namespace ngcomp
   {
   protected:  
     // Level
-    int level;
+    // int level;
     // Number of Facets
     int nfa;
     // Number of Elements
@@ -22,8 +22,8 @@ namespace ngcomp
     // relative order to mesh-order
     int rel_order; 
   
-    int ndof;
-    Array<int> ndlevel;
+    // int ndof;
+    // Array<int> ndlevel;
     bool var_order; 
     bool nowirebasket;
     
@@ -44,9 +44,9 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray() override;
 
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
 
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
@@ -84,8 +84,7 @@ namespace ngcomp
 
     virtual void GetEdgeDofNrs ( int nr, Array<DofId> & dnums ) const override
     {
-      dnums.SetSize0();
-      dnums = MakeTuple (nr, GetEdgeDofs(nr));
+      dnums = GetEdgeDofs(nr);
     }
 
     virtual void GetFaceDofNrs (int nr, Array<DofId> & dnums) const override

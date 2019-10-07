@@ -181,7 +181,7 @@ namespace ngcomp
     if(checkflags) CheckFlags(flags);
     
     
-    ndlevel.SetSize(0);
+    // ndlevel.SetSize(0);
     Flags loflags;
     loflags.SetFlag("order",0.0);
     if ( this->IsComplex() )
@@ -263,33 +263,47 @@ namespace ngcomp
 
     nel = ma->GetNSE();
     nfa = ma->GetNEdges(); 
-    ndof = 0;
-    first_edge_dof.SetSize(nfa +1);
-    first_edge_dof = ndof;
-        
+    first_edge_dof.SetSize(nfa+1);
+    first_edge_dof = 0;
     
-    first_edge_dof.SetSize(nfa+1); 
-    first_edge_dof = nfa;
+    // first_edge_dof.SetSize(nfa+1); 
+    // first_edge_dof = nfa;
 
     if(ma->GetDimension() == 3)
       {
+        /*
         for(int i = 0; i < nfa; i++)
           {
             first_edge_dof[i] = ndof;
             ndof += order+1;
-        
           }
         first_edge_dof[nfa] = ndof;              
+        */
+        for (auto el : ma->Elements(BND))
+          for (auto edge : el.Edges())
+            first_edge_dof[edge] = order+1;
       }
     else
       {
 	throw Exception("Only implemented for 3d!");
       }
+
+    size_t ndof = 0;
+    for (size_t i = 0; i < nfa; i++)
+      {
+        size_t tmp = first_edge_dof[i];
+        first_edge_dof[i] = ndof;
+        ndof += tmp;
+      }
+    first_edge_dof[nfa] = ndof;    
+
     
+    SetNDof (ndof);
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-
+    */
     UpdateCouplingDofArray();
     
     if(print)
@@ -309,6 +323,9 @@ namespace ngcomp
       if (DefinedOn(ei))
         for (auto ed : ma->GetElEdges (ei))
           ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
+
+    if (print)
+      *testout << "couplingtypes = " << endl << ctofdof << endl;
   }
 
     template <ELEMENT_TYPE ET>
@@ -395,6 +412,7 @@ namespace ngcomp
   }
 
 
+  /*
   // ------------------------------------------------------------------------
   size_t FacetSurfaceFESpace :: GetNDof () const throw()
   {
@@ -406,7 +424,8 @@ namespace ngcomp
   {
     return ndlevel[level];
   }
-
+  */
+  
 
   // ------------------------------------------------------------------------
   void FacetSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
@@ -422,23 +441,18 @@ namespace ngcomp
 	break;
      
       case BND:
-	{
-	  // int fnum = 0;
-	  if (ma->GetDimension() == 3)
-	    {
-	      auto ednums = ma->GetElEdges (ei);
-	      for( auto ed : ednums)
-		{
-		  dnums += GetEdgeDofs(ed);
-		}
-	    }
-	}
-	break;
+        {
+          if (ma->GetDimension() == 3)
+            for (auto ed : ma->GetElEdges (ei))
+              dnums += GetEdgeDofs(ed);
+          break;
+        }
+        
       case BBND:
 	{
 	  dnums += GetEdgeDofs(ma->GetElEdges(ei)[0]);
+          break;
 	}
-	break;
 
       case BBBND:
 	break;
