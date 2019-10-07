@@ -73,9 +73,9 @@ namespace ngcomp {
 
       for (auto k : Range(GetNDof())) {
 	if (space_free_dofs->Test(k))
-	  { free_dofs->Set(dofmap[k]); }
+	  { free_dofs->SetBit(dofmap[k]); }
 	if (external_space_free_dofs->Test(k))
-	  { external_free_dofs->Set(dofmap[k]); }
+	  { external_free_dofs->SetBit(dofmap[k]); }
       }
     }
   }
