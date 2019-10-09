@@ -233,7 +233,7 @@ namespace ngfem
 
   // ***********************  OPTIMAL EXTENSION  *****************************************
   /**
-     Evaluete optimal edge-shape function.
+     Evaluate optimal edge-shape function.
      on triangle (with coordinates (-1,0),(1,0),(0,1))
      $$
      \varphi_i:=\frac{1}{y}\int_{x-y}^{x+y}C_{i-1}^{-1/2}(s)ds

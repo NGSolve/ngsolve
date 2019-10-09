@@ -3047,7 +3047,7 @@ namespace ngsolve
       " -scalarcomp=<value>\n"				   \
       "      component of the scalar function, which is displayed (default 1)\n"\
       " -vectorfunction=<name>\n"\
-      "      name of the vector function to be displayes\n" \
+      "      name of the vector function to be displayed\n" \
       " -clipsolution=< scalar | vector > \n"\
       "      specifies clipping plane solution\n" \
       " -evaluate = < abs | abstens | mises | main >\n"\

@@ -35,7 +35,7 @@ as well as the LinearForm
    :start-after: a.Assemble()
    :end-before: u =
 
-The argument of the symbolic integrator must be a coefficient function depending linearily on the test and trial function.
+The argument of the symbolic integrator must be a coefficient function depending linearly on the test and trial function.
 
 .. automethod:: ngsolve.BilinearForm.Assemble
 

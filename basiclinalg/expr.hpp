@@ -130,7 +130,7 @@ namespace ngbla
 
   /**
      Trait to obtain vector and scalar types for given matrix types.
-     Is specified for double, Complex, AutoDiff<doube>, AutoDiff<Complex>
+     Is specified for double, Complex, AutoDiff<double>, AutoDiff<Complex>
   */
 
 

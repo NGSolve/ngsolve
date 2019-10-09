@@ -531,7 +531,7 @@ namespace ngla
 	if (global_nums[row] < 0)
 	  {
 	    Node node = pmdofs.GetDofNodes()[row];
-	    cout << "illegal gobal num, id = " << id << ", localnum = " << row << 
+	    cout << "illegal global num, id = " << id << ", localnum = " << row << 
 	      ", on " << node << endl;
 	    
 	    Array<int> procs;

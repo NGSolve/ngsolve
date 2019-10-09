@@ -204,7 +204,7 @@ namespace ngla
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	{
 	  mdo->AddEdge (i, i);
-	  *testout << "add unsused position " << i << endl;
+	  *testout << "add unused position " << i << endl;
 	}
     */
 

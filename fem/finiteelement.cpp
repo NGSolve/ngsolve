@@ -28,7 +28,7 @@ namespace ngfem
     
   void FiniteElement :: Print (ostream & ost) const
   {
-    ost << ClassName() << ", tpye = " << ElementType() << ", order = " << Order() << ", ndof = " << ndof << endl;
+    ost << ClassName() << ", type = " << ElementType() << ", order = " << Order() << ", ndof = " << ndof << endl;
   }
 
   ostream & operator<< (ostream & ost, const FiniteElement & fel)

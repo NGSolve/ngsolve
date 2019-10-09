@@ -614,7 +614,7 @@ namespace ngla
 	    minj = vertices[lastel].NextSlave();
 
 	    if (vertices[minj].Eliminated())
-	      cerr << "alread eliminated !!!" << endl;
+	      cerr << "already eliminated !!!" << endl;
 	    priqueue.Invalidate(minj);
 
 	    blocknr[i] = blocknr[i-1];

@@ -6,7 +6,7 @@
 
 /* 
 
-  Conjugate Gradient Soler
+  Conjugate Gradient Solver
   
 */ 
 

@@ -37,7 +37,7 @@ namespace ngfem
   GetPolOrders (FlatArray<PolOrder<D> > orders) const
   {
 #ifndef __CUDA_ARCH__
-    throw Exception (string ("GetPolOrders not implemnted for element") + ClassName());
+    throw Exception (string ("GetPolOrders not implemented for element") + ClassName());
 #endif
   }
   */
