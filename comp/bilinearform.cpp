@@ -2307,7 +2307,7 @@ namespace ngcomp
                   el.GetDofNrs (dnums);
                 
                   FlatMatrix<SCAL> elmat(dnums.Size(), lh);
-                  el.Assemble (elmat, lh);
+                  el.CalcElementMatrix (elmat, lh);
                   
                   {
                     lock_guard<mutex> guard(printmatspecel2_mutex);
@@ -2714,6 +2714,9 @@ namespace ngcomp
 
     RegionTimer reg (timer);
     ma->PushStatus ("Assemble Linearization");
+
+    if(reallocate && this->mats.Size())
+      this->mats.DeleteLast();
 
     if (this->mats.Size() < this->ma->GetNLevels())
       AllocateMatrix();
@@ -3217,13 +3220,16 @@ namespace ngcomp
             HeapReset hr(clh);
             const SpecialElement & el = *fespace->specialelements[i];
             el.GetDofNrs (dnums);
+
+            FlatVector<SCAL> elvec(dnums.Size(), clh);
+            lin.GetIndirect (dnums, elvec);
           
             for (int j = 0; j < dnums.Size(); j++)
               if (IsRegularDof(dnums[j]))
                 useddof[dnums[j]] = true;
           
-            FlatMatrix<SCAL> elmat;
-            el.Assemble (elmat, clh);
+            FlatMatrix<SCAL> elmat(dnums.Size(), clh);
+            el.CalcLinearizedElementMatrix(elvec, elmat, clh);
           
             AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
           }
