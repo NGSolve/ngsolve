@@ -603,6 +603,7 @@ kwargs : kwargs
            self->FinalizeUpdate();
          },
          "finalize update")
+     .def("DeleteSpecialElements", &FESpace::DeleteSpecialElements)
      .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
          {
            shared_ptr<FESpace> space = self;
@@ -2084,11 +2085,13 @@ f : ngsolve.la.BaseVector
 
 )raw_string"))
 
-    .def("AssembleLinearization", [](BF & self, BaseVector & ulin)
+    .def("AssembleLinearization", [](BF & self, BaseVector & ulin,
+                                     bool reallocate)
 	  {
-	    self.AssembleLinearization (ulin, glh);
+	    self.AssembleLinearization (ulin, glh, reallocate);
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("ulin"), docu_string(R"raw_string(
+         py::arg("ulin"), py::arg("reallocate")=false,
+         docu_string(R"raw_string(
 Computes linearization of the bilinear form at given vecor.
 
 Parameters:

@@ -32,12 +32,12 @@ namespace ngfem
 
 
     virtual void GetDofNrs (Array<int> & dnums) const = 0;
-    virtual double Energy (const FlatVector<double> & elx, 
+    virtual double Energy (FlatVector<double> elx,
 			   LocalHeap & lh) const
     {
       return 0;
     }
-    virtual double Energy (const FlatVector<Complex> & elx, 
+    virtual double Energy (FlatVector<Complex> elx,
 			   LocalHeap & lh) const 
     {
       cerr << "SpecialElement::Energy (complex) called" << endl;
@@ -45,50 +45,65 @@ namespace ngfem
     }
 
     template<int S, class T>
-    void Apply (const FlatVector< Vec<S,T> > & elx, 
-		FlatVector< Vec<S,T> > & ely, 
+    void Apply (FlatVector< Vec<S,T> > elx,
+		FlatVector< Vec<S,T> > ely,
 		LocalHeap & lh) const
     {
       cerr << "SpecialElement::Apply (Vec) called" << endl;
     }
 
-    virtual void Apply (const FlatVector<double> & elx, FlatVector<double> & ely, 
+    virtual void Apply (FlatVector<double> elx, FlatVector<double> ely, 
 			LocalHeap & lh) const;
 
-    virtual void Apply (const FlatVector<Complex> & elx, 
-			FlatVector<Complex> & ely, 
+    virtual void Apply (FlatVector<Complex> elx,
+			FlatVector<Complex> ely,
 			LocalHeap & lh) const
     {
       cerr << "SpecialElement::Apply (complex) called" << endl;
     }
 
-    virtual void Assemble (FlatMatrix<double> & elmat,
-			   LocalHeap & lh) const;
 
-    virtual void Assemble (FlatMatrix<Complex> & elmat,
+    virtual void CalcElementMatrix(FlatMatrix<double> elmat,
+			   LocalHeap& lh) const;
+
+    virtual void CalcElementMatrix(FlatMatrix<Complex> elmat,
 			   LocalHeap & lh) const
     {
-      cerr << "SpecialElement::Assemble (complex) called" << endl;
+      cerr << "SpecialElement::CalcElementMatrix(complex) called" << endl;
       exit(10);
       FlatMatrix<double> relmat;
-      Assemble (relmat, lh);
+      CalcElementMatrix(relmat, lh);
       elmat.AssignMemory (relmat.Height(), relmat.Width(), lh);
       elmat = relmat;
     }
 
-    virtual void Assemble (FlatVector<double> & elvec,
+    virtual void CalcElementVector(FlatVector<double> elvec,
 			   LocalHeap & lh) const;
 
-    virtual void Assemble (FlatVector<Complex> & elvec,
+    virtual void CalcElementVector(FlatVector<Complex> elvec,
 			   LocalHeap & lh) const
     {
-      cerr << "SpecialElement::Assemble (complex) called" << endl;
+      cerr << "SpecialElement::CalcElementMatrix(complex) called" << endl;
       exit(10);
       FlatVector<double> relvec;
-      Assemble (relvec, lh);
+      CalcElementVector(relvec, lh);
       elvec.AssignMemory (relvec.Height(),lh);
       elvec = relvec;
     }
+
+    virtual void CalcLinearizedElementMatrix(FlatVector<double> elx,
+                                             FlatMatrix<double> elmat,
+                                             LocalHeap& lh) const
+    {
+      CalcElementMatrix(elmat, lh);
+    }
+    virtual void CalcLinearizedElementMatrix(FlatVector<Complex> elx,
+                                             FlatMatrix<Complex> elmat,
+                                             LocalHeap& lh) const
+    {
+      throw Exception("Complex CalcLinearizedElementMatrix not implemented!");
+    }
+
   };
 
 }
