@@ -238,7 +238,6 @@ namespace ngfem
     auto x = tip.x;
     auto y = tip.y;
 
-    int p = order_inner[0];
     int ii = 0;
 
     Tx lami[3] = { x, y, 1-x-y };

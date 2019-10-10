@@ -1537,8 +1537,8 @@ namespace ngfem
       : t1(at1), t2(at2), u(au) { ; } 
     INLINE Vec<6,T> Shape() 
     { 
-      auto rotlam1 = t1;
-      auto rotlam2 = t2;
+      //auto rotlam1 = t1;
+      //auto rotlam2 = t2;
 
       Vec<6,T> sigma(0.);
       sigma[0] = t1.DValue(0)*t2.DValue(0);
@@ -1962,7 +1962,7 @@ namespace ngfem
       AutoDiff<3,T> lam[4] = { ip.x, ip.y, ip.z, 1.0-ip.x-ip.y-ip.z };
       size_t ii = 0;
       
-      const FACE * faces = ElementTopology::GetFaces(ET_TET);
+      //const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
       /*
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
