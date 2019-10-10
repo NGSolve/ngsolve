@@ -236,16 +236,25 @@ namespace ngcomp
     auto one = make_shared<ConstantCoefficientFunction>(1);
     if (ma->GetDimension() == 2)
       {
-        throw Exception("FacetSurfaceFESpace only implemented for 3d!");
-      }
-    else
-      {
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
-	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
-	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
+        //throw Exception("FacetSurfaceFESpace only implemented for 3d!");
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<2>>>();
+	      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<2>>>();
+	      evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<2>>>();
 	
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
+    else if (ma->GetDimension() == 3)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
+      	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
+      	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
+	
+        integrator[BND] = make_shared<RobinIntegrator<3>> (one);
+      }
+    else
+    {
+      throw Exception("FacetSurfaceFESpace only implemented for 2d and 3d");
+    }
 
   }
   
@@ -283,9 +292,15 @@ namespace ngcomp
           for (auto edge : el.Edges())
             first_edge_dof[edge] = order+1;
       }
+    else if(ma->GetDimension() == 2)
+      {
+        for (auto el : ma->Elements(BND))
+          for (auto vertex : el.Vertices())
+            first_edge_dof[vertex] = 1;
+      }
     else
       {
-	throw Exception("Only implemented for 3d!");
+	throw Exception("Only implemented for 3d and 2d!");
       }
 
     size_t ndof = 0;
@@ -361,6 +376,7 @@ namespace ngcomp
 	  switch (ma->GetElType(ei))
 	    {
 	    case ET_TRIG: return T_GetFE<ET_TRIG>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_TRIG> (); break;
+	    case ET_SEGM: return T_GetFE<ET_SEGM>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_TRIG> (); break;
 	    case ET_QUAD: return T_GetFE<ET_QUAD>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_QUAD> (); break;
 	    default:
 	      throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
@@ -444,6 +460,9 @@ namespace ngcomp
         {
           if (ma->GetDimension() == 3)
             for (auto ed : ma->GetElEdges (ei))
+              dnums += GetEdgeDofs(ed);
+          else if (ma->GetDimension() == 2)
+            for (auto ed : ma->GetElVertices (ei))
               dnums += GetEdgeDofs(ed);
           break;
         }
