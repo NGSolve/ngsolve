@@ -2085,6 +2085,7 @@ f : ngsolve.la.BaseVector
 
 )raw_string"))
 
+    .def("DeleteMatrix", &BF::DeleteMatrix)
     .def("AssembleLinearization", [](BF & self, BaseVector & ulin,
                                      bool reallocate)
 	  {
