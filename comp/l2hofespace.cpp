@@ -991,7 +991,7 @@ global system.
 
     shared_ptr<BaseMatrix> sum;
   
-    size_t ne = ma->GetNE();
+    // size_t ne = ma->GetNE();
   
     for (auto elclass_inds : table)
       {
@@ -999,7 +999,7 @@ global system.
         
         ElementId ei(VOL,elclass_inds[0]);
         auto & felx = GetFE (ei, lh);
-        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        //auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
         
         Matrix<> trace_op_x = GetTraceMatrix (felx);
 
@@ -1054,7 +1054,7 @@ global system.
     Table<size_t> table = creator.MoveTable();
 
 
-    size_t ne = ma->GetNE();
+    // size_t ne = ma->GetNE();
   
     for (auto elclass_inds : table)
       {
@@ -1062,7 +1062,7 @@ global system.
         
         ElementId ei(VOL,elclass_inds[0]);
         auto & felx = GetFE (ei, lh);
-        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
         
         Matrix<> trace_op_x = GetTraceMatrix (felx);
         
@@ -1075,7 +1075,7 @@ global system.
            {
              Array<DofId> dofs;
              
-             int tid = TaskManager::GetThreadId();
+             // int tid = TaskManager::GetThreadId();
              {
                for (auto i : myrange)
                  {
@@ -1125,7 +1125,7 @@ global system.
     Table<size_t> table = creator.MoveTable();
 
 
-    size_t ne = ma->GetNE();
+    // size_t ne = ma->GetNE();
   
     for (auto elclass_inds : table)
       {
@@ -1133,7 +1133,7 @@ global system.
         
         ElementId ei(VOL,elclass_inds[0]);
         auto & felx = GetFE (ei, lh);
-        auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
+        // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
         
         Matrix<> trace_op_x = GetTraceMatrix (felx);
         
@@ -1146,7 +1146,7 @@ global system.
            {
              Array<DofId> dofs;
              
-             int tid = TaskManager::GetThreadId();
+             // int tid = TaskManager::GetThreadId();
              {
                for (auto i : myrange)
                  {

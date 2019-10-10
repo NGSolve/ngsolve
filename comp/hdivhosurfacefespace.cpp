@@ -394,7 +394,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
           }
           
 	ELEMENT_TYPE eltype = el.GetType();
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);
+	// const POINT3D * points = ElementTopology :: GetVertices (eltype);
         auto elfacets = el.Edges();
 
         fine_facet[elfacets] = true;
