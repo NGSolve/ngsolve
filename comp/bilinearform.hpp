@@ -242,6 +242,11 @@ namespace ngcomp
     /// returns the assembled matrix
     const BaseMatrix & GetMatrix () const { return *mats.Last(); }
     const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
+    void DeleteMatrix()
+    {
+      if(mats.Size())
+        mats.DeleteLast();
+    }
     /// returns the assembled matrix
     shared_ptr<BaseMatrix> GetMatrixPtr () const;
 
