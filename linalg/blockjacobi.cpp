@@ -91,10 +91,10 @@ namespace ngla
 	    for (size_t j = 0; j < n; j++)
 	      {
 		FlatArray<int> row = graph.GetRowIndices(block[j]);
-		for (int k = 0; k < row.Size(); k++)
+		for (size_t k = 0; k < row.Size(); k++)
 		  {
 		    int kk = block_inv[row[k]];
-		    if (kk >= 0 && kk < n)
+		    if (kk >= 0 && unsigned(kk) < n)
 		      if (block[kk] == row[k])
 			{
 			  if (cluster0[j] != cluster0[kk]) 
@@ -128,8 +128,8 @@ namespace ngla
 	// cout << "cluster0, 1 = " << cluster0 << endl;
 	*/
 
-	int cnt = 0;
-	for (int i = 0; i < n; i++)
+	size_t cnt = 0;
+	for (size_t i = 0; i < n; i++)
 	  if (cluster0[i])
 	    {
 	      newnum[cnt] = block[i];
@@ -139,15 +139,15 @@ namespace ngla
 	if (cnt < n)
 	  {
 	    // separated clusters
-	    int cnt2 = cnt;
-	    for (int i = 0; i < n; i++)
+	    size_t cnt2 = cnt;
+	    for (size_t i = 0; i < n; i++)
 	      if (!cluster0[i])
 		newnum[cnt2++] = block[i];
 	    
-	    for (int i = 0; i < n; i++)
+	    for (size_t i = 0; i < n; i++)
 	      block[i] = newnum[i];
 
-	    for (int i = 0; i < n; i++)
+	    for (size_t i = 0; i < n; i++)
 	      block_inv[block[i]] = -1;
 
 	    // block = newnum;
@@ -165,7 +165,7 @@ namespace ngla
 
 	// compute distance function
 
-	int pstart = 0;
+	size_t pstart = 0;
 	for (int step = 0; step < 3; step++)
 	  {
 	    /*
@@ -202,15 +202,15 @@ namespace ngla
 	    do
 	      {
 		changed = 0;
-		for (int i = 0; i < n; i++)
+		for (size_t i = 0; i < n; i++)
 		  {
 		    FlatArray<int> row = graph.GetRowIndices(block[i]);
 
-		    for (int j = 0; j < row.Size(); j++)
+		    for (size_t j = 0; j < row.Size(); j++)
 		      {
 			int jj = block_inv[row[j]];
 
-			if (jj >= 0 && jj < n)
+			if (jj >= 0 && unsigned(jj) < n)
 			  if (block[jj] == row[j])		    
 			    {
 			      if (dist[i] > dist[jj]+1)
@@ -231,7 +231,7 @@ namespace ngla
 
 	    
 	    int maxval = 0;
-	    for (int i = 0; i < n; i++)
+	    for (size_t i = 0; i < n; i++)
 	      if (dist[i] > maxval)
 		{
 		  maxval = dist[i];
@@ -249,8 +249,8 @@ namespace ngla
 	
 
 	cnt = 0;
-	for (int i = 0; i < n; i++)
-	  for (int j = 0; j < n; j++)
+	for (size_t i = 0; i < n; i++)
+	  for (size_t j = 0; j < n; j++)
 	    if (dist[j] == i)
 	      {
 		reorder[cnt] = j;
@@ -265,15 +265,15 @@ namespace ngla
 	  if (connected.Test(reorder[i], reorder[j]))
 	  bw = max2(bw, abs(i-j)+1);
 	*/
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  newnum[reorder[i]] = i;
-	for (int j = 0; j < n; j++)
+	for (size_t j = 0; j < n; j++)
 	  {
 	    FlatArray<int> row = graph.GetRowIndices(block[j]);
-	    for (int k = 0; k < row.Size(); k++)
+	    for (size_t k = 0; k < row.Size(); k++)
 	      {
 		int kk = block_inv[row[k]];
-		if (kk >= 0 && kk < n)
+		if (kk >= 0 && unsigned(kk) < n)
 		  if (block[kk] == row[k])
 		    {
 		      int inv_j = newnum[j];
@@ -284,15 +284,15 @@ namespace ngla
 	  }
 
 
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  newnum[i] = block[reorder[i]];
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  block[i] = newnum[i];
 
 
 	lh.CleanUp(heapp);
 
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  block_inv[block[i]] = -1;
 
 	return bw;
@@ -549,7 +549,7 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    for (int c = 0; c < block_coloring.Size(); c++)
+    for (size_t c = 0; c < block_coloring.Size(); c++)
       {
         ParallelForRange
           (color_balance[c], [&] (IntRange r) 
@@ -768,10 +768,10 @@ namespace ngla
     lowmem = false;
     // lowmem = true;
     
-    int maxbs = 0;
-    int n = blocktable->Size();
+    size_t maxbs = 0;
+    size_t n = blocktable->Size();
 	
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
       if ((*blocktable)[i].Size() > maxbs)
 	maxbs = (*blocktable)[i].Size();
 
@@ -791,7 +791,7 @@ namespace ngla
       Array<int> block_inv(amat.Height());
       block_inv = -1;
 
-      for (int i = 0; i < blocktable->Size(); i++)
+      for (size_t i = 0; i < blocktable->Size(); i++)
 	{
 	  int bs = (*blocktable)[i].Size();
 	  
@@ -925,7 +925,7 @@ namespace ngla
                                  int blocknr = block_coloring[c][bi];
                                  FlatArray<int> block = (*blocktable)[blocknr];
                                  int costs = 0;
-                                 for (int i=0; i<block.Size(); i++)
+                                 for (size_t i=0; i<block.Size(); i++)
                                    costs += mat.GetRowIndices(block[i]).Size();
                                  return costs;
                                });
@@ -991,7 +991,7 @@ namespace ngla
     Vector<TVX> hxmax(maxbs);
     Vector<TVX> hymax(maxbs);
 
-    for (int i = 0; i < blocktable->Size(); i++)
+    for (size_t i = 0; i < blocktable->Size(); i++)
       {
 	int bs = (*blocktable)[i].Size();
 	if (!bs) continue;
@@ -1040,7 +1040,7 @@ namespace ngla
     if (task_manager)
       
       for (int k = 1; k <= steps; k++)
-        for (int c = 0; c < block_coloring.Size(); c++)
+        for (size_t c = 0; c < block_coloring.Size(); c++)
           ParallelFor (color_balance[c], [&] (int bi)
                        {
                          SmoothBlock (block_coloring[c][bi], fx, fy);
@@ -1049,7 +1049,7 @@ namespace ngla
     else
       
       for (int k = 1; k <= steps; k++)
-        for (int i = 0; i < blocktable->Size(); i++)
+        for (size_t i = 0; i < blocktable->Size(); i++)
           SmoothBlock (i, fx, fy);
   }
 
@@ -1068,7 +1068,7 @@ namespace ngla
 
     if (task_manager)
       
-      for (int c = 0; c < block_coloring.Size(); c++)
+      for (size_t c = 0; c < block_coloring.Size(); c++)
         ParallelFor (color_balance[c], [&] (int bi)
                      {
                        SmoothBlock (block_coloring[c][bi], fx, fy);
@@ -1076,7 +1076,7 @@ namespace ngla
     
     else
 
-      for (int i = 0; i < blocktable->Size(); i++)
+      for (size_t i = 0; i < blocktable->Size(); i++)
         SmoothBlock (i, fx, fy);
 
   }
