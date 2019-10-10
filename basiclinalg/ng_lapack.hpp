@@ -1021,7 +1021,7 @@ namespace ngbla
         return;
       }
     
-    for ( int i = 0; i < lami.Size(); i++ )
+    for ( size_t i = 0; i < lami.Size(); i++ )
       lami(i) = ngbla::Complex (lami_re[i], lami_im[i]);
 
     delete[] work; 

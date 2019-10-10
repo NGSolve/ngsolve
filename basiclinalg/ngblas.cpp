@@ -258,7 +258,7 @@ namespace ngbla
                                                          FlatArray<int> ind)
   {
     constexpr int BS = 24;
-    int i = 0;
+    size_t i = 0;
     for (i = 0; i+BS <= y.Size(); i += BS)
       MultAddMatTransVecIndirect (s, a.Cols(i, i+BS), x, y.Range(i,i+BS), ind);
     MultAddMatTransVecIndirect (s, a.Cols(i, y.Size()), x, y.Range(i,y.Size()), ind);
@@ -1466,13 +1466,13 @@ namespace ngbla
     NgProfiler::AddThreadFlops(timer_addabtcd, TaskManager::GetThreadId(),
                                a.Height()*b.Height()*a.Width()*2*SIMD<double>::Size());
 
-    for (int i = 0; i < c.Height(); i++)
-      for (int j = 0; j < c.Width(); j++)
+    for (size_t i = 0; i < c.Height(); i++)
+      for (size_t j = 0; j < c.Width(); j++)
         {
           SIMD<Complex> sum = 0.0;
           auto rowa = a.Row(i);
           auto rowb = b.Row(j);
-          for (int k = 0; k < a.Width(); k++)
+          for (size_t k = 0; k < a.Width(); k++)
             sum += rowa(k)*rowb(k);
           c(i,j) += HSum(sum);
         }
@@ -2320,7 +2320,7 @@ namespace ngbla
         Matrix<> a(n,m);
         Vector<> x(1000), y(m);
         Array<int> index(n);
-        for (int i = 0; i < n; i++)
+        for (size_t i = 0; i < n; i++)
           index[i] = (17*i)%1000;
         a = 1; x = 2; y = 0;
         double tot = n*m;
@@ -2342,11 +2342,11 @@ namespace ngbla
         // C=A*B
         Matrix<> a(n,m), b(m,k), c(n,k);
         a = 1; b = 2;
-        for (int i = 0; i < n; i++)
-          for (int j = 0; j < m; j++)
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
             a(i,j) = sin(i+1) * cos(j);
-        for (int i = 0; i < m; i++)
-          for (int j = 0; j < k; j++)
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < k; j++)
             b(i,j) = cos(i+3) * cos(j);
         
         double tot = n*m*k;
@@ -2378,11 +2378,11 @@ namespace ngbla
         // C=A*B
         Matrix<> a(n,m), b(m,k), c(n,k);
         a = 1; b = 2;
-        for (int i = 0; i < n; i++)
-          for (int j = 0; j < m; j++)
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
             a(i,j) = sin(i+1) * cos(j);
-        for (int i = 0; i < m; i++)
-          for (int j = 0; j < k; j++)
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < k; j++)
             b(i,j) = cos(i+3) * cos(j);
         c = 0.0;
         double tot = n*m*k;
@@ -2498,11 +2498,11 @@ namespace ngbla
       {
         // C=A*B^t
         Matrix<> a(n,k), b(n,m), c(k,m);
-        for (int i = 0; i < a.Height(); i++)
-          for (int j = 0; j < a.Width(); j++)
+        for (size_t i = 0; i < a.Height(); i++)
+          for (size_t j = 0; j < a.Width(); j++)
             a(i,j) = sin(i+1) * cos(j);
-        for (int i = 0; i < b.Height(); i++)
-          for (int j = 0; j < b.Width(); j++)
+        for (size_t i = 0; i < b.Height(); i++)
+          for (size_t j = 0; j < b.Width(); j++)
             b(i,j) = cos(i+3) * cos(j);
         
         c = 0.0;
@@ -2597,7 +2597,7 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (int j = 0; j < its; j++)
-            for (int i = 0; i+3*SW <= m; i += 3*SW)
+            for (size_t i = 0; i+3*SW <= m; i += 3*SW)
               MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i), b.Width(), &c(i), c.Width());
           t.Stop();
           cout << "MatKernel2AddAB 3x4 = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -2619,7 +2619,7 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (int j = 0; j < its; j++)
-            for (int i = 0; i+3*SW <= m; i += 3*SW)            
+            for (size_t i = 0; i+3*SW <= m; i += 3*SW)            
               MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i/SW), b.Width(), &c(i), c.Width());
           t.Stop();
           cout << "MatKernel2AddAB 3x4, algined GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
