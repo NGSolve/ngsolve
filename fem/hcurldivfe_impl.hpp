@@ -110,8 +110,8 @@ namespace ngfem
     {
       T vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
       T ux = u.DValue(0), uy = u.DValue(1);
-      T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
-      T vx = v.DValue(0), vy = v.DValue(1);
+      //T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      //T vx = v.DValue(0), vy = v.DValue(1);
 
       return Vec<2,T> (vyy*ux - vxy*uy,-vxy*ux+vxx*uy);     
     }    
@@ -256,9 +256,9 @@ namespace ngfem
       auto B = b.Value();
       auto Bx = b.DValue(0);
       auto By = b.DValue(1);
-      auto Bxx = b.DDValue(0,0);
-      auto Bxy = b.DDValue(0,1);
-      auto Byy = b.DDValue(1,1);
+      //auto Bxx = b.DDValue(0,0);
+      //auto Bxy = b.DDValue(0,1);
+      //auto Byy = b.DDValue(1,1);
 
       auto trace = 0.5 * (By*S.DValue(0)  - Bx*S.DValue(1));
 
