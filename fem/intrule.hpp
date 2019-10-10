@@ -21,8 +21,8 @@ namespace ngfem
   class TIP
   {
   public:
-    int8_t facetnr;
-    VorB vb;
+    int8_t facetnr = -1;
+    VorB vb = VOL;
 
     // T x; // dummy
     TIP () = default;
@@ -42,8 +42,8 @@ namespace ngfem
   class TIP<0,T>
   {
   public:
-    int8_t facetnr;
-    VorB vb;
+    int8_t facetnr = -1;
+    VorB vb = VOL;
 
     TIP () = default;
     TIP (const TIP &) = default;
@@ -65,8 +65,8 @@ namespace ngfem
   {
   public:
     T x;
-    int8_t facetnr;
-    VorB vb;
+    int8_t facetnr = -1;
+    VorB vb = VOL;
     
     TIP () = default;
     TIP (const TIP &) = default;
@@ -88,8 +88,8 @@ namespace ngfem
   {
   public:
     T x, y;
-    int8_t facetnr;
-    VorB vb;
+    int8_t facetnr = -1;
+    VorB vb = VOL;
     
     TIP () = default;
     TIP (const TIP &) = default;
@@ -110,8 +110,8 @@ namespace ngfem
   {
   public:
     T x, y, z;
-    int8_t facetnr;
-    VorB vb;
+    int8_t facetnr = -1;
+    VorB vb = VOL;
 
     TIP () = default;
     TIP (const TIP &) = default;
