@@ -1863,7 +1863,7 @@ namespace ngcomp
   {
     static Timer t("FindSurfaceElementOfPoint");
     RegionTimer reg(t);
-    int elnr;
+    int elnr = -1;
 
     if(indices != NULL && indices->Size()>0)
       {
