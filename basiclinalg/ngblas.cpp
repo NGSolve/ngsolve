@@ -995,7 +995,7 @@ namespace ngbla
     constexpr size_t bs = 8;
     size_t i = 0;
     size_t ha = a.Height();    
-    size_t wa = a.Width();
+    //size_t wa = a.Width();
     size_t wb = b.Width();
     BareSliceMatrix<> bare_a(a);
     BareSliceMatrix<> bare_b(b);
@@ -1676,7 +1676,7 @@ namespace ngbla
   /* ************************** SubAtDB ***************************** */
 
   static constexpr size_t NA = 128;
-  static constexpr size_t NB = 96;
+  //static constexpr size_t NB = 96;
   static constexpr size_t NK = 128;
 
 
