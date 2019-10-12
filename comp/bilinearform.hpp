@@ -81,7 +81,7 @@ namespace ngcomp
 #endif
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
-    Array<SpecialElement*> specialelements;
+    Array<unique_ptr<SpecialElement>> specialelements;
     size_t specialelements_timestamp = 0;
 
     
@@ -183,21 +183,9 @@ namespace ngcomp
     }
     */
 
-    void AddSpecialElement (SpecialElement * spel)
-    {
-      specialelements.Append (spel);
-      specialelements_timestamp = GetNextTimeStamp();
-    }
-
-    const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
-    void DeleteSpecialElements()
-    {
-      for(auto el : specialelements)
-        delete el;
-      specialelements.DeleteAll();
-      specialelements_timestamp = GetNextTimeStamp();      
-    }
-
+    void AddSpecialElement (unique_ptr<SpecialElement> spel);
+    auto & GetSpecialElements() const { return specialelements; }
+    void DeleteSpecialElements();
 
     /// for static condensation of internal bubbles
     void SetLinearForm (LinearForm * alf) { linearform = alf; }
