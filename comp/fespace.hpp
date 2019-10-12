@@ -640,19 +640,6 @@ ANY                  1 1 1 1 | 15
     }
     */
     
-    /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
-    Array<SpecialElement*> specialelements;
-
-    void AppendSpecialElement (SpecialElement * spel)
-    { specialelements.Append (spel); }
-
-    const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
-    void DeleteSpecialElements()
-    {
-      for(auto el : specialelements)
-        delete el;
-      specialelements.DeleteAll();
-    }
 
     virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
                                                     shared_ptr<Region> defon,

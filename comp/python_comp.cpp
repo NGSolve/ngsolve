@@ -603,7 +603,6 @@ kwargs : kwargs
            self->FinalizeUpdate();
          },
          "finalize update")
-     .def("DeleteSpecialElements", &FESpace::DeleteSpecialElements)
      .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
          {
            shared_ptr<FESpace> space = self;
@@ -2084,6 +2083,7 @@ f : ngsolve.la.BaseVector
   input right hand side
 
 )raw_string"))
+    .def("DeleteSpecialElements", &BF::DeleteSpecialElements)
 
     .def("DeleteMatrix", &BF::DeleteMatrix)
     .def("AssembleLinearization", [](BF & self, BaseVector & ulin,
