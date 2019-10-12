@@ -61,7 +61,8 @@ namespace ngcomp
 
     /// matrices (sparse, application, diagonal, ...)
     Array<shared_ptr<BaseMatrix>> mats;
-
+    size_t graph_timestamp = 0;
+    
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
     Array<shared_ptr<BilinearFormIntegrator>> VB_parts[4];
@@ -78,6 +79,11 @@ namespace ngcomp
 #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
 #endif
+
+    /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
+    Array<SpecialElement*> specialelements;
+    size_t specialelements_timestamp = 0;
+
     
     /*
     Array<BilinearFormIntegrator*> independent_parts;
@@ -176,6 +182,21 @@ namespace ngcomp
       return independent_meshindex[i](1);
     }
     */
+
+    void AddSpecialElement (SpecialElement * spel)
+    {
+      specialelements.Append (spel);
+      specialelements_timestamp = GetNextTimeStamp();
+    }
+
+    const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
+    void DeleteSpecialElements()
+    {
+      for(auto el : specialelements)
+        delete el;
+      specialelements.DeleteAll();
+      specialelements_timestamp = GetNextTimeStamp();      
+    }
 
 
     /// for static condensation of internal bubbles

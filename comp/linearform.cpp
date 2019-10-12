@@ -189,8 +189,8 @@ namespace ngcomp
 	  loopsteps += ma->GetNFacets();
 	if(hasskeletonparts[BND])
 	  loopsteps += ma->GetNSE();
-	if(fespace->specialelements.Size())
-	  loopsteps += fespace->specialelements.Size();
+	// if(fespace->specialelements.Size())
+        // loopsteps += fespace->specialelements.Size();
         
 	// int actcase = 0;
 	int gcnt = 0; //global count (for all cases)
