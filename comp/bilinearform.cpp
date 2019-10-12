@@ -307,6 +307,21 @@ namespace ngcomp
       low_order_bilinear_form -> SetCheckUnused (b);
   }
 
+  void BilinearForm :: AddSpecialElement (unique_ptr<SpecialElement> spel)
+  {
+    specialelements.Append (std::move(spel));
+    specialelements_timestamp = GetNextTimeStamp();
+  }
+
+  void BilinearForm :: DeleteSpecialElements()
+  {
+    // for(auto el : specialelements)
+    // delete el;
+    specialelements.DeleteAll();
+    specialelements_timestamp = GetNextTimeStamp();
+  }
+
+  
   void BilinearForm :: SetPreconditioner (Preconditioner * pre)
   {
     // cout << "SetPreconditioner, type fes = " << typeid(*fespace).name() << ", type pre = " << typeid(*pre).name() << endl;
@@ -658,6 +673,7 @@ namespace ngcomp
     try
       {
         AllocateMatrix ();
+        graph_timestamp = GetNextTimeStamp();
       }
     catch (Exception & e)
       {
@@ -814,7 +830,12 @@ namespace ngcomp
         return;
       }
 
-
+    if (specialelements_timestamp > graph_timestamp)
+      {
+        reallocate = true;
+        cout << IM(3) << "reallocate due to changed special elements" << endl;
+      }
+    
     if (reallocate)
       {
         // delete mats.Last();
@@ -2723,11 +2744,20 @@ namespace ngcomp
     RegionTimer reg (timer);
     ma->PushStatus ("Assemble Linearization");
 
+    if (specialelements_timestamp > graph_timestamp)
+      {
+        reallocate = true;
+        cout << IM(3) << "reallocate due to changed special elements" << endl;
+      }
+
     if(reallocate && this->mats.Size())
       this->mats.DeleteLast();
 
     if (this->mats.Size() < this->ma->GetNLevels())
-      AllocateMatrix();
+      {
+        AllocateMatrix();
+        graph_timestamp = GetNextTimeStamp();
+      }
 
     // timestamp = ++global_timestamp;
     timestamp = GetNextTimeStamp();
