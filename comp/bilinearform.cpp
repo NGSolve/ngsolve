@@ -5,13 +5,6 @@
 
 namespace ngcomp
 {
-
-  auto TestFunc (const Array<unique_ptr<int>> & upa)
-  {
-    return;
-  }
-
-
   
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
@@ -307,16 +300,16 @@ namespace ngcomp
       low_order_bilinear_form -> SetCheckUnused (b);
   }
 
-  void BilinearForm :: AddSpecialElement (unique_ptr<SpecialElement> spel)
+  void BilinearForm :: AddSpecialElement (SpecialElement *  spel)
   {
-    specialelements.Append (std::move(spel));
+    specialelements.Append (spel);
     specialelements_timestamp = GetNextTimeStamp();
   }
 
   void BilinearForm :: DeleteSpecialElements()
   {
-    // for(auto el : specialelements)
-    // delete el;
+    for(auto el : specialelements)
+      delete el;
     specialelements.DeleteAll();
     specialelements_timestamp = GetNextTimeStamp();
   }
