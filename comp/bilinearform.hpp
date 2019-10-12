@@ -81,7 +81,7 @@ namespace ngcomp
 #endif
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
-    Array<unique_ptr<SpecialElement>> specialelements;
+    Array<SpecialElement*> specialelements;
     size_t specialelements_timestamp = 0;
 
     
@@ -183,7 +183,7 @@ namespace ngcomp
     }
     */
 
-    void AddSpecialElement (unique_ptr<SpecialElement> spel);
+    void AddSpecialElement (SpecialElement * spel);
     auto & GetSpecialElements() const { return specialelements; }
     void DeleteSpecialElements();
 
