@@ -5,6 +5,14 @@
 
 namespace ngcomp
 {
+
+  auto TestFunc (const Array<unique_ptr<int>> & upa)
+  {
+    return;
+  }
+
+
+  
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
                         FlatVector<Complex> & lami, 
