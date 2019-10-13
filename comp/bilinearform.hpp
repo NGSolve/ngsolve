@@ -81,7 +81,7 @@ namespace ngcomp
 #endif
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
-    Array<SpecialElement*> specialelements;
+    Array<unique_ptr<SpecialElement>> specialelements;
     size_t specialelements_timestamp = 0;
 
     
@@ -127,7 +127,8 @@ namespace ngcomp
 		  shared_ptr<FESpace> afespace2, 
 		  const string & aname,
 		  const Flags & flags);
-
+    BilinearForm (const BilinearForm&) = delete;
+    BilinearForm& opeator= (const BilinearForm&) = delete;
     virtual ~BilinearForm ();
   
 
@@ -183,7 +184,7 @@ namespace ngcomp
     }
     */
 
-    void AddSpecialElement (SpecialElement * spel);
+    void AddSpecialElement (unique_ptr<SpecialElement> spel);
     auto & GetSpecialElements() const { return specialelements; }
     void DeleteSpecialElements();
 
