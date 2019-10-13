@@ -300,7 +300,7 @@ namespace ngcomp
       low_order_bilinear_form -> SetCheckUnused (b);
   }
 
-  void BilinearForm :: AddSpecialElement (SpecialElement *  spel)
+  void BilinearForm :: AddSpecialElement (unique_ptr<SpecialElement> spel)
   {
     specialelements.Append (spel);
     specialelements_timestamp = GetNextTimeStamp();
@@ -308,8 +308,8 @@ namespace ngcomp
 
   void BilinearForm :: DeleteSpecialElements()
   {
-    for(auto el : specialelements)
-      delete el;
+    // for(auto el : specialelements)
+    // delete el;
     specialelements.DeleteAll();
     specialelements_timestamp = GetNextTimeStamp();
   }
