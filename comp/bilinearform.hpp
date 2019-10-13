@@ -128,7 +128,7 @@ namespace ngcomp
 		  const string & aname,
 		  const Flags & flags);
     BilinearForm (const BilinearForm&) = delete;
-    BilinearForm& opeator= (const BilinearForm&) = delete;
+    BilinearForm& operator= (const BilinearForm&) = delete;
     virtual ~BilinearForm ();
   
 
