@@ -3244,7 +3244,7 @@ namespace ngcomp
 
         
         if (specialelements.Size())
-          cout << "special elements: " << specialelements.Size() << endl;
+          cout << IM(3) << "special elements: " << specialelements.Size() << endl;
 
         for (int i = 0; i < specialelements.Size(); i++)
           {
