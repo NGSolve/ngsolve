@@ -302,7 +302,7 @@ namespace ngcomp
 
   void BilinearForm :: AddSpecialElement (unique_ptr<SpecialElement> spel)
   {
-    specialelements.Append (spel);
+    specialelements.Append (std::move(spel));
     specialelements_timestamp = GetNextTimeStamp();
   }
 
