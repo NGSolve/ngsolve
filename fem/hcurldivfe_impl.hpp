@@ -45,7 +45,8 @@ namespace ngfem
   template <int D, typename T> class T_Sigma_gradu_v;
   template <typename T> class T_Sigma_gradu_v<2,T>
   {
-    AutoDiffDiff<2,T> u,v;
+    AutoDiffDiff<2,T> u;
+    AutoDiffDiff<2,T> v;
   public:
     T_Sigma_gradu_v  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
@@ -81,7 +82,8 @@ namespace ngfem
   template <int D, typename T> class T_Gradu_Curlv;
   template <typename T>  class T_Gradu_Curlv<2,T>
   {
-    AutoDiffDiff<2,T> u,v;
+    AutoDiffDiff<2,T> u;
+    AutoDiffDiff<2,T> v;
   public:
     T_Gradu_Curlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
@@ -126,7 +128,8 @@ namespace ngfem
   template <int D, typename T> class T_u_Sigma_gradv;
   template <typename T> class T_u_Sigma_gradv<2,T>
   {
-    AutoDiffDiff<2,T> v,u;
+    AutoDiffDiff<2,T> u;
+    AutoDiffDiff<2,T> v;
   public:
     T_u_Sigma_gradv  (AutoDiffDiff<2,T> au,AutoDiffDiff<2,T> av) : u(au),v(av){ ; }
     
@@ -157,7 +160,8 @@ namespace ngfem
   template <int D, typename T>  class T_Curlgraduv_graducurlv;
   template <typename T>  class T_Curlgraduv_graducurlv<2,T>
   {
-    AutoDiffDiff<2,T> u,v;
+    AutoDiffDiff<2,T> u;
+    AutoDiffDiff<2,T> v;
   public:
     T_Curlgraduv_graducurlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
