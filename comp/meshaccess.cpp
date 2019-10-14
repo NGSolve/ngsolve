@@ -2260,7 +2260,7 @@ namespace ngcomp
   function<void()> cleanup_func;
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
 				    string atask, size_t atotal)
-    : ma(ama), task(atask), total(atotal), comm(ama->GetCommunicator())
+    : ma(ama), comm(ama->GetCommunicator()), task(atask), total(atotal)
   {
     use_mpi = false;   // hardcoded for the moment 
     is_root = comm.Rank() == 0;
