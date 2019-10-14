@@ -5,6 +5,7 @@
 
 namespace ngcomp
 {
+  
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
                         FlatVector<Complex> & lami, 
@@ -299,6 +300,21 @@ namespace ngcomp
       low_order_bilinear_form -> SetCheckUnused (b);
   }
 
+  void BilinearForm :: AddSpecialElement (unique_ptr<SpecialElement> spel)
+  {
+    specialelements.Append (std::move(spel));
+    specialelements_timestamp = GetNextTimeStamp();
+  }
+
+  void BilinearForm :: DeleteSpecialElements()
+  {
+    // for(auto el : specialelements)
+    // delete el;
+    specialelements.DeleteAll();
+    specialelements_timestamp = GetNextTimeStamp();
+  }
+
+  
   void BilinearForm :: SetPreconditioner (Preconditioner * pre)
   {
     // cout << "SetPreconditioner, type fes = " << typeid(*fespace).name() << ", type pre = " << typeid(*pre).name() << endl;
@@ -326,7 +342,7 @@ namespace ngcomp
     size_t neV = ma->GetNE(VOL);
     size_t neB = ma->GetNE(BND);
     size_t neBB = ma->GetNE(BBND);
-    const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
+    // const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
     size_t nspe = specialelements.Size();
 
     Array<DofId> dnums;
@@ -650,6 +666,7 @@ namespace ngcomp
     try
       {
         AllocateMatrix ();
+        graph_timestamp = GetNextTimeStamp();
       }
     catch (Exception & e)
       {
@@ -806,7 +823,12 @@ namespace ngcomp
         return;
       }
 
-
+    if (specialelements_timestamp > graph_timestamp)
+      {
+        reallocate = true;
+        cout << IM(3) << "reallocate due to changed special elements" << endl;
+      }
+    
     if (reallocate)
       {
         // delete mats.Last();
@@ -1019,8 +1041,8 @@ namespace ngcomp
 	    if (facetwise_skeleton_parts[BND].Size())
 	      loopsteps += ma->GetNSE();
             
-	    if (fespace->specialelements.Size())
-	      loopsteps += fespace->specialelements.Size(); 
+	    if (specialelements.Size())
+	      loopsteps += specialelements.Size(); 
 	    
             size_t gcnt = 0; //global count (for all cases)
             
@@ -2286,7 +2308,7 @@ namespace ngcomp
             
             
             int nspecel = 0;
-            ParallelForRange( IntRange(fespace->specialelements.Size()), [&] ( IntRange r )
+            ParallelForRange( IntRange(specialelements.Size()), [&] ( IntRange r )
                               {
               LocalHeap lh = clh.Split();
               Array<int> dnums;
@@ -2298,11 +2320,11 @@ namespace ngcomp
                     gcnt++;
                     nspecel++;
                     if (i % 10 == 0)
-                      cout << "\rassemble special element " << nspecel << "/" << fespace->specialelements.Size() << flush;
+                      cout << "\rassemble special element " << nspecel << "/" << specialelements.Size() << flush;
                     ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                   }
                   
-                  const SpecialElement & el = *fespace->specialelements[i];
+                  const SpecialElement & el = *specialelements[i];
                 
                   el.GetDofNrs (dnums);
                 
@@ -2324,7 +2346,7 @@ namespace ngcomp
                 }
             });
             if(assembledspecialelements) cout << "\rassemble special element " 
-                                              << fespace->specialelements.Size() << "/" << fespace->specialelements.Size() << endl;
+                                              << specialelements.Size() << "/" << specialelements.Size() << endl;
 
             
             
@@ -2715,11 +2737,20 @@ namespace ngcomp
     RegionTimer reg (timer);
     ma->PushStatus ("Assemble Linearization");
 
+    if (specialelements_timestamp > graph_timestamp)
+      {
+        reallocate = true;
+        cout << IM(3) << "reallocate due to changed special elements" << endl;
+      }
+
     if(reallocate && this->mats.Size())
       this->mats.DeleteLast();
 
     if (this->mats.Size() < this->ma->GetNLevels())
-      AllocateMatrix();
+      {
+        AllocateMatrix();
+        graph_timestamp = GetNextTimeStamp();
+      }
 
     // timestamp = ++global_timestamp;
     timestamp = GetNextTimeStamp();
@@ -3212,13 +3243,13 @@ namespace ngcomp
 
 
         
-        if (fespace->specialelements.Size())
-          cout << "special elements: " << fespace->specialelements.Size() << endl;
+        if (specialelements.Size())
+          cout << IM(3) << "special elements: " << specialelements.Size() << endl;
 
-        for (int i = 0; i < fespace->specialelements.Size(); i++)
+        for (int i = 0; i < specialelements.Size(); i++)
           {
             HeapReset hr(clh);
-            const SpecialElement & el = *fespace->specialelements[i];
+            const SpecialElement & el = *specialelements[i];
             el.GetDofNrs (dnums);
 
             FlatVector<SCAL> elvec(dnums.Size(), clh);
@@ -4231,15 +4262,15 @@ namespace ngcomp
 
 
         
-        if (fespace->specialelements.Size())
+        if (specialelements.Size())
           {
             // LocalHeap lh(lh_size, "biform-AddMatrix (c)");
             Array<int> dnums;
             // ElementTransformation * dummy_eltrans = NULL;
-            for (int i = 0; i < fespace->specialelements.Size(); i++)
+            for (int i = 0; i < specialelements.Size(); i++)
               {
                 HeapReset hr(clh);
-                const SpecialElement & el = *fespace->specialelements[i];
+                const SpecialElement & el = *specialelements[i];
                 el.GetDofNrs (dnums);
 
                 FlatVector<SCAL> elvecx (dnums.Size() * fespace->GetDimension(), clh);
@@ -4757,10 +4788,10 @@ namespace ngcomp
                 }
             }
 
-        for (int i = 0; i < fespace->specialelements.Size(); i++)
+        for (int i = 0; i < specialelements.Size(); i++)
           {
             HeapReset hr(lh);
-            const SpecialElement & el = *fespace->specialelements[i];
+            const SpecialElement & el = *specialelements[i];
             el.GetDofNrs (dnums);
           
             FlatVector<SCAL> elvecx (dnums.Size() * dim, lh);
@@ -4892,11 +4923,11 @@ namespace ngcomp
             }
         */
         Array<int> dnums;
-        for (int i = 0; i < fespace->specialelements.Size(); i++)
+        for (int i = 0; i < specialelements.Size(); i++)
           {
             HeapReset hr(lh);
 
-            const SpecialElement & el = *fespace->specialelements[i];
+            const SpecialElement & el = *specialelements[i];
             el.GetDofNrs (dnums);
 
             FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace()->GetDimension(), lh);

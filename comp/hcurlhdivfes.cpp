@@ -93,10 +93,12 @@ namespace ngcomp
     
     nelevel.Append (ned);
 
+    /*
     for (int i=0; i<specialelements.Size(); i++)
       delete specialelements[i];
     specialelements.DeleteAll();
-
+    */
+    
     // new implementation of finelevelofedge - array:
     
     size_t oldned = finelevelofedge.Size();

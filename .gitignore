@@ -7,3 +7,4 @@ py_tutorials/code*.cpp
 .vs
 out
 CMakeSettings.json
+/external_dependencies/parmetis-4.0.3.tar.gz

@@ -544,10 +544,12 @@ namespace ngcomp
     maxorder = -1; 
     minorder = 99; 
 
+    /*
     for(int i = 0; i < specialelements.Size(); i++)
       delete specialelements[i];
     specialelements.DeleteAll();
-
+    */
+    
     /*
     if (order_policy == VARIABLE_ORDER &&
         ma->GetTimeStamp() > order_timestamp)
