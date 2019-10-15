@@ -642,7 +642,6 @@ namespace ngfem
       AutoDiff<2> yy(y.Value(), &y.DValue(0));
       AutoDiffDiff<2> lx[4] ={1-x, x, x, 1-x};
       AutoDiffDiff<2> ly[4] = {1-y, 1-y, y, y};
-      AutoDiff<2> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};
       int ii = 0;
 
       int facetnr = mip.IP().FacetNr();
@@ -689,7 +688,7 @@ namespace ngfem
       if (mip.IP().VB() == VOL)
         {
           auto p = order_inner[0];
-          INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
+          //INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
 
           IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
           IntegratedLegendreMonomialExt::Calc(p+3,ly[0]-ly[2],v);
@@ -1410,7 +1409,6 @@ namespace ngfem
 
       if (order_inner[0] > 1)
         {
-          int p = order_inner[0];
           AutoDiff<3,T> li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
 
           Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
@@ -1442,8 +1440,6 @@ namespace ngfem
       int facetnr = ip.FacetNr();
 
       int ii = 0;
-
-      const EDGE * edges = ElementTopology::GetEdges(ET_TET);
 
       if (ip.VB() == BBND)
         { // facet shapes

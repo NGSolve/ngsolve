@@ -238,7 +238,6 @@ namespace ngfem
     auto x = tip.x;
     auto y = tip.y;
 
-    int p = order_inner[0];
     int ii = 0;
 
     Tx lami[3] = { x, y, 1-x-y };
@@ -485,10 +484,10 @@ namespace ngfem
 
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
-    double xi = lami[fav[0]].Value();
-    double eta = lami[fav[1]].Value();
+    //double xi = lami[fav[0]].Value();
+    //double eta = lami[fav[1]].Value();
 
-    int p = facet_order[fanr][0];
+    //int p = facet_order[fanr][0];
     int ii = first_facet_dof[fanr];
 
     /*
@@ -515,7 +514,7 @@ namespace ngfem
 	}
     cout << "old: " << shape.Rows(first_facet_dof[fanr], first_facet_dof[fanr+1]);
     */
-    typedef AutoDiff<3> Tx;
+    //typedef AutoDiff<3> Tx;
     ii = first_facet_dof[fanr];    
     DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([&] (size_t nr, double val)

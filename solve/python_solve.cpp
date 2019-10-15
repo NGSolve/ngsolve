@@ -767,7 +767,7 @@ void ExportVisFunctions(py::module &m) {
                   values_imag[T_ET{et.first,false}].SetSize(count[et.first] * et.second.GetNIP() * ncomps);
               }
 
-            bool use_simd = false;
+            //bool use_simd = false;
             ma->IterateElements(VOL, lh, [&](auto el, LocalHeap& mlh)
                                 {
                                   FlatArray<float> min_local(ncomps,  mlh);

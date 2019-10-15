@@ -2548,7 +2548,7 @@ namespace ngfem
     // static Timer td("symbolicbfi - Apply EB, evaluate D", 2);
     // static Timer ttrans("symbolicbfi - Apply EB, trans", 2);
     
-    size_t tid = TaskManager::GetThreadId();    
+    //size_t tid = TaskManager::GetThreadId();    
     // ThreadRegionTimer reg(t, tid);
     
     ely = 0;

@@ -386,7 +386,7 @@ namespace ngla
         FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
         FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
         
-        for (int i = 0; i < ind.Size(); i++)
+        for (size_t i = 0; i < ind.Size(); i++)
           if (IsRegularIndex(ind[i]))
             sv(i) = lsv(ind[i]);
           else
@@ -401,7 +401,7 @@ namespace ngla
     FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
     FlatSysVector<Complex> sv(ind.Size(), EntrySize(), &v(0));
 
-    for (int i = 0; i < ind.Size(); i++)
+    for (size_t i = 0; i < ind.Size(); i++)
       if (IsRegularIndex(ind[i]))
 	sv(i) = lsv(ind[i]);
       else
@@ -440,7 +440,7 @@ namespace ngla
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
     int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+    for (size_t i = 0; i < ind.Size(); i++)
       if (IsRegularIndex(ind[i]))
 	{
 	  int base = es * ind[i];
@@ -464,7 +464,7 @@ namespace ngla
     FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
     FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
 
-    for (int i = 0; i < ind.Size(); i++)
+    for (size_t i = 0; i < ind.Size(); i++)
       if (IsRegularIndex(ind[i]))
 	lsv(ind[i]) = sv(i);
 
@@ -490,7 +490,7 @@ namespace ngla
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
     int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+    for (size_t i = 0; i < ind.Size(); i++)
       if (IsRegularIndex(ind[i]))
 	{
 	  int base = es * ind[i];
@@ -545,13 +545,13 @@ namespace ngla
 
         if (!use_atomic)
           {
-            for (int i = 0; i < ind.Size(); i++)
+            for (size_t i = 0; i < ind.Size(); i++)
               if (IsRegularIndex(ind[i]))
                 lsv(ind[i]) += v(i);
           }
         else
           {
-            for (int i = 0; i < ind.Size(); i++)
+            for (size_t i = 0; i < ind.Size(); i++)
               if (IsRegularIndex(ind[i]))
                 AtomicAdd (lsv(ind[i]), v(i));
             // lsv(ind[i]) += v(i);
@@ -562,7 +562,7 @@ namespace ngla
         FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
         FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
         
-        for (int i = 0; i < ind.Size(); i++)
+        for (size_t i = 0; i < ind.Size(); i++)
           if (IsRegularIndex(ind[i]))
             lsv(ind[i]) += sv(i);
       }
@@ -578,13 +578,13 @@ namespace ngla
       {
         if (!use_atomic)
           {
-            for (int i = 0; i < ind.Size(); i++)
+            for (size_t i = 0; i < ind.Size(); i++)
               if (IsRegularIndex(ind[i]))
                 fv(ind[i]) += v(i);
           }
         else
           {
-            for (int i = 0; i < ind.Size(); i++)
+            for (size_t i = 0; i < ind.Size(); i++)
               if (IsRegularIndex(ind[i]))
                 AtomicAdd (fv(ind[i]), v(i));
           }
@@ -593,7 +593,7 @@ namespace ngla
       {
     
         int ii = 0;
-        for (int i = 0; i < ind.Size(); i++)
+        for (size_t i = 0; i < ind.Size(); i++)
           if (IsRegularIndex(ind[i]))
             {
               int base = es * ind[i];

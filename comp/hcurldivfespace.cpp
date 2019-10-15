@@ -211,7 +211,7 @@ namespace ngcomp
 	       int nd = fel.GetNDof();
 	       FlatMatrix<> shape(nd,D,lh);
       
-	       Mat<D+1,D> jac = sip.GetJacobian();
+	       //Mat<D+1,D> jac = sip.GetJacobian();
 	       Mat<D,D+1> jacinv = sip.GetJacobianInverse();
 	       double det = fabs(sip.GetJacobiDet());
       
@@ -446,7 +446,7 @@ namespace ngcomp
       fel.CalcCurlShape (sip.IP(), curl_shape);
       
       Mat<D> jac = sip.GetJacobian();
-      Mat<D> jacinv = sip.GetJacobianInverse();
+      //Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs (sip.GetJacobiDet());
       
       Mat<D> sjac = (1.0/(det*det)) * jac;          

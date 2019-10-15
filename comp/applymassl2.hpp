@@ -19,7 +19,7 @@
       elscale.SetSize (ma->GetNE());
       
       IterateElements (*fes, VOL, alh,
-                       [&arho, &adef, &ma, this] (FESpace::Element el, LocalHeap & lh)
+                       [/*&arho, */&adef, &ma, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
                        const ElementTransformation & trafo = el.GetTrafo();
@@ -131,7 +131,7 @@
       elscale.SetSize (ma->GetNE());
       
       IterateElements (*fes, VOL, alh,
-                       [&arho, &adef, &ma, this] (FESpace::Element el, LocalHeap & lh)
+                       [/*&arho, */&adef, &ma, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto & fel = el.GetFE();          
                        const ElementTransformation & trafo = el.GetTrafo();

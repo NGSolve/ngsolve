@@ -456,7 +456,7 @@ namespace ngfem
         size_t nipx = irx.GetNIP();
         size_t nipy = iry.GetNIP();
         size_t nipz = irz.GetNIP();
-        size_t nip = nipx*nipy*nipz;
+        //size_t nip = nipx*nipy*nipz;
         size_t ndof = (order+1)*(order+1)*(order+1);
 
         /*
@@ -557,7 +557,7 @@ namespace ngfem
         size_t nipx = irx.GetNIP();
         size_t nipy = iry.GetNIP();
         size_t nipz = irz.GetNIP();
-        size_t nip = nipx*nipy*nipz;
+        //size_t nip = nipx*nipy*nipz;
         size_t ndof = (order+1)*(order+1)*(order+1);
         
         

@@ -155,7 +155,8 @@ private:
     /// Reference - element (low order only)
     FiniteElement * segm;// = NULL;
     /// Reference - element (low order only)
-    FiniteElement * point;// = NULL;
+    //Never used?
+    //FiniteElement * point;// = NULL;
 
   
   /// order in z-direction
