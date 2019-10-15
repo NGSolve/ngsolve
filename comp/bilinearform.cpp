@@ -758,7 +758,7 @@ namespace ngcomp
           {
             if (elclass_inds.Size() == 0) continue;
             
-            size_t nr = classnr[elclass_inds[0]];
+            // size_t nr = classnr[elclass_inds[0]];
             ElementId ei(vb,elclass_inds[0]);
             auto & felx = GetTrialSpace()->GetFE (ei, lh);
             auto & fely = GetTestSpace()->GetFE (ei, lh);
@@ -2431,7 +2431,7 @@ namespace ngcomp
             mat = 0.0;
 
 
-            bool hasbound = false;
+            // bool hasbound = false;
 
 	    for (VorB vb : { VOL, BND, BBND, BBBND })
               if (VB_parts[vb].Size())

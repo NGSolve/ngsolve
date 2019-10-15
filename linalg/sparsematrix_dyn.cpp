@@ -152,7 +152,7 @@ namespace ngla
              TSCAL * pdata = &data[firsti_data[i]];
              int firsti = firsti_colnr[i];
              int nexti = firsti_colnr[i+1];
-             int * pcol = &colnr[firsti];
+             //int * pcol = &colnr[firsti];
              TSCAL * py = &fy(cum_block_size[i]);
              int bs = cum_block_size[i+1]-cum_block_size[i];
              FlatMatrix<TSCAL> mat(nexti-firsti, bs, pdata);
