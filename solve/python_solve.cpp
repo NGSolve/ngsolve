@@ -646,13 +646,16 @@ void ExportVisFunctions(py::module &m) {
                     if(el.is_curved) {
                         ei.data.Append(vertices.Size()/3);
                         HeapReset hr(lh);
-                        auto & mir = GetMappedIR(ma, el, ir, lh);
-                        // mapped coordinates of edge midpoints (for P2 interpolation)
-                        for (auto &ip : mir) {
-                          auto p = ip.GetPoint();
-                          for (auto i : Range(3))
-                              vertices.Append(p[i]);
-                        }
+                        if(ir.Size()>0)
+                          {
+                            auto & mir = GetMappedIR(ma, el, ir, lh);
+                            // mapped coordinates of edge midpoints (for P2 interpolation)
+                            for (auto &ip : mir) {
+                                auto p = ip.GetPoint();
+                                for (auto i : Range(3))
+                                    vertices.Append(p[i]);
+                            }
+                          }
                     }
                 }
                 element_data[VOL].append(types_and_numbering);
