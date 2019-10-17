@@ -459,7 +459,7 @@ namespace ngla
 	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
 	  return nullptr;
 	}
-      else return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks );
+      else return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
     }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;

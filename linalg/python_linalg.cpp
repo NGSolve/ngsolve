@@ -759,7 +759,7 @@ inverse : string
          { return m.CreateJacobiPrecond(ba); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("freedofs") = shared_ptr<BitArray>())
     
-    .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks)
+    .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks, bool parallel)
          {
            shared_ptr<Table<int>> blocktable;
            {
@@ -781,8 +781,8 @@ inverse : string
                    row[j++] = val.cast<int>();
                }
            }
-           return m.CreateBlockJacobiPrecond (blocktable);
-         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"))
+           return m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel);
+         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false)
      ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
