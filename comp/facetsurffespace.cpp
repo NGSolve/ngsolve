@@ -336,8 +336,13 @@ namespace ngcomp
 
     for (ElementId ei : ma->Elements(BND))
       if (DefinedOn(ei))
-        for (auto ed : ma->GetElEdges (ei))
-          ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
+
+        if (ma->GetDimension() == 3)
+          for (auto ed : ma->GetElEdges (ei))
+            ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
+        else if (ma->GetDimension() == 2)
+          for (auto ed : ma->GetElVertices (ei))
+            ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
 
     if (print)
       *testout << "couplingtypes = " << endl << ctofdof << endl;
@@ -373,6 +378,14 @@ namespace ngcomp
 	  //FacetFE<ET_TRIG>* fet = 0;
 	  //FacetFE<ET_QUAD>* feq = 0;
 
+    if (!DefinedOn (ei))
+      {
+        return
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (lh) DummyFE<et.ElementType()> ();
+                      });
+      }
 	  switch (ma->GetElType(ei))
 	    {
 	    case ET_TRIG: return T_GetFE<ET_TRIG>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_TRIG> (); break;
