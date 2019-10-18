@@ -629,18 +629,26 @@ namespace ngla
   template class UmfpackInverse<Mat<4,4,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 5
+  template class UmfpackInverseTM<Mat<5,5,double> >;
+  template class UmfpackInverseTM<Mat<5,5,Complex> >;
   template class UmfpackInverse<Mat<5,5,double> >;
   template class UmfpackInverse<Mat<5,5,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 6
+  template class UmfpackInverseTM<Mat<6,6,double> >;
+  template class UmfpackInverseTM<Mat<6,6,Complex> >;
   template class UmfpackInverse<Mat<6,6,double> >;
   template class UmfpackInverse<Mat<6,6,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 7
+  template class UmfpackInverseTM<Mat<7,7,double> >;
+  template class UmfpackInverseTM<Mat<7,7,Complex> >;
   template class UmfpackInverse<Mat<7,7,double> >;
   template class UmfpackInverse<Mat<7,7,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 8
+  template class UmfpackInverseTM<Mat<8,8,double> >;
+  template class UmfpackInverseTM<Mat<8,8,Complex> >;
   template class UmfpackInverse<Mat<8,8,double> >;
   template class UmfpackInverse<Mat<8,8,Complex> >;
 #endif
