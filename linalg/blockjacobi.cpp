@@ -312,7 +312,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   BlockJacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-		      shared_ptr<Table<int>> ablocktable)
+		      shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
   {
@@ -368,18 +368,14 @@ namespace ngla
       }
 
 
-    // atomic<int> cnt(0);
-    SharedLoop2 sl(blocktable->Size());
 
-    /*
-    ParallelFor 
-      (Range(*blocktable), [&] (int i)
-    */
+    /** Get diagonal blocks **/
+    SharedLoop2 sl1(blocktable->Size());
     ParallelJob
       ([&] (const TaskInfo & ti)
        {
          NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
-         for (int i : sl)
+         for (int i : sl1)
        {
          NgProfiler::StartThreadTimer (tprep, TaskManager::GetThreadId());
 
@@ -400,14 +396,106 @@ namespace ngla
 	  for (size_t k = 0; k < blocki.Size(); k++)
 	    blockmat(j,k) = mat(blocki[j], blocki[k]);
         NgProfiler::StopThreadTimer (tget, TaskManager::GetThreadId());                         
-        NgProfiler::StartThreadTimer (tinv, TaskManager::GetThreadId());
-	CalcInverse (blockmat);
-        NgProfiler::StopThreadTimer (tinv, TaskManager::GetThreadId());        
         // }, TasksPerThread(10));
        }
          NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
        } );
-    
+
+
+    /**
+       Cumulate diagonal blocks across processors - works ONLY IF:
+	 - Blocks are consistent across processors
+	 - The blocks are already numbered consistently
+	 - For each block, all it's DOFs are shared between the same procs.
+	   This excludes, for example:
+	      Any blocks that reach from a subdomain interface in the interior of any domain
+	      Blocks that contain all DOFs on a facet shared between two procs, as well as all
+	      DOFs in that facet's BBND and BBBND nodes if any of those are also shared with some
+	      third block.
+        !! THIS ALSO ONLY ALLOWS FOR MULT/MULTADD, NOT FOR GSSMOOTH/GSSMOOTHBACK !!
+	Calling GSSmooth/GSSmoothback leads to undefined behavior
+     **/
+    if (cumulate_block_diags) {
+      if (auto ppds = amat.GetParallelDofs()) { // without attached ParallelDofs, we cannot cumulate blocks
+	const auto & pds = *ppds;
+	auto all_dps = pds.GetDistantProcs();
+	const auto& btab = *blocktable;
+
+	// iterates through all blocks that are shared with someone and calls a lambda function
+	auto iterate_ex_blocks = [&](auto lam) {
+	  for (auto block_num : Range(btab)) {
+	    auto block = btab[block_num];
+	    if (block.Size()) {
+	      auto dps = pds.GetDistantProcs(block[0]);
+	      for (auto p : dps) {
+		lam(block_num, block, p);
+		// sds[all_dps.Pos(p)] += sqr(block.Size());
+	      }
+	    }
+	  }
+	};
+
+	// find size of data to send/recv
+	Array<int> sds(all_dps.Size()); sds = 0; // shared data size
+	iterate_ex_blocks([&](auto block_num, auto block, auto p){
+	    sds[all_dps.Pos(p)] += sqr(block.Size());
+	  });
+
+	// allocate send/recv data
+	Table<TM> send_data(sds), recv_data(sds);
+
+	// write send-data
+	sds = 0;
+	iterate_ex_blocks([&](auto block_num, auto block, auto p){
+	    auto pos = all_dps.Pos(p);
+	    auto blocks = block.Size();
+	    // auto buf_block = send_data[pos].Part(sds[pos], ds);
+	    auto buf_block = FlatMatrix<TM>(blocks, blocks, send_data[pos].Addr(sds[pos]));
+	    auto diag_block = invdiag[block_num];
+	    sds[pos] += sqr(blocks);
+	    buf_block = diag_block;
+	  });
+
+	// send-recv
+	Array<MPI_Request> rsend(all_dps.Size()), rrecv(all_dps.Size());
+	auto comm = pds.GetCommunicator();
+	for (auto kp : Range(all_dps)) {
+	  rsend[kp] = comm.ISend(send_data[kp], all_dps[kp], MPI_TAG_SOLVE);
+	  rrecv[kp] = comm.IRecv(recv_data[kp], all_dps[kp], MPI_TAG_SOLVE);
+	}
+
+	// wait for recvs to finish and add to diagonal blocks
+	MyMPI_WaitAll(rrecv);
+	sds = 0;
+	iterate_ex_blocks([&](auto block_num, auto block, auto p){
+	    auto pos = all_dps.Pos(p);
+	    auto blocks = block.Size();
+	    // auto buf_block = recv_data[pos].Part(sds[pos], ds);
+	    auto buf_block = FlatMatrix<TM>(blocks, blocks, recv_data[pos].Addr(sds[pos]));
+	    auto diag_block = invdiag[block_num];
+	    sds[pos] += sqr(blocks);
+	    diag_block += buf_block;
+	  });
+
+	MyMPI_WaitAll(rsend); // wait for sends to finish !!
+      }
+    }
+
+    /** Invert diagonal blocks **/
+    SharedLoop2 sl2(blocktable->Size());
+    ParallelJob
+      ([&] (const TaskInfo & ti)
+       {
+         NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
+         for (auto i : sl2) {
+	     NgProfiler::StartThreadTimer (tinv, TaskManager::GetThreadId());
+	     FlatMatrix<TM> & blockmat = invdiag[i];
+	     CalcInverse (blockmat);
+	     NgProfiler::StopThreadTimer (tinv, TaskManager::GetThreadId());        
+	   }
+         NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
+       } );
+
     cout << IM(3) << "\rBuilding block " << blocktable->Size() << "/" << blocktable->Size() << flush;
     *testout << "block coloring";
 
@@ -506,6 +594,9 @@ namespace ngla
     static Timer timer("BlockJacobi::MultAdd");
     RegionTimer reg (timer);
     
+    x.Cumulate();
+    y.Cumulate();
+
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
@@ -984,6 +1075,9 @@ namespace ngla
   {
     static Timer timer("BlockJacobiSymmetric::MultAdd");
     RegionTimer reg (timer);
+
+    x.Cumulate();
+    y.Cumulate();
 
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy       = y.FV<TVX> ();
