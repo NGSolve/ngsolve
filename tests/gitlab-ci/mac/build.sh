@@ -17,6 +17,9 @@ cmake $SRC_DIR \
       -DENABLE_UNIT_TESTS=ON \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 \
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX} \
+      -DUSE_OCC=ON \
+      -DOCC_INCLUDE_DIR=/usr/local/opt/oce/include/oce \
+      -DOCC_LIBRARY=/usr/local/opt/oce/lib/libTKernel.a
 
 make -j5 install
 osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
