@@ -604,14 +604,16 @@ namespace ngcomp
     // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpBoundIdHDivSym<2>>>();
     if(ma->GetDimension() == 2)
     {
-      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<1>>>();
+      if (!discontinuous)
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<1>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<2>>>();
       integrator[VOL] = make_shared<HDivDivMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<2>>>();
     }
     else
     {
-      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<2>>>();
+      if (!discontinuous)
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<2>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
       integrator[VOL] = make_shared<HDivDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
