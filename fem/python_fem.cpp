@@ -520,6 +520,43 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
   };
 
 
+template <int D>
+  class JacobianMatrixCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    JacobianMatrixCF () : CoefficientFunctionNoDerivative(D*D,false)
+    {
+      SetDimensions(Array<int>({D,D}));
+    }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
+    {
+      return 0;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
+    {
+      if (ip.Dim() != D)
+        throw Exception("illegal dim of normal vector");
+      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
+    }
+
+      //virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
+      //{
+      //  if (ir[0].Dim() != D)
+      //	throw Exception("illegal dim!");
+      // for (int i = 0; i < ir.Size(); i++)
+      //	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
+      //}
+
+    //virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
+    //{
+    //  values.AddSize(D, ir.Size()) = Trans(ir.GetNormals());
+    //}
+  };
+
+
 
 void ExportCoefficientFunction(py::module &m)
 {
@@ -693,6 +730,19 @@ direction : int
 	  return make_shared<TangentialVectorCF<3>>();
 	}
     }
+
+    shared_ptr<CF> GetJacobianMatrixCF (int dim)
+    {
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<JacobianMatrixCF<1>>();
+	case 2:
+	  return make_shared<JacobianMatrixCF<2>>();
+	default:
+	  return make_shared<JacobianMatrixCF<3>>();
+	}
+    }
   };
 
   
@@ -723,6 +773,9 @@ direction : int
          "space-dimension must be provided")
     .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
          "depending on contents: tangential-vector to element\n"
+         "space-dimension must be provided")
+    .def("JacobianMatrix", &SpecialCoefficientFunctions::GetJacobianMatrixCF, py::arg("dim"),
+         "Jacobian matrix of transformation to physical element\n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;
