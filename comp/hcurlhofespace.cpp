@@ -189,7 +189,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      int size = (bmir.Size()+1)*2000;
+      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -248,7 +248,7 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      int size = (bmir.Size()+1)*2000;
+      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
