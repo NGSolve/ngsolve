@@ -928,6 +928,12 @@ cf : ngsolve.CoefficientFunction
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=1.0)
 
+    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
+          {
+            return coef->Diff (shape, dir);
+          },
+          "Compute shape derivative in direction", 
+          py::arg("direction")=1.0)
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now

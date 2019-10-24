@@ -16,7 +16,8 @@ namespace ngcomp
 
   class GridFunction;
 
-  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunctionNoDerivative
+  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunctionNoDerivative,
+                                                         public enable_shared_from_this_virtual<GridFunctionCoefficientFunction>
   {
   protected:
     shared_ptr<GridFunction> gf_shared_ptr;
@@ -94,7 +95,11 @@ namespace ngcomp
     bool generated_from_deriv = false;
     string generated_from_operator;
     shared_ptr<GridFunction> GetGridFunctionPtr() const { return gf_shared_ptr; }
-    const auto & GetDifferentialOperator (VorB vb) const { return diffop[vb]; } 
+    const auto & GetDifferentialOperator (VorB vb) const { return diffop[vb]; }
+    
+    virtual shared_ptr<CoefficientFunction>
+      Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+    
   };
 
 
@@ -206,10 +211,10 @@ namespace ngcomp
 
       // derivcf is not set -> initialize it
       res =
-            make_shared<GridFunctionCoefficientFunction> (dynamic_pointer_cast<GridFunction> (shared_from_this()),
-                                                          GetFESpace()->GetFluxEvaluator(),
-                                                          GetFESpace()->GetFluxEvaluator(BND),
-                                                          GetFESpace()->GetFluxEvaluator(BBND));
+        make_shared<GridFunctionCoefficientFunction> (dynamic_pointer_cast<GridFunction> (shared_from_this()),
+                                                      GetFESpace()->GetFluxEvaluator(),
+                                                      GetFESpace()->GetFluxEvaluator(BND),
+                                                      GetFESpace()->GetFluxEvaluator(BBND));
       res -> generated_from_deriv = true;
       derivcf = res;
       return res;
@@ -267,6 +272,7 @@ namespace ngcomp
 
     virtual void Load (istream & ist) = 0;
     virtual void Save (ostream & ost) const = 0;
+    using NGS_Object::shared_from_this;
   };
 
 

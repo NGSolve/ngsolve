@@ -1815,6 +1815,7 @@ diffop : ngsolve.fem.DifferentialOperator
             return faccf;
           })
     .def ("Diff", &SumOfIntegrals::Diff)
+    .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     ;
