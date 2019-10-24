@@ -615,7 +615,9 @@ namespace ngfem
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == this)
+    if (var == shape)
+      return evaluator->DiffShape (const_cast<ProxyFunction*>(this)->shared_from_this(), dir);
+    else if (var == this)
       return dir;
     else
       {

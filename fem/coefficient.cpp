@@ -219,6 +219,11 @@ namespace ngfem
   }
   
 
+  CoefficientFunction * shape = new ConstantCoefficientFunction(1);
+
+
+
+  
   ///
   ConstantCoefficientFunction ::   
   ConstantCoefficientFunction (double aval) 
@@ -4554,6 +4559,16 @@ public:
       Evaluate (ir, values);
     }
     */
+
+    shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dirdiff) const override
+    {
+      if (var == shape)
+        return MakeComponentCoefficientFunction (dirdiff, dir);
+      return BASE::Diff (var, dirdiff);
+    }
+    
+    
   };
 
 

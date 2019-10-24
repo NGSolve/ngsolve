@@ -146,7 +146,15 @@ namespace ngfem
     {
       throw ExceptionNOSIMD (string("AddTrans simdir not implemented for diffop ") + typeid(DOP).name());
     }
-    
+
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir) 
+    {
+      throw Exception (string("shape derivative not implemented for DifferentialOperator")+Name());
+    }
+
   };
 
 
@@ -328,6 +336,13 @@ namespace ngfem
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
 
+    virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                                       shared_ptr<CoefficientFunction> dir) const
+    {
+      throw Exception ("shape derivative not implemented for DifferentialOperator");
+// diffop")+typeid(*this).name());
+    }
+    
   };
 
 
@@ -538,6 +553,12 @@ namespace ngfem
               BareSliceVector<Complex> x) const override;
 
 #endif
+    shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                               shared_ptr<CoefficientFunction> dir) const override
+    {
+      return DIFFOP::DiffShape(proxy, dir);
+    }
+    
   };
 
 

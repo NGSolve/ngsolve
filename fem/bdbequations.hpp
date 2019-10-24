@@ -143,7 +143,11 @@ namespace ngfem
     {
       Cast(fel).AddGradTrans (mir, y, x);
     }    
-    
+
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
 
@@ -408,7 +412,11 @@ namespace ngfem
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
-    }    
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
 

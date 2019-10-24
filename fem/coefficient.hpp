@@ -340,6 +340,9 @@ namespace ngfem
 
   };
 
+
+  extern CoefficientFunction * shape;  // for shape derivative
+
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
   {
     cf.PrintReport (ost);
