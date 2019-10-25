@@ -611,6 +611,14 @@ namespace ngfem
       nonzero(ud.trial_comp) = true;
   }
 
+  shared_ptr<CoefficientFunction> ProxyFunction :: 
+  Operator (const string & name) const
+  {
+    if (deriv_evaluator && deriv_evaluator->Name() == name)
+      return Deriv();
+    return GetAdditionalProxy (name); 
+  }
+
 
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const

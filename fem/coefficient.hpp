@@ -13,7 +13,7 @@ namespace ngfem
       coefficient functions
   */
   
-  class NGS_DLL_HEADER CoefficientFunction
+  class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this_virtual<CoefficientFunction>
   {
   private:
     int dimension;
@@ -333,6 +333,10 @@ namespace ngfem
 
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
+
+    virtual shared_ptr<CoefficientFunction>
+      Operator (const string & name) const;
+    
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
     { return Array<shared_ptr<CoefficientFunction>>(); }
@@ -1679,9 +1683,13 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Imag(shared_ptr<CoefficientFunction> cf);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf);
   
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
+
 }
 
 

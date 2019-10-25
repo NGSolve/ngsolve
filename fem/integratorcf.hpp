@@ -63,8 +63,8 @@ namespace ngfem
     {
       auto deriv = make_shared<SumOfIntegrals>();
       // auto divdir = dynamic_pointer_cast<ProxyFunction>(dir)->GetAdditionalProxy("div");
-      auto grad = dynamic_pointer_cast<ProxyFunction>(dir)->Deriv();
-      // auto divdir = MakeComponentCoefficientFunction(grad, 0) + MakeComponentCoefficientFunction(grad, 3);
+      // auto grad = dynamic_pointer_cast<ProxyFunction>(dir)->Deriv();
+      auto grad = dir->Operator("grad");
       int dim = grad->Dimensions()[0];
       auto divdir = MakeComponentCoefficientFunction(grad, 0);
       for (int j = 1; j < dim; j++)
