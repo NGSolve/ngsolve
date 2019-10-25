@@ -113,6 +113,12 @@ namespace ngfem
     throw Exception(string("Deriv not implemented for CF ")+typeid(*this).name());
   }
 
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
+  Operator (const string & name) const
+  {
+    throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
+  }
+  
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
@@ -4578,8 +4584,71 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 }
 
 
+
+class NGS_DLL_HEADER FrozenCoefficientFunction
+  : public T_CoefficientFunction<FrozenCoefficientFunction, CoefficientFunctionNoDerivative>
+{
+  shared_ptr<CoefficientFunction> cf;
+ public:
+  FrozenCoefficientFunction (shared_ptr<CoefficientFunction> acf) : cf(acf)
+    {
+      SetDimensions (cf->Dimensions());
+    }
+  
+  ~FrozenCoefficientFunction() { ; }
+  
+  void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    cf->TraverseTree (func);
+  }
+  
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  {
+    return { cf };
+  }
+  
+
+  
+  double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    return cf -> Evaluate(ip); 
+  }
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    cf -> Evaluate (ir, values);
+  }
+  
+  template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                     BareSliceMatrix<T,ORD> values) const
+  {
+    cf -> Evaluate (ir, values);
+  }
+
+  shared_ptr<CoefficientFunction>
+    Operator (const string & name) const override
+  {
+    return Freeze (cf->Operator(name));
+  }
+  
+};
+
+
+
+shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf)
+{
+  return make_shared<FrozenCoefficientFunction> (cf);
+}
+
+
+
+
   // ///////////////////////////// Compiled CF /////////////////////////
-  class CompiledCoefficientFunction : public CoefficientFunction, public std::enable_shared_from_this<CompiledCoefficientFunction>
+class CompiledCoefficientFunction : public CoefficientFunction //, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::BareSliceMatrix<double>);
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>);
@@ -4857,7 +4926,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           codes.push_back(pointer_code);
         }
 
-        auto self = shared_from_this();
+        auto self = dynamic_pointer_cast<CompiledCoefficientFunction>(shared_from_this());
         auto compile_func = [self, codes, link_flags, maxderiv] () {
               self->library = CompileCode( codes, link_flags );
               if(self->cf->IsComplex())

@@ -16,7 +16,7 @@ namespace ngcomp
 namespace ngfem
 {
 
-  class ProxyFunction : public CoefficientFunction, public enable_shared_from_this<ProxyFunction>
+  class ProxyFunction : public CoefficientFunction
 {
   shared_ptr<ngcomp::FESpace> fes;
   bool testfunction; // true .. test, false .. trial
@@ -107,7 +107,10 @@ public:
     }
     return shared_ptr<ProxyFunction>();
   }
-
+  
+  virtual shared_ptr<CoefficientFunction>
+  Operator (const string & name) const override;
+    
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override

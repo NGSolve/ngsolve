@@ -993,6 +993,10 @@ cf : ngsolve.CoefficientFunction
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
+    .def ("Freeze", [] (shared_ptr<CF> coef)
+          { return Freeze(coef); },
+          "don't differentiate this expression")
+
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
