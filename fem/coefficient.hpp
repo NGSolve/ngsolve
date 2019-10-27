@@ -55,14 +55,12 @@ namespace ngfem
     void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double,ColMajor> values) const
     { Evaluate (ir, Trans(values)); }
     
-    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
     void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex,ColMajor> values) const
     { Evaluate (ir, Trans(values)); }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const;
-    // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<BareSliceMatrix<double,ColMajor>> input,
                            BareSliceMatrix<double,ColMajor> values) const
@@ -70,30 +68,6 @@ namespace ngfem
       Evaluate (ir, Trans(values));
     }
 
-    /*
-    [[deprecated("Use Evaluate (SIMD) instead")]]        
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
-    {
-      throw ExceptionNOSIMD (string("cf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
-    }
-
-    [[deprecated("Use Evaluate (AutoDiff) instead")]]
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const 
-    {
-      throw ExceptionNOSIMD (string("cf::EvaluateDeriv(simd) not overloaded for ")+typeid(*this).name());
-    }
-
-    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]    
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const 
-    {
-      throw ExceptionNOSIMD (string("cf::EvaluateDDeriv(simd) not overloaded for ")+typeid(*this).name());
-    }
-    */
-    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const
@@ -168,30 +142,6 @@ namespace ngfem
       Evaluate (ir, values);
     }
 
-    /*
-    [[deprecated("Use Evaluate (AutoDiff) instead")]]    
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      throw ExceptionNOSIMD (string("cf::EvaluateDeriv(simd,in-out) not overloaded for ")+typeid(*this).name());
-    }
-
-    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]        
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                 FlatArray<AFlatMatrix<>*> input,
-                                 FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result,
-                                 AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
-    {
-      throw ExceptionNOSIMD (string("cf::EvaluateDDeriv(simd,in-out) not overloaded for ")+typeid(*this).name());
-    }
-    */
-    
     ///
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
     { 
@@ -234,22 +184,7 @@ namespace ngfem
       VectorMem<10,double> dres(result.Size());
       Evaluate(ip, dres);
       result = dres;
-      /*
-      Complex f = EvaluateComplex (ip);
-      result(0) = f; 
-      */
     }
-
-    /*
-    [[deprecated("Use Evaluate (AutoDiff) instead")]]
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                FlatMatrix<> result,
-                                FlatMatrix<> deriv) const
-    {
-      Evaluate (ir, result);
-      deriv = 0;
-    }
-    */
     
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                 FlatMatrix<Complex> result,
@@ -259,54 +194,9 @@ namespace ngfem
       deriv = 0;
     }
 
-    /*
-    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatMatrix<> result,
-                                 FlatMatrix<> deriv,
-                                 FlatMatrix<> dderiv) const
-    {
-      EvaluateDeriv (ir, result, deriv);
-      dderiv = 0;
-    }
-    */
-    
-    /*
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatMatrix<Complex> result,
-                                 FlatMatrix<Complex> deriv,
-                                 FlatMatrix<Complex> dderiv) const
-    {
-      EvaluateDeriv (ir, result, deriv);
-      dderiv = 0;
-    }
-
-    
-    [[deprecated("Use Evaluate (AutoDiff) instead")]]
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatArray<FlatMatrix<>*> input,
-                                 FlatArray<FlatMatrix<>*> dinput,
-                                 FlatMatrix<> result,
-                                 FlatMatrix<> deriv) const
-    {
-      EvaluateDeriv (ir, result, deriv);
-    }
-
-    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]    
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatArray<FlatMatrix<>*> input,
-                                 FlatArray<FlatMatrix<>*> dinput,
-                                 FlatArray<FlatMatrix<>*> ddinput,
-                                 FlatMatrix<> result,
-                                 FlatMatrix<> deriv,
-                                 FlatMatrix<> dderiv) const override
-    {
-      EvaluateDDeriv (ir, result, deriv, dderiv);
-    }
-    */
-
     bool ElementwiseConstant () const { return elementwise_constant; }
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
+
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
@@ -546,9 +436,26 @@ namespace ngfem
     {
       STACK_ARRAY(double, hmem, Dimension());
       FlatMatrix<double,ColMajor> mat(Dimension(), 1, hmem);
-      ip.IntegrationRuleFromPoint([&] (const BaseMappedIntegrationRule & ir)
+      ip.IntegrationRuleFromPoint([this,mat] (const BaseMappedIntegrationRule & ir)
                                   { static_cast<const TCF*>(this)->T_Evaluate (ir, BareSliceMatrix<double,ColMajor>(mat)); });
       return mat(0);
+    }
+
+
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<> result) const override
+    {
+      FlatMatrix<double,ColMajor> mat(Dimension(), 1, &result(0));
+      ip.IntegrationRuleFromPoint([this,mat] (const BaseMappedIntegrationRule & ir)
+                                  { static_cast<const TCF*>(this)->T_Evaluate (ir, BareSliceMatrix<double,ColMajor>(mat)); });
+    }
+
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<Complex> result) const override
+    {
+      FlatMatrix<Complex,ColMajor> mat(Dimension(), 1, &result(0));
+      ip.IntegrationRuleFromPoint([this,mat] (const BaseMappedIntegrationRule & ir)
+                                  { static_cast<const TCF*>(this)->T_Evaluate (ir, BareSliceMatrix<Complex,ColMajor>(mat)); });
     }
     
     

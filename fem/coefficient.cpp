@@ -2934,6 +2934,7 @@ public:
         }
   }
   using T_CoefficientFunction<SymmetricCoefficientFunction>::Evaluate;
+  /*
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     throw Exception ("SymCF:: scalar evaluate for matrix called");
@@ -2961,7 +2962,8 @@ public:
     FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
     reshape2 = 0.5 * (reshape1+Trans(reshape1));
   }  
-
+  */
+  
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
                    BareSliceMatrix<T,ORD> result) const
@@ -3086,6 +3088,7 @@ public:
     throw Exception ("SkewCF:: scalar evaluate for matrix called");
   }
 
+  /*
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const override
   {
@@ -3108,7 +3111,9 @@ public:
     FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
     reshape2 = 0.5 * (reshape1-Trans(reshape1));
   }  
+  */
 
+  
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
                    BareSliceMatrix<T,ORD> result) const
@@ -3557,7 +3562,9 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
+  
   using BASE::Evaluate;
+  /*
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     VectorMem<20> v1(c1->Dimension());
@@ -3572,7 +3579,7 @@ public:
     c1->Evaluate (ip, v1);
     result(0) = v1(comp);
   }  
-
+  
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override
   {
@@ -3580,6 +3587,7 @@ public:
     c1->Evaluate (ip, v1);
     result(0) = v1(comp);
   }
+  */
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          BareSliceMatrix<Complex> result) const override
