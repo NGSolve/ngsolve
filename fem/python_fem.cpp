@@ -930,7 +930,7 @@ cf : ngsolve.CoefficientFunction
 
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
           {
-            return coef->Diff (shape, dir);
+            return coef->Diff (shape.get(), dir);
           },
           "Compute shape derivative in direction", 
           py::arg("direction")=1.0)

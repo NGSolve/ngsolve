@@ -11,7 +11,7 @@ namespace ngfem
              shared_ptr<CoefficientFunction> dir)
   {
     // return (-1)*TransposeCF(dir->Operator("Grad")) * proxy;
-    return (-1)*dir->Operator("grad") * proxy;
+    return -dir->Operator("grad") * proxy;
   }
 
 

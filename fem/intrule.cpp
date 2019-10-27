@@ -328,6 +328,9 @@ namespace ngfem
             ddx(k)(dir,j) = (jacr(k,j) - jacl(k,j) ) / (2*eps);
       }
   }
+
+
+
   
 
   template class MappedIntegrationPoint<0,0>;
