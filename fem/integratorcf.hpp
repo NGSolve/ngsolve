@@ -62,15 +62,10 @@ namespace ngfem
     DiffShape (shared_ptr<CoefficientFunction> dir) const
     {
       auto deriv = make_shared<SumOfIntegrals>();
-      // auto divdir = dynamic_pointer_cast<ProxyFunction>(dir)->GetAdditionalProxy("div");
-      // auto grad = dynamic_pointer_cast<ProxyFunction>(dir)->Deriv();
-      auto grad = dir->Operator("grad");
-      int dim = grad->Dimensions()[0];
-      auto divdir = MakeComponentCoefficientFunction(grad, 0);
-      for (int j = 1; j < dim; j++)
-        divdir = divdir + MakeComponentCoefficientFunction(grad, j*(dim+1));
+
+      auto divdir = TraceCF(dir->Operator("grad"));
       for (auto & icf : icfs)
-        deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape, dir) + divdir*icf->cf, icf->dx);
+        deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
       return deriv;
     }
 

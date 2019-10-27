@@ -345,7 +345,7 @@ namespace ngfem
   };
 
 
-  extern CoefficientFunction * shape;  // for shape derivative
+  extern shared_ptr<CoefficientFunction> shape;  // for shape derivative
 
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
   {
@@ -542,6 +542,16 @@ namespace ngfem
         }
     }
 
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      STACK_ARRAY(double, hmem, Dimension());
+      FlatMatrix<double,ColMajor> mat(Dimension(), 1, hmem);
+      ip.IntegrationRuleFromPoint([&] (const BaseMappedIntegrationRule & ir)
+                                  { static_cast<const TCF*>(this)->T_Evaluate (ir, BareSliceMatrix<double,ColMajor>(mat)); });
+      return mat(0);
+    }
+    
+    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const override
@@ -1647,6 +1657,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2);
 
+  inline shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1)
+  { return (-1) * c1; }
+
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
@@ -1667,6 +1680,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> SkewCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> TraceCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef);

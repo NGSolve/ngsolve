@@ -453,7 +453,14 @@ namespace ngfem
   }
 
 
-  
+  shared_ptr<CoefficientFunction> BlockDifferentialOperator ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir) const 
+  {
+    // assume it's a grad ...
+    return (-1)*dir->Operator("grad") * proxy;
+  }
+
 
   /*
   template class T_DifferentialOperator<DiffOpId<1> >;

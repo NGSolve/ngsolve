@@ -48,6 +48,8 @@ public:
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
 
+  string GetDescription () const override;
+
   NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }

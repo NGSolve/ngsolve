@@ -57,6 +57,15 @@ namespace ngfem
       throw Exception("a proxy needs at least one evaluator");
     elementwise_constant = true;
   }
+
+  string ProxyFunction :: GetDescription () const
+  {
+    return string(testfunction ? "test-function" : "trial-function")
+      + string(" diffop = ")
+      + evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???"));
+  }
+
+
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
@@ -623,7 +632,7 @@ namespace ngfem
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == shape)
+    if (var == shape.get())
       return evaluator->DiffShape (const_cast<ProxyFunction*>(this)->shared_from_this(), dir);
     else if (var == this)
       return dir;

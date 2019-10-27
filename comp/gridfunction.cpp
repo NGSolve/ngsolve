@@ -1581,7 +1581,7 @@ namespace ngcomp
   shared_ptr<CoefficientFunction> GridFunctionCoefficientFunction ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == shape)
+    if (var == shape.get())
       return diffop[VOL]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
     return CoefficientFunctionNoDerivative::Diff (var, dir);
   }
