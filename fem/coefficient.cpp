@@ -3051,10 +3051,8 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
-    cout << "nonzero, rec" << endl;
     int hd = Dimensions()[0];    
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-    cout << "non-zero input " << nonzero << endl;
     for (int i = 0; i < hd; i++)
       for (int j = 0; j < hd; j++)
         {
@@ -3064,7 +3062,6 @@ public:
           nonzero_deriv(ii) |= nonzero_deriv(jj);
           nonzero_dderiv(ii) |= nonzero_dderiv(jj);
         }
-    cout << "non-zero result " << nonzero << endl;    
   }
 
   
@@ -3227,11 +3224,11 @@ public:
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    int hd = Dimensions()[0];    
+    int dim1 = c1->Dimension();
     auto in0 = input[0];
     values(0) = false;
-    for (int i = 0; i < hd*hd; i++)
-      values(0) = values(0)+in0(i);   // logical or 
+    for (int i = 0; i < dim1; i++)
+      values(0) = values(0)+in0(i);   // logical or
   }
 
   using T_CoefficientFunction<TraceCoefficientFunction>::Evaluate;
