@@ -36,7 +36,7 @@ from .la import BaseMatrix, BaseVector, BlockVector, BlockMatrix, \
 from .fem import BFI, LFI, CoefficientFunction, Parameter, ET, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
-    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Inv, Det, \
+    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Trace, Inv, Det, \
     specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
     IntegrationRule, IfPos
 from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
@@ -52,7 +52,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     SetTestoutFile, ngsglobals, pml, MPI_Init
 from .solve import Redraw, BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
-from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, Trace, \
+from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, PyTrace, \
     PyDet, Cross, Cof, PyInv, PySym, PySkew, OuterProduct, TimeFunction
 from . import solvers
 

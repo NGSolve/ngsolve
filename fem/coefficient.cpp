@@ -3192,14 +3192,13 @@ public:
     func(*this);
   }
 
-  /*
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    FlatArray<int> hdims = Dimensions();        
-    for (int i : Range(hdims[0]))
-      for (int j : Range(hdims[1]))
-        code.body += Var(index,i,j).Assign("0.5*("+Var(inputs[0],i,j).S()+"-"+Var(inputs[0],j,i).S()+")");
+    CodeExpr result;
+    int dim1 = c1->Dimensions()[0];
+    for (int i = 0; i < dim1; i++)
+      result += Var(inputs[0],i,i);
+    code.body += Var(index).Assign(result.S());
   }
-  */
   
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
