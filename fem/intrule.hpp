@@ -1546,11 +1546,11 @@ namespace ngfem
   void MappedIntegrationPoint<DIMS,DIMR,SCAL>::
   IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const
   {
-    if constexpr (std::is_same_v<SCAL,double>)
+    if constexpr (std::is_same_v<SCAL,double> || std::is_same_v<SCAL,Complex>)
       {
-        FlatArray<MappedIntegrationPoint<DIMS,DIMR,double>> ia(1, const_cast<MappedIntegrationPoint*>(this));
+        FlatArray<MappedIntegrationPoint<DIMS,DIMR,SCAL>> ia(1, const_cast<MappedIntegrationPoint*>(this));
         IntegrationRule ir(1, const_cast<IntegrationPoint*>(&this->IP()));
-        MappedIntegrationRule<DIMS,DIMR,double> mir(ir, this->GetTransformation(), ia);
+        MappedIntegrationRule<DIMS,DIMR,SCAL> mir(ir, this->GetTransformation(), ia);
         func (mir);
       }
   }
