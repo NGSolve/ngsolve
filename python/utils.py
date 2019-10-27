@@ -80,7 +80,7 @@ def DomainConstantCF(values):
 def Id(dim):
     return CoefficientFunction( tuple( [1 if i==j else 0 for i in range(dim) for j in range(dim)]), dims=(dim,dim) )
 
-def Trace(mat):
+def PyTrace(mat):
     return sum( [mat[i,i] for i in range(mat.dims[0]) ])
 
 def PyDet(mat):
