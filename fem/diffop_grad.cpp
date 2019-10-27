@@ -14,6 +14,15 @@ namespace ngfem
     // return -dir->Operator("grad") * proxy;
   }
 
+  template <int D, typename FEL>
+  shared_ptr<CoefficientFunction> DiffOpGradientBoundary<D,FEL> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TransposeCF(dir->Operator("Gradboundary")) * proxy;
+    // return -dir->Operator("grad") * proxy;
+  }
+
 
 
   

@@ -929,7 +929,7 @@ namespace ngfem
 
     for (auto proxy : trial_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
     for (auto proxy : test_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");

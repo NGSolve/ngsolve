@@ -164,6 +164,8 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
 
+    static string Name() { return "gradboundary"; }
+    
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
 
@@ -200,7 +202,10 @@ namespace ngfem
     {
       Cast(fel).AddGradTrans (mir, y, x);
     }    
-    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
   
