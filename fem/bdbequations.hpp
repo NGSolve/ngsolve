@@ -134,7 +134,7 @@ namespace ngfem
       // y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
       FlatMatrixFixWidth<D> dshape(fel.GetNDof(), lh);
       Cast(fel).CalcDShape (mip.IP(), dshape);
-      y = dshape * hv;      
+      y.Range(0,fel.GetNDof()) = dshape * hv;      
     }
 
     using DiffOp<DiffOpGradient<D, FEL> >::AddTransSIMDIR;        
@@ -357,7 +357,7 @@ namespace ngfem
 
     template <class MIR, class TMY>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-                         FlatVector<double> x, TMY y,
+                         BareSliceVector<double> x, TMY y,
 			 LocalHeap & lh)
     {
       Cast(fel).Evaluate (mir.IR(), x, y.Col(0)); // FlatVector<> (mir.Size(), &y(0,0)));
@@ -365,7 +365,7 @@ namespace ngfem
 
     template <class MIR>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-                         FlatVector<Complex> x, SliceMatrix<Complex> y,
+                         BareSliceVector<Complex> x, SliceMatrix<Complex> y,
 			 LocalHeap & lh)
     {
       Cast(fel).Evaluate (mir.IR(),
@@ -389,7 +389,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      y = Cast(fel).GetShape (mip.IP(), lh) * x;
+      y.Range(0,fel.GetNDof()) = Cast(fel).GetShape (mip.IP(), lh) * x;
     }
 
 
@@ -397,7 +397,7 @@ namespace ngfem
     template <class MIR>
     static void ApplyTransIR (const FiniteElement & fel, 
 			      const MIR & mir,
-			      FlatMatrix<double> x, FlatVector<double> y,
+			      FlatMatrix<double> x, BareSliceVector<double> y,
 			      LocalHeap & lh)
     {
       Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
@@ -406,7 +406,7 @@ namespace ngfem
     template <class MIR>
     static void ApplyTransIR (const FiniteElement & fel, 
 			      const MIR & mir,
-			      FlatMatrix<Complex> x, FlatVector<Complex> y,
+			      FlatMatrix<Complex> x, BareSliceVector<Complex> y,
 			      LocalHeap & lh)
     {
       DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
@@ -511,7 +511,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      y = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
+      y.AddSize(fel.GetNDof()) = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
     }
 
 
@@ -520,7 +520,7 @@ namespace ngfem
     // using DiffOp<DiffOpIdBoundary<D, FEL> >::ApplyTransIR;
     template <class MIR>
     static void ApplyTransIR (const FiniteElement & fel, const MIR & mir,
-			      FlatMatrix<double> x, FlatVector<double> y,
+			      FlatMatrix<double> x, BareSliceVector<double> y,
 			      LocalHeap & lh)
     {
       // static Timer t("applytransir - bnd");
@@ -532,7 +532,7 @@ namespace ngfem
 
     template <class MIR>
     static void ApplyTransIR (const FiniteElement & fel, const MIR & mir,
-			      FlatMatrix<Complex> x, FlatVector<Complex> y,
+			      FlatMatrix<Complex> x, BareSliceVector<Complex> y,
 			      LocalHeap & lh)
     { 
       DiffOp<DiffOpIdBoundary<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    

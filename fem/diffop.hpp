@@ -108,7 +108,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
       DOP::GenerateMatrix (fel, mip, mat, lh);
-      y = Trans (mat) * x;
+      y.Range(0,fel.GetNDof()) = Trans (mat) * x;
     }
 
     /// Computes Transpose (B-matrix) times point value
@@ -133,7 +133,7 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
-      y = 0.0;
+      y.AddSize(fel.GetNDof()) = 0.0;
       for (size_t i = 0; i < mir.Size(); i++)
         ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }
@@ -258,28 +258,28 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   BareSliceMatrix<double> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   BareSliceMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
@@ -300,28 +300,28 @@ namespace ngfem
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
@@ -381,7 +381,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
@@ -395,14 +395,14 @@ namespace ngfem
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<double> flux,
-                FlatVector<double> x, 
+                BareSliceVector<double> x, 
                 LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<Complex> flux,
-                FlatVector<Complex> x, 
+                BareSliceVector<Complex> x, 
                 LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
@@ -463,7 +463,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
@@ -477,14 +477,14 @@ namespace ngfem
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<double> flux,
-                FlatVector<double> x, 
+                BareSliceVector<double> x, 
                 LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<Complex> flux,
-                FlatVector<Complex> x, 
+                BareSliceVector<Complex> x, 
                 LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
@@ -561,28 +561,28 @@ namespace ngfem
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   BareSliceMatrix<double> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   BareSliceMatrix<Complex> flux,
 	   LocalHeap & lh) const override;
 
@@ -603,28 +603,28 @@ namespace ngfem
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const override;
 
     virtual void

@@ -114,7 +114,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & bmip,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
@@ -128,7 +128,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationRule & bmir,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          BareSliceMatrix<double> flux,
          LocalHeap & lh) const
   {
@@ -142,7 +142,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & bmip,
-         FlatVector<Complex> x, 
+         BareSliceVector<Complex> x, 
          FlatVector<Complex> flux,
          LocalHeap & lh) const
   {
@@ -155,7 +155,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationRule & bmir,
-         FlatVector<Complex> x, 
+         BareSliceVector<Complex> x, 
          BareSliceMatrix<Complex> flux,
          LocalHeap & lh) const
   {
@@ -206,7 +206,7 @@ namespace ngfem
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & bmip,
               FlatVector<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const 
   {
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
@@ -219,7 +219,7 @@ namespace ngfem
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & bmip,
               FlatVector<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const 
   {
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
@@ -232,7 +232,7 @@ namespace ngfem
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & bmir,
               FlatMatrix<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const 
   {
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
@@ -245,7 +245,7 @@ namespace ngfem
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & bmir,
               FlatMatrix<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const 
   {
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =

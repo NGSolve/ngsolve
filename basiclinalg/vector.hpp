@@ -1396,6 +1396,7 @@ namespace ngbla
   {
     T * __restrict data;
   public:
+    
     using DummySize::Width;
     using DummySize::Height;
     BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
@@ -1442,6 +1443,8 @@ namespace ngbla
     size_t dist;
     BareSliceVector(T * _data, size_t _dist) : DummySize(0,0), data(_data), dist(_dist) { ; }
   public:
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    
     using DummySize::Width;
     using DummySize::Height;
     BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(vec.Dist()) { ; }
