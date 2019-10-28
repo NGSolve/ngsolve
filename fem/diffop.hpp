@@ -108,7 +108,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
       DOP::GenerateMatrix (fel, mip, mat, lh);
-      y.Range(0,fel.GetNDof()) = Trans (mat) * x;
+      y.Range(0,DOP::DIM*fel.GetNDof()) = Trans (mat) * x;
     }
 
     /// Computes Transpose (B-matrix) times point value
@@ -133,7 +133,7 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
-      y.AddSize(fel.GetNDof()) = 0.0;
+      y.AddSize(DOP::DIM*fel.GetNDof()) = 0.0;
       for (size_t i = 0; i < mir.Size(); i++)
         ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }
