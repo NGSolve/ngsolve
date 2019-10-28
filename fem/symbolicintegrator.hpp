@@ -473,7 +473,7 @@ public:
   NGS_DLL_HEADER virtual void
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const override
   {
@@ -485,7 +485,7 @@ public:
   NGS_DLL_HEADER virtual void
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<Complex> x, 
+         BareSliceVector<Complex> x, 
          FlatVector<Complex> flux,
          LocalHeap & lh) const override
   {
@@ -523,10 +523,10 @@ public:
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const override
   {
-    x = 0;
+    x.AddSize(bfel.GetNDof()) = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);
@@ -536,10 +536,10 @@ public:
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const override
   {
-    x = 0;
+    x.AddSize(bfel.GetNDof()) = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);

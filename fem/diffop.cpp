@@ -80,7 +80,7 @@ namespace ngfem
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
@@ -93,7 +93,7 @@ namespace ngfem
       }
 #endif
     HeapReset hr(lh);
-    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
   }
@@ -101,7 +101,7 @@ namespace ngfem
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<Complex> x, 
+         BareSliceVector<Complex> x, 
          FlatVector<Complex> flux,
          LocalHeap & lh) const
   {
@@ -114,7 +114,7 @@ namespace ngfem
       }
 #endif
     HeapReset hr(lh);
-    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
   }
@@ -122,7 +122,7 @@ namespace ngfem
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationRule & mir,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          BareSliceMatrix<double> flux,
          LocalHeap & lh) const
   {
@@ -133,7 +133,7 @@ namespace ngfem
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationRule & mir,
-         FlatVector<Complex> x, 
+         BareSliceVector<Complex> x, 
          BareSliceMatrix<Complex> flux,
          LocalHeap & lh) const
   {
@@ -166,7 +166,7 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const 
   {
 #ifndef FASTCOMPILE
@@ -178,9 +178,9 @@ namespace ngfem
       }
 #endif
     HeapReset hr(lh);
-    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
     CalcMatrix (fel, mip, mat, lh);
-    x = Trans(mat) * flux;
+    x.AddSize(fel.GetNDof()) = Trans(mat) * flux;
   }
   
   
@@ -188,7 +188,7 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const 
   {
 #ifndef FASTCOMPILE
@@ -200,9 +200,9 @@ namespace ngfem
       }
 #endif
     HeapReset hr(lh);
-    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
     CalcMatrix (fel, mip, mat, lh);
-    x = Trans(mat) * flux;
+    x.AddSize(fel.GetNDof()) = Trans(mat) * flux;
   }
   
   
@@ -210,16 +210,17 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationRule & mir,
               FlatMatrix<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    FlatVector<double> hx(x.Size(), lh);
-    x = 0.0;
+    size_t nd = fel.GetNDof();
+    FlatVector<double> hx(nd, lh);
+    x.AddSize(nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
       {
         ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
-        x += hx;
+        x.AddSize(nd) += hx;
       }
   }
   
@@ -227,16 +228,17 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationRule & mir,
               FlatMatrix<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    FlatVector<Complex> hx(x.Size(), lh);
-    x = 0.0;
+    size_t nd = fel.GetNDof();
+    FlatVector<Complex> hx(nd, lh);
+    x.AddSize(nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
       {
         ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
-        x += hx;
+        x.AddSize(nd) += hx;
       }
   }
 
@@ -326,7 +328,7 @@ namespace ngfem
   void BlockDifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
@@ -371,10 +373,11 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> bx, 
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
+    auto x = bx.AddSize(dim*fel.GetNDof());
     FlatVector<> hx(fel.GetNDof(), lh);
     FlatVector<> hflux(diffop->Dim(), lh);
     
@@ -400,10 +403,11 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> bx, 
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
+    auto x = bx.AddSize(dim*fel.GetNDof());
     FlatVector<Complex> hx(fel.GetNDof(), lh);
     FlatVector<Complex> hflux(diffop->Dim(), lh);
     
@@ -536,7 +540,7 @@ namespace ngfem
   void BlockDifferentialOperatorTrans ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
@@ -582,10 +586,11 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> bx, 
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
+    auto x = bx.AddSize(fel.GetNDof()*dim);
     FlatVector<> hx(fel.GetNDof(), lh);
     // FlatVector<> hflux(diffop->Dim(), lh);
     
@@ -611,10 +616,11 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> bx, 
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
+    auto x = bx.AddSize(dim*fel.GetNDof());
     FlatVector<Complex> hx(fel.GetNDof(), lh);
     // FlatVector<Complex> hflux(diffop->Dim(), lh);
     

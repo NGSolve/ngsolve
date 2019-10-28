@@ -199,7 +199,7 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
+  EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
   {
     LocalHeapMem<1000> lhdummy("hcurlfe-lh");
     for (int i = 0; i < ir.Size(); i++)
@@ -209,7 +209,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
-                      FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
+                      BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
   {
     /*
     LocalHeapMem<1000> lhdummy("dummy");
