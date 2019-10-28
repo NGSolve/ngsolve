@@ -90,7 +90,7 @@ namespace ngfem
 
     template <class TVY>
     static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
-		       const FlatVector<> & x, TVY && y,
+		       BareSliceVector<> x, TVY && y,
 		       LocalHeap & lh) 
     {
       Vec<D> hv = Cast(fel).EvaluateGrad(mip.IP(), x);
@@ -101,7 +101,7 @@ namespace ngfem
   
     template <class MIR>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-			 const FlatVector<double> x, SliceMatrix<double> y,
+			 BareSliceVector<double> x, SliceMatrix<double> y,
 			 LocalHeap & lh)
     {
       // FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
