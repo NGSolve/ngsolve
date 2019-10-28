@@ -539,7 +539,7 @@ public:
               BareSliceVector<Complex> x, 
               LocalHeap & lh) const override
   {
-    x.AddSize(bfel.GetNDof()) = 0;
+    x.AddSize(BlockDim()*bfel.GetNDof()) = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);
