@@ -123,7 +123,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
       DOP::GenerateMatrix (fel, mip, mat, lh);
-      y += Trans (mat) * x;
+      y.Range(DOP::DIM*fel.GetNDof()) += Trans (mat) * x;
     }
 
 
