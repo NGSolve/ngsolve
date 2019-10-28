@@ -333,22 +333,22 @@ namespace ngfem
          LocalHeap & lh) const
   {
     HeapReset hr(lh);
-    FlatVector<> hx(fel.GetNDof(), lh);
+    // FlatVector<> hx(fel.GetNDof(), lh);
     FlatVector<> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
       {
         for (int k = 0; k < dim; k++)
           {
-            hx = x.Slice(k, dim);
-            diffop->Apply(fel, mip, hx, hflux, lh);
+            // hx = x.Slice(k, dim);
+            diffop->Apply(fel, mip, x.Slice(k,dim), hflux, lh);
             flux.Slice(k,dim) = hflux;
           }
       }
     else
       {
-        hx = x.Slice(comp, dim);
-        diffop->Apply(fel, mip, hx, hflux, lh);
+        // hx = x.Slice(comp, dim);
+        diffop->Apply(fel, mip, x.Slice(comp,dim), hflux, lh);
         flux.Slice(comp,dim) = hflux;
       }
   }
@@ -373,12 +373,12 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
-              BareSliceVector<double> bx, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
-    auto x = bx.AddSize(dim*fel.GetNDof());
-    FlatVector<> hx(fel.GetNDof(), lh);
+    // auto x = bx.AddSize(dim*fel.GetNDof());
+    // FlatVector<> hx(fel.GetNDof(), lh);
     FlatVector<> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
@@ -386,16 +386,16 @@ namespace ngfem
         for (int k = 0; k < dim; k++)
           {
             hflux = flux.Slice(k, dim);
-            diffop->ApplyTrans(fel, mip, hflux, hx, lh);
-            x.Slice(k,dim) = hx;
+            diffop->ApplyTrans(fel, mip, hflux, x.Slice(k,dim), lh);
+            // x.Slice(k,dim) = hx;
           }
       }
     else
       {
+        x.AddSize(dim*fel.GetNDof()) = 0.0;
         hflux = flux.Slice(comp, dim);
-        diffop->ApplyTrans(fel, mip, hflux, hx,lh);
-        x = 0.0;
-        x.Slice(comp,dim) = hx;
+        diffop->ApplyTrans(fel, mip, hflux, x.Slice(comp,dim), lh);
+        // x.Slice(comp,dim) = hx;
       }
   }
 
@@ -403,12 +403,12 @@ namespace ngfem
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
-              BareSliceVector<Complex> bx, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
-    auto x = bx.AddSize(dim*fel.GetNDof());
-    FlatVector<Complex> hx(fel.GetNDof(), lh);
+    // auto x = bx;
+    // FlatVector<Complex> hx(fel.GetNDof(), lh);
     FlatVector<Complex> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
@@ -416,16 +416,16 @@ namespace ngfem
         for (int k = 0; k < dim; k++)
           {
             hflux = flux.Slice(k, dim);
-            diffop->ApplyTrans(fel, mip, hflux, hx, lh);
-            x.Slice(k,dim) = hx;
+            diffop->ApplyTrans(fel, mip, hflux, x.Slice(k,dim), lh);
+            // x.Slice(k,dim) = hx;
           }
       }
     else
       {
         hflux = flux.Slice(comp, dim);
-        diffop->ApplyTrans(fel, mip, hflux, hx,lh);
-        x = 0.0;
-        x.Slice(comp,dim) = hx;
+        x.AddSize(dim*fel.GetNDof()) = 0.0;
+        diffop->ApplyTrans(fel, mip, hflux, x.Slice(comp,dim), lh);
+        // x.Slice(comp,dim) = hx;
       }
   }
 
@@ -544,23 +544,23 @@ namespace ngfem
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
-    HeapReset hr(lh);
-    FlatVector<> hx(fel.GetNDof(), lh);
+    // HeapReset hr(lh);
+    // FlatVector<> hx(fel.GetNDof(), lh);
     // FlatVector<> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
       {
         for (int k = 0; k < dim; k++)
           {
-            hx = x.Slice(k, dim);
-            diffop->Apply(fel, mip, hx, flux.Range(diffop->Dim()*IntRange(k,k+1)), lh);
+            // hx = x.Slice(k, dim);
+            diffop->Apply(fel, mip, x.Slice(k,dim), flux.Range(diffop->Dim()*IntRange(k,k+1)), lh);
             // flux.Slice(k,dim) = hflux;
           }
       }
     else
       {
-        hx = x.Slice(comp, dim);
-        diffop->Apply(fel, mip, hx, flux.Range(diffop->Dim()*IntRange(comp,comp+1)), lh);
+        // hx = x.Slice(comp, dim);
+        diffop->Apply(fel, mip, x.Slice(comp,dim), flux.Range(diffop->Dim()*IntRange(comp,comp+1)), lh);
         // flux.Slice(comp,dim) = hflux;
       }
   }
@@ -589,9 +589,9 @@ namespace ngfem
               BareSliceVector<double> bx, 
               LocalHeap & lh) const
   {
-    HeapReset hr(lh);
+    // HeapReset hr(lh);
     auto x = bx.AddSize(fel.GetNDof()*dim);
-    FlatVector<> hx(fel.GetNDof(), lh);
+    // FlatVector<> hx(fel.GetNDof(), lh);
     // FlatVector<> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
@@ -599,16 +599,16 @@ namespace ngfem
         for (int k = 0; k < dim; k++)
           {
             // hflux = flux.Slice(k, dim);
-            diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(k,k+1)), hx, lh);
-            x.Slice(k,dim) = hx;
+            diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(k,k+1)), x.Slice(k,dim), lh);
+            // x.Slice(k,dim) = hx;
           }
       }
     else
       {
         // hflux = flux.Slice(comp, dim);
-        diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(comp,comp+1)), hx,lh);
         x = 0.0;
-        x.Slice(comp,dim) = hx;
+        diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(comp,comp+1)), x.Slice(comp,dim), lh);
+        // x.Slice(comp,dim) = hx;
       }
   }
 
@@ -619,9 +619,9 @@ namespace ngfem
               BareSliceVector<Complex> bx, 
               LocalHeap & lh) const
   {
-    HeapReset hr(lh);
+    // HeapReset hr(lh);
     auto x = bx.AddSize(dim*fel.GetNDof());
-    FlatVector<Complex> hx(fel.GetNDof(), lh);
+    // FlatVector<Complex> hx(fel.GetNDof(), lh);
     // FlatVector<Complex> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
@@ -629,16 +629,16 @@ namespace ngfem
         for (int k = 0; k < dim; k++)
           {
             // hflux = flux.Slice(k, dim);
-            diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(k,k+1)), hx, lh);
-            x.Slice(k,dim) = hx;
+            diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(k,k+1)), x.Slice(k,dim), lh);
+            // x.Slice(k,dim) = hx;
           }
       }
     else
       {
         // hflux = flux.Slice(comp, dim);
-        diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(comp,comp+1)), hx,lh);
         x = 0.0;
-        x.Slice(comp,dim) = hx;
+        diffop->ApplyTrans(fel, mip, flux.Range(diffop->Dim()*IntRange(comp,comp+1)), x.Slice(comp,dim), lh);
+        // x.Slice(comp,dim) = hx;
       }
   }
 
