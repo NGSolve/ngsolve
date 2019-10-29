@@ -271,9 +271,9 @@ namespace ngfem
 
     result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).Range(0,mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).Range(0,mir.Size()) = 1;
   }
 
   void ProxyFunction ::
@@ -297,9 +297,9 @@ namespace ngfem
 
     result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).Range(0,mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).Range(0,mir.Size()) = 1;
   }
 
   /*
@@ -1310,7 +1310,7 @@ namespace ngfem
                               auto hbdbmat1 = bdbmat1.RowSlice(j,dim_proxy1).Rows(r1);
                               
                               for (size_t k = 0; k < bdbmat1.Width(); k++)
-                                hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
+                                hbdbmat1.Col(k).Range(0,r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
                             }
                         }
                       else
@@ -1355,7 +1355,7 @@ namespace ngfem
                                   auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
 
                                   for (size_t i = 0; i < ir.Size(); i++)
-                                    bdbmat1_j.Col(i).AddSize(r1.Size()) += proxyvalues_jk(i)*weights(i) * bbmat1_k.Col(i);
+                                    bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*weights(i) * bbmat1_k.Col(i);
                                 }
                         }
                       
@@ -1806,7 +1806,7 @@ namespace ngfem
                                     auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
                                     
                                     for (size_t i = 0; i < mir.Size(); i++)
-                                      bdbmat1_j.Col(i).AddSize(r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
+                                      bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
                                   }
                             }
                             
@@ -1836,7 +1836,7 @@ namespace ngfem
                                     auto bdbmat2_k = bdbmat2.RowSlice(k, dim_proxy1).Rows(r2);
                                     
                                     for (size_t i = 0; i < mir.Size(); i++)
-                                      bdbmat2_k.Col(i).AddSize(r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
+                                      bdbmat2_k.Col(i).Range(0,r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
                                   }
                             }
                             

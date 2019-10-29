@@ -323,7 +323,7 @@ namespace ngfem
         if (needs_copy)
           {
             FlatVector<> coefs(sqr(order+1), mem_coefs);
-            bcoefs.AddSize(ndof) = coefs;
+            bcoefs.Range(0,ndof) = coefs;
           }
           
         return;
@@ -529,7 +529,7 @@ namespace ngfem
         NgProfiler::StopThreadTimer (tmult, TaskManager::GetThreadId());
 
         FlatVector<> vec_coefs(sqr(order+1)*(order+1), &temp0(0));
-        bcoefs.AddSize(ndof) += vec_coefs;
+        bcoefs.Range(0,ndof) += vec_coefs;
         
         return;
       }
@@ -659,7 +659,7 @@ namespace ngfem
             temp0 = Trans(temp1)*tshapez;
             
             FlatVector<> vec_coefs(sqr(order+1)*(order+1), &temp0(0));
-            bcoefs.AddSize(ndof) += vec_coefs;
+            bcoefs.Range(0,ndof) += vec_coefs;
           }
         
         return;

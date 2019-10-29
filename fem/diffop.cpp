@@ -127,7 +127,7 @@ namespace ngfem
          LocalHeap & lh) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      Apply (fel, mir[i], x, flux.Row(i).AddSize(dim), lh);
+      Apply (fel, mir[i], x, flux.Row(i).Range(0,dim), lh);
   }
   
   void DifferentialOperator ::
@@ -138,7 +138,7 @@ namespace ngfem
          LocalHeap & lh) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      Apply (fel, mir[i], x, flux.Row(i).AddSize(dim), lh);
+      Apply (fel, mir[i], x, flux.Row(i).Range(0,dim), lh);
   }
 
   void DifferentialOperator ::
@@ -180,7 +180,7 @@ namespace ngfem
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
     CalcMatrix (fel, mip, mat, lh);
-    x.AddSize(fel.GetNDof()) = Trans(mat) * flux;
+    x.Range(0,fel.GetNDof()) = Trans(mat) * flux;
   }
   
   
@@ -202,7 +202,7 @@ namespace ngfem
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
     CalcMatrix (fel, mip, mat, lh);
-    x.AddSize(fel.GetNDof()) = Trans(mat) * flux;
+    x.Range(0,fel.GetNDof()) = Trans(mat) * flux;
   }
   
   
@@ -216,11 +216,11 @@ namespace ngfem
     HeapReset hr(lh);
     size_t nd = fel.GetNDof();
     FlatVector<double> hx(nd, lh);
-    x.AddSize(nd) = 0.0;
+    x.Range(0,nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
       {
         ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
-        x.AddSize(nd) += hx;
+        x.Range(0,nd) += hx;
       }
   }
   
@@ -234,11 +234,11 @@ namespace ngfem
     HeapReset hr(lh);
     size_t nd = fel.GetNDof();
     FlatVector<Complex> hx(nd, lh);
-    x.AddSize(nd) = 0.0;
+    x.Range(0,nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
       {
         ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
-        x.AddSize(nd) += hx;
+        x.Range(0,nd) += hx;
       }
   }
 
@@ -314,10 +314,10 @@ namespace ngfem
               for (size_t l = 0; l < dim_diffop; l++)
                 hval[l] = col(l*hdim2);
               
-              col.AddSize(dim2_dim_do) = 0;
+              col.Range(0,dim2_dim_do) = 0;
             
               for (size_t l = 0; l < dim_diffop; l++)
-                col.Slice(l*hdim, dim_dim_do+1).AddSize(hdim) = hval[l];
+                col.Slice(l*hdim, dim_dim_do+1).Range(0,hdim) = hval[l];
             }
         }
     else
@@ -377,7 +377,7 @@ namespace ngfem
               LocalHeap & lh) const
   {
     HeapReset hr(lh);
-    // auto x = bx.AddSize(dim*fel.GetNDof());
+    // auto x = bx.Range(0,dim*fel.GetNDof());
     // FlatVector<> hx(fel.GetNDof(), lh);
     FlatVector<> hflux(diffop->Dim(), lh);
     
@@ -392,7 +392,7 @@ namespace ngfem
       }
     else
       {
-        x.AddSize(dim*fel.GetNDof()) = 0.0;
+        x.Range(0,dim*fel.GetNDof()) = 0.0;
         hflux = flux.Slice(comp, dim);
         diffop->ApplyTrans(fel, mip, hflux, x.Slice(comp,dim), lh);
         // x.Slice(comp,dim) = hx;
@@ -423,7 +423,7 @@ namespace ngfem
     else
       {
         hflux = flux.Slice(comp, dim);
-        x.AddSize(dim*fel.GetNDof()) = 0.0;
+        x.Range(0,dim*fel.GetNDof()) = 0.0;
         diffop->ApplyTrans(fel, mip, hflux, x.Slice(comp,dim), lh);
         // x.Slice(comp,dim) = hx;
       }
@@ -527,9 +527,9 @@ namespace ngfem
               for (size_t l = 0; l < dim_diffop; l++)
                 hval[l] = col(l*hdim2);
               
-              col.AddSize(dim2_dim_do) = 0;
+              col.Range(0,dim2_dim_do) = 0;
               for (size_t l = 0; l < dim_diffop; l++)
-                col.Slice(l, dim_diffop*(dim+1)).AddSize(hdim) = hval[l];
+                col.Slice(l, dim_diffop*(dim+1)).Range(0,hdim) = hval[l];
             }
         }
     else
@@ -590,7 +590,7 @@ namespace ngfem
               LocalHeap & lh) const
   {
     // HeapReset hr(lh);
-    auto x = bx.AddSize(fel.GetNDof()*dim);
+    auto x = bx.Range(0,fel.GetNDof()*dim);
     // FlatVector<> hx(fel.GetNDof(), lh);
     // FlatVector<> hflux(diffop->Dim(), lh);
     
@@ -620,7 +620,7 @@ namespace ngfem
               LocalHeap & lh) const
   {
     // HeapReset hr(lh);
-    auto x = bx.AddSize(dim*fel.GetNDof());
+    auto x = bx.Range(0,dim*fel.GetNDof());
     // FlatVector<Complex> hx(fel.GetNDof(), lh);
     // FlatVector<Complex> hflux(diffop->Dim(), lh);
     
