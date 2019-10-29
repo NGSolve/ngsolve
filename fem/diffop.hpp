@@ -133,7 +133,7 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
-      y.AddSize(DOP::DIM*fel.GetNDof()) = 0.0;
+      y.Range(0,DOP::DIM*fel.GetNDof()) = 0.0;
       for (size_t i = 0; i < mir.Size(); i++)
         ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }

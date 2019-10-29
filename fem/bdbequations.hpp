@@ -511,7 +511,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      y.AddSize(fel.GetNDof()) = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
     }
 
 

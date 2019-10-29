@@ -124,7 +124,7 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
       static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
-      y.AddSize(fel.GetNDof()) = shape * x;
+      y.Range(0,fel.GetNDof()) = shape * x;
     }
 
 
@@ -481,7 +481,7 @@ namespace ngfem
 
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y.AddSize(fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -554,7 +554,7 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      y.AddSize(fel.GetNDof()) = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
     
     }
   };

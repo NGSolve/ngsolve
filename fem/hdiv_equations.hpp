@@ -254,7 +254,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y.AddSize(fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)*((1.0/mip.GetJacobiDet())* x);
+    y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)*((1.0/mip.GetJacobiDet())* x);
   }
 };
 
@@ -300,7 +300,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y.AddSize(fel.GetNDof()) = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetShape (mip.IP(), lh);
+    y.Range(0,fel.GetNDof()) = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetShape (mip.IP(), lh);
   }
 
   using DiffOp<DiffOpIdVecHDivBoundary<D,FEL>>::ApplySIMDIR;          

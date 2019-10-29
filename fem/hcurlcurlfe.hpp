@@ -306,7 +306,7 @@ namespace ngfem
           this->Cast() -> T_CalcShape (addp,
                                        SBLambda ([i,shapes,trans] (size_t j, auto val) 
                                                  {
-                                                   shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).AddSize(sqr(DIMSPACE)) = trans * val.Shape();
+                                                   shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = trans * val.Shape();
                                                  }));
         }
     }

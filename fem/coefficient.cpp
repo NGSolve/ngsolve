@@ -3592,7 +3592,7 @@ public:
     STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
     FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
     c1->Evaluate (ir, temp);
-    result.Col(0).AddSize(ir.Size()) = temp.Col(comp);
+    result.Col(0).Range(0,ir.Size()) = temp.Col(comp);
   }  
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -3614,7 +3614,7 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];    
-    values.Row(0).AddSize(ir.Size()) = in0.Row(comp);
+    values.Row(0).Range(ir.Size()) = in0.Row(comp);
   }
 
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
