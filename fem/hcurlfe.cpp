@@ -199,7 +199,7 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
+  EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
   {
     LocalHeapMem<1000> lhdummy("hcurlfe-lh");
     for (int i = 0; i < ir.Size(); i++)
@@ -209,7 +209,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
-                      FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
+                      BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
   {
     /*
     LocalHeapMem<1000> lhdummy("dummy");
@@ -561,7 +561,7 @@ namespace ngfem
       double y = ip(1);
       double l3 = 1-x-y;
 
-      shape.AddSize(ndof) = 0.0; //!
+      shape.Range(0,ndof) = 0.0; //!
 
       shape(0) = x * l3;
       shape(1) = x * (x-l3) * l3;
@@ -1517,7 +1517,7 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    BareSliceVector<> shape) const override
     {
-      shape.AddSize(ndof) = 0.0; //!
+      shape.Range(0,ndof) = 0.0; //!
       double x = ip(0);
       double y = ip(1);
       double z = ip(2);
@@ -3368,7 +3368,7 @@ namespace ngfem
 
 
 
-
+  
   /* ************************ Prism3 No Gradients ******************************* */
   
   // template <int ORDER>
@@ -4245,7 +4245,7 @@ namespace ngfem
       double y = ip(1);
       double z = ip(2);
     
-      shape.AddSize(ndof) = 0.0; //!
+      shape.Range(0,ndof) = 0.0; //!
       int ii = 0;
 
       double fac = z * (1-z);
@@ -4433,7 +4433,7 @@ namespace ngfem
       double y = ip(1);
       double z = ip(2);
     
-      shape.AddSize(ndof) = 0.0; //!
+      shape.Range(0,ndof) = 0.0;
       int ii = 0;
 
       double fac = z * (1-z) * (1-z);

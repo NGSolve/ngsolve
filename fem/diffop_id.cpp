@@ -2,7 +2,18 @@
 #include <diffop_impl.hpp>
   
 namespace ngfem
-{ 
+{
+
+  template <int D, typename FEL>
+  shared_ptr<CoefficientFunction> DiffOpId<D,FEL> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return make_shared<ConstantCoefficientFunction>(0);
+  }
+
+
+  
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<1>>;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<2>>;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<3>>;

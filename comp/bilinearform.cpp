@@ -111,6 +111,9 @@ namespace ngcomp
                 const Flags & flags)
     : NGS_Object(afespace->GetMeshAccess(), flags, aname), fespace(afespace), fespace2(afespace2)
   {
+    if (fespace->GetMeshAccess() != fespace2->GetMeshAccess())
+      throw Exception("Trial- and test-spaces must be defined on the same mesh");
+    
     multilevel = true;
     galerkin = false;
     symmetric = false;

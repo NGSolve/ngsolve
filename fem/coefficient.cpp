@@ -113,6 +113,12 @@ namespace ngfem
     throw Exception(string("Deriv not implemented for CF ")+typeid(*this).name());
   }
 
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
+  Operator (const string & name) const
+  {
+    throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
+  }
+  
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
@@ -219,6 +225,11 @@ namespace ngfem
   }
   
 
+  shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
+
+
+
+  
   ///
   ConstantCoefficientFunction ::   
   ConstantCoefficientFunction (double aval) 
@@ -1005,7 +1016,7 @@ public:
 
   virtual string GetDescription() const override
   {
-    return "Scale "+ToString(scal);
+    return "scale "+ToString(scal);
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1512,6 +1523,10 @@ public:
     ar.Shallow(c1).Shallow(c2);
   }
 
+  virtual string GetDescription () const override
+  { return "innerproduct, fix size = "+ToString(DIM); }
+
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     CodeExpr result;
@@ -1988,6 +2003,9 @@ public:
     SetDimensions( ngstd::INT<2> (dims_c1[0], dims_c2[1]) );
     inner_dim = dims_c1[1];
   }
+
+  virtual string GetDescription () const override
+  { return "matrix-matrix multiply"; }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
@@ -2208,7 +2226,7 @@ public:
   }
 
   virtual string GetDescription () const override
-  { return "Matrix-Vector multiply"; }
+  { return "matrix-vector multiply"; }
 
   
   // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
@@ -2608,29 +2626,10 @@ public:
     */
   }
   using T_CoefficientFunction<InverseCoefficientFunction<D>>::Evaluate;
-
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     throw Exception ("InverseCF:: scalar evaluate for matrix called");
   }
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const override
-  {
-    Mat<D,D> mat;
-    c1->Evaluate (ip, FlatVector<> (D*D, &mat(0,0)));
-    Mat<D,D> inv = Inv(mat);
-    result = FlatVector<> (D*D, &inv(0,0));
-  }  
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const override
-  {
-    Mat<D,D,Complex> mat;
-    c1->Evaluate (ip, FlatVector<Complex> (D*D, &mat(0,0)));
-    Mat<D,D, Complex> inv = Inv(mat);
-    result = FlatVector<Complex> (D*D, &inv(0,0));
-  }  
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
@@ -2693,7 +2692,11 @@ public:
   DeterminantCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<DeterminantCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
   {
-    ;
+    auto dims_c1 = c1 -> Dimensions();
+    if (dims_c1.Size() != 2)
+      throw Exception("Determinant of non-matrix called");
+    if (dims_c1[0] != dims_c1[1])
+      throw Exception("Determinant of non-symmetric matrix called");
   }
 
   void DoArchive(Archive& ar) override
@@ -2766,28 +2769,8 @@ public:
         values(j*hdims[1]+k) = in0(k*hdims[0]+j);
     */
   }
+  
   using T_CoefficientFunction<DeterminantCoefficientFunction<D>>::Evaluate;
-  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
-  {
-    throw Exception ("DeterminantCF:: scalar evaluate for matrix called");
-  }
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const override
-  {
-    Mat<D,D> mat;
-    c1->Evaluate (ip, FlatVector<> (D*D, &mat(0,0)));
-    result(0) = Det(mat);
-  }  
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const override
-  {
-    Mat<D,D,Complex> mat;
-    c1->Evaluate (ip, FlatVector<Complex> (D*D, &mat(0,0)));
-    result(0) = Det(mat);
-  }  
-
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
                    BareSliceMatrix<T,ORD> result) const
@@ -2920,30 +2903,7 @@ public:
   {
     throw Exception ("SymCF:: scalar evaluate for matrix called");
   }
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const override
-  {
-    FlatArray<int> hdims = Dimensions();        
-    VectorMem<20> input(result.Size());
-    c1->Evaluate (ip, input);    
-    FlatMatrix<> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = 0.5 * (reshape1+Trans(reshape1));
-  }  
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const override
-  {
-    FlatArray<int> hdims = Dimensions();        
-    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
-    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
-    c1->Evaluate (ip, input);    
-    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = 0.5 * (reshape1+Trans(reshape1));
-  }  
-
+  
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
                    BareSliceMatrix<T,ORD> result) const
@@ -2983,7 +2943,7 @@ public:
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return 0.5*(c1->Diff(var, dir) + TransposeCF (c1->Diff(var, dir)));
+    return SymmetricCF(c1->Diff(var, dir));
   }
 };
 
@@ -3031,10 +2991,8 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
-    cout << "nonzero, rec" << endl;
     int hd = Dimensions()[0];    
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-    cout << "non-zero input " << nonzero << endl;
     for (int i = 0; i < hd; i++)
       for (int j = 0; j < hd; j++)
         {
@@ -3044,7 +3002,6 @@ public:
           nonzero_deriv(ii) |= nonzero_deriv(jj);
           nonzero_dderiv(ii) |= nonzero_dderiv(jj);
         }
-    cout << "non-zero result " << nonzero << endl;    
   }
 
   
@@ -3068,29 +3025,7 @@ public:
     throw Exception ("SkewCF:: scalar evaluate for matrix called");
   }
 
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const override
-  {
-    FlatArray<int> hdims = Dimensions();        
-    VectorMem<20> input(result.Size());
-    c1->Evaluate (ip, input);    
-    FlatMatrix<> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = 0.5 * (reshape1-Trans(reshape1));
-  }  
-
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const override
-  {
-    FlatArray<int> hdims = Dimensions();        
-    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
-    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
-    c1->Evaluate (ip, input);    
-    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
-    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
-    reshape2 = 0.5 * (reshape1-Trans(reshape1));
-  }  
-
+  
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
                    BareSliceMatrix<T,ORD> result) const
@@ -3130,7 +3065,129 @@ public:
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return 0.5*(c1->Diff(var, dir) - TransposeCF (c1->Diff(var, dir)));
+    return SkewCF(c1->Diff(var, dir));
+  }
+};
+
+
+
+
+
+class TraceCoefficientFunction : public T_CoefficientFunction<TraceCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<TraceCoefficientFunction>;
+public:
+  TraceCoefficientFunction() = default;
+  TraceCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : T_CoefficientFunction<TraceCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
+  {
+    auto dims_c1 = c1 -> Dimensions();
+    if (dims_c1.Size() != 2)
+      throw Exception("Trace of non-matrix called");
+    if (dims_c1[0] != dims_c1[1])
+      throw Exception("Trace of non-symmetric matrix called");
+  }
+
+  virtual string GetDescription () const override
+  { return "trace"; }
+  
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    CodeExpr result;
+    int dim1 = c1->Dimensions()[0];
+    for (int i = 0; i < dim1; i++)
+      result += Var(inputs[0],i,i);
+    code.body += Var(index).Assign(result.S());
+  }
+  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+  {
+    int dim1 = c1->Dimension();
+    Vector<bool> v1(dim1), d1(dim1), dd1(dim1);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+
+    bool v = false, d = false, dd = false;
+    for (int i = 0; i < dim1; i++)
+      {
+        v |= v1(i);
+        d |= d1(i);
+        dd |= dd1(i);
+      }
+    nonzero = v;
+    nonzero_deriv = d;
+    nonzero_dderiv = dd;
+  }
+
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    int dim1 = c1->Dimension();
+    auto in0 = input[0];
+    values(0) = false;
+    for (int i = 0; i < dim1; i++)
+      values(0) = values(0)+in0(i);   // logical or
+  }
+
+  using T_CoefficientFunction<TraceCoefficientFunction>::Evaluate;
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & mir,
+                   BareSliceMatrix<T,ORD> result) const
+  {
+    int hd = c1->Dimensions()[0];
+    STACK_ARRAY(T, hmem, hd*hd*mir.Size());
+    FlatMatrix<T> m1(hd*hd, mir.Size(), &hmem[0]);
+    c1->Evaluate (mir, m1);
+    
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        T sum{0.0};
+        for (int j = 0; j < hd; j++)
+          sum += m1(j*(hd+1), i);
+        result(0, i) = sum;
+      }
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    int hd = c1->Dimensions()[0];
+    size_t np = ir.Size();
+    
+    auto in0 = input[0];
+    for (size_t i = 0; i < np; i++)
+      {
+        T sum{0.0};
+        for (size_t j = 0; j < hd; j++)
+          sum += in0(j*(hd+1), i);
+        values(0,i) = sum;
+      }
+  }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return TraceCF(c1->Diff(var, dir));
   }
 };
 
@@ -3325,6 +3382,11 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
     return make_shared<SkewCoefficientFunction> (coef);
   }
 
+  shared_ptr<CoefficientFunction> TraceCF (shared_ptr<CoefficientFunction> coef)
+  {
+    return make_shared<TraceCoefficientFunction> (coef);
+  }
+
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef)
   {
     if (coef->IsComplex())
@@ -3385,7 +3447,9 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
+  
   using BASE::Evaluate;
+  /*
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     VectorMem<20> v1(c1->Dimension());
@@ -3400,7 +3464,7 @@ public:
     c1->Evaluate (ip, v1);
     result(0) = v1(comp);
   }  
-
+  
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override
   {
@@ -3408,6 +3472,7 @@ public:
     c1->Evaluate (ip, v1);
     result(0) = v1(comp);
   }
+  */
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          BareSliceMatrix<Complex> result) const override
@@ -3416,7 +3481,7 @@ public:
     STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
     FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
     c1->Evaluate (ir, temp);
-    result.Col(0).AddSize(ir.Size()) = temp.Col(comp);
+    result.Col(0).Range(0,ir.Size()) = temp.Col(comp);
   }  
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -3438,7 +3503,7 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];    
-    values.Row(0).AddSize(ir.Size()) = in0.Row(comp);
+    values.Row(0).Range(ir.Size()) = in0.Row(comp);
   }
 
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
@@ -4554,6 +4619,16 @@ public:
       Evaluate (ir, values);
     }
     */
+
+    shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dirdiff) const override
+    {
+      if (var == shape.get())
+        return MakeComponentCoefficientFunction (dirdiff, dir);
+      return BASE::Diff (var, dirdiff);
+    }
+    
+    
   };
 
 
@@ -4563,8 +4638,78 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 }
 
 
+
+class NGS_DLL_HEADER FrozenCoefficientFunction
+  : public T_CoefficientFunction<FrozenCoefficientFunction, CoefficientFunctionNoDerivative>
+{
+  shared_ptr<CoefficientFunction> cf;
+ public:
+  FrozenCoefficientFunction (shared_ptr<CoefficientFunction> acf) : cf(acf)
+    {
+      SetDimensions (cf->Dimensions());
+    }
+  
+  ~FrozenCoefficientFunction() { ; }
+  
+  void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    cf->TraverseTree (func);
+    func(*this);
+  }
+
+  string GetDescription () const override
+  {
+    return "frozen";
+  }    
+
+  
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  {
+    return { cf };
+  }
+  
+
+  
+  double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    return cf -> Evaluate(ip); 
+  }
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    cf -> Evaluate (ir, values);
+  }
+  
+  template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                     BareSliceMatrix<T,ORD> values) const
+  {
+    cf -> Evaluate (ir, values);
+  }
+
+  shared_ptr<CoefficientFunction>
+    Operator (const string & name) const override
+  {
+    return Freeze (cf->Operator(name));
+  }
+  
+};
+
+
+
+shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf)
+{
+  return make_shared<FrozenCoefficientFunction> (cf);
+}
+
+
+
+
   // ///////////////////////////// Compiled CF /////////////////////////
-  class CompiledCoefficientFunction : public CoefficientFunction, public std::enable_shared_from_this<CompiledCoefficientFunction>
+class CompiledCoefficientFunction : public CoefficientFunction //, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::BareSliceMatrix<double>);
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>);
@@ -4842,7 +4987,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           codes.push_back(pointer_code);
         }
 
-        auto self = shared_from_this();
+        auto self = dynamic_pointer_cast<CompiledCoefficientFunction>(shared_from_this());
         auto compile_func = [self, codes, link_flags, maxderiv] () {
               self->library = CompileCode( codes, link_flags );
               if(self->cf->IsComplex())
@@ -5682,6 +5827,7 @@ static RegisterClassForArchive<MultMatVecCoefficientFunction, CoefficientFunctio
 static RegisterClassForArchive<TransposeCoefficientFunction, CoefficientFunction> regtransposecf;
 static RegisterClassForArchive<SymmetricCoefficientFunction, CoefficientFunction> regsymmetriccf;
 static RegisterClassForArchive<SkewCoefficientFunction, CoefficientFunction> regskewcf;
+static RegisterClassForArchive<TraceCoefficientFunction, CoefficientFunction> regtracecf;
 static RegisterClassForArchive<InverseCoefficientFunction<1>, CoefficientFunction> reginversecf1;
 static RegisterClassForArchive<InverseCoefficientFunction<2>, CoefficientFunction> reginversecf2;
 static RegisterClassForArchive<InverseCoefficientFunction<3>, CoefficientFunction> reginversecf3;

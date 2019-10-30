@@ -415,7 +415,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, BareSliceVector<double> coefs) const
   {
-    coefs.AddSize(ndof) = 0.0;
+    coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM> pt = ir[i].Point();
@@ -781,7 +781,7 @@ namespace ngfem
   EvaluateGradTrans (const IntegrationRule & ir, 
                      FlatMatrixFixWidth<DIM> vals, BareSliceVector<double> coefs) const
   {
-    coefs.AddSize(ndof) = 0.0;
+    coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         Vec<DIM, AutoDiff<DIM>> adp = ir[i];

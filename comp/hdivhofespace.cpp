@@ -1752,7 +1752,7 @@ namespace ngcomp
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void ApplyTrans (const AFEL & fel, const MIP & mip,
-			    const TVX & x, TVY & y,
+			    const TVX & x, TVY & by,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCALX;      
@@ -1764,6 +1764,7 @@ namespace ngcomp
       
       auto & fel_u = static_cast<const FEL&>(fel);
       int nd_u = fel.GetNDof();
+      auto y = by.Range(0, nd_u);
       const IntegrationPoint& ip = mip.IP();
       const ElementTransformation & eltrans = mip.GetTransformation();
       FlatMatrixFixWidth<D> shape_ul(nd_u, lh);

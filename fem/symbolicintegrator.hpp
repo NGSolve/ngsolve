@@ -16,7 +16,7 @@ namespace ngcomp
 namespace ngfem
 {
 
-class ProxyFunction : public CoefficientFunction
+  class ProxyFunction : public CoefficientFunction
 {
   shared_ptr<ngcomp::FESpace> fes;
   bool testfunction; // true .. test, false .. trial
@@ -47,6 +47,8 @@ public:
   bool IsTrialFunction () const { return !testfunction; }
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
+
+  string GetDescription () const override;
 
   NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   
@@ -107,7 +109,10 @@ public:
     }
     return shared_ptr<ProxyFunction>();
   }
-
+  
+  virtual shared_ptr<CoefficientFunction>
+  Operator (const string & name) const override;
+    
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -468,7 +473,7 @@ public:
   NGS_DLL_HEADER virtual void
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<double> x, 
+         BareSliceVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const override
   {
@@ -480,7 +485,7 @@ public:
   NGS_DLL_HEADER virtual void
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & mip,
-         FlatVector<Complex> x, 
+         BareSliceVector<Complex> x, 
          FlatVector<Complex> flux,
          LocalHeap & lh) const override
   {
@@ -518,10 +523,10 @@ public:
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<double> flux,
-              FlatVector<double> x, 
+              BareSliceVector<double> x, 
               LocalHeap & lh) const override
   {
-    x = 0;
+    x.Range(0,bfel.GetNDof()) = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);
@@ -531,10 +536,10 @@ public:
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
               FlatVector<Complex> flux,
-              FlatVector<Complex> x, 
+              BareSliceVector<Complex> x, 
               LocalHeap & lh) const override
   {
-    x = 0;
+    x.Range(0,BlockDim()*bfel.GetNDof()) = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);

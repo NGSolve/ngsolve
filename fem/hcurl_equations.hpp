@@ -113,7 +113,7 @@ namespace ngfem
       HeapReset hr(lh);
       Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
     }
 
     template <typename FEL1, class TVX, class TVY>
@@ -124,7 +124,7 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
       static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
-      y = shape * x;
+      y.Range(0,fel.GetNDof()) = shape * x;
     }
 
 
@@ -297,7 +297,7 @@ namespace ngfem
 
       Vec<3,TSCAL> hx;
       hx = (1.0/mip.GetJacobiDet()) * (Trans (mip.GetJacobian()) * x);
-      y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * hx;
     }
 
     using DiffOp<DiffOpCurlEdge<3> >::ApplySIMDIR;        
@@ -397,7 +397,7 @@ namespace ngfem
 
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0, fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -481,7 +481,7 @@ namespace ngfem
 
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -554,7 +554,7 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
     
     }
   };
@@ -604,7 +604,8 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
+    y.Range(0,fel.GetNDof()) =
+      ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
   }
 };
 
