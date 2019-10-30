@@ -18,8 +18,9 @@ cmake $SRC_DIR \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 \
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX} \
       -DUSE_OCC=ON \
-      -DOCC_INCLUDE_DIR=/usr/local/opt/oce/include/oce \
-      -DOCC_LIBRARY=/usr/local/opt/oce/lib/libTKernel.a
+      -DOCC_LIBRARY=/usr/local/opt/opencascade-7.4.0/lib/libTKernel.a \
+      -DOCC_INCLUDE_DIR=/usr/local/opt/opencascade-7.4.0/include/opencascade \
+      -DOCC_LINK_FREETYPE=ON
 
 make -j5 install
 osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'

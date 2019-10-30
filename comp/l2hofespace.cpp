@@ -1692,7 +1692,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           auto jac = mir[i].GetJacobian();
           Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
           val *= 1/mir[i].GetJacobiDet();
-          y.Col(i).AddSize(DIM_SPACE) = jac * val;
+          y.Col(i).Range(0,DIM_SPACE) = jac * val;
         }
     }    
     
@@ -2147,7 +2147,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         {
           auto jacinv = mir[i].GetJacobianInverse();
           Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
-          y.Col(i).AddSize(DIM_SPACE) = Trans(jacinv) * val;
+          y.Col(i).Range(0,DIM_SPACE) = Trans(jacinv) * val;
         }
     }    
     

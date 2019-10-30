@@ -1396,8 +1396,10 @@ namespace ngbla
   {
     T * __restrict data;
   public:
+#ifdef DEBUG        
     using DummySize::Width;
     using DummySize::Height;
+#endif
     BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
     BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)) { ; }
     // template <int D>
@@ -1413,6 +1415,15 @@ namespace ngbla
     T & operator() (size_t i) const { return data[i];  }
     T & operator() (size_t i, size_t j) const { return data[i];  }
     T & operator[] (size_t i) const { return data[i];  }
+
+    /// sub-vector of size next-first, starting at first
+    INLINE auto Range (size_t first, size_t next) const
+    { return FlatVector (next-first, data+first); }
+
+    /// sub-vector given by range
+    INLINE auto Range (T_Range<size_t> range) const
+    { return Range (range.First(), range.Next()); }
+    
     // BareSliceVector<T> operator+(size_t i) const { return BareSliceVector<T> (data+i*dist, dist); }
     /*
     T * Addr (size_t i) const { return data+i*dist; }
@@ -1442,8 +1453,11 @@ namespace ngbla
     size_t dist;
     BareSliceVector(T * _data, size_t _dist) : DummySize(0,0), data(_data), dist(_dist) { ; }
   public:
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+#ifdef DEBUG    
     using DummySize::Width;
     using DummySize::Height;
+#endif
     BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(vec.Dist()) { ; }
     template <int D>
     BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(D)  { ; }
@@ -1453,6 +1467,8 @@ namespace ngbla
     BareSliceVector(const BareSliceVector &) = default;
     BareSliceVector & operator= (const BareSliceVector&) = delete;
     size_t Dist () const { return dist; }
+
+    [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T,size_t> AddSize(size_t size) const { return SliceVector<T,size_t> (size, dist, data); }
     
     T & operator() (size_t i) const { return data[i*dist];  }

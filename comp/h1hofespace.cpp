@@ -238,19 +238,42 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
+        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
+        if (ma->GetDimension() >= 2)        
+          additional_evaluators.Set ("Gradboundary", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[BND], dimension));
         for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
           {
             if (evaluator[vb])
               evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
             if (flux_evaluator[vb])
-              flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
+              flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);
+          }
+      }
+    else
+      {
+        switch (ma->GetDimension())
+          {
+          case 1:
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
+            break;
+          case 2:
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
+            additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>());
+            break;
+          case 3:
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
+            additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>());
+            break;
+          default:
+            ;
           }
       }
 
     switch (ma->GetDimension())
       {
       case 1:
-        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ()); break;
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ());
+        break;
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());

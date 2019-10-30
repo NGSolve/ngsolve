@@ -1793,6 +1793,11 @@ diffop : ngsolve.fem.DifferentialOperator
          py::arg("deformation")=nullptr)
     ;
 
+
+  py::class_<Integral, shared_ptr<Integral>> (m, "Integral")
+    .def_property_readonly("coef", [] (shared_ptr<Integral> igl) { return igl->cf; })
+    ;
+     
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
     .def ("__add__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
           {
@@ -1814,7 +1819,10 @@ diffop : ngsolve.fem.DifferentialOperator
             for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
             return faccf;
           })
+    .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
+          { return igls->icfs[nr]; })
     .def ("Diff", &SumOfIntegrals::Diff)
+    .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     ;

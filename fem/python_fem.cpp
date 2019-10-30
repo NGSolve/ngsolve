@@ -981,6 +981,12 @@ cf : ngsolve.CoefficientFunction
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=1.0)
 
+    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
+          {
+            return coef->Diff (shape.get(), dir);
+          },
+          "Compute shape derivative in direction", 
+          py::arg("direction")=1.0)
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -1040,6 +1046,10 @@ cf : ngsolve.CoefficientFunction
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
+    .def ("Freeze", [] (shared_ptr<CF> coef)
+          { return Freeze(coef); },
+          "don't differentiate this expression")
+
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
@@ -1080,6 +1090,7 @@ wait : bool
 
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
+  m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
 

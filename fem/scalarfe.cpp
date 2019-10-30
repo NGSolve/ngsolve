@@ -188,7 +188,7 @@ namespace ngfem
     for (size_t i = 0; i < ir.Size(); i++)
       {
         CalcShape (ir[i], shapes);
-        values.Row(i).AddSize(coefs.Width()) = Trans(coefs) * shapes;
+        values.Row(i).Range(0,coefs.Width()) = Trans(coefs) * shapes;
       }
   }
 
@@ -198,7 +198,7 @@ namespace ngfem
   EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, BareSliceMatrix<> vals) const
   {
     for (size_t i = 0; i < ir.GetNIP(); i++)
-      vals.Row(i).AddSize(D) = EvaluateGrad (ir[i], coefs);
+      vals.Row(i).Range(0,D) = EvaluateGrad (ir[i], coefs);
   }
 
   void BaseScalarFiniteElement :: 
@@ -218,11 +218,11 @@ namespace ngfem
   EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, BareSliceVector<double> coefs) const
   {
     VectorMem<20, double> shape(ndof);
-    coefs.AddSize(ndof) = 0.0;
+    coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	CalcShape (ir[i], shape);
-	coefs.AddSize(ndof) += vals(i) * shape;
+	coefs.Range(0,ndof) += vals(i) * shape;
       }
   }
 
@@ -342,11 +342,11 @@ namespace ngfem
                      BareSliceVector<double> coefs) const
   {
     MatrixFixWidth<D> dshape(ndof);
-    coefs.AddSize(ndof) = 0.0;
+    coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	CalcDShape (ir[i], dshape);
-	coefs.AddSize(ndof) += dshape * vals.Row(i);
+	coefs.Range(0,ndof) += dshape * vals.Row(i);
       }
   }
 
