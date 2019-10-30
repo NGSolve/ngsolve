@@ -538,22 +538,22 @@ template <int D>
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
       if (ip.Dim() != D)
-        throw Exception("illegal dim of normal vector");
+        throw Exception("illegal dim!");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
     }
 
-      //virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
-      //{
-      //  if (ir[0].Dim() != D)
-      //	throw Exception("illegal dim!");
-      // for (int i = 0; i < ir.Size(); i++)
-      //	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
-      //}
-
-    //virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
-    //{
-    //  values.AddSize(D, ir.Size()) = Trans(ir.GetNormals());
-    //}
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
+    {
+      if (ir[0].Dim() != D)
+      	throw Exception("illegal dim!");
+      for (int i = 0; i < ir.Size(); i++)
+      	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
+    }
+    
+    /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
+    {
+      values.AddSize(D*D, ir.Size()) = Trans(ir.GetJacobian());
+      }*/
   };
 
 
