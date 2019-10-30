@@ -287,7 +287,7 @@ namespace ngcomp
     dnums.SetSize(0);
     if(ei.VB() != VOL)
       return;
-    ArrayMem<int,2> indices;
+    ArrayMem<int,2> indices(2);
     ArrayMem<int,100> dnumsx, dnumsy;
     GetIndices(ei.Nr(),indices);
     space_x->GetDofNrs(ElementId(indices[0]),dnumsx);
