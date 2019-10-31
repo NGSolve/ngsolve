@@ -3153,7 +3153,7 @@ public:
   {
     int hd = c1->Dimensions()[0];
     STACK_ARRAY(T, hmem, hd*hd*mir.Size());
-    FlatMatrix<T> m1(hd*hd, mir.Size(), &hmem[0]);
+    FlatMatrix<T,ORD> m1(hd*hd, mir.Size(), &hmem[0]);
     c1->Evaluate (mir, m1);
     
     for (size_t i = 0; i < mir.Size(); i++)
