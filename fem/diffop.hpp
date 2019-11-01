@@ -28,6 +28,10 @@ namespace ngfem
     // static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
     static INT<1> GetDimensions() { return { DOP::DIM_DMAT }; };
     static bool SupportsVB (VorB checkvb) { return DOP::DIM_SPACE-DOP::DIM_ELEMENT == int(checkvb); }
+
+
+    typedef void DIFFOP_TRACE;  // 
+    
     /**
        Computes the B-matrix. 
        The height is DIM_DMAT, the width is fel.GetNDof(). 
@@ -212,6 +216,10 @@ namespace ngfem
     VorB VB() const { return vb; }
 
     virtual bool SupportsVB (VorB checkvb) const { return checkvb == vb; }
+    virtual shared_ptr<DifferentialOperator> GetTrace() const
+    {
+      throw Exception("GetTrace not overloaded for DifferentialOperator"+string(typeid(*this).name()));
+    }
     
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     int DiffOrder() const { return difforder; } 
@@ -367,6 +375,15 @@ namespace ngfem
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
 
+    shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if (auto diffoptrace = diffop->GetTrace())
+        return make_shared<BlockDifferentialOperator> (diffoptrace,
+                                                       dim, comp);
+      else
+        return nullptr;
+    }
+    
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
@@ -449,6 +466,17 @@ namespace ngfem
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
 
+    shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if (auto diffoptrace = diffop->GetTrace())      
+        return make_shared<BlockDifferentialOperatorTrans> (diffoptrace,
+                                                            dim, comp);
+      else
+        return nullptr;
+    }
+    
+
+    
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
@@ -533,6 +561,14 @@ namespace ngfem
     { return typeid(*this) == typeid(diffop2); }
 
     virtual bool SupportsVB (VorB checkvb) const override { return DIFFOP::SupportsVB(checkvb); }
+
+    virtual shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if constexpr (is_same_v<void,typename DIFFOP::DIFFOP_TRACE>)
+                     return nullptr;
+      else
+        return make_shared<T_DifferentialOperator<typename DIFFOP::DIFFOP_TRACE>> ();
+    }
     
     virtual void
     CalcMatrix (const FiniteElement & bfel,

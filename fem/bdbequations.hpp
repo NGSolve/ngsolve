@@ -19,6 +19,8 @@ namespace ngfem
 
 
 
+  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  class DiffOpGradientBoundary; //  : public DiffOp<DiffOpGradientBoundary<D, FEL> >
   
 
 
@@ -32,6 +34,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
+
+    typedef DiffOpGradientBoundary<D> DIFFOP_TRACE;
     
     static string Name() { return "grad"; }
     static constexpr bool SUPPORT_PML = true;
@@ -154,7 +158,7 @@ namespace ngfem
 
 
   /// Boundary Gradient operator of dimension D
-  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  template <int D, typename FEL> //  = ScalarFiniteElement<D-1> >
   class DiffOpGradientBoundary : public DiffOp<DiffOpGradientBoundary<D, FEL> >
   {
   public:

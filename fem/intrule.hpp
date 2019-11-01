@@ -530,10 +530,12 @@ namespace ngfem
         return 1.0/det * Trans (Cof (dxdxi));
       else
         {
-	  Mat<DIMS,DIMS,SCAL> ata, iata;
-	  ata = Trans (dxdxi) * dxdxi;
-	  iata = Inv (ata);
-	  return (iata * Trans (dxdxi));
+	  // Mat<DIMS,DIMS,SCAL> ata, iata;
+	  // ata = Trans (dxdxi) * dxdxi;
+	  // iata = Inv (ata);
+          // auto iata = Inv (Trans (dxdxi) * dxdxi);
+	  // return iata * Trans (dxdxi);
+          return Inv (Trans (dxdxi) * dxdxi) * Trans (dxdxi);
         }
     }
 
