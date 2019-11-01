@@ -1059,6 +1059,11 @@ namespace ngcomp
       comp (acomp) 
   {
     fes = gf->GetFESpace();
+    if (diffop[VOL] && !diffop[BND])
+      diffop[BND] = diffop[VOL]->GetTrace();
+    if (diffop[BND] && !diffop[BBND])
+      diffop[BBND] = diffop[BND]->GetTrace();
+    
     for (auto vb : { VOL, BND, BBND } )
       if (diffop[vb])
         {
