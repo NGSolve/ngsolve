@@ -69,14 +69,22 @@ namespace ngfem
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
-    if (!trace_evaluator)
-      throw Exception (string("don't have a trace, primal evaluator = ")+
-                       evaluator->Name());
+    if (trace_evaluator)
+      return make_shared<ProxyFunction> (fes, testfunction, is_complex,
+                                         trace_evaluator, trace_deriv_evaluator,
+                                         ttrace_evaluator, ttrace_deriv_evaluator,
+                                         nullptr, nullptr);
     
-    return make_shared<ProxyFunction> (fes, testfunction, is_complex,
-                                       trace_evaluator, trace_deriv_evaluator,
-                                       ttrace_evaluator, ttrace_deriv_evaluator,
-                                       nullptr, nullptr);
+    if (auto trace_from_diffop = evaluator->GetTrace())
+      {
+        return make_shared<ProxyFunction>(fes, testfunction, is_complex,
+                                          trace_from_diffop, nullptr,
+                                          nullptr, nullptr,
+                                          nullptr, nullptr);
+      }
+        
+    throw Exception (string("don't have a trace, primal evaluator = ")+
+                     evaluator->Name());
   }
   
   void ProxyFunction ::
