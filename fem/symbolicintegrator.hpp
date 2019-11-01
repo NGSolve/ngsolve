@@ -391,6 +391,14 @@ public:
   int Component () const { return comp; }
   virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
   
+  shared_ptr<DifferentialOperator> GetTrace() const override
+  {
+    if (auto diffoptrace = diffop->GetTrace())
+      return make_shared<CompoundDifferentialOperator> (diffoptrace, comp);
+    else
+      return nullptr;
+  }
+  
   virtual bool operator== (const DifferentialOperator & diffop2) const override
   {
     const CompoundDifferentialOperator * do2 =
