@@ -2240,7 +2240,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               Vec<3,SIMD<double>> gi = grad.Col(i);
               Vec<3,SIMD<double>> tek = trafo.Col(k);
               Vec<3,SIMD<double>> hv = Cross(gi, tek);
-              y.Col(i).AddSize(3) += hv;
+              y.Col(i).Range(0,3) += hv;
             }
         }             
     }    

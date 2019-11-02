@@ -110,7 +110,7 @@ namespace ngfem
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    throw Exception(string("Deriv not implemented for CF ")+typeid(*this).name());
+    throw Exception(string("Diff not implemented for CF ")+typeid(*this).name());
   }
 
   shared_ptr<CoefficientFunction> CoefficientFunction ::
@@ -3086,7 +3086,7 @@ public:
     if (dims_c1.Size() != 2)
       throw Exception("Trace of non-matrix called");
     if (dims_c1[0] != dims_c1[1])
-      throw Exception("Trace of non-symmetric matrix called");
+      throw Exception("Trace of non-square matrix called");
   }
 
   virtual string GetDescription () const override

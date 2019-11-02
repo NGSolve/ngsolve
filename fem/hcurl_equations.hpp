@@ -151,7 +151,13 @@ namespace ngfem
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
-    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return -TransposeCF(dir->Operator("Grad")) * proxy;      
+    }
   };
 
 
@@ -313,7 +319,14 @@ namespace ngfem
     {
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
     }    
-    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      auto grad = dir->Operator("Grad");
+      return grad * proxy - TraceCF(grad) * proxy;
+    }
   };
 
 
@@ -433,6 +446,9 @@ namespace ngfem
     
     
   };
+
+
+  
   /// Identity on boundary
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class DiffOpIdBoundaryEdge : public DiffOp<DiffOpIdBoundaryEdge<D,FEL> >
@@ -514,6 +530,13 @@ namespace ngfem
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return -TransposeCF(dir->Operator("Gradboundary")) * proxy;      
+    }
     
   };
 
