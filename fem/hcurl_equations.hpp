@@ -919,6 +919,13 @@ public:
 #define HCURL_EQUATIONS_EXTERN extern
 #endif
 
+  HCURL_EQUATIONS_EXTERN template class DiffOpIdEdge<2>;
+  HCURL_EQUATIONS_EXTERN template class DiffOpIdEdge<3>;
+  
+  HCURL_EQUATIONS_EXTERN template class DiffOpCurlEdge<2>;
+  HCURL_EQUATIONS_EXTERN template class DiffOpCurlEdge<3>;
+
+  
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
