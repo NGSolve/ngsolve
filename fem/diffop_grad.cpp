@@ -24,7 +24,9 @@ namespace ngfem
   }
 
 
-
+  template class NGS_DLL_HEADER DiffOpGradient<1>;
+  template class NGS_DLL_HEADER DiffOpGradient<2>;
+  template class NGS_DLL_HEADER DiffOpGradient<3>;
   
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<1> >;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradient<2> >;
