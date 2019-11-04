@@ -213,7 +213,7 @@ namespace ngbla
 
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( (Height()-first)/adist, w));
+      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( Height()/adist, w));
     }
     
     INLINE operator SliceMatrix<T> () const
@@ -1661,16 +1661,21 @@ namespace ngbla
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*dist+j]; 
     }
     /// access operator
     INLINE TELEM & operator() (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Width()*Height());
       return data[i]; 
     }
 
     INLINE TELEM * Addr(size_t i, size_t j) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data+i*dist+j;
     }
     using DummySize::Height;
@@ -1688,27 +1693,27 @@ namespace ngbla
     void IncPtr (size_t inc) { data += inc; } 
     SliceMatrix<T> AddSize (size_t h, size_t w) const
     {
-#ifdef DEBUG
-      if(Height() != h  || Width() != w)
-        throw Exception(string("BareSliceMatrix::AddSize dimensions do not fit, mysize = ")
-                        +ToString(Height()) + "x" + ToString(Width()) +
-                        " new size = " + ToString(h) + " x " + ToString(w));
-#endif
+      NETGEN_CHECK_RANGE(h, Height(), Height()+1);
+      NETGEN_CHECK_RANGE(w, Width(), Width()+1);
       return SliceMatrix<T> (h, w, dist, data);
     }
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, Height());
+      NETGEN_CHECK_RANGE(next, 0, Height()+1);
       return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
     INLINE const BareSliceVector<T> Col (size_t col) const
     {
+      NETGEN_CHECK_RANGE(col, 0, Width());
       return SliceVector<T> (Height(), dist, data+col);
     }
     
     INLINE const BareVector<T> Row (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
       return FlatVector<T> (Width(), data+i*dist);
     }
 
@@ -1725,16 +1730,22 @@ namespace ngbla
     */
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, Width());
+      NETGEN_CHECK_RANGE(next, 0, Width()+1);
       return BareSliceMatrix (dist, data+first, DummySize(Height(), next-first));
     }
 
     INLINE const BareSliceMatrix Rows (IntRange range) const
     {
+      NETGEN_CHECK_RANGE(range.First(), 0, Height());
+      NETGEN_CHECK_RANGE(range.Next(), 0, Height()+1);
       return Rows (range.First(), range.Next());
     }
 
     INLINE const BareSliceMatrix<T> Cols (IntRange range) const
     {
+      NETGEN_CHECK_RANGE(range.First(), 0, Width());
+      NETGEN_CHECK_RANGE(range.Next(), 0, Width()+1);
       return Cols (range.First(), range.Next());
     }
     /*
@@ -1745,7 +1756,8 @@ namespace ngbla
     */
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
+      NETGEN_CHECK_RANGE(first, 0, Height());
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
   };
@@ -1789,11 +1801,14 @@ namespace ngbla
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[j*dist+i]; 
     }
     /// access operator
     INLINE TELEM & operator() (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Width()*Height());
       return data[i]; 
     }
 
@@ -1805,40 +1820,48 @@ namespace ngbla
 
     SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
     {
-#ifdef DEBUG
-      if(Height() != h  || Width() != w)
-        throw Exception("BareSliceMatrix::AddSize dimensions do not fit");
-#endif
+      NETGEN_CHECK_RANGE(h, Height(), Height()+1);
+      NETGEN_CHECK_RANGE(w, Width(), Width()+1);
       return SliceMatrix<T,ColMajor> (h, w, dist, data);
     }
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, Height());
+      NETGEN_CHECK_RANGE(next, 0, Height()+1);
       return BareSliceMatrix (dist, data+first, DummySize(next-first, Width()));
     }
 
     INLINE const BareVector<T> Col (size_t i)
     {
+      NETGEN_CHECK_RANGE(i, 0, Width());
       return FlatVector<T> (Height(), data+i*dist);
     }
     
     INLINE const BareSliceVector<T> Row (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
       return SliceVector<T> (Width(), dist, data+i);
     }
 
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, Width());
+      NETGEN_CHECK_RANGE(next, 0, Width()+1);
       return BareSliceMatrix (dist, data+dist*first, DummySize(Height(), next-first));
     }
 
     INLINE const BareSliceMatrix Rows (IntRange range) const
     {
+      NETGEN_CHECK_RANGE(range.First(), 0, Height());
+      NETGEN_CHECK_RANGE(range.Next(), 0, Height()+1);
       return Rows (range.First(), range.Next());
     }
 
     INLINE const BareSliceMatrix<T> Cols (IntRange range) const
     {
+      NETGEN_CHECK_RANGE(range.First(), 0, Width());
+      NETGEN_CHECK_RANGE(range.Next(), 0, Width()+1);
       return Cols (range.First(), range.Next());
     }
     /*
