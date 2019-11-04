@@ -344,10 +344,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	*testout << "name = " << name << endl;
       }
 
+    /*
     for (int i = 0; i < specialelements.Size(); i++)
       delete specialelements[i]; 
     specialelements.SetSize(0);
-
+    */
+    
     ma->UpdateBuffers();  // is free if netgen-mesh did not change
     int dim = ma->GetDimension();
     
@@ -1431,7 +1433,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
-    size_t nd = GetNDof();
+    // size_t nd = GetNDof();
 
     bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     auto freedofs = GetFreeDofs(eliminate_internal);
@@ -1751,7 +1753,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     shared_ptr<BaseMatrix> sum;
   
-    size_t ne = ma->GetNE();
+    // size_t ne = ma->GetNE();
 
     // scaling for multiple dofs (if actually not an L2 space)
     Array<int> cnt(l2space->GetNDof());

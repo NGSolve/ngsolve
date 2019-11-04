@@ -57,17 +57,34 @@ namespace ngfem
       throw Exception("a proxy needs at least one evaluator");
     elementwise_constant = true;
   }
+
+  string ProxyFunction :: GetDescription () const
+  {
+    return string(testfunction ? "test-function" : "trial-function")
+      + string(" diffop = ")
+      + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")));
+  }
+
+
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
-    if (!trace_evaluator)
-      throw Exception (string("don't have a trace, primal evaluator = ")+
-                       evaluator->Name());
+    if (trace_evaluator)
+      return make_shared<ProxyFunction> (fes, testfunction, is_complex,
+                                         trace_evaluator, trace_deriv_evaluator,
+                                         ttrace_evaluator, ttrace_deriv_evaluator,
+                                         nullptr, nullptr);
     
-    return make_shared<ProxyFunction> (fes, testfunction, is_complex,
-                                       trace_evaluator, trace_deriv_evaluator,
-                                       ttrace_evaluator, ttrace_deriv_evaluator,
-                                       nullptr, nullptr);
+    if (auto trace_from_diffop = evaluator->GetTrace())
+      {
+        return make_shared<ProxyFunction>(fes, testfunction, is_complex,
+                                          trace_from_diffop, nullptr,
+                                          nullptr, nullptr,
+                                          nullptr, nullptr);
+      }
+        
+    throw Exception (string("don't have a trace, primal evaluator = ")+
+                     evaluator->Name());
   }
   
   void ProxyFunction ::
@@ -262,9 +279,9 @@ namespace ngfem
 
     result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).Range(0,mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).Range(0,mir.Size()) = 1;
   }
 
   void ProxyFunction ::
@@ -288,9 +305,9 @@ namespace ngfem
 
     result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).Range(0,mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).Range(0,mir.Size()) = 1;
   }
 
   /*
@@ -611,11 +628,21 @@ namespace ngfem
       nonzero(ud.trial_comp) = true;
   }
 
+  shared_ptr<CoefficientFunction> ProxyFunction :: 
+  Operator (const string & name) const
+  {
+    if (deriv_evaluator && deriv_evaluator->Name() == name)
+      return Deriv();
+    return GetAdditionalProxy (name); 
+  }
+
 
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == this)
+    if (var == shape.get())
+      return evaluator->DiffShape (const_cast<ProxyFunction*>(this)->shared_from_this(), dir);
+    else if (var == this)
       return dir;
     else
       {
@@ -910,7 +937,7 @@ namespace ngfem
 
     for (auto proxy : trial_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
     for (auto proxy : test_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
@@ -1291,7 +1318,7 @@ namespace ngfem
                               auto hbdbmat1 = bdbmat1.RowSlice(j,dim_proxy1).Rows(r1);
                               
                               for (size_t k = 0; k < bdbmat1.Width(); k++)
-                                hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
+                                hbdbmat1.Col(k).Range(0,r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
                             }
                         }
                       else
@@ -1336,7 +1363,7 @@ namespace ngfem
                                   auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
 
                                   for (size_t i = 0; i < ir.Size(); i++)
-                                    bdbmat1_j.Col(i).AddSize(r1.Size()) += proxyvalues_jk(i)*weights(i) * bbmat1_k.Col(i);
+                                    bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*weights(i) * bbmat1_k.Col(i);
                                 }
                         }
                       
@@ -1787,7 +1814,7 @@ namespace ngfem
                                     auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
                                     
                                     for (size_t i = 0; i < mir.Size(); i++)
-                                      bdbmat1_j.Col(i).AddSize(r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
+                                      bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
                                   }
                             }
                             
@@ -1817,7 +1844,7 @@ namespace ngfem
                                     auto bdbmat2_k = bdbmat2.RowSlice(k, dim_proxy1).Rows(r2);
                                     
                                     for (size_t i = 0; i < mir.Size(); i++)
-                                      bdbmat2_k.Col(i).AddSize(r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
+                                      bdbmat2_k.Col(i).Range(0,r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
                                   }
                             }
                             
@@ -2548,7 +2575,7 @@ namespace ngfem
     // static Timer td("symbolicbfi - Apply EB, evaluate D", 2);
     // static Timer ttrans("symbolicbfi - Apply EB, trans", 2);
     
-    size_t tid = TaskManager::GetThreadId();    
+    //size_t tid = TaskManager::GetThreadId();    
     // ThreadRegionTimer reg(t, tid);
     
     ely = 0;

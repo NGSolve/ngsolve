@@ -1640,11 +1640,11 @@ namespace ngbla
     BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
-    BareSliceMatrix (const FlatMatrix<T> & mat)
+    BareSliceMatrix (const FlatMatrix<T,ORD> & mat)
       : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
-    BareSliceMatrix (const SliceMatrix<T> & mat)
+    BareSliceMatrix (const SliceMatrix<T,ORD> & mat)
       : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 

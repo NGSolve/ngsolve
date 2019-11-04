@@ -950,8 +950,7 @@ namespace ngla
     size_t * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
     TM * hlfact = lfact.Addr(0);
-    int percent = 0;
-
+   
     // #define CHOLESKY_ORIGINAL
     // #define CHOLESKY_SIMPLE
     // #define CHOLESKY_PARALLEL
@@ -959,7 +958,8 @@ namespace ngla
 
     
 #ifdef CHOLESKY_ORIGINAL
-    Array<TM> tmpmem;
+     int percent = 0;
+     Array<TM> tmpmem;
     for (size_t blocknr : Range(blocks.Size()-1))
       {
         IntRange block = BlockDofs(blocknr);

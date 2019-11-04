@@ -520,6 +520,43 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
   };
 
 
+template <int D>
+  class JacobianMatrixCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    JacobianMatrixCF () : CoefficientFunctionNoDerivative(D*D,false)
+    {
+      SetDimensions(Array<int>({D,D}));
+    }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
+    {
+      return 0;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
+    {
+      if (ip.Dim() != D)
+        throw Exception("illegal dim!");
+      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
+    {
+      if (ir[0].Dim() != D)
+      	throw Exception("illegal dim!");
+      for (int i = 0; i < ir.Size(); i++)
+      	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
+    }
+    
+    /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
+    {
+      values.AddSize(D*D, ir.Size()) = Trans(ir.GetJacobian());
+      }*/
+  };
+
+
 
 void ExportCoefficientFunction(py::module &m)
 {
@@ -693,6 +730,19 @@ direction : int
 	  return make_shared<TangentialVectorCF<3>>();
 	}
     }
+
+    shared_ptr<CF> GetJacobianMatrixCF (int dim)
+    {
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<JacobianMatrixCF<1>>();
+	case 2:
+	  return make_shared<JacobianMatrixCF<2>>();
+	default:
+	  return make_shared<JacobianMatrixCF<3>>();
+	}
+    }
   };
 
   
@@ -723,6 +773,9 @@ direction : int
          "space-dimension must be provided")
     .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
          "depending on contents: tangential-vector to element\n"
+         "space-dimension must be provided")
+    .def("JacobianMatrix", &SpecialCoefficientFunctions::GetJacobianMatrixCF, py::arg("dim"),
+         "Jacobian matrix of transformation to physical element\n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;
@@ -928,6 +981,12 @@ cf : ngsolve.CoefficientFunction
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=1.0)
 
+    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
+          {
+            return coef->Diff (shape.get(), dir);
+          },
+          "Compute shape derivative in direction", 
+          py::arg("direction")=1.0)
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -987,6 +1046,10 @@ cf : ngsolve.CoefficientFunction
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
+    .def ("Freeze", [] (shared_ptr<CF> coef)
+          { return Freeze(coef); },
+          "don't differentiate this expression")
+
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
@@ -1027,6 +1090,7 @@ wait : bool
 
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
+  m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
 

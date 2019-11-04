@@ -182,7 +182,7 @@ namespace ngfem
       Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
                              SBLambda([&] (int nr, auto val)
                                       {
-                                        shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                        shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
                                       }));
     }
 
@@ -205,7 +205,7 @@ namespace ngfem
 
       Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
                                                                      {
-                                                                       shape.Row(nr).AddSize(DIM) = val.DivShape();
+                                                                       shape.Row(nr).Range(0,DIM) = val.DivShape();
                                                                      }));
     }
 
@@ -224,7 +224,7 @@ namespace ngfem
       */
       Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
                                           }));
     }
 
@@ -251,7 +251,7 @@ namespace ngfem
       {
         Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
         {
-          shape.Row(nr).AddSize(DIM) = val.DivShape();
+          shape.Row(nr).Range(0,DIM) = val.DivShape();
         }));
       }
       else // curved element
@@ -288,7 +288,7 @@ namespace ngfem
 
         Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
                                   {
-                                    shape.Row(nr).AddSize(DIM) = val.DivShape();
+                                    shape.Row(nr).Range(0,DIM) = val.DivShape();
                                     BareVector<double> divshape = shape.Row(nr);
                                     Vec<DIM_STRESS> vecshape = val.Shape();
                                     Vec<DIM*DIM> matshape;
@@ -358,7 +358,7 @@ namespace ngfem
               this->Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                            SBLambda ([i,shapes,trans] (size_t j, auto val) 
                                                      {
-                                                       shapes.Rows(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)).Col(i).AddSize(sqr(DIMSPACE)) = trans * val.Shape();
+                                                       shapes.Rows(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = trans * val.Shape();
                                                      }));
             }
         }
@@ -562,7 +562,7 @@ namespace ngfem
             (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
              SBLambda([divshapes,i,trans](int j,auto val)
                       {
-                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).AddSize(DIM) = trans * val.DivShape();
+                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(0,DIM) = trans * val.DivShape();
                       }));
 	}
       }
@@ -1537,8 +1537,8 @@ namespace ngfem
       : t1(at1), t2(at2), u(au) { ; } 
     INLINE Vec<6,T> Shape() 
     { 
-      auto rotlam1 = t1;
-      auto rotlam2 = t2;
+      //auto rotlam1 = t1;
+      //auto rotlam2 = t2;
 
       Vec<6,T> sigma(0.);
       sigma[0] = t1.DValue(0)*t2.DValue(0);
@@ -1962,7 +1962,7 @@ namespace ngfem
       AutoDiff<3,T> lam[4] = { ip.x, ip.y, ip.z, 1.0-ip.x-ip.y-ip.z };
       size_t ii = 0;
       
-      const FACE * faces = ElementTopology::GetFaces(ET_TET);
+      //const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
       /*
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
@@ -2321,7 +2321,7 @@ namespace ngfem
    
       Cast() -> T_CalcShape (addp, SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
                                           }));
     }
 

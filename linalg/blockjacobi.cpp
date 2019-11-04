@@ -91,10 +91,10 @@ namespace ngla
 	    for (size_t j = 0; j < n; j++)
 	      {
 		FlatArray<int> row = graph.GetRowIndices(block[j]);
-		for (int k = 0; k < row.Size(); k++)
+		for (size_t k = 0; k < row.Size(); k++)
 		  {
 		    int kk = block_inv[row[k]];
-		    if (kk >= 0 && kk < n)
+		    if (kk >= 0 && unsigned(kk) < n)
 		      if (block[kk] == row[k])
 			{
 			  if (cluster0[j] != cluster0[kk]) 
@@ -128,8 +128,8 @@ namespace ngla
 	// cout << "cluster0, 1 = " << cluster0 << endl;
 	*/
 
-	int cnt = 0;
-	for (int i = 0; i < n; i++)
+	size_t cnt = 0;
+	for (size_t i = 0; i < n; i++)
 	  if (cluster0[i])
 	    {
 	      newnum[cnt] = block[i];
@@ -139,15 +139,15 @@ namespace ngla
 	if (cnt < n)
 	  {
 	    // separated clusters
-	    int cnt2 = cnt;
-	    for (int i = 0; i < n; i++)
+	    size_t cnt2 = cnt;
+	    for (size_t i = 0; i < n; i++)
 	      if (!cluster0[i])
 		newnum[cnt2++] = block[i];
 	    
-	    for (int i = 0; i < n; i++)
+	    for (size_t i = 0; i < n; i++)
 	      block[i] = newnum[i];
 
-	    for (int i = 0; i < n; i++)
+	    for (size_t i = 0; i < n; i++)
 	      block_inv[block[i]] = -1;
 
 	    // block = newnum;
@@ -165,7 +165,7 @@ namespace ngla
 
 	// compute distance function
 
-	int pstart = 0;
+	size_t pstart = 0;
 	for (int step = 0; step < 3; step++)
 	  {
 	    /*
@@ -202,15 +202,15 @@ namespace ngla
 	    do
 	      {
 		changed = 0;
-		for (int i = 0; i < n; i++)
+		for (size_t i = 0; i < n; i++)
 		  {
 		    FlatArray<int> row = graph.GetRowIndices(block[i]);
 
-		    for (int j = 0; j < row.Size(); j++)
+		    for (size_t j = 0; j < row.Size(); j++)
 		      {
 			int jj = block_inv[row[j]];
 
-			if (jj >= 0 && jj < n)
+			if (jj >= 0 && unsigned(jj) < n)
 			  if (block[jj] == row[j])		    
 			    {
 			      if (dist[i] > dist[jj]+1)
@@ -231,7 +231,7 @@ namespace ngla
 
 	    
 	    int maxval = 0;
-	    for (int i = 0; i < n; i++)
+	    for (size_t i = 0; i < n; i++)
 	      if (dist[i] > maxval)
 		{
 		  maxval = dist[i];
@@ -249,8 +249,8 @@ namespace ngla
 	
 
 	cnt = 0;
-	for (int i = 0; i < n; i++)
-	  for (int j = 0; j < n; j++)
+	for (size_t i = 0; i < n; i++)
+	  for (size_t j = 0; j < n; j++)
 	    if (dist[j] == i)
 	      {
 		reorder[cnt] = j;
@@ -265,15 +265,15 @@ namespace ngla
 	  if (connected.Test(reorder[i], reorder[j]))
 	  bw = max2(bw, abs(i-j)+1);
 	*/
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  newnum[reorder[i]] = i;
-	for (int j = 0; j < n; j++)
+	for (size_t j = 0; j < n; j++)
 	  {
 	    FlatArray<int> row = graph.GetRowIndices(block[j]);
-	    for (int k = 0; k < row.Size(); k++)
+	    for (size_t k = 0; k < row.Size(); k++)
 	      {
 		int kk = block_inv[row[k]];
-		if (kk >= 0 && kk < n)
+		if (kk >= 0 && unsigned(kk) < n)
 		  if (block[kk] == row[k])
 		    {
 		      int inv_j = newnum[j];
@@ -284,15 +284,15 @@ namespace ngla
 	  }
 
 
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  newnum[i] = block[reorder[i]];
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  block[i] = newnum[i];
 
 
 	lh.CleanUp(heapp);
 
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  block_inv[block[i]] = -1;
 
 	return bw;
@@ -312,7 +312,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   BlockJacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-		      shared_ptr<Table<int>> ablocktable)
+		      shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
   {
@@ -368,18 +368,14 @@ namespace ngla
       }
 
 
-    // atomic<int> cnt(0);
-    SharedLoop2 sl(blocktable->Size());
 
-    /*
-    ParallelFor 
-      (Range(*blocktable), [&] (int i)
-    */
+    /** Get diagonal blocks **/
+    SharedLoop2 sl1(blocktable->Size());
     ParallelJob
       ([&] (const TaskInfo & ti)
        {
          NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
-         for (int i : sl)
+         for (int i : sl1)
        {
          NgProfiler::StartThreadTimer (tprep, TaskManager::GetThreadId());
 
@@ -400,14 +396,106 @@ namespace ngla
 	  for (size_t k = 0; k < blocki.Size(); k++)
 	    blockmat(j,k) = mat(blocki[j], blocki[k]);
         NgProfiler::StopThreadTimer (tget, TaskManager::GetThreadId());                         
-        NgProfiler::StartThreadTimer (tinv, TaskManager::GetThreadId());
-	CalcInverse (blockmat);
-        NgProfiler::StopThreadTimer (tinv, TaskManager::GetThreadId());        
         // }, TasksPerThread(10));
        }
          NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
        } );
-    
+
+
+    /**
+       Cumulate diagonal blocks across processors - works ONLY IF:
+	 - Blocks are consistent across processors
+	 - The blocks are already numbered consistently
+	 - For each block, all it's DOFs are shared between the same procs.
+	   This excludes, for example:
+	      Any blocks that reach from a subdomain interface in the interior of any domain
+	      Blocks that contain all DOFs on a facet shared between two procs, as well as all
+	      DOFs in that facet's BBND and BBBND nodes if any of those are also shared with some
+	      third block.
+        !! THIS ALSO ONLY ALLOWS FOR MULT/MULTADD, NOT FOR GSSMOOTH/GSSMOOTHBACK !!
+	Calling GSSmooth/GSSmoothback leads to undefined behavior
+     **/
+    if (cumulate_block_diags) {
+      if (auto ppds = amat.GetParallelDofs()) { // without attached ParallelDofs, we cannot cumulate blocks
+	const auto & pds = *ppds;
+	auto all_dps = pds.GetDistantProcs();
+	const auto& btab = *blocktable;
+
+	// iterates through all blocks that are shared with someone and calls a lambda function
+	auto iterate_ex_blocks = [&](auto lam) {
+	  for (auto block_num : Range(btab)) {
+	    auto block = btab[block_num];
+	    if (block.Size()) {
+	      auto dps = pds.GetDistantProcs(block[0]);
+	      for (auto p : dps) {
+		lam(block_num, block, p);
+		// sds[all_dps.Pos(p)] += sqr(block.Size());
+	      }
+	    }
+	  }
+	};
+
+	// find size of data to send/recv
+	Array<int> sds(all_dps.Size()); sds = 0; // shared data size
+	iterate_ex_blocks([&](auto block_num, auto block, auto p){
+	    sds[all_dps.Pos(p)] += sqr(block.Size());
+	  });
+
+	// allocate send/recv data
+	Table<TM> send_data(sds), recv_data(sds);
+
+	// write send-data
+	sds = 0;
+	iterate_ex_blocks([&](auto block_num, auto block, auto p){
+	    auto pos = all_dps.Pos(p);
+	    auto blocks = block.Size();
+	    // auto buf_block = send_data[pos].Part(sds[pos], ds);
+	    auto buf_block = FlatMatrix<TM>(blocks, blocks, send_data[pos].Addr(sds[pos]));
+	    auto diag_block = invdiag[block_num];
+	    sds[pos] += sqr(blocks);
+	    buf_block = diag_block;
+	  });
+
+	// send-recv
+	Array<MPI_Request> rsend(all_dps.Size()), rrecv(all_dps.Size());
+	auto comm = pds.GetCommunicator();
+	for (auto kp : Range(all_dps)) {
+	  rsend[kp] = comm.ISend(send_data[kp], all_dps[kp], MPI_TAG_SOLVE);
+	  rrecv[kp] = comm.IRecv(recv_data[kp], all_dps[kp], MPI_TAG_SOLVE);
+	}
+
+	// wait for recvs to finish and add to diagonal blocks
+	MyMPI_WaitAll(rrecv);
+	sds = 0;
+	iterate_ex_blocks([&](auto block_num, auto block, auto p){
+	    auto pos = all_dps.Pos(p);
+	    auto blocks = block.Size();
+	    // auto buf_block = recv_data[pos].Part(sds[pos], ds);
+	    auto buf_block = FlatMatrix<TM>(blocks, blocks, recv_data[pos].Addr(sds[pos]));
+	    auto diag_block = invdiag[block_num];
+	    sds[pos] += sqr(blocks);
+	    diag_block += buf_block;
+	  });
+
+	MyMPI_WaitAll(rsend); // wait for sends to finish !!
+      }
+    }
+
+    /** Invert diagonal blocks **/
+    SharedLoop2 sl2(blocktable->Size());
+    ParallelJob
+      ([&] (const TaskInfo & ti)
+       {
+         NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
+         for (auto i : sl2) {
+	     NgProfiler::StartThreadTimer (tinv, TaskManager::GetThreadId());
+	     FlatMatrix<TM> & blockmat = invdiag[i];
+	     CalcInverse (blockmat);
+	     NgProfiler::StopThreadTimer (tinv, TaskManager::GetThreadId());        
+	   }
+         NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
+       } );
+
     cout << IM(3) << "\rBuilding block " << blocktable->Size() << "/" << blocktable->Size() << flush;
     *testout << "block coloring";
 
@@ -506,6 +594,9 @@ namespace ngla
     static Timer timer("BlockJacobi::MultAdd");
     RegionTimer reg (timer);
     
+    x.Cumulate();
+    y.Cumulate();
+
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
@@ -549,7 +640,7 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    for (int c = 0; c < block_coloring.Size(); c++)
+    for (size_t c = 0; c < block_coloring.Size(); c++)
       {
         ParallelForRange
           (color_balance[c], [&] (IntRange r) 
@@ -768,10 +859,10 @@ namespace ngla
     lowmem = false;
     // lowmem = true;
     
-    int maxbs = 0;
-    int n = blocktable->Size();
+    size_t maxbs = 0;
+    size_t n = blocktable->Size();
 	
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
       if ((*blocktable)[i].Size() > maxbs)
 	maxbs = (*blocktable)[i].Size();
 
@@ -791,7 +882,7 @@ namespace ngla
       Array<int> block_inv(amat.Height());
       block_inv = -1;
 
-      for (int i = 0; i < blocktable->Size(); i++)
+      for (size_t i = 0; i < blocktable->Size(); i++)
 	{
 	  int bs = (*blocktable)[i].Size();
 	  
@@ -925,7 +1016,7 @@ namespace ngla
                                  int blocknr = block_coloring[c][bi];
                                  FlatArray<int> block = (*blocktable)[blocknr];
                                  int costs = 0;
-                                 for (int i=0; i<block.Size(); i++)
+                                 for (size_t i=0; i<block.Size(); i++)
                                    costs += mat.GetRowIndices(block[i]).Size();
                                  return costs;
                                });
@@ -985,13 +1076,16 @@ namespace ngla
     static Timer timer("BlockJacobiSymmetric::MultAdd");
     RegionTimer reg (timer);
 
+    x.Cumulate();
+    y.Cumulate();
+
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy       = y.FV<TVX> ();
 
     Vector<TVX> hxmax(maxbs);
     Vector<TVX> hymax(maxbs);
 
-    for (int i = 0; i < blocktable->Size(); i++)
+    for (size_t i = 0; i < blocktable->Size(); i++)
       {
 	int bs = (*blocktable)[i].Size();
 	if (!bs) continue;
@@ -1040,7 +1134,7 @@ namespace ngla
     if (task_manager)
       
       for (int k = 1; k <= steps; k++)
-        for (int c = 0; c < block_coloring.Size(); c++)
+        for (size_t c = 0; c < block_coloring.Size(); c++)
           ParallelFor (color_balance[c], [&] (int bi)
                        {
                          SmoothBlock (block_coloring[c][bi], fx, fy);
@@ -1049,7 +1143,7 @@ namespace ngla
     else
       
       for (int k = 1; k <= steps; k++)
-        for (int i = 0; i < blocktable->Size(); i++)
+        for (size_t i = 0; i < blocktable->Size(); i++)
           SmoothBlock (i, fx, fy);
   }
 
@@ -1068,7 +1162,7 @@ namespace ngla
 
     if (task_manager)
       
-      for (int c = 0; c < block_coloring.Size(); c++)
+      for (size_t c = 0; c < block_coloring.Size(); c++)
         ParallelFor (color_balance[c], [&] (int bi)
                      {
                        SmoothBlock (block_coloring[c][bi], fx, fy);
@@ -1076,7 +1170,7 @@ namespace ngla
     
     else
 
-      for (int i = 0; i < blocktable->Size(); i++)
+      for (size_t i = 0; i < blocktable->Size(); i++)
         SmoothBlock (i, fx, fy);
 
   }
