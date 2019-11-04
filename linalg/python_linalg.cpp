@@ -825,6 +825,15 @@ inverse : string
          py::arg("h"), py::arg("w"), py::arg("matrix"),
          py::arg("col_ind"), py::arg("row_ind"))
     ;
+
+  m.def("ChebyshevIteration", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
+				 int steps, double lambda_min, double lambda_max)
+	-> shared_ptr<BaseMatrix> {
+	  auto cheb = make_shared<ChebyshevIteration>(*mat, *pre, steps);
+	  cheb->SetBounds(lambda_min, lambda_max);
+	  return cheb;
+	}, py::arg("mat") = nullptr, py::arg("pre") = nullptr,
+	py::arg("steps") = 3, py::arg("lam_min") = 1, py::arg("lam_max") = 1);
   
   py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
     .def(py::init<> ([] (vector<vector<shared_ptr<BaseMatrix>>> mats)

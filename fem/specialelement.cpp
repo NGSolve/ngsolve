@@ -6,7 +6,7 @@ namespace ngfem
 
   
   void SpecialElement :: 
-  Apply (const FlatVector<double> & elx, FlatVector<double> & ely, 
+  Apply (FlatVector<double> elx, FlatVector<double> ely,
 	 LocalHeap & lh) const
   {
     FlatVector<double> hx1(elx.Size(), lh);
@@ -25,14 +25,14 @@ namespace ngfem
   }
   
   void SpecialElement ::
-  Assemble (FlatMatrix<double> & elmat,
-	    LocalHeap & lh) const
+  CalcElementMatrix(FlatMatrix<double> elmat,
+                    LocalHeap & lh) const
   {
     cerr << "SpecialElement::Assemble not implementd" << endl;
   }
   void SpecialElement ::
-  Assemble (FlatVector<double> & elvec,
-	    LocalHeap & lh) const
+  CalcElementVector(FlatVector<double> elvec,
+                    LocalHeap & lh) const
   {
     cerr << "SpecialElement::Assemble not implementd" << endl;
   }
