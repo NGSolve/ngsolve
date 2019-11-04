@@ -213,7 +213,7 @@ namespace ngbla
 
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( (Height()-first)/adist, w));
+      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( Height()/adist, w));
     }
     
     INLINE operator SliceMatrix<T> () const
@@ -1757,7 +1757,7 @@ namespace ngbla
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
       NETGEN_CHECK_RANGE(first, 0, Height());
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
   };
