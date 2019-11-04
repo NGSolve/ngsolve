@@ -281,7 +281,7 @@ namespace ngfem
                      
             {
               ThreadRegionTimer regadd(tadd, TaskManager::GetThreadId());                                  
-              coefs.AddSize(this->ndof) += trans3;
+              coefs.Range(0,this->ndof) += trans3;
             }
           }
 
@@ -475,7 +475,7 @@ namespace ngfem
           FlatMatrix<> mgrid_dx(nipz, nipx*nipy, &values(0,0)[0]);
           FlatMatrix<> mgrid_dy(nipz, nipx*nipy, &values(1,0)[0]);
           FlatMatrix<> mgrid_dz(nipz, nipx*nipy, &values(2,0)[0]);
-          values.Col(ir.Size()-1).AddSize(3) = SIMD<double>(0);
+          values.Col(ir.Size()-1).Range(0,3) = SIMD<double>(0);
           
           FlatVector<double> vecx_ref(irx.GetNIP(), &vecx(0)[0]);
           FlatVector<double> vecy_ref(iry.GetNIP(), &vecy(0)[0]);
@@ -613,7 +613,7 @@ namespace ngfem
           size_t nipz = irz.GetNIP();
 
           size_t nipxy = nipx*nipy;
-          size_t nip = nipx * nipy * nipz;
+          //size_t nip = nipx * nipy * nipz;
           size_t ndof = this->ndof;
           size_t ndof1d = static_cast<const FEL&> (*this).GetNDof1d ();
           size_t ndof2d = static_cast<const FEL&> (*this).GetNDof2d ();
@@ -696,7 +696,7 @@ namespace ngfem
           FlatMatrix<> mgrid_dx(nipz, nipx*nipy, &values(0,0)[0]);
           FlatMatrix<> mgrid_dy(nipz, nipx*nipy, &values(1,0)[0]);
           FlatMatrix<> mgrid_dz(nipz, nipx*nipy, &values(2,0)[0]);
-          // values.Col(ir.Size()-1).AddSize(3) = SIMD<double>(0);
+          // values.Col(ir.Size()-1).Range(0,3) = SIMD<double>(0);
           
           FlatVector<double> vecx_ref(irx.GetNIP(), &vecx(0)[0]);
           FlatVector<double> vecy_ref(iry.GetNIP(), &vecy(0)[0]);
@@ -797,7 +797,7 @@ namespace ngfem
                      });          
           }
 
-          bcoefs.AddSize(this->ndof) += coefs;
+          bcoefs.Range(0,this->ndof) += coefs;
           }
 
           // cout << "diff = " << L2Norm2( (coefs - coefs1))/(L2Norm2(coefs1)+1e-40) << endl;

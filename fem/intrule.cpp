@@ -328,6 +328,9 @@ namespace ngfem
             ddx(k)(dir,j) = (jacr(k,j) - jacl(k,j) ) / (2*eps);
       }
   }
+
+
+
   
 
   template class MappedIntegrationPoint<0,0>;
@@ -3365,7 +3368,7 @@ namespace ngfem
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
         // Vec<DIM_SPACE,SIMD<double>> vphys =
-        grad.Col(i).AddSize(DIM_SPACE) = Trans(mips[i].GetJacobianInverse()) * vref;
+        grad.Col(i).Range(0,DIM_SPACE) = Trans(mips[i].GetJacobianInverse()) * vref;
       }
   }
   
@@ -3380,7 +3383,7 @@ namespace ngfem
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
         // Vec<DIM_SPACE,SIMD<double>> vphys =
-        grad.Col(i).AddSize(DIM_SPACE) = mips[i].GetJacobianInverse() * vref;
+        grad.Col(i).Range(DIM_SPACE) = mips[i].GetJacobianInverse() * vref;
       }
   }
 

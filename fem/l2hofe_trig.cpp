@@ -28,7 +28,7 @@ namespace ngfem
   template class L2HighOrderFE<ET_TRIG>;  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
 
-  constexpr int MAX_FO_TRIG = 2;
+  //constexpr int MAX_FO_TRIG = 2;
   
   template<>
   ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_TRIG> (int order, FlatArray<int> vnums, Allocator & lh)

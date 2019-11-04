@@ -497,7 +497,7 @@ namespace ngfem
 	     SBLambda([divshapes,i](int j, auto val)
                       {
 			//divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).AddSize(DIM) = trans * val.DivShape();
-                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).AddSize(DIM) = val.DivShape();
+                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(0,DIM) = val.DivShape();
                       }));
 	}
       }
@@ -765,7 +765,6 @@ namespace ngfem
       int maxorder_facet =
         max2(order_facet[3],max2(order_facet[0],max2(order_facet[1],order_facet[2])));
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
 
       ArrayMem<Tx,20> ha(maxorder_facet);
       ArrayMem<Tx,20> v(oi), u(oi);
@@ -904,7 +903,7 @@ namespace ngfem
 	  
 	  DubinerBasis::Eval (maxorder_facet, ls, le, ha);
 
-          for (int l = 0; l < (order_facet[fa]+1)*(order_facet[fa]+2)/2.0; l++)
+          for (int l = 0; l < (p+1)*(p+2)/2.0; l++)
 	    {	      
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,ha[l]);	      
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,ha[l]);

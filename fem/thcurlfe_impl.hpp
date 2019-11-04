@@ -156,7 +156,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   auto T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurlShape (const IntegrationPoint & ip, 
-                     FlatVector<double> x,
+                     BareSliceVector<double> x,
                      LocalHeap & lh) const -> Vec<DIM_CURL_(DIM)>
   {
     Vec<DIM, AutoDiff<DIM> > adp = ip;
@@ -170,7 +170,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const
+  EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const
   {
     LocalHeapMem<10000> lhdummy("evalcurl-heap");
     for (int i = 0; i < ir.Size(); i++)

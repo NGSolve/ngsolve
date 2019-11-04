@@ -61,7 +61,8 @@ namespace ngcomp
 
     /// matrices (sparse, application, diagonal, ...)
     Array<shared_ptr<BaseMatrix>> mats;
-
+    size_t graph_timestamp = 0;
+    
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
     Array<shared_ptr<BilinearFormIntegrator>> VB_parts[4];
@@ -78,6 +79,11 @@ namespace ngcomp
 #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
 #endif
+
+    /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
+    Array<unique_ptr<SpecialElement>> specialelements;
+    size_t specialelements_timestamp = 0;
+
     
     /*
     Array<BilinearFormIntegrator*> independent_parts;
@@ -121,7 +127,8 @@ namespace ngcomp
 		  shared_ptr<FESpace> afespace2, 
 		  const string & aname,
 		  const Flags & flags);
-
+    BilinearForm (const BilinearForm&) = delete;
+    BilinearForm& operator= (const BilinearForm&) = delete;
     virtual ~BilinearForm ();
   
 
@@ -177,6 +184,9 @@ namespace ngcomp
     }
     */
 
+    void AddSpecialElement (unique_ptr<SpecialElement> spel);
+    auto & GetSpecialElements() const { return specialelements; }
+    void DeleteSpecialElements();
 
     /// for static condensation of internal bubbles
     void SetLinearForm (LinearForm * alf) { linearform = alf; }
@@ -242,6 +252,11 @@ namespace ngcomp
     /// returns the assembled matrix
     const BaseMatrix & GetMatrix () const { return *mats.Last(); }
     const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
+    void DeleteMatrix()
+    {
+      if(mats.Size())
+        mats.DeleteLast();
+    }
     /// returns the assembled matrix
     shared_ptr<BaseMatrix> GetMatrixPtr () const;
 

@@ -129,18 +129,18 @@ namespace ngfem
 
     virtual Vec<DIM_CURL_TRAIT<D>::DIM> 
     EvaluateCurlShape (const IntegrationPoint & ip, 
-		       FlatVector<double> x, LocalHeap & lh) const
+		       BareSliceVector<double> x, LocalHeap & lh) const
     {
       HeapReset hr(lh);
       return Trans (GetCurlShape(ip, lh)) * x;
     }  
 
     NGS_DLL_HEADER virtual void 
-    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
+    EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
 
     NGS_DLL_HEADER virtual void 
     EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
-                        FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
+                        BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
 
 
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
