@@ -1497,7 +1497,7 @@ namespace ngbla
     BareSliceVector Slice (size_t first, size_t adist) const
     {
 #ifdef NETGEN_ENABLE_CHECK_RANGE
-      return BareSliceVector (data+first*dist, dist*adist, Height()-first );
+      return BareSliceVector (data+first*dist, dist*adist, Height()/adist );
 #else
       return BareSliceVector (data+first*dist, dist*adist);
 #endif
