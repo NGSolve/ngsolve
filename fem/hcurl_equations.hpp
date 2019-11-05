@@ -223,7 +223,16 @@ namespace ngfem
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
-    }    
+    }
+    
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      auto grad = dir->Operator("Grad");
+      return -TraceCF(grad) * proxy;
+    }
+
   };
 
   template <typename FEL> class DiffOpCurlEdge<3,FEL> : public DiffOp<DiffOpCurlEdge<3,FEL> >
