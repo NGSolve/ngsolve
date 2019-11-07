@@ -2751,9 +2751,10 @@ namespace ngcomp
                           //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                           //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
-                          cout << "compressed_elmat:" << compressed_elmat << endl;
-                          cout << "compressed_dnums_test:" << compressed_dnums_test << endl;
-                          cout << "compressed_dnums_trial:" << compressed_dnums_trial << endl;
+                          // cout << "compressed_elmat:" << compressed_elmat << endl;
+                          // cout << "compressed_dnums_test:" << compressed_dnums_test << endl;
+                          // cout << "compressed_dnums_trial:" << compressed_dnums_trial << endl;
+                          
                           AddElementMatrix (compressed_dnums_test, compressed_dnums_trial, compressed_elmat, ElementId(BND,i), lh);
                         }
                       }
