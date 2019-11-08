@@ -20,27 +20,64 @@ namespace ngla
   
   void Projector :: MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    return Mult (x, y);
+    Mult (x, y);
   }
 
 
   void Projector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("Projector::MultAdd"); RegionTimer reg(t);
+    /*
     FlatSysVector<> sx = x.SV<double>();
     FlatSysVector<> sy = y.SV<double>();
 
-    if (keep_values)
+    ParallelForRange
+      (bits->Size(),
+       [this, sx, sy, s] (IntRange myrange)
+       {
+         if (keep_values)
+           {
+             for (size_t i : myrange) //  Range(*bits))
+               if ((*bits)[i])
+                 sy(i) += s * sx(i);
+           }
+         else
+           {
+             for (size_t i : myrange) // Range(*bits))
+               if (!(*bits)[i])
+                 sy(i) += s * sx(i);
+           }
+       });
+    */
+
+    auto multadd = [this,s] (BitArray & bits, auto sx, auto sy)
       {
-        for (size_t i : Range(*bits))
-          if ((*bits)[i])
-            sy(i) += s * sx(i);
-      }
+        ParallelForRange
+        (bits.Size(),
+         [&bits, sx, sy, s, this] (IntRange myrange)
+            {
+              if (keep_values)
+                {
+                  for (size_t i : myrange) //  Range(*bits))
+                    if (bits[i])
+                      sy(i) += s * sx(i);
+                }
+              else
+                {
+                  for (size_t i : myrange) // Range(*bits))
+                    if (!bits[i])
+                      sy(i) += s * sx(i);
+                }
+            });
+      };
+
+    
+    if (x.EntrySize() == 1)
+      multadd (*bits, x.FV<double>(), y.FV<double>());
     else
-      {
-        for (size_t i : Range(*bits))
-          if (!(*bits)[i])
-            sy(i) += s * sx(i);
-      }
+      multadd (*bits, x.SV<double>(), y.SV<double>());
+
+    
   }
   
   void Projector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -50,28 +87,63 @@ namespace ngla
 
   void Projector :: Project (BaseVector & x) const
   {
+    static Timer t("Projector::Project"); RegionTimer reg(t);
+    /*
     FlatSysVector<> sx = x.SV<double>();
+    
+    ParallelForRange
+      (bits->Size(),
+       [this, sx] (IntRange myrange)
+       {
+         if (keep_values)
+           {
+             for (size_t i : myrange) // Range(*bits))
+               if (!(*bits)[i])
+                 sx(i) = 0.0;
+           }
+         else
+           {
+             for (size_t i : myrange) // Range(*bits))
+               if ((*bits)[i])
+                 sx(i) = 0.0;
+           }
+       });
+    */
 
-    if (keep_values)
+    auto project = [this] (BitArray & bits, auto sx)
       {
-        for (size_t i : Range(*bits))
-          if (!(*bits)[i])
-            sx(i) = 0.0;
-      }
+        ParallelForRange
+        (bits.Size(),
+         [&bits, sx, this] (IntRange myrange)
+            {
+              if (keep_values)
+                {
+                  for (size_t i : myrange) // Range(*bits))
+                    if (!bits[i])
+                      sx(i) = 0.0;
+                }
+              else
+                {
+                  for (size_t i : myrange) // Range(*bits))
+                    if (bits[i])
+                      sx(i) = 0.0;
+                }
+            });
+      };
+
+    if (x.EntrySize() == 1)
+      project (*bits, x.FV<double>());
     else
-      {
-        for (size_t i : Range(*bits))
-          if ((*bits)[i])
-            sx(i) = 0.0;
-      }
+      project (*bits, x.SV<double>());
   }
-
+  
 
 
 
   template <typename TM>
   void DiagonalMatrix<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("DiagonalMatrix::MultAdd"); RegionTimer reg(t);    
     if (mat_traits<TM>::WIDTH == x.EntrySize())
       {
         typedef typename mat_traits<TM>::TV_ROW TV_ROW;
