@@ -643,6 +643,8 @@ kwargs : kwargs
     .def("__timing__", [] (shared_ptr<FESpace> self) { return py::cast(self->Timing()); })
     .def_property_readonly("lospace", [](shared_ptr<FESpace> self) -> shared_ptr<FESpace>
 			   { return self->LowOrderFESpacePtr(); })
+    .def_property_readonly("loembedding", [](shared_ptr<FESpace> self) -> shared_ptr<BaseMatrix>
+			   { return self->LowOrderEmbedding(); })
     .def_property_readonly("mesh",
                            [](shared_ptr<FESpace> self) -> shared_ptr<MeshAccess>
                            { return self->GetMeshAccess(); }, "mesh on which the FESpace is created")
@@ -1995,6 +1997,9 @@ integrator : ngsolve.fem.BFI
 
     .def_property_readonly("integrators", [](BF & self)
                            { return MakePyTuple (self.Integrators()); }, "integrators of the bilinear form")
+
+    .def_property_readonly("loform", [](shared_ptr<BilinearForm> self) 
+			   { return self->GetLowOrderBilinearForm(); })
     
     .def("Assemble", [](BF & self, bool reallocate)
          {
@@ -2649,10 +2654,12 @@ integrator : ngsolve.fem.LFI
               py::object result;
               if (region_wise) {
 #ifdef PARALLEL
-                Vector<> rs2(ma->GetNRegions(vb));
-                if (ma->GetCommunicator().Size() > 1)                
-                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
-                region_sum = rs2;
+                if (ma->GetCommunicator().Size() > 1)
+                  {
+                    Vector<> rs2(ma->GetNRegions(vb));
+                    MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                    region_sum = rs2;
+                  }
 #endif
                 // result = py::list(py::cast(region_sum));  // crashes ?!?!
                 result = py::cast(region_sum);
@@ -2665,11 +2672,12 @@ integrator : ngsolve.fem.LFI
               }
               else {
 #ifdef PARALLEL
-                Vector<> gsum(dim);
-                if (ma->GetCommunicator().Size() > 1) {
-                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
-		  sum = gsum;
-		}
+                if (ma->GetCommunicator().Size() > 1)
+                  {
+                    Vector<> gsum(dim);
+                    MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                    sum = gsum;
+                  }
 #endif
                 result = py::cast(sum);
               }
