@@ -1044,7 +1044,7 @@ namespace ngstd
     return _mm512_fmadd_pd (_mm512_set1_pd(a), b.Data(), c.Data());    
   }
 #endif
-#ifdef __AVX2__
+#ifdef __FMA__
   INLINE SIMD<double,4> FMA (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
   {
     return _mm256_fmadd_pd (a.Data(), b.Data(), c.Data());
