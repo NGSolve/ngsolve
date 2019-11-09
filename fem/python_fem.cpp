@@ -1002,7 +1002,7 @@ cf : ngsolve.CoefficientFunction
                   {
                     ei = zero;
                     ei[i] = one;
-                    auto vec = MakeVectorialCoefficientFunction (Array(ei));
+                    auto vec = MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(ei));
                     vec->SetDimensions(var->Dimensions());
                     ddi[i] = coef->Diff(var.get(), vec);
                   }
