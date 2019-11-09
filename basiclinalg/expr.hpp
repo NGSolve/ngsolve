@@ -19,7 +19,7 @@ namespace ngbla
   template <typename T = double, ORDERING ORD = RowMajor, typename TIND = size_t> class FlatMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
 
-  template <auto H, auto W, typename T> class Mat;
+  template <int H, int W, typename T> class Mat;
   template <int H, typename T> class DiagMat;
   template <int S, typename T> class Vec;
 
