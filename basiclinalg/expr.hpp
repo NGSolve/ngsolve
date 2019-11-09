@@ -1682,7 +1682,7 @@ namespace ngbla
     m = 1.0 / m;
   }
 
-  template <int H, int W, typename T>
+  template <auto H, auto W, typename T>
   inline void CalcInverse (Mat<H,W,T> & m)
   {
     FlatMatrix<T> fm(m);
@@ -1700,7 +1700,7 @@ namespace ngbla
     inv = 1.0 / m;
   }
 
-  template <int H, int W, typename T, typename TINV>
+  template <auto H, auto W, typename T, typename TINV>
   inline void CalcInverse (const Mat<H,W,T> & m, TINV & inv)
   {
     FlatMatrix<T> fm(m);
@@ -1755,7 +1755,7 @@ namespace ngbla
 
 
 
-  template <int H, int W, typename T>
+  template <auto H, auto W, typename T>
   INLINE Mat<H,W,T> Inv (Mat<H,W,T> m)
   {
     Mat<H,W,T> inv;
@@ -1763,7 +1763,7 @@ namespace ngbla
     return inv;
   }
 
-  template <int H, int W, typename T>
+  template <auto H, auto W, typename T>
   INLINE Mat<H,W,T> Adj (Mat<H,W,T> m)
   {
     cerr << "Adj<" << H << "," << W << "> not implemented" << endl;
@@ -1817,7 +1817,7 @@ namespace ngbla
 
 
 
-  template <int H, int W, typename T>
+  template <auto H, auto W, typename T>
   INLINE Mat<H,W,T> Cof (Mat<H,W,T> m)
   {
     cerr << "Cof<" << H << "," << W << "> not implemented" << endl;
