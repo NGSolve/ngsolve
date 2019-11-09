@@ -687,9 +687,11 @@ namespace ngbla
     /// type of row vector
     typedef typename Mat<H,W,T>::TV_ROW TV_ROW;
     /// matrix height
-    enum { HEIGHT = H };
+    // enum { HEIGHT = H };
+    static constexpr int HEIGHT = H;
     /// matrix with
-    enum { WIDTH  = W  };
+    // enum { WIDTH  = W  };
+    static constexpr int WIDTH = W;
     ///
     enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
