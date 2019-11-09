@@ -2151,7 +2151,7 @@ namespace ngbla
 
 
 
-  template<auto H, auto W, typename T>
+  template<int H, int W, typename T>
   inline std::ostream & operator<< (std::ostream & s, const Mat<H,W,T> & m)
   {
     for (int i = 0; i < H*W; i++)
@@ -2161,7 +2161,7 @@ namespace ngbla
 
 
 
-  template <auto H, auto W, typename T>
+  template <int H, int W, typename T>
   INLINE auto Trans (const Mat<H,W,T> & mat)
     -> Mat<W,H,decltype(Trans(mat(0,0)))>
   {
@@ -2179,7 +2179,7 @@ namespace ngbla
     return res;
   }
   
-  template <auto H, auto W, typename T>
+  template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & mat)
   {
     Mat<H,W,T> res;
@@ -2189,7 +2189,7 @@ namespace ngbla
     return res;
   }
 
-  template <auto H, auto W, typename T>
+  template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
   {
     Mat<H,W,T> res;
@@ -2200,7 +2200,7 @@ namespace ngbla
   }
 
 
-  template <auto H, auto W, auto W2, typename T1, typename T2>
+  template <int H, int W, int W2, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat1, const Mat<W,W2,T2> & mat2) 
     -> Mat<H,W2,decltype( RemoveConst(mat1(0,0)*mat2(0,0)))>
   {
@@ -2218,7 +2218,7 @@ namespace ngbla
   }
 
 
-  template <auto H, auto W, auto W2, typename T1, typename T2>
+  template <int H, int W, int W2, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat, const Vec<W2,T2> & vec) 
     -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
@@ -2230,7 +2230,7 @@ namespace ngbla
     return res;
   }
 
-  template <auto H, auto W, typename T1, typename T2>
+  template <int H, int W, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W,T2> & vec) 
     -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
@@ -2242,7 +2242,7 @@ namespace ngbla
     return res;
   }
 
-  template <auto H, auto W, typename T1, typename T2>
+  template <int H, int W, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat, FlatVector<T2> vec) 
     -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
@@ -2272,7 +2272,7 @@ namespace ngbla
   template <typename T>
   class Is_Sliceable<Matrix<T>,T> { public: enum { VAL = true };  };
   
-  template <auto W, typename T, int DIST>
+  template <int W, typename T, int DIST>
   class Is_Sliceable<FlatMatrixFixWidth<W,T,DIST>,T> { public: enum { VAL = true };  };
 
 
@@ -2317,7 +2317,7 @@ namespace ngbla
   
 
 
-  template <auto H, auto W, typename SCAL, typename TANY>
+  template <int H, int W, typename SCAL, typename TANY>
   inline void AtomicAdd (Mat<H,W,SCAL> & x, TANY y)
   {
     for (int i = 0; i < H; i++)
@@ -2330,7 +2330,7 @@ namespace ngbla
 
 namespace ngstd
 {
-  template <auto N, auto M, typename T>
+  template <int N, int M, typename T>
   inline Archive & operator& (Archive & ar, ngbla::Mat<N,M,T> & m)
   {
     for (int i = 0; i < N*M; i++)
@@ -2343,7 +2343,7 @@ namespace ngstd
 #ifdef PARALLEL
 namespace ngcore
 {
-  template<auto N, auto M, typename T>
+  template<int N, int M, typename T>
   class MPI_typetrait<ngbla::Mat<N, M, T> >
   {
   public:
