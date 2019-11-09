@@ -22,7 +22,8 @@ namespace ngfem
   class T_ScalarFiniteElement : public BASE   
   {
   public:
-    enum { DIM = ET_trait<ET>::DIM };
+    // enum { DIM = ET_trait<ET>::DIM };
+    static constexpr int DIM = ET_trait<ET>::DIM;
 
     // using BASE::eltype;
     using BASE::ndof;
