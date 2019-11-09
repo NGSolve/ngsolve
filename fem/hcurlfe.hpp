@@ -20,14 +20,15 @@ namespace ngfem
 
   template <int D> class HDivFiniteElement;
 
-
+  /*
   template <int D>
   class DIM_CURL_TRAIT
   {
   public:
     enum { DIM = (D*(D-1))/2 };
   };
-
+  */
+  
   constexpr int DIM_CURL_ (int D) { return (D*(D-1))/2; }
 
   /**
@@ -59,8 +60,8 @@ namespace ngfem
 
   public:
     enum { DIM = D };
-    enum { DIM_CURL = DIM_CURL_TRAIT<D>::DIM };
-    // enum { DIM_CURL = DIM_CURL_(D) };
+    // enum { DIM_CURL = DIM_CURL_TRAIT<D>::DIM };
+    enum { DIM_CURL = DIM_CURL_(D) };
 
 
   public:
@@ -110,6 +111,7 @@ namespace ngfem
     }
 
     ///
+    /*
     const FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> GetCurlShape (const IntegrationPoint & ip, 
                                                          LocalHeap & lh) const
     {
@@ -117,9 +119,17 @@ namespace ngfem
       CalcCurlShape (ip, curlshape);
       return curlshape;
     }  
+    */
+    const FlatMatrixFixWidth<DIM_CURL_(D)> GetCurlShape (const IntegrationPoint & ip, 
+                                                         LocalHeap & lh) const
+    {
+      FlatMatrixFixWidth<DIM_CURL_(D)> curlshape(ndof, lh);
+      CalcCurlShape (ip, curlshape);
+      return curlshape;
+    }  
     
     template <typename TVX>
-    Vec<DIM_CURL_TRAIT<D>::DIM, typename TVX::TSCAL> 
+    Vec<DIM_CURL_(D), typename TVX::TSCAL> 
     EvaluateCurlShape (const IntegrationPoint & ip, 
 		       const TVX & x, LocalHeap & lh) const
     {
@@ -127,7 +137,8 @@ namespace ngfem
       return Trans (GetCurlShape(ip, lh)) * x;
     } 
 
-    virtual Vec<DIM_CURL_TRAIT<D>::DIM> 
+    // virtual Vec<DIM_CURL_TRAIT<D>::DIM>
+    virtual Vec<DIM_CURL_(D)>
     EvaluateCurlShape (const IntegrationPoint & ip, 
 		       BareSliceVector<double> x, LocalHeap & lh) const
     {
@@ -136,11 +147,11 @@ namespace ngfem
     }  
 
     NGS_DLL_HEADER virtual void 
-    EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
+    EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
 
     NGS_DLL_HEADER virtual void 
     EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
-                        BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
+                        BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
 
 
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
