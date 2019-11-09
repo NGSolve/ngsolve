@@ -173,9 +173,11 @@ namespace ngbla
     /// type of row vector
     typedef T TV_ROW;
     /// matrix height
-    enum { HEIGHT = 1 };
+    // enum { HEIGHT = 1 };
     /// matrix with
-    enum { WIDTH  = 1  };
+    // enum { WIDTH  = 1  };
+    static constexpr int HEIGHT = 1;
+    static constexpr int WIDTH = 1;
     ///
     enum { IS_COMPLEX = 0 };
   };
