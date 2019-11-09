@@ -983,9 +983,36 @@ cf : ngsolve.CoefficientFunction
           },
           "depricated: use 'Diff' instead", 
           py::arg("variable"), py::arg("direction")=1.0)
-    .def ("Diff", &CoefficientFunction::Diff,
+    .def ("Diff", // &CoefficientFunction::Diff,
+          [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
+          {
+            if (dir)
+              return coef->Diff(var.get(), dir);
+            if (var->Dimension() == 1)
+              return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));
+            else
+              {
+                if (coef->Dimension() != 1)
+                  throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
+                int dim = var->Dimension();
+                Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
+                auto zero = make_shared<ConstantCoefficientFunction>(0);
+                auto one =  make_shared<ConstantCoefficientFunction>(1);
+                for (int i = 0; i < dim; i++)
+                  {
+                    ei = zero;
+                    ei[i] = one;
+                    auto vec = MakeVectorialCoefficientFunction (Array(ei));
+                    vec->SetDimensions(var->Dimensions());
+                    ddi[i] = coef->Diff(var.get(), vec);
+                  }
+                auto dvec = MakeVectorialCoefficientFunction (move(ddi));
+                dvec->SetDimensions(var->Dimensions());
+                return dvec;
+              }
+          },
           "Compute directional derivative with respect to variable",
-          py::arg("variable"), py::arg("direction")=1.0)
+          py::arg("variable"), py::arg("direction")=nullptr)
 
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
           {
@@ -1460,9 +1487,10 @@ z : double
 
   m.def("H1FE", [](ELEMENT_TYPE et, int order)
         {
-          SwitchET (et, [&] (auto et) -> shared_ptr<BaseScalarFiniteElement>
+          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
                     {
-                      return make_shared<H1HighOrderFE<et.ElementType()>> (order);
+                      constexpr ELEMENT_TYPE ET = et2.ElementType();
+                      return make_shared<H1HighOrderFE<ET>> (order);
                     });
         },
         py::arg("et"), py::arg("order"),
@@ -1481,9 +1509,10 @@ order : int
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
         {
-          SwitchET (et, [&] (auto et) -> shared_ptr<BaseScalarFiniteElement>
+          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
                     {
-                      return make_shared<L2HighOrderFE<et.ElementType()>> (order);
+                      constexpr ELEMENT_TYPE ET = et2.ElementType();                      
+                      return make_shared<L2HighOrderFE<ET>> (order);
                     });
         },
         py::arg("et"), py::arg("order"),
