@@ -21,7 +21,7 @@ namespace ngbla
 
   template <int H, int W, typename T> class Mat;
   template <int H, typename T> class DiagMat;
-  template <int S, typename T> class Vec;
+  template <auto S, typename T> class Vec;
 
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <class T = double> class FlatVector;
