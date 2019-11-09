@@ -11,7 +11,7 @@ namespace ngbla
 {
 
   
-  template <int H, int W, typename T> class Mat;
+  template <auto H, auto W, typename T> class Mat;
   // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
   // template <typename T> class SliceMatrixColMajor;
@@ -564,7 +564,7 @@ namespace ngbla
      A matrix of fixed size.
      Useful as entry type in system matrices,...
   */
-  template <int H, int W = H, typename T = double>
+  template <auto H, auto W = H, typename T = double>
   class Mat : public MatExpr<Mat<H,W,T> >
   {
     // T data[(H*W>0) ? H*W : 1];
