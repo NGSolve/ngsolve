@@ -11,7 +11,7 @@ namespace ngbla
 {
 
 
-  template <int S, class T> class Vec;
+  template <auto S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
   template <class T = double> class Vector;
@@ -778,7 +778,7 @@ namespace ngbla
      A vector of fixed size.
      Useful as entry type in system vectors.
   */
-  template <int S, typename T = double>
+  template <auto S, typename T = double>
   class Vec : public MatExpr<Vec<S,T> > // , protected BaseVec
   {
     /// the values
