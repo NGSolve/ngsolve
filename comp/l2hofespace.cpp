@@ -2580,7 +2580,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
              
-             Mat<DIM> trans; // (0.0);
+             Mat<DIM> trans(0.0);
              if (piola)
                trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
              else if (covariant)
@@ -2744,7 +2744,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2834,7 +2834,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2922,7 +2922,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -3008,7 +3008,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
