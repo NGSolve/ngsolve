@@ -347,7 +347,7 @@ namespace ngstd
 #ifdef __AVX__
   
   template<>
-  class /* alignas(32) */ SIMD<double,4> // : public AlignedAlloc<SIMD<double,4>>
+  class /* alignas(32) */ SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
   {
     __m256d data;
     
@@ -396,7 +396,7 @@ namespace ngstd
 #else // AVX
 
   template<>
-  class alignas(32) SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
+  class /* alignas(32) */ SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
   {
     SIMD<double,2> data[2];
     
@@ -468,7 +468,7 @@ namespace ngstd
   
 #ifdef __AVX512F__
   template<>
-  class alignas(64) SIMD<double,8> : public AlignedAlloc<SIMD<double,8>>
+  class /* alignas(64) */ SIMD<double,8> : public AlignedAlloc<SIMD<double,8>>
   {
     __m512d data;
   public:
