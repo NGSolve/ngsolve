@@ -19,6 +19,7 @@ string ToString (OP op)
     case ADD: return "ADD";
     case SUB: return "SUB";
     }
+  return "none";  // make the compile happy
 }
 
 /*
