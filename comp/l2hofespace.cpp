@@ -2578,7 +2578,10 @@ One can evaluate the vector-valued function, and one can take the gradient.
              else if (rho->Dimension() == 1)
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
-               rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+               {
+                 rhoi = 0.0;
+                 rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+               }
              
              Mat<DIM> trans;
              if (piola)
