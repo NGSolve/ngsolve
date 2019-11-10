@@ -1123,7 +1123,7 @@ namespace ngfem
       SetVertexNumbers (avnums);
     }
     virtual ~L2HighOrderFETP();
-    
+    using TBASE::Evaluate;
     virtual void Evaluate (const SIMD_IntegrationRule & ir,
                            BareSliceVector<> bcoefs,
                            BareVector<SIMD<double>> values) const override;

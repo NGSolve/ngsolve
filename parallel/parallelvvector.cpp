@@ -111,7 +111,7 @@ namespace ngla
 #ifdef PARALLEL
     if (status != DISTRIBUTED) return;
     
-    int ntasks = paralleldofs->GetNTasks();
+    // int ntasks = paralleldofs->GetNTasks();
     auto exprocs = paralleldofs->GetDistantProcs();
     
     int nexprocs = exprocs.Size();
