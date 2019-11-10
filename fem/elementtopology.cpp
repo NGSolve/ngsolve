@@ -453,6 +453,7 @@ namespace ngfem
     case ET_PRISM: return FlatVector< Vec<D> > (5, prism_normals);
     case ET_HEX: return FlatVector< Vec<D> > (6, hex_normals);
     }
+    __assume(flase);
     /*
     stringstream str;
     str << "Ng_GetNormals, illegal element type " << et << "\n";

@@ -595,7 +595,7 @@ namespace ngstd
   template <int N>  
   INLINE SIMD<double,N> operator/ (double a, SIMD<double,N> b) { return SIMD<double,N>(a)/b; }
   template <int N>  
-  INLINE SIMD<double,N> & operator+= (SIMD<double,N> & a, SIMD<double,N> b) { a=a+b; return a; }
+  INLINE SIMD<double,N> & operator+= (SIMD<double,N> & a, const SIMD<double,N> & b) { a=a+b; return a; }
   template <int N>  
   INLINE SIMD<double,N> & operator+= (SIMD<double,N> & a, double b) { a+=SIMD<double,N>(b); return a; }
   template <int N>  
@@ -1062,7 +1062,7 @@ namespace ngstd
     sum = FMA(a,b,sum);
   }
 
-#if defined(__AVX2__) && not defined(__AVX512F__)
+#if defined(__FMA__) && not defined(__AVX512F__)
   // make sure to use the update-version of fma
   // important in matrix kernels using 12 sum-registers, 3 a-values and updated b-value
   // avx512 has enough registers, and gcc seems to use only the first 16 z-regs
