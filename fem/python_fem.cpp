@@ -848,7 +848,7 @@ val : can be one of the following:
                 py::tuple res(self.Dimension());
                 for (auto i : Range(vec))
                   res[i] = py::cast(vec[i]);
-                return res;
+                return std::move(res);
 	      }
 	    else
 	      {
@@ -858,7 +858,7 @@ val : can be one of the following:
                 py::tuple res(self.Dimension());
                 for (auto i : Range(vec))
                   res[i] = py::cast(vec[i]);
-                return res;
+                return std::move(res);
 	      }
 	  },
          py::arg("mip"),

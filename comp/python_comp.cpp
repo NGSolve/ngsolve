@@ -96,7 +96,7 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                            return block_proxy;
                                          }));
         }
-      return l;
+      return std::move(l);
     }
 
   auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
