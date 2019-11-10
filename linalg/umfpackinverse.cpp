@@ -141,10 +141,10 @@ namespace ngla
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
           }
       }
-    catch(Exception e)
+    catch(Exception & e)
       {
         if (task_manager) task_manager -> StartWorkers();
-        throw e;
+        throw;
       }
 
     if (task_manager) task_manager -> StartWorkers();
@@ -585,10 +585,10 @@ namespace ngla
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
           }
       }
-    catch(Exception e)
+    catch(Exception & e)
       {
         if (task_manager) task_manager -> StartWorkers();
-        throw e;
+        throw;
       }
 
     if (task_manager) task_manager -> StartWorkers();

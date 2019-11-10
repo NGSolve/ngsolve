@@ -4131,7 +4131,7 @@ namespace ngcomp
 	    
 	    //cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << ", " << mpi_facet_parts.Size() << " total parts " << endl;
 
-            int mrank = comm.Rank();
+            // int mrank = comm.Rank();
             int mnp = comm.Size();
 	    Array<int> cnt_in(mnp), cnt_per(mnp);
 	    if(!have_mpi_facet_data) {

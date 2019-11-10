@@ -1070,7 +1070,7 @@ namespace ngbla
     /// the data
     T * __restrict data;
     /// the width
-    int w;
+    size_t w;
   public:
     ///
     typedef T TELEM;
@@ -1081,11 +1081,11 @@ namespace ngbla
     FlatMatrixFixHeight () : data(0), w(0) { ; }
   
     /// set height and mem
-    FlatMatrixFixHeight (int aw, T * adata) 
+    FlatMatrixFixHeight (size_t aw, T * adata) 
       : data(adata), w(aw) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixHeight (int aw, LocalHeap & lh) 
+    FlatMatrixFixHeight (size_t aw, LocalHeap & lh) 
       : data(lh.Alloc<T>(aw*SLICE)), w(aw) { ; }
   
     /// copy constructor. copies pointers, not contents
