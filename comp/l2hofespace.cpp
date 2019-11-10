@@ -2572,16 +2572,13 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
 
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
-               {
-                 rhoi = 0.0;
-                 rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-               }
+               rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
              
              Mat<DIM> trans;
              if (piola)
