@@ -2655,11 +2655,14 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());                  
+                  /*
                   {
                     Vector<> rs2(ma->GetNRegions(vb));
                     MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                     region_sum = rs2;
                   }
+                  */
 #endif
                 // result = py::list(py::cast(region_sum));  // crashes ?!?!
                 result = py::cast(region_sum);
@@ -2673,11 +2676,14 @@ integrator : ngsolve.fem.LFI
               else {
 #ifdef PARALLEL
                 if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &sum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                /*                  
                   {
                     Vector<> gsum(dim);
                     MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
                     sum = gsum;
                   }
+                */
 #endif
                 result = py::cast(sum);
               }
@@ -2747,10 +2753,16 @@ integrator : ngsolve.fem.LFI
               py::object result;
               if (region_wise) {
 #ifdef PARALLEL
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb),
+                                MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                
+                /*
                 Vector<Complex> rs2(ma->GetNRegions(vb));
                 if (ma->GetCommunicator().Size() > 1)
                   MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
+                */
 #endif
                 // result = py::list(py::cast(region_sum));
                 result = py::cast(region_sum);
@@ -2763,11 +2775,15 @@ integrator : ngsolve.fem.LFI
               }
               else {
 #ifdef PARALLEL
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &sum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                /*
                 Vector<Complex> gsum(dim);
                 if (ma->GetCommunicator().Size() > 1) {
                   MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
 		  sum = gsum;
 		}
+                */
 #endif
                 result = py::cast(sum);
               }
