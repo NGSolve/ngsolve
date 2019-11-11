@@ -827,8 +827,8 @@ namespace ngfem
              for (size_t i = 0; i < mir.Size(); i++)
                {
                  // Directional derivative
-                 // [[maybe_unused]]
-                 Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
+                 [[maybe_unused]]
+                   Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
 
                  const auto &ip = mir[i].IP();
                  TIP<DIM,AutoDiffRec<1,SIMD<double>>>adp;
