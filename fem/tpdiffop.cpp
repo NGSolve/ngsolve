@@ -70,8 +70,8 @@ namespace ngfem
   void TPDifferentialOperator :: Apply (
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
-            FlatVector<double> x, 
-            FlatMatrix<double> flux,
+            BareSliceVector<double> x, 
+            BareSliceMatrix<double> flux,
             LocalHeap & lh) const
   {
     const TPHighOrderFE & tpfel = static_cast<const TPHighOrderFE &>(fel);
@@ -103,7 +103,7 @@ namespace ngfem
       helper = Trans(fcoefs) * Trans(shape0);
       fvals = shape1 * helper;
       for(int i=0;i<nip0;i++)
-        flux.Rows(i*nip1,(i+1)*nip1) = fvals.Cols(dim0*i,dim0*(i+1));
+        flux.Rows(i*nip1,(i+1)*nip1).AddSize(nip1,dim0) = fvals.Cols(dim0*i,dim0*(i+1));
     }
   }
     
@@ -112,7 +112,7 @@ namespace ngfem
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
             FlatMatrix<double> flux,
-            FlatVector<double> x, 
+            BareSliceVector<double> x, 
             LocalHeap & lh) const
   {
     const TPHighOrderFE & tpfel = static_cast<const TPHighOrderFE &>(fel);
@@ -271,8 +271,8 @@ namespace ngfem
   void TPBlockDifferentialOperator :: Apply (
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
-            FlatVector<double> x, 
-            FlatMatrix<double> flux,
+            BareSliceVector<double> x, 
+            BareSliceMatrix<double> flux,
             LocalHeap & lh) const
   {
     const TPHighOrderFE & tpfel = static_cast<const TPHighOrderFE &>(fel);
@@ -297,10 +297,11 @@ namespace ngfem
       FlatMatrix<double,ColMajor> helper1(nip0*dim0,ndof1*BlockDim(),lh);
       FlatMatrix<> helper2(ndof1,nip0*dim0*BlockDim(),&helper1(0,0));
       FlatMatrix<double,ColMajor> result(nip1*dim1,nip0*dim0*BlockDim(),lh);
-      FlatMatrix<double,ColMajor> fluxCM(flux.Height(),flux.Width(),&result(0,0));
+      // FlatMatrix<double,ColMajor> fluxCM(flux.Height(),flux.Width(),&result(0,0));
+      FlatMatrix<double,ColMajor> fluxCM(nip0*nip1, dim1,&result(0,0));
       helper1 = shape0 * fcoefs;
       result =  shape1*helper2;
-      flux = fluxCM;
+      flux.AddSize(nip0*nip1, dim1) = fluxCM;
     }
     if(dim0 > 1)
     {
@@ -327,7 +328,7 @@ namespace ngfem
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
             FlatMatrix<double> flux,
-            FlatVector<double> x, 
+            BareSliceVector<double> x, 
             LocalHeap & lh) const
   {
     const TPHighOrderFE & tpfel = static_cast<const TPHighOrderFE &>(fel);
@@ -534,8 +535,8 @@ namespace ngfem
   void TPBlockDifferentialOperator2 :: Apply (
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
-            FlatVector<double> x, 
-            FlatMatrix<double> flux,
+            BareSliceVector<double> x, 
+            BareSliceMatrix<double> flux,
             LocalHeap & lh) const
   {
     const TPHighOrderFE & tpfel = static_cast<const TPHighOrderFE &>(fel);
@@ -555,7 +556,7 @@ namespace ngfem
     FlatMatrix<double> fcoefs( ndof0, ndof1*BlockDim(), &x(0) );
     evalx->CalcMatrix( *elements[0], *irs[0], shape0, lh );
     evaly->CalcMatrix( *elements[1], *irs[1], shape1, lh );
-    flux = 0.0;
+    flux.AddSize(nip0*nip1, dim0*dim1) = 0.0;
     FlatMatrix<> dim0geq1(nip1*dim1,nip0*dim0*BlockDim(),lh);
     dim0geq1 = 0.0;
     if(dim0 == 1)
@@ -593,7 +594,7 @@ namespace ngfem
       }
       
       for(int i=0;i<nip0;i++)
-        flux.Rows(i*nip1,(i+1)*nip1) = dim0geq1.Cols(i*BlockDim()*dim0,(i+1)*BlockDim()*dim0);
+        flux.Rows(i*nip1,(i+1)*nip1).AddSize(nip1,dim0*BlockDim()) = dim0geq1.Cols(i*BlockDim()*dim0,(i+1)*BlockDim()*dim0);
     }
   }
 
@@ -602,7 +603,7 @@ namespace ngfem
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
             FlatMatrix<double> flux,
-            FlatVector<double> x, 
+            BareSliceVector<double> x, 
             LocalHeap & lh) const
   {
     const TPHighOrderFE & tpfel = static_cast<const TPHighOrderFE &>(fel);

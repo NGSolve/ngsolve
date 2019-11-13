@@ -520,6 +520,43 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
   };
 
 
+template <int D>
+  class JacobianMatrixCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    JacobianMatrixCF () : CoefficientFunctionNoDerivative(D*D,false)
+    {
+      SetDimensions(Array<int>({D,D}));
+    }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
+    {
+      return 0;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
+    {
+      if (ip.Dim() != D)
+        throw Exception("illegal dim!");
+      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
+    {
+      if (ir[0].Dim() != D)
+      	throw Exception("illegal dim!");
+      for (int i = 0; i < ir.Size(); i++)
+      	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
+    }
+    
+    /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
+    {
+      values.AddSize(D*D, ir.Size()) = Trans(ir.GetJacobian());
+      }*/
+  };
+
+
 
 void ExportCoefficientFunction(py::module &m)
 {
@@ -693,6 +730,19 @@ direction : int
 	  return make_shared<TangentialVectorCF<3>>();
 	}
     }
+
+    shared_ptr<CF> GetJacobianMatrixCF (int dim)
+    {
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<JacobianMatrixCF<1>>();
+	case 2:
+	  return make_shared<JacobianMatrixCF<2>>();
+	default:
+	  return make_shared<JacobianMatrixCF<3>>();
+	}
+    }
   };
 
   
@@ -723,6 +773,9 @@ direction : int
          "space-dimension must be provided")
     .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
          "depending on contents: tangential-vector to element\n"
+         "space-dimension must be provided")
+    .def("JacobianMatrix", &SpecialCoefficientFunctions::GetJacobianMatrixCF, py::arg("dim"),
+         "Jacobian matrix of transformation to physical element\n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;
@@ -795,7 +848,7 @@ val : can be one of the following:
                 py::tuple res(self.Dimension());
                 for (auto i : Range(vec))
                   res[i] = py::cast(vec[i]);
-                return res;
+                return std::move(res);
 	      }
 	    else
 	      {
@@ -805,7 +858,7 @@ val : can be one of the following:
                 py::tuple res(self.Dimension());
                 for (auto i : Range(vec))
                   res[i] = py::cast(vec[i]);
-                return res;
+                return std::move(res);
 	      }
 	  },
          py::arg("mip"),
@@ -921,13 +974,52 @@ cf : ngsolve.CoefficientFunction
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
 
-    .def ("Derive", &CoefficientFunction::Diff,
+    .def ("Derive",
+          // &CoefficientFunction::Diff,
+          [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
+          {
+            cout << "warning: Derive is deprecated, use Diff instead" << endl;
+            return coef->Diff(var.get(), dir);
+          },
           "depricated: use 'Diff' instead", 
           py::arg("variable"), py::arg("direction")=1.0)
-    .def ("Diff", &CoefficientFunction::Diff,
+    .def ("Diff", // &CoefficientFunction::Diff,
+          [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
+          {
+            if (dir)
+              return coef->Diff(var.get(), dir);
+            if (var->Dimension() == 1)
+              return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));
+            else
+              {
+                if (coef->Dimension() != 1)
+                  throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
+                int dim = var->Dimension();
+                Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
+                auto zero = make_shared<ConstantCoefficientFunction>(0);
+                auto one =  make_shared<ConstantCoefficientFunction>(1);
+                for (int i = 0; i < dim; i++)
+                  {
+                    ei = zero;
+                    ei[i] = one;
+                    auto vec = MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(ei));
+                    vec->SetDimensions(var->Dimensions());
+                    ddi[i] = coef->Diff(var.get(), vec);
+                  }
+                auto dvec = MakeVectorialCoefficientFunction (move(ddi));
+                dvec->SetDimensions(var->Dimensions());
+                return dvec;
+              }
+          },
           "Compute directional derivative with respect to variable",
-          py::arg("variable"), py::arg("direction")=1.0)
+          py::arg("variable"), py::arg("direction")=nullptr)
 
+    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
+          {
+            return coef->Diff (shape.get(), dir);
+          },
+          "Compute shape derivative in direction", 
+          py::arg("direction")=1.0)
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -987,6 +1079,10 @@ cf : ngsolve.CoefficientFunction
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
+    .def ("Freeze", [] (shared_ptr<CF> coef)
+          { return Freeze(coef); },
+          "don't differentiate this expression")
+
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
@@ -1027,6 +1123,7 @@ wait : bool
 
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
+  m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
 
@@ -1386,28 +1483,18 @@ z : double
     ;
 
 
-
-  
-
-  py::implicitly_convertible 
-    <BaseScalarFiniteElement, 
-    FiniteElement >(); 
-
+  py::implicitly_convertible <BaseScalarFiniteElement, FiniteElement >(); 
 
   m.def("H1FE", [](ELEMENT_TYPE et, int order)
-           {
-             BaseScalarFiniteElement * fe = nullptr;
-             switch (et)
-               {
-               case ET_SEGM: fe = new H1HighOrderFE<ET_SEGM>(order); break;
-               case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
-               case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
-               case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
-               default: cerr << "cannot make fe " << et << endl;
-               }
-             return shared_ptr<BaseScalarFiniteElement>(fe);
-           }, py::arg("et"), py::arg("order"),
-          docu_string(R"raw_string(Creates an H1 finite element of given geometric shape and polynomial order.
+        {
+          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
+                    {
+                      constexpr ELEMENT_TYPE ET = et2.ElementType();
+                      return make_shared<H1HighOrderFE<ET>> (order);
+                    });
+        },
+        py::arg("et"), py::arg("order"),
+        docu_string(R"raw_string(Creates an H1 finite element of given geometric shape and polynomial order.
 
 Parameters:
 
@@ -1421,19 +1508,15 @@ order : int
           );
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
-           {
-             BaseScalarFiniteElement * fe = nullptr;
-             switch (et)
-               {
-               case ET_SEGM: fe = new L2HighOrderFE<ET_SEGM>(order); break;
-               case ET_TRIG: fe = new L2HighOrderFE<ET_TRIG>(order); break;
-               case ET_QUAD: fe = new L2HighOrderFE<ET_QUAD>(order); break;
-               case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
-               default: cerr << "cannot make fe " << et << endl;
-               }
-             return shared_ptr<BaseScalarFiniteElement>(fe);
-           }, py::arg("et"), py::arg("order"),
-          docu_string(R"raw_string(Creates an L2 finite element of given geometric shape and polynomial order.
+        {
+          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
+                    {
+                      constexpr ELEMENT_TYPE ET = et2.ElementType();                      
+                      return make_shared<L2HighOrderFE<ET>> (order);
+                    });
+        },
+        py::arg("et"), py::arg("order"),
+        docu_string(R"raw_string(Creates an L2 finite element of given geometric shape and polynomial order.
 
 Parameters:
 

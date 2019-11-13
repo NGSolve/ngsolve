@@ -222,7 +222,7 @@ namespace ngfem
 
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
       if (pre)
-	coefs.AddSize(SHAPES::NDOF) = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
+	coefs.Range(0,SHAPES::NDOF) = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
       else
 #endif
         BASE::T_IMPL:: EvaluateGradTrans (ir, values, coefs);

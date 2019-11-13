@@ -144,7 +144,7 @@ namespace ngcomp
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void ApplyTrans (const AFEL & fel, const MIP & mip,
-			    const TVX & x, TVY & y,
+			    const TVX & x, TVY & by,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCALX;      
@@ -156,6 +156,7 @@ namespace ngcomp
       
       auto & fel_u = static_cast<const FEL&>(fel);
       int nd_u = fel.GetNDof();
+      auto y = by.Range(0,nd_u);
       const IntegrationPoint& ip = mip.IP();
       const ElementTransformation & eltrans = mip.GetTransformation();
       FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
@@ -189,7 +190,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      int size = (bmir.Size()+1)*2000;
+      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -248,7 +249,7 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      int size = (bmir.Size()+1)*2000;
+      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 

@@ -204,10 +204,10 @@ public:
 
     virtual ~T_BDBIntegrator_DMat () { delete diffop; }
     
-    virtual xbool IsSymmetric () const
+    virtual xbool IsSymmetric () const override
     { return DMATOP::SYMMETRIC; }
     
-    virtual int DimFlux () const
+    virtual int DimFlux () const override
     { return DMATOP::DIM_DMAT; }
     
     DMATOP & DMat () { return dmatop; }
@@ -251,7 +251,7 @@ public:
                             const BaseMappedIntegrationPoint & bmip,
                             FlatVector<double> elx, 
                             FlatVector<double> eldx,
-                            LocalHeap & lh) const
+                            LocalHeap & lh) const override
     {
       dmatop.Apply(bfel, bmip,
                    // static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
@@ -262,7 +262,7 @@ public:
                             const BaseMappedIntegrationPoint & bmip,
                             FlatVector<Complex> elx, 
                             FlatVector<Complex> eldx,
-                            LocalHeap & lh) const
+                            LocalHeap & lh) const override
     {
       dmatop.Apply(bfel, bmip,
                    // static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
@@ -273,7 +273,7 @@ public:
                             const BaseMappedIntegrationRule & bmir,
                             FlatMatrix<double> elx, 
                             FlatMatrix<double> eldx,
-                            LocalHeap & lh) const
+                            LocalHeap & lh) const override
     {
       // const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       // static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
@@ -286,7 +286,7 @@ public:
                                const BaseMappedIntegrationRule & bmir,
                                FlatMatrix<double> elx, 
                                FlatMatrix<double> eldx,
-                               LocalHeap & lh) const
+                               LocalHeap & lh) const override
     {
       // const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       // static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
@@ -300,7 +300,7 @@ public:
                             const BaseMappedIntegrationRule & bmir,
                             FlatMatrix<Complex> elx, 
                             FlatMatrix<Complex> eldx,
-                            LocalHeap & lh) const
+                            LocalHeap & lh) const override
     {
       // const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       // static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
@@ -316,10 +316,10 @@ public:
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & bmip,
-              FlatVector<double> elx, 
+              BareSliceVector<double> elx, 
               FlatVector<double> flux,
               bool applyd,
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
     {
       diffop -> Apply (fel, bmip, elx, flux, lh);
 
@@ -331,10 +331,10 @@ public:
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationRule & bmir,
-              FlatVector<double> elx, 
-              FlatMatrix<double> flux,
+              BareSliceVector<double> elx, 
+              BareSliceMatrix<double> flux,
               bool applyd,
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
     {
       diffop->Apply (fel, bmir, elx, flux, lh);
       
@@ -346,10 +346,10 @@ public:
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & bmip,
-              FlatVector<Complex> elx, 
+              BareSliceVector<Complex> elx, 
               FlatVector<Complex> flux,
               bool applyd,
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
     {
       diffop->Apply (fel, bmip, elx, flux, lh);
 
@@ -361,10 +361,10 @@ public:
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationRule & bmir,
-              FlatVector<Complex> elx, 
-              FlatMatrix<Complex> flux,
+              BareSliceVector<Complex> elx, 
+              BareSliceMatrix<Complex> flux,
               bool applyd,
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
     {
       diffop->Apply (fel, bmir, elx, flux, lh);
       
@@ -383,7 +383,7 @@ public:
                  FlatVector<double> elx, 
 		 FlatVector<double> flux,
 		 bool applyd,
-		 LocalHeap & lh) const
+		 LocalHeap & lh) const override
   {
     int ndof = fel.GetNDof();
     int dimension = this->GetDimension();
@@ -424,7 +424,7 @@ public:
                  const BaseMappedIntegrationPoint & bmip,
                  FlatVector<double> elx, 
                  FlatVector<double> ely,
-                 LocalHeap & lh) const
+                 LocalHeap & lh) const override
     {
       diffop->ApplyTrans (fel, bmip, elx, ely, lh);
     }
@@ -435,7 +435,7 @@ public:
                  const BaseMappedIntegrationPoint & bmip,
                  FlatVector<Complex> elx, 
                  FlatVector<Complex> ely,
-                 LocalHeap & lh) const
+                 LocalHeap & lh) const override
     {
       diffop->ApplyTrans (fel, bmip, elx, ely, lh);
     }
@@ -446,7 +446,7 @@ public:
                  const BaseMappedIntegrationRule & bmir,
                  FlatMatrix<double> elx, 
                  FlatVector<double> ely,
-                 LocalHeap & lh) const
+                 LocalHeap & lh) const override
     {
       // const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       // static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
@@ -460,7 +460,7 @@ public:
                         const FlatVector<double> elx, 
                         FlatVector<double> ely,
                         void * precomputed,
-                        LocalHeap & lh) const
+                        LocalHeap & lh) const override
     {
       T_ApplyElementMatrix<double> (bfel, eltrans, elx, ely, precomputed, lh);
     }
@@ -471,7 +471,7 @@ public:
                         FlatVector<Complex> elx, 
                         FlatVector<Complex> ely,
                         void * precomputed,
-                        LocalHeap & lh) const
+                        LocalHeap & lh) const override
     {
       T_ApplyElementMatrix<Complex> (bfel, eltrans, elx, ely, precomputed, lh);
     }
@@ -539,7 +539,7 @@ public:
     CalcElementMatrixDiag (const FiniteElement & fel,
                            const ElementTransformation & eltrans, 
                            FlatVector<double> diag,
-                           LocalHeap & lh) const
+                           LocalHeap & lh) const override
     {
       try
         {

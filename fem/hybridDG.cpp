@@ -346,7 +346,7 @@ namespace ngfem
     CalcFlux (const FiniteElement & fel,
 	      const FiniteElement & felflux,
 	      const ElementTransformation & eltrans,
-              FlatVector<> elu, 
+              BareSliceVector<> elu, 
 	      FlatVector<> elflux,
 	      bool applyd,
 	      LocalHeap & lh) const

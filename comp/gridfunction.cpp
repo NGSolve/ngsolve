@@ -1059,6 +1059,11 @@ namespace ngcomp
       comp (acomp) 
   {
     fes = gf->GetFESpace();
+    if (diffop[VOL] && !diffop[BND])
+      diffop[BND] = diffop[VOL]->GetTrace();
+    if (diffop[BND] && !diffop[BBND])
+      diffop[BBND] = diffop[BND]->GetTrace();
+    
     for (auto vb : { VOL, BND, BBND } )
       if (diffop[vb])
         {
@@ -1578,6 +1583,13 @@ namespace ngcomp
 
 
 
+  shared_ptr<CoefficientFunction> GridFunctionCoefficientFunction ::
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
+  {
+    if (var == shape.get())
+      return diffop[VOL]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
+    return CoefficientFunctionNoDerivative::Diff (var, dir);
+  }
 
 
 

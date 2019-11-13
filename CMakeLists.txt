@@ -149,8 +149,6 @@ set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${NGSOLVE_INSTALL
 install(EXPORT ngsolve-targets DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE} COMPONENT ngsolve_devel)
 
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_TIMEOFDAY)
-list(APPEND NGSOLVE_INCLUDE_DIRS $<INSTALL_INTERFACE:${NETGEN_INSTALL_DIR_INCLUDE}>)
-list(APPEND NGSOLVE_INCLUDE_DIRS $<INSTALL_INTERFACE:${NETGEN_INSTALL_DIR_INCLUDE}/include>)
 
 include_directories (BEFORE ${PROJECT_SOURCE_DIR}/include)
 include_directories (BEFORE ${PROJECT_BINARY_DIR})
@@ -166,7 +164,7 @@ endif(NETGEN_USE_GUI)
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS DDEBUG Wall)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS DEBUG Wall)
 endif()
 
 #######################################################################
@@ -367,8 +365,12 @@ endif()
 
 # compile flags and preprocessor definitions
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
+set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS})
+if(${NETGEN_CHECK_RANGE} OR ${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR ${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+    set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS} "NETGEN_ENABLE_CHECK_RANGE")
+endif()
 
-foreach( d ${NGSOLVE_COMPILE_DEFINITIONS} )
+foreach( d ${ngscxx_compile_definitions} )
     if(WIN32)
       if(NOT ${d} STREQUAL "NGS_EXPORTS")
         set( ngscxx_define_flags "${ngscxx_define_flags} /D${d}" )

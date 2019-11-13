@@ -114,7 +114,7 @@ public:
 
     Vec<D,TSCAL> hv = Trans (mip.GetJacobian()) * x;
     hv *= (1.0/mip.GetJacobiDet());
-    y = Cast(fel).GetShape(mip.IP(),lh) * hv;
+    y.Range(0,fel.GetNDof()) = Cast(fel).GetShape(mip.IP(),lh) * hv;
   }
 
   using DiffOp<DiffOpIdHDiv<D,FEL>>::ApplySIMDIR;        
@@ -197,7 +197,7 @@ public:
     typedef typename TVX::TSCAL TSCAL;
     Vec<DIM,TSCAL> hv = x;
     hv *= (1.0/mip.GetJacobiDet());
-    y = static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh) * hv;
+    y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh) * hv;
   }
 
 
@@ -254,7 +254,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)*((1.0/mip.GetJacobiDet())* x);
+    y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)*((1.0/mip.GetJacobiDet())* x);
   }
 };
 
@@ -300,7 +300,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetShape (mip.IP(), lh);
+    y.Range(0,fel.GetNDof()) = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetShape (mip.IP(), lh);
   }
 
   using DiffOp<DiffOpIdVecHDivBoundary<D,FEL>>::ApplySIMDIR;          

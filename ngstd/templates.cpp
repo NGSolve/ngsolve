@@ -24,7 +24,7 @@ namespace ngstd
   int mkl_max_threads = [] ()
   {
       auto mkl_max = mkl_get_max_threads();
-      mkl_set_num_threads_local(1);
+      mkl_set_num_threads(1);
       return mkl_max;
   }();
 #endif // USE_MKL

@@ -299,7 +299,7 @@ namespace ngfem
 
 
   class NGS_DLL_HEADER ElementTransformation;
-
+  class NGS_DLL_HEADER BaseMappedIntegrationRule;
   /**
      Base class for MappedIntegrationPoint.
      A specific integration point is the mapped point, and stores
@@ -327,7 +327,7 @@ namespace ngfem
                                        const ElementTransformation & aeltrans)
       : ip(aip), eltrans(&aeltrans)  { ; }
     ///
-    NGS_DLL_HEADER ~BaseMappedIntegrationPoint ();
+    NGS_DLL_HEADER virtual ~BaseMappedIntegrationPoint ();
     /// 
     INLINE const IntegrationPoint & IP () const { return ip; }
     ///
@@ -350,6 +350,7 @@ namespace ngfem
     VorB VB() const; 
     bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
+    virtual void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const { ; } 
   };
 
   template <typename SCAL = double>
@@ -529,10 +530,12 @@ namespace ngfem
         return 1.0/det * Trans (Cof (dxdxi));
       else
         {
-	  Mat<DIMS,DIMS,SCAL> ata, iata;
-	  ata = Trans (dxdxi) * dxdxi;
-	  iata = Inv (ata);
-	  return (iata * Trans (dxdxi));
+	  // Mat<DIMS,DIMS,SCAL> ata, iata;
+	  // ata = Trans (dxdxi) * dxdxi;
+	  // iata = Inv (ata);
+          // auto iata = Inv (Trans (dxdxi) * dxdxi);
+	  // return iata * Trans (dxdxi);
+          return Inv (Trans (dxdxi) * dxdxi) * Trans (dxdxi);
         }
     }
 
@@ -566,9 +569,13 @@ namespace ngfem
     void CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const;
 
     void CalcHesse (Vec<DIMR,Mat<DIMS,DIMS>> & ddx1) const;
+
+    void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const override;
   };
 
 
+
+  
   /*
   template <int DIM> 
   INLINE Vec<DIM, AutoDiff<DIM>> Mip2Ad (const MappedIntegrationPoint<DIM,DIM> & mip)
@@ -1537,6 +1544,23 @@ namespace ngfem
     return ost;
   }
 
+  template <int DIMS, int DIMR, typename SCAL>
+  void MappedIntegrationPoint<DIMS,DIMR,SCAL>::
+  IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const
+  {
+    if constexpr (std::is_same_v<SCAL,double> || std::is_same_v<SCAL,Complex>)
+      {
+        FlatArray<MappedIntegrationPoint<DIMS,DIMR,SCAL>> ia(1, const_cast<MappedIntegrationPoint*>(this));
+        IntegrationRule ir(1, const_cast<IntegrationPoint*>(&this->IP()));
+        MappedIntegrationRule<DIMS,DIMR,SCAL> mir(ir, this->GetTransformation(), ia);
+        func (mir);
+      }
+  }
+  
+
+
+
+  
   // deprecated, don't use SpecificIntegrationPoint anymore
   template <int DIMS, int DIMR, typename SCAL>   
   using SpecificIntegrationPoint = MappedIntegrationPoint<DIMS,DIMR,SCAL>;

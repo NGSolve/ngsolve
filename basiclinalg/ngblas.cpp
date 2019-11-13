@@ -945,6 +945,8 @@ namespace ngbla
           sum[i].Store (pc);
       }
 
+    if(j==wb)
+        return;
     
     SIMD<mask64> mask(wb-j);
     std::array<SIMD<double>,WA> sum;
