@@ -296,7 +296,7 @@ namespace ngla
 
     if (paralleldofs->GetEntrySize() == 1) {
       // this is a bit faster for BS = 1
-      auto fv = this->template FV<double>();
+      auto fv = this->template FV<SCAL>();
       for (auto p : paralleldofs->GetDistantProcs())
 	if (p < rank)
 	  for (auto dof : paralleldofs->GetExchangeDofs(p))
