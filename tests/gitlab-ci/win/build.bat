@@ -17,6 +17,9 @@ cmake %SRC_DIR% ^
         -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL_PREFIX% ^
         %CMAKE_CONFIG% ^
         -DUSE_OCC=ON ^
+        -DOCC_LIBRARY=C:/install_opencascade_7.4.0_static/win64/vc14/lib/TKernel.lib ^
+        -DOCC_INCLUDE_DIR=C:/install_opencascade_7.4.0_static/inc ^
+        -DOCC_LINK_FREETYPE=ON ^
         -DUSE_CCACHE=ON ^
         -DUSE_MKL=ON ^
         -DMKL_STATIC=ON ^

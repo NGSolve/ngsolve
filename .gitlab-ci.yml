@@ -8,7 +8,7 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  UBUNTU_VERSION_LATEST: "19.04"
+  UBUNTU_VERSION_LATEST: "19.10"
   UBUNTU_VERSION_LTS: "18.04"
 
 ############################################
@@ -335,7 +335,6 @@ deploy_release:
   script:
     - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git push github $CI_BUILD_TAG
-    - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID $CI_BUILD_TAG
     - source tests/gitlab-ci/deploy/release.sh
   only:
     - tags

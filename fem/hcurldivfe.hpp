@@ -497,7 +497,7 @@ namespace ngfem
 	     SBLambda([divshapes,i](int j, auto val)
                       {
 			//divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).AddSize(DIM) = trans * val.DivShape();
-                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).AddSize(DIM) = val.DivShape();
+                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(0,DIM) = val.DivShape();
                       }));
 	}
       }

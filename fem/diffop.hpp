@@ -28,6 +28,10 @@ namespace ngfem
     // static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
     static INT<1> GetDimensions() { return { DOP::DIM_DMAT }; };
     static bool SupportsVB (VorB checkvb) { return DOP::DIM_SPACE-DOP::DIM_ELEMENT == int(checkvb); }
+
+
+    typedef void DIFFOP_TRACE;  // 
+    
     /**
        Computes the B-matrix. 
        The height is DIM_DMAT, the width is fel.GetNDof(). 
@@ -108,7 +112,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
       DOP::GenerateMatrix (fel, mip, mat, lh);
-      y = Trans (mat) * x;
+      y.Range(0,DOP::DIM*fel.GetNDof()) = Trans (mat) * x;
     }
 
     /// Computes Transpose (B-matrix) times point value
@@ -123,7 +127,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
       DOP::GenerateMatrix (fel, mip, mat, lh);
-      y += Trans (mat) * x;
+      y.Range(DOP::DIM*fel.GetNDof()) += Trans (mat) * x;
     }
 
 
@@ -133,7 +137,7 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
-      y = 0.0;
+      y.Range(0,DOP::DIM*fel.GetNDof()) = 0.0;
       for (size_t i = 0; i < mir.Size(); i++)
         ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }
@@ -146,7 +150,15 @@ namespace ngfem
     {
       throw ExceptionNOSIMD (string("AddTrans simdir not implemented for diffop ") + typeid(DOP).name());
     }
-    
+
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir) 
+    {
+      throw Exception (string("shape derivative not implemented for DifferentialOperator")+Name());
+    }
+
   };
 
 
@@ -204,7 +216,11 @@ namespace ngfem
     VorB VB() const { return vb; }
 
     virtual bool SupportsVB (VorB checkvb) const { return checkvb == vb; }
-    
+    virtual shared_ptr<DifferentialOperator> GetTrace() const
+    {
+      return nullptr;
+      // throw Exception("GetTrace not overloaded for DifferentialOperator"+string(typeid(*this).name()));
+    }
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     int DiffOrder() const { return difforder; } 
 
@@ -250,28 +266,28 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   BareSliceMatrix<double> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   BareSliceMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
@@ -292,28 +308,28 @@ namespace ngfem
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
@@ -328,6 +344,12 @@ namespace ngfem
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
 
+    virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                                       shared_ptr<CoefficientFunction> dir) const
+    {
+      throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
+    }
+    
   };
 
 
@@ -353,6 +375,15 @@ namespace ngfem
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
 
+    shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if (auto diffoptrace = diffop->GetTrace())
+        return make_shared<BlockDifferentialOperator> (diffoptrace,
+                                                       dim, comp);
+      else
+        return nullptr;
+    }
+    
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
@@ -367,7 +398,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
@@ -381,14 +412,14 @@ namespace ngfem
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<double> flux,
-                FlatVector<double> x, 
+                BareSliceVector<double> x, 
                 LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<Complex> flux,
-                FlatVector<Complex> x, 
+                BareSliceVector<Complex> x, 
                 LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
@@ -402,9 +433,108 @@ namespace ngfem
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const override;
+
+
+    shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                               shared_ptr<CoefficientFunction> dir) const override;
   };
 
 
+
+
+  class BlockDifferentialOperatorTrans : public DifferentialOperator
+  {
+  protected:
+    shared_ptr<DifferentialOperator> diffop;
+    int dim;
+    int comp;
+  public:
+    BlockDifferentialOperatorTrans (shared_ptr<DifferentialOperator> adiffop, 
+                                    int adim, int acomp = -1)
+      : DifferentialOperator(adim*adiffop->Dim(), adim*adiffop->BlockDim(),
+                             adiffop->VB(), adiffop->DiffOrder()),
+        diffop(adiffop), dim(adim), comp(acomp)
+    {
+      dimensions = Array<int> ( { adim, adiffop->Dim() });
+    }
+
+    NGS_DLL_HEADER virtual ~BlockDifferentialOperatorTrans ();
+    
+    virtual string Name() const override { return diffop->Name(); }
+    shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
+    virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    
+    virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
+
+    shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if (auto diffoptrace = diffop->GetTrace())      
+        return make_shared<BlockDifferentialOperatorTrans> (diffoptrace,
+                                                            dim, comp);
+      else
+        return nullptr;
+    }
+    
+
+    
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const BaseMappedIntegrationPoint & mip,
+		SliceMatrix<double,ColMajor> mat, 
+		LocalHeap & lh) const override;    
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		BareSliceMatrix<SIMD<double>> mat) const override;
+    
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationPoint & mip,
+	   BareSliceVector<double> x, 
+	   FlatVector<double> flux,
+	   LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & bfel,
+	   const SIMD_BaseMappedIntegrationRule & bmir,
+	   BareSliceVector<double> x, 
+	   BareSliceMatrix<SIMD<double>> flux) const override;
+    
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+                const BaseMappedIntegrationPoint & mip,
+                FlatVector<double> flux,
+                BareSliceVector<double> x, 
+                LocalHeap & lh) const override;
+    
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+                const BaseMappedIntegrationPoint & mip,
+                FlatVector<Complex> flux,
+                BareSliceVector<Complex> x, 
+                LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              BareSliceMatrix<SIMD<double>> flux,
+              BareSliceVector<double> x) const override;
+
+    NGS_DLL_HEADER virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              BareSliceMatrix<SIMD<Complex>> flux,
+              BareSliceVector<Complex> x) const override;
+
+
+    shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                               shared_ptr<CoefficientFunction> dir) const override;
+  };
+
+
+
+  
 
   /**
      Connect compile-time polymorph DiffOp to run-time polymorph DifferentialOperator.
@@ -431,6 +561,14 @@ namespace ngfem
     { return typeid(*this) == typeid(diffop2); }
 
     virtual bool SupportsVB (VorB checkvb) const override { return DIFFOP::SupportsVB(checkvb); }
+
+    virtual shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if constexpr (is_same_v<void,typename DIFFOP::DIFFOP_TRACE>)
+                     return nullptr;
+      else
+        return make_shared<T_DifferentialOperator<typename DIFFOP::DIFFOP_TRACE>> ();
+    }
     
     virtual void
     CalcMatrix (const FiniteElement & bfel,
@@ -459,28 +597,28 @@ namespace ngfem
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   BareSliceMatrix<double> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   BareSliceMatrix<Complex> flux,
 	   LocalHeap & lh) const override;
 
@@ -501,28 +639,28 @@ namespace ngfem
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<double> flux,
-		FlatVector<double> x, 
+		BareSliceVector<double> x, 
 		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<Complex> flux,
-		FlatVector<Complex> x, 
+		BareSliceVector<Complex> x, 
 		LocalHeap & lh) const override;
 
     virtual void
@@ -538,6 +676,12 @@ namespace ngfem
               BareSliceVector<Complex> x) const override;
 
 #endif
+    shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                               shared_ptr<CoefficientFunction> dir) const override
+    {
+      return DIFFOP::DiffShape(proxy, dir);
+    }
+    
   };
 
 

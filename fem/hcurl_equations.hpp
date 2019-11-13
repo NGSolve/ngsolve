@@ -113,7 +113,7 @@ namespace ngfem
       HeapReset hr(lh);
       Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
     }
 
     template <typename FEL1, class TVX, class TVY>
@@ -124,7 +124,7 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
       static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
-      y = shape * x;
+      y.Range(0,fel.GetNDof()) = shape * x;
     }
 
 
@@ -151,7 +151,13 @@ namespace ngfem
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
-    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return -TransposeCF(dir->Operator("Grad")) * proxy;      
+    }
   };
 
 
@@ -217,7 +223,16 @@ namespace ngfem
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
-    }    
+    }
+    
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      auto grad = dir->Operator("Grad");
+      return -TraceCF(grad) * proxy;
+    }
+
   };
 
   template <typename FEL> class DiffOpCurlEdge<3,FEL> : public DiffOp<DiffOpCurlEdge<3,FEL> >
@@ -297,7 +312,7 @@ namespace ngfem
 
       Vec<3,TSCAL> hx;
       hx = (1.0/mip.GetJacobiDet()) * (Trans (mip.GetJacobian()) * x);
-      y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * hx;
     }
 
     using DiffOp<DiffOpCurlEdge<3> >::ApplySIMDIR;        
@@ -313,7 +328,14 @@ namespace ngfem
     {
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
     }    
-    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      auto grad = dir->Operator("Grad");
+      return grad * proxy - TraceCF(grad) * proxy;
+    }
   };
 
 
@@ -397,7 +419,7 @@ namespace ngfem
 
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0, fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -433,6 +455,9 @@ namespace ngfem
     
     
   };
+
+
+  
   /// Identity on boundary
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class DiffOpIdBoundaryEdge : public DiffOp<DiffOpIdBoundaryEdge<D,FEL> >
@@ -481,7 +506,7 @@ namespace ngfem
 
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -514,6 +539,13 @@ namespace ngfem
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return -TransposeCF(dir->Operator("Gradboundary")) * proxy;      
+    }
     
   };
 
@@ -554,7 +586,7 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
+      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
     
     }
   };
@@ -604,7 +636,8 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
+    y.Range(0,fel.GetNDof()) =
+      ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
   }
 };
 
@@ -632,7 +665,7 @@ public:
   */
 
   template <int D>
-  using CurlCurlEdgeIntegrator = T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D>>;
+  using CurlCurlEdgeIntegrator = T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_(D)>, HCurlFiniteElement<D>>;
   
 
 
@@ -652,11 +685,11 @@ public:
   /// 
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class CurlCurlEdgeOrthoIntegrator 
-    : public T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
+    : public T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_(D)>, FEL>
   {
-    typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
+    typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_(D)>, FEL> BASE;
   public:
-    using T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_(D)>, FEL>::T_BDBIntegrator;
     ///
     virtual string Name () const { return "CurlCurlEdgeOrtho"; }
   };
@@ -814,11 +847,11 @@ public:
   ///
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class CurlEdgeIntegrator 
-    : public T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL>
+    : public T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_(D)>, FEL>
   {
-    typedef  T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
+    typedef  T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_(D)>, FEL> BASE;
   public:
-    using T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL>::T_BIntegrator;
+    using T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_(D)>, FEL>::T_BIntegrator;
     /*
     ///
     CurlEdgeIntegrator (CoefficientFunction * coeff1)
@@ -895,6 +928,13 @@ public:
 #define HCURL_EQUATIONS_EXTERN extern
 #endif
 
+  HCURL_EQUATIONS_EXTERN template class DiffOpIdEdge<2>;
+  HCURL_EQUATIONS_EXTERN template class DiffOpIdEdge<3>;
+  
+  HCURL_EQUATIONS_EXTERN template class DiffOpCurlEdge<2>;
+  HCURL_EQUATIONS_EXTERN template class DiffOpCurlEdge<3>;
+
+  
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;

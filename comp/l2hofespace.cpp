@@ -1692,7 +1692,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           auto jac = mir[i].GetJacobian();
           Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
           val *= 1/mir[i].GetJacobiDet();
-          y.Col(i).AddSize(DIM_SPACE) = jac * val;
+          y.Col(i).Range(0,DIM_SPACE) = jac * val;
         }
     }    
     
@@ -2147,7 +2147,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         {
           auto jacinv = mir[i].GetJacobianInverse();
           Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
-          y.Col(i).AddSize(DIM_SPACE) = Trans(jacinv) * val;
+          y.Col(i).Range(0,DIM_SPACE) = Trans(jacinv) * val;
         }
     }    
     
@@ -2240,7 +2240,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               Vec<3,SIMD<double>> gi = grad.Col(i);
               Vec<3,SIMD<double>> tek = trafo.Col(k);
               Vec<3,SIMD<double>> hv = Cross(gi, tek);
-              y.Col(i).AddSize(3) += hv;
+              y.Col(i).Range(0,3) += hv;
             }
         }             
     }    
@@ -2572,7 +2572,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
 
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2580,7 +2580,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
              
-             Mat<DIM> trans;
+             Mat<DIM> trans(0.0);
              if (piola)
                trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
              else if (covariant)
@@ -2744,7 +2744,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2834,7 +2834,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2922,7 +2922,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -3008,7 +3008,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)

@@ -22,7 +22,8 @@ namespace ngfem
   class T_ScalarFiniteElement : public BASE   
   {
   public:
-    enum { DIM = ET_trait<ET>::DIM };
+    // enum { DIM = ET_trait<ET>::DIM };
+    static constexpr int DIM = ET_trait<ET>::DIM;
 
     // using BASE::eltype;
     using BASE::ndof;
@@ -31,8 +32,8 @@ namespace ngfem
     INLINE T_ScalarFiniteElement () { ; }
     // virtual ~T_ScalarFiniteElement() { ; }
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return ET; }
-    HD NGS_DLL_HEADER virtual int Dim () const override { return DIM; } 
+    HD virtual ELEMENT_TYPE ElementType() const final { return ET; }
+    // HD NGS_DLL_HEADER virtual int Dim () const override { return DIM; } 
 
     
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 

@@ -127,7 +127,7 @@ namespace ngla
 
     ///
     BlockJacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-			shared_ptr<Table<int>> ablocktable);
+			shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags = false);
     ///
     virtual ~BlockJacobiPrecond ();
 

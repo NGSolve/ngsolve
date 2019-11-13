@@ -74,11 +74,11 @@ namespace ngfem
     
     virtual Vec <DIM_CURL_(DIM)>
     EvaluateCurlShape (const IntegrationPoint & ip, 
-                       FlatVector<double> x,
+                       BareSliceVector<double> x,
                        LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void 
-    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const override;
+    EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const override;
 #endif
 
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
