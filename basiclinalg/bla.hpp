@@ -66,9 +66,10 @@ namespace ngcore
   public:
     /// gets the MPI datatype
     static MPI_Datatype MPIType () 
-    { 
+    {
+      return MPI_CXX_DOUBLE_COMPLEX;   
       // return MPI_C_DOUBLE_COMPLEX;   // no MPI_SUM defined ??
-      return MPI_DOUBLE_COMPLEX;
+      // return MPI_DOUBLE_COMPLEX;
     }
   };
 }
