@@ -16,6 +16,9 @@ namespace ngfem
     /// destructor
     NGS_DLL_HEADER virtual ~TPDifferentialOperator () {}
 
+    virtual shared_ptr<DifferentialOperator> GetTrace() const override { return nullptr; }
+    
+
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const TPDifferentialOperator & diffop2) const { return false; }
