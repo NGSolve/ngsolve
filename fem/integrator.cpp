@@ -1063,8 +1063,13 @@ namespace ngfem
     else
       {
         // only possible for elx.Dist() = 1
-	// bfi->CalcFluxMulti (fel, bmip, dim, elx, flux, applyd, lh);
-
+        if (elx.Dist() == 1)
+          {
+            FlatVector<> felx(dim*fel.GetNDof(), &elx(0));
+            bfi->CalcFluxMulti (fel, bmip, dim, felx, flux, applyd, lh);
+            return;
+          }
+        
 	// FlatVector<double> selx(elx.Size()/dim, lh);
 	FlatVector<double> sflux(bfi->DimFlux(), lh);
 	// flux.AssignMemory (DimFlux(), lh);
