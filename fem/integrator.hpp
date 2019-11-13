@@ -507,7 +507,7 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-	      FlatVector<double> elx, 
+	      BareSliceVector<double> elx, 
 	      FlatVector<double> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
@@ -516,7 +516,7 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-              FlatVector<Complex> elx, 
+              BareSliceVector<Complex> elx, 
 	      FlatVector<Complex> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
@@ -525,8 +525,8 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationRule & mir,
-              FlatVector<double> elx, 
-	      FlatMatrix<double> flux,
+              BareSliceVector<double> elx, 
+	      BareSliceMatrix<double> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
 
@@ -534,8 +534,8 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationRule & mir,
-              FlatVector<Complex> elx, 
-	      FlatMatrix<Complex> flux,
+              BareSliceVector<Complex> elx, 
+	      BareSliceMatrix<Complex> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
 
@@ -544,7 +544,7 @@ namespace ngfem
     CalcFlux (const FiniteElement & fel,
 	      const FiniteElement & felflux,
 	      const ElementTransformation & eltrans,
-              FlatVector<> elx, 
+              BareSliceVector<> elx, 
 	      FlatVector<> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
@@ -868,10 +868,10 @@ namespace ngfem
     BlockBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int adim);
     virtual ~BlockBilinearFormIntegrator ();
 
-    virtual VorB VB () const
+    virtual VorB VB () const override
     { return bfi->VB(); }
-    virtual xbool IsSymmetric () const { return bfi->IsSymmetric(); }
-    virtual int DimFlux () const 
+    virtual xbool IsSymmetric () const override { return bfi->IsSymmetric(); }
+    virtual int DimFlux () const override 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
     int GetDim() const { return dim; }
     int GetComp() const { return comp; } 
@@ -883,13 +883,13 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
     
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -897,7 +897,7 @@ namespace ngfem
 			const FlatVector<double> elx, 
 			FlatVector<double> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -905,20 +905,20 @@ namespace ngfem
 			const FlatVector<Complex> elx, 
 			FlatVector<Complex> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & bfel,
 				 const ElementTransformation & eltrans,
 				 FlatVector<double> elveclin,
 				 FlatMatrix<double> elmat,
-				 LocalHeap & lh) const;
+				 LocalHeap & lh) const override;
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 				 const ElementTransformation & eltrans, 
 				 FlatVector<Complex> elveclin,
 				 FlatMatrix<Complex> elmat,
-				 LocalHeap & lh) const;
+				 LocalHeap & lh) const override;
 
     /*
     virtual void
@@ -944,26 +944,26 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-              FlatVector<double> elx, 
+              BareSliceVector<double> elx, 
 	      FlatVector<double> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-              FlatVector<Complex> elx, 
+              BareSliceVector<Complex> elx, 
 	      FlatVector<Complex> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationRule & mir,
-              FlatVector<double> elx, 
-	      FlatMatrix<double> flux,
+              BareSliceVector<double> elx, 
+	      BareSliceMatrix<double> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
 
 
@@ -972,28 +972,28 @@ namespace ngfem
 		 const BaseMappedIntegrationPoint & bmip,
                  FlatVector<double> elx, 
 		 FlatVector<double> ely,
-		 LocalHeap & lh) const;
+		 LocalHeap & lh) const override;
 
     virtual void
     ApplyBTrans (const FiniteElement & bfel,
 		 const BaseMappedIntegrationPoint & bmip,
                  FlatVector<Complex> elx, 
 		 FlatVector<Complex> ely,
-		 LocalHeap & lh) const;
+		 LocalHeap & lh) const override;
 
     virtual void
     ApplyBTrans (const FiniteElement & fel,
 		 const BaseMappedIntegrationRule & mir,
                  FlatMatrix<double> elx, 
 		 FlatVector<double> ely,
-		 LocalHeap & lh) const;
+		 LocalHeap & lh) const override;
 
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & eltrans, 
                            FlatVector<double> elx, 
-			   LocalHeap & lh) const;
+			   LocalHeap & lh) const override;
 
-    virtual string Name () const;
+    virtual string Name () const override;
   };
 
 
@@ -1010,16 +1010,16 @@ namespace ngfem
     ComplexBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi,
 				   Complex afactor);
 
-    virtual VorB VB () const
+    virtual VorB VB () const override
     { return bfi->VB(); }
 
-    virtual int DimFlux () const
+    virtual int DimFlux () const override
     { return bfi->DimFlux(); }
-    virtual int DimElement () const
+    virtual int DimElement () const override
     { return bfi->DimElement(); }
-    virtual int DimSpace () const
+    virtual int DimSpace () const override
     { return bfi->DimSpace(); }
-    virtual xbool IsSymmetric () const
+    virtual xbool IsSymmetric () const override
     { return bfi->IsSymmetric(); }
 
 
@@ -1028,20 +1028,20 @@ namespace ngfem
   
     virtual shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
 
-    virtual void CheckElement (const FiniteElement & el) const { bfi->CheckElement(el); }
+    virtual void CheckElement (const FiniteElement & el) const override { bfi->CheckElement(el); }
 
 
     virtual void
     CalcElementMatrix (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrix (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
     
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -1054,7 +1054,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master_element,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<double> & elmat,
-				      LocalHeap & lh) const;
+				      LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -1067,7 +1067,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master_element,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<Complex> & elmat,
-				      LocalHeap & lh) const;
+				      LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -1077,7 +1077,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<double> & elmat,
-				      LocalHeap & lh) const;
+				      LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -1087,7 +1087,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<Complex> & elmat,
-				      LocalHeap & lh) const;
+				      LocalHeap & lh) const override;
 
   
 
@@ -1097,7 +1097,7 @@ namespace ngfem
 			const FlatVector<Complex> elx, 
 			FlatVector<Complex> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
     /*
     virtual void
     CalcFlux (const FiniteElement & fel,
@@ -1112,12 +1112,12 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-              FlatVector<Complex> elx, 
+              BareSliceVector<Complex> elx, 
 	      FlatVector<Complex> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
-    virtual string Name () const;
+    virtual string Name () const override;
 
     /*
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,
@@ -1226,20 +1226,20 @@ namespace ngfem
   
     shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
     int GetComponent() const {return comp;}
-    virtual VorB VB () const
+    virtual VorB VB () const override
     { return bfi->VB(); }
 
-    virtual int DimFlux () const 
+    virtual int DimFlux () const override
     { return bfi->DimFlux(); }
-    virtual int DimElement () const
+    virtual int DimElement () const override
     { return bfi->DimElement(); }
-    virtual int DimSpace () const
+    virtual int DimSpace () const override
     { return bfi->DimSpace(); }
-    virtual xbool IsSymmetric () const
+    virtual xbool IsSymmetric () const override
     { return bfi->IsSymmetric(); }
-    virtual bool SkeletonForm () const
+    virtual bool SkeletonForm () const override
     { return bfi->SkeletonForm(); }
-    virtual void CheckElement (const FiniteElement & el) const
+    virtual void CheckElement (const FiniteElement & el) const override
     {
       return bfi->CheckElement (dynamic_cast<const CompoundFiniteElement&>(el)[comp]);
     }
@@ -1248,13 +1248,13 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
 
     virtual void
@@ -1262,14 +1262,14 @@ namespace ngfem
 				 const ElementTransformation & eltrans, 
 				 FlatVector<double> elveclin,
 				 FlatMatrix<double> elmat,
-				 LocalHeap & lh) const;
+				 LocalHeap & lh) const override;
     
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & fel, 
                                  const ElementTransformation & eltrans, 
                                  FlatVector<Complex> elveclin,
                                  FlatMatrix<Complex> elmat,
-                                 LocalHeap & lh) const;
+                                 LocalHeap & lh) const override;
 
     virtual void
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -1277,7 +1277,7 @@ namespace ngfem
                         FlatVector<double> elx,
 			FlatVector<double> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     virtual void
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -1285,7 +1285,7 @@ namespace ngfem
                         FlatVector<Complex> elx,
 			FlatVector<Complex> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     virtual void
     ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
@@ -1293,7 +1293,7 @@ namespace ngfem
                                   FlatVector<double> ellin,
                                   FlatVector<double> elx,
 				  FlatVector<double> ely,
-				  LocalHeap & lh) const;
+				  LocalHeap & lh) const override;
 
     virtual void
     ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
@@ -1301,43 +1301,43 @@ namespace ngfem
                                   FlatVector<Complex> ellin,
                                   FlatVector<Complex> elx,
 				  FlatVector<Complex> ely,
-				  LocalHeap & lh) const;
+				  LocalHeap & lh) const override;
 
 
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-              FlatVector<double> elx, 
+              BareSliceVector<double> elx, 
 	      FlatVector<double> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
 
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationPoint & bmip,
-              FlatVector<Complex> elx, 
+              BareSliceVector<Complex> elx, 
 	      FlatVector<Complex> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
 
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationRule & mir,
-              FlatVector<double> elx, 
-	      FlatMatrix<double> flux,
+              BareSliceVector<double> elx, 
+	      BareSliceMatrix<double> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
 
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationRule & mir,
-              FlatVector<Complex> elx, 
-	      FlatMatrix<Complex> flux,
+              BareSliceVector<Complex> elx, 
+	      BareSliceMatrix<Complex> flux,
 	      bool applyd,
-	      LocalHeap & lh) const;
+	      LocalHeap & lh) const override;
 
 
     virtual void
@@ -1345,16 +1345,16 @@ namespace ngfem
 		 const BaseMappedIntegrationPoint & bmip,
                  FlatVector<double> elx, 
 		 FlatVector<double> ely,
-		 LocalHeap & lh) const;
+		 LocalHeap & lh) const override;
 
     virtual void
     ApplyBTrans (const FiniteElement & fel,
 		 const BaseMappedIntegrationPoint & bmip,
                  FlatVector<Complex> elx, 
 		 FlatVector<Complex> ely,
-		 LocalHeap & lh) const;
+		 LocalHeap & lh) const override;
 
-    virtual string Name () const;
+    virtual string Name () const override;
   };
 
 
@@ -1687,11 +1687,14 @@ namespace ngfem
       : DifferentialOperator(_bfi->DimFlux(), 1, _bfi->VB(), 0), bfi(_bfi)
     { ; }
 
+    virtual shared_ptr<DifferentialOperator> GetTrace() const override { return nullptr; }
+
+    
     virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		SliceMatrix<double,ColMajor> mat,   
-		LocalHeap & lh) const
+		LocalHeap & lh) const override
     {
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
@@ -1700,7 +1703,7 @@ namespace ngfem
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & bmip,
 		SliceMatrix<Complex,ColMajor> mat, 
-		LocalHeap & lh) const
+		LocalHeap & lh) const override
     {
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
@@ -1709,7 +1712,7 @@ namespace ngfem
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationRule & mir,
 		SliceMatrix<double,ColMajor> mat,   
-		LocalHeap & lh) const
+		LocalHeap & lh) const override
     {
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
@@ -1718,7 +1721,7 @@ namespace ngfem
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		SliceMatrix<Complex,ColMajor> mat,   
-		LocalHeap & lh) const
+		LocalHeap & lh) const override
     {
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
@@ -1727,7 +1730,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		BareSliceMatrix<SIMD<double>> mat) const
+		BareSliceMatrix<SIMD<double>> mat) const override
     {
       throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
     }
@@ -1736,9 +1739,9 @@ namespace ngfem
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
+	   BareSliceVector<double> x, 
 	   FlatVector<double> flux,
-	   LocalHeap & lh) const
+	   LocalHeap & lh) const override
     {
       bfi->CalcFlux(fel, mip, x, flux, applyd, lh);
     }
@@ -1746,9 +1749,9 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<Complex> x, 
+	   BareSliceVector<Complex> x, 
 	   FlatVector<Complex> flux,
-	   LocalHeap & lh) const
+	   LocalHeap & lh) const override
     {
       bfi->CalcFlux(fel, mip, x, flux, applyd, lh);
     }
@@ -1756,9 +1759,9 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<double> x, 
-	   FlatMatrix<double> flux,
-	   LocalHeap & lh) const
+	   BareSliceVector<double> x, 
+	   BareSliceMatrix<double> flux,
+	   LocalHeap & lh) const override
     {
       bfi->CalcFlux(fel, mir, x, flux, applyd, lh);
     }
@@ -1766,9 +1769,9 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<Complex> x, 
-	   FlatMatrix<Complex> flux,
-	   LocalHeap & lh) const
+	   BareSliceVector<Complex> x, 
+	   BareSliceMatrix<Complex> flux,
+	   LocalHeap & lh) const override
     {
       bfi->CalcFlux(fel, mir, x, flux, applyd, lh);
     }
@@ -1778,7 +1781,7 @@ namespace ngfem
     Apply (const FiniteElement & fel,
 	   const SIMD_BaseMappedIntegrationRule & mir,
 	   BareSliceVector<double> x, 
-	   BareSliceMatrix<SIMD<double>> flux) const
+	   BareSliceMatrix<SIMD<double>> flux) const override
     {
       // bfi->CalcFlux(fel, mir, x, flux, applyd);
       throw ExceptionNOSIMD (string("CalcFluxDiffop: simd is not supported"));
@@ -1788,7 +1791,7 @@ namespace ngfem
     Apply (const FiniteElement & fel,
 	   const SIMD_BaseMappedIntegrationRule & mir,
 	   BareSliceVector<Complex> x, 
-	   BareSliceMatrix<SIMD<Complex>> flux) const
+	   BareSliceMatrix<SIMD<Complex>> flux) const override
     {
       // bfi->CalcFlux(fel, mir, x, flux, applyd);
       throw ExceptionNOSIMD (string("CalcFluxDiffop: simd is not supported"));
