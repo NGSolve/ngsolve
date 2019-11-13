@@ -454,14 +454,14 @@ namespace ngla
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateRowVector () const
   {
-    return make_shared<VVector<TVY>> (this->width);
+    return make_shared<VVector<TVX>> (this->width);
   }
 
   template <class TM, class TV_ROW, class TV_COL>
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateColVector () const
   {
-    return make_shared<VVector<TVX>> (this->size);
+    return make_shared<VVector<TVY>> (this->size);
   }
 
 
