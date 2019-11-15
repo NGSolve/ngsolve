@@ -241,7 +241,7 @@ namespace ngcomp
         additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
         if (ma->GetDimension() >= 2)        
           additional_evaluators.Set ("Gradboundary", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[BND], dimension));
-        for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
+        for (auto vb : { VOL,BND, BBND, BBBND })
           {
             if (evaluator[vb])
               evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
