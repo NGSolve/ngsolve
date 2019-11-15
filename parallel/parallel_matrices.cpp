@@ -629,7 +629,7 @@ namespace ngla
     Table<int> dps(ones);
     njs = 0;
     for (auto p:paralleldofs->GetDistantProcs()) {
-      for (auto d:paralleldofs->GetExchangeDofs(p)) {
+      for ([[maybe_unused]] auto d:paralleldofs->GetExchangeDofs(p)) {
 	dps[njs++][0] = p;
       }
     }    
