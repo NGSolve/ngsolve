@@ -1307,7 +1307,7 @@ namespace ngbla
                   BareSliceMatrix<double> c)
   {
     TAddABt4Sym(a.Width(), a.Height(), b.Height(),
-                &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist(),
+                a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist(),
                 [] (auto c, auto ab) { return c+ab; });
   }
 
@@ -1317,7 +1317,7 @@ namespace ngbla
                   BareSliceMatrix<double> c)
   {
     TAddABt4Sym(a.Width(), a.Height(), b.Height(),
-                &a(0), a.Width(), &b(0), b.Width(), &c(0), c.Dist(),
+                a.Data(), a.Width(), b.Data(), b.Width(), c.Data(), c.Dist(),
                 [] (auto c, auto ab) { return c+ab; });
     /*
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
@@ -1823,7 +1823,7 @@ namespace ngbla
 
     size_t da = NA;
     // size_t db = b.Dist();
-    double * pc = &c(0);
+    double * pc = c.Data();
 
     SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
     MyTransposeScaleNeg (a, loca, diag);
@@ -2157,8 +2157,8 @@ namespace ngbla
     size_t k = a.Height();
     
     CopyMatrixInScaleRows (k, na,
-                           &a(0,0), a.Dist(), (Complex*)&mema[0], CNA,
-                           &diag(0), diag.Dist());
+                           a.Data(), a.Dist(), (Complex*)&mema[0], CNA,
+                           diag.Data(), diag.Dist());
 
     size_t i = 0;
     constexpr size_t bs = CNB;
