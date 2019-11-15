@@ -1462,6 +1462,7 @@ namespace ngbla
     BareSliceVector(const BareSliceVector &) = default;
     BareSliceVector & operator= (const BareSliceVector&) = delete;
     size_t Dist () const { return dist; }
+    T* Data() const { return data; }
 
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T,size_t> AddSize(size_t size) const
