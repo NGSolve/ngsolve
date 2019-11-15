@@ -50,34 +50,31 @@ namespace ngla
        });
     */
 
-    auto multadd = [this,s] (BitArray & bits, auto sx, auto sy)
+    auto multadd = [this,s] (auto sx, auto sy)
       {
         ParallelForRange
-        (bits.Size(),
-         [&bits, sx, sy, s, this] (IntRange myrange)
+        (bits->Size(),
+         [sx, sy, s, this] (IntRange myrange)
             {
               if (keep_values)
                 {
-                  for (size_t i : myrange) //  Range(*bits))
-                    if (bits[i])
+                  for (size_t i : myrange) 
+                    if ((*bits)[i])
                       sy(i) += s * sx(i);
                 }
               else
                 {
-                  for (size_t i : myrange) // Range(*bits))
-                    if (!bits[i])
+                  for (size_t i : myrange) 
+                    if (!(*bits)[i])
                       sy(i) += s * sx(i);
                 }
             });
       };
-
     
     if (x.EntrySize() == 1)
-      multadd (*bits, x.FV<double>(), y.FV<double>());
+      multadd (x.FV<double>(), y.FV<double>());
     else
-      multadd (*bits, x.SV<double>(), y.SV<double>());
-
-    
+      multadd (x.SV<double>(), y.SV<double>());
   }
   
   void Projector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
