@@ -116,16 +116,27 @@ namespace ngbla
   
   extern NGS_DLL_HEADER void REGCALL AddAB_intern (size_t ha, size_t wa, size_t wb,
                                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
+  extern NGS_DLL_HEADER pmultAB dispatch_addAB[13];
+
   inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
-    AddAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
+    size_t wa = a.Width();
+    if (wa <= 12)
+      (*dispatch_addAB[wa])  (a.Height(), b.Width(), a, b, c);
+    else
+      AddAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
   extern NGS_DLL_HEADER void REGCALL SubAB_intern (size_t ha, size_t wa, size_t wb,
                                                    BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
+  extern NGS_DLL_HEADER pmultAB dispatch_subAB[13];
   inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
-    SubAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
+    size_t wa = a.Width();
+    if (wa <= 12)
+      (*dispatch_subAB[wa])  (a.Height(), b.Width(), a, b, c);
+    else
+      SubAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
 

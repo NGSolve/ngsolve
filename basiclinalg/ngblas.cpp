@@ -640,22 +640,57 @@ namespace ngbla
       MatKernelShortSum<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
   }
 
-
   pmultAB dispatch_multAB[13] =
-    { &MultMatMat_intern2_ShortSum<0>,
-      &MultMatMat_intern2_ShortSum<1>,
-      &MultMatMat_intern2_ShortSum<2>,
-      &MultMatMat_intern2_ShortSum<3>,
-      &MultMatMat_intern2_ShortSum<4>,
-      &MultMatMat_intern2_ShortSum<5>,
-      &MultMatMat_intern2_ShortSum<6>,
-      &MultMatMat_intern2_ShortSum<7>,
-      &MultMatMat_intern2_ShortSum<8>,
-      &MultMatMat_intern2_ShortSum<9>,
-      &MultMatMat_intern2_ShortSum<10>,
-      &MultMatMat_intern2_ShortSum<11>,
-      &MultMatMat_intern2_ShortSum<12>
+    { &MultMatMat_intern2_ShortSum<0,SET>,
+      &MultMatMat_intern2_ShortSum<1,SET>,
+      &MultMatMat_intern2_ShortSum<2,SET>,
+      &MultMatMat_intern2_ShortSum<3,SET>,
+      &MultMatMat_intern2_ShortSum<4,SET>,
+      &MultMatMat_intern2_ShortSum<5,SET>,
+      &MultMatMat_intern2_ShortSum<6,SET>,
+      &MultMatMat_intern2_ShortSum<7,SET>,
+      &MultMatMat_intern2_ShortSum<8,SET>,
+      &MultMatMat_intern2_ShortSum<9,SET>,
+      &MultMatMat_intern2_ShortSum<10,SET>,
+      &MultMatMat_intern2_ShortSum<11,SET>,
+      &MultMatMat_intern2_ShortSum<12,SET>
     };
+
+  pmultAB dispatch_addAB[13] =
+    { &MultMatMat_intern2_ShortSum<0,ADD>,
+      &MultMatMat_intern2_ShortSum<1,ADD>,
+      &MultMatMat_intern2_ShortSum<2,ADD>,
+      &MultMatMat_intern2_ShortSum<3,ADD>,
+      &MultMatMat_intern2_ShortSum<4,ADD>,
+      &MultMatMat_intern2_ShortSum<5,ADD>,
+      &MultMatMat_intern2_ShortSum<6,ADD>,
+      &MultMatMat_intern2_ShortSum<7,ADD>,
+      &MultMatMat_intern2_ShortSum<8,ADD>,
+      &MultMatMat_intern2_ShortSum<9,ADD>,
+      &MultMatMat_intern2_ShortSum<10,ADD>,
+      &MultMatMat_intern2_ShortSum<11,ADD>,
+      &MultMatMat_intern2_ShortSum<12,ADD>
+    };
+
+  pmultAB dispatch_subAB[13] =
+    { &MultMatMat_intern2_ShortSum<0,SUB>,
+      &MultMatMat_intern2_ShortSum<1,SUB>,
+      &MultMatMat_intern2_ShortSum<2,SUB>,
+      &MultMatMat_intern2_ShortSum<3,SUB>,
+      &MultMatMat_intern2_ShortSum<4,SUB>,
+      &MultMatMat_intern2_ShortSum<5,SUB>,
+      &MultMatMat_intern2_ShortSum<6,SUB>,
+      &MultMatMat_intern2_ShortSum<7,SUB>,
+      &MultMatMat_intern2_ShortSum<8,SUB>,
+      &MultMatMat_intern2_ShortSum<9,SUB>,
+      &MultMatMat_intern2_ShortSum<10,SUB>,
+      &MultMatMat_intern2_ShortSum<11,SUB>,
+      &MultMatMat_intern2_ShortSum<12,SUB>
+    };
+
+
+
+
 
   
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,

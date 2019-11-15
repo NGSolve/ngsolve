@@ -489,6 +489,7 @@ namespace ngbla
 
   template <class TA, class TB> class MultExpr;
   template <class TA> class MinusExpr;
+  template <class TA> class TransExpr;
   
   /**
      The base class for matrices.
@@ -646,6 +647,25 @@ namespace ngbla
       return Spec();
     }
 
+    // rank 1 update
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<is_convertible<TA,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<TA, TransExpr<TB>>> & prod)
+    {
+      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
+      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
+
+      auto veca = prod.Spec().A();
+      auto mata = FlatMatrix<typename TA::TELEM>(veca.Height(), 1, &veca(0));
+      auto vecb = prod.Spec().B().A();
+      auto matb = FlatMatrix<typename TB::TELEM>(1, vecb.Height(), &vecb(0));
+      
+      NgGEMM<ADD,POS> (SliceMatrix<typename TA::TELEM>(mata),
+                       SliceMatrix<typename TB::TELEM>(matb), Spec());
+      return Spec();
+    }
 
 
     

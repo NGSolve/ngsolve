@@ -709,7 +709,7 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> sum" << k << "(0.0);\n";
   out << "double * pa2 = pa;\n"
-      << "double * pc2 = pc;\n"
+      << "[[maybe_unused]] double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
   out << "#pragma unroll 1\n";
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
@@ -730,7 +730,7 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
   for (int k = 0; k < wa; k++)
     out << "SIMD<double> sum" << k << "(0.0);\n";    
   out << "double * pa2 = pa;\n"
-      << "double * pc2 = pc;\n"
+      << "[[maybe_unused]] double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
 
   out << "#pragma unroll 1\n";  
@@ -1368,6 +1368,7 @@ int main ()
     {
       GenerateShortSum (out, i, SET);  
       GenerateShortSum (out, i, ADD);  
+      GenerateShortSum (out, i, SUB);  
     }
 
 
