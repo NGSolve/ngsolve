@@ -1458,6 +1458,8 @@ namespace ngbla
     /// 
     INLINE size_t Dist () const throw() { return dist; }
 
+    INLINE T* Data() const noexcept { return data; }
+
     INLINE const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
@@ -1680,6 +1682,9 @@ namespace ngbla
       NETGEN_CHECK_RANGE(j, 0, Width());
       return data+i*dist+j;
     }
+
+    INLINE TELEM* Data() const { return data; }
+
     using DummySize::Height;
     using DummySize::Width;
     /*
