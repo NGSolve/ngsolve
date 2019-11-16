@@ -244,6 +244,113 @@ namespace ngbla
 
 
 
+
+
+
+
+
+  template <int SX>
+  void MultAddMatTransVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    double hx[SX];
+    for (size_t i = 0; i < SX; i++)
+      hx[i] = s*x(i);
+    MatKernelDaxpy<1, SX, ADD> (y.Size(), &hx[0], 1, &a(0), a.Dist(), &y(0), 1);
+  }
+  
+
+
+  NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = x.Size();
+    size_t w = y.Size();
+    size_t dist = a.Dist();
+
+    size_t i = 0;
+    for ( ; i+SW <= w; i+= SW)
+      {
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum *= s;
+        sum += SIMD<double>(&y(i));
+        sum.Store(&y(i));
+      }
+    
+    if (i < w)
+      {
+        SIMD<mask64> mask(w % SW);
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist, mask);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist, mask);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum *= s;
+        sum += SIMD<double>(&y(i), mask);
+        sum.Store(&y(i), mask);
+      }
+  }
+
+
+  
+  // typedef void REGCALL (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);  
+  pmultadd_mattransvec dispatch_addmattransvec[13] =
+    {
+      &MultAddMatTransVecShort<0>,
+      &MultAddMatTransVecShort<1>,
+      &MultAddMatTransVecShort<2>,
+      &MultAddMatTransVecShort<3>,
+      &MultAddMatTransVecShort<4>,
+      &MultAddMatTransVecShort<5>,
+      &MultAddMatTransVecShort<6>,
+      &MultAddMatTransVecShort<7>,
+      &MultAddMatTransVecShort<8>,
+      &MultAddMatTransVecShort<9>,
+      &MultAddMatTransVecShort<10>,
+      &MultAddMatTransVecShort<11>,
+      &MultAddMatTransVecShort<12>
+    };
+  
+
+
+
+
+
+
+
+
+
+  
+
   // ************************** Mult Add transpose Mat * vec, indirect ***************
 
 
@@ -1929,7 +2036,19 @@ namespace ngbla
       }
   }
 
+  // ************************ SubADBt ******************************
+  
+  void SubADBt (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    for (size_t i = 0; i < a.Height(); i++)
+      for (size_t j = 0; j < b.Height(); j++)
+        for (size_t k = 0; k < a.Width(); k++)
+          c(i,j) -= diag(k) * a(i,k) * b(j,k);
+  }
 
+  
   // ************************************** Complex ADB^t *********************
   
   /*

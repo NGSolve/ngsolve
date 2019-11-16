@@ -640,7 +640,6 @@ namespace ngbla
     {
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
-      
       NgGEMV<ADD,POS> (make_SliceMatrix(prod.Spec().A()),
                        prod.Spec().B(),
                        Spec());
