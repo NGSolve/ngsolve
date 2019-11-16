@@ -173,6 +173,8 @@ namespace ngbla
     /// 
     INLINE auto Dist () const { return w; }
 
+    INLINE T * Data () const { return data; }
+    
     INLINE const FlatVector<T> Row (TIND i) const
     {
       return FlatVector<T> (w, &data[i*w]);
@@ -215,12 +217,13 @@ namespace ngbla
     {
       return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( Height()/adist, w));
     }
-    
+
+    /*
     INLINE operator SliceMatrix<T> () const
     {
       return SliceMatrix<T> (h, w, w, data);
     }
-
+    */
     auto AsVector() const
     {
       return FlatVector<T> (h*w, data);
@@ -353,6 +356,8 @@ namespace ngbla
 
     INLINE size_t Dist () const { return h; }
 
+    INLINE T * Data () const { return data; }
+    
     INLINE const FlatVector<T> Col (size_t i) const
     {
       return FlatVector<T> (h, &data[i*size_t(h)]);
@@ -363,12 +368,10 @@ namespace ngbla
       return SliceVector<T> (w, h, &data[i]);
     }
 
-    /*
     const SliceVector<T> Diag () const
     {
       return SliceVector<T> (h, w+1, &data[0]);
     }
-    */
 
     INLINE const FlatMatrix Cols (size_t first, size_t next) const
     {
@@ -417,10 +420,12 @@ namespace ngbla
     }
     */
 
+    /*
     INLINE operator SliceMatrix<T,ColMajor> () const
     {
       return SliceMatrix<T,ColMajor> (h, w, h, data);
     }
+    */
   };
 
 
@@ -458,7 +463,7 @@ namespace ngbla
 
     /// allocate and copy matrix  
     INLINE Matrix (const Matrix & m2) 
-      : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
+      : FlatMatrix<T,ORD> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       FlatMatrix<T,ORD>::operator= (m2);
     }
@@ -471,7 +476,7 @@ namespace ngbla
     /// allocate and compute 
     template<typename TB>
     INLINE Matrix (const Expr<TB> & m2) 
-      : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
+      : FlatMatrix<T,ORD> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
     }
@@ -1340,11 +1345,11 @@ namespace ngbla
     INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
-    /*
-    SliceMatrix (const FlatMatrix<T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
+    SliceMatrix (FlatMatrix<T,ORD> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
+    /*
     template<int W>
     SliceMatrix (const FlatMatrixFixWidth<W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
@@ -1530,6 +1535,11 @@ namespace ngbla
     /// set height, width, and mem
     SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
+
+    SliceMatrix (FlatMatrix<T,ColMajor> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
+    { ; }
+
     
     /// assign contents
     template<typename TB>

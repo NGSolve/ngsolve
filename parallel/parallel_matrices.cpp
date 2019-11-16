@@ -628,15 +628,11 @@ namespace ngla
     ones = 1;
     Table<int> dps(ones);
     njs = 0;
-    for (auto p:paralleldofs->GetDistantProcs()) {
-      for ([[maybe_unused]] auto d:paralleldofs->GetExchangeDofs(p)) {
+    for (auto p : paralleldofs->GetDistantProcs()) 
+      for ([[maybe_unused]] auto d : paralleldofs->GetExchangeDofs(p)) 
 	dps[njs++][0] = p;
-      }
-    }    
 
     this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), move(dps));
-
-    return;
   }
 
 

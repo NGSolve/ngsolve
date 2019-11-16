@@ -53,7 +53,23 @@ namespace ngbla
       MultMatTransVec_intern (a, x, y);
   }
 
+  extern NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  typedef void (*pmultadd_mattransvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmultadd_mattransvec dispatch_addmattransvec[13];
+  
+  INLINE void MultAddMatTransVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    size_t sx = x.Size();
+    if (sx <= 12)
+      (*dispatch_addmattransvec[sx])  (s, a, x, y);
+    else
+      MultAddMatTransVec_intern (s, a, x, y);
+  }
 
+
+
+
+  
 
   extern NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern
   (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y, FlatArray<int> ind);
@@ -217,6 +233,11 @@ namespace ngbla
 
   // for Cholesky and SparseCholesky
   extern NGS_DLL_HEADER
+  void SubADBt (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c);
+
+  extern NGS_DLL_HEADER
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c);
@@ -365,6 +386,7 @@ namespace ngbla
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
   {
+    // cout << "generic nggemv , add = " << ADD << ", pos = " << POS << endl;
     // static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
@@ -395,6 +417,27 @@ namespace ngbla
     MultMatTransVec (Trans(a),x,y);
   }
   
+
+  template <> INLINE void NgGEMV<true,true> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatVec (1,a,x,y);
+  }
+
+  template <> INLINE void NgGEMV<true,true> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatTransVec (1,Trans(a),x,y);
+  }
+  
+  template <> INLINE void NgGEMV<true,false> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatVec (-1,a,x,y);
+  }
+
+  template <> INLINE void NgGEMV<true,false> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatTransVec (-1,Trans(a),x,y);
+  }
+
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack);
 
