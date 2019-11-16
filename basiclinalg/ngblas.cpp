@@ -252,7 +252,7 @@ namespace ngbla
   template <int SX>
   void MultAddMatTransVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    double hx[SX];
+    double hx[max(1,SX)];
     for (size_t i = 0; i < SX; i++)
       hx[i] = s*x(i);
     MatKernelDaxpy<1, SX, ADD> (y.Size(), &hx[0], 1, &a(0), a.Dist(), &y(0), 1);
