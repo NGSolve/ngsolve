@@ -1330,7 +1330,7 @@ namespace ngbla
     size_t wa = a.Width();
     SIMD<double> *pa = &a(0);
     SIMD<double> *pb = &b(0);
-    double *pc = &c(0);
+    double *pc = c.Data();
     for (size_t i = 0; i < wa; i += bs, pa+=bs, pb+=bs)
       TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
