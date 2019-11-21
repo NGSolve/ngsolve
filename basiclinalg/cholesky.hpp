@@ -519,8 +519,11 @@ namespace ngbla
           L2(i,j) -= diag(k)*B(i,k)*B(j,k);
     */
     CalcLDLNew (L2);
+    ScaleCols(B, diag);
+    /*
     for (int i = 0; i < B.Width(); i++)
       B.Col(i) *= diag(i);
+    */
   }
 
 
