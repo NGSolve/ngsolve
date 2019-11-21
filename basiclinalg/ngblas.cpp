@@ -1909,12 +1909,12 @@ namespace ngbla
                    SliceVector<double> diag,
                    SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    constexpr size_t SW = SIMD<double>::Size();
+    // constexpr size_t SW = SIMD<double>::Size();
     alignas (64) double mema[NA*NK];
-    SIMD<double> memb[3*NK];
-    size_t na = a.Width();
-    size_t nb = b.Width();
-    size_t ha = a.Height();
+    // SIMD<double> memb[3*NK];
+    // size_t na = a.Width();
+    // size_t nb = b.Width();
+    // size_t ha = a.Height();
     
     // loca = Trans(a);
     // for (size_t i = 0; i < loca.Width(); i++)
@@ -1923,18 +1923,21 @@ namespace ngbla
     // return;
 
 #ifdef __AVX512F__
-    constexpr size_t HA = 6;
+    // constexpr size_t HA = 6;
 #else
-    constexpr size_t HA = 4;
+    // constexpr size_t HA = 4;
 #endif
 
-    size_t da = NA;
+    // size_t da = NA;
     // size_t db = b.Dist();
-    double * pc = c.Data();
+    // double * pc = c.Data();
 
     SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
     MyTransposeScaleNeg (a, loca, diag);
-
+    c += loca * b;
+    return;
+    
+    /*    
     size_t j = 0;
     for ( ; j+3*SW <= nb; j += 3*SW)
       {
@@ -1992,7 +1995,9 @@ namespace ngbla
         break;
       default: ;
       }
+*/
 
+    
     /*
     size_t k = 0;
     for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
@@ -2042,12 +2047,54 @@ namespace ngbla
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    static Timer t("SubADBt"); RegionTimer r(t);
+    t.AddFlops(diag.Size()*c.Height()*c.Width());
+    constexpr size_t N = 128;
+    constexpr size_t M = 128;
+    double memb[N*M];
+
+    for (size_t i = 0; i < b.Height(); i += N)
+      {
+        size_t i2 = min2(i+N, b.Height());
+        for (size_t j = 0; j < b.Width(); j += M)
+          {
+            size_t j2 = min2(j+M, b.Width());
+            SliceMatrix<> hb(j2-j, i2-i, N, &memb[0]);
+            hb = Trans(b.Rows(i,i2).Cols(j,j2));
+            for (size_t k : Range(j2-j))
+              hb.Row(k) *= -diag(k+j);
+            c.Cols(i,i2) += a.Cols(j,j2) * hb;
+          }
+      }
+
+    /*
     for (size_t i = 0; i < a.Height(); i++)
       for (size_t j = 0; j < b.Height(); j++)
         for (size_t k = 0; k < a.Width(); k++)
           c(i,j) -= diag(k) * a(i,k) * b(j,k);
+    */
   }
 
+
+  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag)
+  {
+    static Timer t("ScaleCols, RowMajor"); RegionTimer r(t);
+    t.AddFlops(a.Height()*a.Width());
+
+    for (size_t i = 0; i < a.Width(); i++)
+      a.Col(i) *= diag(i);
+  }
+
+  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag)
+  {
+    static Timer t("ScaleCols, ColMajor"); RegionTimer r(t);
+    t.AddFlops(a.Height()*a.Width());
+    
+    for (size_t i = 0; i < a.Width(); i++)
+      a.Col(i) *= diag(i);
+  }
+
+  
   
   // ************************************** Complex ADB^t *********************
   

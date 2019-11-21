@@ -231,6 +231,21 @@ namespace ngbla
   
 
 
+
+
+  extern NGS_DLL_HEADER
+  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag);
+  extern NGS_DLL_HEADER
+  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag);
+
+  template <ORDERING ord>
+  INLINE void ScaleRows (SliceMatrix<double,ord> a, BareSliceVector<double> diag)
+  {
+    ScaleCols (Trans(a), diag);
+  }
+
+  
+
   // for Cholesky and SparseCholesky
   extern NGS_DLL_HEADER
   void SubADBt (SliceMatrix<double> a,
@@ -262,9 +277,21 @@ namespace ngbla
   // t   f    C -= A*B
   // t   t    C += A*B
 
+  template <bool A, bool P, ORDERING oa, ORDERING ob>
+  class trait__
+  {
+  public:
+    typedef double TELEM;
+  };
+  
+  
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
   INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
   {
+    // static Timer t("generic MM, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(orda)+ToString(ordb));
+    // RegionTimer r(t);
+    // typename trait__<ADD,POS,orda,ordb>::TELEM x;  // to get a warning
+    
     // static Timer t("NgGEMM unresolved" + ToString(ADD) + ToString(POS) + ToString(orda) + ToString(ordb));
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
@@ -382,10 +409,20 @@ namespace ngbla
   }
 
 
+  template <bool A, bool P, ORDERING oa>
+  class vtrait__
+  {
+  public:
+    typedef double TELEM;
+  };
 
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
   {
+    typename vtrait__<ADD,POS,ord>::TELEM hv;  // to get a warning
+    
+    // static Timer t("generic MV, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(ord));
+    // RegionTimer r(t);
     // cout << "generic nggemv , add = " << ADD << ", pos = " << POS << endl;
     // static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
