@@ -27,6 +27,14 @@
 #endif
 
 
+#ifdef __GNUC__
+#if( __GNUC__==8 && __GNUC_MINOR__<=2)
+// gcc 8.1/8.2 procudes empty loops in code like
+// for (auto vb : {VOL, BND})
+#error "This code does not compile with GCC 8.1/8.2, please upgrade your compiler"
+#endif
+#endif
+
 
 
 
