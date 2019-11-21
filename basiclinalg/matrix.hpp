@@ -1840,8 +1840,8 @@ namespace ngbla
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
-      NETGEN_CHECK_RANGE(first, 0, first==next ? Height()+1 : Height()); // always allow Cols(0,0)
-      NETGEN_CHECK_RANGE(next, 0, Height()+1);
+      NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
+      NETGEN_CHECK_RANGE(next, first, Height()+1);
       return BareSliceMatrix (dist, data+first, DummySize(next-first, Width()));
     }
 
@@ -1859,8 +1859,8 @@ namespace ngbla
 
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
-      NETGEN_CHECK_RANGE(first, 0, first==next ? Width()+1 : Width()); // always allow Rows(0,0)
-      NETGEN_CHECK_RANGE(next, 0, Width()+1);
+      NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
+      NETGEN_CHECK_RANGE(next, first, Width()+1);
       return BareSliceMatrix (dist, data+dist*first, DummySize(Height(), next-first));
     }
 
