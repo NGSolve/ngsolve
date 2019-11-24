@@ -18,7 +18,8 @@ namespace ngbla
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t sx = x.Size();
-    if (sx <= 24)
+    // if (sx <= 24)
+    if (sx < std::size(dispatch_matvec))
       (*dispatch_matvec[sx])  (a, x, y);
     else
       MultMatVec_intern (a, x, y);
