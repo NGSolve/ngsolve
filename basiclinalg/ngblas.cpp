@@ -130,7 +130,8 @@ namespace ngbla
     y += s * a.AddSize(x.Size(),y.Size()) * x;
   }
 
- pmult_matvec dispatch_matvec[25] =
+  pmult_matvec dispatch_matvec[];
+  /*=
     {
       &MultMatVecShort<0>, &MultMatVecShort<1>, &MultMatVecShort<2>, &MultMatVecShort<3>,
       &MultMatVecShort<4>, &MultMatVecShort<5>, &MultMatVecShort<6>, &MultMatVecShort<7>,
@@ -140,6 +141,32 @@ namespace ngbla
       &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
       &MultMatVecShort<24>
     };
+  */
+  
+  auto init_matvec = [] ()
+  {
+    Iterate<std::size(dispatch_matvec)> ([&] (auto i)
+    { dispatch_matvec[i] = &MultMatVecShort<i>; });
+    return 1;
+  }();
+  
+  
+  /*
+  template <template <int> typename FUNC, typename T>
+  void InitDispatchArray (T * ap)
+  {
+    cout << "array size = " << std::size(*ap) << endl;
+  }
+  
+  auto myinit = [] ()
+  {
+    cout << "init" << endl;
+    InitDispatchArray<MultMatVecShort> (dispatch_matvec);
+    return 0;
+  };
+  int dummy_myinit = myinit();
+  */
+  
 
  pmultadd_matvec dispatch_addmatvec[25] =
     {
