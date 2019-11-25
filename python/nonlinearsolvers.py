@@ -46,7 +46,6 @@ class NewtonSolver:
                 w.data += a.inner_solve * r
             else:
                 w.data = self.inv * r
-                print("n its = ", self.inv.iterations)
 
             err2 = InnerProduct(w,r)
             if err2 < 0:
@@ -124,11 +123,15 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", \
       List of two integers. The first one is 0 if Newton's method did converge, -1 otherwise. The second one gives the number of Newton iterations needed.
 
     """
-    solver = NewtonSolver(a, u, freedofs, inverse)
+    solver = NewtonSolver(a=a, u=u, freedofs=freedofs, inverse=inverse)
     if dirichletvalues is not None:
         solver.SetDirichlet(dirichletvalues)
-    return solver.Solve(maxit, maxerr, dampfactor,
-                        printing, callback, False, False)
+    return solver.Solve(maxit=maxit, maxerr=maxerr,
+                        dampfactor=dampfactor,
+                        printing=printing,
+                        callback=callback,
+                        linesearch=False,
+                        printenergy=False)
 
 
 def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True, callback=None):
@@ -171,6 +174,11 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
       List of two integers. The first one is 0 if Newton's method did converge, -1 otherwise. The second one gives the number of Newton iterations needed.
 
     """
-    solver = NewtonSolver(a, u, freedofs, inverse)
-    return solver.Solve(maxit, maxerr, dampfactor,
-                        printing, callback, linesearch, printing)
+    solver = NewtonSolver(a=a, u=u, freedofs=freedofs, inverse=inverse)
+    return solver.Solve(maxit=maxit, maxerr=maxerr,
+                        dampfactor=dampfactor,
+                        printing=printing,
+                        callback=callback,
+                        linesearch=linesearch,
+                        printenergy=printing)
+
