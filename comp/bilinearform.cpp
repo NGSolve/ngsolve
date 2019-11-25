@@ -2771,7 +2771,7 @@ namespace ngcomp
 
             
             
-            cout << endl;
+            //cout << endl;
           }
 
         //  WriteMatrix (*testout);
