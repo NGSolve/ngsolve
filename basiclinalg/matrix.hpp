@@ -490,7 +490,7 @@ namespace ngbla
         w = max2(w, int(row.size()));
 
       SetSize (h, w);
-      (*this) = 0.0;
+      (*this) = T(0.0);
 
       int r = 0;
       for (auto row : llist)
