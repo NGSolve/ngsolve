@@ -143,6 +143,7 @@ namespace ngbla
       return *this;
     }
 
+    /*  // prevents bla pattern matching
     template<typename TB>
     INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
@@ -154,7 +155,7 @@ namespace ngbla
           data[i] += v.Spec()(i,0);
       return *this;
     }
-
+    */
 
     /// constant element access
     INLINE TELEM & operator() (size_t i) const
@@ -1462,6 +1463,7 @@ namespace ngbla
     BareSliceVector(const BareSliceVector &) = default;
     BareSliceVector & operator= (const BareSliceVector&) = delete;
     size_t Dist () const { return dist; }
+    T* Data() const { return data; }
 
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T,size_t> AddSize(size_t size) const

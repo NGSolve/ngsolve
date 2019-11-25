@@ -127,10 +127,11 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    y += s * a * x;
+    y += s * a.AddSize(x.Size(),y.Size()) * x;
   }
 
- pmult_matvec dispatch_matvec[25] =
+  pmult_matvec dispatch_matvec[];
+  /*=
     {
       &MultMatVecShort<0>, &MultMatVecShort<1>, &MultMatVecShort<2>, &MultMatVecShort<3>,
       &MultMatVecShort<4>, &MultMatVecShort<5>, &MultMatVecShort<6>, &MultMatVecShort<7>,
@@ -140,6 +141,32 @@ namespace ngbla
       &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
       &MultMatVecShort<24>
     };
+  */
+  
+  auto init_matvec = [] ()
+  {
+    Iterate<std::size(dispatch_matvec)> ([&] (auto i)
+    { dispatch_matvec[i] = &MultMatVecShort<i>; });
+    return 1;
+  }();
+  
+  
+  /*
+  template <template <int> typename FUNC, typename T>
+  void InitDispatchArray (T * ap)
+  {
+    cout << "array size = " << std::size(*ap) << endl;
+  }
+  
+  auto myinit = [] ()
+  {
+    cout << "init" << endl;
+    InitDispatchArray<MultMatVecShort> (dispatch_matvec);
+    return 0;
+  };
+  int dummy_myinit = myinit();
+  */
+  
 
  pmultadd_matvec dispatch_addmatvec[25] =
     {
@@ -243,6 +270,113 @@ namespace ngbla
   
 
 
+
+
+
+
+
+
+  template <int SX>
+  void MultAddMatTransVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    double hx[max(1,SX)];
+    for (size_t i = 0; i < SX; i++)
+      hx[i] = s*x(i);
+    MatKernelDaxpy<1, SX, ADD> (y.Size(), &hx[0], 1, &a(0), a.Dist(), &y(0), 1);
+  }
+  
+
+
+  NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = x.Size();
+    size_t w = y.Size();
+    size_t dist = a.Dist();
+
+    size_t i = 0;
+    for ( ; i+SW <= w; i+= SW)
+      {
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum *= s;
+        sum += SIMD<double>(&y(i));
+        sum.Store(&y(i));
+      }
+    
+    if (i < w)
+      {
+        SIMD<mask64> mask(w % SW);
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist, mask);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist, mask);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum *= s;
+        sum += SIMD<double>(&y(i), mask);
+        sum.Store(&y(i), mask);
+      }
+  }
+
+
+  
+  // typedef void REGCALL (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);  
+  pmultadd_mattransvec dispatch_addmattransvec[13] =
+    {
+      &MultAddMatTransVecShort<0>,
+      &MultAddMatTransVecShort<1>,
+      &MultAddMatTransVecShort<2>,
+      &MultAddMatTransVecShort<3>,
+      &MultAddMatTransVecShort<4>,
+      &MultAddMatTransVecShort<5>,
+      &MultAddMatTransVecShort<6>,
+      &MultAddMatTransVecShort<7>,
+      &MultAddMatTransVecShort<8>,
+      &MultAddMatTransVecShort<9>,
+      &MultAddMatTransVecShort<10>,
+      &MultAddMatTransVecShort<11>,
+      &MultAddMatTransVecShort<12>
+    };
+  
+
+
+
+
+
+
+
+
+
+  
 
   // ************************** Mult Add transpose Mat * vec, indirect ***************
 
@@ -640,22 +774,57 @@ namespace ngbla
       MatKernelShortSum<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
   }
 
-
   pmultAB dispatch_multAB[13] =
-    { &MultMatMat_intern2_ShortSum<0>,
-      &MultMatMat_intern2_ShortSum<1>,
-      &MultMatMat_intern2_ShortSum<2>,
-      &MultMatMat_intern2_ShortSum<3>,
-      &MultMatMat_intern2_ShortSum<4>,
-      &MultMatMat_intern2_ShortSum<5>,
-      &MultMatMat_intern2_ShortSum<6>,
-      &MultMatMat_intern2_ShortSum<7>,
-      &MultMatMat_intern2_ShortSum<8>,
-      &MultMatMat_intern2_ShortSum<9>,
-      &MultMatMat_intern2_ShortSum<10>,
-      &MultMatMat_intern2_ShortSum<11>,
-      &MultMatMat_intern2_ShortSum<12>
+    { &MultMatMat_intern2_ShortSum<0,SET>,
+      &MultMatMat_intern2_ShortSum<1,SET>,
+      &MultMatMat_intern2_ShortSum<2,SET>,
+      &MultMatMat_intern2_ShortSum<3,SET>,
+      &MultMatMat_intern2_ShortSum<4,SET>,
+      &MultMatMat_intern2_ShortSum<5,SET>,
+      &MultMatMat_intern2_ShortSum<6,SET>,
+      &MultMatMat_intern2_ShortSum<7,SET>,
+      &MultMatMat_intern2_ShortSum<8,SET>,
+      &MultMatMat_intern2_ShortSum<9,SET>,
+      &MultMatMat_intern2_ShortSum<10,SET>,
+      &MultMatMat_intern2_ShortSum<11,SET>,
+      &MultMatMat_intern2_ShortSum<12,SET>
     };
+
+  pmultAB dispatch_addAB[13] =
+    { &MultMatMat_intern2_ShortSum<0,ADD>,
+      &MultMatMat_intern2_ShortSum<1,ADD>,
+      &MultMatMat_intern2_ShortSum<2,ADD>,
+      &MultMatMat_intern2_ShortSum<3,ADD>,
+      &MultMatMat_intern2_ShortSum<4,ADD>,
+      &MultMatMat_intern2_ShortSum<5,ADD>,
+      &MultMatMat_intern2_ShortSum<6,ADD>,
+      &MultMatMat_intern2_ShortSum<7,ADD>,
+      &MultMatMat_intern2_ShortSum<8,ADD>,
+      &MultMatMat_intern2_ShortSum<9,ADD>,
+      &MultMatMat_intern2_ShortSum<10,ADD>,
+      &MultMatMat_intern2_ShortSum<11,ADD>,
+      &MultMatMat_intern2_ShortSum<12,ADD>
+    };
+
+  pmultAB dispatch_subAB[13] =
+    { &MultMatMat_intern2_ShortSum<0,SUB>,
+      &MultMatMat_intern2_ShortSum<1,SUB>,
+      &MultMatMat_intern2_ShortSum<2,SUB>,
+      &MultMatMat_intern2_ShortSum<3,SUB>,
+      &MultMatMat_intern2_ShortSum<4,SUB>,
+      &MultMatMat_intern2_ShortSum<5,SUB>,
+      &MultMatMat_intern2_ShortSum<6,SUB>,
+      &MultMatMat_intern2_ShortSum<7,SUB>,
+      &MultMatMat_intern2_ShortSum<8,SUB>,
+      &MultMatMat_intern2_ShortSum<9,SUB>,
+      &MultMatMat_intern2_ShortSum<10,SUB>,
+      &MultMatMat_intern2_ShortSum<11,SUB>,
+      &MultMatMat_intern2_ShortSum<12,SUB>
+    };
+
+
+
+
 
   
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
@@ -1188,7 +1357,7 @@ namespace ngbla
     size_t wa = a.Width();
     SIMD<double> *pa = &a(0);
     SIMD<double> *pb = &b(0);
-    double *pc = &c(0);
+    double *pc = c.Data();
     for (size_t i = 0; i < wa; i += bs, pa+=bs, pb+=bs)
       TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
@@ -1272,7 +1441,7 @@ namespace ngbla
                   BareSliceMatrix<double> c)
   {
     TAddABt4Sym(a.Width(), a.Height(), b.Height(),
-                &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist(),
+                a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist(),
                 [] (auto c, auto ab) { return c+ab; });
   }
 
@@ -1282,7 +1451,7 @@ namespace ngbla
                   BareSliceMatrix<double> c)
   {
     TAddABt4Sym(a.Width(), a.Height(), b.Height(),
-                &a(0), a.Width(), &b(0), b.Width(), &c(0), c.Dist(),
+                a.Data(), a.Width(), b.Data(), b.Width(), c.Data(), c.Dist(),
                 [] (auto c, auto ab) { return c+ab; });
     /*
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
@@ -1767,12 +1936,12 @@ namespace ngbla
                    SliceVector<double> diag,
                    SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    constexpr size_t SW = SIMD<double>::Size();
+    // constexpr size_t SW = SIMD<double>::Size();
     alignas (64) double mema[NA*NK];
-    SIMD<double> memb[3*NK];
-    size_t na = a.Width();
-    size_t nb = b.Width();
-    size_t ha = a.Height();
+    // SIMD<double> memb[3*NK];
+    // size_t na = a.Width();
+    // size_t nb = b.Width();
+    // size_t ha = a.Height();
     
     // loca = Trans(a);
     // for (size_t i = 0; i < loca.Width(); i++)
@@ -1781,18 +1950,21 @@ namespace ngbla
     // return;
 
 #ifdef __AVX512F__
-    constexpr size_t HA = 6;
+    // constexpr size_t HA = 6;
 #else
-    constexpr size_t HA = 4;
+    // constexpr size_t HA = 4;
 #endif
 
-    size_t da = NA;
+    // size_t da = NA;
     // size_t db = b.Dist();
-    double * pc = &c(0);
+    // double * pc = c.Data();
 
     SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
     MyTransposeScaleNeg (a, loca, diag);
-
+    c += loca * b;
+    return;
+    
+    /*    
     size_t j = 0;
     for ( ; j+3*SW <= nb; j += 3*SW)
       {
@@ -1850,7 +2022,9 @@ namespace ngbla
         break;
       default: ;
       }
+*/
 
+    
     /*
     size_t k = 0;
     for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
@@ -1894,7 +2068,61 @@ namespace ngbla
       }
   }
 
+  // ************************ SubADBt ******************************
+  
+  void SubADBt (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    static Timer t("SubADBt"); RegionTimer r(t);
+    t.AddFlops(diag.Size()*c.Height()*c.Width());
+    constexpr size_t N = 128;
+    constexpr size_t M = 128;
+    double memb[N*M];
 
+    for (size_t i = 0; i < b.Height(); i += N)
+      {
+        size_t i2 = min2(i+N, b.Height());
+        for (size_t j = 0; j < b.Width(); j += M)
+          {
+            size_t j2 = min2(j+M, b.Width());
+            SliceMatrix<> hb(j2-j, i2-i, N, &memb[0]);
+            hb = Trans(b.Rows(i,i2).Cols(j,j2));
+            for (size_t k : Range(j2-j))
+              hb.Row(k) *= -diag(k+j);
+            c.Cols(i,i2) += a.Cols(j,j2) * hb;
+          }
+      }
+
+    /*
+    for (size_t i = 0; i < a.Height(); i++)
+      for (size_t j = 0; j < b.Height(); j++)
+        for (size_t k = 0; k < a.Width(); k++)
+          c(i,j) -= diag(k) * a(i,k) * b(j,k);
+    */
+  }
+
+
+  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag)
+  {
+    static Timer t("ScaleCols, RowMajor"); RegionTimer r(t);
+    t.AddFlops(a.Height()*a.Width());
+
+    for (size_t i = 0; i < a.Width(); i++)
+      a.Col(i) *= diag(i);
+  }
+
+  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag)
+  {
+    static Timer t("ScaleCols, ColMajor"); RegionTimer r(t);
+    t.AddFlops(a.Height()*a.Width());
+    
+    for (size_t i = 0; i < a.Width(); i++)
+      a.Col(i) *= diag(i);
+  }
+
+  
+  
   // ************************************** Complex ADB^t *********************
   
   /*
@@ -2122,8 +2350,8 @@ namespace ngbla
     size_t k = a.Height();
     
     CopyMatrixInScaleRows (k, na,
-                           &a(0,0), a.Dist(), (Complex*)&mema[0], CNA,
-                           &diag(0), diag.Dist());
+                           a.Data(), a.Dist(), (Complex*)&mema[0], CNA,
+                           diag.Data(), diag.Dist());
 
     size_t i = 0;
     constexpr size_t bs = CNB;

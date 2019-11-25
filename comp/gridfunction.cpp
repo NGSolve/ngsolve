@@ -87,7 +87,7 @@ namespace ngcomp
     multidim = int (flags.GetNumFlag ("multidim", 1));
     auto comp_space = dynamic_pointer_cast<CompoundFESpace>(fespace);
     if(comp_space)
-      for(auto i : Range(comp_space->GetNSpaces()))
+      for([[maybe_unused]] auto i : Range(comp_space->GetNSpaces()))
         compgfs.Append(shared_ptr<GridFunction>(nullptr));
     // level_updated = -1;
     // cacheblocksize = 1;

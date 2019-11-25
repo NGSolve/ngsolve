@@ -246,7 +246,7 @@ namespace ngla
     if (task_manager) task_manager -> StopWorkers();
 
 #ifdef USE_MKL
-    mkl_set_num_threads_local(mkl_max_threads);
+    mkl_set_num_threads(mkl_max_threads);
 #endif // USE_MKL
 
     // retvalue = 
@@ -255,7 +255,7 @@ namespace ngla
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
 #ifdef USE_MKL
-    mkl_set_num_threads_local(1);
+    mkl_set_num_threads(1);
 #endif // USE_MKL
     
     if (task_manager) task_manager -> StartWorkers();
@@ -493,7 +493,7 @@ namespace ngla
       task_manager->SuspendWorkers(1000);
 
 #ifdef USE_MKL
-    mkl_set_num_threads_local(mkl_max_threads);
+    mkl_set_num_threads(mkl_max_threads);
 #endif // USE_MKL
 
     if (compressed)
@@ -525,7 +525,7 @@ namespace ngla
       }
 
 #ifdef USE_MKL
-    mkl_set_num_threads_local(1);
+    mkl_set_num_threads(1);
 #endif // USE_MKL
 
     if(task_manager)
@@ -571,7 +571,7 @@ namespace ngla
       task_manager->SuspendWorkers(1000);
 
 #ifdef USE_MKL
-    mkl_set_num_threads_local(mkl_max_threads);
+    mkl_set_num_threads(mkl_max_threads);
 #endif // USE_MKL
 
     F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
@@ -582,7 +582,7 @@ namespace ngla
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
 			&error );
 #ifdef USE_MKL
-      mkl_set_num_threads_local(1);
+      mkl_set_num_threads(1);
 #endif // USE_MKL
 
     if(task_manager)

@@ -667,6 +667,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                            { return self.Width(); }, "Width of the matrix" )
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
+    .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
     .def("CreateMatrix", [] ( BaseMatrix & self)
          { return self.CreateMatrix(); }, "Create matrix of same dimension and same sparsestructure" )

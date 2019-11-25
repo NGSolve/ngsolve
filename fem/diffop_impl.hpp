@@ -83,6 +83,7 @@ namespace ngfem
     else
       {
         throw Exception ("cannot do complex matrix for real mip");
+        // ThrowException ("cannot do complex matrix for real mip");
       }
   }
 

@@ -584,12 +584,12 @@ namespace ngfem
 
   template <int D>
   class PML_CurlCurlEdgeIntegrator
-    : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> >
+    : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_(D)>, HCurlFiniteElement<D> >
   {
-    typedef  PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > BASE;
+    typedef  PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_(D)>, HCurlFiniteElement<D> > BASE;
   public:
     ///
-    using  PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> >::PML_BDBIntegrator;
+    using  PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_(D)>, HCurlFiniteElement<D> >::PML_BDBIntegrator;
     /*
     PML_CurlCurlEdgeIntegrator (shared_ptr<CoefficientFunction> coef)
       : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 

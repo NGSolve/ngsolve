@@ -423,7 +423,7 @@ if(APPLE)
     if(CMAKE_OSX_SYSROOT)
         set( ngscxx_includes "-isysroot ${CMAKE_OSX_SYSROOT} ${ngscxx_includes}" )
     endif()
-    set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
+    #   set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
     set(ngscxx_includes "${ngscxx_includes} -I$Netgen_BUNDLE/Contents/Resources/include" )  
     set(ngsld_flags "${ngsld_flags} -L$Netgen_BUNDLE/Contents/MacOS  -undefined dynamic_lookup" )
     set(ngscxx_header "\
