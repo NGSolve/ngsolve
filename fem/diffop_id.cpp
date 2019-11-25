@@ -13,6 +13,9 @@ namespace ngfem
   }
 
 
+  template class NGS_DLL_HEADER DiffOpId<1>;
+  template class NGS_DLL_HEADER DiffOpId<2>;
+  template class NGS_DLL_HEADER DiffOpId<3>;
   
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<1>>;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<2>>;

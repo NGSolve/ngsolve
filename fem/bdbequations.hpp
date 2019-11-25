@@ -306,10 +306,11 @@ namespace ngfem
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
-      mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
+      // HeapReset hr(lh);
+      // mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));      
     }
-
+    /*
     static void GenerateMatrix (const FiniteElement & fel, 
 				const BaseMappedIntegrationPoint & mip,
 				FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
@@ -317,13 +318,15 @@ namespace ngfem
       Cast(fel).CalcShape (mip.IP(), mat.Row(0)); // FlatVector<> (fel.GetNDof(), &mat(0,0)));
     }
 
+    template <typename MIP>
     static void GenerateMatrix (const FiniteElement & fel, 
-				const BaseMappedIntegrationPoint & mip,
+				// const BaseMappedIntegrationPoint & mip,
+                                const MIP & mip,
 				SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
-
+    */
     // using DiffOp<DiffOpId<D, FEL> > :: GenerateMatrixIR;
     template <typename MAT>
     static void GenerateMatrixIR (const FiniteElement & fel, 
@@ -350,7 +353,7 @@ namespace ngfem
     }
 
     static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
-		       const FlatVector<double> & x, FlatVector<double> & y,
+		       BareSliceVector<double> x, FlatVector<double> y,
 		       LocalHeap & lh) 
     {
       y(0) = Cast(fel).Evaluate(mip.IP(), x);
@@ -429,6 +432,27 @@ namespace ngfem
   };
 
 
+  template <int _DIM_SPACE, int _DIM_ELEMENT>
+  class DiffOpIdH1 : public DiffOpId<_DIM_SPACE>
+  {
+  public:
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = _DIM_ELEMENT };
+
+    typedef DiffOpIdH1<_DIM_SPACE, _DIM_ELEMENT-1> DIFFOP_TRACE;
+  };
+  
+  template <int _DIM_SPACE>
+  class DiffOpIdH1<_DIM_SPACE,0> : public DiffOpId<_DIM_SPACE>
+  {
+  public:    
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = 0 };
+
+    typedef void DIFFOP_TRACE;
+  };
+
+  
 
   /// Identity
   template <int D, int SYSDIM>

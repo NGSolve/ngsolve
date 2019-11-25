@@ -291,7 +291,8 @@ ANY                  1 1 1 1 | 15
     /// number of dofs on the level
     virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
 
-       
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const;
+    
     class Element : public Ngs_Element
     {
       const FESpace & fes;

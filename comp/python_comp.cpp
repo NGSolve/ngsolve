@@ -123,6 +123,21 @@ py::object MakeProxyFunction (shared_ptr<FESpace> fes,
 }
 
 
+  shared_ptr<SumOfIntegrals> DualProxyFunction :: operator() (shared_ptr<CoefficientFunction> u) const
+  {
+    VorB vb = evaluator -> VB();
+    Array<VorB> node_types { fes->GetDualShapeNodes(vb) };
+    
+    auto sum = make_shared<SumOfIntegrals>();
+    for (auto nt : node_types)
+      {
+        DifferentialSymbol dx(vb, nt, false, 0);
+        sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+      }
+    return sum;
+  }
+  
+
 
 class GlobalDummyVariables 
 {
@@ -368,6 +383,9 @@ when building the system matrices.
             auto op = self->GetAdditionalProxy(name);
             if (!op)
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+
+            if (name == "dual")
+              op = make_shared<DualProxyFunction> (*op);
             return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
@@ -415,6 +433,13 @@ file : string
 )raw_string")
         );
 
+  py::class_<DualProxyFunction, shared_ptr<DualProxyFunction>, ProxyFunction> (m, "DualProxyFunction")
+    .def("__call__", [](shared_ptr<DualProxyFunction> self, shared_ptr<CoefficientFunction> u)
+         {
+           return (*self)(u);
+         });
+  ;
+    
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
