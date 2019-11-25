@@ -412,9 +412,18 @@ namespace ngla
       : bma(abma), bmb(abmb), tempvec(abmb.CreateColVector())
     { ; }
     ProductMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb)
-      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb),
-        tempvec(aspbmb->CreateColVector())
-    { ; }
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb)
+        // tempvec(aspbmb->CreateColVector())
+    {
+      try
+        {
+          tempvec.AssignPointer(bmb.CreateColVector());
+        }
+      catch (Exception & e)
+        {
+          tempvec.AssignPointer(bma.CreateRowVector());          
+        }
+    }
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
 

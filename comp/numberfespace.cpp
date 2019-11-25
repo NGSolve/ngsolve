@@ -29,14 +29,16 @@ namespace ngcomp
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      mat(0,0) = 1;
+      if(fel.GetNDof()) // if not dummyFE
+        mat(0,0) = 1;
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      mat.Row(0).AddSize(mir.Size()) = SIMD<double>(1);
+      if(bfel.GetNDof()) // if not dummyFE
+        mat.Row(0).AddSize(mir.Size()) = SIMD<double>(1);
     }
 
     using DiffOp<NumberDiffOp>::ApplySIMDIR;
@@ -48,8 +50,9 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      for (size_t i = 0; i < mir.Size(); i++)
-        y(0,i) = x(0);
+      if(fel.GetNDof()) // if not dummyFE
+        for (size_t i = 0; i < mir.Size(); i++)
+          y(0,i) = x(0);
     }
 
     using DiffOp<NumberDiffOp>::AddTransSIMDIR;
@@ -57,6 +60,8 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
+      if(bfel.GetNDof() == 0) // if not dummyFE
+        return;
       SIMD<double> sum = 0.0;
       for (size_t i = 0; i < mir.Size(); i++)
         sum += x(0,i);
@@ -81,7 +86,7 @@ namespace ngcomp
 
     if (dimension > 1)
       {
-        for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
+        for (auto vb : { VOL,BND, BBND, BBBND })
           evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
       }
       

@@ -665,7 +665,7 @@ public:
   */
 
   template <int D>
-  using CurlCurlEdgeIntegrator = T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D>>;
+  using CurlCurlEdgeIntegrator = T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_(D)>, HCurlFiniteElement<D>>;
   
 
 
@@ -685,11 +685,11 @@ public:
   /// 
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class CurlCurlEdgeOrthoIntegrator 
-    : public T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
+    : public T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_(D)>, FEL>
   {
-    typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
+    typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_(D)>, FEL> BASE;
   public:
-    using T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_(D)>, FEL>::T_BDBIntegrator;
     ///
     virtual string Name () const { return "CurlCurlEdgeOrtho"; }
   };
@@ -847,11 +847,11 @@ public:
   ///
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class CurlEdgeIntegrator 
-    : public T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL>
+    : public T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_(D)>, FEL>
   {
-    typedef  T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
+    typedef  T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_(D)>, FEL> BASE;
   public:
-    using T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL>::T_BIntegrator;
+    using T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_(D)>, FEL>::T_BIntegrator;
     /*
     ///
     CurlEdgeIntegrator (CoefficientFunction * coeff1)

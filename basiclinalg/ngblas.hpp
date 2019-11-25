@@ -18,7 +18,8 @@ namespace ngbla
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t sx = x.Size();
-    if (sx <= 24)
+    // if (sx <= 24)
+    if (sx < std::size(dispatch_matvec))
       (*dispatch_matvec[sx])  (a, x, y);
     else
       MultMatVec_intern (a, x, y);
@@ -53,7 +54,23 @@ namespace ngbla
       MultMatTransVec_intern (a, x, y);
   }
 
+  extern NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  typedef void (*pmultadd_mattransvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmultadd_mattransvec dispatch_addmattransvec[13];
+  
+  INLINE void MultAddMatTransVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    size_t sx = x.Size();
+    if (sx <= 12)
+      (*dispatch_addmattransvec[sx])  (s, a, x, y);
+    else
+      MultAddMatTransVec_intern (s, a, x, y);
+  }
 
+
+
+
+  
 
   extern NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern
   (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y, FlatArray<int> ind);
@@ -116,16 +133,27 @@ namespace ngbla
   
   extern NGS_DLL_HEADER void REGCALL AddAB_intern (size_t ha, size_t wa, size_t wb,
                                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
+  extern NGS_DLL_HEADER pmultAB dispatch_addAB[13];
+
   inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
-    AddAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
+    size_t wa = a.Width();
+    if (wa <= 12)
+      (*dispatch_addAB[wa])  (a.Height(), b.Width(), a, b, c);
+    else
+      AddAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
   extern NGS_DLL_HEADER void REGCALL SubAB_intern (size_t ha, size_t wa, size_t wb,
                                                    BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
+  extern NGS_DLL_HEADER pmultAB dispatch_subAB[13];
   inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
-    SubAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
+    size_t wa = a.Width();
+    if (wa <= 12)
+      (*dispatch_subAB[wa])  (a.Height(), b.Width(), a, b, c);
+    else
+      SubAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
 
@@ -204,7 +232,27 @@ namespace ngbla
   
 
 
+
+
+  extern NGS_DLL_HEADER
+  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag);
+  extern NGS_DLL_HEADER
+  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag);
+
+  template <ORDERING ord>
+  INLINE void ScaleRows (SliceMatrix<double,ord> a, BareSliceVector<double> diag)
+  {
+    ScaleCols (Trans(a), diag);
+  }
+
+  
+
   // for Cholesky and SparseCholesky
+  extern NGS_DLL_HEADER
+  void SubADBt (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c);
+
   extern NGS_DLL_HEADER
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
@@ -230,9 +278,21 @@ namespace ngbla
   // t   f    C -= A*B
   // t   t    C += A*B
 
+  template <bool A, bool P, ORDERING oa, ORDERING ob>
+  class trait__
+  {
+  public:
+    typedef double TELEM;
+  };
+  
+  
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
   INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
   {
+    // static Timer t("generic MM, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(orda)+ToString(ordb));
+    // RegionTimer r(t);
+    // typename trait__<ADD,POS,orda,ordb>::TELEM x;  // to get a warning
+    
     // static Timer t("NgGEMM unresolved" + ToString(ADD) + ToString(POS) + ToString(orda) + ToString(ordb));
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
@@ -350,10 +410,21 @@ namespace ngbla
   }
 
 
+  template <bool A, bool P, ORDERING oa>
+  class vtrait__
+  {
+  public:
+    typedef double TELEM;
+  };
 
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
   {
+    typename vtrait__<ADD,POS,ord>::TELEM hv;  // to get a warning
+    
+    // static Timer t("generic MV, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(ord));
+    // RegionTimer r(t);
+    // cout << "generic nggemv , add = " << ADD << ", pos = " << POS << endl;
     // static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
@@ -384,6 +455,27 @@ namespace ngbla
     MultMatTransVec (Trans(a),x,y);
   }
   
+
+  template <> INLINE void NgGEMV<true,true> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatVec (1,a,x,y);
+  }
+
+  template <> INLINE void NgGEMV<true,true> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatTransVec (1,Trans(a),x,y);
+  }
+  
+  template <> INLINE void NgGEMV<true,false> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatVec (-1,a,x,y);
+  }
+
+  template <> INLINE void NgGEMV<true,false> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatTransVec (-1,Trans(a),x,y);
+  }
+
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack);
 
