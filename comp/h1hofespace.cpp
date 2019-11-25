@@ -218,21 +218,28 @@ namespace ngcomp
         }
       case 2:
         {
-          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,1>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>();          
           break;
         }
       case 3:
         {
-          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
-          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,2>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
-          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          // evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,1>>>();
 	  flux_evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpGradientBBoundary<3>>>();
-          evaluator[BBBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          // evaluator[BBBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          evaluator[BBBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,0>>>();
           break;
         }
       }
