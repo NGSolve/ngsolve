@@ -1455,6 +1455,27 @@ namespace ngfem
       }
   }
 
+
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  CalcDualShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
+  {
+    shape = 0.0;
+
+    //TIP<DIM,AutoDiff<DIM>> tip = ip;
+    IntegrationRule ir(1, const_cast<IntegrationPoint*>(&ip));
+    MappedIntegrationRule<DIM,DIM,SCAL> mir(ir, this->GetTransformation(), ia);
+    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+      ->CalcDualShape2 (tip, SBLambda ([shape](size_t i, Vec<DIM> val) 
+                                       { FlatVec<DIM> (&shape(i,0)) = val; }));
+    
+    //static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+    //  -> CalcDualShape2 (ip, SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
+  }
+
+  
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
