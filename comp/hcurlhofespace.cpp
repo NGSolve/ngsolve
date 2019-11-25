@@ -358,6 +358,74 @@ namespace ngcomp
         
   };
 
+  /// Gradient operator for HCurl
+  template <int D>
+  class DiffOpHCurlDualBoundary : public DiffOp<DiffOpHCurlDualBoundary<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlDualBoundary<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlFiniteElement<D-1>&> (fel); }
+
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D-1> shape(Cast(fel).ndof, lh);
+      Cast(fel).CalcDualShape(mip.IP(), shape);
+      
+      /*auto J = mip.GetJacobiDet();
+      auto F = mip.GetJacobian();
+      Mat<D-1,D-1> refmat;
+      for (size_t i = 0; i < Cast(fel).ndof; i++)
+        {
+          refmat = shape.Row(i);
+          mat.Col(i) = 1/J*
+          }*/
+      mat = 1/mip.GetJacobiDet()*mip.GetJacobian() * Trans(shape);
+      
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      // fel.CalcDualShape (mip, mat);
+      throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
+    }
+
+    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
+    }
+
+    using BASE::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
+    }
+
+    using BASE::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
+      }   */ 
+        
+  };
+
 
 
 
@@ -1902,6 +1970,7 @@ namespace ngcomp
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
         additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        additional.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlDualBoundary<3>>> ());
         break;
       default:
         ;
