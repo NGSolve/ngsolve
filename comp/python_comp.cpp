@@ -374,7 +374,7 @@ when building the system matrices.
     .def_property_readonly("derivname",
                   [](const spProxy self) -> string
                    {
-                     if (!self->Deriv()) return "";
+                     if (!self->Deriv() || !self->DerivEvaluator()) return "";
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
