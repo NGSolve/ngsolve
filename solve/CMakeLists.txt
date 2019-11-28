@@ -55,7 +55,7 @@ endif (NETGEN_USE_GUI)
 
 if(NOT WIN32)
     add_executable( ngs ngs.cpp)
-    target_link_libraries(ngs solve netgen_python)
+    target_link_libraries(ngs PUBLIC solve netgen_python ${NETGEN_PYTHON_LIBRARIES})
     install( TARGETS ngs DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
 endif(NOT WIN32)
 
