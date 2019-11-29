@@ -63,6 +63,7 @@ namespace ngbla
       }
   }
 
+  
   /* ************************ Matrix * Vector ************************** */
 
 
@@ -147,6 +148,7 @@ namespace ngbla
   {
     Iterate<std::size(dispatch_matvec)> ([&] (auto i)
     { dispatch_matvec[i] = &MultMatVecShort<i>; });
+    dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
   }();
   

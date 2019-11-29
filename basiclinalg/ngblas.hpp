@@ -12,17 +12,23 @@
 namespace ngbla
 {
 
-  extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  // extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
   typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
-  extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[25];
+  extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
+    /*
     size_t sx = x.Size();
     // if (sx <= 24)
     if (sx < std::size(dispatch_matvec))
       (*dispatch_matvec[sx])  (a, x, y);
     else
       MultMatVec_intern (a, x, y);
+    */
+    size_t dsx = x.Size();
+    if (dsx >= std::size(dispatch_matvec))
+      dsx = std::size(dispatch_matvec)-1;
+    (*dispatch_matvec[dsx])  (a, x, y);    
   }
 
 
