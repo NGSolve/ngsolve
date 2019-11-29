@@ -144,7 +144,7 @@ namespace ngbla
   
   auto init_matvec = [] ()
   {
-    Iterate<std::size(dispatch_matvec)> ([&] (auto i)
+    Iterate<std::size(dispatch_matvec)-1> ([&] (auto i)
     { dispatch_matvec[i] = &MultMatVecShort<i>; });
     dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
