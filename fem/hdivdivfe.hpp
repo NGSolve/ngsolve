@@ -72,9 +72,9 @@ namespace ngfem
                       BareSliceMatrix<SIMD<double>> divshapes) const = 0;
 
     virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
-			      BareVector<SIMD<double>> values) const = 0;
+			      BareSliceMatrix<SIMD<double>> values) const = 0;
 
-    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareVector<SIMD<double>> values,
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
 			      BareSliceVector<> coefs) const=0;
 
     virtual void CalcShape_NormalComponent (const SIMD_BaseMappedIntegrationRule & mir, 
@@ -638,7 +638,7 @@ namespace ngfem
     }
 
     virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
-			      BareVector<SIMD<double>> values) const override
+			      BareSliceMatrix<SIMD<double>> values) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
       if(!mir.GetTransformation().IsCurvedElement()) // non-curved element
@@ -670,7 +670,7 @@ namespace ngfem
                    auto d2 = sqr(mir[i].GetJacobiDet());
                    Vec<DIMSPACE,SIMD<double>> physvec = 1/d2 * (jac * sum);
                    for (size_t k=0; k < DIMSPACE; k++)
-                     values(i+bmir.Size()*k) = physvec(k);
+                     values(k,i) = physvec(k);
                  }
              });
         }
@@ -681,7 +681,7 @@ namespace ngfem
       }
     }
 
-    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareVector<SIMD<double>> values,
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
 			      BareSliceVector<> coefs) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -704,7 +704,7 @@ namespace ngfem
 
                    Vec<DIMSPACE,SIMD<double>> physvec{};
                    for (size_t k = 0; k < DIMSPACE; k++)
-                     physvec(k) = values(i+bmir.Size()*k);
+                     physvec(k) = values(k,i);
                    vec = 1/d2 * Trans(jac) * physvec;
                  }
              });
