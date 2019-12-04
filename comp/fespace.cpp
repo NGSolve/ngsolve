@@ -1019,6 +1019,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
         }
   }
   */
+
+
+  FlatArray<VorB> FESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL, BND, BBND, BBBND };
+    return FlatArray<VorB> (ma->GetDimension()-int(vb)+1, &nodes[0]); 
+  }
+
   
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {

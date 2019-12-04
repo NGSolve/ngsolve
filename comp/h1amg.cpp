@@ -609,6 +609,6 @@ namespace ngcomp
 
   };
 
-
+  template class H1AMG_Matrix<double>;
   static RegisterPreconditioner<H1AMG_Preconditioner<double> > initpre ("h1amg");
 }

@@ -18,6 +18,7 @@ namespace ngfem
 
   class ProxyFunction : public CoefficientFunction
 {
+protected:
   shared_ptr<ngcomp::FESpace> fes;
   bool testfunction; // true .. test, false .. trial
   // bool is_complex;
@@ -43,6 +44,8 @@ public:
                                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
                                 shared_ptr<DifferentialOperator> attrace_evaluator,
                                 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
+
+  ProxyFunction (const ProxyFunction &) = default;
 
   bool IsTrialFunction () const { return !testfunction; }
   bool IsTestFunction () const { return testfunction; }
@@ -245,6 +248,19 @@ public:
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
 };
 
+
+  class SumOfIntegrals;
+  class DualProxyFunction : public ProxyFunction
+  {
+  public:
+    DualProxyFunction(const ProxyFunction & proxy)
+      : ProxyFunction(proxy) { ; }
+
+    shared_ptr<SumOfIntegrals> operator() (shared_ptr<CoefficientFunction> u) const;
+  };
+
+
+  
 class ProxyUserData
 {
   FlatArray<const ProxyFunction*> remember_first;

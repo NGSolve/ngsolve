@@ -188,7 +188,7 @@ namespace ngfem
         TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
         SIMD<double> sum = 0;
         // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
-        double * pcoefs = &coefs(0);
+        double * pcoefs = coefs.Data();
         size_t dist = coefs.Dist();
         T_CalcShape (pt, // TIP<DIM,SIMD<double>> (hir[i]), 
                      SBLambda ( [&](int j, SIMD<double> shape)
@@ -816,6 +816,7 @@ namespace ngfem
                 BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
+    if constexpr (DIM == 0) return;
     Iterate<4-DIM>
       ([&](auto CODIM)
        {
@@ -826,7 +827,8 @@ namespace ngfem
              for (size_t i = 0; i < mir.Size(); i++)
                {
                  // Directional derivative
-                 Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
+                 [[maybe_unused]]
+                   Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
 
                  const auto &ip = mir[i].IP();
                  TIP<DIM,AutoDiffRec<1,SIMD<double>>>adp;

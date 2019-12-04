@@ -218,9 +218,9 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const { return checkvb == vb; }
     virtual shared_ptr<DifferentialOperator> GetTrace() const
     {
-      throw Exception("GetTrace not overloaded for DifferentialOperator"+string(typeid(*this).name()));
+      return nullptr;
+      // throw Exception("GetTrace not overloaded for DifferentialOperator"+string(typeid(*this).name()));
     }
-    
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     int DiffOrder() const { return difforder; } 
 

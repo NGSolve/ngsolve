@@ -3,10 +3,15 @@ namespace ngfem
 
   INLINE pmult_matvec GetMatVecFunction (size_t wa)
   {
+    /*
     if (wa <= 24)
       return dispatch_matvec[wa];
     else
       return &MultMatVec_intern;
+    */
+    if (wa >= std::size(dispatch_matvec))
+      wa = std::size(dispatch_matvec)-1;
+    return dispatch_matvec[wa];
   }
 
   INLINE pmult_mattransvec GetMatTransVecFunction (size_t wa)
@@ -1123,7 +1128,7 @@ namespace ngfem
       SetVertexNumbers (avnums);
     }
     virtual ~L2HighOrderFETP();
-    
+    using TBASE::Evaluate;
     virtual void Evaluate (const SIMD_IntegrationRule & ir,
                            BareSliceVector<> bcoefs,
                            BareVector<SIMD<double>> values) const override;

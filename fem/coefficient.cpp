@@ -4965,10 +4965,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
               }
             s << " ) {" << endl;
             s << code.header << endl;
-            s << "auto points = mir.GetPoints();" << endl;
-            s << "auto domain_index = mir.GetTransformation().GetElementIndex();" << endl;
+            s << "[[maybe_unused]] auto points = mir.GetPoints();" << endl;
+            s << "[[maybe_unused]] auto domain_index = mir.GetTransformation().GetElementIndex();" << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
-            s << "auto & ip = mir[i];" << endl;
+            s << "[[maybe_unused]] auto & ip = mir[i];" << endl;
             s << code.body << endl;
             s << "}\n}" << endl << endl;
 

@@ -96,7 +96,7 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                            return block_proxy;
                                          }));
         }
-      return l;
+      return std::move(l);
     }
 
   auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
@@ -122,6 +122,21 @@ py::object MakeProxyFunction (shared_ptr<FESpace> fes,
                         [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
 }
 
+
+  shared_ptr<SumOfIntegrals> DualProxyFunction :: operator() (shared_ptr<CoefficientFunction> u) const
+  {
+    VorB vb = evaluator -> VB();
+    Array<VorB> node_types { fes->GetDualShapeNodes(vb) };
+    
+    auto sum = make_shared<SumOfIntegrals>();
+    for (auto nt : node_types)
+      {
+        DifferentialSymbol dx(vb, nt, false, 0);
+        sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+      }
+    return sum;
+  }
+  
 
 
 class GlobalDummyVariables 
@@ -359,7 +374,7 @@ when building the system matrices.
     .def_property_readonly("derivname",
                   [](const spProxy self) -> string
                    {
-                     if (!self->Deriv()) return "";
+                     if (!self->Deriv() || !self->DerivEvaluator()) return "";
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
@@ -368,6 +383,9 @@ when building the system matrices.
             auto op = self->GetAdditionalProxy(name);
             if (!op)
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+
+            if (name == "dual")
+              op = make_shared<DualProxyFunction> (*op);
             return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
     .def("Operators",
@@ -415,6 +433,13 @@ file : string
 )raw_string")
         );
 
+  py::class_<DualProxyFunction, shared_ptr<DualProxyFunction>, ProxyFunction> (m, "DualProxyFunction")
+    .def("__call__", [](shared_ptr<DualProxyFunction> self, shared_ptr<CoefficientFunction> u)
+         {
+           return (*self)(u);
+         });
+  ;
+    
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -643,6 +668,8 @@ kwargs : kwargs
     .def("__timing__", [] (shared_ptr<FESpace> self) { return py::cast(self->Timing()); })
     .def_property_readonly("lospace", [](shared_ptr<FESpace> self) -> shared_ptr<FESpace>
 			   { return self->LowOrderFESpacePtr(); })
+    .def_property_readonly("loembedding", [](shared_ptr<FESpace> self) -> shared_ptr<BaseMatrix>
+			   { return self->LowOrderEmbedding(); })
     .def_property_readonly("mesh",
                            [](shared_ptr<FESpace> self) -> shared_ptr<MeshAccess>
                            { return self->GetMeshAccess(); }, "mesh on which the FESpace is created")
@@ -1995,6 +2022,9 @@ integrator : ngsolve.fem.BFI
 
     .def_property_readonly("integrators", [](BF & self)
                            { return MakePyTuple (self.Integrators()); }, "integrators of the bilinear form")
+
+    .def_property_readonly("loform", [](shared_ptr<BilinearForm> self) 
+			   { return self->GetLowOrderBilinearForm(); })
     
     .def("Assemble", [](BF & self, bool reallocate)
          {
@@ -2649,10 +2679,15 @@ integrator : ngsolve.fem.LFI
               py::object result;
               if (region_wise) {
 #ifdef PARALLEL
-                Vector<> rs2(ma->GetNRegions(vb));
-                if (ma->GetCommunicator().Size() > 1)                
-                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
-                region_sum = rs2;
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());                  
+                  /*
+                  {
+                    Vector<> rs2(ma->GetNRegions(vb));
+                    MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                    region_sum = rs2;
+                  }
+                  */
 #endif
                 // result = py::list(py::cast(region_sum));  // crashes ?!?!
                 result = py::cast(region_sum);
@@ -2665,11 +2700,15 @@ integrator : ngsolve.fem.LFI
               }
               else {
 #ifdef PARALLEL
-                Vector<> gsum(dim);
-                if (ma->GetCommunicator().Size() > 1) {
-                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
-		  sum = gsum;
-		}
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &sum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                /*                  
+                  {
+                    Vector<> gsum(dim);
+                    MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                    sum = gsum;
+                  }
+                */
 #endif
                 result = py::cast(sum);
               }
@@ -2739,10 +2778,16 @@ integrator : ngsolve.fem.LFI
               py::object result;
               if (region_wise) {
 #ifdef PARALLEL
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb),
+                                MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                
+                /*
                 Vector<Complex> rs2(ma->GetNRegions(vb));
                 if (ma->GetCommunicator().Size() > 1)
                   MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
+                */
 #endif
                 // result = py::list(py::cast(region_sum));
                 result = py::cast(region_sum);
@@ -2755,11 +2800,15 @@ integrator : ngsolve.fem.LFI
               }
               else {
 #ifdef PARALLEL
+                if (ma->GetCommunicator().Size() > 1)
+                  MPI_Allreduce(MPI_IN_PLACE, &sum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                /*
                 Vector<Complex> gsum(dim);
                 if (ma->GetCommunicator().Size() > 1) {
                   MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
 		  sum = gsum;
 		}
+                */
 #endif
                 result = py::cast(sum);
               }

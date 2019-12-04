@@ -357,7 +357,8 @@ namespace ngla
 	    for (int j = 0; j < ncon; j++)
 	      rowindex2[firstinrow_ri[i]+j] = order[vertices[ii].connected[j]];
 
-	    QuickSort (FlatArray<int> (ncon, &rowindex2[firstinrow_ri[i]]));
+	    // QuickSort (FlatArray<int> (ncon, &rowindex2[firstinrow_ri[i]]));
+            QuickSort (rowindex2.Part(firstinrow_ri[i], ncon));   // fixes pathologic case with ncon = 0
 
 	    cnt_master += ncon;
 	    cnt += ncon;
