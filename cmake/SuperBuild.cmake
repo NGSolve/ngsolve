@@ -56,14 +56,6 @@ if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS"${CMAKE_EXE_LINKER_FLAGS_NEW}/IGNORE:4217,4049" CACHE STRING "compile flags" FORCE)
 
   endif(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-
-  if(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
-    # 32 bit
-    set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack32.zip" CACHE STRING INTERNAL)
-  else(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
-    # 64 bit
-    set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack64.zip" CACHE STRING INTERNAL)
-  endif(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
 endif(WIN32)
 
 #######################################################################
@@ -157,7 +149,8 @@ if (USE_LAPACK)
       if(WIN32)
         ExternalProject_Add(win_download_lapack
           PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-          URL ${LAPACK_DOWNLOAD_URL_WIN}
+          URL "https://github.com/NGSolve/ngsolve_dependencies/releases/download/v1.0.0/lapack64.zip"
+          URL_MD% 635432b6b41f23177b9116d4323c978c
           UPDATE_COMMAND "" # Disable update
           BUILD_IN_SOURCE 1
           CONFIGURE_COMMAND ""
