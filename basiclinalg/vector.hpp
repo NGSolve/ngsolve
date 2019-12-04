@@ -215,7 +215,7 @@ namespace ngbla
     INLINE size_t Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
     
     INLINE T_Range<size_t> Range () const
     { return T_Range<size_t> (0, size); }
@@ -417,7 +417,7 @@ namespace ngbla
     INLINE size_t Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
 
 
     INLINE SliceVector<T> Comp (size_t comp) const
@@ -770,7 +770,7 @@ namespace ngbla
 
     INLINE size_t Size () const { return s; }
     INLINE size_t Height () const { return s; }
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
   };
 
 
@@ -936,11 +936,11 @@ namespace ngbla
     }
 
     /// vector size
-    INLINE size_t Size () const { return S; }
+    INLINE constexpr size_t Size () const { return S; }
     /// corresponding matrix height
-    INLINE size_t Height () const { return S; }
+    INLINE constexpr size_t Height () const { return S; }
     /// corresponding matrix with
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
 
     INLINE /* const */ FlatVector<const T> Range(size_t first, size_t next) const
     { return FlatVector<const T> (next-first, data+first); }
@@ -960,9 +960,9 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
-    INLINE int Size() const { return 0; }
-    INLINE int Height() const { return 0; }
-    INLINE int Width() const { return 1; }
+    INLINE constexpr size_t Size() const { return 0; }
+    INLINE constexpr size_t Height() const { return 0; }
+    INLINE constexpr size_t Width() const { return 1; }
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v) { return *this;}
     INLINE Vec & operator= (const T & /* scal */) { return *this; } 
@@ -1150,11 +1150,11 @@ namespace ngbla
     { return FlatVector<T> (next-first, data+first); }
 
     /// vector size
-    INLINE int Size () const { return S; }
+    INLINE constexpr int Size () const { return S; }
     /// corresponding matrix height
-    INLINE int Height () const { return S; }
+    INLINE constexpr int Height () const { return S; }
     /// corresponding matrix with
-    INLINE int Width () const { return 1; }
+    INLINE constexpr int Width () const { return 1; }
   };
 
   /// output vector.
@@ -1330,7 +1330,7 @@ namespace ngbla
     /// vector is a matrix of height size
     INLINE size_t Height () const { return s; }
     /// vector is a matrix of width 1
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
 
     INLINE T * Data () const { return data; }
 
@@ -1656,7 +1656,7 @@ namespace ngbla
     /// vector is a matrix of height size
     size_t Height () const { return s; }
     /// vector is a matrix of width 1
-    size_t Width () const { return 1; }
+    size_t constexpr Width () const { return 1; }
 
     const FixSliceVector Range (size_t first, size_t next) const
     {

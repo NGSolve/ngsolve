@@ -96,9 +96,10 @@ namespace ngfem
   /// compute shape
   template <int D>
   void HDivFiniteElement<D> ::
-  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                   SliceMatrix<> shape) const
+  CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const
   {
+    auto mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
     CalcShape (mip.IP(), shape);
     Mat<DIM> trans = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
     for (int i = 0; i < ndof; i++)
@@ -107,14 +108,15 @@ namespace ngfem
         shape.Row(i) = trans * hs;
       }
   }
+  
 
   template <int D>
   void HDivFiniteElement<D> ::
-  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                   SliceMatrix<> shape) const
+  CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const
   {
+    auto mir = static_cast<const MappedIntegrationRule<D,D>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)
-      CalcMappedShape (mir[i], shape.Cols(i*D, (i+1)*D));
+      CalcMappedShape (mir[i], shapes.Cols(i*D, (i+1)*D));
   }
 
   template <int D>
