@@ -347,7 +347,7 @@ namespace ngstd
 #ifdef __AVX__
   
   template<>
-  class alignas(32) SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
+  class /* alignas(32) */ SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
   {
     __m256d data;
     
@@ -396,7 +396,7 @@ namespace ngstd
 #else // AVX
 
   template<>
-  class alignas(32) SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
+  class /* alignas(32) */ SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
   {
     SIMD<double,2> data[2];
     
@@ -468,7 +468,7 @@ namespace ngstd
   
 #ifdef __AVX512F__
   template<>
-  class alignas(64) SIMD<double,8> : public AlignedAlloc<SIMD<double,8>>
+  class /* alignas(64) */ SIMD<double,8> : public AlignedAlloc<SIMD<double,8>>
   {
     __m512d data;
   public:
@@ -1044,7 +1044,7 @@ namespace ngstd
     return _mm512_fmadd_pd (_mm512_set1_pd(a), b.Data(), c.Data());    
   }
 #endif
-#ifdef __AVX2__
+#ifdef __FMA__
   INLINE SIMD<double,4> FMA (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
   {
     return _mm256_fmadd_pd (a.Data(), b.Data(), c.Data());
@@ -1062,7 +1062,7 @@ namespace ngstd
     sum = FMA(a,b,sum);
   }
 
-#if defined(__AVX2__) && not defined(__AVX512F__)
+#if defined(__FMA__) && not defined(__AVX512F__)
   // make sure to use the update-version of fma
   // important in matrix kernels using 12 sum-registers, 3 a-values and updated b-value
   // avx512 has enough registers, and gcc seems to use only the first 16 z-regs

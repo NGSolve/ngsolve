@@ -164,7 +164,7 @@ endif(NETGEN_USE_GUI)
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS DDEBUG Wall)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS DEBUG Wall)
 endif()
 
 #######################################################################
@@ -290,7 +290,9 @@ install( TARGETS netgen_python ${ngs_install_dir} )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
-    target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
+    if(NOT NETGEN_BUILD_FOR_CONDA)
+        target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
+    endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
     "${CMAKE_CURRENT_BINARY_DIR}/python/config.py"
@@ -365,8 +367,12 @@ endif()
 
 # compile flags and preprocessor definitions
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
+set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS})
+if(${NETGEN_CHECK_RANGE} OR ${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR ${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+    set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS} "NETGEN_ENABLE_CHECK_RANGE")
+endif()
 
-foreach( d ${NGSOLVE_COMPILE_DEFINITIONS} )
+foreach( d ${ngscxx_compile_definitions} )
     if(WIN32)
       if(NOT ${d} STREQUAL "NGS_EXPORTS")
         set( ngscxx_define_flags "${ngscxx_define_flags} /D${d}" )
@@ -419,7 +425,7 @@ if(APPLE)
     if(CMAKE_OSX_SYSROOT)
         set( ngscxx_includes "-isysroot ${CMAKE_OSX_SYSROOT} ${ngscxx_includes}" )
     endif()
-    set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
+    #   set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
     set(ngscxx_includes "${ngscxx_includes} -I$Netgen_BUNDLE/Contents/Resources/include" )  
     set(ngsld_flags "${ngsld_flags} -L$Netgen_BUNDLE/Contents/MacOS  -undefined dynamic_lookup" )
     set(ngscxx_header "\

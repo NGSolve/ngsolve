@@ -510,7 +510,7 @@ namespace ngfem
     size_t hdim = dim;   // how many copies
     size_t dim_diffop = diffop->Dim();
     size_t hdim2 = hdim*hdim;
-    size_t dim_dim_do = hdim*dim_diffop;
+    // size_t dim_dim_do = hdim*dim_diffop;
     size_t dim2_dim_do = hdim2*dim_diffop;
 
     STACK_ARRAY(SIMD<double>, hval, dim_diffop);

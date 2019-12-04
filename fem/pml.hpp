@@ -84,7 +84,7 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<double> elmat,
-			   LocalHeap & locheap) const
+			   LocalHeap & locheap) const override
     {
       throw Exception ("PML cannot generate real matrices");
     }
@@ -94,7 +94,7 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<Complex> elmat,
-			   LocalHeap & locheap) const
+			   LocalHeap & locheap) const override
     {
       try
 	{
@@ -155,10 +155,10 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & bmip,
-              FlatVector<Complex> elx, 
+              BareSliceVector<Complex> elx, 
               FlatVector<Complex> flux,
               bool applyd,
-              LocalHeap & lh) const
+              LocalHeap & lh) const override
     {
       HeapReset hr(lh);
       MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
@@ -180,7 +180,7 @@ namespace ngfem
 			const FlatVector<double> elx, 
 			FlatVector<double> ely,
 			void * precomputed,
-			LocalHeap & locheap) const
+			LocalHeap & locheap) const override
     { ; }
 
 
@@ -190,7 +190,7 @@ namespace ngfem
 			const FlatVector<Complex> elx, 
 			FlatVector<Complex> ely,
 			void * precomputed,
-			LocalHeap & locheap) const
+			LocalHeap & locheap) const override
     {
       const FEL & fel = static_cast<const FEL&> (bfel);
       int ndof = fel.GetNDof ();
@@ -257,9 +257,9 @@ namespace ngfem
 
 
     ///
-    virtual int GetDimension () const { return DIM; }
+    virtual int GetDimension () const override { return DIM; }
     ///
-    virtual string Name () const { return "PML-BDB integrator"; }
+    virtual string Name () const override { return "PML-BDB integrator"; }
   };
 
 }

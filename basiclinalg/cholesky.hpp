@@ -249,7 +249,7 @@ namespace ngbla
             int nr = (c.Height()+BH-1) / BH;
             int nc = (c.Width()+BW-1) / BW;
             task_manager -> CreateJob
-                           ( [a,b,c,diag,nr,nc,BH,BW,symmetric] (const TaskInfo & ti)
+                           ( [a,b,c,diag,nr,BH,BW,symmetric] (const TaskInfo & ti)
                            {
                              size_t br = ti.task_nr % nr;
                              size_t bc = ti.task_nr / nr;
@@ -468,9 +468,166 @@ namespace ngbla
 
 
 
-  
 
   
+  // Solve for B1:   B1 D1 L1^t = B
+  template <typename T, ORDERING ORD>
+  void CalcLDLNew_SolveL (SliceMatrix<T,ORD> L, SliceMatrix<T,ORD> B)
+  {
+    size_t n = L.Height();
+    if (n <= 1) return;
+
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto L1 = L.Rows(r1).Cols(r1);
+    auto L21 = L.Rows(r2).Cols(r1);
+    auto L2 = L.Rows(r2).Cols(r2);
+    auto B1 = B.Cols(r1);
+    auto B2 = B.Cols(r2);
+    
+    CalcLDLNew_SolveL(L1, B1);
+    // MySubADBt (B1, L1.Diag(), L21, B2, false);
+    B2 -= B1 * Trans(L21);
+    CalcLDLNew_SolveL(L2, B2);
+  }
+
+  
+  // Calc A = L D^{-1} L^t
+  template <typename T, ORDERING ORD>
+  void CalcLDLNew (SliceMatrix<T,ORD> mat)
+  {
+    size_t n = mat.Height();
+    if (n == 0) return;
+    if (n == 1)
+      {
+        //  mat(0,0) = Inv(mat(0,0));
+        CalcInverse (mat(0,0));
+        return;
+      }      
+    
+    size_t n1 = n/2;
+    auto L1 = mat.Rows(0,n1).Cols(0,n1);
+    auto L2 = mat.Rows(n1,n).Cols(n1,n);
+    auto B = mat.Rows(n1,n).Cols(0,n1);
+    CalcLDLNew (L1);
+    CalcLDLNew_SolveL (L1,B);
+    auto diag = L1.Diag();
+    MySubADBt (B, diag, B, L2, true);
+    /*
+    for (int i = 0; i < B.Height(); i++)
+      for (int j = 0; j < B.Height(); j++)
+        for (int k = 0; k < B.Width(); k++)
+          L2(i,j) -= diag(k)*B(i,k)*B(j,k);
+    */
+    CalcLDLNew (L2);
+    ScaleCols(B, diag);
+    /*
+    for (int i = 0; i < B.Width(); i++)
+      B.Col(i) *= diag(i);
+    */
+  }
+
+
+
+  /*
+  template <typename T, ORDERING ORD>
+  void SolveLDLNew (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
+  {
+    size_t n = mat.Height();
+    
+    for (size_t i = 0; i < n; i++)
+      {
+        T tmp = sol(i);
+        for (size_t j = i+1; j < n; j++)
+          sol(j) -= mat(j,i) * tmp;
+      }
+    
+    for (size_t i = 0; i < n; i++)
+      sol(i) *= mat(i,i);
+    
+    for (size_t i = n; i--> 0; )
+      {
+        T hsum{0};
+        for (size_t j = i+1; j < n; j++)
+          hsum += mat(j,i)*sol(j);
+        sol(i) -= hsum;
+      }
+  }
+  */
+
+  template <typename T, ORDERING ORD>
+  void SolveL (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
+  {
+    size_t n = mat.Height();
+    if (n <= 1) return;
+
+    if (n < 32)
+      {
+        for (size_t i = 0; i < n; i++)
+          {
+            T tmp = sol(i);
+            for (size_t j = i+1; j < n; j++)
+              sol(j) -= mat(j,i) * tmp;
+          }
+        return;
+      }
+
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto L1 = mat.Rows(r1).Cols(r1);
+    auto L21 = mat.Rows(r2).Cols(r1);
+    auto L2 = mat.Rows(r2).Cols(r2);
+    auto sol1 = sol.Range(r1);
+    auto sol2 = sol.Range(r2);
+
+    SolveL (L1, sol1);
+    sol2 -= L21 * sol1;
+    SolveL (L2, sol2);
+  }
+
+  template <typename T, ORDERING ORD>
+  void SolveLT (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
+  {
+    size_t n = mat.Height();
+
+    if (n <= 1) return;
+
+    if (n < 32)
+      {
+        for (size_t i = n; i--> 0; )
+          {
+            T hsum{0};
+            for (size_t j = i+1; j < n; j++)
+              hsum += mat(j,i)*sol(j);
+            sol(i) -= hsum;
+          }
+        return;
+      }
+
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto L1 = mat.Rows(r1).Cols(r1);
+    auto L21 = mat.Rows(r2).Cols(r1);
+    auto L2 = mat.Rows(r2).Cols(r2);
+    auto sol1 = sol.Range(r1);
+    auto sol2 = sol.Range(r2);
+
+    SolveLT (L2, sol2);
+    sol1 -= Trans(L21) * sol2;
+    SolveLT (L1, sol1);
+  }
+
+  template <typename T, ORDERING ORD>
+  void SolveLDLNew (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
+  {
+    size_t n = mat.Height();
+    
+    SolveL (mat, sol);
+    
+    auto diag = mat.Diag();
+    for (size_t i = 0; i < n; i++)
+      sol(i) *= diag(i);
+    
+    SolveLT (mat, sol);    
+  }
+
 }
 
 #endif

@@ -173,6 +173,8 @@ namespace ngbla
     /// 
     INLINE auto Dist () const { return w; }
 
+    INLINE T * Data () const { return data; }
+    
     INLINE const FlatVector<T> Row (TIND i) const
     {
       return FlatVector<T> (w, &data[i*w]);
@@ -213,14 +215,15 @@ namespace ngbla
 
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( (Height()-first)/adist, w));
+      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( Height()/adist, w));
     }
-    
+
+    /*
     INLINE operator SliceMatrix<T> () const
     {
       return SliceMatrix<T> (h, w, w, data);
     }
-
+    */
     auto AsVector() const
     {
       return FlatVector<T> (h*w, data);
@@ -353,6 +356,8 @@ namespace ngbla
 
     INLINE size_t Dist () const { return h; }
 
+    INLINE T * Data () const { return data; }
+    
     INLINE const FlatVector<T> Col (size_t i) const
     {
       return FlatVector<T> (h, &data[i*size_t(h)]);
@@ -363,12 +368,10 @@ namespace ngbla
       return SliceVector<T> (w, h, &data[i]);
     }
 
-    /*
     const SliceVector<T> Diag () const
     {
       return SliceVector<T> (h, w+1, &data[0]);
     }
-    */
 
     INLINE const FlatMatrix Cols (size_t first, size_t next) const
     {
@@ -417,10 +420,12 @@ namespace ngbla
     }
     */
 
+    /*
     INLINE operator SliceMatrix<T,ColMajor> () const
     {
       return SliceMatrix<T,ColMajor> (h, w, h, data);
     }
+    */
   };
 
 
@@ -458,7 +463,7 @@ namespace ngbla
 
     /// allocate and copy matrix  
     INLINE Matrix (const Matrix & m2) 
-      : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
+      : FlatMatrix<T,ORD> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       FlatMatrix<T,ORD>::operator= (m2);
     }
@@ -471,7 +476,7 @@ namespace ngbla
     /// allocate and compute 
     template<typename TB>
     INLINE Matrix (const Expr<TB> & m2) 
-      : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
+      : FlatMatrix<T,ORD> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
     }
@@ -485,7 +490,7 @@ namespace ngbla
         w = max2(w, int(row.size()));
 
       SetSize (h, w);
-      (*this) = 0.0;
+      (*this) = T(0.0);
 
       int r = 0;
       for (auto row : llist)
@@ -687,9 +692,11 @@ namespace ngbla
     /// type of row vector
     typedef typename Mat<H,W,T>::TV_ROW TV_ROW;
     /// matrix height
-    enum { HEIGHT = H };
+    // enum { HEIGHT = H };
+    static constexpr int HEIGHT = H;
     /// matrix with
-    enum { WIDTH  = W  };
+    // enum { WIDTH  = W  };
+    static constexpr int WIDTH = W;
     ///
     enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
@@ -1068,7 +1075,7 @@ namespace ngbla
     /// the data
     T * __restrict data;
     /// the width
-    int w;
+    size_t w;
   public:
     ///
     typedef T TELEM;
@@ -1079,11 +1086,11 @@ namespace ngbla
     FlatMatrixFixHeight () : data(0), w(0) { ; }
   
     /// set height and mem
-    FlatMatrixFixHeight (int aw, T * adata) 
+    FlatMatrixFixHeight (size_t aw, T * adata) 
       : data(adata), w(aw) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixHeight (int aw, LocalHeap & lh) 
+    FlatMatrixFixHeight (size_t aw, LocalHeap & lh) 
       : data(lh.Alloc<T>(aw*SLICE)), w(aw) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -1338,11 +1345,11 @@ namespace ngbla
     INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
-    /*
-    SliceMatrix (const FlatMatrix<T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
+    SliceMatrix (FlatMatrix<T,ORD> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
+    /*
     template<int W>
     SliceMatrix (const FlatMatrixFixWidth<W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
@@ -1456,6 +1463,8 @@ namespace ngbla
     /// 
     INLINE size_t Dist () const throw() { return dist; }
 
+    INLINE T* Data() const noexcept { return data; }
+
     INLINE const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
@@ -1526,6 +1535,11 @@ namespace ngbla
     /// set height, width, and mem
     SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
+
+    SliceMatrix (FlatMatrix<T,ColMajor> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
+    { ; }
+
     
     /// assign contents
     template<typename TB>
@@ -1661,18 +1675,26 @@ namespace ngbla
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*dist+j]; 
     }
     /// access operator
     INLINE TELEM & operator() (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Width()*Height());
       return data[i]; 
     }
 
     INLINE TELEM * Addr(size_t i, size_t j) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data+i*dist+j;
     }
+
+    INLINE TELEM* Data() const { return data; }
+
     using DummySize::Height;
     using DummySize::Width;
     /*
@@ -1688,27 +1710,27 @@ namespace ngbla
     void IncPtr (size_t inc) { data += inc; } 
     SliceMatrix<T> AddSize (size_t h, size_t w) const
     {
-#ifdef DEBUG
-      if(Height() != h  || Width() != w)
-        throw Exception(string("BareSliceMatrix::AddSize dimensions do not fit, mysize = ")
-                        +ToString(Height()) + "x" + ToString(Width()) +
-                        " new size = " + ToString(h) + " x " + ToString(w));
-#endif
+      NETGEN_CHECK_RANGE(h, Height(), Height()+1);
+      NETGEN_CHECK_RANGE(w, Width(), Width()+1);
       return SliceMatrix<T> (h, w, dist, data);
     }
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, first==next ? Height()+1 : Height()); // always allow Rows(0,0)
+      NETGEN_CHECK_RANGE(next, 0, Height()+1);
       return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
     INLINE const BareSliceVector<T> Col (size_t col) const
     {
+      NETGEN_CHECK_RANGE(col, 0, Width());
       return SliceVector<T> (Height(), dist, data+col);
     }
     
     INLINE const BareVector<T> Row (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
       return FlatVector<T> (Width(), data+i*dist);
     }
 
@@ -1725,6 +1747,8 @@ namespace ngbla
     */
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, first==next ? Width()+1 : Width()); // always allow Cols(0,0)
+      NETGEN_CHECK_RANGE(next, 0, Width()+1);
       return BareSliceMatrix (dist, data+first, DummySize(Height(), next-first));
     }
 
@@ -1745,7 +1769,8 @@ namespace ngbla
     */
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
+      NETGEN_CHECK_RANGE(first, 0, Height());
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
   };
@@ -1789,11 +1814,14 @@ namespace ngbla
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[j*dist+i]; 
     }
     /// access operator
     INLINE TELEM & operator() (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Width()*Height());
       return data[i]; 
     }
 
@@ -1805,30 +1833,34 @@ namespace ngbla
 
     SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
     {
-#ifdef DEBUG
-      if(Height() != h  || Width() != w)
-        throw Exception("BareSliceMatrix::AddSize dimensions do not fit");
-#endif
+      NETGEN_CHECK_RANGE(h, Height(), Height()+1);
+      NETGEN_CHECK_RANGE(w, Width(), Width()+1);
       return SliceMatrix<T,ColMajor> (h, w, dist, data);
     }
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
+      NETGEN_CHECK_RANGE(next, first, Height()+1);
       return BareSliceMatrix (dist, data+first, DummySize(next-first, Width()));
     }
 
     INLINE const BareVector<T> Col (size_t i)
     {
+      NETGEN_CHECK_RANGE(i, 0, Width());
       return FlatVector<T> (Height(), data+i*dist);
     }
     
     INLINE const BareSliceVector<T> Row (size_t i) const
     {
+      NETGEN_CHECK_RANGE(i, 0, Height());
       return SliceVector<T> (Width(), dist, data+i);
     }
 
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
+      NETGEN_CHECK_RANGE(next, first, Width()+1);
       return BareSliceMatrix (dist, data+dist*first, DummySize(Height(), next-first));
     }
 

@@ -848,7 +848,7 @@ val : can be one of the following:
                 py::tuple res(self.Dimension());
                 for (auto i : Range(vec))
                   res[i] = py::cast(vec[i]);
-                return res;
+                return std::move(res);
 	      }
 	    else
 	      {
@@ -858,7 +858,7 @@ val : can be one of the following:
                 py::tuple res(self.Dimension());
                 for (auto i : Range(vec))
                   res[i] = py::cast(vec[i]);
-                return res;
+                return std::move(res);
 	      }
 	  },
          py::arg("mip"),
@@ -974,12 +974,45 @@ cf : ngsolve.CoefficientFunction
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
 
-    .def ("Derive", &CoefficientFunction::Diff,
+    .def ("Derive",
+          // &CoefficientFunction::Diff,
+          [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
+          {
+            cout << "warning: Derive is deprecated, use Diff instead" << endl;
+            return coef->Diff(var.get(), dir);
+          },
           "depricated: use 'Diff' instead", 
           py::arg("variable"), py::arg("direction")=1.0)
-    .def ("Diff", &CoefficientFunction::Diff,
+    .def ("Diff", // &CoefficientFunction::Diff,
+          [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
+          {
+            if (dir)
+              return coef->Diff(var.get(), dir);
+            if (var->Dimension() == 1)
+              return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));
+            else
+              {
+                if (coef->Dimension() != 1)
+                  throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
+                int dim = var->Dimension();
+                Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
+                auto zero = make_shared<ConstantCoefficientFunction>(0);
+                auto one =  make_shared<ConstantCoefficientFunction>(1);
+                for (int i = 0; i < dim; i++)
+                  {
+                    ei = zero;
+                    ei[i] = one;
+                    auto vec = MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(ei));
+                    vec->SetDimensions(var->Dimensions());
+                    ddi[i] = coef->Diff(var.get(), vec);
+                  }
+                auto dvec = MakeVectorialCoefficientFunction (move(ddi));
+                dvec->SetDimensions(var->Dimensions());
+                return dvec;
+              }
+          },
           "Compute directional derivative with respect to variable",
-          py::arg("variable"), py::arg("direction")=1.0)
+          py::arg("variable"), py::arg("direction")=nullptr)
 
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
           {
@@ -1450,28 +1483,18 @@ z : double
     ;
 
 
-
-  
-
-  py::implicitly_convertible 
-    <BaseScalarFiniteElement, 
-    FiniteElement >(); 
-
+  py::implicitly_convertible <BaseScalarFiniteElement, FiniteElement >(); 
 
   m.def("H1FE", [](ELEMENT_TYPE et, int order)
-           {
-             BaseScalarFiniteElement * fe = nullptr;
-             switch (et)
-               {
-               case ET_SEGM: fe = new H1HighOrderFE<ET_SEGM>(order); break;
-               case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
-               case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
-               case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
-               default: cerr << "cannot make fe " << et << endl;
-               }
-             return shared_ptr<BaseScalarFiniteElement>(fe);
-           }, py::arg("et"), py::arg("order"),
-          docu_string(R"raw_string(Creates an H1 finite element of given geometric shape and polynomial order.
+        {
+          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
+                    {
+                      constexpr ELEMENT_TYPE ET = et2.ElementType();
+                      return make_shared<H1HighOrderFE<ET>> (order);
+                    });
+        },
+        py::arg("et"), py::arg("order"),
+        docu_string(R"raw_string(Creates an H1 finite element of given geometric shape and polynomial order.
 
 Parameters:
 
@@ -1485,19 +1508,15 @@ order : int
           );
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
-           {
-             BaseScalarFiniteElement * fe = nullptr;
-             switch (et)
-               {
-               case ET_SEGM: fe = new L2HighOrderFE<ET_SEGM>(order); break;
-               case ET_TRIG: fe = new L2HighOrderFE<ET_TRIG>(order); break;
-               case ET_QUAD: fe = new L2HighOrderFE<ET_QUAD>(order); break;
-               case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
-               default: cerr << "cannot make fe " << et << endl;
-               }
-             return shared_ptr<BaseScalarFiniteElement>(fe);
-           }, py::arg("et"), py::arg("order"),
-          docu_string(R"raw_string(Creates an L2 finite element of given geometric shape and polynomial order.
+        {
+          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
+                    {
+                      constexpr ELEMENT_TYPE ET = et2.ElementType();                      
+                      return make_shared<L2HighOrderFE<ET>> (order);
+                    });
+        },
+        py::arg("et"), py::arg("order"),
+        docu_string(R"raw_string(Creates an L2 finite element of given geometric shape and polynomial order.
 
 Parameters:
 

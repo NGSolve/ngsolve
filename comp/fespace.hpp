@@ -291,7 +291,8 @@ ANY                  1 1 1 1 | 15
     /// number of dofs on the level
     virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
 
-       
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const;
+    
     class Element : public Ngs_Element
     {
       const FESpace & fes;
@@ -1156,7 +1157,9 @@ ANY                  1 1 1 1 | 15
     // virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
 
     IntRange GetRange (int spacenr) const
-    { 
+    {
+      if (spacenr+1 >= cummulative_nd.Size())
+        throw Exception("spacenr >= cummulative_nd.Size() in CompoundFESpace!");
       return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
     }
 

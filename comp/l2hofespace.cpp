@@ -1251,7 +1251,7 @@ global system.
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
-	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
+	      flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
       }
     else
       {
@@ -1267,7 +1267,7 @@ global system.
     if (dimension > 1)
     {
       integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-      for (auto vb : std::array<VorB,4>{ VOL,BND, BBND, BBBND }) // array needed for gcc 8.1 bug workaround
+      for (auto vb : { VOL,BND, BBND, BBBND })
       {
         if (evaluator[vb])
           evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
@@ -2646,7 +2646,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
 
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2654,7 +2654,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
              
-             Mat<DIM> trans;
+             Mat<DIM> trans(0.0);
              if (piola)
                trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
              else if (covariant)
@@ -2818,7 +2818,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2908,7 +2908,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -2996,7 +2996,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)
@@ -3082,7 +3082,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
              
-             Mat<DIM,DIM> rhoi;
+             Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
              else if (rho->Dimension() == 1)

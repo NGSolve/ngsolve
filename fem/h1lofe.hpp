@@ -47,7 +47,7 @@ namespace ngfem
       else if (ORDER == 1)
         {
           shape = 0.0;
-          if (mip.VB() == ET_trait<ET>::DIM)
+          if (int(mip.VB()) == ET_trait<ET>::DIM)
             shape[mip.IP().FacetNr()] = 1;
         }
       else
