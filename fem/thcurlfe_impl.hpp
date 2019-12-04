@@ -32,28 +32,46 @@ namespace ngfem
   } 
 
 #ifndef FASTCOMPILE
+
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES, BASE> :: 
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    SliceMatrix<> shape) const
   {
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-    Vec<DIM, AutoDiff<DIM> > adp = mip;
-    TIP<DIM,AutoDiff<DIM>> tip(adp);
-    this->T_CalcShape (tip, // GetTIP(mip),
-                       SBLambda ([shape](size_t i, auto s) 
-                                 { 
-                                   FlatVec<DIM> (&shape(i,0)) = s.Value(); 
-                                 }));
+    Iterate<4-DIM>
+      ([this,&bmip,shape](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+
+         if (bmip.DimSpace() == DIMSPACE)
+           {
+             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+             this->T_CalcShape (GetTIP(mip),
+                                SBLambda ([shape](size_t i, auto s) 
+                                          {
+                                            auto val = s.Value();
+                                            FlatVec<val.Size()>(&shape(i,0)) = val;
+                                          }));
+           }
+       });
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                   SliceMatrix<> shape) const
+  CalcMappedShape (const BaseMappedIntegrationRule & bmir, 
+                   SliceMatrix<> shapes) const
   {
-    for (size_t i = 0; i < mir.Size(); i++)
-      CalcMappedShape (mir[i], shape.Cols(i*DIM,(i+1)*DIM));
+    Iterate<4-DIM>
+      ([this,&bmir,shapes](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               CalcMappedShape (mir[i], shapes.Cols(i*DIMSPACE,(i+1)*DIMSPACE));
+           }
+       });
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
