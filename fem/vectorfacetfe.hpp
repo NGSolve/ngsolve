@@ -145,6 +145,9 @@ namespace ngfem
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                            BareSliceVector<> coefs) const override;
 
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
+				  SliceMatrix<> shape) const;
+
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
     
