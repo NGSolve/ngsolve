@@ -343,6 +343,9 @@ namespace ngfem
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
 
+    int DimElement() const;
+    int DimSpace() const;
+
     FlatVector<Complex> GetPointComplex() const;
     FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
@@ -426,7 +429,8 @@ namespace ngfem
     /// for boundary points
     using DimMappedIntegrationPoint<DIMR,SCAL>::normalvec;
     using DimMappedIntegrationPoint<DIMR,SCAL>::tangentialvec;
-    using DimMappedIntegrationPoint<DIMR,SCAL>::det;    
+    using DimMappedIntegrationPoint<DIMR,SCAL>::det;
+
   public:
     typedef SCAL TSCAL;
     ///
@@ -1395,6 +1399,9 @@ namespace ngfem
 
     auto begin () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, 0); }
     auto end () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, Size()); }
+
+    int DimElement() const;
+    int DimSpace() const;
     
     virtual SliceMatrix<> GetPoints() const = 0;
     virtual SliceMatrix<Complex> GetPointsComplex() const
