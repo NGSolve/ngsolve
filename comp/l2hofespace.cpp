@@ -1585,7 +1585,6 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static Timer t("SolveM"); RegionTimer reg(t);
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::SolveM needs a scalar density");
-//cout << "surf solvem called" << endl;
     IterateElements (*this, BND, lh,
                      [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
@@ -1652,54 +1651,6 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                      });
   }
 
-
-  
- /* 
-  void L2SurfaceHighOrderFESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
-                                  Region * defon,
-                                  LocalHeap & lh) const
-  {
-    if (piola)
-      {
-        switch (ma->GetDimension())
-          {
-          case 1: ApplyMPiola<1>(rho, vec, defon, lh); break;
-          case 2: ApplyMPiola<2>(rho, vec, defon, lh); break;
-          case 3: ApplyMPiola<3>(rho, vec, defon, lh); break;
-          default: throw Exception("L2SurfaceHighOrderFESpace::ApplyM: illegal dimension");
-          }
-        return;
-      }
-
-    if (covariant)
-      {
-        switch (ma->GetDimension())
-          {
-          case 1: ApplyMCovariant<1>(rho, vec, defon, lh); break;
-          case 2: ApplyMCovariant<2>(rho, vec, defon, lh); break;
-          case 3: ApplyMCovariant<3>(rho, vec, defon, lh); break;
-          default: throw Exception("VectorL2FESpace::ApplyM: illegal dimension");
-          }
-        return;
-      }
-
-    if (rho && rho->Dimension() > 1)
-      {
-        switch (ma->GetDimension())
-          {
-          case 1: ApplyM_Dim<1>(rho, vec, defon, lh); break;
-          case 2: ApplyM_Dim<2>(rho, vec, defon, lh); break;
-          case 3: ApplyM_Dim<3>(rho, vec, defon, lh); break;
-          default: throw Exception("VectorL2FESpace::ApplyM: illegal dimension");
-          }
-        return;
-      }
-    for (size_t i = 0; i < spaces.Size(); i++)
-      {
-        auto veci = vec.Range (GetRange(i));
-        spaces[i] -> ApplyM (rho, veci, defon, lh);
-      }
-  }*/
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
   // CreateSmoothingBlocks ( int type) const
   CreateSmoothingBlocks (const Flags & precflags) const    
