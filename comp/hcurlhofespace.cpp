@@ -343,21 +343,21 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
+      Cast(fel).CalcDualShape (mir, mat);      
     }
 
     using BASE::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
+      Cast(fel).EvaluateDual (mir, x, y);
     }
 
     using BASE::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
+      Cast(fel).AddDualTrans (mir, y, x);
     }    
         
   };
@@ -395,26 +395,26 @@ namespace ngcomp
       throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
     }
 
-    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
+      Cast(fel).CalcDualShape (mir, mat);      
     }
 
     using BASE::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
+      Cast(fel).EvaluateDual (mir, x, y);
     }
 
     using BASE::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
-      }   */ 
+      Cast(fel).AddDualTrans (mir, y, x);
+    }   
         
   };
 
