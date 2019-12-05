@@ -379,10 +379,10 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
-      FlatMatrixFixWidth<D-1> shape(Cast(fel).ndof, lh);
-      Cast(fel).CalcDualShape(mip.IP(), shape);
-      
+      //HeapReset hr(lh);
+      //FlatMatrixFixWidth<D-1> shape(Cast(fel).ndof, lh);
+      //Cast(fel).CalcDualShape(mip.IP(), shape);
+      Cast(fel).CalcDualShape (mip, Trans(mat));
       /*auto J = mip.GetJacobiDet();
       auto F = mip.GetJacobian();
       Mat<D-1,D-1> refmat;
@@ -391,7 +391,7 @@ namespace ngcomp
           refmat = shape.Row(i);
           mat.Col(i) = 1/J*
           }*/
-      mat = 1/mip.GetJacobiDet()*mip.GetJacobian() * Trans(shape);
+      //mat = 1/mip.GetJacobiDet()*mip.GetJacobian() * Trans(shape);
       
     }
     template <typename AFEL, typename MIP, typename MAT,
