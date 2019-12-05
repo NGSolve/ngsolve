@@ -128,14 +128,32 @@ namespace ngfem
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    SliceMatrix<> shape) const
   {
-    auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
-    CalcShape (mip.IP(), shape);
+    // auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
+    CalcShape (bmip.IP(), shape);
+    /*
     Mat<DIM> trans = Trans (mip.GetJacobianInverse());
     for (int i = 0; i < ndof; i++)
       {
         Vec<DIM> hs = shape.Row(i);
         shape.Row(i) = trans * hs;
       }
+    */
+    Iterate<4-DIM>
+      ([this,&bmip,shape](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmip.DimSpace() == DIMSPACE)
+           {
+             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+             auto trans = Trans (mip.GetJacobianInverse());
+             for (int i = 0; i < ndof; i++)
+               {
+                 Vec<DIM> hs = shape.Row(i).Range(DIM);
+                 shape.Row(i).Range(DIM+CODIM.value) = trans * hs;
+               }
+           }
+       });
+    
   }
 
   template <int D>
