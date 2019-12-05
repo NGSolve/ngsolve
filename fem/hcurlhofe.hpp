@@ -125,9 +125,9 @@ namespace ngfem
     void ComputeNDof();
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override;
-    virtual void CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shape) const override;
-    virtual void EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
-    virtual void AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override;
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                                BareSliceVector<double> coefs) const override;
   };
 
