@@ -586,6 +586,10 @@ namespace ngcomp
       "  Use type 1 Nedelec elements";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HCurl space";
+    docu.Arg("gradientdomains") = "List[int] = None\n"
+      "  Remove high order gradients from domains where the value is 0.\n"
+      "  This list can be generated for example like this:\n"
+      "  graddoms = [1 if mat == 'iron' else 0 for mat in mesh.GetMaterials()]";
     return docu;
   }
 

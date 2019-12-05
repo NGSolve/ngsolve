@@ -472,11 +472,27 @@ namespace ngfem
     static constexpr bool SUPPORT_PML = true;
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
-      mat = Trans (mip.GetJacobianInverse ()) * 
-	Trans (static_cast<const FEL&> (fel).GetShape(mip.IP(),lh));
+      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
     }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      mat = static_cast<const FEL&> (fel).GetShape(mip.IP(),lh)*mip.GetJacobianInverse();
+    }
+
+    template <typename AFEL>
+    static void GenerateMatrix2 (const AFEL & fel, 
+                                 const MappedIntegrationPoint<D-1,D> & bmip,
+                                 SliceMatrix<> mat, LocalHeap & lh)
+    {
+      static_cast<const FEL&> (fel).CalcMappedShape (bmip, mat);  
+    }
+    
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
