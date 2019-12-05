@@ -1655,16 +1655,6 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                      LocalHeap & lh) const
   {
     static Timer t("ApplyM"); RegionTimer reg(t);
-    static Timer tall("ApplyM - all");
-    static Timer tel("ApplyM - el");    
-    static Timer ttrafo("ApplyM - trafo");    
-    static Timer tdofs("ApplyM - getdofs");
-    static Timer tgetx("ApplyM - getx");
-    static Timer tsety("ApplyM - sety");
-    static Timer tcalc("ApplyM - calc");
-    static Timer tcalc1("ApplyM - calc1");
-    static Timer tcalc2("ApplyM - calc2");
-    static Timer tsetup("ApplyM - setup");
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
 
@@ -1674,16 +1664,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                      [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto tid = TaskManager::GetThreadId();
-                       NgProfiler::StartThreadTimer(tall, tid);                       
-                       NgProfiler::StartThreadTimer(tel, tid);
-                       
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
-                       NgProfiler::StopThreadTimer(tel, tid);
-                       NgProfiler::AddThreadFlops(tel, tid, 1);                       
-                       NgProfiler::StartThreadTimer(ttrafo, tid);                       
                        const ElementTransformation & trafo = el.GetTrafo();
-                       NgProfiler::StopThreadTimer(ttrafo, tid);
-                       NgProfiler::StartThreadTimer(tdofs, tid);
                        
                        Array<int> dnums(fel.GetNDof(), lh);
                        auto dofrange = GetElementDofs(el.Nr());
@@ -1712,33 +1694,21 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                        else
                          elx = fv.Range(dofrange);
                        */
-                       NgProfiler::StopThreadTimer(tdofs, tid);
-                       NgProfiler::StartThreadTimer(tgetx, tid);
                        
 		                   auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
                        
-                       NgProfiler::StopThreadTimer(tgetx, tid);
-                       
-                       NgProfiler::StartThreadTimer(tsetup, tid);                       
-                       FlatVector<double> diag_mass(fel.GetNDof(), lh);
-                       fel.GetDiagMassMatrix (diag_mass);
-
                        bool curved = trafo.IsCurvedElement();
                        if (rho && !rho->ElementwiseConstant()) curved = true;
-                       NgProfiler::StopThreadTimer(tsetup, tid);
-
-                       NgProfiler::StartThreadTimer(tcalc, tid);                       
                        if (!curved)
                          {
-                           NgProfiler::StartThreadTimer(tcalc1, tid);                                                  
+                           FlatVector<double> diag_mass(fel.GetNDof(), lh);
+                           fel.GetDiagMassMatrix (diag_mass);
                            IntegrationRule ir(fel.ElementType(), 0);
                            BaseMappedIntegrationRule & mir = trafo(ir, lh);
                            double jac = mir[0].GetMeasure();
                            if (rho) jac *= rho->Evaluate(mir[0]);
                            
                            
-                           NgProfiler::StopThreadTimer(tcalc1, tid);
-                           NgProfiler::StartThreadTimer(tcalc2, tid);
 
                            if (dimension == 1)
                              for (size_t i = 0; i < elx.Size(); i++)
@@ -1746,7 +1716,6 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                            else
                              for (size_t i = 0; i < melx.Height(); i++)
                                melx.Row(i) *= jac*diag_mass(i);
-                           NgProfiler::StopThreadTimer(tcalc2, tid);                           
                          }
                        else
                          {
@@ -1770,17 +1739,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
                          }
-                       NgProfiler::StopThreadTimer(tcalc, tid);
-                       
-                       NgProfiler::StartThreadTimer(tsety, tid);
                        
                        //if (!lindofs)
                          vec.SetIndirect(dnums, elx);
                        //else
                         // fv.Range(dofrange) = elx;
                        
-                       NgProfiler::StopThreadTimer(tsety, tid);
-                       NgProfiler::StopThreadTimer(tall, tid);                                              
                      });
   }
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
