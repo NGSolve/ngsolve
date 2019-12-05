@@ -302,6 +302,8 @@ namespace ngcomp
     
   };
 
+  template <int D>
+  class DiffOpHCurlDualBoundary;
 
   /// Gradient operator for HCurl
   template <int D>
@@ -314,6 +316,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
+
+    typedef DiffOpHCurlDualBoundary<D> DIFFOP_TRACE;
 
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlFiniteElement<D>&> (fel); }
@@ -370,6 +374,8 @@ namespace ngcomp
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
+    typedef void DIFFOP_TRACE;
+
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlFiniteElement<D-1>&> (fel); }
 
@@ -379,27 +385,13 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      //HeapReset hr(lh);
-      //FlatMatrixFixWidth<D-1> shape(Cast(fel).ndof, lh);
-      //Cast(fel).CalcDualShape(mip.IP(), shape);
       Cast(fel).CalcDualShape (mip, Trans(mat));
-      /*auto J = mip.GetJacobiDet();
-      auto F = mip.GetJacobian();
-      Mat<D-1,D-1> refmat;
-      for (size_t i = 0; i < Cast(fel).ndof; i++)
-        {
-          refmat = shape.Row(i);
-          mat.Col(i) = 1/J*
-          }*/
-      //mat = 1/mip.GetJacobiDet()*mip.GetJacobian() * Trans(shape);
-      
     }
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      // fel.CalcDualShape (mip, mat);
       throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
     }
 
@@ -1974,7 +1966,6 @@ namespace ngcomp
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
         additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
-        additional.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlDualBoundary<3>>> ());
         break;
       default:
         ;
