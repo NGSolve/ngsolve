@@ -1254,14 +1254,14 @@ namespace ngfem
                 INT<2> e = GetEdgeSort (i, vnums);
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
-                Vec<2,T> tau = mip.GetJacobian()*tauref;
+                auto tau = mip.GetJacobian()*tauref;
                 tau /= mip.GetMeasure();
 
                 LegendrePolynomial::Eval
                   (p, xi,
                    SBLambda([&] (size_t nr, T val)
                             {
-                              Vec<2,T> vshape = val * tau;
+                              auto vshape = val * tau;
                               if (nr==0)
                                 shape[i] = vshape;
                               else

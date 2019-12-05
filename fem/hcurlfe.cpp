@@ -440,7 +440,12 @@ namespace ngfem
   void HCurlFiniteElement<D> ::
   CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & ir, BareSliceMatrix<SIMD<double>> shape) const
   {
-    throw ExceptionNOSIMD (string("CalcDualShape SIMD not implemented for H(curl) element ") +typeid(*this).name());
+    static bool firstsimd = true;
+    if (firstsimd)
+      cerr << "CalcDualShape SIMD not implemented for H(curl) element " << typeid(*this).name() << endl;
+    else
+      throw ExceptionNOSIMD (string("CalcDualShape SIMD not implemented for H(curl) element ") +typeid(*this).name());
+    firstsimd = false;
   }
 
   
