@@ -85,6 +85,7 @@ namespace ngfem
     throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
   }
 
+  /*
   int BaseMappedIntegrationPoint :: DimElement() const
   {
     switch(eltrans->VB())
@@ -126,7 +127,8 @@ namespace ngfem
   {
     return eltrans->SpaceDim();
   }
-
+*/
+  
   FlatVector<Complex> BaseMappedIntegrationPoint :: GetPointComplex() const
   {
     if (is_complex)
@@ -446,6 +448,8 @@ namespace ngfem
 
   int BaseMappedIntegrationRule :: DimElement() const
   {
+    return eltrans.ElementDim();
+    /*
     switch(eltrans.VB())
       {
       case VOL:
@@ -479,8 +483,9 @@ namespace ngfem
         break;
       }
     throw Exception("BaseMappedIntegrationRule::DimElement, illegal dimension");
+    */
   }
-  
+
   int BaseMappedIntegrationRule :: DimSpace() const
   {
     return eltrans.SpaceDim();

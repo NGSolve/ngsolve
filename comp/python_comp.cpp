@@ -1332,9 +1332,9 @@ active_dofs : BitArray or None
     .def(py::init([] (shared_ptr<FESpace> & fes,
                       py::object active_dofs)
                   {
-                    shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
-                    if (compspace)
-                      cout << "yes, we can also compress a CompoundFESpace" << endl;
+                    // shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    // if (compspace)
+                      // cout << "yes, we can also compress a CompoundFESpace" << endl;
                     // throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
                     auto ret = make_shared<CompressedFESpace> (fes);
                     shared_ptr<BitArray> actdofs = nullptr;

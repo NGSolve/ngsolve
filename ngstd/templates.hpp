@@ -126,6 +126,50 @@ INLINE void Iterate (FUNC f)
 
 
 
+template <int NUM>
+class Cl_Switch
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (size_t nr, FUNC f)
+  {
+    if (nr == NUM)
+      f(IC<NUM>());
+    else
+      Cl_Switch<NUM-1>::Do(nr, f);
+  }
+};
+  
+template <>
+class Cl_Switch<-1>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (size_t nr, FUNC f)  { }
+};
+
+template <>
+class Cl_Switch<0>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (size_t nr, FUNC f)
+  {
+    // if (nr == 0)
+    f(IC<0>());
+  }
+};
+
+template <int NUM, typename FUNC>
+INLINE void Switch (size_t nr, FUNC f)
+{
+  Cl_Switch<NUM-1>::Do(nr, f);
+}
+
+
+
+
+
 }
 
 #endif

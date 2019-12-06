@@ -343,12 +343,14 @@ namespace ngfem
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
 
-    int DimElement() const;
-    int DimSpace() const;
-
+    // in elementtransforamtion.hpp
+    INLINE int DimElement() const; // { return eltrans->ElementDim(); }
+    INLINE int DimSpace() const; // { return eltrans->SpaceDim(); } 
+    
     FlatVector<Complex> GetPointComplex() const;
     FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
+    [[deprecated("Use DimSpace instead")]]
     NGS_DLL_HEADER int Dim() const;  
     VorB VB() const; 
     bool IsComplex() const { return is_complex; }
