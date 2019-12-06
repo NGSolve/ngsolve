@@ -69,7 +69,7 @@ namespace ngfem
            {
              auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
-               CalcMappedShape (mir[i], shapes.Cols(i*DIMSPACE,(i+1)*DIMSPACE));
+               this->CalcMappedShape (mir[i], shapes.Cols(i*DIMSPACE,(i+1)*DIMSPACE));
            }
        });
   }
