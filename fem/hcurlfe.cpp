@@ -128,39 +128,24 @@ namespace ngfem
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    SliceMatrix<> shape) const
   {
-    // auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
     CalcShape (bmip.IP(), shape);
-    /*
-    Mat<DIM> trans = Trans (mip.GetJacobianInverse());
-    for (int i = 0; i < ndof; i++)
-      {
-        Vec<DIM> hs = shape.Row(i);
-        shape.Row(i) = trans * hs;
-      }
-    */
-    Iterate<4-DIM>
-      ([this,&bmip,shape](auto CODIM)
+
+    Switch<4-DIM>
+      (bmip.DimSpace()-DIM,
+       [this,&bmip,shape](auto CODIM)
        {
-         constexpr int DIMSPACE = DIM+CODIM.value;
-         if (bmip.DimSpace() == DIMSPACE)
-           {
-             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
-             auto trans = Trans (mip.GetJacobianInverse());
-             for (int i = 0; i < ndof; i++)
-               {
-                 Vec<DIM> hs = shape.Row(i).Range(DIM);
-                 shape.Row(i).Range(DIM+CODIM.value) = trans * hs;
-               }
-           }
+         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+         auto trans = Trans (mip.GetJacobianInverse());
+         
+         for (int i = 0; i < ndof; i++)
+           shape.Row(i).Range(DIM+CODIM.value) = trans * Vec<DIM> (shape.Row(i));
        });
-    
   }
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const
+  CalcMappedShape (const BaseMappedIntegrationRule & mir, SliceMatrix<> shapes) const
   {
-    auto mir = static_cast<const MappedIntegrationRule<D,D>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedShape (mir[i], shapes.Cols(i*D, (i+1)*D));
   }
