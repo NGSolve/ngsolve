@@ -368,7 +368,7 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
     }
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
-      if (ip.Dim() != D)
+      if (ip.DimSpace() != D)
         throw Exception("illegal dim of normal vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
     }
@@ -378,7 +378,7 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
       const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
        if(!tpir)
        {
-         if (ir[0].Dim() != D)
+         if (ir[0].DimSpace() != D)
            throw Exception("illegal dim of normal vector");
          FlatMatrixFixWidth<D> resD(res);
          for (int i = 0; i < ir.Size(); i++)
@@ -388,7 +388,7 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
        {
          int facet = tpir->GetFacet();
          auto & mir = *tpir->GetIRs()[facet];
-         int dim = mir[0].Dim();
+         int dim = mir[0].DimSpace();
          int ii = 0;
          res = 0.0;
          if(facet == 0)
@@ -426,7 +426,7 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
     {
-      if (ir[0].Dim() != D)
+      if (ir[0].DimSpace() != D)
 	throw Exception("illegal dim of normal vector");
       for (int i = 0; i < ir.Size(); i++)
 	res.Row(i).AddSize(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
@@ -493,7 +493,7 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
     }
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
     {
-      if (ip.Dim() != D)
+      if (ip.DimSpace() != D)
         throw Exception("illegal dim of tangential vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
     }
@@ -537,14 +537,14 @@ template <int D>
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
-      if (ip.Dim() != D)
+      if (ip.DimSpace() != D)
         throw Exception("illegal dim!");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
     {
-      if (ir[0].Dim() != D)
+      if (ir[0].DimSpace() != D)
       	throw Exception("illegal dim!");
       for (int i = 0; i < ir.Size(); i++)
       	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
@@ -606,7 +606,7 @@ direction : int
       if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
         {
           double det = 1;
-          switch (ip.Dim())
+          switch (ip.DimSpace())
             {
             case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
             case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
@@ -617,7 +617,7 @@ direction : int
           return det/ip.GetMeasure();
         }
       
-      switch (ip.Dim() - int(ip.VB()))
+      switch (ip.DimSpace() - int(ip.VB()))
         {
         case 0: throw Exception ("don't have mesh-size on 0-D boundary");
         case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
