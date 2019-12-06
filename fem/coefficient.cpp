@@ -569,7 +569,7 @@ namespace ngfem
       {
 	VectorMem<10> args(numarg);
 	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-        args.Range(0,ip.Dim()) = ip.GetPoint();
+        args.Range(0,ip.DimSpace()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -583,7 +583,7 @@ namespace ngfem
       {
 	VectorMem<10, Complex> args(numarg);
 	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-        args.Range(0,ip.Dim()) = ip.GetPoint();
+        args.Range(0,ip.DimSpace()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -603,7 +603,7 @@ namespace ngfem
     VectorMem<10,Complex> args(numarg);
     args = -47;
     // args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-    args.Range(0,ip.Dim()) = ip.GetPoint();
+    args.Range(0,ip.DimSpace()) = ip.GetPoint();
     for (int i = 0, an = 3; i < depends_on.Size(); i++)
       {
         int dim = depends_on[i]->Dimension();
@@ -630,7 +630,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
       ArrayMem<double,2000> mem(ir.Size()*numarg);
       FlatMatrix<> args(ir.Size(), numarg, &mem[0]);
       
-      int dim = ir[0].Dim();
+      int dim = ir[0].DimSpace();
       switch (dim)
         {
         case 2:
@@ -666,7 +666,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
     {
       Matrix<Complex> args(ir.Size(), numarg);
       for (int i = 0; i < ir.Size(); i++)
-	args.Row(i).Range(0,ir[i].Dim()) = ir[i].GetPoint();
+	args.Row(i).Range(0,ir[i].DimSpace()) = ir[i].GetPoint();
       
       for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	{

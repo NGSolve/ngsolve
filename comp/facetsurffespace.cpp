@@ -336,14 +336,15 @@ namespace ngcomp
 
     for (ElementId ei : ma->Elements(BND))
       if (DefinedOn(ei))
-
-        if (ma->GetDimension() == 3)
-          for (auto ed : ma->GetElEdges (ei))
-            ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
-        else if (ma->GetDimension() == 2)
-          for (auto ed : ma->GetElVertices (ei))
-            ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
-
+        {
+          if (ma->GetDimension() == 3)
+            for (auto ed : ma->GetElEdges (ei))
+              ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
+          else if (ma->GetDimension() == 2)
+            for (auto ed : ma->GetElVertices (ei))
+              ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
+        }
+    
     if (print)
       *testout << "couplingtypes = " << endl << ctofdof << endl;
   }
