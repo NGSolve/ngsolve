@@ -338,7 +338,9 @@ namespace ngcomp
       CalcDShapeOfHCurlFE<D,D-1,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
   };
-
+  
+  template <int D>
+  class DiffOpHCurlDualBoundary;
 
   /// Dual operator for HCurl
   template <int D>
