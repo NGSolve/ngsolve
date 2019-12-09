@@ -61,15 +61,29 @@ namespace ngfem
     }
 
     virtual void CalcShape (const IntegrationPoint & ip,
-                            FlatVector<> shape) const
+                            FlatVector<> shape) const override
     {
       TIP<DIM,double> tip = ip;
       static_cast<const FEL*> (this) -> T_CalcShape (tip, shape);
     }
 
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const override
+    {
+      auto mip = static_cast<const MappedIntegrationPoint<DIM,DIM+1>&>(bmip);
+      auto scaled_nv = (1.0/mip.GetJacobiDet())*mip.GetNV();
+
+      TIP<DIM,double> tip = mip.IP();
+      static_cast<const FEL*> (this) -> T_CalcShape (tip, SBLambda([&shape, scaled_nv](int nr,auto val)
+                                                                   {
+                                                                     shape.Row(nr) = val*scaled_nv;
+                                                                   }));
+                                      
+    }
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir,
                            BareSliceVector<> coefs,
-                           BareSliceMatrix<SIMD<double>> values) const
+                           BareSliceMatrix<SIMD<double>> values) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
       for (size_t i = 0; i < mir.Size(); i++)
@@ -94,7 +108,7 @@ namespace ngfem
     
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & bmir,
                            BareSliceMatrix<SIMD<double>> values,
-                           BareSliceVector<> coefs) const
+                           BareSliceVector<> coefs) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
       for (size_t i = 0; i < mir.Size(); i++)
@@ -131,7 +145,7 @@ namespace ngfem
     using BASE::GetVertexOrientedFace;    
   public:
     HDivHighOrderNormalSegm (int aorder);
-    virtual void ComputeNDof();
+    virtual void ComputeNDof() override;
     /*
     virtual void CalcShape (const IntegrationPoint & ip,
                             FlatVector<> shape) const;
@@ -167,7 +181,7 @@ namespace ngfem
     using BASE::vnums;
   public:
     HDivHighOrderNormalTrig (int aorder);
-    virtual void ComputeNDof();
+    virtual void ComputeNDof() override;
     /*
     virtual void CalcShape (const IntegrationPoint & ip,
                             FlatVector<> shape) const;
@@ -263,7 +277,7 @@ namespace ngfem
 
   public:
     HDivHighOrderNormalQuad (int aorder);
-    virtual void ComputeNDof();
+    virtual void ComputeNDof() override;
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
@@ -379,7 +393,7 @@ namespace ngfem
 
     
     virtual void ComputeNDof();
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
 
     /// calc normal components of facet shapes, ip has facet-nr
