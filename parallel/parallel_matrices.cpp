@@ -415,11 +415,13 @@ namespace ngla
     op = aop;
     if(row_paralleldofs==col_paralleldofs)
       mat->SetParallelDofs (arpardofs);
+    if (auto spmat = dynamic_pointer_cast<BaseSparseMatrix>(mat)) {
 #ifdef USE_MUMPS
-    mat->SetInverseType(MUMPS);
+      spmat->SetInverseType(MUMPS);
 #else
-    mat->SetInverseType(MASTERINVERSE);
+      spmat->SetInverseType(MASTERINVERSE);
 #endif
+    }
   }
 
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
