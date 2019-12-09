@@ -192,6 +192,12 @@ namespace ngfem
       return shape;
     }
 
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const
+    {
+      throw Exception(string("CalcMappedShape not implemented for H(div) normal element ")+typeid(*this).name());
+    }
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            BareSliceVector<> coefs,
                            BareSliceMatrix<SIMD<double>> values) const
