@@ -1552,8 +1552,8 @@ namespace ngcomp
 
 
 /** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
-    template<int D, int BMATDIM>
-    void CalcDShapeOfHDivFE(const HDivFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
+  template<int DIMSPACE, int DIM, int BMATDIM>
+    void CalcDShapeOfHDivFE(const HDivFiniteElement<DIM>& fel_u, const MappedIntegrationPoint<DIM,DIMSPACE>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
       HeapReset hr(lh);
       // bmatu = 0;
       // evaluate dshape by numerical diff
@@ -1561,31 +1561,31 @@ namespace ngcomp
       int nd_u = fel_u.GetNDof();
       const IntegrationPoint& ip = sip.IP();//volume_ir[i];
       const ElementTransformation & eltrans = sip.GetTransformation();
-      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ull(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_urr(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
+      FlatMatrixFixWidth<DIMSPACE> shape_ul(nd_u, lh);
+      FlatMatrixFixWidth<DIMSPACE> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<DIMSPACE> shape_ull(nd_u, lh);
+      FlatMatrixFixWidth<DIMSPACE> shape_urr(nd_u, lh);
+      FlatMatrixFixWidth<DIMSPACE> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
+      FlatMatrixFixWidth<DIMSPACE> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
 
       double eps = 1e-4;
-      for (int j = 0; j < D; j++)   // d / dxj
+      for (int j = 0; j < DIMSPACE; j++)   // d / dxj
       {
         IntegrationPoint ipl(ip);
         ipl(j) -= eps;
-        MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> sipl(ipl, eltrans);
 
         IntegrationPoint ipr(ip);
         ipr(j) += eps;
-        MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> sipr(ipr, eltrans);
 
         IntegrationPoint ipll(ip);
         ipll(j) -= 2*eps;
-        MappedIntegrationPoint<D,D> sipll(ipll, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> sipll(ipll, eltrans);
 
         IntegrationPoint iprr(ip);
         iprr(j) += 2*eps;
-        MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> siprr(iprr, eltrans);
 
         fel_u.CalcMappedShape (sipl, shape_ul);
         fel_u.CalcMappedShape (sipr, shape_ur);
@@ -1602,25 +1602,28 @@ namespace ngcomp
           for (int l = 0; l < D; l++)
           bmatu(k, j*D+l) = dshape_u_ref(k,l);
         */
-        for (int l = 0; l < D; l++)
-          bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
+        for (int l = 0; l < DIMSPACE; l++)
+          bmatu.Col(j*DIMSPACE+l) = dshape_u_ref.Col(l);
       }
       
-      for (int j = 0; j < D; j++)
+      for (int j = 0; j < DIMSPACE; j++)
 	{
 	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      dshape_u_ref(k,l) = bmatu(k, l*D+j);
+	    for (int l = 0; l < DIMSPACE; l++)
+	      dshape_u_ref(k,l) = bmatu(k, l*DIMSPACE+j);
 	  
 	  dshape_u = dshape_u_ref * sip.GetJacobianInverse();
 
 	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      bmatu(k, l*D+j) = dshape_u(k,l);
+	    for (int l = 0; l < DIMSPACE; l++)
+	      bmatu(k, l*DIMSPACE+j) = dshape_u(k,l);
 	}
     }
   
 
+  template <int D, typename FEL = HDivFiniteElement<D-1> >
+  class DiffOpGradientBoundaryHDiv;
+  
   /// Gradient operator for HDiv
   template <int D, typename FEL = HDivFiniteElement<D> >
   class DiffOpGradientHdiv : public DiffOp<DiffOpGradientHdiv<D> >
@@ -1633,7 +1636,9 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
     
-    static constexpr double eps() { return 1e-4; } 
+    static constexpr double eps() { return 1e-4; }
+
+    typedef DiffOpGradientBoundaryHDiv<D> DIFFOP_TRACE;
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -1653,7 +1658,7 @@ namespace ngcomp
                                                   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {
-      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+      CalcDShapeOfHDivFE<D,D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
@@ -1745,7 +1750,7 @@ namespace ngcomp
       // typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), mip, hm, lh);
+      CalcDShapeOfHDivFE<D,D,D*D>(static_cast<const FEL&>(fel), mip, hm, lh);
       y = Trans(hm)*x;
     }
 
@@ -2165,6 +2170,40 @@ namespace ngcomp
               }
             }
         }
+    }
+  };
+
+  /// Boundary gradient operator for HDiv
+  template <int D, typename FEL>
+  class DiffOpGradientBoundaryHDiv : public DiffOp<DiffOpGradientBoundaryHDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    
+    static constexpr double eps() { return 1e-4; }
+
+    typedef void DIFFOP_TRACE;
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeOfHDivFE<D,D-1,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
   };
 
