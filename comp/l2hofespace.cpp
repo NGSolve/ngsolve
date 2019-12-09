@@ -1584,7 +1584,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   {
     static Timer t("SolveM"); RegionTimer reg(t);
     if (rho && rho->Dimension() != 1)
-      throw Exception("L2HighOrderFESpace::SolveM needs a scalar density");
+      throw Exception("L2HighSurfaceOrderFESpace::SolveM needs a scalar density");
     IterateElements (*this, BND, lh,
                      [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
