@@ -706,45 +706,44 @@ namespace ngfem
   public:
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
     
     virtual void CalcDivShape (const IntegrationPoint & ip, 
-			       SliceVector<> divshape) const;
+			       SliceVector<> divshape) const override;
 
 #ifndef FASTCOMPILE
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				  SliceMatrix<> shape) const;
 
-    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mip,
-				  SliceMatrix<> shape) const;
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const override;
+
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const override;
 
     virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
-				  BareSliceMatrix<SIMD<double>> shape) const;
+				  BareSliceMatrix<SIMD<double>> shape) const override;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  BareSliceMatrix<SIMD<double>> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const override;
 
     using HDivFiniteElement<ET_trait<ET>::DIM>::CalcMappedDivShape;
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                     BareSliceMatrix<SIMD<double>> divshapes) const;
+                                     BareSliceMatrix<SIMD<double>> divshapes) const override;
 
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 
-			   FlatMatrixFixWidth<DIM> vals) const;
+			   FlatMatrixFixWidth<DIM> vals) const override;
 
     virtual void EvaluateTrans (const IntegrationRule & ir, 
                                 FlatMatrixFixWidth<DIM> vals,
-                                FlatVector<double> coefs) const;
+                                FlatVector<double> coefs) const override;
 
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
-    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                           BareSliceVector<> coefs) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<> coefs) const override;
 
-    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const;
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override;
     
     virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
-                              BareSliceVector<> coefs) const;
+                              BareSliceVector<> coefs) const override;
     
     
 #endif

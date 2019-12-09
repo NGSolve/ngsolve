@@ -94,26 +94,46 @@ namespace ngfem
   }
 
 #ifndef FASTCOMPILE
+
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET> :: 
-  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-		   SliceMatrix<> shape) const
-  {   
-    static_cast<const FEL*> (this) -> 
-      T_CalcShape (GetTIPHDiv(mip),
-                   SBLambda([shape] (size_t nr, auto s) LAMBDA_INLINE
-                            {
-                              FlatVec<DIM> (&shape(nr,0)) = HDiv2ShapeNew(s);
-                            }));
+  CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                   SliceMatrix<> shape) const
+  {
+    Iterate<4-DIM>
+      ([this,&bmip,shape](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmip.DimSpace() == DIMSPACE)
+           {
+             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+             static_cast<const FEL*> (this) ->
+               T_CalcShape (GetTIPHDiv(mip),
+                            SBLambda ([shape](size_t nr, auto s) 
+                                 {
+                                   auto val = HDiv2ShapeNew(s);
+                                   FlatVec<val.Size()>(&shape(nr,0)) = val;
+                                 }));
+           }
+       });
   }
 
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET>::
-  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                   SliceMatrix<> shape) const
+  CalcMappedShape (const BaseMappedIntegrationRule & bmir, 
+                   SliceMatrix<> shapes) const
   {
-    for (size_t i = 0; i < mir.Size(); i++)
-      CalcMappedShape (mir[i], shape.Cols(i*DIM,(i+1)*DIM));
+    Iterate<4-DIM>
+      ([this,&bmir,shapes](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               this->CalcMappedShape (mir[i], shapes.Cols(i*DIMSPACE,(i+1)*DIMSPACE));
+           }
+       });
   }
       
   template <class FEL, ELEMENT_TYPE ET>
