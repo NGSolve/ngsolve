@@ -694,36 +694,39 @@ namespace ngfem
                 BareSliceVector<> coefs,
                 BareSliceMatrix<SIMD<double>> values) const
   {
+    /*
     Iterate<4-DIM>
       ([this,&bmir,coefs,values](auto CODIM)
        {
          constexpr int DIMSPACE = DIM+CODIM.value;
          if (bmir.DimSpace() == DIMSPACE)
+    */
+    Switch<4-DIM>
+      (bmir.DimSpace()-DIM, [this,&bmir,coefs,values] (auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;         
+         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+         for (size_t i = 0; i < mir.Size(); i++)
            {
-             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-             for (size_t i = 0; i < mir.Size(); i++)
-               {
-                 double *pcoefs = &coefs(0);
-                 const size_t dist = coefs.Dist();
-                 
-                 Vec<DIMSPACE,SIMD<double>> sum(0.0);
-                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
-                 // GetTIP(mir[i], adp);
-                 this->T_CalcShape (adp,
-                                    SBLambda ([&pcoefs,dist,&sum]
-                                              // (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
-                                              (size_t j, auto shape)
-                                              { 
-                                                for (auto k = 0; k < sum.Size(); k++)
-                                                  sum(k) += *pcoefs * shape.DValue(k); 
-                                                pcoefs += dist;
-                                              }));
-                 for (size_t k = 0; k < DIMSPACE; k++)
-                   values(k,i) = sum(k).Data();
-               }
+             double *pcoefs = &coefs(0);
+             const size_t dist = coefs.Dist();
+             
+             Vec<DIMSPACE,SIMD<double>> sum(0.0);
+             TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>> adp = GetTIP(mir[i]);
+             this->T_CalcShape (adp,
+                                SBLambda ([&pcoefs,dist,&sum]
+                                          (size_t j, auto shape)
+                                          { 
+                                            for (auto k = 0; k < sum.Size(); k++)
+                                              sum(k) += *pcoefs * shape.DValue(k); 
+                                            pcoefs += dist;
+                                          }));
+             for (size_t k = 0; k < DIMSPACE; k++)
+               values(k,i) = sum(k).Data();
            }
+         // }
        });
-
+    
        
     /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))

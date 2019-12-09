@@ -74,7 +74,15 @@ if(NGSOLVE_USE_PYTHON)
     find_package(PythonInterp 3 REQUIRED)
     find_package(PythonLibs 3 REQUIRED)
     target_include_directories(${target} PRIVATE ${PYTHON_INCLUDE_DIR})
-    target_link_libraries(${target} PUBLIC ${PYTHON_LIBRARY})
+
+    if(NETGEN_BUILD_FOR_CONDA)
+        if(APPLE)
+            target_link_options(${target} PUBLIC -undefined dynamic_lookup)
+        endif(APPLE)
+    else(NETGEN_BUILD_FOR_CONDA)
+        target_link_libraries(${target} PUBLIC ${PYTHON_LIBRARY})
+    endif(NETGEN_BUILD_FOR_CONDA)
+
     set_target_properties(${target} PROPERTIES PREFIX "" CXX_STANDARD 17)
 
     if(NETGEN_USE_GUI AND WIN32)
