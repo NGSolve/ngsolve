@@ -1584,7 +1584,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   {
     static Timer t("SolveM"); RegionTimer reg(t);
     if (rho && rho->Dimension() != 1)
-      throw Exception("L2HighOrderFESpace::SolveM needs a scalar density");
+      throw Exception("L2HighSurfaceOrderFESpace::SolveM needs a scalar density");
     IterateElements (*this, BND, lh,
                      [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
@@ -1651,6 +1651,102 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                      });
   }
 
+  void L2SurfaceHighOrderFESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * def,
+                                     LocalHeap & lh) const
+  {
+    static Timer t("ApplyM"); RegionTimer reg(t);
+    if (rho && rho->Dimension() != 1)
+      throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
+
+    auto fv = vec.FV<double>();
+    
+    IterateElements (*this, BND, lh,
+                     [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
+                     {
+                       auto tid = TaskManager::GetThreadId();
+                       auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
+                       const ElementTransformation & trafo = el.GetTrafo();
+                       
+                       Array<int> dnums(fel.GetNDof(), lh);
+                       auto dofrange = GetElementDofs(el.Nr());
+                       FlatVector<double> elx(fel.GetNDof()*dimension, lh);
+
+                       //bool lindofs = all_dofs_together && dimension==1;
+
+                       if (def && !def->Mask()[ma->GetElIndex(el)])
+                         {
+                           /*if (lindofs)
+                             fv.Range(dofrange) = 0.0;
+                           else
+                             {*/
+                               elx = 0.0;
+                               GetDofNrs (el, dnums);                               
+                               vec.SetIndirect(dnums, elx);
+                             //}
+                           return;
+                         }
+                       
+                       /*if (!lindofs)
+                         {*/
+                           GetDofNrs (el, dnums);
+                           vec.GetIndirect(dnums, elx);
+                         /*}
+                       else
+                         elx = fv.Range(dofrange);
+                       */
+                       
+		                   auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
+                       
+                       bool curved = trafo.IsCurvedElement();
+                       if (rho && !rho->ElementwiseConstant()) curved = true;
+                       if (!curved)
+                         {
+                           FlatVector<double> diag_mass(fel.GetNDof(), lh);
+                           fel.GetDiagMassMatrix (diag_mass);
+                           IntegrationRule ir(fel.ElementType(), 0);
+                           BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                           double jac = mir[0].GetMeasure();
+                           if (rho) jac *= rho->Evaluate(mir[0]);
+                           
+                           
+
+                           if (dimension == 1)
+                             for (size_t i = 0; i < elx.Size(); i++)
+                               elx(i) *= jac*diag_mass(i);
+                           else
+                             for (size_t i = 0; i < melx.Height(); i++)
+                               melx.Row(i) *= jac*diag_mass(i);
+                         }
+                       else
+                         {
+                           SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+                           auto & mir = trafo(ir, lh);
+                           FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
+                           FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
+                           if (rho) rho->Evaluate (mir, rhovals);
+                           
+                           for (int comp = 0; comp < dimension; comp++)
+                             {
+                               fel.Evaluate (ir, melx.Col(comp), pntvals);
+                               if (rho)
+                                 for (size_t i = 0; i < ir.Size(); i++)
+                                   pntvals(i) *= ir[i].Weight()* rhovals(0,i) * mir[i].GetMeasure() ;
+                               else
+                                 for (size_t i = 0; i < ir.Size(); i++)
+                                   pntvals(i) *= ir[i].Weight() * mir[i].GetMeasure();
+                               
+                               melx.Col(comp) = 0.0;
+                               fel.AddTrans (ir, pntvals, melx.Col(comp));
+                             }
+                         }
+                       
+                       //if (!lindofs)
+                         vec.SetIndirect(dnums, elx);
+                       //else
+                        // fv.Range(dofrange) = elx;
+                       
+                     });
+  }
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
   // CreateSmoothingBlocks ( int type) const
   CreateSmoothingBlocks (const Flags & precflags) const    
