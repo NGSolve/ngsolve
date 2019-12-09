@@ -415,7 +415,7 @@ namespace ngla
     op = aop;
     if(row_paralleldofs==col_paralleldofs)
       mat->SetParallelDofs (arpardofs);
-    if (auto spmat = dynamic_cast<BaseSparseMatrix>(mat)) {
+    if (auto spmat = dynamic_pointer_cast<BaseSparseMatrix>(mat)) {
 #ifdef USE_MUMPS
       spmat->SetInverseType(MUMPS);
 #else
