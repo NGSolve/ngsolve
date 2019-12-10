@@ -6,7 +6,7 @@ if(WIN32)
   # we are linking to object libraries on Windows
   cmake_minimum_required(VERSION 3.12)
 else(WIN32)
-  cmake_minimum_required(VERSION 3.3)
+  cmake_minimum_required(VERSION 3.8)
 endif(WIN32)
 
 # Handle superbuild first
