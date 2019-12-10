@@ -6,7 +6,6 @@ class NewtonSolver:
     def __init__(self, a, u, rhs=None, freedofs=None,
                  inverse="umfpack", solver=None):
         self.a, self.u, self.inverse = a, u, inverse
-        self.freedofs = freedofs or u.space.FreeDofs(a.condense)
         self.w = u.vec.CreateVector()
         self.r = u.vec.CreateVector()
         self.rhs = rhs
@@ -14,6 +13,8 @@ class NewtonSolver:
         self.inv = None if solver is None else solver
         if solver:
             self.inverse = "given"
+        else:
+            self.freedofs = freedofs or u.space.FreeDofs(a.condense)
 
     def Solve(self, maxit=100, maxerr=1e-11, dampfactor=1,
               printing=False, callback=None, linesearch=False,
