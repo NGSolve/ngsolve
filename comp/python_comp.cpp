@@ -2172,6 +2172,8 @@ gf : ngsolve.comp.GridFunction
                      return self.GetInnerMatrix();
                    }, "inner_matrix of the bilinear form"
                   )
+    .def("SetPreconditioner", &BF::SetPreconditioner)
+    .def("UnsetPreconditioner", &BF::UnsetPreconditioner)
     ;
 
   ///////////////////////////////// LinearForm //////////////////////////////////////////
