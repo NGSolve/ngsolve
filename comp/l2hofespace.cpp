@@ -1663,12 +1663,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     IterateElements (*this, BND, lh,
                      [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
-                       auto tid = TaskManager::GetThreadId();
+                       // auto tid = TaskManager::GetThreadId();
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
                        const ElementTransformation & trafo = el.GetTrafo();
                        
                        Array<int> dnums(fel.GetNDof(), lh);
-                       auto dofrange = GetElementDofs(el.Nr());
+                       // auto dofrange = GetElementDofs(el.Nr());
                        FlatVector<double> elx(fel.GetNDof()*dimension, lh);
 
                        //bool lindofs = all_dofs_together && dimension==1;
