@@ -1551,15 +1551,15 @@ namespace ngfem
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
              for (size_t i = 0; i < mir.Size(); i++)
                {
-                 Vec<DIMSPACE,SIMD<double>> value;
-                 for (size_t k = 0; k < DIMSPACE; k++)
-                   value(k) = values(k, i);
+                 Vec<DIMSPACE,SIMD<double>> value = values.Col(i);
+                 // for (size_t k = 0; k < DIMSPACE; k++)
+                 // value(k) = values(k, i);
         
                  static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
-                   -> CalcDualShape2 (mir[i], SBLambda([value, coefs, DIMSPACE] (size_t j, auto val)
+                   -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
                                                        {
                                                          SIMD<double> sum = 0.0;
-                                                         for (int k = 0; k < DIMSPACE; k++)
+                                                         for (int k = 0; k < value.Size(); k++)
                                                            sum += val(k) * value(k);
                                                          coefs(j) += HSum(sum);
                                                        }));
