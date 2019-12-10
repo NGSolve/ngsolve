@@ -120,6 +120,15 @@ namespace ngbla
       return *this;
     }
 
+    template <int D, typename TSCAL>
+    INLINE const FlatVector & operator= (Vec<D,TSCAL> v) const
+    {
+      for (auto i : ngstd::Range(D))
+	data[i] = v(i);
+      return *this;
+    }
+
+    
     /// evaluate matrix expression
     template<typename TB>
     INLINE const FlatVector & operator= (const Expr<TB> & v) const
