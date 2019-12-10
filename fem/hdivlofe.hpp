@@ -84,7 +84,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> shape) const;
+			     FlatMatrixFixWidth<2> shape) const override;
   
     ///
     void Orthogonalize();
@@ -152,7 +152,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -199,7 +199,7 @@ namespace ngfem
     /// full P2
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -248,7 +248,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -297,7 +297,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -369,7 +369,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -541,7 +541,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+			     FlatMatrixFixWidth<3> shape) const override;
 
     ///
     void Orthogonalize();
@@ -587,12 +587,12 @@ namespace ngfem
     /// full p2
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     /// full P1
     virtual void CalcShape2 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
 
     ///
@@ -646,7 +646,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
   
     ///
     void Orthogonalize();
@@ -693,7 +693,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
   
     ///
     void Orthogonalize();
@@ -748,7 +748,7 @@ namespace ngfem
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
   
     ///
     void Orthogonalize();
