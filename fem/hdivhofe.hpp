@@ -52,7 +52,7 @@ namespace ngfem
         vnums[i] = i;
     }
 
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override{ return ET; }
 
     int EdgeOrientation (int enr) const
     {
@@ -394,13 +394,13 @@ namespace ngfem
     
     virtual void ComputeNDof();
     virtual ELEMENT_TYPE ElementType() const override { return ET; }
-    virtual void GetFacetDofs(int i, Array<int> & dnums) const;
+    virtual void GetFacetDofs(int i, Array<int> & dnums) const override;
 
     /// calc normal components of facet shapes, ip has facet-nr
     virtual void CalcNormalShape (const IntegrationPoint & ip, 
-                                  SliceVector<> nshape) const;
+                                  SliceVector<> nshape) const override;
 
-    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override;
 
   };
 
