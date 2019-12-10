@@ -320,6 +320,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__getitem__",
           [](BaseVector & self,  int ind )
            {
+             if (ind < 0) ind+=self.Size();
              if (ind < 0 || ind >= self.Size()) 
                throw py::index_error();
              int entrysize = self.EntrySize();
@@ -354,10 +355,16 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          })
     .def("__setitem__", [](BaseVector & self,  int ind, double d )
       {
+          if (ind < 0) ind+=self.Size();
+          if (ind < 0 || ind >= self.Size())
+            throw py::index_error();
           self.Range(ind,ind+1) = d;
       }, py::arg("ind"), py::arg("value"), "Set value at given position" )
     .def("__setitem__", [](BaseVector & self,  int ind, Complex z )
       {
+          if (ind < 0) ind+=self.Size();
+          if (ind < 0 || ind >= self.Size())
+            throw py::index_error();
         self.Range(ind,ind+1) = z;
       }, py::arg("ind"), py::arg("value"), "Set value at given position" )
     .def("__setitem__", [](BaseVector & self,  py::slice inds, double d )
@@ -394,6 +401,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("range"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<double> & v )
       {
+          if (ind < 0) ind+=self.Size();
+          if (ind < 0 || ind >= self.Size())
+            throw py::index_error();
           if( self.IsComplex() )
             self.SV<Complex>()(ind) = v;
           else
@@ -401,6 +411,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("ind"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<Complex> & v )
       {
+          if (ind < 0) ind+=self.Size();
+          if (ind < 0 || ind >= self.Size())
+            throw py::index_error();
           if( self.IsComplex() )
             self.SV<Complex>()(ind) = v;
           else
