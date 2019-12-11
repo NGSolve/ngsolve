@@ -1558,10 +1558,7 @@ namespace ngfem
                  static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
                    -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
                                                        {
-                                                         SIMD<double> sum = 0.0;
-                                                         for (int k = 0; k < value.Size(); k++)
-                                                           sum += val(k) * value(k);
-                                                         coefs(j) += HSum(sum);
+                                                         coefs(j) += HSum(InnerProduct(value,val));
                                                        }));
                }
            }
