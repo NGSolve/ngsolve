@@ -257,12 +257,13 @@ namespace ngfem
     {
        for (size_t i = 0; i < bmir.Size(); i++)
         {
-          Mat<DIM,DIM,SIMD<double>> mat;
+          Vec<DIM*DIM,SIMD<double>> mat;
 	  
 	  auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
 
-	  for (size_t k = 0; k < DIM*DIM; k++)
-	    mat(k) = values(k,i);
+	  //for (size_t k = 0; k < DIM*DIM; k++)
+	  //  mat(k) = values(k,i);
+          mat = values.Col(i);
 	  
 	  Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
           TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
@@ -273,12 +274,7 @@ namespace ngfem
                                  SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
                                            {                                          
 					     Vec<DIM*DIM,SIMD<double>> vecshape = val.Shape();
-                                             
-                                             SIMD<double> sum = 0.0;
-                                             for (size_t k = 0; k < DIM*DIM; k++)
-                                               sum += mat(k) * vecshape(k);
-                                             
-                                             *pcoefs += HSum(sum);
+                                             *pcoefs += HSum(InnerProduct(mat,vecshape));
                                              pcoefs += dist;
                                            }));
         }
