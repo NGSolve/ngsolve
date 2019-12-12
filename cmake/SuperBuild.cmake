@@ -150,7 +150,7 @@ if (USE_LAPACK)
         ExternalProject_Add(win_download_lapack
           PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
           URL "https://github.com/NGSolve/ngsolve_dependencies/releases/download/v1.0.0/lapack64.zip"
-          URL_MD% 635432b6b41f23177b9116d4323c978c
+          URL_MD5 635432b6b41f23177b9116d4323c978c
           UPDATE_COMMAND "" # Disable update
           BUILD_IN_SOURCE 1
           CONFIGURE_COMMAND ""
@@ -250,7 +250,7 @@ ExternalProject_Add (ngsolve
   )
 
 
-install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
+install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/ngsolve\")")
 
 add_custom_target(test_ngsolve
   ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
