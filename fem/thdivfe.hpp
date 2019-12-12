@@ -222,7 +222,7 @@ namespace ngfem
       data(1) =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
     }
 
-    INLINE THDiv2Shape (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+    INLINE THDiv2Shape (const wuDv_minus_wvDu<2,SCAL> & uv) 
     { 
       data[0] = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
       data[1] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -358,7 +358,7 @@ namespace ngfem
   }
 
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const wuDv_minus_wvDu<2,SCAL> & uv) 
   {
     Vec<2,SCAL> data;    
     data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -393,7 +393,7 @@ namespace ngfem
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<3,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const wuDv_minus_wvDu<3,SCAL> & uv) 
   {
     Vec<3,SCAL> data;
     data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -567,7 +567,7 @@ namespace ngfem
         + 2*uv.u.DValue(1) * uv.v.DValue(0);
     }
 
-    INLINE THDiv2DivShape (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+    INLINE THDiv2DivShape (const wuDv_minus_wvDu<2,SCAL> & uv) 
     { 
       AutoDiff<1,SCAL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
       data = -hd.DValue(0);
