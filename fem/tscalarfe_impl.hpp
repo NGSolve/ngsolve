@@ -45,7 +45,7 @@ namespace ngfem
     TIP<DIM,AutoDiff<DIM>> tip = ip;
     T_CalcShape (tip,
                  SBLambda ([dshapes] (int i, auto shape)
-                           { dshapes.Row(i) = GetGradient(shape); }));
+                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
   }
 
 #ifndef FASTCOMPILE
@@ -790,7 +790,7 @@ namespace ngfem
         Vec<DIM, AutoDiff<DIM>> adp = ir[i];
         T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),
                      SBLambda ([&] (int j, auto shape)
-                               { coefs(j) += InnerProduct (vals.Row(i), GetGradient(shape)); }));
+                               { coefs(j) += InnerProduct (vals.Row(i), ngbla::GetGradient(shape)); }));
       }
   }
   
@@ -807,7 +807,7 @@ namespace ngfem
                      SBLambda ([&] (int j, auto shape)
                                { 
                                  FlatMatrixFixWidth<DIM> mvals(nels, &values(i,0));
-                                 coefs.Row(j) += mvals * GetGradient(shape);
+                                 coefs.Row(j) += mvals * ngbla::GetGradient(shape);
                                }));
       }
   }
