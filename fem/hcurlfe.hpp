@@ -260,23 +260,20 @@ namespace ngfem
 
 
 
-  template <int DIM, typename SCAL = double>
-  class Class_Du
+  template <int DIM, typename SCAL> //  = double>
+  class Du
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
     const AutoDiff<DIM,SCAL> u;
 
-    Class_Du (const AutoDiff<DIM,SCAL> au)
-      : u(au) { ; }
+    Du (const AutoDiff<DIM,SCAL> au) : u(au) { }
+    Du (const AutoDiffRec<DIM,SCAL> au) : u(au) { }
 
     Vec<DIM,SCAL> Value () const
     {
-      Vec<DIM,SCAL> val;
-      for (int j = 0; j < DIM; j++)
-	val(j) = u.DValue(j);
-      return val;
+      return GetGradient(u);
     }
 
     Vec<DIM_CURL,SCAL> CurlValue () const
@@ -285,6 +282,7 @@ namespace ngfem
     }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_Du<DIM,SCAL> Du (AutoDiff<DIM,SCAL> u)
   { return Class_Du<DIM,SCAL> (u); }
@@ -292,40 +290,50 @@ namespace ngfem
   template <int DIM, typename SCAL>
   INLINE Class_Du<DIM,SCAL> Du (AutoDiffRec<DIM,SCAL> u)
   { return Class_Du<DIM,SCAL> (u); }
-
+  */
 
 
 
   template <int DIM, typename SCAL = double>
-  class Class_uDv
+  class uDv
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM,SCAL> u, v;
+    AutoDiff<DIM,SCAL> u, v;
     
-    Class_uDv (const AutoDiff<DIM,SCAL> au, 
-               const AutoDiff<DIM,SCAL> av)
+    uDv (AutoDiff<DIM,SCAL> au, AutoDiff<DIM,SCAL> av)
+      : u(au), v(av) { ; }
+
+    uDv (AutoDiffRec<DIM,SCAL> au, AutoDiffRec<DIM,SCAL> av)
       : u(au), v(av) { ; }
     
     Vec<DIM,SCAL> Value () const
     {
+      /*
       Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = u.Value() * v.DValue(j);
       return val;
+      */
+      return u.Value() * GetGradient(v);
     }
 
     Vec<DIM_CURL,SCAL> CurlValue () const
     {
+      /*
       AutoDiff<DIM_CURL,SCAL> hd = Cross (u, v);
       Vec<DIM_CURL,SCAL> val;
       for (int i = 0; i < DIM_CURL; i++) 
         val(i) = hd.DValue(i);
       return val;
+      */
+      // return GetGradient(Cross(u,v)); // cross product of gradients
+      return Cross (GetGradient(u), GetGradient(v));
     }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_uDv<DIM,SCAL> uDv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
   { return Class_uDv<DIM,SCAL> (u,v); }
@@ -333,38 +341,49 @@ namespace ngfem
   template <int DIM, typename SCAL>
   INLINE Class_uDv<DIM,SCAL> uDv (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
   { return Class_uDv<DIM,SCAL> (u,v); }
-
+  */
 
   template <int DIM, typename SCAL = double>
-  class Class_uDv_minus_vDu
+  class uDv_minus_vDu
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
-
+    
   public:
     const AutoDiff<DIM, SCAL> u, v;
 
-    Class_uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
+    uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
                          const AutoDiff<DIM,SCAL> av)
+      : u(au), v(av) { ; }
+    
+    uDv_minus_vDu (const AutoDiffRec<DIM,SCAL> au, 
+                         const AutoDiffRec<DIM,SCAL> av)
       : u(au), v(av) { ; }
 
     Vec<DIM,SCAL> Value () const
     {
+      /*
       Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = u.Value() * v.DValue(j) - v.Value() * u.DValue(j);
       return val;
+      */
+      return u.Value()*GetGradient(v)-v.Value()*GetGradient(u);
     }
 
     Vec<DIM_CURL,SCAL> CurlValue () const
     {
+      /*
       AutoDiff<DIM_CURL,SCAL> hd = Cross (u, v);
       Vec<DIM_CURL,SCAL> val;
       for (int i = 0; i < DIM_CURL; i++) 
         val(i) = 2 * hd.DValue(i);
       return val;
+      */
+      return 2 * Cross (GetGradient(u), GetGradient(v));
     }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_uDv_minus_vDu<DIM,SCAL> 
   uDv_minus_vDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
@@ -374,7 +393,7 @@ namespace ngfem
   INLINE Class_uDv_minus_vDu<DIM,SCAL> 
   uDv_minus_vDu (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
   { return Class_uDv_minus_vDu<DIM,SCAL> (u,v); }
-
+  */
 
 
 

@@ -1032,13 +1032,33 @@ namespace ngbla
   template <typename S>
   INLINE Vec<3,S> Cross (const Vec<3,S> & a, const Vec<3,S> & b)
   {
+    /*
     Vec<3,S> prod;
     prod(0) = a(1) * b(2) - a(2) * b(1);
     prod(1) = a(2) * b(0) - a(0) * b(2);
     prod(2) = a(0) * b(1) - a(1) * b(0);
     return prod;
+    */
+    return Vec<3,S>({ a(1)*b(2)-a(2)*b(1), a(2)*b(0)-a(0)*b(2), a(0)*b(1)-a(1)*b(0) });
   }
 
+  template <typename S>
+  INLINE Vec<1,S> Cross (const Vec<2,S> & a, const Vec<2,S> & b)
+  {
+    return Vec<1,S> ( { a(0) * b(1) - a(1) * b(0) } );
+    /*
+    Vec<1,S> prod;
+    prod(0) = a(0) * b(1) - a(1) * b(0);
+    return prod;
+    */
+  }
+
+  template <typename S>
+  INLINE Vec<0,S> Cross (const Vec<1,S> & a, const Vec<1,S> & b)
+  {
+    return Vec<0,S>();
+  }
+  
   /// output vector
   template<int S, typename T>
   inline ostream & operator<< (ostream & ost, const Vec<S,T> & v)
