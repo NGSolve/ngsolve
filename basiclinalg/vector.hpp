@@ -1766,7 +1766,7 @@ namespace ngbla
 
 
   template <int S, typename T>
-  INLINE  auto operator* (double a, const Vec<S,T> & vec) 
+  INLINE auto operator* (double a, const Vec<S,T> & vec) 
     -> Vec<S, decltype(RemoveConst(a*vec(0)))>
   {
     typedef decltype(RemoveConst(a*vec(0))) TRES;
@@ -1776,6 +1776,25 @@ namespace ngbla
     return res;
   }
 
+  template <int S, typename T>
+  INLINE auto operator+ (Vec<S,T> a, Vec<S,T> b) 
+  {
+    Vec<S,T> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a(i)+b(i);
+    return res;
+  }
+
+  template <int S, typename T>
+  INLINE auto operator- (Vec<S,T> a, Vec<S,T> b) 
+  {
+    Vec<S,T> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a(i)-b(i);
+    return res;
+  }
+
+  
   template <int S, typename T>
   INLINE auto operator* (double a, FlatVec<S,T> vec) 
     -> Vec<S, decltype(RemoveConst(a*vec(0)))>
