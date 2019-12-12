@@ -120,8 +120,8 @@ namespace ngbla
       return *this;
     }
 
-    template <int D, typename TSCAL>
-    INLINE const FlatVector & operator= (Vec<D,TSCAL> v) const
+    template <int D, typename TSCAL2>
+    INLINE const FlatVector & operator= (Vec<D,TSCAL2> v) const
     {
       for (auto i : ngstd::Range(D))
 	data[i] = v(i);
