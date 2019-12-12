@@ -625,7 +625,7 @@ direction : int
         case 3: default:
           return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
         }
-      // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
+      // return pow(ip.GetMeasure(), 1.0/(ip.DimSpace());
     }
 
       using CoefficientFunctionNoDerivative::Evaluate;
@@ -666,7 +666,7 @@ direction : int
           if (ip.IP().FacetNr() != -1)
           {
           double det = 1;
-          switch (ip.Dim())
+          switch (ip.DimSpace())
             {
             case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
             case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
@@ -678,7 +678,7 @@ direction : int
           }
           else
           {
-          switch (ip.Dim()) {
+          switch (ip.DimSpace()) {
             case 1:  tmp_res =      fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
             case 2:  tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2); break;
             default: tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
