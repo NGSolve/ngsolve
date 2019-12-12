@@ -290,10 +290,7 @@ namespace ngfem
                                 SBLambda ([vali,coefs] (size_t j, auto s)
                                           {
                                             auto vshape = HDiv2ShapeNew(s); 
-                                            SIMD<double> sum = 0.0;
-                                            for (size_t k = 0; k < vshape.Size(); k++)
-                                              sum += vali(k) * vshape(k);
-                                            coefs(j) += HSum(sum);
+                                            coefs(j) += HSum(InnerProduct(vali,vshape));
                                           }));
                }
            }
