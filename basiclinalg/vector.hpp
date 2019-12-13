@@ -123,7 +123,8 @@ namespace ngbla
     template <int D, typename TSCAL2>
     INLINE const FlatVector & operator= (Vec<D,TSCAL2> v) const
     {
-      for (auto i : ngstd::Range(D))
+      // for (auto i : ngstd::Range(D))
+      for (int i = 0; i < D; i++)
 	data[i] = v(i);
       return *this;
     }
