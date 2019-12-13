@@ -1661,6 +1661,15 @@ namespace ngstd
     INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0]); }
     INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
     INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); } 
+
+    template <int DIM> 
+    INLINE operator Vec<DIM, AutoDiffRec<DIM,SIMD<double>>> () const
+    {
+      Vec<DIM, AutoDiffRec<DIM,SIMD<double>> > adp;
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiffRec<DIM,SIMD<double>> (x[i], i);
+      return adp;
+    }
   };
 
   template <> INLINE ngfem::TIP<0,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<0>() const
