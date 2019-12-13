@@ -2,15 +2,6 @@
 
 namespace ngfem
 {
-
-  /*
-  template <int DIM>
-  INLINE auto GetTIPHDiv (const IntegrationPoint & ip)
-  {
-    TIP<DIM,AutoDiff<DIM>> tip = ip;
-    return tip;
-  }
-  */
   
   template<int DIMS, int DIMR>
   INLINE auto GetTIPHDiv (const MappedIntegrationPoint<DIMS,DIMR> & mip)
