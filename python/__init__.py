@@ -12,19 +12,7 @@ ngsolve.comp ... function spaces, forms
 import netgen
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
-def TmpRedraw(*args, **kwargs):
-    if solve._Redraw(*args, **kwargs):
-        try:
-            import netgen
-            import tkinter
-            cnt = 0
-            while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT) and cnt < 100):
-                cnt += 1
-        except:
-            pass
-
-solve.Redraw = TmpRedraw
-del TmpRedraw
+from netgen import Redraw
 
 from pyngcore import BitArray, TaskManager, SetNumThreads
 from .ngstd import Timers, Timer, IntRange
@@ -50,7 +38,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, MPI_Init
-from .solve import Redraw, BVP, CalcFlux, Draw, DrawFlux, \
+from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, PyTrace, \
     PyDet, Cross, Cof, PyInv, PySym, PySkew, OuterProduct, TimeFunction
