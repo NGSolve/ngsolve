@@ -284,6 +284,7 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class uDv
   {
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };    
   public:
     const AutoDiff<DIM,SCAL> u, v;
 
@@ -293,12 +294,12 @@ namespace ngfem
     uDv (AutoDiffRec<DIM,SCAL> au, AutoDiffRec<DIM,SCAL> av)
       : u(au), v(av) { ; }
     
-    auto Value () const
+    Vec<DIM,SCAL> Value () const
     {
       return u.Value() * GetGradient(v);
     }
 
-    auto CurlValue () const
+    Vec<DIM_CURL,SCAL> CurlValue () const
     {
       return Cross (GetGradient(u), GetGradient(v));
     }
@@ -309,6 +310,7 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class uDv_minus_vDu
   {
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
   public:
     const AutoDiff<DIM, SCAL> u, v;
     
@@ -320,12 +322,12 @@ namespace ngfem
                    const AutoDiffRec<DIM,SCAL> av)
       : u(au), v(av) { }
 
-    auto Value () const
+    Vec<DIM,SCAL> Value () const
     {
       return u.Value()*GetGradient(v)-v.Value()*GetGradient(u);
     }
 
-    auto CurlValue () const
+    Vec<DIM_CURL,SCAL> CurlValue () const
     {
       return 2 * Cross (GetGradient(u), GetGradient(v));
     }
