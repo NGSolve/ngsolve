@@ -239,6 +239,12 @@ namespace ngbla
   }
 
   template <typename SCAL>
+  auto GetGradient (AutoDiff<2,SCAL> ad)
+  {
+    return Vec<2,SCAL>(ad.DValue(0), ad.DValue(1));
+  }
+
+  template <typename SCAL>
   auto GetGradient (AutoDiff<0,SCAL> ad)
   {
     return Vec<0,SCAL>();
