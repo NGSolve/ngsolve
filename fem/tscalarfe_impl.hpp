@@ -42,8 +42,8 @@ namespace ngfem
               BareSliceMatrix<> dshape) const
   {
     auto dshapes = dshape.AddSize(ndof, DIM);
-    TIP<DIM,AutoDiff<DIM>> tip = ip;
-    T_CalcShape (tip,
+    TIP<DIM,AutoDiffRec<DIM>> tip = ip;
+    T_CalcShape (tip, 
                  SBLambda ([dshapes] (int i, auto shape)
                            { dshapes.Row(i) = ngbla::GetGradient(shape); }));
   }
@@ -658,10 +658,10 @@ namespace ngfem
   EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<double> coefs) const -> Vec<DIM>
   {
     // Vec<DIM, AutoDiff<DIM>> adp = ip;
-    TIP<DIM,AutoDiff<DIM>> tip = ip;
-    AutoDiff<DIM> sum = 0.0;
+    TIP<DIM,AutoDiffRec<DIM>> tip = ip;
+    AutoDiffRec<DIM> sum = 0.0;
     T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ( [&](int i, AutoDiff<DIM> val) 
+                 SBLambda ( [&](int i, AutoDiffRec<DIM> val) 
                             { 
                               sum += coefs(i) * val;
                             }));
@@ -677,7 +677,7 @@ namespace ngfem
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
-        TIP<DIM,AutoDiff<DIM>> tip = ir[i];
+        TIP<DIM,AutoDiffRec<DIM>> tip = ir[i];
         Vec<DIM> sum = 0.0;
         T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
