@@ -268,7 +268,9 @@ namespace ngfem
       {
         Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
         {
-          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+          // shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+          Vec<DIM_DMAT> cs = val.CurlShape();
+          shape.Row(nr).AddSize(DIM_DMAT) = cs;
         }));
       }
       else // curved element
