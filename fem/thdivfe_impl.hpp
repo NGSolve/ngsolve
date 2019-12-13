@@ -54,7 +54,6 @@ namespace ngfem
   }
 
 
-#ifdef COMMENT  
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 
   CalcShape (const IntegrationPoint & ip, 
@@ -330,7 +329,6 @@ namespace ngfem
   }
 
   
-#endif
 
 
 #endif
