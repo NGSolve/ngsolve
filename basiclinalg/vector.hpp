@@ -121,7 +121,7 @@ namespace ngbla
     }
 
     template <int D, typename TSCAL2>
-    INLINE const FlatVector & operator= (Vec<D,TSCAL2> v) const
+    INLINE const FlatVector & operator= (const Vec<D,TSCAL2> & v) const
     {
       for (int i = 0; i < D; i++)
 	data[i] = v(i);
