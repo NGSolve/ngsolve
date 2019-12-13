@@ -120,6 +120,7 @@ namespace ngbla
       return *this;
     }
 
+    /*
     template <int D, typename TSCAL2>
     INLINE const FlatVector & operator= (Vec<D,TSCAL2> v) const
     {
@@ -129,7 +130,7 @@ namespace ngbla
 	data[i] = v(i);
       return *this;
     }
-
+    */
     
     /// evaluate matrix expression
     template<typename TB>
