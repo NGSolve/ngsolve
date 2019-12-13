@@ -1764,7 +1764,7 @@ namespace ngbla
 
 
 
-
+  /*
   template <int S, typename T>
   INLINE auto operator* (double a, const Vec<S,T> & vec) 
     -> Vec<S, decltype(RemoveConst(a*vec(0)))>
@@ -1775,7 +1775,40 @@ namespace ngbla
       res(i) = a * vec(i);
     return res;
   }
+  */
+  
+  template <int S, typename T>
+  INLINE auto operator* (double a, const Vec<S,T> & vec)
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+  
+  template <int S, typename T>
+  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
 
+  // all other cases ...
+  template <int S, typename T,
+            typename enable_if<!is_convertible_v<T,Complex>,int>::type=0>
+  INLINE auto operator* (T a, const Vec<S,T> & vec) 
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+  
   template <int S, typename T>
   INLINE auto operator+ (Vec<S,T> a, Vec<S,T> b) 
   {
@@ -1806,16 +1839,6 @@ namespace ngbla
     return res;
   }
 
-  template <int S, typename T>
-  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
-    -> Vec<S, decltype(RemoveConst(a*vec(0)))>
-  {
-    typedef decltype(RemoveConst(a*vec(0))) TRES;
-    Vec<S, TRES> res;
-    for (int i = 0; i < S; i++)
-      res(i) = a * vec(i);
-    return res;
-  }
 
   template <int S, typename T>
   INLINE auto operator* (Complex a, FlatVec<S,T> vec) 
