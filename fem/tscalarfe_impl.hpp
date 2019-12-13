@@ -981,10 +981,10 @@ namespace ngfem
 		    BareSliceMatrix<> dshape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
-    Vec<DIM, AutoDiffRec<DIM>> adp = mip;
+    // Vec<DIM, AutoDiffRec<DIM>> adp = mip;
     auto dshapes = dshape.AddSize(ndof, DIM);
 
-    T_CalcShape (TIP<DIM, AutoDiffRec<DIM>> (adp),
+    T_CalcShape (GetTIP(mip), // TIP<DIM, AutoDiffRec<DIM>> (adp),
                  SBLambda ([dshapes] (int i, auto shape)
                            { dshapes.Row(i) = ngbla::GetGradient(shape); }));
   }
