@@ -608,6 +608,19 @@ namespace ngbla
         data[i] = s;
     }
 
+    Mat (initializer_list<initializer_list<T>> llist)
+    {
+      int r = 0;
+      for (auto row : llist)
+        {
+          int c = 0;
+          for (auto col : row)
+            (*this)(r,c++) = col;
+          r++;
+        }
+    }
+
+    
     /// assign values
     template<typename TB>
     INLINE Mat & operator= (const Expr<TB> & m)
