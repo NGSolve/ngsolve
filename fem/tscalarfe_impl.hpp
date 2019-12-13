@@ -768,9 +768,9 @@ namespace ngfem
   {
     for (int i = 0; i < ir.Size(); i++)
       {
-        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = ir[i];
+        Vec<DIM, AutoDiffRec<DIM,SIMD<double>>> adp = ir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
-        T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>> (adp),
+        T_CalcShape (TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> (adp),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
                                { sum += coefs(j) * ngbla::GetGradient(shape); }));
         for (int k = 0; k < DIM; k++)
@@ -787,8 +787,8 @@ namespace ngfem
     coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM>> adp = ir[i];
-        T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),
+        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i];
+        T_CalcShape (TIP<DIM,AutoDiffRec<DIM>> (adp),
                      SBLambda ([&] (int j, auto shape)
                                { coefs(j) += InnerProduct (vals.Row(i), ngbla::GetGradient(shape)); }));
       }
@@ -802,8 +802,8 @@ namespace ngfem
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM>> adp = ir[i];  
-        T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
+        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i];  
+        T_CalcShape (TIP<DIM, AutoDiffRec<DIM>> (adp),
                      SBLambda ([&] (int j, auto shape)
                                { 
                                  FlatMatrixFixWidth<DIM> mvals(nels, &values(i,0));
@@ -981,12 +981,12 @@ namespace ngfem
 		    BareSliceMatrix<> dshape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
-    Vec<DIM, AutoDiff<DIM>> adp = mip;
+    Vec<DIM, AutoDiffRec<DIM>> adp = mip;
     auto dshapes = dshape.AddSize(ndof, DIM);
 
-    T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ([dshapes] (int i, AD2Vec<DIM> shape)
-                           { dshapes.Row(i) = shape; }));
+    T_CalcShape (TIP<DIM, AutoDiffRec<DIM>> (adp),
+                 SBLambda ([dshapes] (int i, auto shape)
+                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
   }
 
 
