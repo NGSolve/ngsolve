@@ -69,7 +69,7 @@ namespace ngfem
   CalcShape (const IntegrationPoint & ip, 
 	     SliceMatrix<> shape) const
   {    
-    TIP<DIM,AutoDiff<DIM>> pt = ip;
+    TIP<DIM,AutoDiffRec<DIM>> pt = ip;
     static_cast<const FEL*> (this) -> 
       T_CalcShape (pt, // GetTIPHDiv<DIM> (ip),
                    SBLambda( [shape] (size_t nr, THDiv2Shape<DIM> val)  LAMBDA_INLINE
@@ -84,7 +84,7 @@ namespace ngfem
   CalcDivShape (const IntegrationPoint & ip, 
 		SliceVector<> divshape) const
   {  
-    TIP<DIM,AutoDiff<DIM>> pt = ip;    
+    TIP<DIM,AutoDiffRec<DIM>> pt = ip;    
     static_cast<const FEL*> (this) -> 
       T_CalcShape (pt, // GetTIPHDiv<DIM>(ip),
                    SBLambda( [divshape] (size_t nr, THDiv2DivShape<DIM> val) LAMBDA_INLINE
@@ -203,11 +203,11 @@ namespace ngfem
   {    
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
+        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i]; 
 
         Vec<DIM> sum = 0;
         static_cast<const FEL*> (this) -> 
-          T_CalcShape (TIP<DIM,AutoDiff<DIM>>(adp),
+          T_CalcShape (TIP<DIM,AutoDiffRec<DIM>>(adp),
                        SBLambda([coefs,&sum] (size_t j, THDiv2Shape<DIM> vshape)
                                 {
                                   sum += coefs(j) * Vec<DIM> (vshape);
@@ -226,7 +226,7 @@ namespace ngfem
     coefs = 0;
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
+        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i]; 
 
         Vec<DIM> val = vals.Row(i);
         static_cast<const FEL*> (this) -> 
