@@ -284,7 +284,7 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class uDv
   {
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };    
+    // enum { DIM_CURL = (DIM * (DIM-1))/2 };    
   public:
     const AutoDiff<DIM,SCAL> u, v;
 
@@ -294,12 +294,14 @@ namespace ngfem
     uDv (AutoDiffRec<DIM,SCAL> au, AutoDiffRec<DIM,SCAL> av)
       : u(au), v(av) { ; }
     
-    Vec<DIM,SCAL> Value () const
+    // Vec<DIM,SCAL> Value () const
+    auto Value () const
     {
       return u.Value() * GetGradient(v);
     }
 
-    Vec<DIM_CURL,SCAL> CurlValue () const
+    // Vec<DIM_CURL,SCAL> CurlValue () const
+    auto CurlValue () const
     {
       return Cross (GetGradient(u), GetGradient(v));
     }
@@ -310,7 +312,7 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class uDv_minus_vDu
   {
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    // enum { DIM_CURL = (DIM * (DIM-1))/2 };
   public:
     const AutoDiff<DIM, SCAL> u, v;
     
@@ -322,12 +324,14 @@ namespace ngfem
                    const AutoDiffRec<DIM,SCAL> av)
       : u(au), v(av) { }
 
-    Vec<DIM,SCAL> Value () const
+    // Vec<DIM,SCAL> Value () const
+    auto Value () const
     {
       return u.Value()*GetGradient(v)-v.Value()*GetGradient(u);
     }
 
-    Vec<DIM_CURL,SCAL> CurlValue () const
+    // Vec<DIM_CURL,SCAL> CurlValue () const
+    auto CurlValue () const    
     {
       return 2 * Cross (GetGradient(u), GetGradient(v));
     }
@@ -339,7 +343,7 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class wuDv_minus_wvDu
   {
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    // enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
     const AutoDiff<DIM,SCAL> u, v, w;
@@ -353,7 +357,8 @@ namespace ngfem
                      const AutoDiffRec<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
     
-    Vec<DIM,SCAL> Value () const
+    // Vec<DIM,SCAL> Value () const
+    auto Value () const
     {
       /*
       Vec<DIM,SCAL> val;
@@ -364,7 +369,8 @@ namespace ngfem
       return w.Value()*u.Value()*GetGradient(v) - w.Value()*v.Value()*GetGradient(u);
     }
 
-    Vec<DIM_CURL,SCAL> CurlValue () const
+    // Vec<DIM_CURL,SCAL> CurlValue () const
+    auto CurlValue () const
     {
       /*
       AutoDiff<DIM_CURL,SCAL> hd = Cross (u*w, v) + Cross(u, v*w);
