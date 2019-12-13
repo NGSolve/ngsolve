@@ -1813,18 +1813,20 @@ namespace ngbla
   }
   
   template <int S, typename T>
-  INLINE auto operator+ (Vec<S,T> a, Vec<S,T> b) 
+  INLINE auto operator+ (const Vec<S,T> & a, const Vec<S,T> & b) 
   {
-    Vec<S,T> res;
+    typedef decltype(RemoveConst(a(0))) TRES;    
+    Vec<S,TRES> res;
     for (int i = 0; i < S; i++)
       res(i) = a(i)+b(i);
     return res;
   }
 
   template <int S, typename T>
-  INLINE auto operator- (Vec<S,T> a, Vec<S,T> b) 
+  INLINE auto operator- (const Vec<S,T> & a, const Vec<S,T> & b) 
   {
-    Vec<S,T> res;
+    typedef decltype(RemoveConst(a(0))) TRES;        
+    Vec<S,TRES> res;
     for (int i = 0; i < S; i++)
       res(i) = a(i)-b(i);
     return res;
