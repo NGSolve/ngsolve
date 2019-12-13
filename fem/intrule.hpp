@@ -269,6 +269,15 @@ namespace ngfem
         adp[i] = AutoDiff<DIM> (pi[i], i);
       return adp;
     }
+
+    template <int DIM> 
+    INLINE operator Vec<DIM, AutoDiffRec<DIM>> () const
+    {
+      Vec<DIM, AutoDiffRec<DIM> > adp;
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiffRec<DIM> (pi[i], i);
+      return adp;
+    }
     
     INLINE operator TIP<0,double> () const { return TIP<0,double>(); }
     INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0]); }
@@ -284,6 +293,17 @@ namespace ngfem
     INLINE operator TIP<3,AutoDiff<3>> () const
     { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2)); } 
 
+    INLINE operator TIP<0,AutoDiffRec<0>> () const
+    { return TIP<0,AutoDiffRec<0>>(); } 
+    INLINE operator TIP<1,AutoDiffRec<1>> () const
+    { return TIP<1,AutoDiffRec<1>>(AutoDiffRec<1> (pi[0],0)); }
+    INLINE operator TIP<2,AutoDiffRec<2>> () const
+    { return TIP<2,AutoDiffRec<2>>(AutoDiffRec<2> (pi[0],0), AutoDiffRec<2> (pi[1],1)); }
+    INLINE operator TIP<3,AutoDiffRec<3>> () const
+    { return TIP<3,AutoDiffRec<3>>(AutoDiffRec<3> (pi[0],0), AutoDiffRec<3> (pi[1],1), AutoDiffRec<3> (pi[2],2)); } 
+
+
+    
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };
@@ -1853,10 +1873,10 @@ namespace ngfem
   template<int DIMS, int DIMR>
   INLINE void GetTIP( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip, TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> & adp);
 
-    template<int DIMR>
-    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip, TIP<0,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
-    { }
-
+  template<int DIMR>
+  INLINE void GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip, TIP<0,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
+  { }
+  
     template<int DIMR>
     INLINE void GetTIP( const SIMD<MappedIntegrationPoint<1,DIMR>> & mip, TIP<1,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
     {

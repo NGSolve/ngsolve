@@ -664,7 +664,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     INLINE auto Rec() const { return val; }
     INLINE auto Last() const { return SCAL(0); }
     INLINE auto & Rec() { return val; }
-    // auto & Last() { return val; }
+    INLINE auto & Last() { return val; }
     INLINE operator AutoDiff<0,SCAL> () const { return AutoDiff<0,SCAL>(); }
   };
 
