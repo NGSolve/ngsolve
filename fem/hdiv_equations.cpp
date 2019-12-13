@@ -69,8 +69,6 @@ namespace ngfem
   */
 
 
-
-#ifdef COMMENT
   static RegisterBilinearFormIntegrator<MassHDivIntegrator<2>> init_mhd2("masshdiv", 2, 1);
   static RegisterBilinearFormIntegrator<MassHDivIntegrator<3>> init_mhd3("masshdiv", 3, 1);
   static RegisterBilinearFormIntegrator<DivDivHDivIntegrator<2>> init_ddhd2("divdivhdiv", 2, 1);
@@ -84,7 +82,6 @@ namespace ngfem
   static RegisterLinearFormIntegrator<SourceHDivIntegrator<3>> init_shd3("sourcehdiv", 3, 3);
   static RegisterLinearFormIntegrator<NeumannHDivIntegrator<2>> init_nhd2("neumannhdiv", 2, 1);
   static RegisterLinearFormIntegrator<NeumannHDivIntegrator<3>> init_nhd3("neumannhdiv", 3, 1);
-#endif
 }
 
 
