@@ -1902,7 +1902,8 @@ namespace ngfem
   template <int D>
   INLINE auto GetTIP (const SIMD<IntegrationPoint> & ip)
   {
-    return ngfem::TIP<D,SIMD<double>> (ip);
+    // return ngfem::TIP<D,SIMD<double> (ip);
+    return ip.TIp<D>();
   }
   
   
