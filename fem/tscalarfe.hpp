@@ -213,6 +213,7 @@ namespace ngfem
 namespace ngbla
 {
 
+  /*
   template <int DIM, typename SCAL = double>
   class AD2Vec : public MatExpr<AD2Vec<DIM,SCAL> >
   {
@@ -228,6 +229,7 @@ namespace ngbla
     INLINE int Height () const { return DIM; }
     INLINE int Width () const { return 1; }
   };
+  */
 
   template <int DIM, typename SCAL>
   auto GetGradient (const AutoDiff<DIM,SCAL> & ad)
@@ -239,7 +241,7 @@ namespace ngbla
   }
   
   template <int DIM, typename SCAL>
-  auto GetGradient (AutoDiffRec<DIM,SCAL> ad)
+  auto GetGradient (const AutoDiffRec<DIM,SCAL> & ad)
   {
     Vec<DIM,SCAL> grad;
     for (int i = 0; i < DIM; i++)
