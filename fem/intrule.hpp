@@ -1896,7 +1896,9 @@ namespace ngfem
   template <int D>
   INLINE auto GetTIPGrad (const IntegrationPoint & ip)
   {
-    return TIP<D,AutoDiffRec<D>>(ip);
+    TIP<DIM,AutoDiffRec<DIM>> tip = ip;
+    return tip;
+    // return TIP<D,AutoDiffRec<D>>(ip);
   }
 
   template <int D>
