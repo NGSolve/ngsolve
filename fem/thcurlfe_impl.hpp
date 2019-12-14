@@ -111,10 +111,11 @@ namespace ngfem
     {
       Vec<DIM, AutoDiff<DIM> > adp = mip;
       TIP<DIM,AutoDiff<DIM>> tip(adp);
-      this->T_CalcShape (tip, // GetTIP(mip),
+      this->T_CalcShape (GetTIP(mip), 
                          SBLambda ([&](size_t i, auto s) 
                                    { 
-                                     FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue(); 
+                                     // FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue();
+                                     curlshape.Row(i) = s.CurlValue();
                                    }));
     }
   }
@@ -148,9 +149,12 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([shapei,DIM_CURL] (size_t j, auto s)
                                           {
+                                            /*
                                             auto cshape = s.CurlValue();
                                             for (size_t k = 0; k < DIM_CURL; k++)
                                               shapei(j*DIM_CURL+k) = cshape(k);
+                                            */
+                                            shapei.Range(j*DIM_CURL, (j+1)*DIM_CURL) = s.CurlValue();
                                           }));
            }
        });
@@ -164,12 +168,13 @@ namespace ngfem
                      BareSliceVector<double> x,
                      LocalHeap & lh) const -> Vec<DIM_CURL_(DIM)>
   {
-    Vec<DIM, AutoDiff<DIM> > adp = ip;
-    TIP<DIM,AutoDiff<DIM>> tip(adp);
+    // Vec<DIM, AutoDiff<DIM> > adp = ip;
+    // TIP<DIM,AutoDiff<DIM>> tip(adp);
     
     Vec<DIM_CURL_(DIM)> sum = 0.0;
-    this->T_CalcShape (tip, SBLambda ([&sum, x](size_t i, auto s) 
-                                      { sum += x(i) * s.CurlValue(); }));
+    this->T_CalcShape (GetTIPGrad<DIM>(ip), 
+                       SBLambda ([&sum, x](size_t i, auto s) 
+                                 { sum += x(i) * s.CurlValue(); }));
     return sum;
   }
 
@@ -201,8 +206,9 @@ namespace ngfem
                                           {
                                             sum += coefs(j) * shape.Value();
                                           }));
-             for (size_t k = 0; k < DIMSPACE; k++)
-               values(k,i) = sum(k); 
+             values.Col(i).Range(DIMSPACE) = sum;
+             // for (size_t k = 0; k < DIMSPACE; k++)
+             // values(k,i) = sum(k); 
            }
        });
   }
@@ -225,8 +231,9 @@ namespace ngfem
                                           {
                                             sum += coefs(j) * shape.Value();
                                           }));
-             for (size_t k = 0; k < DIMSPACE; k++)
-               values(k,i) = sum(k);
+             values.Col(i).Range(DIMSPACE) = sum;
+             // for (size_t k = 0; k < DIMSPACE; k++)
+             // values(k,i) = sum(k);
            }
        });
   }
@@ -247,10 +254,11 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([coefs,&sum] (size_t j, auto shape)
                                           {
-                                                sum += coefs(j) * shape.CurlValue();
+                                            sum += coefs(j) * shape.CurlValue();
                                           }));
-             for (size_t k = 0; k < DIM_CURL; k++)
-               values(k,i) = sum(k).Data();
+             values.Col(i).Range(DIM_CURL) = sum;
+             // for (size_t k = 0; k < DIM_CURL; k++)
+             // values(k,i) = sum(k).Data();
            }
        });
   }
@@ -274,8 +282,7 @@ namespace ngfem
                                           {
                                             sum += coefs(j) * shape.CurlValue();
                                           }));
-             for (size_t k = 0; k < DIM_CURL; k++)
-               values(k,i) = sum(k);
+             values.Col(i).Range(DIM_CURL) = sum;
            }
        });
   }
@@ -297,13 +304,6 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([vali,coefs] (size_t j, auto s)
                                           {
-                                            /*
-                                              auto shape = s.Value();
-                                              SIMD<double> sum = 0.0;
-                                              for (size_t k = 0; k < shape.Size(); k++)
-                                              sum += shape(k) * vali(k);
-                                              coefs(j) += HSum(sum);
-                                            */
                                             coefs(j) += HSum(InnerProduct(s.Value(), vali));
                                           }));
            }
@@ -326,13 +326,6 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([vali,coefs] (size_t j, auto s)
                                           {
-                                            /*
-                                              auto shape = s.Value();
-                                              SIMD<Complex> sum = 0.0;
-                                              for (size_t k = 0; k < shape.Size(); k++)
-                                              sum += shape(k) * vali(k);
-                                              coefs(j) += HSum(sum);
-                                            */
                                             coefs(j) += HSum(InnerProduct(s.Value(), vali));
                                           }));
            }
@@ -358,13 +351,6 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([vali,coefs] (size_t j, auto s)
                                           {
-                                            /*
-                                              auto cshape = s.CurlValue();
-                                                  SIMD<double> sum = 0.0;
-                                                  for (size_t k = 0; k < cshape.Size(); k++)
-                                                  sum += cshape(k) * vali(k);
-                                                  coefs(j) += HSum(sum);
-                                            */
                                             coefs(j) += HSum(InnerProduct(s.CurlValue(), vali));
                                           }));
            }
@@ -389,13 +375,6 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([vali,coefs] (size_t j, auto s)
                                           {
-                                            /*
-                                              auto cshape = s.CurlValue();
-                                              SIMD<Complex> sum = 0.0;
-                                              for (size_t k = 0; k < cshape.Size(); k++)
-                                              sum += cshape(k) * vali(k);
-                                              coefs(j) += HSum(sum);
-                                            */
                                             coefs(j) += HSum(InnerProduct(s.CurlValue(), vali));
                                           }));
            }
