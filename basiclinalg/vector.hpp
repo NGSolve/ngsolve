@@ -1431,6 +1431,15 @@ namespace ngbla
 #endif
     BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
     BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)) { ; }
+
+    template <int D, typename TSCAL2>
+    INLINE const BareVector & operator= (const Vec<D,TSCAL2> & v) const
+    {
+      for (int i = 0; i < D; i++)
+	data[i] = v(i);
+      return *this;
+    }
+    
     FlatVector<T> AddSize(size_t size) const
     {
       NETGEN_CHECK_RANGE(size, Height(), Height()+1);

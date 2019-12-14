@@ -302,12 +302,16 @@ namespace ngfem
     INLINE operator TIP<3,AutoDiffRec<3>> () const
     { return TIP<3,AutoDiffRec<3>>(AutoDiffRec<3> (pi[0],0), AutoDiffRec<3> (pi[1],1), AutoDiffRec<3> (pi[2],2)); } 
 
-
+    template <int D>
+    INLINE ngfem::TIP<D,double> TIp() const;
     
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };
 
+  template <int D> INLINE ngfem::TIP<D,double> IntegrationPoint :: TIp() const
+  { return ngfem::TIP<D,double> (*this); }
+  
 
   struct MeshPoint
   {
@@ -1672,6 +1676,7 @@ namespace ngstd
     }
   };
 
+  /*
   template <> INLINE ngfem::TIP<0,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<0>() const
   { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
   template <> INLINE ngfem::TIP<1,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<1>() const
@@ -1680,7 +1685,10 @@ namespace ngstd
   { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
   template <> INLINE ngfem::TIP<3,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<3>() const
   { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); }
-
+  */
+  template <int D> INLINE ngfem::TIP<D,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp() const
+  { return ngfem::TIP<D,ngstd::SIMD<double>> (*this); }
+  
   
   template <>
   class SIMD<ngfem::BaseMappedIntegrationPoint>
@@ -1879,6 +1887,25 @@ namespace ngstd
 
 namespace ngfem
 {
+  template <int D>
+  INLINE auto GetTIP (const IntegrationPoint & ip)
+  {
+    return ngfem::TIP<D,double> (ip);
+  }
+
+  template <int D>
+  INLINE auto GetTIPGrad (const IntegrationPoint & ip)
+  {
+    return TIP<D,AutoDiffRec<D>>(ip);
+  }
+
+  template <int D>
+  INLINE auto GetTIP (const SIMD<IntegrationPoint> & ip)
+  {
+    return ngfem::TIP<D,SIMD<double>> (ip);
+  }
+  
+  
   template<int DIMS, int DIMR>
   INLINE void GetTIP( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip, TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> & adp);
 

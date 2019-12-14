@@ -10,6 +10,7 @@
 namespace ngfem
 {
 
+  /*
   template <int DIM> 
   INLINE Vec<DIM, AutoDiff<DIM>> Ip2Ad (const IntegrationPoint & ip)
   {
@@ -18,22 +19,17 @@ namespace ngfem
       adp[i] = AutoDiff<DIM> (ip(i), i);
     return adp;
   }
-
-  
-
-
+  */
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const IntegrationPoint & ip, BareSliceVector<> shape) const
   {
-    /*
-    Vec<DIM> pt = ip.Point();
-    T_CalcShape (TIP<DIM,double> (ip), shape);
-    */
-    TIP<DIM,double> pt = ip;
-    T_CalcShape (pt, shape);    
+    // TIP<DIM,double> pt = ip;
+    // T_CalcShape (pt, shape);
+    // T_CalcShape (TIP<DIM,double>(ip), shape);
+    T_CalcShape (GetTIP<DIM>(ip), shape);    
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -41,11 +37,12 @@ namespace ngfem
   CalcDShape (const IntegrationPoint & ip, 
               BareSliceMatrix<> dshape) const
   {
-    auto dshapes = dshape.AddSize(ndof, DIM);
-    TIP<DIM,AutoDiffRec<DIM>> tip = ip;
-    T_CalcShape (tip, 
-                 SBLambda ([dshapes] (int i, auto shape)
-                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
+    // auto dshapes = dshape.AddSize(ndof, DIM);
+    // TIP<DIM,AutoDiffRec<DIM>> tip = ip;
+    T_CalcShape (// TIP<DIM,AutoDiffRec<DIM>>(ip),
+                 GetTIPGrad<DIM> (ip),
+                 SBLambda ([dshape] (int i, auto shape)
+                           { dshape.Row(i) = ngbla::GetGradient(shape); }));
   }
 
 #ifndef FASTCOMPILE
@@ -55,7 +52,7 @@ namespace ngfem
   CalcShape (const IntegrationRule & ir, BareSliceMatrix<> shape) const
   {
     for (int i = 0; i < ir.Size(); i++)
-      T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
+      T_CalcShape (GetTIP<DIM>(ir[i]), shape.Col(i));        
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -63,7 +60,7 @@ namespace ngfem
   CalcShape (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> shapes) const
   {
     for (size_t i = 0; i < ir.Size(); i++)
-      T_CalcShape (ir[i].TIp<DIM>(),
+      T_CalcShape (GetTIP<DIM>(ir[i]),   // .TIp<DIM>(),
                    SBLambda([&](size_t j, SIMD<double> shape)
                             { shapes(j,i) = shape; } ));
   }
@@ -73,10 +70,8 @@ namespace ngfem
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
-    // Vec<DIM> pt = ip.Point();
-
     double sum = 0;
-    T_CalcShape (TIP<DIM,double> (ip), SBLambda ( [&](int i, double val) { sum += x(i)*val; } ));
+    T_CalcShape (GetTIP<DIM>(ip), SBLambda ( [&](int i, double val) { sum += x(i)*val; } ));
     return sum;
   }  
 
@@ -88,10 +83,10 @@ namespace ngfem
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM> pt = ir[i].Point();
-        TIP<DIM,double> ip = ir[i];
+        // TIP<DIM,double> ip = ir[i];
         double sum = 0;
         // T_CalcShape (TIP<DIM,double> (ir[i]), SBLambda ( [&](int i, double shape) { sum += coefs(i)*shape; } ));
-        T_CalcShape (ip, SBLambda ( [&](int j, double shape) { sum += coefs(j)*shape; } ));
+        T_CalcShape (GetTIP<DIM>(ip), SBLambda ( [&](int j, double shape) { sum += coefs(j)*shape; } ));
         vals(i) = sum;
       }
   }
