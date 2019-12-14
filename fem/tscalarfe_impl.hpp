@@ -60,7 +60,8 @@ namespace ngfem
   CalcShape (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> shapes) const
   {
     for (size_t i = 0; i < ir.Size(); i++)
-      T_CalcShape (GetTIP<DIM>(ir[i]),   // .TIp<DIM>(),
+      T_CalcShape (GetTIP<DIM>(ir[i]),
+                   // ir[i].TIp<DIM>(),
                    SBLambda([&](size_t j, SIMD<double> shape)
                             { shapes(j,i) = shape; } ));
   }
@@ -148,22 +149,17 @@ namespace ngfem
     size_t i = 0;
     for ( ; i+2 <= hir.Size(); i+=2)
       {
-        /*
-        Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = hir[i+1];
-        Vec<DIM,MultiSIMD<2,double>> pt;
-        for (int i = 0; i < DIM; i++)
-          pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
-        */
         MultiSIMD<2,double> sum = 0;
         // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
-        TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
-        TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
+        // TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
+        // TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
+        auto tip1 = GetTIP<DIM>(hir[i]);
+        auto tip2 = GetTIP<DIM>(hir[i+1]);
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
         
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
-        T_CalcShape (tip, // TIP<DIM,MultiSIMD<2,double>> (pt),
+        T_CalcShape (tip, 
                      SBLambda ( [&](int j, MultiSIMD<2,double> shape)
                                 {
                                   // sum += *pcoefs * shape;
