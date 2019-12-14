@@ -1687,7 +1687,11 @@ namespace ngstd
   { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); }
   */
   template <int D> INLINE ngfem::TIP<D,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp() const
-  { return ngfem::TIP<D,ngstd::SIMD<double>> (*this); }
+  {
+    // return ngfem::TIP<D,ngstd::SIMD<double>> (*this);
+    ngfem::TIP<D,ngstd::SIMD<double>> tip = *this;
+    return tip;
+  }
   
   
   template <>
