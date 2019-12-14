@@ -10,25 +10,10 @@
 namespace ngfem
 {
 
-  /*
-  template <int DIM> 
-  INLINE Vec<DIM, AutoDiff<DIM>> Ip2Ad (const IntegrationPoint & ip)
-  {
-    Vec<DIM, AutoDiff<DIM> > adp;
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-    return adp;
-  }
-  */
-
-
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const IntegrationPoint & ip, BareSliceVector<> shape) const
   {
-    // TIP<DIM,double> pt = ip;
-    // T_CalcShape (pt, shape);
-    // T_CalcShape (TIP<DIM,double>(ip), shape);
     T_CalcShape (GetTIP<DIM>(ip), shape);    
   }
 
@@ -37,10 +22,7 @@ namespace ngfem
   CalcDShape (const IntegrationPoint & ip, 
               BareSliceMatrix<> dshape) const
   {
-    // auto dshapes = dshape.AddSize(ndof, DIM);
-    // TIP<DIM,AutoDiffRec<DIM>> tip = ip;
-    T_CalcShape (// TIP<DIM,AutoDiffRec<DIM>>(ip),
-                 GetTIPGrad<DIM> (ip),
+    T_CalcShape (GetTIPGrad<DIM> (ip),
                  SBLambda ([dshape] (int i, auto shape)
                            { dshape.Row(i) = ngbla::GetGradient(shape); }));
   }
@@ -59,11 +41,14 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> shapes) const
   {
+    /*
     for (size_t i = 0; i < ir.Size(); i++)
       T_CalcShape (GetTIP<DIM>(ir[i]),
-                   // ir[i].TIp<DIM>(),
                    SBLambda([&](size_t j, SIMD<double> shape)
                             { shapes(j,i) = shape; } ));
+    */
+    for (size_t i = 0; i < ir.Size(); i++)
+      T_CalcShape (GetTIP<DIM>(ir[i]), shapes.Col(i));
   }
   
   
@@ -72,7 +57,8 @@ namespace ngfem
   Evaluate (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     double sum = 0;
-    T_CalcShape (GetTIP<DIM>(ip), SBLambda ( [&](int i, double val) { sum += x(i)*val; } ));
+    T_CalcShape (GetTIP<DIM>(ip),
+                 SBLambda ([x,&sum](int i, double val) { sum += x(i)*val; } ));
     return sum;
   }  
 
@@ -83,11 +69,9 @@ namespace ngfem
   {
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        // Vec<DIM> pt = ir[i].Point();
-        // TIP<DIM,double> ip = ir[i];
         double sum = 0;
-        // T_CalcShape (TIP<DIM,double> (ir[i]), SBLambda ( [&](int i, double shape) { sum += coefs(i)*shape; } ));
-        T_CalcShape (GetTIP<DIM>(ir[i]), SBLambda ( [&](int j, double shape) { sum += coefs(j)*shape; } ));
+        T_CalcShape (GetTIP<DIM>(ir[i]),
+                     SBLambda ( [coefs,&sum](int j, double shape) { sum += coefs(j)*shape; } ));
         vals(i) = sum;
       }
   }
@@ -96,63 +80,11 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
   {
-    // static Timer t("ScalarFE::Evaluate", 2); RegionTimer reg(t);
-    // t.AddFlops (ir.GetNIP()*ndof);
-
-    /*
-    FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    for (int i = 0; i < hir.Size(); i++)
-      {
-        Vec<DIM,SIMD<double>> pt = hir[i];
-        SIMD<double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape) { sum += coefs(j)*shape; } ));
-        values.Get(i) = sum.Data();
-      }
-    */
-
-    /*
-    FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    for (int i = 0; i < hir.Size(); i++)
-      {
-        TIP<DIM,SIMD<double>> pt = hir[i];
-        SIMD<double> sum = 0;
-        static_cast<const FEL*> (this) -> 
-          T_CalcShape (pt, SBLambda ( [&](int j, SIMD<double> shape) { sum += coefs(j)*shape; } ));
-        values.Get(i) = sum.Data();
-      }
-    */
-
-    /*
-    FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    for (int i = 0; i < hir.Size(); i+=2)
-      {
-        Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = (i+1 < hir.Size()) ? hir[i+1] : hir[i];
-        Vec<DIM,MultiSIMD<2,double>> pt;
-        for (int i = 0; i < DIM; i++)
-          pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
-        MultiSIMD<2,double> sum = 0;
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
-        double * pcoefs = &coefs(0);
-        size_t dist = coefs.Dist();
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape)
-                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
-        
-        values.Get(i) = sum.template Get<0>().Data();
-        if (i+1 < hir.Size())
-          values.Get(i+1) = sum.template Get<1>().Data();          
-        }
-    */
-
-
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     size_t i = 0;
     for ( ; i+2 <= hir.Size(); i+=2)
       {
         MultiSIMD<2,double> sum = 0;
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
-        // TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
-        // TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
         auto tip1 = GetTIP<DIM>(hir[i]);
         auto tip2 = GetTIP<DIM>(hir[i+1]);
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
@@ -166,133 +98,20 @@ namespace ngfem
                                   sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
                                   pcoefs += dist; }
                                 ));
-
-        /*
-        values(i) = sum.template Get<0>().Data();
-        values(i+1) = sum.template Get<1>().Data();          
-        */
+        
         std::tie(values(i), values(i+1)) = sum;
       }
 
     if (i < hir.Size())
       {
-        TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
         SIMD<double> sum = 0;
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
         double * pcoefs = coefs.Data();
         size_t dist = coefs.Dist();
-        T_CalcShape (pt, // TIP<DIM,SIMD<double>> (hir[i]), 
+        T_CalcShape (GetTIP<DIM>(hir[i]),
                      SBLambda ( [&](int j, SIMD<double> shape)
                                 { sum += (*pcoefs)*shape; pcoefs += dist; } ));
-        values(i) = sum.Data();
+        values(i) = sum;
       }
-    
-    /*
-    FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    for (int i = 0; i < hir.Size(); i+=3)
-      {
-        Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = (i+1 < hir.Size()) ? hir[i+1] : hir[i];
-        Vec<DIM,SIMD<double>> pt3 = (i+2 < hir.Size()) ? hir[i+2] : hir[i];
-        Vec<DIM,MultiSIMD<3,double>> pt;
-        for (int i = 0; i < DIM; i++)
-          {
-            pt(i).template Get<0> () = pt1(i);
-            pt(i).template Get<1> () = pt2(i);
-            pt(i).template Get<2> () = pt3(i);
-          }
-        MultiSIMD<3,double> sum = 0;
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { sum += coefs(j)*shape; } ));
-
-        double * pcoefs = &coefs(0);
-        size_t dist = coefs.Dist();
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape)
-                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
-
-        values.Get(i) = sum.template Get<0>().Data();
-        if (i+1 < hir.Size())
-          values.Get(i+1) = sum.template Get<1>().Data();          
-        if (i+2 < hir.Size())
-          values.Get(i+2) = sum.template Get<2>().Data();          
-      }
-    */
-
-    /*
-    // 3 pnts with extra treatment of left-over
-    FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    int i = 0;
-    for ( ; i < hir.Size()-2; i+=3)
-      {
-        Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = hir[i+1];
-        Vec<DIM,SIMD<double>> pt3 = hir[i+2];
-        Vec<DIM,MultiSIMD<3,double>> pt;
-        for (int i = 0; i < DIM; i++)
-          {
-            pt(i).template Get<0> () = pt1(i);
-            pt(i).template Get<1> () = pt2(i);
-            pt(i).template Get<2> () = pt3(i);
-          }
-        MultiSIMD<3,double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { sum += coefs(j)*shape; } ));
-        values.Get(i) = sum.template Get<0>().Data();
-        values.Get(i+1) = sum.template Get<1>().Data();          
-        values.Get(i+2) = sum.template Get<2>().Data();          
-      }
-
-    if (i < hir.Size())
-      {
-        Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = (i+1 < hir.Size()) ? hir[i+1] : hir[i];
-        Vec<DIM,MultiSIMD<2,double>> pt;
-        for (int i = 0; i < DIM; i++)
-          {
-            pt(i).template Get<0> () = pt1(i);
-            pt(i).template Get<1> () = pt2(i);
-          }
-        MultiSIMD<2,double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
-        values.Get(i) = sum.template Get<0>().Data();
-        if (i+1 < hir.Size())
-          values.Get(i+1) = sum.template Get<1>().Data();          
-      }
-    */
-
-    
-    /*
-    FlatArray<SIMD<IntegrationPoint>> hir = ir;
-    for (int i = 0; i < hir.Size(); i+=4)
-      {
-        Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = (i+1 < hir.Size()) ? hir[i+1] : hir[i];
-        Vec<DIM,SIMD<double>> pt3 = (i+2 < hir.Size()) ? hir[i+2] : hir[i];
-        Vec<DIM,SIMD<double>> pt4 = (i+3 < hir.Size()) ? hir[i+3] : hir[i];
-        Vec<DIM,MultiSIMD<4,double>> pt;
-        for (int i = 0; i < DIM; i++)
-          {
-            pt(i).template Get<0> () = pt1(i);
-            pt(i).template Get<1> () = pt2(i);
-            pt(i).template Get<2> () = pt3(i);
-            pt(i).template Get<3> () = pt4(i);
-          }
-        MultiSIMD<4,double> sum = 0;
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<4,double> shape) { sum += coefs(j)*shape; } ));
-
-        double * pcoefs = &coefs(0);
-        size_t dist = coefs.Dist();
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<4,double> shape)
-                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
-
-        
-        values.Get(i) = sum.template Get<0>().Data();
-        if (i+1 < hir.Size())
-          values.Get(i+1) = sum.template Get<1>().Data();          
-        if (i+2 < hir.Size())
-          values.Get(i+2) = sum.template Get<2>().Data();          
-        if (i+3 < hir.Size())
-          values.Get(i+3) = sum.template Get<3>().Data();          
-      }
-    */
   }
     
 
@@ -308,12 +127,11 @@ namespace ngfem
       {
         for (size_t i = 0; i < hir.Size(); i++)
           {
-            TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
             SIMD<double> sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0;
             double * pcoefs = &coefs(j);
             size_t dist = coefs.Dist();
-            T_CalcShape (pt, 
-                         SBLambda ( [&](int j, SIMD<double> shape)
+            T_CalcShape (GetTIP<DIM>(hir[i]), 
+                         SBLambda ( [&pcoefs, dist, &sum1, &sum2, &sum3, &sum4](int j, SIMD<double> shape)
                                     {
                                       sum1 += pcoefs[0]*shape;
                                       sum2 += pcoefs[1]*shape;
@@ -321,10 +139,10 @@ namespace ngfem
                                       sum4 += pcoefs[3]*shape;
                                       pcoefs += dist;
                                     } ));
-            values(j,i) = sum1.Data();
-            values(j+1,i) = sum2.Data();
-            values(j+2,i) = sum3.Data();
-            values(j+3,i) = sum4.Data();
+            values(j,i) = sum1;
+            values(j+1,i) = sum2;
+            values(j+2,i) = sum3;
+            values(j+3,i) = sum4;
           }
       }
     switch (coefs.Width()&3)
@@ -335,40 +153,38 @@ namespace ngfem
         {
           for (size_t i = 0; i < hir.Size(); i++)
             {
-              TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
               SIMD<double> sum1 = 0, sum2 = 0;
               double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
-              T_CalcShape (pt, 
-                           SBLambda ( [&](int j, SIMD<double> shape)
+              T_CalcShape (GetTIP<DIM>(hir[i]), 
+                           SBLambda ( [&pcoefs, dist,&sum1, &sum2](int j, SIMD<double> shape)
                                       {
                                         sum1 += pcoefs[0]*shape;
                                         sum2 += pcoefs[1]*shape;
                                         pcoefs += dist;
                                       } ));
-              values(j,i) = sum1.Data();
-              values(j+1,i) = sum2.Data();
+              values(j,i) = sum1;
+              values(j+1,i) = sum2;
             }
           break;
         case 3:
           {
             for (size_t i = 0; i < hir.Size(); i++)
               {
-                TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
                 SIMD<double> sum1 = 0, sum2 = 0, sum3 = 0;
                 double * pcoefs = &coefs(j);
                 size_t dist = coefs.Dist();
-                T_CalcShape (pt, 
-                             SBLambda ( [&](int j, SIMD<double> shape)
+                T_CalcShape (GetTIP<DIM>(hir[i]), 
+                             SBLambda ( [&pcoefs, dist, &sum1,&sum2,&sum3](int j, SIMD<double> shape)
                                         {
                                           sum1 += pcoefs[0]*shape;
                                           sum2 += pcoefs[1]*shape;
                                           sum3 += pcoefs[2]*shape;
                                           pcoefs += dist;
                                         } ));
-                values(j,i) = sum1.Data();
-                values(j+1,i) = sum2.Data();
-                values(j+2,i) = sum3.Data();
+                values(j,i) = sum1;
+                values(j+1,i) = sum2;
+                values(j+2,i) = sum3;
               }
             break;
           }
@@ -384,21 +200,15 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const
   {
-    for (int i = 0; i < ir.GetNIP(); i++)
+    for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        // Vec<DIM> pt = ir[i].Point();
-        TIP<DIM,double> tip(ir[i]);
-        // values.Row(i) = 0.0;
-        auto hrow = values.Row(i).AddSize(coefs.Width());
+        auto hrow = values.Row(i).Range(coefs.Width());
         hrow = 0.0;
-        T_CalcShape (tip,
-                     SBLambda ( [&](int j, double shape) 
+        T_CalcShape (GetTIP<DIM>(ir[i]), 
+                     SBLambda ( [&](size_t j, double shape) 
                                 { 
-                                  // sum += coefs(i)*shape; 
-                                  // values.Row(i) += shape * coefs.Row(j);
                                   hrow += shape * coefs.Row(j); 
-                                } 
-                                ));
+                                }));
       }
   }
 
@@ -407,13 +217,12 @@ namespace ngfem
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, BareSliceVector<double> coefs) const
   {
     coefs.Range(0,ndof) = 0.0;
-    for (int i = 0; i < ir.GetNIP(); i++)
+    for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        // Vec<DIM> pt = ir[i].Point();
-        TIP<DIM,double> tip(ir[i]);
-        T_CalcShape (tip,
-                     SBLambda ( [&](int j, double shape) 
-                                { coefs(j) += vals(i)*shape; } ));
+        double vali = vals(i);
+        T_CalcShape (GetTIP<DIM>(ir[i]), 
+                     SBLambda ( [coefs, vali](int j, double shape) 
+                                { coefs(j) += vali*shape; } ));
       }
   }
 
@@ -436,14 +245,10 @@ namespace ngfem
     for ( ; i+2 <= hir.Size(); i+=2)
       {
         TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
-        // TIP<DIM,SIMD<double>> tip2 = hir[(i+1 < hir.Size()) ? i+1 : i].TIp<DIM>();
         TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
 
         MultiSIMD<2,double> val (values(i), values(i+1));
-        // i+1 < hir.Size() ? values.Get(i+1) : SIMD<double> (0.0));
-
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { coefs(j) += HSum(val*shape); } ));
 
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
@@ -648,16 +453,13 @@ namespace ngfem
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<double> coefs) const -> Vec<DIM>
   {
-    // Vec<DIM, AutoDiff<DIM>> adp = ip;
-    TIP<DIM,AutoDiffRec<DIM>> tip = ip;
-    AutoDiffRec<DIM> sum = 0.0;
-    T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ( [&](int i, AutoDiffRec<DIM> val) 
+    Vec<DIM> sum = 0.0;
+    T_CalcShape (GetTIPGrad<DIM>(ip), 
+                 SBLambda ( [&](int i, auto val) 
                             { 
-                              sum += coefs(i) * val;
+                              sum += coefs(i) * ngbla::GetGradient(val);
                             }));
-    // return AD2Vec<DIM> (sum);
-    return ngbla::GetGradient(sum);
+    return sum;
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -667,14 +469,11 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        // Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
-        TIP<DIM,AutoDiffRec<DIM>> tip = ir[i];
         Vec<DIM> sum = 0.0;
-        T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
+        T_CalcShape (GetTIPGrad<DIM>(ir[i]), 
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
                                { sum += coefs(j) * ngbla::GetGradient(shape); }));
-        // vals.Row(i).AddSize(DIM) = sum;
-        FlatVec<DIM>(vals.Addr(i,0)) = sum;
+        vals.Row(i) = sum; 
       }
   }
 
@@ -685,13 +484,6 @@ namespace ngfem
                 BareSliceVector<> coefs,
                 BareSliceMatrix<SIMD<double>> values) const
   {
-    /*
-    Iterate<4-DIM>
-      ([this,&bmir,coefs,values](auto CODIM)
-       {
-         constexpr int DIMSPACE = DIM+CODIM.value;
-         if (bmir.DimSpace() == DIMSPACE)
-    */
     Switch<4-DIM>
       (bmir.DimSpace()-DIM, [this,&bmir,coefs,values] (auto CODIM)
        {
@@ -703,51 +495,16 @@ namespace ngfem
              const size_t dist = coefs.Dist();
              
              Vec<DIMSPACE,SIMD<double>> sum(0.0);
-             TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>> adp = GetTIP(mir[i]);
-             this->T_CalcShape (adp,
+             this->T_CalcShape (GetTIP(mir[i]), 
                                 SBLambda ([&pcoefs,dist,&sum]
                                           (size_t j, auto shape)
                                           { 
-                                            for (auto k = 0; k < sum.Size(); k++)
-                                              sum(k) += *pcoefs * shape.DValue(k); 
+                                            sum += *pcoefs * ngbla::GetGradient(shape);
                                             pcoefs += dist;
                                           }));
-             for (size_t k = 0; k < DIMSPACE; k++)
-               values(k,i) = sum(k).Data();
+             values.Col(i).Range(DIMSPACE) = sum;
            }
-         // }
        });
-    
-       
-    /*
-    if ((DIM == 3) || (bmir.DimSpace() == DIM))
-      {
-        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        for (size_t i = 0; i < mir.Size(); i++)
-          {
-            double *pcoefs = &coefs(0);
-            const size_t dist = coefs.Dist();
-            
-            Vec<DIM,SIMD<double>> sum(0.0);
-            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp = GetTIP(mir[i]);
-            // GetTIP(mir[i], adp);
-            T_CalcShape (adp,
-                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
-                                   { 
-                                   Iterate<DIM> ( [&] (auto ii) {
-                                       sum(ii.value) += *pcoefs * shape.DValue(ii.value); 
-                                       });
-                                     pcoefs += dist;
-                                   }));
-            for (size_t k = 0; k < DIM; k++)
-              values(k,i) = sum(k).Data();
-          }
-      }
-    else
-      {
-        cout << "EvaluateGrad(simd) called for boudnary (not implemented)" << endl;        
-      }
-    */
   }
 
   
@@ -759,13 +516,14 @@ namespace ngfem
   {
     for (int i = 0; i < ir.Size(); i++)
       {
-        Vec<DIM, AutoDiffRec<DIM,SIMD<double>>> adp = ir[i];
+        // Vec<DIM, AutoDiffRec<DIM,SIMD<double>>> adp = ir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
-        T_CalcShape (TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> (adp),
+        T_CalcShape (GetTIPGrad<DIM> (ir[i]), // TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> (adp),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
                                { sum += coefs(j) * ngbla::GetGradient(shape); }));
-        for (int k = 0; k < DIM; k++)
-          values(k,i) = sum(k).Data();
+        values.Col(i).Range(DIM) = sum;
+        // for (int k = 0; k < DIM; k++)
+        // values(k,i) = sum(k).Data();
       }
   }
 
@@ -904,13 +662,6 @@ namespace ngfem
                      this->T_CalcShape (GetTIP(mir[i]),   // adp
                                         SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
-                                                    /*
-                                                    auto grad = ::GetGradient(shape);
-                                                    SIMD<double> sum = 0.0;
-                                                    for (size_t k = 0; k < DIMSPACE; k++)
-                                                      sum += grad(k) * vals(k); 
-                                                    *pcoef += HSum(sum);
-                                                    */
                                                     *pcoef += HSum(InnerProduct(ngbla::GetGradient(shape), vals));
                                                     pcoef += dist;
                                                   }));
