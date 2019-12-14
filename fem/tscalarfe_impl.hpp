@@ -793,8 +793,9 @@ namespace ngfem
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i];  
-        T_CalcShape (TIP<DIM, AutoDiffRec<DIM>> (adp),
+        // Vec<DIM, AutoDiffRec<DIM>> adp = ir[i];  
+        T_CalcShape (// TIP<DIM, AutoDiffRec<DIM>> (adp),
+                     GetTIPGrad<DIM>(ir[i]),
                      SBLambda ([&] (int j, auto shape)
                                { 
                                  FlatMatrixFixWidth<DIM> mvals(nels, &values(i,0));
@@ -896,11 +897,11 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
+                     // TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      Vec<DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);
-                     this->T_CalcShape (adp,
+                     this->T_CalcShape (GetTIP(mir[i]),   // adp
                                         SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
                                                     /*
@@ -1005,8 +1006,8 @@ namespace ngfem
             SIMD<double> * pdshapes = &dshapes(0,i);
             size_t dist = dshapes.Dist();
             
-            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
-            T_CalcShape (adp,
+            // TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
+            T_CalcShape (GetTIP(mir[i]), // adp,
                          SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    { 
                                      Iterate<DIM> ( [&] (size_t ii) {
@@ -1025,8 +1026,8 @@ namespace ngfem
            SIMD<double> * pdshapes = &dshapes(0,i);
            size_t dist = dshapes.Dist();
             
-           TIP<DIM,AutoDiffRec<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
-           T_CalcShape (adp,
+           // TIP<DIM,AutoDiffRec<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
+           T_CalcShape (GetTIP(mir[i]), // adp,
                         SBLambda ([&] (size_t j, AutoDiffRec<DIM1,SIMD<double>> shape)
                                   {
                                     /*
