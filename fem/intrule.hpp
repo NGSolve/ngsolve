@@ -1746,6 +1746,7 @@ namespace ngstd
   template <int DIMS, int DIMR>
   class SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>> : public SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>
   {
+    static_assert(DIMS <= DIMR, "DIM-source > DIM-range !!");    
   protected:
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::measure;
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::det;
@@ -1913,6 +1914,16 @@ namespace ngfem
     return ip.TIp<D>();
   }
   
+  template <int D>
+  INLINE auto GetTIPGrad (const SIMD<IntegrationPoint> & ip)
+  {
+    Vec<D, AutoDiffRec<D,SIMD<double>>> adp = ip;
+    return TIP<D,AutoDiffRec<D,SIMD<double>>> (adp);
+    // TIP<D,AutoDiffRec<D,SIMD<double>>> tip = ip;
+    // return tip;
+    // return TIP<D,AutoDiffRec<D>>(ip);
+  }
+
   
   template<int DIMS, int DIMR>
   INLINE void GetTIP1( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip, TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> & adp);
