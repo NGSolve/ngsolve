@@ -86,7 +86,7 @@ namespace ngfem
         // TIP<DIM,double> ip = ir[i];
         double sum = 0;
         // T_CalcShape (TIP<DIM,double> (ir[i]), SBLambda ( [&](int i, double shape) { sum += coefs(i)*shape; } ));
-        T_CalcShape (GetTIP<DIM>(ip), SBLambda ( [&](int j, double shape) { sum += coefs(j)*shape; } ));
+        T_CalcShape (GetTIP<DIM>(ir[i]), SBLambda ( [&](int j, double shape) { sum += coefs(j)*shape; } ));
         vals(i) = sum;
       }
   }
