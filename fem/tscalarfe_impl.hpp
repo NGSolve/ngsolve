@@ -516,14 +516,11 @@ namespace ngfem
   {
     for (int i = 0; i < ir.Size(); i++)
       {
-        // Vec<DIM, AutoDiffRec<DIM,SIMD<double>>> adp = ir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
-        T_CalcShape (GetTIPGrad<DIM> (ir[i]), // TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> (adp),
+        T_CalcShape (GetTIPGrad<DIM> (ir[i]),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
                                { sum += coefs(j) * ngbla::GetGradient(shape); }));
         values.Col(i).Range(DIM) = sum;
-        // for (int k = 0; k < DIM; k++)
-        // values(k,i) = sum(k).Data();
       }
   }
 
@@ -536,10 +533,10 @@ namespace ngfem
     coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i];
-        T_CalcShape (TIP<DIM,AutoDiffRec<DIM>> (adp),
-                     SBLambda ([&] (int j, auto shape)
-                               { coefs(j) += InnerProduct (vals.Row(i), ngbla::GetGradient(shape)); }));
+        Vec<DIM> vali = vals.Row(i);
+        T_CalcShape (GetTIPGrad<DIM>(ir[i]), 
+                     SBLambda ([coefs, vali] (int j, auto shape)
+                               { coefs(j) += InnerProduct (vali, ngbla::GetGradient(shape)); }));
       }
   }
   

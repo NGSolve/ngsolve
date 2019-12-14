@@ -16,19 +16,19 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
-  {    
-    TIP<DIM,AutoDiff<DIM>> tip = ip;
-    this->T_CalcShape (tip, SBLambda ([shape](size_t i, auto s) 
-                                           { FlatVec<DIM> (&shape(i,0)) = s.Value(); }));
+  {
+    this->T_CalcShape (GetTIPGrad<DIM>(ip), 
+                       SBLambda ([shape](size_t i, auto s)
+                                 { shape.Row(i) = s.Value(); }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES,BASE> :: 
   CalcCurlShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
-  {  
-    TIP<DIM,AutoDiff<DIM>> tip = ip;    
-    this->T_CalcShape (tip, SBLambda ([shape](size_t i, auto s) 
-                                           { FlatVec<DIM_CURL_(DIM)> (&shape(i,0)) = s.CurlValue(); }));
+  {
+    this->T_CalcShape (GetTIPGrad<DIM>(ip), 
+                       SBLambda ([shape](size_t i, auto s) 
+                                 { shape.Row(i) = s.CurlValue(); }));
   } 
 
 #ifndef FASTCOMPILE
@@ -45,8 +45,7 @@ namespace ngfem
          this->T_CalcShape (GetTIP(mip),
                             SBLambda ([shape](size_t i, auto s) 
                                       {
-                                        auto val = s.Value();
-                                        FlatVec<val.Size()>(&shape(i,0)) = val;
+                                        shape.Row(i) = s.Value();
                                       }));
        });
   }
@@ -83,9 +82,12 @@ namespace ngfem
                (GetTIP(mir[i]),
                 SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
                           {
+                            shapei.Range(j*DIMSPACE, (j+1)*DIMSPACE) = s.Value();
+                            /*
                             auto shape = s.Value();
                             for (size_t k = 0; k < DIMSPACE; k++)
                               shapei(j*DIMSPACE+k) = shape(k);
+                            */
                           }));
                }
        });
