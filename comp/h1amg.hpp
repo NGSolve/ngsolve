@@ -6,7 +6,7 @@
 namespace ngcomp
 {
   template <class SCAL>
-  class H1AMG_Matrix : public ngla::BaseMatrix
+  class NGS_DLL_HEADER H1AMG_Matrix : public ngla::BaseMatrix
   {
     size_t size;
     std::shared_ptr<ngla::SparseMatrixTM<SCAL>> mat;
