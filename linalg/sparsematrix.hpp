@@ -727,9 +727,9 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
   };
 
-  shared_ptr<SparseMatrixTM<double>> TransposeMatrix (const SparseMatrixTM<double> & mat);
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>> TransposeMatrix (const SparseMatrixTM<double> & mat);
 
-  shared_ptr<SparseMatrixTM<double>>
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);
 
 #ifdef GOLD
