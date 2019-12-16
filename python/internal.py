@@ -22,7 +22,7 @@ class TclVariables:
             raise KeyError()
         tcl_string = 'set '+self._name+'.'+attribute_name+' '+str(value)+'; '+self._update_cmd+';\n'
         ngsolve.solve.Tcl_Eval(tcl_string)
-        ngsolve.solve.Redraw()
+        ngsolve.Redraw()
 
     # return list of possible attributes - for autocompletion
     def __dir__(self):
