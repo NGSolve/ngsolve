@@ -1901,9 +1901,9 @@ namespace ngfem
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       
-      auto mat = bmat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size());
-      ArrayMem<SIMD<double>,100> mem(DIM_SPC*bfel.GetNDof()*mir.Size());
-      FlatMatrix<SIMD<double>> hmat(DIM_SPC*bfel.GetNDof(), mir.Size(), &mem[0]);
+      auto mat = bmat.AddSize(bfel.GetNDof(), mir.Size());
+      ArrayMem<SIMD<double>,100> mem(DIM_SPC*feli.GetNDof()*mir.Size());
+      FlatMatrix<SIMD<double>> hmat(DIM_SPC*feli.GetNDof(), mir.Size(), &mem[0]);
       feli.CalcMappedDShape (mir, hmat);
       for (size_t i = 0; i < DIM_SPC; i++)
         for (size_t j = 0; j < feli.GetNDof(); j++)
