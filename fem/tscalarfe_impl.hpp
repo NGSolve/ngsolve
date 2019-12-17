@@ -58,7 +58,7 @@ namespace ngfem
   {
     double sum = 0;
     T_CalcShape (GetTIP<DIM>(ip),
-                 SBLambda ([x,&sum](int i, double val) { sum += x(i)*val; } ));
+                 SBLambda ([x,&sum](size_t i, double val) { sum += x(i)*val; } ));
     return sum;
   }  
 
@@ -71,7 +71,7 @@ namespace ngfem
       {
         double sum = 0;
         T_CalcShape (GetTIP<DIM>(ir[i]),
-                     SBLambda ( [coefs,&sum](int j, double shape) { sum += coefs(j)*shape; } ));
+                     SBLambda ( [coefs,&sum](size_t j, double shape) { sum += coefs(j)*shape; } ));
         vals(i) = sum;
       }
   }
@@ -92,7 +92,7 @@ namespace ngfem
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
         T_CalcShape (tip, 
-                     SBLambda ( [&](int j, MultiSIMD<2,double> shape)
+                     SBLambda ( [&](size_t j, MultiSIMD<2,double> shape)
                                 {
                                   // sum += *pcoefs * shape;
                                   sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
@@ -221,7 +221,7 @@ namespace ngfem
       {
         double vali = vals(i);
         T_CalcShape (GetTIP<DIM>(ir[i]), 
-                     SBLambda ( [coefs, vali](int j, double shape) 
+                     SBLambda ( [coefs, vali](size_t j, double shape) 
                                 { coefs(j) += vali*shape; } ));
       }
   }
