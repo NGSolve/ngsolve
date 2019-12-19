@@ -132,7 +132,11 @@ py::object MakeProxyFunction (shared_ptr<FESpace> fes,
     for (auto nt : node_types)
       {
         DifferentialSymbol dx(vb, nt, false, 0);
-        sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+        if (this -> Dimension() == 1)
+          sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+        else
+          sum->icfs += make_shared<Integral> (InnerProduct(const_cast<DualProxyFunction*>(this)->shared_from_this(), u), dx);
+          
       }
     return sum;
   }
