@@ -1658,10 +1658,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
 
-    auto fv = vec.FV<double>();
+    // auto fv = vec.FV<double>();
     
     IterateElements (*this, BND, lh,
-                     [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
+                     [&rho, &vec, /* fv, */ def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        // auto tid = TaskManager::GetThreadId();
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
