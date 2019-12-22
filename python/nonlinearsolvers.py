@@ -18,7 +18,7 @@ class NewtonSolver:
 
     def Solve(self, maxit=100, maxerr=1e-11, dampfactor=1,
               printing=False, callback=None, linesearch=False,
-              printenergy=False):
+              printenergy=False, print_wrong_direction=True):
         numit = 0
         err = 1.
         a, u, w, r,uh = self.a, self.u, self.w, self.r, self.uh
@@ -50,7 +50,8 @@ class NewtonSolver:
 
             err2 = InnerProduct(w,r)
             if err2 < 0:
-                print("wrong direction")
+                if print_wrong_direction:
+                    print("wrong direction")
             err = sqrt(abs(err2))
             if printing:
                 print("err = ", err)
