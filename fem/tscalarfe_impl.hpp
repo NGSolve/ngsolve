@@ -250,7 +250,7 @@ namespace ngfem
 
         MultiSIMD<2,double> val (values(i), values(i+1));
 
-        double * pcoefs = &coefs(0);
+        double * pcoefs = coefs.Data();
         size_t dist = coefs.Dist();
         /*
         T_CalcShape (tip, 
