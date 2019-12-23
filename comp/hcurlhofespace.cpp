@@ -14,7 +14,7 @@ namespace ngcomp
 
 /** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
     template<int DIMSPACE, int DIM, int BMATDIM>
-    void CalcDShapeOfHCurlFE(const HCurlFiniteElement<DIM>& fel_u, const MappedIntegrationPoint<DIM,DIMSPACE>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
+    void CalcDShapeOfHCurlFE(const HCurlFiniteElement<DIM>& fel_u, const MappedIntegrationPoint<DIM,DIMSPACE>& sip, SliceMatrix<> bmatu, LocalHeap& lh, double eps = 1e-4){
       HeapReset hr(lh);
       // bmatu = 0;
       // evaluate dshape by numerical diff
@@ -29,7 +29,6 @@ namespace ngcomp
       FlatMatrixFixWidth<DIMSPACE> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
       FlatMatrixFixWidth<DIMSPACE> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
 
-      double eps = 1e-4;
       for (int j = 0; j < DIMSPACE; j++)   // d / dxj
       {
         IntegrationPoint ipl(ip);
@@ -117,7 +116,7 @@ namespace ngcomp
                                                   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {
-      CalcDShapeOfHCurlFE<D,D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+      CalcDShapeOfHCurlFE<D,D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
     /*
     template <typename AFEL>
@@ -138,7 +137,7 @@ namespace ngcomp
       // typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeOfHCurlFE<D,D,D*D>(static_cast<const FEL&>(fel), mip, hm, lh);
+      CalcDShapeOfHCurlFE<D,D,D*D>(static_cast<const FEL&>(fel), mip, hm, lh, eps());
       y = Trans(hm)*x;
     }
 
@@ -335,7 +334,7 @@ namespace ngcomp
                                                   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {
-      CalcDShapeOfHCurlFE<D,D-1,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+      CalcDShapeOfHCurlFE<D,D-1,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
   };
   
