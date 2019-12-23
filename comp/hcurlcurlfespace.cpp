@@ -997,6 +997,11 @@ namespace ngcomp
                 break;
               case ET_QUAD:
                 ndof += oi[0]*oi[0] + (oi[0]+2)*(oi[0])*2 + 2*oi[0] + 1;
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                  }
                 //throw Exception("Hcurlcurl Quad not implemented yet");
                 break;
               case ET_PRISM:
