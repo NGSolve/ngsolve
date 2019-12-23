@@ -391,7 +391,7 @@ namespace ngfem
                                               BareSliceMatrix<> ddshape) const
   {
     int nd = GetNDof();
-    double eps = 1e-3;
+    double eps = 1e-4;
 
     double pos[4] = { -2, -1, 1, 2 };
     double weight[4] = { 1.0/12, -2.0/3, 2.0/3, -1.0/12 };
@@ -423,7 +423,7 @@ namespace ngfem
     auto & mip = static_cast<const MappedIntegrationPoint<D,D> &> (bmip);    
     int nd = GetNDof();
     auto ddshape = hddshape.AddSize(nd, D*D);
-    double eps = 1e-7;
+    double eps = 1e-4;
     MatrixFixWidth<D> dshape1(nd), dshape2(nd);
     const ElementTransformation & eltrans = mip.GetTransformation();
 
