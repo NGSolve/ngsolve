@@ -610,7 +610,8 @@ namespace ngfem
   };
 
 
-
+  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  class DiffOpHesseBoundary;
 
   template <int D>
   class DiffOpHesse : public DiffOp<DiffOpHesse<D>>
@@ -621,6 +622,9 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
+
+    typedef DiffOpHesseBoundary<D> DIFFOP_TRACE;
+
     
     static string Name() { return "hesse"; }
     // static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
@@ -639,7 +643,7 @@ namespace ngfem
   };
 
 
-  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  template <int D, typename FEL>
   class DiffOpHesseBoundary : public DiffOp<DiffOpHesseBoundary<D, FEL> >
   {
   public:
@@ -648,6 +652,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
+
+    typedef void DIFFOP_TRACE;
 
     static string Name() { return "hesseboundary"; }
     // static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
@@ -750,6 +756,28 @@ namespace ngfem
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y);
   };
 
+
+  template <typename FEL>
+  class DiffOpHesseBoundary<1,FEL> : public DiffOp<DiffOpHesseBoundary<1, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 1 };
+    enum { DIM_ELEMENT = 0 };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 2 };
+
+    typedef void DIFFOP_TRACE;
+
+    static string Name() { return "hesseboundary"; }    
+    ///
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      throw Exception("hesseboundary not implemented for 1D!");
+    }
+  };
 
 
 
