@@ -14,9 +14,9 @@ namespace ngfem
         auto nvals = linear ? dim_vals[i] - 1 : dim_vals[i];
         double len = (end[i] - start[i])/nvals;
         double coord = min2(end[i], max2(start[i], pnt[i]));
+        if(!linear && coord == end[i])
+          coord *= (1-1e-12);
         double pos = (coord - start[i])/len;
-        if(!linear)
-          pos -= 0.5*len;
         ind.Append(pos);
         if(linear)
           weight.Append(1.-(pos-ind[i]));
