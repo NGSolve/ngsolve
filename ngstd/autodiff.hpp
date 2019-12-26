@@ -744,14 +744,16 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
     }
   };
 
-  template <int D, typename SCAL>
-  INLINE AutoDiffRec<D,SCAL> operator+ (double a, AutoDiffRec<D,SCAL> b)
+  template <int D, typename SCAL, typename SCAL2,
+            typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+  INLINE AutoDiffRec<D,SCAL> operator+ (SCAL2 a, AutoDiffRec<D,SCAL> b)
   {
     return AutoDiffRec<D,SCAL> (a+b.Rec(), b.Last());
   }
   
-  template <int D, typename SCAL>
-  INLINE AutoDiffRec<D,SCAL> operator+ (AutoDiffRec<D,SCAL> a, double b)
+  template <int D, typename SCAL, typename SCAL2,
+            typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+  INLINE AutoDiffRec<D,SCAL> operator+ (AutoDiffRec<D,SCAL> a, SCAL2 b)
   {
     return AutoDiffRec<D,SCAL> (a.Rec()+b, a.Last());
   }
@@ -762,14 +764,16 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
     return AutoDiffRec<D,SCAL> (a.Rec()+b.Rec(), a.Last()+b.Last());
   }
 
-  template <int D, typename SCAL>
-  INLINE AutoDiffRec<D,SCAL> operator- (double b, AutoDiffRec<D,SCAL> a)
+  template <int D, typename SCAL, typename SCAL2,
+            typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+  INLINE AutoDiffRec<D,SCAL> operator- (SCAL2 b, AutoDiffRec<D,SCAL> a)
   {
     return AutoDiffRec<D,SCAL> (b-a.Rec(), -a.Last());
   }
   
-  template <int D, typename SCAL>
-  INLINE AutoDiffRec<D,SCAL> operator- (AutoDiffRec<D,SCAL> a, double b)
+  template <int D, typename SCAL, typename SCAL2, 
+            typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+  INLINE AutoDiffRec<D,SCAL> operator- (AutoDiffRec<D,SCAL> a, SCAL2 b)
   {
     return AutoDiffRec<D,SCAL> (a.Rec()-b, a.Last());
   }
