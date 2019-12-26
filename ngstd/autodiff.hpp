@@ -12,6 +12,8 @@ namespace ngstd
 
 // Automatic differentiation datatype
 
+  template <int D, typename SCAL = double> class AutoDiffRec;
+
 
 /**
    Datatype for automatic differentiation.
@@ -19,7 +21,7 @@ namespace ngstd
    operations are overloaded by using product-rule etc. etc. 
 **/
 template <int D, typename SCAL = double>
-class AutoDiff : public AlignedAlloc<AutoDiff<D,SCAL>>
+class AutoDiff // : public AlignedAlloc<AutoDiff<D,SCAL>>
 {
   SCAL val;
   SCAL dval[D?D:1];
@@ -449,6 +451,7 @@ INLINE AutoDiff<D,SCAL> pow (AutoDiff<D,SCAL> x, AutoDiff<D,SCAL> y )
 }
 
 using std::sin;
+/*
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
 {
@@ -459,8 +462,16 @@ INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
     res.DValue(k) = x.DValue(k) * c;
   return res;
 }
+*/
 
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
+{
+  return sin(AutoDiffRec<D,SCAL>(x));
+}
+  
 using std::cos;
+/*
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> cos (AutoDiff<D,SCAL> x)
 {
@@ -470,6 +481,12 @@ INLINE AutoDiff<D,SCAL> cos (AutoDiff<D,SCAL> x)
   for (int k = 0; k < D; k++)
     res.DValue(k) = x.DValue(k) * ms;
   return res;
+}
+*/
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> cos (AutoDiff<D,SCAL> x)
+{
+  return cos(AutoDiffRec<D,SCAL>(x));
 }
 
 using std::tan;
@@ -525,6 +542,7 @@ INLINE AutoDiff<D,SCAL> ceil (const AutoDiff<D,SCAL> & x)
 
 
 using std::atan;
+/*
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 {
@@ -535,7 +553,12 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
   return res;
 }
-
+*/
+template <int D, typename SCAL>
+AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
+{
+  return atan (AutoDiffRec<D,SCAL> (x));
+}
 
 using std::atan2;
 template <int D, typename SCAL>
@@ -606,8 +629,8 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
 
   
-  template <int D, typename SCAL = double>
-  class AutoDiffRec : public AlignedAlloc<AutoDiffRec<D,SCAL>>
+  template <int D, typename SCAL>
+  class AutoDiffRec //  : public AlignedAlloc<AutoDiffRec<D,SCAL>>
   {
     AutoDiffRec<D-1, SCAL> rec;
     SCAL last;
@@ -620,6 +643,13 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
     INLINE AutoDiffRec (SCAL aval) : rec(aval), last(0.0) { ; }
     INLINE AutoDiffRec (SCAL aval, int diffindex) : rec(aval, diffindex), last((diffindex==D-1) ? 1.0 : 0.0) { ; }
+    INLINE AutoDiffRec (const AutoDiff<D,SCAL> & ad)
+    {
+      Value() = ad.Value();
+      for (int i = 0; i < D; i++)
+        DValue(i) = ad.DValue(i);
+    }
+    
     INLINE AutoDiffRec & operator= (SCAL aval) { rec = aval; last = 0.0; return *this; }
     INLINE SCAL Value() const { return rec.Value(); }
     INLINE SCAL DValue(int i) const { return (i == D-1) ? last : rec.DValue(i); }
@@ -680,6 +710,11 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     INLINE AutoDiffRec (SCAL _val) : val(_val), last(0.0) { ; }
     INLINE AutoDiffRec (SCAL _val, SCAL _last) : val(_val), last(_last) { ; }
     INLINE AutoDiffRec (SCAL aval, int diffindex) : val(aval), last((diffindex==0) ? 1.0 : 0.0) { ; }    
+    INLINE AutoDiffRec (const AutoDiff<1,SCAL> & ad)
+    {
+      Value() = ad.Value();
+      DValue(0) = ad.DValue(0);
+    }
 
     INLINE AutoDiffRec & operator= (const AutoDiffRec &) = default;
     INLINE AutoDiffRec & operator= (SCAL aval) { val = aval; last = 0.0; return *this; }
@@ -803,21 +838,46 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
   }
 
   /// Inverse of AutoDiffRec
-  template<int D, typename SCAL>
-  INLINE AutoDiffRec<D,SCAL> Inv (const AutoDiffRec<D,SCAL> & x)
-  {
-    AutoDiffRec<D,SCAL> res(1.0 / x.Value());
-    for (int i = 0; i < D; i++)
-      res.DValue(i) = -x.DValue(i) / (x.Value() * x.Value());
-    return res;
-  }
 
+  template <typename SCAL>
+  auto Inv1 (SCAL x)  { return 1.0/x; }
+
+  template<int D, typename SCAL>
+  INLINE AutoDiffRec<D,SCAL> Inv1 (AutoDiffRec<D,SCAL> x)
+  {
+    return AutoDiffRec<D,SCAL> (Inv1(x.Rec()), (-sqr(1.0/x.Value())) * x.Last());
+  }
 
   /// AutoDiffRec div AutoDiffRec
   template<int D, typename SCAL>
   INLINE AutoDiffRec<D,SCAL> operator/ (const AutoDiffRec<D,SCAL> & x, const AutoDiffRec<D,SCAL> & y)
   {
-    return x * Inv (y);
+    return x * Inv1 (y);
+  }
+
+
+  template <int D, typename SCAL>
+  auto sin (AutoDiffRec<D,SCAL> x)
+  {
+    return AutoDiffRec<D,SCAL> (sin(x.Rec()), cos(x.Value())*x.Last());
+  }
+
+  template <int D, typename SCAL>
+  auto cos (AutoDiffRec<D,SCAL> x)
+  {
+    return AutoDiffRec<D,SCAL> (cos(x.Rec()), -sin(x.Value())*x.Last());
+  }
+
+  template <int D, typename SCAL>
+  auto tan (AutoDiffRec<D,SCAL> x)
+  {
+    return sin(x) / cos(x);
+  }
+
+  template <int D, typename SCAL>
+  auto atan (AutoDiffRec<D,SCAL> x)
+  {
+    return AutoDiffRec<D,SCAL> (atan(x.Rec()), (1./(1.+x.Value()*x.Value()))*x.Last());
   }
 
   
