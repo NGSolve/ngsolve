@@ -1589,6 +1589,7 @@ namespace ngcomp
     if (var == shape.get())
       return diffop[VOL]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
 
+    /*
     if (auto gfvar = dynamic_cast<const GridFunction*> (var))
       // if (this == const_cast<GridFunction*>(gfvar)->GetDeriv().get())
       if (gf == gfvar)
@@ -1597,6 +1598,7 @@ namespace ngcomp
             return proxydir -> Deriv();
           throw Exception("direction must be a test-function");
         }
+    */
     return CoefficientFunctionNoDerivative::Diff (var, dir);
   }
 
