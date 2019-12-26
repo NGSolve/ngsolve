@@ -128,6 +128,11 @@ namespace ngfem
     
 #endif
 
+    /// compute dshape, matrix: ndof x (spacedim spacedim)
+    NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
+                                             BareSliceMatrix<> ddshape) const override;
+
+    
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
 
     HD NGS_DLL_HEADER 
