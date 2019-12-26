@@ -1856,6 +1856,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
     ;
 
   py::class_<Variation> (m, "Variation")
