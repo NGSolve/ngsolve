@@ -48,6 +48,8 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<0,T2> & tip) { ; }
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -71,6 +73,9 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<1,T2> & tip) { x = tip.x; }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -94,6 +99,9 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<2,T2> & tip) { x = tip.x; y = tip.y; }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -116,6 +124,9 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<3,T2> & tip) { x = tip.x; y = tip.y; z = tip.z; }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
