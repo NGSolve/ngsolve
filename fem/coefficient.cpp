@@ -5663,6 +5663,10 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "RealCF";
     }
+    
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
       using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
@@ -5735,6 +5739,10 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "ImagCF";
     }
+
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
