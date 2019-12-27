@@ -1263,9 +1263,9 @@ namespace ngfem
                    {
                      SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                      auto & mir = trafo(ir, lh);
-                     FlatMatrix<SIMD<double>> values(1, ir.Size(), lh);
+                     FlatMatrix<SIMD<TSCAL>> values(1, ir.Size(), lh);
                      cf -> Evaluate (mir, values);
-                     SIMD<double> vsum = 0.0;
+                     SIMD<TSCAL> vsum = 0.0;
                      for (size_t i = 0; i < values.Width(); i++)
                        vsum += mir[i].GetWeight() * values(0,i);
                      hsum = HSum(vsum);
@@ -1283,7 +1283,7 @@ namespace ngfem
                {
                  IntegrationRule ir(trafo.GetElementType(), order);
                  BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                 FlatMatrix<> values(ir.Size(), 1, lh);
+                 FlatMatrix<TSCAL> values(ir.Size(), 1, lh);
                  cf -> Evaluate (mir, values);
                  for (int i = 0; i < values.Height(); i++)
                    hsum += mir[i].GetWeight() * values(i,0);
