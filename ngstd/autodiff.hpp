@@ -921,11 +921,13 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
     return x.Value() > val2;
   }
 
-
+  using std::fabs;
   template<int D, typename SCAL>
   INLINE AutoDiffRec<D,SCAL> fabs (const AutoDiffRec<D,SCAL> & x)
   {
-    return fabs (AutoDiffVec<D,SCAL>(x));
+    auto sign = IfPos(x.Value(), SCAL(1.0), IfPos(-x.Value(), SCAL(-1.0), SCAL(0.0)));
+    return AutoDiffRec<D,SCAL> (fabs(x.Rec()), sign*x.Last());
+    // return fabs (AutoDiffVec<D,SCAL>(x));
     /*
       double abs = fabs (x.Value());
       AutoDiffVec<D,SCAL> res( abs );
