@@ -1355,7 +1355,7 @@ namespace ngfem
                        BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
                        mir.ComputeNormalsAndMeasure (eltype, k);
                        
-                       FlatMatrix<> values(ir_facet.Size(), 1, lh);
+                       FlatMatrix<TSCAL> values(ir_facet.Size(), 1, lh);
                        cf -> Evaluate (mir, values);
                        for (int i = 0; i < values.Height(); i++)
                          hsum += mir[i].GetWeight() * values(i,0);
@@ -1435,7 +1435,7 @@ namespace ngfem
                        mir2.SetOtherMIR(&mir1);
                        
                        
-                       FlatMatrix<> values(ir_facet.Size(), 1, lh);
+                       FlatMatrix<TSCAL> values(ir_facet.Size(), 1, lh);
                        cf -> Evaluate (mir1, values);
                        for (int i = 0; i < values.Height(); i++)
                          hsum += mir1[i].GetWeight() * values(i,0);
