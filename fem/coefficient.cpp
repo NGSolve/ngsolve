@@ -5663,6 +5663,12 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "RealCF";
     }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
     
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
@@ -5740,6 +5746,12 @@ class RealCF : public CoefficientFunctionNoDerivative
       return "ImagCF";
     }
 
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+    
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
     
