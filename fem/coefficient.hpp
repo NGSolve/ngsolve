@@ -1568,6 +1568,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   { return (-1) * c1; }
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER

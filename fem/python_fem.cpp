@@ -247,6 +247,7 @@ struct GenericCeil {
   void DoArchive(Archive& ar) {}
 };
 
+/*
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
   static string Name() { return "conj"; }
@@ -257,6 +258,7 @@ struct GenericConj {
   AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   void DoArchive(Archive& ar) {}
 };
+*/
 
 struct GenericATan2 {
   template <typename T1, typename T2> T1 operator() (T1 y, T2 x) const { return atan2(y,x);  }
@@ -759,7 +761,7 @@ direction : int
   ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root function");
   ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
   ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
-  ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
+  // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
   ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians", "y", "x");
@@ -1126,6 +1128,7 @@ wait : bool
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
+  m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
