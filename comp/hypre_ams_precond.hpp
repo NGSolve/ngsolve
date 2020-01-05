@@ -101,14 +101,14 @@ public:
 
   ~HypreAMSPreconditioner ();
 	
-  virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL);
-  virtual void Update();
-  virtual void Mult (const BaseVector & f, BaseVector & u) const;
-  virtual int VHeight() const { return hc_ndof; }
-  virtual int VWidth() const { return hc_ndof; }
-  virtual const BaseMatrix & GetAMatrix() const { return bfa->GetMatrix(); }
+  virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) override;
+  virtual void Update() override;
+  virtual void Mult (const BaseVector & f, BaseVector & u) const override;
+  virtual int VHeight() const override { return hc_ndof; }
+  virtual int VWidth() const override { return hc_ndof; }
+  virtual const BaseMatrix & GetAMatrix() const override { return bfa->GetMatrix(); }
 
-  virtual const char * ClassName() const
+  virtual const char * ClassName() const override
   { return "HYPRE AMG Preconditioner"; }
 
 private:
