@@ -80,6 +80,7 @@ class NewtonSolver:
         return (0,numit)
 
     def SetDirichlet(self, dirichletvalues):
+        a, u, w, r = self.a, self.u, self.w, self.r
         a.AssembleLinearization(u.vec)
         self.inv = a.mat.Inverse(self.freedofs, inverse=self.inverse)
 
