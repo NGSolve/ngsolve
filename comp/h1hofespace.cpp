@@ -124,35 +124,64 @@ namespace ngcomp
     typedef void DIFFOP_TRACE;
   };
 
-  
-  template <int DIM_SPC, VorB VB = VOL>
-  class DiffOpDualVectorH1 : public DiffOp<DiffOpDualVectorH1<DIM_SPC> >
+
+  /// dual operator for VectorH1
+  template <int D>
+  class DiffOpDualVector : public DiffOp<DiffOpDualVector<D> >
   {
   public:
     enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-VB };
-    enum { DIM_DMAT = DIM_SPC };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
+
     static bool SupportsVB (VorB checkvb) { return true; }
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       mat = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
+      for (int i = 0; i < DIM_SPACE; i++)
         {
           auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[i]);
           feli.CalcDualShape (mip, mat.Row(i).Range(fel.GetRange(i)));
         }
     }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
+    }
+  };
+  
+  template <int _DIM_SPACE, int _DIM_ELEMENT>
+  class DiffOpDualVectorH1 : public DiffOpDualVector<_DIM_SPACE>
+  {
+  public:
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = _DIM_ELEMENT };
+
+    typedef DiffOpDualVectorH1<_DIM_SPACE, _DIM_ELEMENT-1> DIFFOP_TRACE;
+  };
+  
+  template <int _DIM_SPACE>
+  class DiffOpDualVectorH1<_DIM_SPACE,0> : public DiffOpId<_DIM_SPACE>
+  {
+  public:    
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = 0 };
+
+    typedef void DIFFOP_TRACE;
   };
 
-
-
-
+  
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -2272,17 +2301,19 @@ into the wirebasket.
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
-          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2,2>>> ());
           break;
           
         case 3:
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
-          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();          
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>>();
+          
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
-          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
           break;
         }
     }
