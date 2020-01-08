@@ -8,7 +8,7 @@
 #include <comp.hpp>
 #include "../fem/hcurlcurlfe.hpp"
 #include "hcurlcurlfespace.hpp"
-
+#include "../fem/hcurlhdiv_dshape.hpp"
 
 
 namespace ngcomp
@@ -439,66 +439,6 @@ namespace ngcomp
   };
 
 
-
-  /** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
-  template<int D>
-    void CalcDShapeOfHCurlCurlFE(const HCurlCurlFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
-      HeapReset hr(lh);
-      int nd_u = fel_u.GetNDof();
-      const IntegrationPoint& ip = sip.IP();
-      const ElementTransformation & eltrans = sip.GetTransformation();
-      FlatMatrixFixWidth<D*D> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D*D> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D*D> shape_ull(nd_u, lh);
-      FlatMatrixFixWidth<D*D> shape_urr(nd_u, lh);
-      FlatMatrixFixWidth<D*D> dshape_u_ref(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);
-
-      FlatMatrixFixWidth<D> dshape_u_tmp(nd_u, lh);
-
-      double eps = 1e-4;
-      for (int j = 0; j < D; j++)   // d / dxj
-      {
-        IntegrationPoint ipl(ip);
-        ipl(j) -= eps;
-        MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
-
-        IntegrationPoint ipr(ip);
-        ipr(j) += eps;
-        MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
-
-        IntegrationPoint ipll(ip);
-        ipll(j) -= 2*eps;
-        MappedIntegrationPoint<D,D> sipll(ipll, eltrans);
-
-        IntegrationPoint iprr(ip);
-        iprr(j) += 2*eps;
-        MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
-
-        fel_u.CalcMappedShape (sipl, shape_ul);
-        fel_u.CalcMappedShape (sipr, shape_ur);
-        fel_u.CalcMappedShape (sipll, shape_ull);
-        fel_u.CalcMappedShape (siprr, shape_urr);
-
-        dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-        
-        for (int l = 0; l < D*D; l++)
-          bmatu.Col(j*D*D+l) = dshape_u_ref.Col(l);
-      }
-      
-      for (int j = 0; j < D*D; j++)
-	{
-	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      dshape_u_tmp(k,l) = bmatu(k, l*D*D+j);
-	  
-	  dshape_u = dshape_u_tmp * sip.GetJacobianInverse();
-
-	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      bmatu(k, l*D*D+j) = dshape_u(k,l);
-	}
-    }
   
 
   /// Gradient operator for HCurlCurl
@@ -530,7 +470,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
-      CalcDShapeOfHCurlCurlFE<D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+      CalcDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
@@ -803,7 +743,7 @@ namespace ngcomp
     enum { DIM_DMAT = D*D*D };
     enum { DIFFORDER = 1 };
     static Array<int> GetDimensions() { return Array<int> ( { D,D*D } ); };
-    
+    static constexpr double eps() { return 1e-4; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -824,7 +764,7 @@ namespace ngcomp
       int nd_u = static_cast<const FEL&>(fel).GetNDof();
       FlatMatrixFixWidth<D*D*D> bmat(nd_u, lh);
       
-      CalcDShapeOfHCurlCurlFE<D>(static_cast<const FEL&>(fel), mip, bmat, lh);
+      CalcDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, bmat, lh, eps());
       
       for (int i=0; i<D; i++)
         for (int j=0; j<D; j++)
