@@ -2272,6 +2272,8 @@ alpha : double
 Start and end mark the cartesian boundary of domain. The function will be continued by a constant function outside of this box. Inside a cartesian grid will be created by the dimensions of the numpy input array 'values'. This array must have the dimensions of the mesh and the values stored as:
 x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
 
+If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
+
 )delimiter");
 
 }
