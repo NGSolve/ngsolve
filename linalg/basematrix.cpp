@@ -126,19 +126,30 @@ namespace ngla
   
   void BaseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    auto temp = y.CreateVector();
+    MultTrans (x, *temp);
+    y += s * *temp;
+    /*
     cout << "warning: BaseMatrix::MultTransAdd(double) calls MultAdd, ";
     cout << "type = " << typeid(*this).name() << endl;
     MultAdd (s, x, y);
     return;
-
+    */
+    /*
     stringstream err;
     err << "BaseMatrix::MultTransAdd (double) called, type = " 
 	<< typeid(*this).name();
     throw Exception (err.str());
+    */
   }
 
   void BaseMatrix :: MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
+    auto temp = y.CreateVector();
+    MultTrans (x, *temp);
+    y += s * *temp;
+
+    /*
     //    cout << "warning: BaseMatrix::MultTransAdd(complex) calls MultAdd" << endl;
     MultAdd (s, x, y);
     return;
@@ -147,6 +158,7 @@ namespace ngla
     err << "BaseMatrix::MultTransAdd (Complex) called, type = " 
 	<< typeid(*this).name();
     throw Exception (err.str());
+    */
   }
 
   void BaseMatrix :: MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
