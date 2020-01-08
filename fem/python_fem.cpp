@@ -1903,6 +1903,11 @@ kwargs : kwargs
            if(kwargs.contains("definedonelem"))
                self->SetDefinedOnElements(py::cast<shared_ptr<BitArray>>(kwargs["definedonelem"]));
          })
+    .def_property_readonly("simd_evaluate", [](shared_ptr<BFI> self)
+                                       { return self->SimdEvaluate(); },
+      "SIMD evaluate ?"
+      )
+
     .def("__str__",  [](shared_ptr<BFI> self) { return ToString<BilinearFormIntegrator>(*self); } )
 
     .def("Evaluator",  [](shared_ptr<BFI> self, string name ) { return self->GetEvaluator(name); }, py::arg("name"), docu_string(R"raw_string(
@@ -2106,6 +2111,10 @@ definedonelem : object
          py::arg("definedonelements")=DummyArgument())
 
     .def("__str__",  [](shared_ptr<LFI> self) { return ToString<LinearFormIntegrator>(*self); } )
+    .def_property_readonly("simd_evaluate", [](shared_ptr<LFI> self)
+                                       { return self->SimdEvaluate(); },
+      "SIMD evaluate ?"
+      )
     
     // .def("GetDefinedOn", &Integrator::GetDefinedOn)
     .def("GetDefinedOn",  [] (shared_ptr<LFI> self) -> const BitArray &{ return self->GetDefinedOn(); } ,
