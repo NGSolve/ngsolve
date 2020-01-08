@@ -48,6 +48,8 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<0,T2> & tip) { ; }
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -71,6 +73,9 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<1,T2> & tip) { x = tip.x; }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -94,6 +99,9 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<2,T2> & tip) { x = tip.x; y = tip.y; }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -116,6 +124,9 @@ namespace ngfem
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<3,T2> & tip) { x = tip.x; y = tip.y; z = tip.z; }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
@@ -270,6 +281,7 @@ namespace ngfem
       return adp;
     }
 
+    /*
     template <int DIM> 
     INLINE operator Vec<DIM, AutoDiffRec<DIM>> () const
     {
@@ -278,7 +290,8 @@ namespace ngfem
         adp[i] = AutoDiffRec<DIM> (pi[i], i);
       return adp;
     }
-    
+    */
+
     INLINE operator TIP<0,double> () const { return TIP<0,double>(); }
     INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0]); }
     INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1]); }
@@ -293,6 +306,7 @@ namespace ngfem
     INLINE operator TIP<3,AutoDiff<3>> () const
     { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2)); } 
 
+    /*
     INLINE operator TIP<0,AutoDiffRec<0>> () const
     { return TIP<0,AutoDiffRec<0>>(); } 
     INLINE operator TIP<1,AutoDiffRec<1>> () const
@@ -301,7 +315,8 @@ namespace ngfem
     { return TIP<2,AutoDiffRec<2>>(AutoDiffRec<2> (pi[0],0), AutoDiffRec<2> (pi[1],1)); }
     INLINE operator TIP<3,AutoDiffRec<3>> () const
     { return TIP<3,AutoDiffRec<3>>(AutoDiffRec<3> (pi[0],0), AutoDiffRec<3> (pi[1],1), AutoDiffRec<3> (pi[2],2)); } 
-
+    */
+    
     template <int D>
     INLINE ngfem::TIP<D,double> TIp() const;
     
@@ -1667,6 +1682,7 @@ namespace ngstd
     INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
     INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); } 
 
+    /*
     template <int DIM> 
     INLINE operator Vec<DIM, AutoDiffRec<DIM,SIMD<double>>> () const
     {
@@ -1675,6 +1691,7 @@ namespace ngstd
         adp[i] = AutoDiffRec<DIM,SIMD<double>> (x[i], i);
       return adp;
     }
+    */
   };
 
   /*

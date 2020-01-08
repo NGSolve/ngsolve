@@ -129,9 +129,9 @@ public:
   /// returns partial derivative
   SCAL DValue (int i) const throw() { return dval[i]; }
 
-  AutoDiff<D> DValueAD (int i) const
+  AutoDiff<D,SCAL> DValueAD (int i) const
   {
-    AutoDiff<D> r(dval[i]);
+    AutoDiff<D,SCAL> r(dval[i]);
     for (int j = 0; j < D; j++)
       r.DValue(j) = ddval[i*D+j];
     return r;

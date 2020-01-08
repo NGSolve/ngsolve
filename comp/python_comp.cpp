@@ -1827,6 +1827,7 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<Integral, shared_ptr<Integral>> (m, "Integral")
     .def_property_readonly("coef", [] (shared_ptr<Integral> igl) { return igl->cf; })
+    .def_property_readonly("symbol", [] (shared_ptr<Integral> igl) { return igl->dx; })
     ;
      
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -1850,12 +1851,19 @@ diffop : ngsolve.fem.DifferentialOperator
             for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
             return faccf;
           })
+    .def("__len__", [](shared_ptr<SumOfIntegrals> igls)
+         { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
-          { return igls->icfs[nr]; })
+          {
+            if (nr < 0 || nr >= igls->icfs.Size())
+              throw py::index_error();
+            return igls->icfs[nr];
+          })
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
     ;
 
   py::class_<Variation> (m, "Variation")

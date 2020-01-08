@@ -81,6 +81,9 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
+    static bool SupportsVB (VorB checkvb) { return true; }
+
+
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -99,6 +102,29 @@ namespace ngcomp
     }
   };
 
+
+  
+  template <int _DIM_SPACE, int _DIM_ELEMENT>
+  class DiffOpDualH1 : public DiffOpDual<_DIM_SPACE>
+  {
+  public:
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = _DIM_ELEMENT };
+
+    typedef DiffOpDualH1<_DIM_SPACE, _DIM_ELEMENT-1> DIFFOP_TRACE;
+  };
+  
+  template <int _DIM_SPACE>
+  class DiffOpDualH1<_DIM_SPACE,0> : public DiffOpId<_DIM_SPACE>
+  {
+  public:    
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = 0 };
+
+    typedef void DIFFOP_TRACE;
+  };
+
+  
   template <int DIM_SPC, VorB VB = VOL>
   class DiffOpDualVectorH1 : public DiffOp<DiffOpDualVectorH1<DIM_SPC> >
   {
@@ -284,12 +310,12 @@ namespace ngcomp
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());
-        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<2>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ());
         break;
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
 	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
-	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<3>>> ());
+	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ());
 	break;
       default:
         ;
