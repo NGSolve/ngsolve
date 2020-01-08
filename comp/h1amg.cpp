@@ -476,12 +476,12 @@ namespace ngcomp
     { ; }
 
 
-    virtual void InitLevel (shared_ptr<BitArray> _freedofs)
+    virtual void InitLevel (shared_ptr<BitArray> _freedofs) override
     {
       freedofs = _freedofs;
     }
 
-    virtual void FinalizeLevel (const BaseMatrix * matrix)
+    virtual void FinalizeLevel (const BaseMatrix * matrix) override
     {
       auto smat = dynamic_pointer_cast<SparseMatrixTM<SCAL>> (const_cast<BaseMatrix*>(matrix)->shared_from_this());
 
@@ -515,7 +515,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums,
                                    const FlatMatrix<SCAL> & elmat,
                                    ElementId id,
-                                   LocalHeap & lh)
+                                   LocalHeap & lh) override
     {
       // vertex weights
       static Timer t("h1amg - addelmat");
@@ -599,9 +599,9 @@ namespace ngcomp
       */
     }
 
-    virtual void Update () { ; }
+    virtual void Update () override { ; }
 
-    virtual const BaseMatrix & GetMatrix() const
+    virtual const BaseMatrix & GetMatrix() const override 
     {
       return *mat;
     }
