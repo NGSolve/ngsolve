@@ -13,6 +13,8 @@ using ngfem::ELEMENT_TYPE;
 
 #include "pml.hpp"
 
+#include "voxelcoefficientfunction.hpp"
+
 #include "tpintrule.hpp"
 namespace ngfem
 {
@@ -2236,6 +2238,43 @@ alpha : double
     
                            
   m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
+
+  m.def("VoxelCoefficient",
+        [](py::tuple pystart, py::tuple pyend, py::array values,
+           bool linear)
+        -> shared_ptr<CoefficientFunction>
+        {
+          Array<string> allowed_types = { "float64", "complex128" };
+          if(!allowed_types.Contains(py::cast<string>(values.dtype().attr("name"))))
+            throw Exception("Only float64 and complex128 dtype arrays allowed!");
+          Array<double> start, end;
+          Array<size_t> dim_vals;
+          for(auto val : pystart)
+            start.Append(py::cast<double>(val));
+          for(auto val : pyend)
+            end.Append(py::cast<double>(val));
+          for(auto dim : Range(values.ndim()))
+            dim_vals.Append(values.shape(dim));
+          if(values.dtype().kind() == 'c')
+            {
+              auto fa_values = FlatArray<Complex>(values.size(),
+                                                  static_cast<Complex*>(values.mutable_data(0)));
+              return make_shared<VoxelCoefficientFunction<Complex>>
+                (start, end, dim_vals, fa_values, linear);
+            }
+          auto fa_values = FlatArray<double>(values.size(),
+                                             static_cast<double*>(values.mutable_data(0)));
+          return make_shared<VoxelCoefficientFunction<double>>
+            (start, end, dim_vals, fa_values, linear);
+        }, py::arg("start"), py::arg("end"), py::arg("values"),
+        py::arg("linear")=true, R"delimiter(CoefficientFunction defined on a grid.
+
+Start and end mark the cartesian boundary of domain. The function will be continued by a constant function outside of this box. Inside a cartesian grid will be created by the dimensions of the numpy input array 'values'. This array must have the dimensions of the mesh and the values stored as:
+x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
+
+If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
+
+)delimiter");
 
 }
 
