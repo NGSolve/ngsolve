@@ -13,6 +13,8 @@ using ngfem::ELEMENT_TYPE;
 
 #include "pml.hpp"
 
+#include "voxelcoefficientfunction.hpp"
+
 #include "tpintrule.hpp"
 namespace ngfem
 {
@@ -247,6 +249,7 @@ struct GenericCeil {
   void DoArchive(Archive& ar) {}
 };
 
+/*
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
   static string Name() { return "conj"; }
@@ -257,6 +260,7 @@ struct GenericConj {
   AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   void DoArchive(Archive& ar) {}
 };
+*/
 
 struct GenericATan2 {
   template <typename T1, typename T2> T1 operator() (T1 y, T2 x) const { return atan2(y,x);  }
@@ -759,7 +763,7 @@ direction : int
   ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root function");
   ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
   ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
-  ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
+  // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
   ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians", "y", "x");
@@ -1126,6 +1130,7 @@ wait : bool
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
+  m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
@@ -2233,6 +2238,43 @@ alpha : double
     
                            
   m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
+
+  m.def("VoxelCoefficient",
+        [](py::tuple pystart, py::tuple pyend, py::array values,
+           bool linear)
+        -> shared_ptr<CoefficientFunction>
+        {
+          Array<string> allowed_types = { "float64", "complex128" };
+          if(!allowed_types.Contains(py::cast<string>(values.dtype().attr("name"))))
+            throw Exception("Only float64 and complex128 dtype arrays allowed!");
+          Array<double> start, end;
+          Array<size_t> dim_vals;
+          for(auto val : pystart)
+            start.Append(py::cast<double>(val));
+          for(auto val : pyend)
+            end.Append(py::cast<double>(val));
+          for(auto dim : Range(values.ndim()))
+            dim_vals.Append(values.shape(dim));
+          if(values.dtype().kind() == 'c')
+            {
+              auto fa_values = FlatArray<Complex>(values.size(),
+                                                  static_cast<Complex*>(values.mutable_data(0)));
+              return make_shared<VoxelCoefficientFunction<Complex>>
+                (start, end, dim_vals, fa_values, linear);
+            }
+          auto fa_values = FlatArray<double>(values.size(),
+                                             static_cast<double*>(values.mutable_data(0)));
+          return make_shared<VoxelCoefficientFunction<double>>
+            (start, end, dim_vals, fa_values, linear);
+        }, py::arg("start"), py::arg("end"), py::arg("values"),
+        py::arg("linear")=true, R"delimiter(CoefficientFunction defined on a grid.
+
+Start and end mark the cartesian boundary of domain. The function will be continued by a constant function outside of this box. Inside a cartesian grid will be created by the dimensions of the numpy input array 'values'. This array must have the dimensions of the mesh and the values stored as:
+x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
+
+If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
+
+)delimiter");
 
 }
 

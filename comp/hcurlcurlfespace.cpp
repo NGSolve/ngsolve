@@ -15,6 +15,9 @@ namespace ngcomp
 {
 
   template <int D>
+  class DiffOpHCurlCurlDualBoundary;
+  
+  template <int D>
   class DiffOpHCurlCurlDual : public DiffOp<DiffOpHCurlCurlDual<D> >
   {
   public:
@@ -25,6 +28,8 @@ namespace ngcomp
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 0 };
     enum { DIM_STRESS = D*D };
+
+    typedef DiffOpHCurlCurlDualBoundary<D> DIFFOP_TRACE;
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
     
@@ -46,6 +51,28 @@ namespace ngcomp
     {
       throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(bfel).CalcDualShape (mir, mat);
+    }
+
+    using DiffOp<DiffOpHCurlCurlDual<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(bfel).EvaluateDual (mir, x, y);
+    }
+
+    using DiffOp<DiffOpHCurlCurlDual<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(bfel).AddDualTrans (mir, y, x);
+    }
+
    
   };
 
@@ -61,25 +88,50 @@ namespace ngcomp
     enum { DIFFORDER = 0 };
     enum { DIM_STRESS = D*D };
 
+    typedef void DIFFOP_TRACE;
+
+
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
     
     static auto & Cast (const FiniteElement & fel) 
-    { return static_cast<const HCurlCurlSurfaceFiniteElement<D-1>&> (fel); }
+    { return static_cast<const HCurlCurlFiniteElement<D-1>&> (fel); }
     
     
-    template <typename AFEL, typename MIP, typename MAT,
+    template <typename FEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
       Cast(fel).CalcDualShape (mip, Trans(mat));
     }
-    template <typename AFEL, typename MIP, typename MAT,
+    
+    template <typename FEL, typename MIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
+    }
+
+        static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(bfel).CalcDualShape (mir, mat);
+    }
+
+    using DiffOp<DiffOpHCurlCurlDualBoundary<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(bfel).EvaluateDual (mir, x, y);
+    }
+
+    using DiffOp<DiffOpHCurlCurlDualBoundary<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(bfel).AddDualTrans (mir, y, x);
     }
    
   };
@@ -97,27 +149,38 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlCurlFiniteElement<D>&> (fel); }
+
+    template <typename FEL,typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, 
+				const MIP & mip,
+				MAT && mat, LocalHeap & lh)
     {
-      const HCurlCurlFiniteElement<D> & fel =
-        dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape (mip,Trans(mat));
+      
+      GenerateMatrix2 (bfel, mip, SliceIfPossible<double> (mat), lh);
     }
 
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix2 (const FEL & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
     {
-      const HCurlCurlFiniteElement<D> & fel =
-        dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape(sip,shape);
-      for(int i=0; i<nd; i++)
-        for(int j = 0; j <DIM_DMAT; j++)
-          mat(j,i) = shape(i,j);
+      HeapReset hr(lh);
+      auto refmat = Cast(fel).GetShape(mip.IP(), lh);
+      Mat<D,D,double> physmat;
+      for (size_t i = 0; i < Cast(fel).ndof; i++)
+        {
+          physmat = refmat.Row(i);
+          mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
+        }
+    }
+
+    template <typename FEL>
+    static void GenerateMatrix2 (const FEL & fel, 
+                                 const MappedIntegrationPoint<D,D> & mip,
+                                 SliceMatrix<> mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcMappedShape (mip,Trans(mat));
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
@@ -139,7 +202,7 @@ namespace ngcomp
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans (mir, y, x);
-    }
+      }
   };
 
   template<int D>
@@ -229,13 +292,13 @@ namespace ngcomp
   };
 
   
-  class DiffOpCurlHCurlCurlBoundary : public DiffOp<DiffOpCurlHCurlCurlBoundary>
+  /*class DiffOpCurlHCurlCurlBoundary : public DiffOp<DiffOpCurlHCurlCurlBoundary>
   {
   public:
     enum { DIM = 1 };
-    enum { DIM_SPACE = 3 };
-    enum { DIM_ELEMENT = 2 };
-    enum { DIM_DMAT = 9 };//??????
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D-1 };//??????
     enum { DIFFORDER = 1 };
 
     static Array<int> GetDimensions() { return Array<int> ({3,3}); }
@@ -267,9 +330,9 @@ namespace ngcomp
 
     }
 
-  };
+    };*/
   
-
+  
   template<int D>
   class DiffOpIdBoundaryHCurlCurl: public DiffOp<DiffOpIdBoundaryHCurlCurl<D> >
   {
@@ -283,72 +346,102 @@ namespace ngcomp
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
     static auto & Cast (const FiniteElement & fel) 
-    { return static_cast<const HCurlCurlSurfaceFiniteElement<D-1>&> (fel); }
+    { return static_cast<const HCurlCurlFiniteElement<D-1>&> (fel); }
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      
-      Cast(bfel).CalcMappedShape (mip,Trans(mat));
+      HeapReset hr(lh);
+      auto refmat = Cast(bfel).GetShape(mip.IP(), lh);
+      Mat<D-1,D-1,double> physmat;
+      for (size_t i = 0; i < Cast(bfel).ndof; i++)
+        {
+          physmat = refmat.Row(i);
+          mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
+        }
     }
 
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
-    {
-      auto & fel = Cast(bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape(sip,shape);
-      mat = Trans(shape);
-
-    }
-
-    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      cout << "B" << endl;
-            
       Cast(fel).CalcMappedShape (mir, mat); 
-      cout << "Bend" << endl;     
     }
-
+    
     using DiffOp<DiffOpIdBoundaryHCurlCurl<D> >::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      cout << "C" << endl;
-
       Cast(bfel).Evaluate (mir, x, y);
-      cout << "Cend" << endl;
     }
 
     using DiffOp<DiffOpIdBoundaryHCurlCurl<D> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      cout << "D" << endl;
-
       Cast(bfel).AddTrans (mir, y, x);
-      cout << "Dend" << endl;
-      }*/
+    }
+    
   };
 
 
-
-  template <int D>
-  class NGS_DLL_HEADER HCurlCurlMassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHCurlCurl<D>, DiagDMat<D*D>, HCurlCurlFiniteElement<D> >
+    template<int D>
+  class DiffOpIdBBoundaryHCurlCurl: public DiffOp<DiffOpIdBBoundaryHCurlCurl<D> >
   {
   public:
-    using T_BDBIntegrator<DiffOpIdHCurlCurl<D>, DiagDMat<D*D>, HCurlCurlFiniteElement<D>>::T_BDBIntegrator;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-2 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlCurlFiniteElement<D-2>&> (fel); }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto refmat = Cast(bfel).GetShape(mip.IP(), lh);
+      Mat<D-2,D-2,double> physmat;
+      for (size_t i = 0; i < Cast(bfel).ndof; i++)
+        {
+          physmat = refmat.Row(i);
+          mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcMappedShape (mir, mat); 
+    }
+    
+    using DiffOp<DiffOpIdBBoundaryHCurlCurl<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(bfel).Evaluate (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdBBoundaryHCurlCurl<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(bfel).AddTrans (mir, y, x);
+    }
+    
   };
+
 
 
   /** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
-    template<int D>
+  template<int D>
     void CalcDShapeOfHCurlCurlFE(const HCurlCurlFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
       HeapReset hr(lh);
       int nd_u = fel_u.GetNDof();
@@ -698,7 +791,7 @@ namespace ngcomp
         }
     }
   };
-
+  
   /// Christoffel Symbol of first kind for HCurlCurl
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
@@ -714,8 +807,8 @@ namespace ngcomp
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                MAT & mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -732,7 +825,7 @@ namespace ngcomp
       FlatMatrixFixWidth<D*D*D> bmat(nd_u, lh);
       
       CalcDShapeOfHCurlCurlFE<D>(static_cast<const FEL&>(fel), mip, bmat, lh);
-
+      
       for (int i=0; i<D; i++)
         for (int j=0; j<D; j++)
           for (int k=0; k<D; k++)
@@ -744,7 +837,7 @@ namespace ngcomp
     }
 
     
-
+    
     /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
@@ -857,29 +950,30 @@ namespace ngcomp
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags), issurfacespace(false)
   {
-    type = "hcurlcurl";
-    order = int (flags.GetNumFlag ("order",1));
+    type  = "hcurlcurl";
+    order = int (flags.GetNumFlag ("order", 0));
     discontinuous = flags.GetDefineFlag("discontinuous");
-    uniform_order_edge = int(flags.GetNumFlag("orderedge",order));
+    uniform_order_edge  = int(flags.GetNumFlag("orderedge", order));
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
 
-    auto one = make_shared<ConstantCoefficientFunction>(1);
-
-    if(ma->GetDimension() == 2)
+    if(ma->GetDimension() == 1)
+    {
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<1>>>();
+    }
+    else if(ma->GetDimension() == 2)
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<2>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<2>>>();
-      integrator[VOL] = make_shared<HCurlCurlMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<2>>>();
     }
-    else
+    else //dim=3
     {
-      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<3>>>();
-      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<3>>>();
-      integrator[VOL] = make_shared<HCurlCurlMassIntegrator<3>> (one);
+      evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryHCurlCurl<3>>>();
+      evaluator[BND]  = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlCurl<3>>>();
+      evaluator[VOL]  = make_shared<T_DifferentialOperator<DiffOpIdHCurlCurl<3>>>();
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<3>>>();
-      flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurlBoundary>>();
+      //flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurlBoundary>>();
     }
   }
 
@@ -970,7 +1064,12 @@ namespace ngcomp
                   }
                 break;
               case ET_QUAD:
-                throw Exception("HCurlcurl not implemented for quad face");
+                ndof += of[0]*of[0] + (of[0]+2)*(of[0])*2 + 2*of[0] + 1;
+                if(issurfacespace && discontinuous)
+                  {
+                    for (auto e : ma->GetElEdges(ei))
+                      ndof += first_edge_dof[e+1] - first_edge_dof[e];            
+                  }
                 break;
               default:
                 throw Exception("illegal facet type");
@@ -997,6 +1096,11 @@ namespace ngcomp
                 break;
               case ET_QUAD:
                 ndof += oi[0]*oi[0] + (oi[0]+2)*(oi[0])*2 + 2*oi[0] + 1;
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                  }
                 //throw Exception("Hcurlcurl Quad not implemented yet");
                 break;
               case ET_PRISM:
@@ -1135,9 +1239,9 @@ namespace ngcomp
     {
       if(!discontinuous || (issurfacespace && ei.VB() == BND))
       {
-        auto feseg = new (alloc) HCurlCurlSurfaceFE<ET_SEGM> (order);
-        auto fetr  = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
-        //auto fequ  = new (alloc) HCurlCurlSurfaceFE<ET_QUAD> (order);
+        auto feseg = new (alloc) HCurlCurlFE<ET_SEGM> (order);
+        auto fetr  = new (alloc) HCurlCurlFE<ET_TRIG> (order);
+        auto fequ  = new (alloc) HCurlCurlFE<ET_QUAD> (order);
         switch(ma->GetElType(ei))
           {
           case ET_SEGM:
@@ -1157,7 +1261,7 @@ namespace ngcomp
               return *fetr;
             }
             
-            /*case ET_QUAD:
+          case ET_QUAD:
             {
               fequ->SetVertexNumbers (ngel.Vertices());
               int ii = 0;
@@ -1166,7 +1270,7 @@ namespace ngcomp
               fequ->SetOrderInner(order_facet[ei.Nr()]);
               fequ->ComputeNDof();
               return *fequ;
-              }*/
+              }
             
           default:
             stringstream str;
