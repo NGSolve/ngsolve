@@ -3302,7 +3302,11 @@ namespace ngfem
     dimension = ir.Dim();
     for (int i = 0; i < Size(); i++)
       (*this)[i] = [&] (int j) { int nr = i*SIMD<IntegrationPoint>::Size()+j;
-                                 return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
+                                 bool regularip = nr < ir.Size();
+                                 IntegrationPoint ip = ir[regularip ? nr : ir.Size()-1];
+                                 if (!regularip) ip.SetWeight(0);
+                                 return ip; };
+    // return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
