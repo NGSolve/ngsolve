@@ -93,7 +93,7 @@ public:
   {
     if (additional_diffops.Used(name))
       return additional_diffops[name];
-    return shared_ptr<DifferentialOperator>();
+    return nullptr; // shared_ptr<DifferentialOperator>();
   }
 
   SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const

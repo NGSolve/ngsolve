@@ -627,7 +627,6 @@ namespace ngfem
 
     
     static string Name() { return "hesse"; }
-    // static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     static INT<2> GetDimensions() { return { D,D }; }
     
     static auto & Cast (const FiniteElement & fel) 
@@ -656,7 +655,6 @@ namespace ngfem
     typedef void DIFFOP_TRACE;
 
     static string Name() { return "hesseboundary"; }
-    // static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     static INT<2> GetDimensions() { return { D,D }; }    
     
     static auto & Cast (const FiniteElement & fel) 
@@ -1768,7 +1766,7 @@ namespace ngfem
   };
 
 
-
+  template <int DIM_SPC> class DiffOpGradBoundaryVectorH1;
   
   template <int DIM_SPC>
   class DiffOpGradVectorH1 : public DiffOp<DiffOpGradVectorH1<DIM_SPC> >
@@ -1780,7 +1778,8 @@ namespace ngfem
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
 
-    // static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+    typedef DiffOpGradBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
+
     static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     
     static string Name() { return "grad"; }
@@ -1868,7 +1867,6 @@ namespace ngfem
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
 
-    // static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
     static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     
     static string Name() { return "gradbnd"; }
