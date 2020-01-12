@@ -702,45 +702,26 @@ namespace ngfem
     mat = 0.0;
     diffop->CalcMatrix (fel, mip, mat, lh);
     for (int i = 1; i < dim; i++)
-      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi, ndi);
+      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
   }
   
   void VectorDifferentialOperator ::
-  CalcMatrix (const FiniteElement & fel,
+  CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              BareSliceMatrix<SIMD<double>> mat) const
+              BareSliceMatrix<SIMD<double>> bmat) const
   {
-    /*
-    diffop->CalcMatrix(fel, mir, mat.RowSlice(0, dim*dim));
-    
-    size_t hdim = dim;   // how many copies
-    size_t dim_diffop = diffop->Dim();
-    size_t hdim2 = hdim*hdim;
-    // size_t dim_dim_do = hdim*dim_diffop;
-    size_t dim2_dim_do = hdim2*dim_diffop;
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
 
-    STACK_ARRAY(SIMD<double>, hval, dim_diffop);
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();
 
-    size_t nip = mir.Size();
-    if (comp == -1) 
-      for (size_t i = 0; i < fel.GetNDof(); i++)
-        {
-          auto mati = mat.Rows(dim2_dim_do*IntRange(i,i+1));
-          for (size_t j = 0; j < nip; j++)
-            {
-              auto col = mati.Col(j);
+    auto mat = bmat.AddSize(dim*dim*dimi*ndi, mir.Size());
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mir, mat.Rows(dimi*ndi));
+    for (int i = 1; i < dim; i++)
+      mat.Rows(i*dimi*(dim+1), (i+1)*dimi*(dim+1)) = mat.Rows(dimi);
 
-              for (size_t l = 0; l < dim_diffop; l++)
-                hval[l] = col(l*hdim2);
-              
-              col.Range(0,dim2_dim_do) = 0;
-              for (size_t l = 0; l < dim_diffop; l++)
-                col.Slice(l, dim_diffop*(dim+1)).Range(0,hdim) = hval[l];
-            }
-        }
-    else
-    */
-    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix does not support SIMD");
+    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
   }
   
 
