@@ -685,6 +685,172 @@ namespace ngfem
 
 
 
+  VectorDifferentialOperator :: ~VectorDifferentialOperator ()  { ; }
+
+
+  void VectorDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const 
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mip, mat, lh);
+    for (int i = 1; i < dim; i++)
+      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi, ndi);
+  }
+  
+  void VectorDifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              BareSliceMatrix<SIMD<double>> mat) const
+  {
+    /*
+    diffop->CalcMatrix(fel, mir, mat.RowSlice(0, dim*dim));
+    
+    size_t hdim = dim;   // how many copies
+    size_t dim_diffop = diffop->Dim();
+    size_t hdim2 = hdim*hdim;
+    // size_t dim_dim_do = hdim*dim_diffop;
+    size_t dim2_dim_do = hdim2*dim_diffop;
+
+    STACK_ARRAY(SIMD<double>, hval, dim_diffop);
+
+    size_t nip = mir.Size();
+    if (comp == -1) 
+      for (size_t i = 0; i < fel.GetNDof(); i++)
+        {
+          auto mati = mat.Rows(dim2_dim_do*IntRange(i,i+1));
+          for (size_t j = 0; j < nip; j++)
+            {
+              auto col = mati.Col(j);
+
+              for (size_t l = 0; l < dim_diffop; l++)
+                hval[l] = col(l*hdim2);
+              
+              col.Range(0,dim2_dim_do) = 0;
+              for (size_t l = 0; l < dim_diffop; l++)
+                col.Slice(l, dim_diffop*(dim+1)).Range(0,hdim) = hval[l];
+            }
+        }
+    else
+    */
+    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix does not support SIMD");
+  }
+  
+
+  void VectorDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const BaseMappedIntegrationPoint & mip,
+         BareSliceVector<double> x, 
+         FlatVector<double> flux,
+         LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();    
+
+    for (int k = 0; k < dim; k++)
+      diffop->Apply(fel, mip, x.Range(ndi*k, ndi*(k+1)), flux.Range(k*dimi, (k+1)*dimi), lh);
+  }
+
+
+  void VectorDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & mir,
+         BareSliceVector<double> x, 
+         BareSliceMatrix<SIMD<double>> flux) const
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();    
+
+    for (int k = 0; k < dim; k++)
+      diffop->Apply(fel, mir, x.Range(k*ndi, (k+1)*ndi), flux.Rows(k*dimi, (k+1)*dimi));
+  }
+  
+  
+  void VectorDifferentialOperator ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatVector<double> flux,
+              BareSliceVector<double> x, 
+              LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();    
+
+    for (int k = 0; k < dim; k++)
+      diffop->ApplyTrans(fel, mip, flux.Range(k*dimi, (k+1)*dimi), x.Range(k*ndi, (k+1)*ndi), lh);
+  }
+
+  void VectorDifferentialOperator ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatVector<Complex> flux,
+              BareSliceVector<Complex> x, 
+              LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();    
+
+    for (int k = 0; k < dim; k++)
+      diffop->ApplyTrans(fel, mip, flux.Range(k*dimi, (k+1)*dimi), x.Range(k*ndi, (k+1)*ndi), lh);
+  }
+
+    
+  void VectorDifferentialOperator ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<SIMD<double>> flux,
+            BareSliceVector<double> x) const
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();
+    
+    for (size_t k = 0; k < dim; k++)
+      diffop->AddTrans(fel, mir, flux.Rows(k*dimi, (k+1)*dimi), x.Range(k*ndi, (k+1)*ndi));
+  }
+
+  void VectorDifferentialOperator ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<SIMD<Complex>> flux,
+            BareSliceVector<Complex> x) const
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();
+    
+    for (size_t k = 0; k < dim; k++)
+      diffop->AddTrans(fel, mir, flux.Rows(k*dimi, (k+1)*dimi), x.Range(k*ndi, (k+1)*ndi));
+  }
+
+
+  shared_ptr<CoefficientFunction> VectorDifferentialOperator ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir) const 
+  {
+    throw Exception("DiffShape not implemented for VectorDifferentialOp");
+    // return TransposeCF (diffop->DiffShape(TransposeCF(proxy), dir));
+  }
+
+
+
+
+
+  
+
+
+
 
 
   

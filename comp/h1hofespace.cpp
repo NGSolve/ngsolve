@@ -279,7 +279,7 @@ namespace ngcomp
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,1>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
-          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>();          
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>();
           break;
         }
       case 3:
@@ -2302,6 +2302,8 @@ into the wirebasket.
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2,2>>> ());
+          additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<2>>>(), 2));
+          
           break;
           
         case 3:
@@ -2314,6 +2316,7 @@ into the wirebasket.
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
+          additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<3>>>(), 3));          
           break;
         }
     }
