@@ -63,14 +63,13 @@ namespace ngfem
                                   SliceVector<> nshape) const;
 
     /// compute shape
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				  SliceMatrix<> shape) const;
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const;
 
     virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
 				  BareSliceMatrix<SIMD<double>> shape) const;
 
-    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                                  SliceMatrix<> shape) const;
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                   BareSliceMatrix<SIMD<double>> shapes) const;
@@ -191,6 +190,12 @@ namespace ngfem
       FlatVector<> shape(ndof, lh);
       CalcShape (ip, shape);
       return shape;
+    }
+
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const
+    {
+      throw Exception(string("CalcMappedShape not implemented for H(div) normal element ")+typeid(*this).name());
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,

@@ -85,8 +85,8 @@ namespace ngfem
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
 				  SliceMatrix<> shape) const override;
 
-    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                                  SliceMatrix<> shape) const;
+
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                   BareSliceMatrix<SIMD<double>> shapes) const;
@@ -171,14 +171,14 @@ namespace ngfem
                                                  BareSliceVector<> coefs) const
     { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans not overloaded")+typeid(*this).name()); }
 
-    NGS_DLL_HEADER virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+    NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const;
 
-    NGS_DLL_HEADER virtual void CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shape) const;
+    NGS_DLL_HEADER virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const;
 
-    NGS_DLL_HEADER virtual void EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+    NGS_DLL_HEADER virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
     { throw ExceptionNOSIMD("HCurlFE - simd evaldual not overloaded"); }      
 
-    NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+    NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                                               BareSliceVector<double> coefs) const
     { throw ExceptionNOSIMD("HCurlFE - simd adddualtrans not overloaded"); }
     
@@ -210,7 +210,6 @@ namespace ngfem
     void ComputeVolMoments (HDivFiniteElement<3> & testfe,
 			    FlatMatrix<> moments, int order, int shape = 1) const;
   };
-
 
 
 
@@ -258,25 +257,20 @@ namespace ngfem
 
 
 
-
-
-  template <int DIM, typename SCAL = double>
-  class Class_Du
+  template <int DIM, typename SCAL> //  = double>
+  class Du
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
     const AutoDiff<DIM,SCAL> u;
 
-    Class_Du (const AutoDiff<DIM,SCAL> au)
-      : u(au) { ; }
+    Du (const AutoDiff<DIM,SCAL> au) : u(au) { }
+    // Du (const AutoDiffRec<DIM,SCAL> au) : u(au) { }
 
     Vec<DIM,SCAL> Value () const
     {
-      Vec<DIM,SCAL> val;
-      for (int j = 0; j < DIM; j++)
-	val(j) = u.DValue(j);
-      return val;
+      return GetGradient(u);
     }
 
     Vec<DIM_CURL,SCAL> CurlValue () const
@@ -285,141 +279,113 @@ namespace ngfem
     }
   };
 
-  template <int DIM, typename SCAL>
-  INLINE Class_Du<DIM,SCAL> Du (AutoDiff<DIM,SCAL> u)
-  { return Class_Du<DIM,SCAL> (u); }
-  
-  template <int DIM, typename SCAL>
-  INLINE Class_Du<DIM,SCAL> Du (AutoDiffRec<DIM,SCAL> u)
-  { return Class_Du<DIM,SCAL> (u); }
-
-
 
 
   template <int DIM, typename SCAL = double>
-  class Class_uDv
+  class uDv
   {
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
-
+    // enum { DIM_CURL = (DIM * (DIM-1))/2 };    
   public:
     const AutoDiff<DIM,SCAL> u, v;
-    
-    Class_uDv (const AutoDiff<DIM,SCAL> au, 
-               const AutoDiff<DIM,SCAL> av)
+
+    uDv (AutoDiff<DIM,SCAL> au, AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
+
+    // uDv (AutoDiffRec<DIM,SCAL> au, AutoDiffRec<DIM,SCAL> av)
+    // : u(au), v(av) { ; }
     
-    Vec<DIM,SCAL> Value () const
+    // Vec<DIM,SCAL> Value () const
+    auto Value () const
     {
-      Vec<DIM,SCAL> val;
-      for (int j = 0; j < DIM; j++)
-	val(j) = u.Value() * v.DValue(j);
-      return val;
+      return u.Value() * GetGradient(v);
     }
 
-    Vec<DIM_CURL,SCAL> CurlValue () const
+    // Vec<DIM_CURL,SCAL> CurlValue () const
+    auto CurlValue () const
     {
-      AutoDiff<DIM_CURL,SCAL> hd = Cross (u, v);
-      Vec<DIM_CURL,SCAL> val;
-      for (int i = 0; i < DIM_CURL; i++) 
-        val(i) = hd.DValue(i);
-      return val;
+      return Cross (GetGradient(u), GetGradient(v));
     }
   };
 
-  template <int DIM, typename SCAL>
-  INLINE Class_uDv<DIM,SCAL> uDv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
-  { return Class_uDv<DIM,SCAL> (u,v); }
-  
-  template <int DIM, typename SCAL>
-  INLINE Class_uDv<DIM,SCAL> uDv (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
-  { return Class_uDv<DIM,SCAL> (u,v); }
 
 
   template <int DIM, typename SCAL = double>
-  class Class_uDv_minus_vDu
+  class uDv_minus_vDu
   {
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
-
+    // enum { DIM_CURL = (DIM * (DIM-1))/2 };
   public:
     const AutoDiff<DIM, SCAL> u, v;
+    
+    uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
+                   const AutoDiff<DIM,SCAL> av)
+      : u(au), v(av) { }
 
-    Class_uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
-                         const AutoDiff<DIM,SCAL> av)
-      : u(au), v(av) { ; }
-
-    Vec<DIM,SCAL> Value () const
+    /*
+    uDv_minus_vDu (const AutoDiffRec<DIM,SCAL> au, 
+                   const AutoDiffRec<DIM,SCAL> av)
+      : u(au), v(av) { }
+    */
+    
+    // Vec<DIM,SCAL> Value () const
+    auto Value () const
     {
-      Vec<DIM,SCAL> val;
-      for (int j = 0; j < DIM; j++)
-	val(j) = u.Value() * v.DValue(j) - v.Value() * u.DValue(j);
-      return val;
+      return u.Value()*GetGradient(v)-v.Value()*GetGradient(u);
     }
 
-    Vec<DIM_CURL,SCAL> CurlValue () const
+    // Vec<DIM_CURL,SCAL> CurlValue () const
+    auto CurlValue () const    
     {
-      AutoDiff<DIM_CURL,SCAL> hd = Cross (u, v);
-      Vec<DIM_CURL,SCAL> val;
-      for (int i = 0; i < DIM_CURL; i++) 
-        val(i) = 2 * hd.DValue(i);
-      return val;
+      return 2 * Cross (GetGradient(u), GetGradient(v));
     }
   };
-
-  template <int DIM, typename SCAL>
-  INLINE Class_uDv_minus_vDu<DIM,SCAL> 
-  uDv_minus_vDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
-  { return Class_uDv_minus_vDu<DIM,SCAL> (u,v); }
-
-  template <int DIM, typename SCAL>
-  INLINE Class_uDv_minus_vDu<DIM,SCAL> 
-  uDv_minus_vDu (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
-  { return Class_uDv_minus_vDu<DIM,SCAL> (u,v); }
 
 
 
 
   template <int DIM, typename SCAL = double>
-  class Class_wuDv_minus_wvDu
+  class wuDv_minus_wvDu
   {
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    // enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
     const AutoDiff<DIM,SCAL> u, v, w;
 
-    Class_wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> au, 
-                           const AutoDiff<DIM,SCAL> av,
-                           const AutoDiff<DIM,SCAL> aw)
+    wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> au, 
+                     const AutoDiff<DIM,SCAL> av,
+                     const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
+    /*
+    wuDv_minus_wvDu (const AutoDiffRec<DIM,SCAL> au, 
+                     const AutoDiffRec<DIM,SCAL> av,
+                     const AutoDiffRec<DIM,SCAL> aw)
+      : u(au), v(av), w(aw) { ; }
+    */
     
-    Vec<DIM,SCAL> Value () const
+    // Vec<DIM,SCAL> Value () const
+    auto Value () const
     {
+      /*
       Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = w.Value() * (u.Value() * v.DValue(j) - v.Value() * u.DValue(j));
       return val;
+      */
+      return w.Value()*u.Value()*GetGradient(v) - w.Value()*v.Value()*GetGradient(u);
     }
 
-    Vec<DIM_CURL,SCAL> CurlValue () const
+    // Vec<DIM_CURL,SCAL> CurlValue () const
+    auto CurlValue () const
     {
+      /*
       AutoDiff<DIM_CURL,SCAL> hd = Cross (u*w, v) + Cross(u, v*w);
       Vec<DIM_CURL,SCAL> val;
       for (int i = 0; i < DIM_CURL; i++) 
         val(i) = hd.DValue(i);
       return val;
+      */
+      return Cross(GetGradient(u*w),GetGradient(v)) - Cross(GetGradient(v*w), GetGradient(u));
     }
   };
-
-
-  template <int DIM, typename SCAL>
-  INLINE Class_wuDv_minus_wvDu<DIM,SCAL> 
-  wuDv_minus_wvDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
-  { return Class_wuDv_minus_wvDu<DIM,SCAL> (u,v,w); }
-
-  template <int DIM, typename SCAL>
-  INLINE Class_wuDv_minus_wvDu<DIM,SCAL> 
-  wuDv_minus_wvDu (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
-  { return Class_wuDv_minus_wvDu<DIM,SCAL> (u,v,w); }
-
 
 
 

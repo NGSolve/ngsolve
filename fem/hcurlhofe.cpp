@@ -10,7 +10,6 @@
 #include <thcurlfe_impl.hpp>
 #include <hcurlhofe_impl.hpp>
 
-
 namespace ngfem
 {
   template class HCurlHighOrderFE<ET_SEGM>;

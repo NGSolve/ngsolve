@@ -335,7 +335,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,double>> values) const override
     {
-      FlatMatrix<double> hvalues(ir.Size(), 3*values.Dist(), &values(0).Value());
+      SliceMatrix<double> hvalues(ir.Size(), Dimension(), 3*values.Dist(), &values(0).Value());
       Evaluate (ir, hvalues);
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = Dimension(); j-- > 0; )
@@ -1566,6 +1566,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   inline shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1)
   { return (-1) * c1; }
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);

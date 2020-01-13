@@ -15,9 +15,9 @@ namespace ngfem
   {
   public:
     HDivDummyFE() : HDivFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const { ; }
+			    SliceMatrix<> shape) const override { ; }
   };
 
   template <ELEMENT_TYPE ET>
@@ -25,9 +25,9 @@ namespace ngfem
   {
   public:
     HDivNormalDummyFE() : HDivNormalFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const { ; }
+			    FlatVector<> shape) const override { ; }
   };
 
 
@@ -40,10 +40,10 @@ namespace ngfem
     FE_RTTrig0();
     ///
     virtual ~FE_RTTrig0();
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
   };
 
 
@@ -58,9 +58,9 @@ namespace ngfem
     ///
     virtual ~FE_RTTrig0plus();
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
   };
 
 
@@ -77,14 +77,14 @@ namespace ngfem
     FE_BDMTrig1();
     ///
     virtual ~FE_BDMTrig1();
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> shape) const;
+			     FlatMatrixFixWidth<2> shape) const override;
   
     ///
     void Orthogonalize();
@@ -103,10 +103,10 @@ namespace ngfem
   public:
 
     HDivNormalSegm0 ();
-    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_SEGM; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
-			    FlatVector<> shape) const;
+			    FlatVector<> shape) const override;
   };
 
 
@@ -138,21 +138,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 2; }
     ///
-    virtual int GetNDof () const { return 7; }
+    virtual int GetNDof () const override { return 7; }
     ///
-    virtual int Order () const { return 2; }
+    virtual int Order () const override { return 2; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -185,21 +185,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 2; }
     ///
-    virtual int GetNDof () const { return 9; }
+    virtual int GetNDof () const override { return 9; }
     ///
-    virtual int Order () const { return 2; }
+    virtual int Order () const override{ return 2; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     /// full P2
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -234,21 +234,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 2; }
     ///
-    virtual int GetNDof () const { return 12; }
+    virtual int GetNDof () const override { return 12; }
     ///
-    virtual int Order () const { return 3; }
+    virtual int Order () const override { return 3; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
   
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -283,21 +283,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 2; }
     ///
-    virtual int GetNDof () const { return 14; }
+    virtual int GetNDof () const override { return 14; }
     ///
-    virtual int Order () const { return 2; }
+    virtual int Order () const override { return 2; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -325,10 +325,10 @@ namespace ngfem
     ///
     virtual ~FE_RTQuad0();
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_QUAD; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
 
   };
 
@@ -355,21 +355,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 2; }
     ///
-    virtual int GetNDof () const { return 8; }
+    virtual int GetNDof () const override { return 8; }
     ///
-    virtual int Order () const { return 2; }
+    virtual int Order () const override { return 2; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_QUAD; }
   
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     ///
     void Orthogonalize();
@@ -403,16 +403,16 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 1; }
     ///
-    virtual int GetNDof () const { return 1; }
+    virtual int GetNDof () const override { return 1; }
     ///
-    virtual int Order () const { return 1; }
+    virtual int Order () const override { return 1; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_SEGM; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcDShape (const IntegrationPoint & ip, 
@@ -449,17 +449,17 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 1; }
     ///
-    virtual int GetNDof () const { return 2; }
+    virtual int GetNDof () const override { return 2; }
     ///
-    virtual int Order () const { return 1; }
+    virtual int Order () const override { return 1; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_SEGM; }
 
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcDShape (const IntegrationPoint & ip, 
@@ -491,17 +491,17 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 1; }
     ///
-    virtual int GetNDof () const { return 3; }
+    virtual int GetNDof () const override { return 3; }
     ///
-    virtual int Order () const { return 3; }
+    virtual int Order () const override { return 3; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_SEGM; }
 
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     ///
     virtual void CalcDShape (const IntegrationPoint & ip, 
@@ -537,11 +537,11 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+			     FlatMatrixFixWidth<3> shape) const override;
 
     ///
     void Orthogonalize();
@@ -573,26 +573,26 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 3; }
     ///
-    virtual int GetNDof () const { return 18; }
+    virtual int GetNDof () const override { return 18; }
     ///
-    virtual int Order () const { return 2; }
+    virtual int Order () const override { return 2; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TET; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
 
     /// full p2
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
     /// full P1
     virtual void CalcShape2 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
 
 
     ///
@@ -632,21 +632,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 3; }
     ///
-    virtual int GetNDof () const { return 18; }
+    virtual int GetNDof () const override { return 18; }
     ///
-    virtual int Order () const { return 1; }
+    virtual int Order () const override { return 1; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_PRISM; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
   
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
   
     ///
     void Orthogonalize();
@@ -679,21 +679,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 3; }
     ///
-    virtual int GetNDof () const { return 21; }
+    virtual int GetNDof () const override { return 21; }
     ///
-    virtual int Order () const { return 1; }
+    virtual int Order () const override { return 1; }
     ///
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
   
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
   
     ///
     void Orthogonalize();
@@ -734,21 +734,21 @@ namespace ngfem
     ///
     virtual int SpatialDim () const { return 3; }
     ///
-    virtual int GetNDof () const { return 27; }
+    virtual int GetNDof () const override { return 27; }
     ///
-    virtual int Order () const { return 3; }
+    virtual int Order () const override { return 3; }
     ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_PRISM; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> & shape,
-			    int comp = 1) const;
+			    int comp = 1) const override;
   
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatVector<> & shape,
-			     int comp = 1) const;
+			     int comp = 1) const override;
   
     ///
     void Orthogonalize();

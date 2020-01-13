@@ -128,6 +128,11 @@ namespace ngfem
     
 #endif
 
+    /// compute dshape, matrix: ndof x (spacedim spacedim)
+    NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
+                                             BareSliceMatrix<> ddshape) const override;
+
+    
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
 
     HD NGS_DLL_HEADER 
@@ -213,6 +218,7 @@ namespace ngfem
 namespace ngbla
 {
 
+  /*
   template <int DIM, typename SCAL = double>
   class AD2Vec : public MatExpr<AD2Vec<DIM,SCAL> >
   {
@@ -228,9 +234,10 @@ namespace ngbla
     INLINE int Height () const { return DIM; }
     INLINE int Width () const { return 1; }
   };
+  */
 
   template <int DIM, typename SCAL>
-  auto GetGradient (AutoDiff<DIM,SCAL> ad)
+  auto GetGradient (const AutoDiff<DIM,SCAL> & ad)
   {
     Vec<DIM,SCAL> grad;
     for (int i = 0; i < DIM; i++)
@@ -238,15 +245,16 @@ namespace ngbla
     return grad;
   }
 
+  /*
   template <int DIM, typename SCAL>
-  auto GetGradient (AutoDiffRec<DIM,SCAL> ad)
+  auto GetGradient (const AutoDiffRec<DIM,SCAL> & ad)
   {
     Vec<DIM,SCAL> grad;
     for (int i = 0; i < DIM; i++)
       grad(i) = ad.DValue(i);
     return grad;
   }
-  
+  */
 }
 
 

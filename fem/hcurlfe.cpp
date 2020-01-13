@@ -122,36 +122,42 @@ namespace ngfem
 
 
   /// compute shape
+  
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    SliceMatrix<> shape) const
   {
-    auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
-    CalcShape (mip.IP(), shape);
-    Mat<DIM> trans = Trans (mip.GetJacobianInverse());
-    for (int i = 0; i < ndof; i++)
-      {
-        Vec<DIM> hs = shape.Row(i);
-        shape.Row(i) = trans * hs;
-      }
+    CalcShape (bmip.IP(), shape);
+
+    Switch<4-DIM>
+      (bmip.DimSpace()-DIM,
+       [this,&bmip,shape](auto CODIM)
+       {
+         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+         auto trans = Trans (mip.GetJacobianInverse());
+         
+         for (int i = 0; i < ndof; i++)
+           shape.Row(i).Range(DIM+CODIM.value) = trans * Vec<DIM> (shape.Row(i));
+       });
   }
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                   SliceMatrix<> shape) const
+  CalcMappedShape (const BaseMappedIntegrationRule & mir, SliceMatrix<> shapes) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      CalcMappedShape (mir[i], shape.Cols(i*D, (i+1)*D));
+      CalcMappedShape (mir[i], shapes.Cols(i*D, (i+1)*D));
   }
+
   
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                    BareSliceMatrix<SIMD<double>> dshapes) const
   {
-    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcShape not overloaded");
+    throw ExceptionNOSIMD(string("SIMD - HCurlFE::CalcShape not overloaded, et = ")
+                          + typeid(*this).name());
   }
   
 
@@ -424,7 +430,7 @@ namespace ngfem
   
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
   {
     // throw Exception(string("CalcDualShape not implemented for H(curl) element ")+typeid(*this).name());
     static bool first = true;
@@ -435,9 +441,13 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & ir, BareSliceMatrix<SIMD<double>> shape) const
+  CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const
   {
-    throw ExceptionNOSIMD (string("CalcDualShape SIMD not implemented for H(curl) element ") +typeid(*this).name());
+    //throw ExceptionNOSIMD (string("CalcDualShape SIMD not implemented for H(curl) element ") +typeid(*this).name());
+    static bool firstsimd = true;
+    if (firstsimd)
+      cerr << "CalcDualShape SIMD not implemented for H(curl) element " << typeid(*this).name() << endl;
+    firstsimd = false;
   }
 
   

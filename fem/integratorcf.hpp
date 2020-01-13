@@ -38,6 +38,12 @@ namespace ngfem
   {
     return Integral (fac * cf.cf, cf.dx);
   }
+
+  inline ostream & operator<< (ostream & ost, const Integral & igl)
+  {
+    ost << *igl.cf << " " << igl.dx.vb << endl;
+    return ost;
+  }
   
   class SumOfIntegrals
   {
@@ -88,7 +94,13 @@ namespace ngfem
     }
   };
 
-
+  inline ostream & operator<< (ostream & ost, const SumOfIntegrals & igls)
+  {
+    for (auto & igl : igls.icfs)
+      ost << *igl;
+    return ost;
+  }
+  
   class Variation
   {
   public:

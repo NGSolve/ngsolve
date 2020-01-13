@@ -56,14 +56,6 @@ if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS"${CMAKE_EXE_LINKER_FLAGS_NEW}/IGNORE:4217,4049" CACHE STRING "compile flags" FORCE)
 
   endif(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-
-  if(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
-    # 32 bit
-    set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack32.zip" CACHE STRING INTERNAL)
-  else(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
-    # 64 bit
-    set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack64.zip" CACHE STRING INTERNAL)
-  endif(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
 endif(WIN32)
 
 #######################################################################
@@ -157,7 +149,8 @@ if (USE_LAPACK)
       if(WIN32)
         ExternalProject_Add(win_download_lapack
           PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-          URL ${LAPACK_DOWNLOAD_URL_WIN}
+          URL "https://github.com/NGSolve/ngsolve_dependencies/releases/download/v1.0.0/lapack64.zip"
+          URL_MD5 635432b6b41f23177b9116d4323c978c
           UPDATE_COMMAND "" # Disable update
           BUILD_IN_SOURCE 1
           CONFIGURE_COMMAND ""
@@ -183,7 +176,20 @@ if(USE_UMFPACK)
       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/umfpack
       GIT_REPOSITORY https://github.com/jlblancoc/suitesparse-metis-for-windows.git
       GIT_TAG 1618fd16ea34be287c0fbc32789ca280012a9280
-      CMAKE_ARGS -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON -DSHARED=OFF -DBUILD_METIS=OFF -DCMAKE_INSTALL_PREFIX=${UMFPACK_DIR} -DSUITESPARSE_INSTALL_PREFIX=${UMFPACK_DIR} -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES} -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET} -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+      CMAKE_ARGS
+          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+          -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+          -DCMAKE_INSTALL_PREFIX=${UMFPACK_DIR}
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}
+          -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+          -DSHARED=OFF
+          -DBUILD_METIS=OFF
+          -DLAPACK_FOUND=FALSE # Use blas/lapack found by ngsolve
+          -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
+          -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES}
+          -DSUITESPARSE_INSTALL_PREFIX=${UMFPACK_DIR}
+          -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON
       UPDATE_COMMAND ""
       LOG_DOWNLOAD 1
       LOG_BUILD 1
@@ -257,7 +263,7 @@ ExternalProject_Add (ngsolve
   )
 
 
-install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
+install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/ngsolve\")")
 
 add_custom_target(test_ngsolve
   ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve

@@ -120,6 +120,14 @@ namespace ngbla
       return *this;
     }
 
+    template <int D, typename TSCAL2>
+    INLINE const FlatVector & operator= (const Vec<D,TSCAL2> & v) const
+    {
+      for (int i = 0; i < D; i++)
+	data[i] = v(i);
+      return *this;
+    }
+    
     /// evaluate matrix expression
     template<typename TB>
     INLINE const FlatVector & operator= (const Expr<TB> & v) const
@@ -215,7 +223,7 @@ namespace ngbla
     INLINE size_t Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
     
     INLINE T_Range<size_t> Range () const
     { return T_Range<size_t> (0, size); }
@@ -417,7 +425,7 @@ namespace ngbla
     INLINE size_t Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
 
 
     INLINE SliceVector<T> Comp (size_t comp) const
@@ -770,7 +778,7 @@ namespace ngbla
 
     INLINE size_t Size () const { return s; }
     INLINE size_t Height () const { return s; }
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
   };
 
 
@@ -936,11 +944,11 @@ namespace ngbla
     }
 
     /// vector size
-    INLINE size_t Size () const { return S; }
+    INLINE constexpr size_t Size () const { return S; }
     /// corresponding matrix height
-    INLINE size_t Height () const { return S; }
+    INLINE constexpr size_t Height () const { return S; }
     /// corresponding matrix with
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
 
     INLINE /* const */ FlatVector<const T> Range(size_t first, size_t next) const
     { return FlatVector<const T> (next-first, data+first); }
@@ -960,9 +968,9 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
-    INLINE int Size() const { return 0; }
-    INLINE int Height() const { return 0; }
-    INLINE int Width() const { return 1; }
+    INLINE constexpr size_t Size() const { return 0; }
+    INLINE constexpr size_t Height() const { return 0; }
+    INLINE constexpr size_t Width() const { return 1; }
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v) { return *this;}
     INLINE Vec & operator= (const T & /* scal */) { return *this; } 
@@ -1023,13 +1031,33 @@ namespace ngbla
   template <typename S>
   INLINE Vec<3,S> Cross (const Vec<3,S> & a, const Vec<3,S> & b)
   {
+    /*
     Vec<3,S> prod;
     prod(0) = a(1) * b(2) - a(2) * b(1);
     prod(1) = a(2) * b(0) - a(0) * b(2);
     prod(2) = a(0) * b(1) - a(1) * b(0);
     return prod;
+    */
+    return Vec<3,S>({ a(1)*b(2)-a(2)*b(1), a(2)*b(0)-a(0)*b(2), a(0)*b(1)-a(1)*b(0) });
   }
 
+  template <typename S>
+  INLINE Vec<1,S> Cross (const Vec<2,S> & a, const Vec<2,S> & b)
+  {
+    return Vec<1,S> ( { a(0) * b(1) - a(1) * b(0) } );
+    /*
+    Vec<1,S> prod;
+    prod(0) = a(0) * b(1) - a(1) * b(0);
+    return prod;
+    */
+  }
+
+  template <typename S>
+  INLINE Vec<0,S> Cross (const Vec<1,S> & a, const Vec<1,S> & b)
+  {
+    return Vec<0,S>();
+  }
+  
   /// output vector
   template<int S, typename T>
   inline ostream & operator<< (ostream & ost, const Vec<S,T> & v)
@@ -1150,11 +1178,11 @@ namespace ngbla
     { return FlatVector<T> (next-first, data+first); }
 
     /// vector size
-    INLINE int Size () const { return S; }
+    INLINE constexpr int Size () const { return S; }
     /// corresponding matrix height
-    INLINE int Height () const { return S; }
+    INLINE constexpr int Height () const { return S; }
     /// corresponding matrix with
-    INLINE int Width () const { return 1; }
+    INLINE constexpr int Width () const { return 1; }
   };
 
   /// output vector.
@@ -1330,7 +1358,7 @@ namespace ngbla
     /// vector is a matrix of height size
     INLINE size_t Height () const { return s; }
     /// vector is a matrix of width 1
-    INLINE size_t Width () const { return 1; }
+    INLINE constexpr size_t Width () const { return 1; }
 
     INLINE T * Data () const { return data; }
 
@@ -1403,6 +1431,15 @@ namespace ngbla
 #endif
     BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
     BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)) { ; }
+
+    template <int D, typename TSCAL2>
+    INLINE const BareVector & operator= (const Vec<D,TSCAL2> & v) const
+    {
+      for (int i = 0; i < D; i++)
+	data[i] = v(i);
+      return *this;
+    }
+    
     FlatVector<T> AddSize(size_t size) const
     {
       NETGEN_CHECK_RANGE(size, Height(), Height()+1);
@@ -1656,7 +1693,7 @@ namespace ngbla
     /// vector is a matrix of height size
     size_t Height () const { return s; }
     /// vector is a matrix of width 1
-    size_t Width () const { return 1; }
+    size_t constexpr Width () const { return 1; }
 
     const FixSliceVector Range (size_t first, size_t next) const
     {
@@ -1735,9 +1772,9 @@ namespace ngbla
 
 
 
-
+  /*
   template <int S, typename T>
-  INLINE  auto operator* (double a, const Vec<S,T> & vec) 
+  INLINE auto operator* (double a, const Vec<S,T> & vec) 
     -> Vec<S, decltype(RemoveConst(a*vec(0)))>
   {
     typedef decltype(RemoveConst(a*vec(0))) TRES;
@@ -1746,7 +1783,61 @@ namespace ngbla
       res(i) = a * vec(i);
     return res;
   }
+  */
+  
+  template <int S, typename T>
+  INLINE auto operator* (double a, const Vec<S,T> & vec)
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+  
+  template <int S, typename T>
+  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
 
+  // all other cases ...
+  template <int S, typename T,
+            typename enable_if<!is_convertible_v<T,Complex>,int>::type=0>
+  INLINE auto operator* (T a, const Vec<S,T> & vec) 
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+  
+  template <int S, typename T>
+  INLINE auto operator+ (const Vec<S,T> & a, const Vec<S,T> & b) 
+  {
+    typedef decltype(RemoveConst(a(0))) TRES;    
+    Vec<S,TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a(i)+b(i);
+    return res;
+  }
+
+  template <int S, typename T>
+  INLINE auto operator- (const Vec<S,T> & a, const Vec<S,T> & b) 
+  {
+    typedef decltype(RemoveConst(a(0))) TRES;        
+    Vec<S,TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a(i)-b(i);
+    return res;
+  }
+
+  
   template <int S, typename T>
   INLINE auto operator* (double a, FlatVec<S,T> vec) 
     -> Vec<S, decltype(RemoveConst(a*vec(0)))>
@@ -1758,16 +1849,6 @@ namespace ngbla
     return res;
   }
 
-  template <int S, typename T>
-  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
-    -> Vec<S, decltype(RemoveConst(a*vec(0)))>
-  {
-    typedef decltype(RemoveConst(a*vec(0))) TRES;
-    Vec<S, TRES> res;
-    for (int i = 0; i < S; i++)
-      res(i) = a * vec(i);
-    return res;
-  }
 
   template <int S, typename T>
   INLINE auto operator* (Complex a, FlatVec<S,T> vec) 

@@ -132,7 +132,11 @@ py::object MakeProxyFunction (shared_ptr<FESpace> fes,
     for (auto nt : node_types)
       {
         DifferentialSymbol dx(vb, nt, false, 0);
-        sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+        if (this -> Dimension() == 1)
+          sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+        else
+          sum->icfs += make_shared<Integral> (InnerProduct(const_cast<DualProxyFunction*>(this)->shared_from_this(), u), dx);
+          
       }
     return sum;
   }
@@ -374,7 +378,7 @@ when building the system matrices.
     .def_property_readonly("derivname",
                   [](const spProxy self) -> string
                    {
-                     if (!self->Deriv()) return "";
+                     if (!self->Deriv() || !self->DerivEvaluator()) return "";
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
@@ -1603,6 +1607,10 @@ definedon : object
             return self->GetDeriv();
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
+    .def("Trace",  [](shared_ptr<GF> self)
+         { return self; },
+         "take canonical boundary trace. This function is optional, added for consistency with proxies")
+
     .def("Operators", [] (shared_ptr<GF> self)
          {
            py::list l;
@@ -1823,6 +1831,7 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<Integral, shared_ptr<Integral>> (m, "Integral")
     .def_property_readonly("coef", [] (shared_ptr<Integral> igl) { return igl->cf; })
+    .def_property_readonly("symbol", [] (shared_ptr<Integral> igl) { return igl->dx; })
     ;
      
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -1846,12 +1855,19 @@ diffop : ngsolve.fem.DifferentialOperator
             for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
             return faccf;
           })
+    .def("__len__", [](shared_ptr<SumOfIntegrals> igls)
+         { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
-          { return igls->icfs[nr]; })
+          {
+            if (nr < 0 || nr >= igls->icfs.Size())
+              throw py::index_error();
+            return igls->icfs[nr];
+          })
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
     ;
 
   py::class_<Variation> (m, "Variation")
@@ -2172,6 +2188,8 @@ gf : ngsolve.comp.GridFunction
                      return self.GetInnerMatrix();
                    }, "inner_matrix of the bilinear form"
                   )
+    .def("SetPreconditioner", &BF::SetPreconditioner)
+    .def("UnsetPreconditioner", &BF::UnsetPreconditioner)
     ;
 
   ///////////////////////////////// LinearForm //////////////////////////////////////////

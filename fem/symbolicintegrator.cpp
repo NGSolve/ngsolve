@@ -644,20 +644,30 @@ namespace ngfem
       return evaluator->DiffShape (const_cast<ProxyFunction*>(this)->shared_from_this(), dir);
     else if (var == this)
       return dir;
+
+    if (auto proxyvar = dynamic_cast<const ProxyFunction*> (var))
+      {
+        // cout << "I am a proxy" << endl;
+        if (this == proxyvar->Deriv().get())
+          return dynamic_pointer_cast<ProxyFunction> (dir) -> Deriv();
+        if (this == proxyvar->Trace().get())
+          {
+            // cout << "I am the trace" << endl;
+            return dynamic_pointer_cast<ProxyFunction> (dir) -> Trace();
+          }
+      }
+
+    if (Dimension() == 1)
+      return make_shared<ConstantCoefficientFunction>(0);
     else
       {
-        if (Dimension() == 1)
-          return make_shared<ConstantCoefficientFunction>(0);
-        else
-          {
-            auto zero1 = make_shared<ConstantCoefficientFunction>(0);
-            Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
-            for (auto & z : zero_array)
-              z = zero1;
-            auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
-            zerovec->SetDimensions(Dimensions());
-            return zerovec;
-          }
+        auto zero1 = make_shared<ConstantCoefficientFunction>(0);
+        Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
+        for (auto & z : zero_array)
+          z = zero1;
+        auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
+        zerovec->SetDimensions(Dimensions());
+        return zerovec;
       }
   }
 
