@@ -700,7 +700,7 @@ namespace ngfem
     size_t dimi = diffop->Dim();
 
     mat = 0.0;
-    diffop->CalcMatrix (fel, mip, mat, lh);
+    diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < dim; i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
   }
