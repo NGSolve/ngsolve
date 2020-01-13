@@ -114,7 +114,8 @@ ANY                  1 1 1 1 | 15
     Array<bool> definedon[4];
 
     /// prototype: what are the Dirichlet boundaries ?
-    BitArray dirichlet_boundaries;
+    BitArray dirichlet_constraints[4];
+    BitArray & dirichlet_boundaries = dirichlet_constraints[1];
 
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;

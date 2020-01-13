@@ -2288,8 +2288,17 @@ into the wirebasket.
       : CompoundFESpace(ama, flags)
     {
       type = "VectorH1";
+      Array<string> dirichlet_comp;
+      string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
       for (int i = 0; i <  ma->GetDimension(); i++)
-        AddSpace (make_shared<H1HighOrderFESpace> (ama, flags));
+        {
+          Flags tmpflags = flags;
+          if (flags.StringFlagDefined(dirnames[i]))
+            tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
+          if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
+            tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
+          AddSpace (make_shared<H1HighOrderFESpace> (ama, tmpflags));
+        }
 
       switch (ma->GetDimension())
         {
