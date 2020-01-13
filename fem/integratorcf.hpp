@@ -94,6 +94,26 @@ namespace ngfem
     }
   };
 
+  inline auto operator+ (const SumOfIntegrals & c1, const SumOfIntegrals & c2)
+  {
+    SumOfIntegrals sum;
+    for (auto & ci : c1.icfs) sum.icfs += ci;
+    for (auto & ci : c2.icfs) sum.icfs += ci;
+    return sum;
+  }
+
+  inline auto operator* (double fac, SumOfIntegrals c1)
+  {
+    SumOfIntegrals faccf;
+    for (auto & ci : c1.icfs) faccf.icfs += make_shared<Integral>(fac*(*ci));
+    return faccf;
+  }
+
+  inline auto operator- (const SumOfIntegrals & c1, const SumOfIntegrals & c2)
+  {
+    return c1 + (-1)*c2;
+  }
+  
   inline ostream & operator<< (ostream & ost, const SumOfIntegrals & igls)
   {
     for (auto & igl : igls.icfs)
@@ -105,7 +125,12 @@ namespace ngfem
   {
   public:
     shared_ptr<SumOfIntegrals> igls;
-    Variation (shared_ptr<SumOfIntegrals> _igls) : igls(_igls) { ; } 
+    Variation (shared_ptr<SumOfIntegrals> _igls) : igls(_igls) { ; }
+    
+    auto Compile (bool realcompile, bool wait) const
+    {
+      return Variation(igls->Compile(realcompile, wait));
+    }
   };
   
 }
