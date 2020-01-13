@@ -82,23 +82,6 @@ namespace ngfem
       }
   }
 
-
-  template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET>::
-  CalcMappedShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<double> shapes) const
-  {
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-    Vec<DIM, AutoDiff<DIM,double>> adp = mip;
-    T_CalcShape (&adp(0), mip.IP().FacetNr(),
-		 SBLambda ([&] (size_t j, auto s)
-			   {
-			     auto shape = s.Value();
-			     for (size_t k = 0; k < DIM; k++)
-			       shapes(j*DIM+k) = shape(k);
-			   }));
-  }
-
-
   template <ELEMENT_TYPE ET>
   void VectorFacetVolumeFE<ET>::
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,

@@ -136,17 +136,16 @@ namespace ngfem
       throw Exception("VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
     }
 
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcMappedShape;
+
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  BareSliceMatrix<SIMD<double>> shapes) const override;
+				  BareSliceMatrix<SIMD<double>> shapes) const override;
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
                            BareSliceMatrix<SIMD<double>> values) const override;
     
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                            BareSliceVector<> coefs) const override;
-
-    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
-				  SliceMatrix<> shape) const;
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
