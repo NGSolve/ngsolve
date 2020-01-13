@@ -117,7 +117,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         std::regex pattern(flags.GetStringFlag("dirichlet"));
         for (int i : Range(ma->GetNRegions(BND)))
           if (std::regex_match (ma->GetMaterial(BND, i), pattern))
-            dirichlet_constraints[BND].Set(i);
+            dirichlet_constraints[BND].SetBit(i);
       }
 
     
@@ -129,7 +129,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         std::regex pattern(flags.GetStringFlag("dirichlet_bbnd"));
         for (int i : Range(ma->GetNRegions(BBND)))
           if (std::regex_match (ma->GetMaterial(BBND, i), pattern))
-            dirichlet_constraints[BBND].Set(i);
+            dirichlet_constraints[BBND].SetBit(i);
       }
 
     
@@ -407,13 +407,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
         if (dc.Size())
           for (Ngs_Element ngel : ma->Elements(vb)) 
             if (dc[ngel.GetIndex()])
-            {
-              dirichlet_vertex[ngel.Vertices()] = true;
-              if (dim >= 2)
-                dirichlet_edge[ngel.Edges()] = true;
-              if (dim == 3)
-                dirichlet_face[ngel.Faces()[0]] = true;
-            }
+              {
+                dirichlet_vertex[ngel.Vertices()] = true;
+                // if (dim >= 2)
+                if (dim-vb >= 1)
+                  dirichlet_edge[ngel.Edges()] = true;
+                // if (dim == 3)
+                if (dim-vb >= 2)
+                  dirichlet_face[ngel.Faces()[0]] = true;
+              }
       }
 
     
