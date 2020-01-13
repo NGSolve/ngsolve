@@ -280,6 +280,9 @@ public:
     // Vec<D> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
     auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
     mat = scaled_nv * Trans(Cast(fel).GetShape (mip.IP(), lh));
+
+    //Cast(fel).CalcMappedShape(mip, Trans(mat));
+
     /*
     mat =  (1.0/mip.GetJacobiDet())*
       Trans(static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) 

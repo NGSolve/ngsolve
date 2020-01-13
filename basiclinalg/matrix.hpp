@@ -490,7 +490,7 @@ namespace ngbla
         w = max2(w, int(row.size()));
 
       SetSize (h, w);
-      (*this) = 0.0;
+      (*this) = T(0.0);
 
       int r = 0;
       for (auto row : llist)
@@ -608,6 +608,19 @@ namespace ngbla
         data[i] = s;
     }
 
+    Mat (initializer_list<initializer_list<T>> llist)
+    {
+      int r = 0;
+      for (auto row : llist)
+        {
+          int c = 0;
+          for (auto col : row)
+            (*this)(r,c++) = col;
+          r++;
+        }
+    }
+
+    
     /// assign values
     template<typename TB>
     INLINE Mat & operator= (const Expr<TB> & m)
@@ -645,9 +658,9 @@ namespace ngbla
     INLINE const TELEM & operator() (size_t i, size_t j) const { return data[i*W+j]; }
 
     /// the height
-    INLINE size_t Height () const { return H; }
+    INLINE constexpr size_t Height () const { return H; }
     /// the width
-    INLINE size_t Width () const { return W; }
+    INLINE constexpr size_t Width () const { return W; }
 
     ///
     INLINE const FlatVec<W,T> Row (size_t i) 
@@ -781,9 +794,9 @@ namespace ngbla
     TELEM operator() (int i, int j) const { return (i==j) ? data[i] : 0; }
 
     /// the height
-    int Height () const throw() { return H; }
+    constexpr size_t Height () const throw() { return H; }
     /// the width
-    int Width () const throw() { return H; }
+    constexpr size_t  Width () const throw() { return H; }
     
     enum { IS_LINEAR = 0 };
   };
@@ -932,7 +945,7 @@ namespace ngbla
     INLINE size_t Height () const throw() { return h; }
 
     /// the width
-    INLINE size_t Width () const throw() { return W; }
+    INLINE constexpr size_t Width () const throw() { return W; }
 
     ///
     INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
@@ -2103,7 +2116,7 @@ namespace ngbla
   /**
      Identity Matrix of fixed size
   */
-  template <int H>
+  template <size_t H>
   class Id : public MatExpr<Id<H> >
   {
   public:
@@ -2128,9 +2141,9 @@ namespace ngbla
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
 
     /// the height
-    int Height () const { return H; }
+    constexpr size_t Height () const { return H; }
     /// the width
-    int Width () const { return H; }
+    constexpr size_t Width () const { return H; }
   };
 
 

@@ -68,12 +68,13 @@ namespace ngfem
   INLINE Class_uDvDw_Cyclic<DIM,SCAL> 
   uDvDw_Cyclic (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_uDvDw_Cyclic<DIM,SCAL> (u,v,w); }
-  
+
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_uDvDw_Cyclic<DIM,SCAL> 
   uDvDw_Cyclic (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
   { return Class_uDvDw_Cyclic<DIM,SCAL> (u,v,w); }
-
+  */
 
 
 
@@ -95,12 +96,13 @@ namespace ngfem
                         AutoDiff<DIM,SCAL> w, AutoDiff<DIM,SCAL> z)
   { return Class_z_times_uDvDw_Cyclic<DIM,SCAL> (u,v,w,z); }
   
+  /*
   template <int DIM, typename SCAL>
   INLINE auto
   z_times_uDvDw_Cyclic (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v,
                 AutoDiffRec<DIM,SCAL> w, AutoDiffRec<DIM,SCAL> z)
   { return Class_z_times_uDvDw_Cyclic<DIM,SCAL> (u,v,w,z); }
-
+  */
 
 
   
@@ -119,11 +121,12 @@ namespace ngfem
   Du_Cross_Dv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
   { return Class_Du_Cross_Dv<DIM,SCAL> (u,v); }
 
+  /*
   template <int DIM, typename SCAL>
-  INLINE Class_Du_Cross_Dv<DIM,SCAL> 
+  INLINE Class_Du_Cross_Dv<DIM,SCAL>
   Du_Cross_Dv (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
   { return Class_Du_Cross_Dv<DIM,SCAL> (u,v); }
-
+  */
 
   template <int DIM, typename SCAL>
   class Class_wDu_Cross_Dv
@@ -141,11 +144,12 @@ namespace ngfem
   wDu_Cross_Dv(AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_wDu_Cross_Dv<DIM,SCAL> (u,v,w); }
 
+  /*
   template <int DIM, typename SCAL>
-  INLINE Class_wDu_Cross_Dv<DIM,SCAL> 
+  INLINE Class_wDu_Cross_Dv<DIM,SCAL>
   wDu_Cross_Dv(AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
   { return Class_wDu_Cross_Dv<DIM,SCAL> (u,v,w); }
-
+  */
 
   
   template <int DIM, typename SCAL>
@@ -164,11 +168,12 @@ namespace ngfem
   uDvDw_minus_DuvDw (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_uDvDw_minus_DuvDw<DIM,SCAL> (u,v,w); }
 
+  /*
   template <int DIM, typename SCAL>
-  INLINE Class_uDvDw_minus_DuvDw<DIM,SCAL> 
+  INLINE Class_uDvDw_minus_DuvDw<DIM,SCAL>
   uDvDw_minus_DuvDw (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
   { return Class_uDvDw_minus_DuvDw<DIM,SCAL> (u,v,w); }
-
+  */
 
   template <int DIM, typename SCAL>
   class Class_curl_uDvw_minus_Duvw
@@ -186,11 +191,12 @@ namespace ngfem
   curl_uDvw_minus_Duvw (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_curl_uDvw_minus_Duvw<DIM,SCAL> (u,v,w); }
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_curl_uDvw_minus_Duvw<DIM,SCAL> 
   curl_uDvw_minus_Duvw (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
   { return Class_curl_uDvw_minus_Duvw<DIM,SCAL> (u,v,w); }
-
+  */
 
 
 
@@ -205,24 +211,24 @@ namespace ngfem
   {
     Vec<2,SCAL> data;
   public:
-    INLINE THDiv2Shape (Class_Du<2,SCAL> uv)
+    INLINE THDiv2Shape (Du<2,SCAL> uv)
     {
       data = Vec<2,SCAL> (uv.u.DValue(1), -uv.u.DValue(0));
     }
     
-    INLINE THDiv2Shape (Class_uDv<2,SCAL> uv)
+    INLINE THDiv2Shape (uDv<2,SCAL> uv)
     {
       data = Vec<2,SCAL> (-uv.u.Value()*uv.v.DValue(1), 
                           uv.u.Value()*uv.v.DValue(0));
     }
 
-    INLINE THDiv2Shape (const Class_uDv_minus_vDu<2,SCAL> & uv) 
+    INLINE THDiv2Shape (const uDv_minus_vDu<2,SCAL> & uv) 
     { 
       data(0) = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
       data(1) =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
     }
 
-    INLINE THDiv2Shape (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+    INLINE THDiv2Shape (const wuDv_minus_wvDu<2,SCAL> & uv) 
     { 
       data[0] = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
       data[1] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -335,21 +341,21 @@ namespace ngfem
 
 
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (Class_Du<2,SCAL> uv)
+  INLINE auto HDiv2ShapeNew (Du<2,SCAL> uv)
   {
     return Vec<2,SCAL> (-uv.u.DValue(0), -uv.u.DValue(1));  // signs to fit historic inconsistency
   }
 
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (Class_uDv<2,SCAL> uv)
+  INLINE auto HDiv2ShapeNew (uDv<2,SCAL> uv)
   {
     return Vec<2,SCAL> (uv.u.Value()*uv.v.DValue(0), 
                         uv.u.Value()*uv.v.DValue(1));
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_uDv_minus_vDu<2,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const uDv_minus_vDu<2,SCAL> & uv) 
   {
     Vec<2,SCAL> data;
     data(0) = uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -358,7 +364,7 @@ namespace ngfem
   }
 
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const wuDv_minus_wvDu<2,SCAL> & uv) 
   {
     Vec<2,SCAL> data;    
     data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -369,13 +375,13 @@ namespace ngfem
   }
   
   template <typename SCAL>  
-  INLINE auto HDiv2ShapeNew (Class_Du<3,SCAL> uv)
+  INLINE auto HDiv2ShapeNew (Du<3,SCAL> uv)
   {
     return Vec<3,SCAL> (-uv.u.DValue(0), -uv.u.DValue(1), -uv.u.DValue(2));
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (Class_uDv<3,SCAL> uv)
+  INLINE auto HDiv2ShapeNew (uDv<3,SCAL> uv)
   {
     return Vec<3,SCAL> (uv.u.Value()*uv.v.DValue(0), 
                         uv.u.Value()*uv.v.DValue(1), 
@@ -383,7 +389,7 @@ namespace ngfem
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_uDv_minus_vDu<3,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const uDv_minus_vDu<3,SCAL> & uv) 
   {
     Vec<3,SCAL> data;
     data(0) = uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -393,7 +399,7 @@ namespace ngfem
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_wuDv_minus_wvDu<3,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const wuDv_minus_wvDu<3,SCAL> & uv) 
   {
     Vec<3,SCAL> data;
     data[0] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
@@ -550,24 +556,24 @@ namespace ngfem
   {
     SCAL data;
   public:
-    INLINE THDiv2DivShape (Class_Du<2,SCAL> uv)
+    INLINE THDiv2DivShape (Du<2,SCAL> uv)
     {
       data = SCAL(0.0);
     }
     
-    INLINE THDiv2DivShape (Class_uDv<2,SCAL> uv)
+    INLINE THDiv2DivShape (uDv<2,SCAL> uv)
     {
       AutoDiff<1,SCAL> hd = Cross (uv.u, uv.v);
       data = -hd.DValue(0);
     }
 
-    INLINE THDiv2DivShape (const Class_uDv_minus_vDu<2,SCAL> & uv) 
+    INLINE THDiv2DivShape (const uDv_minus_vDu<2,SCAL> & uv) 
     { 
       data = -2*uv.u.DValue(0) * uv.v.DValue(1) 
         + 2*uv.u.DValue(1) * uv.v.DValue(0);
     }
 
-    INLINE THDiv2DivShape (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
+    INLINE THDiv2DivShape (const wuDv_minus_wvDu<2,SCAL> & uv) 
     { 
       AutoDiff<1,SCAL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
       data = -hd.DValue(0);
@@ -706,45 +712,44 @@ namespace ngfem
   public:
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
+			    SliceMatrix<> shape) const override;
     
     virtual void CalcDivShape (const IntegrationPoint & ip, 
-			       SliceVector<> divshape) const;
+			       SliceVector<> divshape) const override;
 
 #ifndef FASTCOMPILE
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				  SliceMatrix<> shape) const;
 
-    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mip,
-				  SliceMatrix<> shape) const;
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                  SliceMatrix<> shape) const override;
+
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const override;
 
     virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
-				  BareSliceMatrix<SIMD<double>> shape) const;
+				  BareSliceMatrix<SIMD<double>> shape) const override;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  BareSliceMatrix<SIMD<double>> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const override;
 
     using HDivFiniteElement<ET_trait<ET>::DIM>::CalcMappedDivShape;
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                     BareSliceMatrix<SIMD<double>> divshapes) const;
+                                     BareSliceMatrix<SIMD<double>> divshapes) const override;
 
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 
-			   FlatMatrixFixWidth<DIM> vals) const;
+			   FlatMatrixFixWidth<DIM> vals) const override;
 
     virtual void EvaluateTrans (const IntegrationRule & ir, 
                                 FlatMatrixFixWidth<DIM> vals,
-                                FlatVector<double> coefs) const;
+                                FlatVector<double> coefs) const override;
 
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
-    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                           BareSliceVector<> coefs) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<> coefs) const override;
 
-    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const;
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override;
     
     virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
-                              BareSliceVector<> coefs) const;
+                              BareSliceVector<> coefs) const override;
     
     
 #endif

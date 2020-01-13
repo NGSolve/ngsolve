@@ -7,8 +7,10 @@
 /* 
    Access to fe mesh
 */
-
+#ifdef NGS_PYTHON
 #include <core/python_ngcore.hpp>
+#endif // NGS_PYTHON
+
 #include <ngstd.hpp>
 #include <nginterface.h>
 

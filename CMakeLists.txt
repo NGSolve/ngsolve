@@ -6,7 +6,7 @@ if(WIN32)
   # we are linking to object libraries on Windows
   cmake_minimum_required(VERSION 3.12)
 else(WIN32)
-  cmake_minimum_required(VERSION 3.3)
+  cmake_minimum_required(VERSION 3.8)
 endif(WIN32)
 
 # Handle superbuild first
@@ -290,7 +290,9 @@ install( TARGETS netgen_python ${ngs_install_dir} )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
-    target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
+    if(NOT NETGEN_BUILD_FOR_CONDA)
+        target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
+    endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
     "${CMAKE_CURRENT_BINARY_DIR}/python/config.py"

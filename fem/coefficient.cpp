@@ -11,7 +11,9 @@
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
+#ifdef NGS_PYTHON
 #include <core/python_ngcore.hpp> // for shallow archive
+#endif // NGS_PYTHON
 
 namespace ngstd
 {
@@ -569,7 +571,7 @@ namespace ngfem
       {
 	VectorMem<10> args(numarg);
 	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-        args.Range(0,ip.Dim()) = ip.GetPoint();
+        args.Range(0,ip.DimSpace()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -583,7 +585,7 @@ namespace ngfem
       {
 	VectorMem<10, Complex> args(numarg);
 	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-        args.Range(0,ip.Dim()) = ip.GetPoint();
+        args.Range(0,ip.DimSpace()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -603,7 +605,7 @@ namespace ngfem
     VectorMem<10,Complex> args(numarg);
     args = -47;
     // args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-    args.Range(0,ip.Dim()) = ip.GetPoint();
+    args.Range(0,ip.DimSpace()) = ip.GetPoint();
     for (int i = 0, an = 3; i < depends_on.Size(); i++)
       {
         int dim = depends_on[i]->Dimension();
@@ -630,7 +632,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
       ArrayMem<double,2000> mem(ir.Size()*numarg);
       FlatMatrix<> args(ir.Size(), numarg, &mem[0]);
       
-      int dim = ir[0].Dim();
+      int dim = ir[0].DimSpace();
       switch (dim)
         {
         case 2:
@@ -666,7 +668,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
     {
       Matrix<Complex> args(ir.Size(), numarg);
       for (int i = 0; i < ir.Size(); i++)
-	args.Row(i).Range(0,ir[i].Dim()) = ir[i].GetPoint();
+	args.Row(i).Range(0,ir[i].DimSpace()) = ir[i].GetPoint();
       
       for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	{
@@ -1199,6 +1201,14 @@ public:
   {
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }
+  
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return scal * c1->Diff(var, dir);
+  }
+  
 };
 
 // ***********************************************************************************
@@ -3308,9 +3318,47 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
     return make_shared<ScaleCoefficientFunctionC> (v1, c2); 
   }
 
+
+  struct GenericConj {
+    template <typename T> T operator() (T x) const { return Conj(x); } // from bla
+    static string Name() { return "conj"; }
+    SIMD<double> operator() (SIMD<double> x) const { return x; }
+    template<typename T>
+    AutoDiff<1,T> operator() (AutoDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+    template<typename T>
+    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+    void DoArchive(Archive& ar) {}
+  };
+
+  template <> 
+  shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericConj>::Diff(const CoefficientFunction * var,
+                                   shared_ptr<CoefficientFunction> dir) const
+  {
+    if (var == this) return dir;
+    cout << "Warning: differentiate conjugate by taking conjugate of derivative" << endl;
+    return ConjCF(c1->Diff(var, dir));
+  }
+
+
+  shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1)
+  {
+    return UnaryOpCF(c1, GenericConj(), GenericConj::Name());
+  }
+
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1,
                                                 shared_ptr<CoefficientFunction> c2)
   {
+    if (c2->IsComplex())
+      {
+        auto conj = ConjCF(c2);
+        if (conj->GetDescription() == c2->GetDescription())
+          cout << "Info: InnerProduct has been changed and takes now conjugate" << endl
+               << "since c2 is already a Conjugate operation, we don't take conjugate" << endl
+               << "is you don't want conjugate, use a*b" << endl;
+        else
+          c2 = conj;
+      }
     switch (c1->Dimension())
       {
       case 1:
@@ -5661,6 +5709,16 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "RealCF";
     }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+    
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
       using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
@@ -5733,6 +5791,16 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "ImagCF";
     }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+    
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {

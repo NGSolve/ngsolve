@@ -127,6 +127,9 @@ namespace ngfem
     /// is it a mapping for boundary or codim 2 elements ?
     virtual VorB VB() const = 0;
 
+    virtual int ElementDim () const
+    { return SpaceDim() - int(VB()); }
+    
     void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
     void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
     bool HigherIntegrationOrderSet(void) const 
@@ -183,11 +186,9 @@ namespace ngfem
 
 
 
-
-
-
-
-
+  
+  int BaseMappedIntegrationPoint :: DimElement() const { return eltrans->ElementDim(); }
+  int BaseMappedIntegrationPoint :: DimSpace() const { return eltrans->SpaceDim(); } 
 
 
 
