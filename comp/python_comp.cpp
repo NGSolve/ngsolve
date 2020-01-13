@@ -1835,26 +1835,9 @@ diffop : ngsolve.fem.DifferentialOperator
     ;
      
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
-    .def ("__add__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
-          {
-            auto sum = make_shared<SumOfIntegrals>();
-            for (auto & ci : c1->icfs) sum->icfs += ci;
-            for (auto & ci : c2->icfs) sum->icfs += ci;
-            return sum;
-          })
-    .def ("__sub__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
-          {
-            auto sum = make_shared<SumOfIntegrals>();
-            for (auto & ci : c1->icfs) sum->icfs += ci;
-            for (auto & ci : c2->icfs) sum->icfs += make_shared<Integral>(-1*(*ci));
-            return sum;
-          })
-    .def ("__rmul__", [] (shared_ptr<SumOfIntegrals> c1, double fac)
-          {
-            auto faccf = make_shared<SumOfIntegrals>();
-            for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
-            return faccf;
-          })
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(float() * py::self)
     .def("__len__", [](shared_ptr<SumOfIntegrals> igls)
          { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
@@ -1872,6 +1855,7 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<Variation> (m, "Variation")
     .def(py::init<shared_ptr<SumOfIntegrals>>())
+    .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     ;
   
   
