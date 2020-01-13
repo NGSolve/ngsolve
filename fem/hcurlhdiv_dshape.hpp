@@ -21,10 +21,10 @@ namespace ngfem
     FlatMatrixFixWidth<DIM_STRESS> shape_urr(nd_u, lh);
     FlatMatrixFixWidth<DIM_STRESS> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
 
-    FlatMatrixFixWidth<DIMSPACE> dshape_u_ref_comp(nd_u, lh);
+    FlatMatrixFixWidth<DIM> dshape_u_ref_comp(nd_u, lh);
     FlatMatrixFixWidth<DIMSPACE> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
     
-    for (int j = 0; j < DIMSPACE; j++)   // d / dxj
+    for (int j = 0; j < DIM; j++)   // d / dxj
       {
         IntegrationPoint ipl(ip);
         ipl(j) -= eps;
@@ -62,7 +62,7 @@ namespace ngfem
     for (int j = 0; j < DIM_STRESS; j++)
       {
         for (int k = 0; k < nd_u; k++)
-          for (int l = 0; l < DIMSPACE; l++)
+          for (int l = 0; l < DIM; l++)
             dshape_u_ref_comp(k,l) = bmatu(k, l*DIM_STRESS+j);
         
         dshape_u = dshape_u_ref_comp * sip.GetJacobianInverse();
