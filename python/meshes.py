@@ -486,3 +486,122 @@ if __name__ == "__main__":
     mesh.Refine()
     Draw(mesh)
     input("structured tet mesh (periodic in x-dir.), refined -- finished.")
+
+
+
+
+
+def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondorder=False, bbbpts=None, bbbnames=None):
+    """
+    Generate a structured 2D surface mesh in 3D
+
+    Parameters
+    ----------
+    quads : bool
+      If True, a quadrilateral mesh is generated. If False, the quads are split to triangles.
+
+    nx : int
+      Number of cells in x-direction.
+
+    ny : int
+      Number of cells in y-direction.
+
+    mapping : lamda
+      Mapping to transform the generated points. If None, the identity mapping is used.
+    
+    secondorder : bool
+      If True, use quadratic elements, else linear elements are used.
+
+    bbbpts : list
+      List of points which should be handled as BBBND and are named with bbbnames. The mesh (nx, ny and mapping) must be constructed in such a way that the bbbpts coincide with generated points. Otherwise an Exception is thrown.
+
+    bbbnames : list
+      List of bbbnd names as strings. Size must coincide with size of bbbpts. Otherwise an Exception is thrown.
+
+    Returns
+    -------
+    (ngsolve.mesh)
+      Returns generated NGSolve mesh
+
+    """
+    mesh = Mesh(dim=3)
+
+    if (bbbpts and bbbnames) and len(bbbpts) != len(bbbnames):
+        raise Exception("Lenght of bbbnames does not coincide with length of bbbpts!")
+
+    found = []
+    indbbbpts = []
+    if bbbpts:
+        for i in range(len(bbbpts)):
+            found.append(False)
+            indbbbpts.append(None)
+
+    pids = []
+    for i in range(ny+1):
+        for j in range(nx+1):
+            x,y,z = j/nx, i/ny, 0
+            pids.append(mesh.Add (MeshPoint(Pnt(x,y,z))))
+            
+    mesh.Add(FaceDescriptor(surfnr=1,domin=1,bc=1))
+    
+    for i in range(ny):
+        for j in range(nx):
+            base = i * (nx+1) + j
+            if quads:
+                pnum = [base,base+1,base+nx+2,base+nx+1]
+                elpids = [pids[p] for p in pnum]
+                el = Element2D(1,elpids)
+                if not mapping:
+                    el.curved=False
+                mesh.Add(el)
+            else:
+                pnum1 = [base,base+1,base+nx+1]
+                pnum2 = [base+1,base+nx+2,base+nx+1]
+                elpids1 = [pids[p] for p in pnum1]
+                elpids2 = [pids[p] for p in pnum2]
+                mesh.Add(Element2D(1,elpids1)) 
+                mesh.Add(Element2D(1,elpids2))                          
+
+    for i in range(nx):
+        mesh.Add(Element1D([pids[i], pids[i+1]], index=1))
+    for i in range(ny):
+        mesh.Add(Element1D([pids[i*(nx+1)+nx], pids[(i+1)*(nx+1)+nx]], index=2))
+    for i in range(nx):
+        mesh.Add(Element1D([pids[ny*(nx+1)+i+1], pids[ny*(nx+1)+i]], index=3))
+    for i in range(ny):
+        mesh.Add(Element1D([pids[(i+1)*(nx+1)], pids[i*(nx+1)]], index=4))
+
+    mesh.SetCD2Name(1, "bottom")        
+    mesh.SetCD2Name(2, "right")        
+    mesh.SetCD2Name(3, "top")        
+    mesh.SetCD2Name(4, "left")
+
+    if secondorder:
+        mesh.SecondOrder()
+    
+    if mapping:
+        i = 0
+        for p in mesh.Points():
+            x,y,z = p.p
+            x,y,z = mapping(x,y,z)
+            p[0] = x
+            p[1] = y
+            p[2] = z
+            for k in range(len(found)):
+                if abs(x-bbbpts[k][0])+abs(y-bbbpts[k][1])+abs(z-bbbpts[k][2]) < 1e-6:
+                    indbbbpts[k] = pids[i]
+                    found[k] = True
+            i += 1
+
+                    
+    for k in range(len(found)):
+        if found[k] == False:
+            raise Exception("bbbpnt[",k,"] not in structured mesh!")
+
+    for i in range(len(indbbbpts)):
+        mesh.Add(Element0D(indbbbpts[i], index=i+1))
+        mesh.SetCD3Name(i+1, bbbnames[i])
+
+    mesh.Compress()       
+    ngsmesh = ngsolve.Mesh(mesh)
+    return ngsmesh
