@@ -561,6 +561,59 @@ template <int D>
   };
 
 
+  template <int D>
+  class WeingartenCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    WeingartenCF () : CoefficientFunctionNoDerivative(D*D,false) { ; }
+
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunctionNoDerivative::DoArchive(ar);
+    }
+  
+    using CoefficientFunctionNoDerivative::Evaluate;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      return 0;
+    }
+
+    void Evaluate (const BaseMappedIntegrationPoint & bmip, FlatVector<> res) const override
+    {
+      if ( (bmip.DimSpace() != D) || D == 1)
+        throw Exception("illegal dim of Weingarten tensor");
+
+      const IntegrationPoint& ip = bmip.IP();
+      const ElementTransformation & eltrans = bmip.GetTransformation();
+
+      double eps = 1e-4;
+
+      Mat<D,D-1> dshape;
+      
+      for (int j = 0; j < D-1; j++)   // d / dxj
+        {
+          IntegrationPoint ipl(ip);
+          ipl(j) -= eps;
+          IntegrationPoint ipr(ip);
+          ipr(j) += eps;
+          IntegrationPoint ipll(ip);
+          ipll(j) -= 2*eps;
+          IntegrationPoint iprr(ip);
+          iprr(j) += 2*eps;
+        
+          MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
+          MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
+          MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
+          MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
+
+          dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*sipr.GetNV()-8.0*sipl.GetNV()-siprr.GetNV()+sipll.GetNV());
+        }
+      
+      res = dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse();
+    }
+  };
+
+
 
 void ExportCoefficientFunction(py::module &m)
 {
@@ -747,6 +800,19 @@ direction : int
 	  return make_shared<JacobianMatrixCF<3>>();
 	}
     }
+
+    shared_ptr<CF> GetWeingartenCF (int dim)
+    {
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<WeingartenCF<1>>();
+	case 2:
+	  return make_shared<WeingartenCF<2>>();
+	default:
+	  return make_shared<WeingartenCF<3>>();
+	}
+    }
   };
 
   
@@ -780,6 +846,9 @@ direction : int
          "space-dimension must be provided")
     .def("JacobianMatrix", &SpecialCoefficientFunctions::GetJacobianMatrixCF, py::arg("dim"),
          "Jacobian matrix of transformation to physical element\n"
+         "space-dimension must be provided")
+    .def("Weingarten", &SpecialCoefficientFunctions::GetWeingartenCF, py::arg("dim"),
+         "Weingarten tensor \n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;
