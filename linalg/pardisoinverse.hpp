@@ -176,6 +176,7 @@ namespace ngla
     virtual ~PardisoInverse () { ; }
     ///
     void Mult (const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;
     ///
 
     AutoVector CreateRowVector() const override
