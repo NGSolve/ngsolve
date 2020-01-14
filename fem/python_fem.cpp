@@ -611,6 +611,51 @@ template <int D>
       
       res = dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse();
     }
+
+    
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values) const override 
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
+      LocalHeapMem<10000> lh("Weingarten-lh");
+
+      auto & ir = mir.IR();
+      double eps = 1e-4;
+
+      Mat<D,D-1,SIMD<double>> dshape;
+      Mat<D,D,SIMD<double>> phys_dshape;
+      
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          const SIMD<IntegrationPoint> & ip = ir[i];
+          const ElementTransformation & eltrans = mir[i].GetTransformation();
+
+          for (int j = 0; j < D-1; j++)   // d / dxj
+            {
+              HeapReset hr(lh);
+              SIMD<IntegrationPoint> ipts[4];
+              ipts[0] = ip;
+              ipts[0](j) -= eps;
+              ipts[1] = ip;
+              ipts[1](j) += eps;              
+              ipts[2] = ip;
+              ipts[2](j) -= 2*eps;
+              ipts[3] = ip;
+              ipts[3](j) += 2*eps;
+
+              SIMD_IntegrationRule ir(4, ipts);
+              SIMD_MappedIntegrationRule<D-1,D> mirl(ir, eltrans, lh);
+
+              dshape.Col(j) = (1.0/(12.0*eps)) * ( mirl.GetNormals().Row(2) - mirl.GetNormals().Row(3) - 8.0*mirl.GetNormals().Row(0) + 8.0*mirl.GetNormals().Row(1) );
+            }
+
+          phys_dshape = dshape*mir[i].GetJacobianInverse();
+              
+          for (size_t l = 0; l < D*D; l++)
+            values(l, i) = phys_dshape(l);
+        }
+      
+    }
+    
   };
 
 
