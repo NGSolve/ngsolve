@@ -33,7 +33,8 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     HDiv, L2, VectorH1, VectorL2, SurfaceL2, HDivDiv, HCurlCurl, HCurlDiv, \
     HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
     NormalFacetFESpace, \
-    FacetSurface, NumberSpace, Periodic, Discontinuous, Compress, \
+    FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
+    NumberSpace, Periodic, Discontinuous, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
