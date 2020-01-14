@@ -850,8 +850,9 @@ direction : int
     {
       switch(dim)
 	{
-	case 1:
-	  return make_shared<WeingartenCF<1>>();
+        case 1:
+          throw Exception ("no WeingartenCF in 1D");
+	  // return make_shared<WeingartenCF<1>>();
 	case 2:
 	  return make_shared<WeingartenCF<2>>();
 	default:
