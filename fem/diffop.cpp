@@ -710,18 +710,29 @@ namespace ngfem
               const SIMD_BaseMappedIntegrationRule & mir,
               BareSliceMatrix<SIMD<double>> bmat) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    auto & feli = fel[0]; 
 
-    size_t ndi = fel.GetNDof();
+    size_t ndi = feli.GetNDof();
     size_t dimi = diffop->Dim();
 
-    auto mat = bmat.AddSize(dim*dim*dimi*ndi, mir.Size());
+    auto mat = bmat.AddSize(dimi*dim*bfel.GetNDof(), mir.Size());
     mat = 0.0;
-    diffop->CalcMatrix (fel, mir, mat.Rows(dimi*ndi));
-    for (int i = 1; i < dim; i++)
-      mat.Rows(i*dimi*(dim+1), (i+1)*dimi*(dim+1)) = mat.Rows(dimi);
 
-    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
+    diffop->CalcMatrix (feli, mir, mat.Rows(dimi*ndi));
+    for (int i = 1; i < dim; i++)
+      {
+        auto mati = mat.Rows(dim*dimi*fel.GetRange(i));
+        for (int j = 0; j < feli.GetNDof(); j++)
+          mati.Rows(j*dim*dimi+i*dimi, j*dim*dimi+(i+1)*dimi)
+            = mat.Rows(j*dimi, (j+1)*dimi);
+      }
+    for (int j = feli.GetNDof()-1; j >= 0; j--)
+      mat.Rows(j*dim*dimi, j*dim*dimi+dimi) = mat.Rows(j*dimi, (j+1)*dimi);
+    for (int j = feli.GetNDof()-1; j >= 0; j--)
+      mat.Rows(j*dim*dimi+dimi, (j+1)*dim*dimi) = 0.0;
+
+    //    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
   }
   
 
