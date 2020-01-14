@@ -536,6 +536,14 @@ namespace ngla
   }
   
   
+  template<class TM, class TV_ROW, class TV_COL>
+  void PardisoInverse<TM,TV_ROW,TV_COL> ::
+  MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    const_cast<integer&>(hparams[11]) = 1; // Solve transposed matrix
+    Mult(x,y);
+    const_cast<integer&>(hparams[11]) = 0;
+  }
 
 
 
