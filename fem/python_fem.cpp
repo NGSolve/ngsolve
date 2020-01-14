@@ -1974,9 +1974,10 @@ kwargs : kwargs
            if(kwargs.contains("definedonelem"))
                self->SetDefinedOnElements(py::cast<shared_ptr<BitArray>>(kwargs["definedonelem"]));
          })
-    .def_property_readonly("simd_evaluate", [](shared_ptr<BFI> self)
-                                       { return self->SimdEvaluate(); },
-      "SIMD evaluate ?"
+    .def_property("simd_evaluate",
+                  [](shared_ptr<BFI> self) { return self->SimdEvaluate(); },
+                  [](shared_ptr<BFI> self, bool b) { return self->SetSimdEvaluate(b); },                  
+                  "SIMD evaluate ?"
       )
 
     .def("__str__",  [](shared_ptr<BFI> self) { return ToString<BilinearFormIntegrator>(*self); } )
@@ -2182,11 +2183,10 @@ definedonelem : object
          py::arg("definedonelements")=DummyArgument())
 
     .def("__str__",  [](shared_ptr<LFI> self) { return ToString<LinearFormIntegrator>(*self); } )
-    .def_property_readonly("simd_evaluate", [](shared_ptr<LFI> self)
-                                       { return self->SimdEvaluate(); },
-      "SIMD evaluate ?"
-      )
-    
+    .def_property("simd_evaluate",
+                  [](shared_ptr<LFI> self) { return self->SimdEvaluate(); },
+                  [](shared_ptr<LFI> self, bool b) { return self->SetSimdEvaluate(b); },                  
+                  "SIMD evaluate ?")
     // .def("GetDefinedOn", &Integrator::GetDefinedOn)
     .def("GetDefinedOn",  [] (shared_ptr<LFI> self) -> const BitArray &{ return self->GetDefinedOn(); } ,
          py::return_value_policy::reference, "Reterns regions where the lienar form integrator is defined on.")
