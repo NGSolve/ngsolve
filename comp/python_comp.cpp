@@ -23,6 +23,57 @@ using ngfem::ELEMENT_TYPE;
 typedef GridFunction GF;
 
 
+namespace ngcomp
+{
+
+  // shall move to fespace.hpp, but keep compilation time low douring testing ...
+  template <typename BASESPACE>
+  class VectorFESpace : public CompoundFESpace
+  {
+  public:
+    VectorFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                   bool checkflags = false)
+      : CompoundFESpace (ama, flags)
+    {
+      Array<string> dirichlet_comp;
+      string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
+      for (int i = 0; i <  ma->GetDimension(); i++)
+        {
+          Flags tmpflags = flags;
+          if (flags.StringFlagDefined(dirnames[i]))
+            tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
+          if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
+            tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
+          AddSpace (make_shared<BASESPACE> (ama, tmpflags));
+        }
+
+      for (auto vb : { VOL, BND, BBND, BBBND })
+        {
+          if (auto eval = spaces[0] -> GetEvaluator(vb))
+            evaluator[vb] = make_shared<VectorDifferentialOperator> (eval, ma->GetDimension());
+          if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
+            flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, ma->GetDimension());
+        }
+
+      auto additional = spaces[0]->GetAdditionalEvaluators();
+      for (int i = 0; i < additional.Size(); i++)
+        additional_evaluators.Set (additional.GetName(i),
+                                   make_shared<VectorDifferentialOperator>(additional[i], ma->GetDimension()));
+
+      type = "Vector"+(*this)[0]->type;
+    }
+
+    virtual string GetClassName () const override
+    {
+      return "Vector"+ (*this)[0]->GetClassName();
+    }
+    
+  };
+
+}
+
+
+
 
 class PyNumProc : public NumProc
 {
@@ -1092,7 +1143,9 @@ rho : ngsolve.fem.CoefficientFunction
          py::arg("vector"))
     ;
 
-  
+  ExportFESpace<VectorFESpace<L2SurfaceHighOrderFESpace>> (m, "VectorSurfaceL2");
+  ExportFESpace<VectorFESpace<FacetFESpace>> (m, "VectorFacetFESpace");
+  ExportFESpace<VectorFESpace<FacetSurfaceFESpace>> (m, "VectorFacetSurface");
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
@@ -1437,6 +1490,11 @@ active_dofs : BitArray or None
 
                       throw Exception("cannot unpickle GridFunctionCoefficientFunction");
                     }))
+    .def("Trace",  [](shared_ptr<GridFunctionCoefficientFunction> self)
+         { return self; },
+         "take canonical boundary trace. This function is optional, added for consistency with proxies")
+    
+    
     ;
     
 
