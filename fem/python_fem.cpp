@@ -1244,6 +1244,7 @@ wait : bool
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
+  m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
