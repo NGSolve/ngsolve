@@ -93,7 +93,7 @@ def PyDet(mat):
               +mat[1,0]*(mat[2,1]*mat[0,2]-mat[2,2]*mat[0,1]) \
               +mat[2,0]*(mat[0,1]*mat[1,2]-mat[0,2]*mat[1,1])
 
-def Cross(a,b):
+def PyCross(a,b):
     return CoefficientFunction( (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]) )
 
 def PyCof(m):

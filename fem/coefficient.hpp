@@ -1649,6 +1649,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CrossProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER

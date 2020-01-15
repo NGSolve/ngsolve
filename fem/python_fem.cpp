@@ -1240,6 +1240,7 @@ wait : bool
     .def (NGSPickle<CoefficientFunction>())
     ;
 
+  m.def("Cross", [] (shared_ptr<CF> cf1, shared_ptr<CF> cf2) { return CrossProduct(cf1, cf2); });
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });

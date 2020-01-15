@@ -2508,6 +2508,145 @@ public:
 
 
 
+class CrossProductCoefficientFunction : public T_CoefficientFunction<CrossProductCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  shared_ptr<CoefficientFunction> c2;
+  using BASE = T_CoefficientFunction<CrossProductCoefficientFunction>;
+public:
+  CrossProductCoefficientFunction() = default;
+  CrossProductCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                   shared_ptr<CoefficientFunction> ac2)
+    : T_CoefficientFunction(3, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+  {
+    if (c1->Dimension() != 3)
+      throw Exception("first factor of cross product does not have dim=3");
+    if (c2->Dimension() != 3)
+      throw Exception("second factor of cross product does not have dim=3");
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2);
+  }
+
+  virtual string GetDescription () const override
+  { return "cross-product"; }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    code.body += Var(index, 0).Assign (Var(inputs[0],1)*Var(inputs[1],2)-Var(inputs[0],2)*Var(inputs[1],1));
+    code.body += Var(index, 1).Assign (Var(inputs[0],2)*Var(inputs[1],0)-Var(inputs[0],0)*Var(inputs[1],2));
+    code.body += Var(index, 2).Assign (Var(inputs[0],0)*Var(inputs[1],1)-Var(inputs[0],1)*Var(inputs[1],0));
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    FlatArray<int> hdims = Dimensions();
+    Vector<AutoDiffDiff<1,bool>> va(3), vb(3);
+    c1->NonZeroPattern (ud, va);
+    c2->NonZeroPattern (ud, vb);
+    
+    values(0) = va(1)*vb(2)+va(2)*vb(1);
+    values(1) = va(2)*vb(0)+va(0)*vb(2);
+    values(2) = va(0)*vb(1)+va(1)*vb(0);    
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto va = input[0];
+    auto vb = input[1];
+    
+    values(0) = va(1)*vb(2)+va(2)*vb(1);
+    values(1) = va(2)*vb(0)+va(0)*vb(2);
+    values(2) = va(0)*vb(1)+va(1)*vb(0);    
+  }
+  
+  using T_CoefficientFunction<CrossProductCoefficientFunction>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    throw Exception ("MultMatVecCF:: scalar evaluate for vector called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const override
+  {
+    Vec<3> va, vb;
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+    result = Cross(va, vb);
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const override
+  {
+    Vec<3> va, vb;
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+    result = Cross(va, vb);
+  }  
+
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    STACK_ARRAY(T, hmem1, ir.Size()*3);
+    STACK_ARRAY(T, hmem2, ir.Size()*3);
+    FlatMatrix<T,ORD> temp1(3, ir.Size(), &hmem1[0]);
+    FlatMatrix<T,ORD> temp2(3, ir.Size(), &hmem2[0]);
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+    for (size_t k = 0; k < ir.Size(); k++)
+      {
+        Vec<3,T> ai = temp1.Col(k);
+        Vec<3,T> bi = temp2.Col(k);
+        values.Col(k).Range(3) = Cross(ai, bi);
+      }
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    auto va = input[0];
+    auto vb = input[1];
+
+    for (size_t k = 0; k < ir.Size(); k++)
+      {
+        Vec<3,T> ai = va.Col(k);
+        Vec<3,T> bi = vb.Col(k);
+        values.Col(k).Range(3) = Cross(ai, bi);
+      }
+  }
+
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return CrossProduct(c1->Diff(var,dir),c2) + CrossProduct(c1, c2->Diff(var,dir));
+  }
+  
+  
+};
+
+
+
+
   
 class TransposeCoefficientFunction : public T_CoefficientFunction<TransposeCoefficientFunction>
 {
@@ -3013,18 +3152,18 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
     auto mat_var = Var("mat", index);
-    auto inv_var = Var("inv", index);
+    auto cof_var = Var("cof", index);
     code.body += mat_var.Declare(mat_type);
-    code.body += inv_var.Declare(mat_type);
+    code.body += cof_var.Declare(mat_type);
     for (int j = 0; j < D; j++)
       for (int k = 0; k < D; k++)
         code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
 
-    code.body += inv_var.Assign(mat_var.Func("Cof"), false);
+    code.body += cof_var.Assign(mat_var.Func("Cof"), false);
 
     for (int j = 0; j < D; j++)
       for (int k = 0; k < D; k++)
-        code.body += Var(index, j, k).Assign(inv_var(j,k));
+        code.body += Var(index, j, k).Assign(cof_var(j,k));
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -3728,6 +3867,14 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
     
     // return make_shared<MultVecVecCoefficientFunction> (c1, c2);
   }
+
+
+  shared_ptr<CoefficientFunction> CrossProduct (shared_ptr<CoefficientFunction> c1,
+                                              shared_ptr<CoefficientFunction> c2)
+  {
+    return make_shared<CrossProductCoefficientFunction> (c1, c2);
+  }
+
 
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef)
   {
