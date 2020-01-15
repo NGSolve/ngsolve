@@ -6325,6 +6325,9 @@ static RegisterClassForArchive<InverseCoefficientFunction<3>, CoefficientFunctio
 static RegisterClassForArchive<DeterminantCoefficientFunction<1>, CoefficientFunction> regdetcf1;
 static RegisterClassForArchive<DeterminantCoefficientFunction<2>, CoefficientFunction> regdetcf2;
 static RegisterClassForArchive<DeterminantCoefficientFunction<3>, CoefficientFunction> regdetcf3;
+static RegisterClassForArchive<CofactorCoefficientFunction<1>, CoefficientFunction> regcof1;
+static RegisterClassForArchive<CofactorCoefficientFunction<2>, CoefficientFunction> regcof2;
+static RegisterClassForArchive<CofactorCoefficientFunction<3>, CoefficientFunction> regcof3;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericPlus>, CoefficientFunction> regcfplus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction> regcfminus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;
