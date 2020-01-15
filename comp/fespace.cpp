@@ -331,6 +331,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  Regular expression string defining the dirichlet boundary.\n"
       "  More than one boundary can be combined by the | operator,\n"
       "  i.e.: dirichlet = 'top|right'";
+    docu.Arg("dirichlet_bbnd") = "regexpr\n"
+      "  Regular expression string defining the dirichlet bboundary,\n"
+      "  i.e. points in 2D and edges in 3D.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichlet_bbnd = 'top|right'";
     docu.Arg("definedon") = "Region or regexpr\n"
       "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
       "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
