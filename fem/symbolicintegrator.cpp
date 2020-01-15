@@ -628,6 +628,23 @@ namespace ngfem
       nonzero(ud.trial_comp) = true;
   }
 
+  void ProxyFunction ::
+  NonZeroPattern (const class ProxyUserData & ud,
+                  FlatVector<AutoDiffDiff<1,bool>> values) const
+  {
+    Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
+    NonZeroPattern (ud, nz, nzd, nzdd);
+    for (size_t i = 0; i < values.Size(); i++)
+      {
+        values(i).Value() = nz(i);
+        values(i).DValue(0) = nzd(i);
+        values(i).DDValue(0) = nzdd(i);
+      }
+  }
+
+
+
+  
   shared_ptr<CoefficientFunction> ProxyFunction :: 
   Operator (const string & name) const
   {
@@ -970,7 +987,8 @@ namespace ngfem
     nonzeros_deriv = Matrix<bool>(cnttest, cnttrial);
 
     ProxyUserData ud;
-    Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    // Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : test_proxies.Range())
       for (int k2 : Range(0,test_proxies[k1]->Dimension()))
@@ -983,8 +1001,8 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
-                nonzeros(k,l) = nzvec(0);
+                cf -> NonZeroPattern (ud, nzvec);
+                nonzeros(k,l) = nzvec(0).Value();
                 l++;
               }
           k++;
@@ -1006,8 +1024,9 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
-                nonzeros_deriv(k,l) = nzdvec(0);
+                cf -> NonZeroPattern (ud, nzvec); 
+                // nonzeros_deriv(k,l) = nzdvec(0);
+                nonzeros_deriv(k,l) = nzvec(0).DValue(0);
                 l++;
               }
           k++;
@@ -3853,7 +3872,7 @@ namespace ngfem
     ProxyUserData ud;
     DummyFE<ET_TRIG> dummyfe;
     ud.fel = &dummyfe;
-    Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : trial_proxies.Range())
       for (int k2 : Range(0,trial_proxies[k1]->Dimension()))
@@ -3866,10 +3885,11 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = trial_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                cf -> NonZeroPattern (ud, nzvec);
                 // nzddvec(0) = true;
-                nonzeros(k,l) = nzddvec(0);
-                if (nzddvec(0))
+                // nonzeros(k,l) = nzddvec(0);
+                nonzeros(k,l) = nzvec(0).DDValue(0);
+                if (nzvec(0).DDValue(0))
                   nonzeros_proxies(k1,l1) = true;
                 l++;
               }
@@ -3877,9 +3897,14 @@ namespace ngfem
         }
     int cnt = 0;
     for (auto i : Range(nonzeros.Height()))
-      for (auto j : Range(nonzeros.Width()))
-        if (nonzeros(i,j)) cnt++;
-    
+      {
+        for (auto j : Range(nonzeros.Width()))
+          {
+            if (nonzeros(i,j)) cnt++;
+            cout << (nonzeros(i,j) ? "1" : "0");
+          }
+        cout << endl;
+      }
     cout << IM(6) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(6) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;
   }

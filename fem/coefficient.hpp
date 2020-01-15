@@ -197,16 +197,21 @@ namespace ngfem
     bool ElementwiseConstant () const { return elementwise_constant; }
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
 
+    /*
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
                                  FlatVector<bool> nonzero_dderiv) const;
+    */
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<AutoDiffDiff<1,bool>> nonzero) const;
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                  FlatVector<AutoDiffDiff<1,bool>> values) const
     {
       cout << string("nonzero in-out not overloaded for type")+typeid(*this).name() << endl;
+      /*
       Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
       NonZeroPattern (ud, nz, nzd, nzdd);
       for (size_t i = 0; i < values.Size(); i++)
@@ -215,6 +220,8 @@ namespace ngfem
           values(i).DValue(0) = nzd(i);
           values(i).DDValue(0) = nzdd(i);
         }
+      */
+      NonZeroPattern (ud, values);
     }
     
     virtual void PrintReport (ostream & ost) const;
@@ -381,7 +388,8 @@ namespace ngfem
       dderiv = 0.0;
     }
     */
-    
+
+    /*
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
@@ -390,6 +398,13 @@ namespace ngfem
       nonzero = true;
       nonzero_deriv = false;
       nonzero_dderiv = false;
+    }
+    */
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      values = AutoDiffDiff<1,bool> (true);
     }
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -598,6 +613,8 @@ namespace ngfem
       nonzero(0) = (val != 0.0);
     }
     */
+
+    /*
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
@@ -606,6 +623,13 @@ namespace ngfem
       nonzero(0) = (val != 0.0);
       nonzero_deriv = 0.0;
       nonzero_dderiv = 0.0;
+    }
+    */
+    
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      values = AutoDiffDiff<1,bool> (val != 0.0);
     }
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -1194,7 +1218,8 @@ public:
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv,
@@ -1219,7 +1244,33 @@ public:
           }
       }
   }
+  */
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override                               
+  {
+    size_t dim = this->Dimension();    
+    Vector<AutoDiffDiff<1,bool>> v1(dim);
+    c1->NonZeroPattern(ud, v1);
+    for (int i = 0; i < values.Size(); i++)
+      {
+        if (name == "-" || name == " ") // "-" actually not used that way
+          {
+            values = v1;
+          }
+        else
+          {
+            for (size_t i = 0; i < values.Size(); i++)
+              {
+                values[i].Value() = v1[i].Value();
+                values[i].DValue(0) = v1[i].DValue(0);
+                values[i].DDValue(0) = v1[i].DValue(0) || v1[i].DDValue(0);
+              }
+          }
+      }
+  }
+
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -1458,7 +1509,8 @@ public:
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv,
@@ -1490,7 +1542,30 @@ public:
           }
       }
   }
+  */
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    size_t dim = Dimension();    
+    Vector<AutoDiffDiff<1,bool>> v1(dim), v2(dim);
+    c1->NonZeroPattern(ud, v1);
+    c2->NonZeroPattern(ud, v2);
+    for (int i = 0; i < values.Size(); i++)
+      {
+        if (opname == "+" || opname == "-")
+          values(i) = v1(i) + v2(i);
+        else if (opname == "*")
+          values(i) = v1(i) * v2(i);
+        else
+          {
+            values(i).Value() = v1(i).Value() || v2(i).Value();
+            values(i).DValue(0) = v1(i).DValue(0) || v2(i).DValue(0);
+            values(i).DDValue(0) = v1(i).DValue(0) || v2(i).DValue(0) || v1(i).DDValue(0) || v2(i).DDValue(0);
+          }
+      }
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
