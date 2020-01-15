@@ -125,7 +125,7 @@ def PySkew(m):
     return 0.5*(m-m.trans)
 
 def OuterProduct(a, b):
-    return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
+    return CoefficientFunction( (a,), dims=(a.dim,1)) * CoefficientFunction( (b,), dims=(b.dim,1)).trans
 
 def TimeFunction(func, name=None):
     name = name or func.__qualname__
