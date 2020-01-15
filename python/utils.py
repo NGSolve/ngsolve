@@ -96,7 +96,7 @@ def PyDet(mat):
 def Cross(a,b):
     return CoefficientFunction( (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]) )
 
-def Cof(m):
+def PyCof(m):
     if m.dims[0] == 1:
         return CoefficientFunction(1, dims=(1,1))
     elif m.dims[0] == 2:

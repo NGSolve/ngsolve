@@ -3901,9 +3901,9 @@ namespace ngfem
         for (auto j : Range(nonzeros.Width()))
           {
             if (nonzeros(i,j)) cnt++;
-            cout << (nonzeros(i,j) ? "1" : "0");
+            cout << IM(6) << (nonzeros(i,j) ? "1" : "0");
           }
-        cout << endl;
+        cout << IM(6) << endl;
       }
     cout << IM(6) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(6) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;

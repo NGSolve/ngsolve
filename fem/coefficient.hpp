@@ -1661,6 +1661,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> DeterminantCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CofactorCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER

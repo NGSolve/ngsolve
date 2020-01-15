@@ -2985,6 +2985,154 @@ public:
 
 
 
+template <int D>
+class CofactorCoefficientFunction : public T_CoefficientFunction<CofactorCoefficientFunction<D>>
+{
+  shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<CofactorCoefficientFunction<D>>;
+public:
+  CofactorCoefficientFunction() = default;
+  CofactorCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : T_CoefficientFunction<CofactorCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
+  {
+    this->SetDimensions (ngstd::INT<2> (D,D));
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    auto mat_var = Var("mat", index);
+    auto inv_var = Var("inv", index);
+    code.body += mat_var.Declare(mat_type);
+    code.body += inv_var.Declare(mat_type);
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
+
+    code.body += inv_var.Assign(mat_var.Func("Cof"), false);
+
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        code.body += Var(index, j, k).Assign(inv_var(j,k));
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
+
+  /*
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+  {
+    nonzero = true;
+    nonzero_deriv = true;
+    nonzero_dderiv = true;
+  }
+  */
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < v1.Size(); i++)
+      sum += v1(i);
+    values = sum;
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < v1.Size(); i++)
+      sum += v1(i);
+    values = sum;
+    /*
+    AutoDiffDiff<1,bool> add(true);
+    add.DValue(0) = true;
+    add.DDValue(0,0) = true;
+    values = add;
+    */
+    /*
+    FlatArray<int> hdims = Dimensions();    
+    auto in0 = input[0];
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < hdims[1]; k++)
+        values(j*hdims[1]+k) = in0(k*hdims[0]+j);
+    */
+  }
+  using T_CoefficientFunction<CofactorCoefficientFunction<D>>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    throw Exception ("CofactorCF:: scalar evaluate for matrix called");
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & mir,
+                   BareSliceMatrix<T,ORD> result) const
+  {
+    c1->Evaluate (mir, result);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = result(j*D+k, i);
+        hm = Cof(hm);
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            result(j*D+k, i) = hm(j,k);
+      }
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    size_t np = ir.Size();
+    auto in0 = input[0];
+
+    for (size_t i = 0; i < np; i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = in0(j*D+k, i);
+        hm = Cof(hm);
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            values(j*D+k, i) = hm(j,k);
+      }
+  }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    throw Exception ("Cofactor doesn't know how to differentiate, use PyCof instead");
+    // if (this == var) return dir;
+    // return (-1)*InverseCF(c1) * c1->Diff(var,dir) * InverseCF(c1);
+  }  
+};
+
+
+
+
+
+
 
 
 class SymmetricCoefficientFunction : public T_CoefficientFunction<SymmetricCoefficientFunction>
@@ -3616,6 +3764,20 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       }
   }
 
+  shared_ptr<CoefficientFunction> CofactorCF (shared_ptr<CoefficientFunction> coef)
+  {
+    auto dims = coef->Dimensions();
+    if (dims.Size() != 2) throw Exception("Cofactor of non-matrix");
+    if (dims[0] != dims[1]) throw Exception("Cofactor of non-quadratic matrix");
+    switch (dims[0])
+      {
+      case 1: return make_shared<CofactorCoefficientFunction<1>> (coef);
+      case 2: return make_shared<CofactorCoefficientFunction<2>> (coef);
+      case 3: return make_shared<CofactorCoefficientFunction<3>> (coef);
+      default:
+        throw Exception("Cofactor of matrix of size "+ToString(dims[0]) + " not available");
+      }
+  }
 
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef)
   {
