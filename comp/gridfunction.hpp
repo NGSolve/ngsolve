@@ -82,12 +82,9 @@ namespace ngcomp
     */
     virtual bool StoreUserData() const override { return true; }
 
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
-                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
     {
-      nonzero = true;
-      nonzero_deriv = false;
-      nonzero_dderiv = false;
+      nonzero = AutoDiffDiff<1,bool> (true);
     }
 
     // generation information for pickling:

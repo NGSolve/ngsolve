@@ -225,15 +225,21 @@ public:
   
   // virtual bool ElementwiseConstant () const  override{ return true; }
 
-  NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                              FlatVector<bool> nonzero,
-                                              FlatVector<bool> nonzero_deriv,
-                                              FlatVector<bool> nonzero_dderiv) const override;
+  // the old one, to be replaced
+  NGS_DLL_HEADER void NonZeroPattern (const class ProxyUserData & ud,
+                                      FlatVector<bool> nonzero,
+                                      FlatVector<bool> nonzero_deriv,
+                                      FlatVector<bool> nonzero_dderiv) const;
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override;
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
+    NonZeroPattern (ud, values);
+    /*
     Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
     NonZeroPattern (ud, nz, nzd, nzdd);
     for (size_t i = 0; i < values.Size(); i++)
@@ -242,6 +248,7 @@ public:
         values(i).DValue(0) = nzd(i);
         values(i).DDValue(0) = nzdd(i);
       }
+    */
   }
 
   virtual shared_ptr<CoefficientFunction>
