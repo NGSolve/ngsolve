@@ -659,7 +659,6 @@ template <int D>
   };
 
 
-
 void ExportCoefficientFunction(py::module &m)
 {
   m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
@@ -1360,6 +1359,8 @@ vals : list
     .def("Differentiate", 
          [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); }, "Differentiate the BSpline")
     ;
+
+  m.def ("LoggingCF", LoggingCF, py::arg("cf"), py::arg("logfile")="stdout");
 }
 
 
