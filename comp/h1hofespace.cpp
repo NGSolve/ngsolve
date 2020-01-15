@@ -2331,6 +2331,32 @@ into the wirebasket.
           break;
         }
     }
+
+  DocInfo VectorH1FESpace :: GetDocu ()
+  {
+    DocInfo docu = CompoundFESpace::GetDocu();
+    
+    docu.Arg("dirichletx") = "regexpr\n"
+      "  Regular expression string defining the dirichlet boundary\n"
+      "  on the first component of VectorH1.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichletx = 'top|right'";
+    docu.Arg("dirichlety") = "regexpr\n"
+      "  Dirichlet boundary for the second component";
+    docu.Arg("dirichletz") = "regexpr\n"
+      "  Dirichlet boundary for the third component";
+    docu.Arg("dirichletx_bbnd") = "regexpr\n"
+      "  Regular expression string defining the dirichlet bboundary,\n"
+      "  i.e. points in 2D and edges in 3D, on the first component.\n"
+      "  More than one bboundary can be combined by the | operator,\n"
+      "  i.e.: dirichletx_bbnd = 'top|right'";
+    docu.Arg("dirichlety_bbnd") = "regexpr\n"
+      "  Dirichlet bboundary for the second component";
+    docu.Arg("dirichletz_bbnd") = "regexpr\n"
+      "  Dirichlet bboundary for the third component";
+
+    return docu;
+  }
     
   void VectorH1FESpace::SetOrder (ELEMENT_TYPE et, TORDER order)
   {
