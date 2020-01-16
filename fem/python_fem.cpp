@@ -2380,18 +2380,23 @@ alpha : double
           for(auto val : pyend)
             end.Append(py::cast<double>(val));
           for(auto dim : Range(values.ndim()))
-            dim_vals.Append(values.shape(dim));
+            dim_vals.Insert(0,values.shape(dim));
+
           if(values.dtype().kind() == 'c')
             {
-              auto fa_values = FlatArray<Complex>(values.size(),
-                                                  static_cast<Complex*>(values.mutable_data(0)));
+              auto c_array = py::cast<py::array_t<Complex>>(values.attr("ravel")());
+              Array<Complex> vals(c_array.size());
+              for(auto i : Range(vals))
+                vals[i] = c_array.at(i);
               return make_shared<VoxelCoefficientFunction<Complex>>
-                (start, end, dim_vals, fa_values, linear);
+                (start, end, dim_vals, move(vals), linear);
             }
-          auto fa_values = FlatArray<double>(values.size(),
-                                             static_cast<double*>(values.mutable_data(0)));
+          auto d_array = py::cast<py::array_t<double>>(values.attr("ravel")());
+          Array<double> vals(values.size());
+          for(auto i : Range(vals))
+            vals[i] = d_array.at(i);
           return make_shared<VoxelCoefficientFunction<double>>
-            (start, end, dim_vals, fa_values, linear);
+            (start, end, dim_vals, move(vals), linear);
         }, py::arg("start"), py::arg("end"), py::arg("values"),
         py::arg("linear")=true, R"delimiter(CoefficientFunction defined on a grid.
 
