@@ -1062,7 +1062,7 @@ namespace ngstd
     sum = FMA(a,b,sum);
   }
 
-#if defined(__FMA__) && not defined(__AVX512F__)
+#if defined(__FMA__) && !defined(__AVX512F__)
   // make sure to use the update-version of fma
   // important in matrix kernels using 12 sum-registers, 3 a-values and updated b-value
   // avx512 has enough registers, and gcc seems to use only the first 16 z-regs
