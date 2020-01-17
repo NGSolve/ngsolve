@@ -10,17 +10,17 @@ namespace ngfem
   {
     Array<double> start, end;
     Array<size_t> dim_vals;
-    FlatArray<SCAL> values;
+    Array<SCAL> values;
     bool linear;
   public:
     VoxelCoefficientFunction(const Array<double>& _start,
                              const Array<double>& _end,
                              const Array<size_t>& _dim_vals,
-                             FlatArray<SCAL> _values,
+                             Array<SCAL>&& _values,
                              bool _linear)
       : CoefficientFunctionNoDerivative(1, is_same_v<SCAL, Complex>),
         start(_start), end(_end), dim_vals(_dim_vals),
-        values(_values), linear(_linear)
+        values(move(_values)), linear(_linear)
     { ; }
 
     using CoefficientFunctionNoDerivative::Evaluate;
