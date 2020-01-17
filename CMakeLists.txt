@@ -25,9 +25,6 @@ option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
 option( BUILD_STUB_FILES "Build stub files for better autocompletion" ON)
-if(NOT WIN32 AND NOT INTEL_MIC)
-    option( USE_NATIVE_ARCH  "build which -march=native" ON)
-endif(NOT WIN32 AND NOT INTEL_MIC)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
@@ -121,11 +118,6 @@ if(INTEL_MIC)
 endif(INTEL_MIC)
 
 #######################################################################
-if(USE_NATIVE_ARCH)
-    list(APPEND NGSOLVE_COMPILE_OPTIONS -march=native)
-endif(USE_NATIVE_ARCH)
-
-#######################################################################
 if(ENABLE_UNIT_TESTS)
   include(${CMAKE_CURRENT_LIST_DIR}/cmake/external_projects/catch.cmake)
 endif(ENABLE_UNIT_TESTS)
@@ -167,20 +159,8 @@ if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS DEBUG Wall)
 endif()
 
-#######################################################################
-# platform specific definitions and flags
-macro(get_WIN32_WINNT version)
-    if (WIN32 AND CMAKE_SYSTEM_VERSION)
-        if("${CMAKE_SYSTEM_VERSION}" MATCHES "^([0-9]+)\\.([0-9]+)")
-            math(EXPR ver "${CMAKE_MATCH_1}*100 + ${CMAKE_MATCH_2}")
-        endif()
-        set(${version} "0x${ver}")
-    endif()
-endmacro()
-get_WIN32_WINNT(ver)
 if(WIN32)
     add_definitions(-DNGS_EXPORTS)
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS NOMINMAX _WIN32_WINNT=${ver} MSVC_EXPRESS _CRT_SECURE_NO_WARNINGS )
 
     # build convenience (aka object) libraries in windows)
     set(NGS_LIB_TYPE OBJECT)
@@ -190,7 +170,7 @@ if(WIN32)
         list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++17> /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj /std:c++17)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /std:c++17)
     endif()
 
 else(WIN32)
@@ -365,12 +345,13 @@ endif()
 #######################################################################
 # generate ngscxx compiler wrapper
 
-# compile flags and preprocessor definitions
-string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS})
-if(${NETGEN_CHECK_RANGE} OR ${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR ${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
-    set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS} "NETGEN_ENABLE_CHECK_RANGE")
-endif()
+# compile flags and preprocessor definitions from ngcore (skip options if none are set)
+get_target_property(ngcore_compile_definitions ngcore INTERFACE_COMPILE_DEFINITIONS)
+get_property(have_options TARGET ngcore PROPERTY INTERFACE_COMPILE_OPTIONS SET)
+if(have_options)
+    get_target_property(ngcore_compile_options ngcore INTERFACE_COMPILE_OPTIONS)
+endif(have_options)
+set(ngscxx_compile_definitions ${NGSOLVE_COMPILE_DEFINITIONS} ${ngcore_compile_definitions})
 
 foreach( d ${ngscxx_compile_definitions} )
     if(WIN32)
@@ -382,9 +363,10 @@ foreach( d ${ngscxx_compile_definitions} )
     endif()
 endforeach()
 
-set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
+string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" build_type_name)
+set(ngscxx_flags "${${build_type_name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
 
-foreach( opt ${NGSOLVE_COMPILE_OPTIONS} )
+foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} )
     set(ngscxx_flags "${ngscxx_flags} ${opt}")
 endforeach()
 if(NOT WIN32)
@@ -458,11 +440,13 @@ endif()
 if(WIN32)
     set(NGSCXX_COMMAND ngscxx.bat)
     get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
-    get_filename_component(VC_DIR ${VC_BIN_DIR}/../../ ABSOLUTE)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat 
-      "${ngscxx_set_script_dir}\n call \"${VC_DIR}/vcvarsall.bat\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n")
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
-      "${ngscxx_set_script_dir}\n call \"${VC_DIR}/vcvarsall.bat\" amd64\nlink /DLL %* ${ngsld_flags}\n")
+    find_file(VCVARSALL vcvarsall.bat PATHS ${VC_BIN_DIR}/../../ ${VC_BIN_DIR}/../../../../../../Auxiliary/Build/)
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat
+                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n"
+                  CONDITION $<CONFIG:${CMAKE_BUILD_TYPE}>
+                  )
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
+                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\nlink /DLL %* ${ngsld_flags}\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)
@@ -475,13 +459,13 @@ if [ -f ${CCACHE_FOUND} ]
   else ${ngscxx_compile_command}
 fi")
     endif(CCACHE_FOUND)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx_preconfig "${ngscxx_header}
-${ngscxx_compile_command}\n")
-    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx INPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx_preconfig CONDITION $<COMPILE_LANGUAGE:CXX> )
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
-${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx
+                  CONTENT "${ngscxx_header} ${ngscxx_compile_command}\n"
+                  CONDITION $<COMPILE_LANGUAGE:CXX>
+                  )
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld CONTENT "${ngsld_header} ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 endif(WIN32)
 
 if (NETGEN_USE_MPI)
@@ -546,7 +530,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSO
 #######################################################################
 # Configure message
 # TODO: other message in case of failure
-string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 set(flags "${ngscxx_flags}")
 message("
 ------------------------------------------------------------------------
