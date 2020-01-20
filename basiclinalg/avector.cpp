@@ -32,7 +32,7 @@ namespace ngbla
 {
 
 
-#if defined (__AVX__) && not defined(__AVX512F__)
+#if defined (__AVX__) && !defined(__AVX512F__)
 
 
   inline SIMD<double,4> operator+= (SIMD<double,4> & a, __m256d b) { return a += SIMD<double,4>(b); }
@@ -2540,7 +2540,7 @@ namespace ngbla
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   
-#if defined (__AVX__) && not defined(__AVX512F__)
+#if defined (__AVX__) && !defined(__AVX512F__)
 
   // prefetch a row-major matrix
   void PreFetchMatrix (size_t h, size_t w, double * p, size_t dist)

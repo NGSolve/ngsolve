@@ -35,7 +35,7 @@
 #endif
 #endif
 
-#if defined __AVX512F__
+#if defined(__AVX512F__)
 #ifdef __GNUC__
 #if( __GNUC__==9 && __GNUC_MINOR__<=2)
 // gcc 9.1/9.2 generates wrong code on avx512_skylake platforms:
@@ -163,7 +163,7 @@
 
 
 // #ifdef __clang__
-#if defined __GNUC__ and not defined __INTEL_COMPILER
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 namespace std
 {
   // avoid expensive call to complex mult by using the grammar school implementation

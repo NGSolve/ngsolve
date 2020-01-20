@@ -43,22 +43,6 @@ else()
 endif()
 
 #######################################################################
-if(WIN32)
-  if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS_NEW ${CMAKE_CXX_FLAGS})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_NEW} /MP" CACHE STRING "compile flags" FORCE)
-    string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS_NEW ${CMAKE_CXX_FLAGS_RELEASE})
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_NEW} /MP" CACHE STRING "compile flags" FORCE)
-
-    string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_SHARED_LINKER_FLAGS_NEW ${CMAKE_SHARED_LINKER_FLAGS})
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS_NEW} /IGNORE:4217,4049" CACHE STRING "compile flags" FORCE)
-    string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_EXE_LINKER_FLAGS_NEW ${CMAKE_EXE_LINKER_FLAGS})
-    set(CMAKE_EXE_LINKER_FLAGS"${CMAKE_EXE_LINKER_FLAGS_NEW}/IGNORE:4217,4049" CACHE STRING "compile flags" FORCE)
-
-  endif(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-endif(WIN32)
-
-#######################################################################
 if(NETGEN_DIR)
   message(STATUS "Looking for NetgenConfig.cmake...")
   find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/lib/cmake ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
