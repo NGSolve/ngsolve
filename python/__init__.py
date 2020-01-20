@@ -42,7 +42,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
 from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, PyTrace, \
-    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction
+    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize
 from . import solvers
 
 
