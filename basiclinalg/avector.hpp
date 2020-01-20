@@ -1256,7 +1256,7 @@ namespace ngbla
   
   void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
-#if defined(__AVX__) && not defined(__AVX512F__)
+#if defined(__AVX__) && !defined(__AVX512F__)
 
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
