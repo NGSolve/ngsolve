@@ -3029,8 +3029,8 @@ public:
     */
     Vector<AutoDiffDiff<1,bool>> in(D*D);
     c1->NonZeroPattern (ud, in);
-    Array<FlatVector<AutoDiffDiff<1,bool>>> input;
-    input.Append (FlatVector (D*D, &in(0)));
+    Array<FlatVector<AutoDiffDiff<1,bool>>> input{1UL};
+    input[0].AssignMemory(D*D, &in(0));
     NonZeroPattern (ud, input, values);
   }
   

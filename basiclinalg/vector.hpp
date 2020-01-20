@@ -115,6 +115,7 @@ namespace ngbla
     /// copy vector. sizes must match
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
+      NETGEN_CHECK_RANGE(v.Size(),0,size+1);
       for (auto i : ngstd::Range(size))
 	data[i] = v(i);
       return *this;
@@ -123,6 +124,7 @@ namespace ngbla
     template <int D, typename TSCAL2>
     INLINE const FlatVector & operator= (const Vec<D,TSCAL2> & v) const
     {
+      NETGEN_CHECK_RANGE(D,0,size+1);
       for (int i = 0; i < D; i++)
 	data[i] = v(i);
       return *this;
@@ -145,6 +147,7 @@ namespace ngbla
 
     INLINE const FlatVector & operator= (initializer_list<T> list) const
     {
+      NETGEN_CHECK_RANGE(list.size(),0,size+1);
       size_t cnt = 0;
       for (auto val : list)
         data[cnt++] = val;
