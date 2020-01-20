@@ -6437,6 +6437,94 @@ class RealCF : public CoefficientFunctionNoDerivative
     return cf;
   }
 
+class LoggingCoefficientFunction : public T_CoefficientFunction<LoggingCoefficientFunction>
+{
+protected:
+  shared_ptr<CoefficientFunction> func;
+  unique_ptr<ostream> out;
+public:
+  LoggingCoefficientFunction (shared_ptr<CoefficientFunction> f, string logfile ) :
+      T_CoefficientFunction<LoggingCoefficientFunction>(f->Dimension(), f->IsComplex()),
+      func(f)
+    {
+      this->SetDimensions (func->Dimensions());
+      this->elementwise_constant = func->ElementwiseConstant();
+
+      if(logfile=="stdout")
+          out = make_unique<ostream>(cout.rdbuf());
+      else if(logfile=="stderr")
+          out = make_unique<ostream>(cerr.rdbuf());
+      else
+          out = make_unique<ofstream>(logfile);
+    }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      *out << "======== Evaluate(" << Demangle(typeid(ir).name()) << ", " << Demangle(typeid(values).name()) << ")\n";
+      *out << ir;
+      func->Evaluate(ir, values);
+      if constexpr(std::is_same_v<MIR, SIMD_BaseMappedIntegrationRule>)
+          *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
+      else
+          *out << "result = \n" << values.AddSize(ir.Size(), Dimension()) << '\n';
+    }
+
+  template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+  {
+    *out << "======== Evaluate(" << Demangle(typeid(ir).name()) << ", " << Demangle(typeid(input).name()) << ", " << Demangle(typeid(values).name()) << ")\n";
+    *out << ir;
+    *out << "input = \n" << input;
+    func->Evaluate(ir, input, values);
+    if constexpr(std::is_same_v<MIR, SIMD_BaseMappedIntegrationRule>)
+        *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
+    else
+        *out << "result = \n" << values.AddSize(ir.Size(), Dimension()) << '\n';
+  }
+
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ func }); }
+
+  void PrintReport (ostream & ost) const override
+    {
+      ost << "LoggingCF(";
+      func->PrintReport(ost);
+      ost << ")";
+    }
+
+  string GetDescription() const override
+    {
+      return "LoggingCF";
+    }
+
+  void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+    {
+      func->NonZeroPattern(ud, nonzero);
+    }
+
+  void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      func->NonZeroPattern(ud, input, values);
+    }
+
+  void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
+    {
+      func->TraverseTree(func_);
+      func_(*this);
+    }
+};
+
+shared_ptr<CoefficientFunction> LoggingCF(shared_ptr<CoefficientFunction> func, string logfile)
+{
+  return make_shared<LoggingCoefficientFunction>(func, logfile);
+}
+
 static RegisterClassForArchive<CoefficientFunction> regcf;
 static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction> regccf;
 static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;

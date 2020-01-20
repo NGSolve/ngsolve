@@ -1697,6 +1697,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
 
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> LoggingCF (shared_ptr<CoefficientFunction> func, string logfile="stdout");
+
 }
 
 
