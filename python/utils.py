@@ -1,7 +1,7 @@
 from ngsolve.ngstd import Timer
 from ngsolve.fem import *
 from ngsolve.comp import *
-from ngsolve.comp import DifferentialSymbol
+from ngsolve.bla import Norm
 
 x = CoordCF(0)
 y = CoordCF(1)
@@ -30,6 +30,8 @@ def VectorFacet (mesh, **args):
     return TangentialFacetFESpace(mesh, **args)
 
 def grad(func):
+    if type(func) == type(specialcf.normal(2)):
+        return specialcf.Weingarten(func.dim)
     if func.derivname == "grad":
         return func.Deriv()
     add = func.Operator("grad")
@@ -41,6 +43,8 @@ def grad(func):
 
 def Grad(func):
     """ Jacobi-matrix"""
+    if type(func) == type(specialcf.normal(2)):
+        return specialcf.Weingarten(func.dim)
     try:
         return func.Operator("Grad")
     except:
@@ -138,3 +142,5 @@ def TimeFunction(func, name=None):
 
 
 
+def Normalize (v):
+    return 1/Norm(v) * v
