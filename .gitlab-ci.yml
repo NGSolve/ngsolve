@@ -21,6 +21,7 @@ variables:
     - x64
   before_script:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%
+    - set NG_USE_NATIVE_ARCH=OFF
     - call tests\gitlab-ci\win\set_vars.bat
 
 win_build:
@@ -56,7 +57,7 @@ win_cleanup:
     - x64
   before_script:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_avx
-    - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/W0 /EHsc /arch:AVX -DWIN32=1"
+    - set NG_USE_NATIVE_ARCH=ON
     - call tests\gitlab-ci\win\set_vars.bat
   only:
     - schedules
