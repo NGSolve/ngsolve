@@ -2553,7 +2553,6 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    FlatArray<int> hdims = Dimensions();
     Vector<AutoDiffDiff<1,bool>> va(3), vb(3);
     c1->NonZeroPattern (ud, va);
     c2->NonZeroPattern (ud, vb);

@@ -167,11 +167,20 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       auto refmat = Cast(fel).GetShape(mip.IP(), lh);
-      Mat<D,D,double> physmat;
+      Mat<D,D,double> refmati, physmati;
       for (size_t i = 0; i < Cast(fel).ndof; i++)
         {
-          physmat = refmat.Row(i);
-          mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
+          for (int j = 0; j < D; j++)
+            for (int k = 0; k < D; k++)
+              refmati(j,k) = refmat.Row(i)(j*D+k);
+          physmati = Trans(mip.GetJacobianInverse())*refmati*mip.GetJacobianInverse();
+          for (int j = 0; j < D; j++)
+            for (int k = 0; k < D; k++)
+              mat.Col(i)(j*D+k) = physmati(j,k);
+
+          
+          // physmat = refmat.Row(i);
+          // mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
         }
     }
 
