@@ -279,7 +279,7 @@ namespace ngfem
         TIP<DIM,SIMD<double>> tip = hir[i].TIp<DIM>();
         SIMD<double> val (values(i));
 
-        double * pcoefs = &coefs(0);
+        double * pcoefs = coefs.Data();
         size_t dist = coefs.Dist();
         T_CalcShape (tip, 
                      SBLambdaDuo

@@ -2140,37 +2140,6 @@ namespace ngcomp
     }
 
     using BASE::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & mip) const override
-    {
-      // static Timer t("BFV - evaluate", 2);
-      // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-      
-      if (Dimension() > 1)
-        throw Exception("double eval called, but dim = " + ToString(Dimension()));
-
-      LocalHeapMem<1000> lh("lhbfv-1pnt");
-      IntegrationRule ir(1, const_cast<IntegrationPoint*>(&mip.IP()));
-      auto & mir = mip.GetTransformation() (ir, lh);
-      double res;
-      FlatMatrix<> mres(1,1, &res);
-      Evaluate (mir, mres);
-      return res;
-    }
-
-    virtual void Evaluate (const BaseMappedIntegrationPoint & mip,
-                           FlatVector<> result) const override
-    {
-      // static Timer t("BFV - evaluate vec", 1);
-      // RegionTimer reg(t); // , TaskManager::GetThreadId());
-      
-      LocalHeapMem<1000> lh("lhbfv-1pnt");
-      IntegrationRule ir(1, const_cast<IntegrationPoint*>(&mip.IP()));
-      auto & mir = mip.GetTransformation() (ir, lh);
-      FlatMatrix<> mres(result.Size(),1, &result(0));
-      Evaluate (mir, mres);
-    }
-
-    
     template <typename MIR, typename T, ORDERING ORD>            
     void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
