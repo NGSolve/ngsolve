@@ -1764,7 +1764,7 @@ namespace ngfem
                 {
                   HeapReset hr(lh);
                   ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-                  SIMD_IntegrationRule ir_facet1(etfacet, fel_trial.Order()+fel_test.Order());
+                  SIMD_IntegrationRule ir_facet1(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
                   SIMD_IntegrationRule & ir_facet(userdefined_simd_intrules[etfacet] ?
                                                   *userdefined_simd_intrules[etfacet]
                                                   : ir_facet1);
