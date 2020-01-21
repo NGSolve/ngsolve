@@ -24,20 +24,17 @@ namespace ngfem
     int8_t facetnr = -1;
     VorB vb = VOL;
 
-    // T x; // dummy
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    explicit TIP (Vec<0,T> v) { ; }
-    // TIP (const IntegrationPoint & ip) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) { ; }
+    // explicit TIP (Vec<0,T> v) { ; }
     template <typename T1, typename T2>    
     TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
   };
-
+  
   template <typename T>
   class TIP<0,T>
   {
@@ -49,14 +46,16 @@ namespace ngfem
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
-    TIP (const TIP<0,T2> & tip) { ; }
+    TIP (const TIP<0,T2> & tip) { }
+
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+
+    
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    // TIP (T _x) : x(_x) { ; }
     explicit TIP (Vec<0,T> v) { ; }    
-    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
     template <typename T1, typename T2>
     TIP (TIP<0,T1> ip1, TIP<0,T2> ip2) { ; } 
   };
@@ -74,15 +73,15 @@ namespace ngfem
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
-    TIP (const TIP<1,T2> & tip) { x = tip.x; }
+    TIP (const TIP<1,T2> & tip)
+      : x(tip.x), facetnr(tip.facetnr), vb(tip.vb) { } 
 
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    TIP (T _x) : x(_x) { ; }
+    TIP (T _x, int8_t afacetnr, VorB avb)
+      : x(_x), facetnr(afacetnr), vb(avb) { ; }
     explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
-    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
     template <typename T1, typename T2>
     TIP (TIP<1,T1> ip1, TIP<1,T2> ip2)
       : x(ip1.x, ip2.x) { ; } 
@@ -100,15 +99,15 @@ namespace ngfem
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
-    TIP (const TIP<2,T2> & tip) { x = tip.x; y = tip.y; }
+    TIP (const TIP<2,T2> & tip)
+      : x(tip.x), y(tip.y), facetnr(tip.facetnr), vb(tip.vb) { }
 
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    TIP (T _x, T _y) : x(_x), y(_y) { ; }
+    TIP (T _x, T _y, int8_t afacetnr, VorB avb)
+      : x(_x), y(_y), facetnr(afacetnr), vb(avb) { ; }
     explicit TIP (Vec<2,T> v) : x(v(0)), y(v(1)) { ; }        
-    // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)), y(ip(1)) { ; } 
     template <typename T1, typename T2>
     TIP (TIP<2,T1> ip1, TIP<2,T2> ip2)
       : x(ip1.x, ip2.x), y(ip1.y, ip2.y) { ; } 
@@ -125,15 +124,15 @@ namespace ngfem
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
-    TIP (const TIP<3,T2> & tip) { x = tip.x; y = tip.y; z = tip.z; }
-
+    TIP (const TIP<3,T2> & tip)
+      : x(tip.x), y(tip.y), z(tip.z), facetnr(tip.facetnr), vb(tip.vb) { }
+    
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    TIP (T _x, T _y, T _z) : x(_x), y(_y), z(_z) { ; }
+    TIP (T _x, T _y, T _z, int8_t afacetnr, VorB avb)
+      : x(_x), y(_y), z(_z), facetnr(afacetnr), vb(avb) { ; }
     explicit TIP (Vec<3,T> v) : x(v(0)), y(v(1)), z(v(2)) { ; }            
-    // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }     
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }
     template <typename T1, typename T2>    
     TIP (TIP<3,T1> ip1, TIP<3,T2> ip2)
       : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z) { ; } 
@@ -292,19 +291,19 @@ namespace ngfem
     }
     */
 
-    INLINE operator TIP<0,double> () const { return TIP<0,double>(); }
-    INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0]); }
-    INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1]); }
-    INLINE operator TIP<3,double> () const { return TIP<3,double>(pi[0], pi[1], pi[2]); } 
+    INLINE operator TIP<0,double> () const { return TIP<0,double>(facetnr, vb); }
+    INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0], facetnr, vb); }
+    INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1], facetnr, vb); }
+    INLINE operator TIP<3,double> () const { return TIP<3,double>(pi[0], pi[1], pi[2], facetnr, vb); } 
 
     INLINE operator TIP<0,AutoDiff<0>> () const
-    { return TIP<0,AutoDiff<0>>(); } 
+    { return TIP<0,AutoDiff<0>>(facetnr, vb); } 
     INLINE operator TIP<1,AutoDiff<1>> () const
-    { return TIP<1,AutoDiff<1>>(AutoDiff<1> (pi[0],0)); }
+    { return TIP<1,AutoDiff<1>>(AutoDiff<1> (pi[0],0), facetnr, vb); }
     INLINE operator TIP<2,AutoDiff<2>> () const
-    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1)); }
+    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1), facetnr, vb); }
     INLINE operator TIP<3,AutoDiff<3>> () const
-    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2)); } 
+    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2), facetnr, vb); } 
 
     /*
     INLINE operator TIP<0,AutoDiffRec<0>> () const
@@ -382,16 +381,16 @@ namespace ngfem
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
 
-    // in elementtransforamtion.hpp
+    // implemented in elementtransforamtion.hpp
     INLINE int DimElement() const; // { return eltrans->ElementDim(); }
     INLINE int DimSpace() const; // { return eltrans->SpaceDim(); } 
     
     FlatVector<Complex> GetPointComplex() const;
     FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
-    [[deprecated("Use DimSpace instead")]]
-    NGS_DLL_HEADER int Dim() const;  
-    VorB VB() const; 
+    // [[deprecated("Use DimSpace instead")]]
+    // NGS_DLL_HEADER int Dim() const;  
+    // VorB ElementVB() const; 
     bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
     virtual void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const { ; } 
@@ -604,7 +603,7 @@ namespace ngfem
     }
 
     ///
-    INLINE VorB VB() const { return VorB(DIMR-DIMS); }
+    // INLINE VorB VB() const { return VorB(DIMR-DIMS); }
     //INLINE int IsBoundary () const { return DIMS != DIMR; }
 
     ///
@@ -1677,10 +1676,10 @@ namespace ngstd
 
     template <int D>
     INLINE ngfem::TIP<D,SIMD<double>> TIp() const;
-    INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
-    INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0]); }
-    INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
-    INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); } 
+    INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(facetnr, vb); }
+    INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0], facetnr, vb); }
+    INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1], facetnr, vb); }
+    INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2], facetnr, vb); } 
 
     /*
     template <int DIM> 

@@ -207,22 +207,22 @@ namespace ngfem
 
             string code;
             {
-                CCode::expressions.clear(); CCode x("x"); CCode y("y"); TIP<2,CCode> ip(x,y);
+              CCode::expressions.clear(); CCode x("x"); CCode y("y"); TIP<2,CCode> ip(x,y, -1, VOL);
                 code += genCode(MyFEL<ET_TRIG, L2HighOrderFE<ET_TRIG>>(order), ip, "TRIG");
             } {
-                CCode::expressions.clear(); CCode x("x"); CCode y("y"); TIP<2,CCode> ip(x,y);
+              CCode::expressions.clear(); CCode x("x"); CCode y("y"); TIP<2,CCode> ip(x,y, -1, VOL);
                 code += genCode(MyFEL<ET_QUAD, L2HighOrderFE<ET_QUAD>>(order), ip, "QUAD");
             } {
-                CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z);
+              CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z, -1, VOL);
                 code += genCode(MyFEL<ET_TET, L2HighOrderFE<ET_TET>>(order), ip, "TET");
             } {
-                CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z);
+              CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z, -1, VOL);
                 code += genCode(MyFEL<ET_HEX, L2HighOrderFE<ET_HEX>>(order), ip, "HEX");
             } {
-                CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z);
+              CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z, -1, VOL);
                 code += genCode(MyFEL<ET_PYRAMID, L2HighOrderFE<ET_PYRAMID>>(order), ip, "PYRAMID");
             } {
-                CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z);
+              CCode::expressions.clear(); CCode x("x"); CCode y("y"); CCode z("z"); TIP<3,CCode> ip(x,y,z, -1, VOL);
                 code += genCode(MyFEL<ET_PRISM, L2HighOrderFE<ET_PRISM>>(order), ip, "PRISM");
             }
             return code;

@@ -188,17 +188,23 @@ namespace ngfem
       }
     throw Exception("BaseMappedIntegrationPoint::GetPointComplex, is not complex");
   }
-  
+
+  /*
   int BaseMappedIntegrationPoint :: Dim() const
   {
     return eltrans->SpaceDim();
   }
-
-  VorB BaseMappedIntegrationPoint :: VB() const
+  */
+  
+  /*
+  VorB BaseMappedIntegrationPoint :: ElementVB() const
   {
-    return eltrans->VB();
+    // cout << "BaseMappedIP, eltrans->VB = " << eltrans->VB() << ", ip.vb = " << ip.VB() << endl;
+    return ip.VB();
+    // return eltrans->VB();
   }
-
+  */
+  
 
   template <int S, int R, typename SCAL>
   void MappedIntegrationPoint<S,R,SCAL> :: 
