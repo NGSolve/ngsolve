@@ -718,7 +718,8 @@ direction : int
           return det/ip.GetMeasure();
         }
       
-      switch (ip.DimSpace() - int(ip.VB()))
+      // switch (ip.DimSpace() - int(ip.VB()))
+      switch (ip.DimElement())  
         {
         case 0: throw Exception ("don't have mesh-size on 0-D boundary");
         case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());

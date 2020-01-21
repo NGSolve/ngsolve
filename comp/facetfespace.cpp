@@ -33,7 +33,8 @@ namespace ngcomp
         }
       else
         {
-          if (mip.BaseMappedIntegrationPoint::VB() == BND) 
+          // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
+          if (mip.IP().VB() == BND) 
             {
               const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
               fel.CalcShape (mip.IP(), mat.Row(0));
