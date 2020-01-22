@@ -6463,10 +6463,7 @@ public:
       *out << "======== Evaluate(" << Demangle(typeid(ir).name()) << ", " << Demangle(typeid(values).name()) << ")\n";
       *out << ir;
       func->Evaluate(ir, values);
-      if constexpr(std::is_same_v<MIR, SIMD_BaseMappedIntegrationRule>)
-          *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
-      else
-          *out << "result = \n" << values.AddSize(ir.Size(), Dimension()) << '\n';
+      *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
     }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -6478,10 +6475,7 @@ public:
     *out << ir;
     *out << "input = \n" << input;
     func->Evaluate(ir, input, values);
-    if constexpr(std::is_same_v<MIR, SIMD_BaseMappedIntegrationRule>)
-        *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
-    else
-        *out << "result = \n" << values.AddSize(ir.Size(), Dimension()) << '\n';
+    *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
   }
 
   Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
