@@ -578,9 +578,9 @@ namespace ngfem
                  // Directional derivative
                  [[maybe_unused]]
                    Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
-
+                 
                  const auto &ip = mir[i].IP();
-                 TIP<DIM,AutoDiffRec<1,SIMD<double>>>adp;
+                 TIP<DIM,AutoDiffRec<1,SIMD<double>>>adp(ip.FacetNr(), ip.VB());
                  if constexpr(DIM>0)
                      adp.x = AutoDiffRec<1, SIMD<double>>( ip(0), jac_dir(0) );
                  if constexpr(DIM>1)
