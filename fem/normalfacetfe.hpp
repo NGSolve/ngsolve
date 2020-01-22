@@ -19,7 +19,7 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET>
   class NormalFacetFacetFE :
-    public HDivFiniteElement<ET_trait<ET>::DIM>,
+    public HDivNormalFiniteElement<ET_trait<ET>::DIM>,
     public VertexOrientedFE<ET>,
     public ET_trait<ET>
   {
@@ -27,20 +27,20 @@ namespace ngfem
     INT<2> order_inner;
     using VertexOrientedFE<ET>::vnums;
     using ET_trait<ET>::DIM;
-    using HDivFiniteElement<ET_trait<ET>::DIM>::order;
+    using HDivNormalFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
 
-    NormalFacetFacetFE (int aorder)
+    NormalFacetFacetFE (int aorder) : HDivNormalFiniteElement<ET_trait<ET>::DIM>(aorder+1,aorder)
     {
       order = aorder;
       order_inner = INT<2>(aorder,aorder);
       ComputeNDof();
     }
 
-    NormalFacetFacetFE () { ; }
+    NormalFacetFacetFE () : HDivNormalFiniteElement<ET_trait<ET>::DIM>(0,0) { ; }
 
     HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
@@ -61,7 +61,7 @@ namespace ngfem
     virtual void ComputeNDof ();
 
     virtual void CalcShape(const IntegrationPoint & ip,
-         		    SliceMatrix<> shape) const override;
+         		    FlatVector<> shape) const override;
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;
