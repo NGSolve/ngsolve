@@ -143,7 +143,7 @@ namespace ngcomp
 	   else //this is for 3d elements as they are not implemented with sigma operators!
 	     {	       
 	       int nd = fel.GetNDof();
-	       FlatMatrix<> shape(nd,D,lh);
+	       FlatMatrix<> shape(nd,D+1,lh);
       
 	       //Mat<D+1,D> jac = sip.GetJacobian();
 	       Mat<D,D+1> jacinv = sip.GetJacobianInverse();
