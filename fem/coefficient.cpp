@@ -120,6 +120,14 @@ namespace ngfem
   {
     throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
   }
+
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
+  Operator (shared_ptr<DifferentialOperator> diffop) const
+  {
+    throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
+  }
+
+
   
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
@@ -5469,6 +5477,16 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         }
     }
 
+
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      auto diff_cf = cf->Diff(var, dir);
+      return Compile (diff_cf, false, 0, 0);
+    }
+
+    
+    
     void RealCompile(int maxderiv, bool wait)
     {
         std::vector<string> link_flags;

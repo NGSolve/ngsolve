@@ -42,11 +42,13 @@ namespace ngfem
         throw Exception("don't have a primal evaluator");
       }
     */
+    /*
     if (deriv_evaluator || trace_deriv_evaluator)
       deriv_proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex,
                                                 deriv_evaluator, nullptr,
                                                 trace_deriv_evaluator, nullptr,
 						ttrace_deriv_evaluator, nullptr);
+    */
     if (evaluator)
       SetDimensions (evaluator->Dimensions());
     else if (trace_evaluator)
@@ -65,7 +67,25 @@ namespace ngfem
       + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")));
   }
 
-
+  shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const
+  {
+    if (auto sp = deriv_proxy.lock())
+      return sp;
+    
+    if (deriv_evaluator || trace_deriv_evaluator)
+      {
+        auto sp = make_shared<ProxyFunction> (fes, testfunction, is_complex,
+                                              deriv_evaluator, nullptr,
+                                              trace_deriv_evaluator, nullptr,
+                                              ttrace_deriv_evaluator, nullptr);
+        sp -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
+        sp->is_other = is_other;
+        const_cast<ProxyFunction*>(this)->deriv_proxy = sp;
+        return sp;
+      }
+        
+    return nullptr;
+  }
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
@@ -86,6 +106,22 @@ namespace ngfem
     throw Exception (string("don't have a trace, primal evaluator = ")+
                      evaluator->Name());
   }
+
+  shared_ptr<ProxyFunction> ProxyFunction :: Other(shared_ptr<CoefficientFunction> _boundary_values) const
+  {
+    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
+    other->is_other = true;
+    // if (other->deriv_proxy)
+    // other->deriv_proxy->is_other = true;
+    other->boundary_values = _boundary_values;
+
+    for (int i = 0; i < additional_diffops.Size(); i++)
+      other->SetAdditionalEvaluator (additional_diffops.GetName(i), additional_diffops[i]);
+    
+    return other;
+  }
+
+
   
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -653,6 +689,16 @@ namespace ngfem
     return GetAdditionalProxy (name); 
   }
 
+  shared_ptr<CoefficientFunction> ProxyFunction :: 
+  Operator (shared_ptr<DifferentialOperator> diffop) const
+  {
+    auto proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
+    // proxy -> originalproxy = shared_from_this;
+    proxy -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());    
+    if (is_other)
+      proxy->is_other = true;
+    return proxy;
+  }
 
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
@@ -662,6 +708,9 @@ namespace ngfem
     else if (var == this)
       return dir;
 
+    if (primaryproxy.get() == var)
+      return dir -> Operator(evaluator);
+    /*
     if (auto proxyvar = dynamic_cast<const ProxyFunction*> (var))
       {
         // cout << "I am a proxy" << endl;
@@ -673,6 +722,7 @@ namespace ngfem
             return dynamic_pointer_cast<ProxyFunction> (dir) -> Trace();
           }
       }
+    */
 
     if (Dimension() == 1)
       return make_shared<ConstantCoefficientFunction>(0);
