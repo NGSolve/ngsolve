@@ -179,7 +179,7 @@ namespace ngfem
       Vec<DIM, AutoDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
         adp(i) = AutoDiff<DIM>(ip(i),i);
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp, ip.FacetNr(), ip.VB()),
                              SBLambda([&] (int nr, auto val)
                                       {
                                         shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
@@ -203,10 +203,11 @@ namespace ngfem
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM>(ip(i),i);
 
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
-                                                                     {
-                                                                       shape.Row(nr).Range(0,DIM) = val.DivShape();
-                                                                     }));
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp, ip.FacetNr(), ip.VB()),
+                             SBLambda([shape] (int nr, auto val)
+                                      {
+                                        shape.Row(nr).Range(0,DIM) = val.DivShape();
+                                      }));
     }
 
     // new style
@@ -222,18 +223,19 @@ namespace ngfem
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
       */
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
-                                          }));
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp, mip.IP().FacetNr(), mip.IP().VB()),
+                             SBLambda([&] (int nr, auto val)
+                                      {
+                                        shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
+                                      }));
     }
 
 
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const override
     {
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),
+      // Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Cast() -> T_CalcShape (GetTIP(mip), // TIP<DIM,AutoDiff<DIM>> (adp),
                              SBLambda([&](int nr,auto val)
                                       {
                                         VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
@@ -244,15 +246,16 @@ namespace ngfem
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                      BareSliceMatrix<double> shape) const override
     {
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      // Vec<DIM, AutoDiff<DIM>> adp = mip;
       // TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
       if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
       {
-        Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
-        {
-          shape.Row(nr).Range(0,DIM) = val.DivShape();
-        }));
+        Cast() -> T_CalcShape (GetTIP(mip), // TIP<DIM,AutoDiff<DIM>> (adp),
+                               SBLambda([&](int nr,auto val)
+                                        {
+                                          shape.Row(nr).Range(0,DIM) = val.DivShape();
+                                        }));
       }
       else // curved element
       {
@@ -286,7 +289,8 @@ namespace ngfem
                   finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
         }
 
-        Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+        Cast() -> T_CalcShape (GetTIP(mip),  // TIP<DIM,AutoDiff<DIM>> (adp),
+                               SBLambda([&](int nr,auto val)
                                   {
                                     shape.Row(nr).Range(0,DIM) = val.DivShape();
                                     BareVector<double> divshape = shape.Row(nr);
@@ -320,9 +324,9 @@ namespace ngfem
               // extern int myvar ; myvar = int(ET);
               const SIMD_BaseMappedIntegrationRule & bmir = mir;
               auto & mir2 = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&>(bmir);
-              Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir2[i];
+              // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir2[i];
               auto shapesi = shapes.Col(i);
-              this->Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+              this->Cast() -> T_CalcShape (GetTIP(mir2[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                            SBLambda ([shapesi] (size_t j, auto val) 
                                                      {
                                                        auto shapeij = shapesi.Range(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE));
@@ -352,10 +356,10 @@ namespace ngfem
                 }
               
               
-              Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
+              // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
               // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
               
-              this->Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+              this->Cast() -> T_CalcShape (GetTIPGrad<DIM> (mir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                            SBLambda ([i,shapes,trans] (size_t j, auto val) 
                                                      {
                                                        shapes.Rows(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = trans * val.Shape();
@@ -371,10 +375,10 @@ namespace ngfem
 
       for (size_t i = 0; i < mir.Size(); i++)
         {
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
           Vec<DIM,SIMD<double>> nv = mir[i].GetNV();
           auto shapesi = shapes.Col(i);
-          this->Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+          this->Cast() -> T_CalcShape (GetTIP(mir[i]),   // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                        SBLambda ([shapesi, nv] (size_t j, auto val) 
                                                  {
                                                    auto shapeij = shapesi.Range(j*DIM,(j+1)*DIM);
@@ -458,10 +462,10 @@ namespace ngfem
           const size_t dist = coefs.Dist();
           
           Vec<DIM_STRESS,SIMD<double>> sum(0.0);
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
           // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
           
-          Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+          Cast() -> T_CalcShape (GetTIPGrad<DIM>(bmir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                  SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
                                            {
                                              sum += (*pcoefs)*val.Shape();
@@ -513,12 +517,12 @@ namespace ngfem
                  }
              });
           
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
           // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
           double *pcoefs = &coefs(0);
           const size_t dist = coefs.Dist();
 
-          Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>  (adp),
+          Cast() -> T_CalcShape (GetTIPGrad<DIM>(bmir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>  (adp),
                                  SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
                                            {
                                              Mat<DIM,DIM,SIMD<double>> mat2;
@@ -556,10 +560,10 @@ namespace ngfem
               trans.Col(k) = physvec;
             }
             */
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
+          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
           // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
 	  Cast() -> T_CalcShape
-            (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+            (GetTIPGrad<DIM>(mir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
              SBLambda([divshapes,i,trans](int j,auto val)
                       {
                         divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(0,DIM) = trans * val.DivShape();
@@ -611,12 +615,13 @@ namespace ngfem
             for (int i = 0; i < DIM; i++)
               finvT_h_tilde_finv[i] *= mir[i].GetJacobiDet();
             
-            Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
             // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-            TIP<DIM,AutoDiff<DIM,SIMD<double>>> addp(adp);
+            // TIP<DIM,AutoDiff<DIM,SIMD<double>>> addp(adp);
             // RegionTracer reg2(TaskManager::GetThreadId(), t2);    
             Cast() -> T_CalcShape
-              (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp), SBLambda([&](int nr,auto val)
+              (GetTIP(mir[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+               SBLambda([&](int nr,auto val)
                               {
                                 BareSliceVector<SIMD<double>> divshape = divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i);
 
@@ -649,10 +654,10 @@ namespace ngfem
           const size_t dist = coefs.Dist();
           
           Vec<DIM,SIMD<double>> sum(0.0);
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
           // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
           
-          Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+          Cast() -> T_CalcShape (GetTIPGrad<DIM>(bmir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                  SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
                                            {
                                              sum += (*pcoefs)*val.DivShape();
@@ -709,12 +714,12 @@ namespace ngfem
                  }
              });
           
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
-          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
           double *pcoefs = &coefs(0);
           const size_t dist = coefs.Dist();
 
-          Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+          Cast() -> T_CalcShape (GetTIPGrad<DIM> (bmir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
                                  SBLambda ([vec,&pcoefs,dist] (size_t j, auto val)
                                            {
                                              *pcoefs += HSum(InnerProduct(vec,val.DivShape()));
@@ -2317,7 +2322,7 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp);
+      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp, mip.IP().FacetNr(), mip.IP().VB());
    
       Cast() -> T_CalcShape (addp, SBLambda([&] (int nr, auto val)
                                           {
@@ -2330,7 +2335,7 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp);
+      TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp, mip.IP().FacetNr(), mip.IP().VB());
       
       Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
       {
