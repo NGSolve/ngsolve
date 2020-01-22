@@ -66,6 +66,29 @@ namespace ngfem
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET, SHAPES, BASE> :: 
+  CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+                   BareSliceMatrix<SIMD<double>> shape) const
+  {
+    /*Switch<4-DIM>
+      (bmip[0].DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         auto & mip = static_cast<const SIMD<MappedIntegrationPoint<DIM,DIM+CODIM.value>>&> (bmip);
+         this->T_CalcShape (GetTIP(mip),
+                            SBLambda ([shape, DIMSPACE](size_t i, auto s) 
+                                      {
+                                        shape.Col(0).Range(i*DIMSPACE, (i+1)*DIMSPACE) = s.Value();
+                                      }));
+                                      });*/
+    this->T_CalcShape (GetTIP(mip),
+                       SBLambda ([shape](size_t i, auto s) 
+                                 {
+                                   shape.Col(0).Range(i*DIM, (i+1)*DIM) = s.Value();
+                                 }));
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                    BareSliceMatrix<SIMD<double>> shapes) const

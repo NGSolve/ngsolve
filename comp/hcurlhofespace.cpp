@@ -28,7 +28,7 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
     
-    static constexpr double eps() { return 1e-6; }
+    static constexpr double eps() { return 1e-4; }
 
     typedef DiffOpGradientBoundaryHCurl<D> DIFFOP_TRACE;
     ///
@@ -47,22 +47,13 @@ namespace ngcomp
     // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-                                                  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {
       CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
-    /*
-    template <typename AFEL>
-    static void GenerateMatrix (const AFEL & fel, 
-                                const MappedIntegrationPoint<D,D> & sip,
-                                FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
-    {
-      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(), &mat(0,0));
-      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, hm, lh);
-    }
-    */
-    ///
+
+    
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
                        const TVX & x, TVY & y,
@@ -81,42 +72,13 @@ namespace ngcomp
 			    const TVX & x, TVY & by,
 			    LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCALX;      
-      // typedef typename TVY::TSCAL TSCAL;
-      // typedef typename MIP::TSCAL TSCAL;
+      ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
+    }
 
-      HeapReset hr(lh);
-      FlatMatrixFixWidth<D*D> bmatu(fel.GetNDof(),lh);
-      
-      auto & fel_u = static_cast<const FEL&>(fel);
-      int nd_u = fel.GetNDof();
-      auto y = by.Range(0,nd_u);
-      const IntegrationPoint& ip = mip.IP();
-      const ElementTransformation & eltrans = mip.GetTransformation();
-      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);
-      
-      FlatMatrix<TSCALX> hx(D,D,&x(0));
-      Mat<D,D,TSCALX> tx = mip.GetJacobianInverse() * hx;
-
-      y = 0;
-      for (int j = 0; j < D; j++)   // d / dxj
-	{
-	  IntegrationPoint ipl(ip);
-	  ipl(j) -= eps();
-	  MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
-
-	  IntegrationPoint ipr(ip);
-	  ipr(j) += eps();
-	  MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
-
-	  fel_u.CalcMappedShape (sipl, shape_ul);
-	  fel_u.CalcMappedShape (sipr, shape_ur);
-	  dshape_u_ref = (1.0/(2*eps())) * (shape_ur-shape_ul);
-          y += dshape_u_ref * tx.Row(j);
-	}
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
     }
 
     using DiffOp<DiffOpGradientHCurl<D>>::ApplySIMDIR;
@@ -124,114 +86,14 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
-      STACK_ARRAY(char, data, size);
-      LocalHeap lh(data, size);
-
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
-      auto & ir = mir.IR();
-      const ElementTransformation & trafo = mir.GetTransformation();
-      auto & fel_u = static_cast<const FEL&>(fel);
-      FlatMatrix<SIMD<double>> hxl(D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hxr(D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
-
-      for (int m = 0; m < D*D; m++)
-        for (int k = 0; k < mir.Size(); k++)
-          y(m, k) = SIMD<double> (0.0);
-      
-      for (int j = 0; j < D; j++)
-        {
-          // hx = (F^-1 * x).Row(j)
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irl.Size(); k++)
-              {
-                irl[k] = ir[k];
-                irl[k](j) -= eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.Evaluate (mirl, x, hxl);
-          }
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
-              {
-                irr[k] = ir[k];              
-                irr[k](j) += eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.Evaluate (mirr, x, hxr);
-          }
-          hx = 1.0/(2*eps()) * (hxr-hxl);
-          
-          for (int k = 0; k < mir.Size(); k++)
-            {
-              auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D; l++)
-                {
-                  for (int m = 0; m < D; m++)
-                    y(m*D+l, k) += (jacinv(j,m) * hx(l, k));
-                }
-            }
-        }
+      ApplySIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
 
     using DiffOp<DiffOpGradientHCurl<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
-      STACK_ARRAY(char, data, size);
-      LocalHeap lh(data, size);
-
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
-      auto & ir = mir.IR();
-      const ElementTransformation & trafo = mir.GetTransformation();
-      auto & fel_u = static_cast<const FEL&>(fel);
-      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
-      
-      for (int j = 0; j < D; j++)
-        {
-          // hx = (F^-1 * x).Row(j)
-          for (int k = 0; k < mir.Size(); k++)
-            {
-              auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D; l++)
-                {
-                  SIMD<double> sum = 0;
-                  for (int m = 0; m < D; m++)
-                    sum += jacinv(j,m) * x(m*D+l, k);
-                  hx(l,k) = (-(0.5/eps()) * sum);
-                }
-            }
-
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irl.Size(); k++)
-              {
-                irl[k] = ir[k];
-                irl[k](j) -= eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.AddTrans (mirl, hx, y);
-          }
-          {
-            HeapReset hr(lh);
-            hx *= -1;
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
-              {
-                irr[k] = ir[k];              
-                irr[k](j) += eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.AddTrans (mirr, hx, y);
-          }
-        }
+      AddTransSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
     
   };

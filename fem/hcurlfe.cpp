@@ -150,6 +150,14 @@ namespace ngfem
       CalcMappedShape (mir[i], shapes.Cols(i*D, (i+1)*D));
   }
 
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip, BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    throw ExceptionNOSIMD(string("SIMD - HCurlFE::CalcMappedShape not overloaded, et = ")
+                          + typeid(*this).name());
+  }
+
   
   template <int D>
   void HCurlFiniteElement<D> ::
