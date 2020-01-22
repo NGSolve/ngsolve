@@ -288,91 +288,91 @@ namespace ngfem
                              BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y, double eps = 1e-4)
   {
     constexpr size_t BS = 64; // number of simd-points
-      size_t maxnp = min2(BS, bmir.Size());
-      size_t size = (maxnp+1)*SIMD<double>::Size()*500;
-      
-      STACK_ARRAY(char, data, size);
-      LocalHeap lh(data, size);
-
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-      auto & ir = mir.IR();
-      const ElementTransformation & trafo = mir.GetTransformation();
-
-      for (size_t base = 0; base < ir.Size(); base += BS)
-        {
-          HeapReset hr(lh);
-          size_t num = min2(BS, ir.Size()-base);
-          
-          FlatMatrix<SIMD<double>> hx1(DIM_STRESS, num, lh);
-          FlatMatrix<SIMD<double>> hx2(DIM_STRESS, num, lh);
-
-          for (size_t j = 0; j < DIM; j++)
+    size_t maxnp = min2(BS, bmir.Size());
+    size_t size = (maxnp+1)*SIMD<double>::Size()*500;
+    
+    STACK_ARRAY(char, data, size);
+    LocalHeap lh(data, size);
+    
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+    auto & ir = mir.IR();
+    const ElementTransformation & trafo = mir.GetTransformation();
+    
+    for (size_t base = 0; base < ir.Size(); base += BS)
+      {
+        HeapReset hr(lh);
+        size_t num = min2(BS, ir.Size()-base);
+        
+        FlatMatrix<SIMD<double>> hx1(DIM_STRESS, num, lh);
+        FlatMatrix<SIMD<double>> hx2(DIM_STRESS, num, lh);
+        
+        for (size_t j = 0; j < DIM; j++)
+          {
+            // hx = (F^-1 * x).Row(j)
+            for (size_t k = 0; k < num; k++)
+              {
+                auto jacinv = mir[base+k].GetJacobianInverse();
+                for (int l = 0; l < DIM_STRESS; l++)
+                  {
+                    SIMD<double> sum = 0;
+                    for (int m = 0; m < DIMSPACE; m++)
+                      sum += jacinv(j,m) * x(m*DIM_STRESS+l, k);
+                    
+                    hx1(l,k) = (-(8/(12*eps)) * sum).Data();
+                    hx2(l,k) = ( (1/(12*eps)) * sum).Data();
+                  }
+              }
+            
             {
-              // hx = (F^-1 * x).Row(j)
-              for (size_t k = 0; k < num; k++)
+              HeapReset hr(lh);
+              SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
+              for (size_t k = 0; k < irl.Size(); k++)
                 {
-                  auto jacinv = mir[base+k].GetJacobianInverse();
-                  for (int l = 0; l < DIM_STRESS; l++)
-                    {
-                      SIMD<double> sum = 0;
-                      for (int m = 0; m < DIM_STRESS; m++)
-                        sum += jacinv(j,m) * x(m*DIM_STRESS+l, k);
-
-                      hx1(l,k) = (-(8/(12*eps)) * sum).Data();
-                      hx2(l,k) = ( (1/(12*eps)) * sum).Data();
-                    }
+                  irl[k] = ir[base+k];
+                  irl[k](j) -= eps;
                 }
-          
-              {
-                HeapReset hr(lh);
-                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
-                for (size_t k = 0; k < irl.Size(); k++)
-                  {
-                    irl[k] = ir[base+k];
-                    irl[k](j) -= eps;
-                  }
-                SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirl(irl, trafo, lh);
-                fel_u.AddTrans (mirl, hx1, y);
-                irl.NothingToDelete();
-              }
-              {
-                HeapReset hr(lh);
-                hx1 *= -1;
-                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
-                for (int k = 0; k < irr.Size(); k++)
-                  {
-                    irr[k] = ir[base+k];              
-                    irr[k](j) += eps;
-                  }
-                SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirr(irr, trafo, lh);
-                fel_u.AddTrans (mirr, hx1, y);
-              }
-              {
-                HeapReset hr(lh);
-                SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
-                for (int k = 0; k < irl.Size(); k++)
-                  {
-                    irl[k] = ir[base+k];
-                    irl[k](j) -= 2*eps;
-                  }
-                SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirl(irl, trafo, lh);
-                fel_u.AddTrans (mirl, hx2, y);
-              }
-              {
-                HeapReset hr(lh);
-                hx2 *= -1;
-                SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
-                for (int k = 0; k < irr.Size(); k++)
-                  {
-                    irr[k] = ir[base+k];              
-                    irr[k](j) += 2*eps;
-                  }
-                SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirr(irr, trafo, lh);
-                fel_u.AddTrans (mirr, hx2, y);
-              }
+              SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirl(irl, trafo, lh);
+              fel_u.AddTrans (mirl, hx1, y);
+              irl.NothingToDelete();
             }
-        }
-    }
+            {
+              HeapReset hr(lh);
+              hx1 *= -1;
+              SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
+              for (int k = 0; k < irr.Size(); k++)
+                {
+                  irr[k] = ir[base+k];              
+                  irr[k](j) += eps;
+                }
+              SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirr(irr, trafo, lh);
+              fel_u.AddTrans (mirr, hx1, y);
+            }
+            {
+              HeapReset hr(lh);
+              SIMD_IntegrationRule irl(num*SIMD<double>::Size(), lh);
+              for (int k = 0; k < irl.Size(); k++)
+                {
+                  irl[k] = ir[base+k];
+                  irl[k](j) -= 2*eps;
+                }
+              SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirl(irl, trafo, lh);
+              fel_u.AddTrans (mirl, hx2, y);
+            }
+            {
+              HeapReset hr(lh);
+              hx2 *= -1;
+              SIMD_IntegrationRule irr(num*SIMD<double>::Size(), lh);
+              for (int k = 0; k < irr.Size(); k++)
+                {
+                  irr[k] = ir[base+k];              
+                  irr[k](j) += 2*eps;
+                }
+              SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirr(irr, trafo, lh);
+              fel_u.AddTrans (mirr, hx2, y);
+            }
+          }
+      }
+  }
 }
 
 #endif 
