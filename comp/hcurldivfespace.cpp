@@ -51,6 +51,20 @@ namespace ngcomp
     {
       CalcSIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
     }
+
+    using DiffOp<DiffOpGradientHCurlDiv<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      ApplySIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+    }
+
+    using DiffOp<DiffOpGradientHCurlDiv<D>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    {
+      AddTransSIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+    }
         
   };
   
