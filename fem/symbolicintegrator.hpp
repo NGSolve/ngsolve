@@ -23,14 +23,14 @@ protected:
   bool testfunction; // true .. test, false .. trial
   // bool is_complex;
   bool is_other;    // neighbour element (DG)
-
+  shared_ptr<ProxyFunction> primaryproxy;   // derivatives and traces point to it
   shared_ptr<DifferentialOperator> evaluator;
   shared_ptr<DifferentialOperator> deriv_evaluator;
   shared_ptr<DifferentialOperator> trace_evaluator;
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
   shared_ptr<DifferentialOperator> ttrace_evaluator;
   shared_ptr<DifferentialOperator> ttrace_deriv_evaluator;
-  shared_ptr<ProxyFunction> deriv_proxy;
+  weak_ptr<ProxyFunction> deriv_proxy;          // weak since we point to the primary proxy
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
 
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
@@ -62,26 +62,11 @@ public:
   const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
 
-  shared_ptr<ProxyFunction> Deriv() const
-  {
-    return deriv_proxy;
-  }
-
+  shared_ptr<ProxyFunction> Deriv() const;
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Trace() const;
 
-  shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
-  {
-    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
-    other->is_other = true;
-    if (other->deriv_proxy)
-      other->deriv_proxy->is_other = true;
-    other->boundary_values = _boundary_values;
+  shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
 
-    for (int i = 0; i < additional_diffops.Size(); i++)
-      other->SetAdditionalEvaluator (additional_diffops.GetName(i), additional_diffops[i]);
-    
-    return other;
-  }
   const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
 
   void SetAdditionalEvaluator (string name, shared_ptr<DifferentialOperator> diffop)
@@ -113,8 +98,8 @@ public:
     return shared_ptr<ProxyFunction>();
   }
   
-  virtual shared_ptr<CoefficientFunction>
-  Operator (const string & name) const override;
+  shared_ptr<CoefficientFunction> Operator (const string & name) const override;
+  shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
     
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
