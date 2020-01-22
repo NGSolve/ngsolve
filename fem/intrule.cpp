@@ -4106,6 +4106,16 @@ namespace ngstd
     throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
   }
 
+  int SIMD<ngfem::BaseMappedIntegrationPoint> ::  DimElement() const
+  {
+    return eltrans->ElementDim();
+  }
+
+  int SIMD<ngfem::BaseMappedIntegrationPoint> ::  DimSpace() const
+  {
+    return eltrans->SpaceDim();
+  }
+
   
   template <int DIMS, int DIMR>
   void SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>>::
