@@ -51,11 +51,44 @@ namespace ngfem
             continue;
           }
           
-        int first = first_facet_dof[ip.facetnr];
-        int p = facet_order[ip.facetnr][0];
+        int first = first_facet_dof[i];
+        int p = facet_order[i][0];
         
-        INT<2> e = GetVertexOrientedEdge(ip.facetnr);
+        INT<2> e = GetVertexOrientedEdge(i);
         Tx xi = lami[e[0]] - lami[e[1]];
+        
+        LegendrePolynomial (p, xi, 
+                            SBLambda([&](int nr, auto val)
+                                     {
+                                       shape[first+nr] = uDv (val, xi);
+                                     }));
+      }
+  }
+
+  template <> template<typename Tx, typename TFA>  
+  void NormalFacetVolumeFE_Shape<ET_QUAD>::
+  T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+  {
+    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
+    
+    Tx x = ip.x, y = ip.y;
+    //Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+
+    for (int i = 0; i < 4; i++)
+      {
+        if (ip.facetnr != i)
+          {
+            for (int j : Range(first_facet_dof[i], first_facet_dof[i+1]))
+              shape[j] = Du(Tx(0.0));
+            continue;
+          }
+          
+        int first = first_facet_dof[i];
+        int p = facet_order[i][0];
+        
+        INT<2> e = GetVertexOrientedEdge(i);
+        Tx xi = sigma[e[1]]-sigma[e[0]];
         
         LegendrePolynomial (p, xi, 
                             SBLambda([&](int nr, auto val)
