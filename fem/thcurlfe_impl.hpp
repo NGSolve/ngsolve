@@ -133,7 +133,7 @@ namespace ngfem
     */
     {
       Vec<DIM, AutoDiff<DIM> > adp = mip;
-      TIP<DIM,AutoDiff<DIM>> tip(adp);
+      TIP<DIM,AutoDiff<DIM>> tip(adp, bmip.IP().FacetNr(), bmip.IP().VB());
       this->T_CalcShape (GetTIP(mip), 
                          SBLambda ([&](size_t i, auto s) 
                                    { 

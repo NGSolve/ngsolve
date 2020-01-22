@@ -18,7 +18,7 @@ namespace ngfem
   template <int DIMR>
   INLINE auto GetTIPHDiv (const MappedIntegrationPoint<2,DIMR> & mip)
   {
-    TIP<2,AutoDiffRec<DIMR>> adp;      
+    TIP<2,AutoDiffRec<DIMR>> adp(mip.IP().FacetNr(), mip.IP().VB());    
     Mat<DIMR,2> jac = mip.GetJacobian();
     jac *= 1/mip.GetJacobiDet();
     const auto &ip = mip.IP();
@@ -29,15 +29,15 @@ namespace ngfem
         adp.x.DValue(i) = jac(i,1);
         adp.y.DValue(i) = -jac(i,0);
       }
-    adp.facetnr = mip.IP().FacetNr();
-    adp.vb = mip.IP().VB();
+    // adp.facetnr = mip.IP().FacetNr();
+    // adp.vb = mip.IP().VB();
     return adp;
   }
   
   template <int DIMR>
   INLINE auto GetTIPHDiv (const SIMD<MappedIntegrationPoint<2,DIMR>> & mip)
   {
-    TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp;      
+    TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp(mip.IP().FacetNr(), mip.IP().VB());
     Mat<DIMR,2,SIMD<double>> jac = mip.GetJacobian();
     jac *= 1/mip.GetJacobiDet();
     const auto &ip = mip.IP();
@@ -48,8 +48,8 @@ namespace ngfem
         adp.x.DValue(i) = jac(i,1);
         adp.y.DValue(i) = -jac(i,0);
       }
-    adp.facetnr = mip.IP().FacetNr();
-    adp.vb = mip.IP().VB();
+    // adp.facetnr = mip.IP().FacetNr();
+    // adp.vb = mip.IP().VB();
     return adp;
   }
 
@@ -194,7 +194,7 @@ namespace ngfem
 
         Vec<DIM> sum = 0;
         static_cast<const FEL*> (this) -> 
-          T_CalcShape (TIP<DIM,AutoDiffRec<DIM>>(adp),
+          T_CalcShape (TIP<DIM,AutoDiffRec<DIM>>(adp, ir[i].FacetNr(), ir[i].VB()),
                        SBLambda([coefs,&sum] (size_t j, THDiv2Shape<DIM> vshape)
                                 {
                                   sum += coefs(j) * Vec<DIM> (vshape);
@@ -217,7 +217,7 @@ namespace ngfem
 
         Vec<DIM> val = vals.Row(i);
         static_cast<const FEL*> (this) -> 
-          T_CalcShape (TIP<DIM,AutoDiff<DIM>>(adp),
+          T_CalcShape (TIP<DIM,AutoDiff<DIM>>(adp, ir[i].FacetNr(), ir[i].VB()),
                        SBLambda([coefs,val] (size_t j, THDiv2Shape<DIM> vshape)
                                 {
                                   coefs(j) += InnerProduct (val, Vec<DIM> (vshape));

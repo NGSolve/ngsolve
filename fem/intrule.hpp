@@ -18,7 +18,8 @@ namespace ngfem
 
 
   template <int DIM, typename T>
-  class TIP
+  class TIP;
+  /*
   {
   public:
     int8_t facetnr = -1;
@@ -34,6 +35,7 @@ namespace ngfem
     template <typename T1, typename T2>    
     TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
   };
+  */
   
   template <typename T>
   class TIP<0,T>
@@ -42,20 +44,22 @@ namespace ngfem
     int8_t facetnr = -1;
     VorB vb = VOL;
 
+    // [[deprecated("Use TIP(facetnr, vb) instead")]]    
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
-    TIP (const TIP<0,T2> & tip) { }
+    TIP (const TIP<0,T2> & tip)
+      : facetnr(tip.facetnr), vb(tip.vb) { }
 
     TIP (int8_t afacetnr, VorB avb)
       : facetnr(afacetnr), vb(avb) { } 
-
     
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    explicit TIP (Vec<0,T> v) { ; }    
+    explicit TIP (Vec<0,T> v, int8_t afacetnr=-1, VorB avb=VOL)
+      : facetnr(afacetnr), vb(avb) { ; }    
     template <typename T1, typename T2>
     TIP (TIP<0,T1> ip1, TIP<0,T2> ip2) { ; } 
   };
@@ -68,8 +72,12 @@ namespace ngfem
     T x;
     int8_t facetnr = -1;
     VorB vb = VOL;
-    
+
+    // [[deprecated("Use TIP(facetnr, vb) instead")]]    
     TIP () = default;
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
@@ -81,10 +89,13 @@ namespace ngfem
     
     TIP (T _x, int8_t afacetnr, VorB avb)
       : x(_x), facetnr(afacetnr), vb(avb) { ; }
-    explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
+    
+    explicit TIP (Vec<1,T> v, int8_t afacetnr = -1, VorB avb = VOL)
+      : x(v(0)), facetnr(afacetnr), vb(avb) { ; }
+    
     template <typename T1, typename T2>
     TIP (TIP<1,T1> ip1, TIP<1,T2> ip2)
-      : x(ip1.x, ip2.x) { ; } 
+      : x(ip1.x, ip2.x), facetnr(ip1.facetnr), vb(ip1.vb) { ; } 
   };
 
   template <typename T>
@@ -96,6 +107,9 @@ namespace ngfem
     VorB vb = VOL;
     
     TIP () = default;
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
@@ -107,10 +121,12 @@ namespace ngfem
     
     TIP (T _x, T _y, int8_t afacetnr, VorB avb)
       : x(_x), y(_y), facetnr(afacetnr), vb(avb) { ; }
-    explicit TIP (Vec<2,T> v) : x(v(0)), y(v(1)) { ; }        
+    explicit TIP (Vec<2,T> v, int8_t afacetnr = -1, VorB avb = VOL)
+      : x(v(0)), y(v(1)), facetnr(afacetnr), vb(avb) { ; }
+    
     template <typename T1, typename T2>
     TIP (TIP<2,T1> ip1, TIP<2,T2> ip2)
-      : x(ip1.x, ip2.x), y(ip1.y, ip2.y) { ; } 
+      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), facetnr(ip1.facetnr), vb(ip1.vb) { ; } 
   };
   template <typename T>
   class TIP<3,T>
@@ -121,6 +137,9 @@ namespace ngfem
     VorB vb = VOL;
 
     TIP () = default;
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     template <typename T2>
@@ -132,10 +151,14 @@ namespace ngfem
     
     TIP (T _x, T _y, T _z, int8_t afacetnr, VorB avb)
       : x(_x), y(_y), z(_z), facetnr(afacetnr), vb(avb) { ; }
-    explicit TIP (Vec<3,T> v) : x(v(0)), y(v(1)), z(v(2)) { ; }            
+    
+    explicit TIP (Vec<3,T> v, int8_t afacetnr = -1, VorB avb = VOL)
+      : x(v(0)), y(v(1)), z(v(2)), facetnr(afacetnr), vb(avb) { ; }
+    
     template <typename T1, typename T2>    
     TIP (TIP<3,T1> ip1, TIP<3,T2> ip2)
-      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z) { ; } 
+      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z),
+        facetnr(ip1.facetnr), vb(ip1.vb) { ; } 
   };
 
   template <typename T>
@@ -1660,7 +1683,6 @@ namespace ngstd
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
 
     int FacetNr() const { return facetnr; }
-    // int & FacetNr() { return facetnr; }
     void SetFacetNr (int afacetnr, ngfem::VorB avb = ngfem::BND)
     { facetnr = afacetnr; vb = avb; }      
     INLINE ngfem::VorB VB() const { return vb; } 
@@ -1934,7 +1956,7 @@ namespace ngfem
   INLINE auto GetTIPGrad (const SIMD<IntegrationPoint> & ip)
   {
     Vec<D, AutoDiffRec<D,SIMD<double>>> adp = ip;
-    return TIP<D,AutoDiffRec<D,SIMD<double>>> (adp);
+    return TIP<D,AutoDiffRec<D,SIMD<double>>> (adp, ip.FacetNr(), ip.VB());
     // TIP<D,AutoDiffRec<D,SIMD<double>>> tip = ip;
     // return tip;
     // return TIP<D,AutoDiffRec<D>>(ip);
@@ -2007,7 +2029,7 @@ namespace ngfem
   template<int DIMS, int DIMR>
   INLINE auto GetTIP (const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip)
   {
-    TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> tip;
+    TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> tip(mip.IP().FacetNr(), mip.IP().VB());
     GetTIP1 (mip, tip);
     return tip;
   }
@@ -2139,7 +2161,7 @@ namespace ngfem
   template<int DIMS, int DIMR>
   INLINE auto GetTIP (const MappedIntegrationPoint<DIMS,DIMR> & mip) //  -> TIP<DIMS,AutoDiffRec<DIMR>>;
   {
-    TIP<DIMS,AutoDiffRec<DIMR>> tip;
+    TIP<DIMS,AutoDiffRec<DIMR>> tip(mip.IP().FacetNr(), mip.IP().VB());
     GetTIP1(mip, tip);
     return tip;
   }
