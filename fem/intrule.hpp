@@ -1752,6 +1752,9 @@ namespace ngstd
     const ngfem::ElementTransformation & GetTransformation () const { return *eltrans; }
     // int GetIPNr() const { return ip.Nr(); }
 
+    int DimElement() const;
+    int DimSpace() const;
+
     void SetMeasure (SIMD<double> _measure) { measure = _measure; }
     SIMD<double> GetMeasure() const { return measure; }
     SIMD<double> GetWeight() const { return measure * ip.Weight(); }
