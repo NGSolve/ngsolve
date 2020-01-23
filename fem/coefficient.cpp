@@ -5503,9 +5503,9 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         string parameters[3] = {"results", "deriv", "dderiv"};
 
         for (int deriv : Range(maxderiv+1))
-        for (auto simd : {false,true}) {
-          if (!simd && deriv == 0)
-            cout << IM(3) << "Compiled CF:" << endl;
+          for (auto simd : {false,true}) {
+            if (!simd && deriv == 0)
+              cout << IM(3) << "Compiled CF:" << endl;
             Code code;
             code.is_simd = simd;
             code.deriv = deriv;
