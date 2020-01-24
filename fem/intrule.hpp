@@ -162,6 +162,11 @@ namespace ngfem
   };
 
   template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<0,T> tip)
+  {
+    return ost;
+  }
+  template <typename T>
   inline ostream & operator<< (ostream & ost, TIP<1,T> tip)
   {
     return ost << "x = " << tip.x;
@@ -2168,6 +2173,43 @@ namespace ngfem
     GetTIP1(mip, tip);
     return tip;
   }
+
+
+  template <int DIMS, int DIMR>
+  auto GetTIPHesse (const MappedIntegrationPoint<DIMS, DIMR> & mip)
+  {
+    Vec<DIMR, Mat<DIMS,DIMS>> hesse;
+    mip.CalcHesse(hesse);
+    Mat<DIMS,DIMR> ijac = mip.GetJacobianInverse();
+    
+    Vec<DIMR, Mat<DIMR,DIMR>> hessemapped;
+    for (int i = 0; i < DIMR; i++)
+      hessemapped(i) =  Trans(ijac) * hesse(i) * ijac; 
+
+    Vec<DIMS, Mat<DIMR,DIMR>> hessemapped2 = Mat<DIMR,DIMR>(0.0);
+    for (int i =  0; i < DIMR; i++)
+      for (int j = 0; j < DIMS; j++)
+        hessemapped2(j) += ijac(j,i) * hessemapped(i);
+
+    TIP<DIMS, AutoDiffDiff<DIMR>> tip = GetTIP(mip);
+    
+    if constexpr(DIMS >= 1)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.x.DDValue(j,k) = -hessemapped2(0)(j,k);
+    if constexpr(DIMS >= 2)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.y.DDValue(j,k) = -hessemapped2(1)(j,k);
+    if constexpr(DIMS >= 3)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.z.DDValue(j,k) = -hessemapped2(2)(j,k);
+    
+    return tip;
+  }
+
+
   
   /*
   template<int DIMR>

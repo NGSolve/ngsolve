@@ -815,51 +815,25 @@ namespace ngfem
                                for (int d2 = 0; d2 < DIM; d2++)
                                  row(d1*DIM+d2) = shape.DDValue(d1,d2);
                            }));
-    
-    /*
-    size_t ndof = this->GetNDof();
-    for (int dir1 = 0; dir1 < DIM; dir1++)
-      for (int dir2 = 0; dir2 <= dir1; dir2++)
-        {
-          int dir = dir1*DIM+dir2;
-          TIP<DIM, AutoDiffDiff<1>> tip;
-          if constexpr (DIM >= 1)
-                         {
-                           if (dir1 == 0 || dir2 == 0)
-                             tip.x = AutoDiff<1> (ip(0),0);
-                           else
-                             tip.x = ip(0);
-                         }
-          if constexpr (DIM >= 2)
-                         {
-                           if (dir1 == 1 || dir2 == 1)
-                             tip.y = AutoDiff<1> (ip(1),0);
-                           else
-                             tip.y = ip(1);
-                         }
-          if constexpr (DIM >= 3)
-                         {
-                           if (dir1 == 2 || dir2 == 2)
-                             tip.z = AutoDiff<1> (ip(2),0);
-                           else
-                             tip.z = ip(2);
-                         }
-          
-          T_CalcShape (tip, 
-                       SBLambda ([dir, ddshape] (int i, auto shape)
-                                 { ddshape(i, dir) = shape.DDValue(0); }));
-        }
-    for (int dir1 = 0; dir1 < DIM; dir1++)
-      for (int dir2 = 0; dir2 < dir1; dir2++)
-        {
-          int dir = dir1*DIM+dir2;
-          ddshape.Col(dir).Range(ndof) -= ddshape.Col(dir1*(DIM+1)) + ddshape.Col(dir2*(DIM+1));
-          ddshape.Col(dir).Range(ndof) *= 0.5;
-          ddshape.Col(dir2*DIM+dir1).Range(ndof) = ddshape.Col(dir);
-        }
-   */
   }
 
+
+  
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> ::   
+  CalcMappedDDShape (const BaseMappedIntegrationPoint & bmip, 
+                     BareSliceMatrix<> ddshape) const
+  {
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+    T_CalcShape (GetTIPHesse (mip),
+                 SBLambda ([ddshape] (size_t i, auto shape)
+                           {
+                             auto row = ddshape.Row(i);
+                             for (int d1 = 0; d1 < DIM; d1++)
+                               for (int d2 = 0; d2 < DIM; d2++)
+                                 row(d1*DIM+d2) = shape.DDValue(d1,d2);
+                           }));
+  }
 
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
