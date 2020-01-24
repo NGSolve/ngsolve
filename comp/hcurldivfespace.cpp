@@ -468,6 +468,7 @@ namespace ngcomp
         break;
       case ET_QUAD:
 	ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
+	//ndof += 1+ oi*(2 + 3*oi);
 	if (ot>-1)
 	  ndof += (ot + 1) * (ot + 1);
 	

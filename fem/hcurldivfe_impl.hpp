@@ -124,8 +124,8 @@ namespace ngfem
   auto Gradu_Curlv (AutoDiffDiff<D,T> au,AutoDiffDiff<D,T> av) { return T_Gradu_Curlv<D, T>(au,av); }
 
   
-  /* ############### Type 2 (QUAD) - inner basis functions - div-free ############### */
-  /* u * sigma(grad v) = Curl(grad v), where Curl is the 1D to 2D curl operator */
+  /* ############### Type 2 (QUAD) - inner basis functions ############### */
+  /* u * sigma(grad v) = u * Curl(grad v), where Curl is the 1D to 2D curl operator */
   template <int D, typename T> class T_u_Sigma_gradv;
   template <typename T> class T_u_Sigma_gradv<2,T>
   {
