@@ -728,7 +728,8 @@ namespace ngfem
 	  order = max2(order, order_facet[i]); 
 	}
       order += 1; //lo facet functions are linear
-      int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;    
+      int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;
+      //int ninner = 1 + order_inner*(2 + 3*order_inner);    
       
       order = max2(order, order_inner);
       //order += 4; // I think this is wrong! PL
@@ -770,9 +771,14 @@ namespace ngfem
           Tx eta = lx[e[0]]*ly[e[0]]+lx[e[1]]*ly[e[1]];
 	  	 
 	  IntLegNoBubble::EvalMult (maxorder_facet , xi, 0.25*edgebubbles[i], ha);	  
-	  
+
+	  // edge basis functions given by (on the unit square)
+	  // (0, u(x) (1-y),0,0) u(x) \in P^k_x -> basis on lower edge
+	  // (0, u(x) y,0,0) u(x) \in P^k_x -> basis on upper edge
+	  // (0, v(y) (1-x),0,0) u(x) \in P^k_x -> basis on left edge
+	  // (0, v(y) x,0,0) u(x) \in P^k_x -> basis on right edge
           for (int l = 0; l <= order_facet[i]; l++)	    
-	    shape[ii++] = Sigma_gradv(eta*ha[l]);	 
+	    shape[ii++] = Sigma_gradv(eta*ha[l]); //div-free	 
         }
 
       // polynomials in x direction. First one is  quadratic
@@ -780,53 +786,72 @@ namespace ngfem
       // polynomials in y direction. First one is  quadratic
       IntLegNoBubble::EvalMult (oi+2, ly[0]-ly[2], 0.25*ly[0]*ly[2], v);
 
-      // constants in diagonal
-      // off-diagonal constant functions are provided by edge functions
-
-      
-      //shape[ii++] = u_Sigma_gradv(AutoDiffDiff<2,T>(1.0), lx[0]*ly[0]);
-      shape[ii++] = Sigma_gradv(lx[0]*ly[0]);
-      
-      //shape[ii++] = u_Sigma_gradv(lx[0]-lx[1], lx[0]*ly[0]);
-	
-      //shape[ii++] = Sigma_gradu_v(lx[0],ly[0]);
-
+      //////////////////////////////////////////////////////////////////////////////////////
+      // functions on the diagonal split into dev-free part and orthogonal part (if ot > -1)
+      //
+      // 1.) constants      
+      // gives the constant function (-1,0,0,1) -> div-free      
+      shape[ii++] = Sigma_gradv(lx[0]*ly[0]); 
+      // gives the constant function (0,0,0,1) -> div-free
       if (ot>-1)	
 	shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
-
-      //provide mixed functions in the diagonal
-      for(int i = 0; i <= oi-1; i++)
-      {
-        for(int j = 0; j <= oi-1; j++)
-        {
-          shape[ii++] = Sigma_gradv(u[i]*v[j]);
-	  if (ot>-1)
-	    shape[ii++] = Sigma_gradu_v(u[i],v[j]);
-	}
-      }
-
-      //are needed to compensate the terms in the off diagonal from the block before
-      for(int i = 0; i <= oi+1; i++)
-      {
-        for(int j = 0; j <= oi-1; j++)
-        {
-          shape[ii++] = u_Sigma_gradv(u[j],v[i]);
-          shape[ii++] = u_Sigma_gradv(v[j],u[i]);	  	  
-        }
-      }
-       
-      // lienar (and high order) parts in the diagonal
+      //
+      // 2.) linear and high order 
       for(int i = 0; i <= oi-1; i++)
        {
 	 if (ot>-1)
 	   {
-	     shape[ii++] = Sigma_gradu_v(ly[0],u[i]);
-	     shape[ii++] = Sigma_gradu_v(lx[0],v[i]);
+	     // gives (0,0,0,- d_x u(x))
+	     shape[ii++] = Sigma_gradu_v(ly[0],u[i]); //div-free
+	     // gives (-d_y v(y), 0, 0,0)
+	     shape[ii++] = Sigma_gradu_v(lx[0],v[i]); //div-free
 	   }
-
+	 // gives (-d_x u(x)/2,0,0, d_x u(x)/2) -> produces a divergence
 	 shape[ii++] = Gradu_Curlv(u[i],ly[0]);
+	 // gives (d_y v(x)/2,0,0, -d_y v(x)/2) -> produces a divergence
 	 shape[ii++] = Gradu_Curlv(v[i],lx[0]);	 
        }
+      //      
+      // block 1 and 2 produce already (P^k_x,0,0,-P^k_x), (P^k_y,0,0,-P^k_y)
+      // and (ot > -1):  (0,0,0,P^k_x), (0,0,0,P^k_y)
+      // 3.) high order mixed functions
+      // both parts (x or y) of the mixed polynomials on the diagonal are at least linear
+      for(int i = 0; i <= oi-1; i++)
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {
+	  // gives (-d_x u(x) d_y v(y), d_xx u(x) v(y),
+	  //        d_yy v(y) u(x)    , d_y v(y) d_x u(x))
+          shape[ii++] = Sigma_gradv(u[i]*v[j]);  //div-free
+
+	  // gives (-d_x u(x) d_y v(y), d_xx u(x) v(y), 0,0)	  
+	  if (ot>-1)
+	    shape[ii++] = Sigma_gradu_v(u[i],v[j]); //div-free
+	}
+      }
+      //////////////////////////////////////////////////////////////////////////////////////
+
+      // edges and shapes one the diagonal give:
+      // edges: (0,P^k_x o-times P^1_y,0,0)
+      //        (0,0,P^1_x o-times P^k_y,0)
+      // diag: (XX, P^{k-1}_x  o-times P^{k+1}_y\P^{1}_y,
+      //       ( P^{k-1}_y o-times P^{k+1}_x\P^{1}_x, XX)
+      // hence we need
+      //       (0,P^{k-1}_x o-times P^{k+1}_y\P^{1}_y, 0,0)
+      //       (0,0,P^{k-1}_y o-times P^{k+1}_x\P^{1}_y,0)
+      // to compensate the part of the diagonal basis functions
+      for(int i = 0; i <= oi+1; i++)  // it was oi + 1
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {	  
+	  // gives (0 ,-d_xx u(x) v(y),0,0) with v(y) bubble or higher (hence inner bubble)
+          shape[ii++] = u_Sigma_gradv(v[j],u[i]);
+	  // gives  (0 ,0 , d_yy v(y) u(x), 0) with u(x) bubble or higher (hence inner bubble)	  
+          shape[ii++] = u_Sigma_gradv(u[j],v[i]);
+
+        }
+      }
+       
       
     };
   };
