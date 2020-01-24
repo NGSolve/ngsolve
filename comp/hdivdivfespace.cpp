@@ -151,7 +151,7 @@ namespace ngcomp
 
 
   template<int D>
-  class DiffOpIdDDMappedHDivDiv: public DiffOp<DiffOpIdHDivDiv<D> >
+  class DiffOpIdDDMappedHDivDiv: public DiffOp<DiffOpIdDDMappedHDivDiv<D> >
   {
   public:
     enum { DIM = 1 };
