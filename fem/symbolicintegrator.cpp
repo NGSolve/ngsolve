@@ -689,11 +689,30 @@ namespace ngfem
     return GetAdditionalProxy (name); 
   }
 
+  
+  
   shared_ptr<CoefficientFunction> ProxyFunction :: 
   Operator (shared_ptr<DifferentialOperator> diffop) const
   {
+    // whatever component is the diffop, take the component we are
+    
+    // first strip components
+    while (auto compdiffop = dynamic_pointer_cast<CompoundDifferentialOperator> (diffop))
+      diffop = compdiffop->BaseDiffOp();
+    
+    // figure out the compound-component from our base diffop
+    Array<int> comps;
+    auto hp = evaluator;
+    while (auto comphp = dynamic_pointer_cast<CompoundDifferentialOperator> (hp))
+      {
+        comps.Append (comphp->Component());
+        hp = comphp->BaseDiffOp();
+      }
+    // and now wrap ...
+    for (int i = comps.Size()-1; i >= 0; i--)
+      diffop = make_shared<CompoundDifferentialOperator> (diffop, comps[i]);
+    
     auto proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
-    // proxy -> originalproxy = shared_from_this;
     proxy -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());    
     if (is_other)
       proxy->is_other = true;
