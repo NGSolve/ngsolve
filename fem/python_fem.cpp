@@ -359,6 +359,50 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
 
 
   template <int D>
+  class ReferenceCoordinateCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    ReferenceCoordinateCF () : CoefficientFunctionNoDerivative(D,false) { ; }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return 0;
+    }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+    {
+      if (ip.DimElement() != D)
+        throw Exception("illegal dim of tangential vector");
+      res.Range(0,D) = ip.IP().Point().Range(0,D);
+    }
+    /*
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        string miptype;
+        if(code.is_simd)
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
+        else
+          miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
+        auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
+        auto tv = Var("tmp", index);
+        code.body += tv.Assign(tv_expr);
+        for( int i : Range(D))
+          code.body += Var(index,i).Assign(tv(i));
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    {
+      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t j = 0; j < D; j++)
+          values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
+    }
+    */
+  };
+
+
+
+
+  template <int D>
   class NormalVectorCF : public CoefficientFunctionNoDerivative
   {
   public:
@@ -798,6 +842,20 @@ direction : int
     shared_ptr<CF> GetMeshSizeCF ()
     { return make_shared<MeshSizeCF>(); }
 
+    
+    shared_ptr<CF> GetReferenceCoordinateCF (int dim)
+    {
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<ReferenceCoordinateCF<1>>();
+	case 2:
+	  return make_shared<ReferenceCoordinateCF<2>>();          
+	default:
+	  return make_shared<ReferenceCoordinateCF<3>>();          
+	}
+    }
+    
     shared_ptr<CF> GetNormalVectorCF (int dim)
     { 
       switch(dim)
@@ -884,6 +942,8 @@ direction : int
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
+    .def("xref", &SpecialCoefficientFunctions::GetReferenceCoordinateCF, py::arg("dim"),
+         "element reference-coordinates")
     .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
          "depending on contents: normal-vector to geometry or element\n"
          "space-dimension must be provided")
