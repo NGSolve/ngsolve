@@ -640,6 +640,7 @@ namespace ngcomp
     type = "hdivdiv";
     order = int (flags.GetNumFlag ("order",1));
     plus = flags.GetDefineFlag ("plus");
+    quadfullpol = flags.GetDefineFlag ("quadfullpol");
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
@@ -752,11 +753,14 @@ namespace ngcomp
                   }
                 break;
               case ET_QUAD:
-                // original:
-                ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
-                  + (oi[0]+2)*(oi[0])*2
-                  + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
-        
+                if (quadfullpol)
+                  ndof += 1+2*(oi[0]+1)*(oi[0]+2) + sqr(oi[0]+1);
+                else
+                  // original:
+                  ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
+                    + (oi[0]+2)*(oi[0])*2
+                    + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
+                
                 //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
                 /*
                   ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
@@ -967,6 +971,18 @@ namespace ngcomp
     }
     case ET_QUAD:
     {
+      if (quadfullpol)
+        {
+          auto fe = new (alloc) HDivDivFE_QuadFullPol(order,plus);
+          fe->SetVertexNumbers (ngel.Vertices());
+          int ii = 0;
+          for(auto f : ngel.Facets())
+            fe->SetOrderFacet(ii++,order_facet[f]);
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+        }
+      
       auto fe = new (alloc) HDivDivFE<ET_QUAD> (order,plus);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;

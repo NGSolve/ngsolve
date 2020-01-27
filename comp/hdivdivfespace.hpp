@@ -25,6 +25,8 @@ namespace ngcomp
 
     Array<bool> fine_facet;
 
+    bool quadfullpol;  // use quad elements with full polynomial space, but divdiv larger than L^{k+1}*
+
   public:
     HDivDivFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
     static DocInfo GetDocu ();
