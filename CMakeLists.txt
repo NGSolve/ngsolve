@@ -292,7 +292,7 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
   find_package(OpenMP)
-  list(APPEND NGSOLVE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
+  set(PARDISO_LIBS ${PARDISO_LIB} ${OpenMP_omp_LIBRARY} ${OpenMP_pthread_LIBRARY})
 endif(USE_PARDISO)
 
 #######################################################################

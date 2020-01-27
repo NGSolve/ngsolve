@@ -29,7 +29,7 @@ set_target_properties(ngslib PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../
 install(TARGETS ngslib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
-target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${VTUNE_LIB} ${PARDISO_LIB})
+target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${VTUNE_LIB} ${PARDISO_LIBS})
 target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
 install( TARGETS solve ${ngs_install_dir} )
 
@@ -39,7 +39,7 @@ if (NETGEN_USE_GUI)
             ngsolve.cpp shapetester.cpp 
             )
 
-    target_link_libraries(ngsolve PUBLIC nglib gui ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIB} ${UMFPACK_LIBRARIES} )
+    target_link_libraries(ngsolve PUBLIC nglib gui ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
 
