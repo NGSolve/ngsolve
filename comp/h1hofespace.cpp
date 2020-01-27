@@ -1001,8 +1001,13 @@ into the wirebasket.
                  hofe -> SetVertexNumbers (ngel.vertices);
 
                  if (et.DIM >= 1)
-                   hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-
+                   {
+                     // hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+                     auto edges = ngel.Edges();
+                     for (auto i : Range(edges))
+                       hofe->SetOrderEdge (i, order_edge[edges[i]] - (highest_order_dc ? 1 : 0));
+                   }
+                 
                  if (et.DIM >= 2)
                    hofe -> SetOrderFace (0, order_face[ma->GetSElFace(ei.Nr())]);
                  
