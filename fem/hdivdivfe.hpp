@@ -128,7 +128,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET> class HDivDivFE;
 
   
-  template <ELEMENT_TYPE ET>
+  template <ELEMENT_TYPE ET, typename SHAPES = HDivDivFE<ET>>
   class T_HDivDivFE : public HDivDivFiniteElement<ET_trait<ET>::DIM>,
     public VertexOrientedFE<ET>
   {
@@ -164,7 +164,8 @@ namespace ngfem
     }
     
     virtual ELEMENT_TYPE ElementType() const override { return ET; }
-    const HDivDivFE<ET> * Cast() const { return static_cast<const HDivDivFE<ET>*> (this); } 
+    // const HDivDivFE<ET> * Cast() const { return static_cast<const HDivDivFE<ET>*> (this); }
+    auto * Cast() const { return static_cast<const SHAPES*> (this); } 
     
     INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
@@ -1313,6 +1314,106 @@ namespace ngfem
 
   };
 
+
+
+  class HDivDivFE_QuadFullPol : public T_HDivDivFE<ET_QUAD, HDivDivFE_QuadFullPol> 
+  {
+    
+  public:
+    using T_HDivDivFE<ET_QUAD,HDivDivFE_QuadFullPol> :: T_HDivDivFE;
+    
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<4; i++)
+        {
+          ndof += order_facet[i][0]+1;
+          order = max2(order, order_facet[i][0]);
+        }
+      
+      int ninner = 1  //  sigma grad(xy)
+        + 2 * (order_inner[0]+1)*(order_inner[0]+2)  // inner nedelec
+        + sqr(order_inner[0]+1)
+        ;
+      
+      order = max2(order, order_inner[0]);
+      order += 1;
+      ndof += ninner;
+    }
+    
+    template <typename T, typename TFA> 
+    void T_CalcShape (TIP<2,AutoDiffDiff<2,T>> ip, TFA & shape) const
+    {
+      typedef AutoDiffDiff<2, T> Tx;
+      
+      Tx x = ip.x, y = ip.y;
+      Tx lx[4] ={1-x, x, x, 1-x};
+      Tx ly[4] = {1-y, 1-y, y, y};
+      
+      int ii = 0;
+
+      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
+
+      ArrayMem<Tx,20> u(order+2), v(order+2);
+      
+      for (int i = 0; i < 4; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+          
+          Tx xi = lx[ee]+ly[ee]-lx[es]-ly[es];
+          Tx eta = lx[es]*ly[es]+lx[ee]*ly[ee];
+
+	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
+          
+          for (int l = 0; l <= order_facet[i][0]; l++)
+            shape[ii++] = SigmaGrad (eta*u[l]);
+        }
+
+      shape[ii++] = SigmaGrad((2*x-1)*(2*y-1));
+
+      int oi=order_inner[0];
+
+      LegendrePolynomial (oi+1, 2*x-1, u);
+      LegendrePolynomial (oi+1, 2*y-1, v);
+      auto bubx = x*(1-x);
+      auto buby = y*(1-y);
+      for (int i = 0; i <= oi; i++)
+        for (int j = 0; j <= oi+1; j++)
+          {
+            shape[ii++] = Sigma_u_Gradv(bubx*u[i]*v[j], 2*y-1);
+            shape[ii++] = Sigma_u_Gradv(buby*u[j]*v[i], 2*x-1);
+          }
+
+      for (int i = 0; i <= oi; i++)
+        for (int j = 0; j <= oi; j++)
+          shape[ii++] = vSigmaGradu(bubx,u[i]*v[j]*buby);
+
+      
+      if (ii != ndof)
+        cerr << "Hdivdivfe, full quad, ndof = " << ndof << " != ii = " << ii << endl;
+    }
+
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hdivdivfe not implementend for quadfullpol");
+    }
+    
+  };
+
+
+
+
+
+
+
+
+
+
+  
   // ***************** S_zz(uvw) ****************************** */
   // write uvw into zz component
   template <int D> class T_S_zz;
