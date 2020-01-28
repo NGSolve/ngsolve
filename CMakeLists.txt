@@ -292,7 +292,7 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
   find_package(OpenMP)
-  set(PARDISO_LIBS ${PARDISO_LIB} ${OpenMP_omp_LIBRARY} ${OpenMP_pthread_LIBRARY})
+  set(PARDISO_LIBS ${PARDISO_LIB} ${OpenMP_gomp_LIBRARY} ${OpenMP_pthread_LIBRARY})
 endif(USE_PARDISO)
 
 #######################################################################
