@@ -1343,6 +1343,8 @@ namespace ngcomp
               hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
               FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
               hofe -> SetOrderEdge (aoe);
+              if (highest_order_dc)
+                hofe->SetOrderEdge (0, aoe[0]-1);
               hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
             } 
           else 
