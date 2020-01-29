@@ -754,7 +754,10 @@ namespace ngcomp
                 break;
               case ET_QUAD:
                 if (quadfullpol)
-                  ndof += 1+2*(oi[0]+1)*(oi[0]+2) + sqr(oi[0]+1);
+                  {
+                    ndof += 1+2*(oi[0]+1)*(oi[0]+2) + sqr(oi[0]+1);
+                    if (plus) ndof += 4*oi[0]+4;
+                  }
                 else
                   // original:
                   ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
