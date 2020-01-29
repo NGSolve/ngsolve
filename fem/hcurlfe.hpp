@@ -269,7 +269,7 @@ namespace ngfem
     const AutoDiff<DIM,SCAL> u;
 
     Du (const AutoDiff<DIM,SCAL> au) : u(au) { }
-    // Du (const AutoDiffRec<DIM,SCAL> au) : u(au) { }
+    // Du (const AutoDiff<DIM,SCAL> au) : u(au) { }
 
     Vec<DIM,SCAL> Value () const
     {
@@ -294,7 +294,7 @@ namespace ngfem
     uDv (AutoDiff<DIM,SCAL> au, AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
 
-    // uDv (AutoDiffRec<DIM,SCAL> au, AutoDiffRec<DIM,SCAL> av)
+    // uDv (AutoDiff<DIM,SCAL> au, AutoDiff<DIM,SCAL> av)
     // : u(au), v(av) { ; }
     
     // Vec<DIM,SCAL> Value () const
@@ -324,8 +324,8 @@ namespace ngfem
       : u(au), v(av) { }
 
     /*
-    uDv_minus_vDu (const AutoDiffRec<DIM,SCAL> au, 
-                   const AutoDiffRec<DIM,SCAL> av)
+    uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
+                   const AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { }
     */
     
@@ -358,9 +358,9 @@ namespace ngfem
                      const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
     /*
-    wuDv_minus_wvDu (const AutoDiffRec<DIM,SCAL> au, 
-                     const AutoDiffRec<DIM,SCAL> av,
-                     const AutoDiffRec<DIM,SCAL> aw)
+    wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> au, 
+                     const AutoDiff<DIM,SCAL> av,
+                     const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
     */
     
