@@ -1336,9 +1336,11 @@ namespace ngfem
         + 2 * (order_inner[0]+1)*(order_inner[0]+2)  // inner nedelec
         + sqr(order_inner[0]+1)
         ;
-      
+      if (plus)
+        ninner += 4*order_inner[0] + 4;
       order = max2(order, order_inner[0]);
-      order += 1;
+      order += 2;
+      if (plus) order++;
       ndof += ninner;
     }
     
@@ -1368,10 +1370,12 @@ namespace ngfem
 	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
           
           for (int l = 0; l <= order_facet[i][0]; l++)
-            shape[ii++] = SigmaGrad (eta*u[l]);
+            // shape[ii++] = SigmaGrad (eta*u[l]);
+            shape[ii++] = Sigma_u_Gradv (eta, u[l]);
         }
 
-      shape[ii++] = SigmaGrad((2*x-1)*(2*y-1));
+      // shape[ii++] = SigmaGrad((2*x-1)*(2*y-1));
+      shape[ii++] = Sigma_u_Gradv((2*x-1),(2*y-1));
 
       int oi=order_inner[0];
 
@@ -1386,6 +1390,17 @@ namespace ngfem
             shape[ii++] = Sigma_u_Gradv(buby*u[j]*v[i], 2*x-1);
           }
 
+      if (plus)
+        {
+          for (int i = 0; i <= oi; i++)
+            {
+              shape[ii++] = Sigma_u_Gradv(bubx*buby*u[i]*v[oi], 2*y-1);            
+              shape[ii++] = Sigma_u_Gradv(bubx*buby*u[oi]*v[i], 2*x-1);
+              shape[ii++] = Sigma_u_Gradv(bubx*buby*u[i]*v[oi+1], 2*y-1);            
+              shape[ii++] = Sigma_u_Gradv(bubx*buby*u[oi+1]*v[i], 2*x-1);
+            }
+        }
+      
       for (int i = 0; i <= oi; i++)
         for (int j = 0; j <= oi; j++)
           shape[ii++] = vSigmaGradu(bubx,u[i]*v[j]*buby);
