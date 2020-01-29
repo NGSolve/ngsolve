@@ -249,7 +249,7 @@ namespace ngbla
 
   /*
   template <int DIM, typename SCAL>
-  auto GetGradient (const AutoDiffRec<DIM,SCAL> & ad)
+  auto GetGradient (const AutoDiff<DIM,SCAL> & ad)
   {
     Vec<DIM,SCAL> grad;
     for (int i = 0; i < DIM; i++)
