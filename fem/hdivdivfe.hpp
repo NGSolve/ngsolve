@@ -17,11 +17,14 @@ namespace ngfem
 
     using FiniteElement::ndof;
     using FiniteElement::order;
-
+    bool algebraic_mapping = true;
+    
     INLINE BaseHDivDivFiniteElement () { ; } 
     INLINE BaseHDivDivFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; }
 
+    void SetAlgebraicMapping (bool am) { algebraic_mapping = am; }
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    BareSliceMatrix<double> shape) const = 0;
 
@@ -47,8 +50,10 @@ namespace ngfem
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+    /*
     virtual void CalcDDMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                                            BareSliceMatrix<double> shape) const = 0;
+    */
     
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
@@ -258,31 +263,41 @@ namespace ngfem
 
 
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const override
+                                         BareSliceMatrix<double> shape) const override
     {
-      // Vec<DIM, AutoDiff<DIM>> adp = mip;
-      /* Cast() -> */ T_CalcShape (GetTIP(mip), // TIP<DIM,AutoDiff<DIM>> (adp),
-                             SBLambda([&](int nr,auto val)
-                                      {
-                                        VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
-                                      }));
+      auto tip = this->algebraic_mapping ? TIP<DIM, AutoDiffDiff<DIM>>(GetTIP(mip)) : GetTIPHesse(mip);
+      T_CalcShape (tip, 
+                   SBLambda([&](int nr,auto val)
+                            {
+                              VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                            }));
     }
 
+    /*
     virtual void CalcDDMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                                            BareSliceMatrix<double> shape) const override
     {
-      /* Cast() -> */ T_CalcShape (GetTIPHesse(mip), 
-                             SBLambda([&](int nr,auto val)
-                                      {
-                                        VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
-                                      }));
+      T_CalcShape (GetTIPHesse(mip), 
+                   SBLambda([&](int nr,auto val)
+                            {
+                              VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                            }));
     }
-
+    */
     
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                      BareSliceMatrix<double> shape) const override
     {
+      if (!this->algebraic_mapping)
+        {
+          T_CalcShape (GetTIPHesse(mip), 
+                       SBLambda([&](int nr,auto val)
+                                {
+                                  shape.Row(nr).Range(0,DIM) = val.DivShape();
+                                }));
+          return;
+        }
       // Vec<DIM, AutoDiff<DIM>> adp = mip;
       // TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
@@ -493,6 +508,30 @@ namespace ngfem
                                   BareSliceVector<> coefs,
                                   BareSliceMatrix<SIMD<double>> values) const override
     {
+      if (this->algebraic_mapping == false)
+        {
+          if (bmir.DimSpace() != DIM)
+            throw Exception ("sequential mapping only for volume space");
+          
+          auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+          for (size_t i = 0; i < bmir.Size(); i++)
+            {
+              double *pcoefs = &coefs(0);
+              const size_t dist = coefs.Dist();
+              
+              Vec<DIM_STRESS,SIMD<double>> sum(0.0);
+              T_CalcShape (GetTIPHesse(mir[i]), 
+                           SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
+                                     {
+                                       sum += (*pcoefs)*val.Shape();
+                                       pcoefs += dist;
+                                     }));
+              for (size_t k = 0; k < DIM_STRESS; k++)
+                values(k,i) = sum(k);
+            }
+          return;
+        }
+      
       for (size_t i = 0; i < bmir.Size(); i++)
         {
           double *pcoefs = &coefs(0);
