@@ -120,7 +120,7 @@ namespace ngfem
         int p = facet_order[i][0];
         
         INT<2> e = GetVertexOrientedEdge(i);
-        Tx xi = sigma[e[1]]-sigma[e[0]];
+        Tx xi = sigma[e[0]]-sigma[e[1]];
         
         LegendrePolynomial (p, xi, 
                             SBLambda([&](int nr, auto val)
