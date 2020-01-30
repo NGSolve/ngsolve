@@ -1522,10 +1522,12 @@ namespace ngbla
      Calculates the trace of a matrix expression.
   */
   template <class TA>
-  inline auto Trace (const Expr<TA> & a) -> decltype (a.Spec()(0,0))
+  inline auto Trace (const Expr<TA> & a) // -> decltype (a.Spec()(0,0))
   {
     // typedef typename TA::TELEM TELEM;
-    decltype (a.Spec()(0,0)) sum = 0;
+    typedef decltype( RemoveConst(a.Spec()(0,0)) ) TRES;
+    TRES sum = 0;    
+    // decltype (a.Spec()(0,0)) sum = 0;
     for (size_t i = 0; i < Height(a); i++)
       sum += a.Spec()(i,i);
     return sum;
