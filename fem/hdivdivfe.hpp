@@ -127,8 +127,21 @@ namespace ngfem
       */
       break;
     }
-
   }
+  
+  template <typename T>
+  auto SymMatToVecDual (const Mat<2,2,T> & mat) 
+  {
+    return Vec<3,T> { mat(0,0), mat(1,1), mat(0,1) };
+  }
+  
+  template <typename T>
+  auto SymMatToVecDual (const Mat<3,3,T> & mat) 
+  {
+    return Vec<6,T> { mat(0,0), mat(1,1), mat(2,2), 2*mat(1,2), 2*mat(0,2), 2*mat(0,1) };
+  }
+  
+    
 
   template <ELEMENT_TYPE ET> class HDivDivFE;
 
@@ -298,19 +311,80 @@ namespace ngfem
                                 }));
           return;
         }
-      // Vec<DIM, AutoDiff<DIM>> adp = mip;
-      // TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
-      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
-      {
-        /* Cast() -> */ T_CalcShape (GetTIP(mip), // TIP<DIM,AutoDiff<DIM>> (adp),
-                               SBLambda([&](int nr,auto val)
-                                        {
-                                          shape.Row(nr).Range(0,DIM) = val.DivShape();
-                                        }));
-      }
+      if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
+        {
+          T_CalcShape (GetTIP(mip), 
+                       SBLambda([&](int nr,auto val)
+                                {
+                                  shape.Row(nr).Range(0,DIM) = val.DivShape();
+                                }));
+        }
       else // curved element
-      {
+        {
+          Mat<DIM> inv = mip.GetJacobianInverse();
+
+          Vec<DIM,Mat<DIM>> hesse, hesse_inv;
+          mip.CalcHesse (hesse);
+
+          /*
+          for (int k = 0; k < DIM; k++)
+            hesse_inv(k) = Trans(inv) * hesse(k) * inv;
+
+          Vec<DIM> gradJ_xi;
+          for (int k = 0; k < DIM; k++)
+            {
+              double sum = 0;
+              for (int i = 0; i < DIM; i++)
+                for (int j = 0; j < DIM; j++)
+                  sum += inv(j,i) * hesse(i)(j,k);
+              gradJ_xi(k) = sum;
+            }
+          Vec<DIM> gradJ = Trans(inv) * gradJ_xi;
+          for (int k = 0; k < DIM; k++)
+            for (int l = 0; l < DIM; l++)
+              hesse_inv(k)(l,k) -= gradJ(l);
+          */
+
+          // saving a view operations ...
+          Vec<DIM, Mat<DIM>> hesse_inv1;
+          
+          for (int k = 0; k < DIM; k++)
+            hesse_inv1(k) = hesse(k) * inv;          
+          
+          Vec<DIM> gradJ_xi;
+          for (int k = 0; k < DIM; k++)
+            {
+              double sum = 0;
+              for (int i = 0; i < DIM; i++)
+                sum += hesse_inv1(i)(k,i);
+              gradJ_xi(k) = sum;
+            }
+          for (int k = 0; k < DIM; k++)
+            for (int l = 0; l < DIM; l++)
+              hesse_inv1(k)(l,k) -= gradJ_xi(l);
+
+          for (int k = 0; k < DIM; k++)
+            hesse_inv(k) = Trans(inv) * hesse_inv1(k);
+          
+          
+          
+          Vec<DIM, Vec<DIM_STRESS>> hesse_inv_vec(DIM);
+          for (int k = 0; k < DIM; k++)
+            hesse_inv_vec(k) = SymMatToVecDual(hesse_inv(k));
+          
+          T_CalcShape (GetTIP(mip),  
+                       SBLambda([&] (int nr,auto val)
+                                {
+                                  FlatVector<double> divshape = shape.Row(nr).Range(0,DIM);
+                                  divshape = val.DivShape();
+                                  for(int k = 0; k < DIM; k++)
+                                    divshape(k) += InnerProduct (hesse_inv_vec(k), val.Shape());
+                                }));
+          return;
+        }
+
+        /*  
         Mat<DIM> jac = mip.GetJacobian();
         Mat<DIM> inv_jac = mip.GetJacobianInverse();
         Mat<DIM> hesse[3],finvT_h_tilde_finv[3];
@@ -341,7 +415,7 @@ namespace ngfem
                   finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
         }
 
-        /* Cast() -> */ T_CalcShape (GetTIP(mip),  // TIP<DIM,AutoDiff<DIM>> (adp),
+        T_CalcShape (GetTIP(mip),  // TIP<DIM,AutoDiff<DIM>> (adp),
                                SBLambda([&](int nr,auto val)
                                   {
                                     shape.Row(nr).Range(0,DIM) = val.DivShape();
@@ -360,6 +434,8 @@ namespace ngfem
                                     
                                   }));
       }
+        */
+      
     }
 
     template <int DIMSPACE>
