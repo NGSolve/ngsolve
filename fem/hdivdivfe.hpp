@@ -132,13 +132,13 @@ namespace ngfem
   template <typename T>
   auto SymMatToVecDual (const Mat<2,2,T> & mat) 
   {
-    return Vec<3,T> { mat(0,0), mat(1,1), mat(0,1) };
+    return Vec<3,T> { mat(0,0), mat(1,1), mat(0,1)+mat(1,0) };
   }
   
   template <typename T>
   auto SymMatToVecDual (const Mat<3,3,T> & mat) 
   {
-    return Vec<6,T> { mat(0,0), mat(1,1), mat(2,2), 2*mat(1,2), 2*mat(0,2), 2*mat(0,1) };
+    return Vec<6,T> { mat(0,0), mat(1,1), mat(2,2), mat(1,2)+mat(2,1), mat(0,2)+mat(2,0), mat(0,1)+mat(1,0) };
   }
   
     
@@ -319,13 +319,27 @@ namespace ngfem
                                 {
                                   shape.Row(nr).Range(0,DIM) = val.DivShape();
                                 }));
+          return;
         }
-      else // curved element
+
+      // curved element
+      
+      if (false) // eval on physical element
         {
           Mat<DIM> inv = mip.GetJacobianInverse();
 
           Vec<DIM,Mat<DIM>> hesse, hesse_inv;
           mip.CalcHesse (hesse);
+
+          /*
+            
+            div ( 1/J F sigma_ref  F^T 1/J ) 
+            = deriv (1/J F)  sigma_ref F^T 1/J  +  1/J F div(sigma_ref F^T 1/J) = I + II
+
+            I  ... Hessian : sigma + grad(1/J) sigma 
+            II ... by DivShape of SigmaGrad templates, as for non-curved elements
+
+           */ 
 
           /*
           for (int k = 0; k < DIM; k++)
@@ -352,38 +366,65 @@ namespace ngfem
           for (int k = 0; k < DIM; k++)
             hesse_inv1(k) = hesse(k) * inv;          
           
-          Vec<DIM> gradJ_xi;
+          Vec<DIM> gradJ_xi = 0.0;
+          for (int i = 0; i < DIM; i++)
+            gradJ_xi += hesse_inv1(i).Col(i);
+          
           for (int k = 0; k < DIM; k++)
-            {
-              double sum = 0;
-              for (int i = 0; i < DIM; i++)
-                sum += hesse_inv1(i)(k,i);
-              gradJ_xi(k) = sum;
-            }
-          for (int k = 0; k < DIM; k++)
-            for (int l = 0; l < DIM; l++)
-              hesse_inv1(k)(l,k) -= gradJ_xi(l);
+            hesse_inv1(k).Col(k) -= gradJ_xi;
 
           for (int k = 0; k < DIM; k++)
             hesse_inv(k) = Trans(inv) * hesse_inv1(k);
-          
-          
-          
-          Vec<DIM, Vec<DIM_STRESS>> hesse_inv_vec(DIM);
+
+          Mat<DIM,DIM_STRESS> hesse_inv_vec;
           for (int k = 0; k < DIM; k++)
-            hesse_inv_vec(k) = SymMatToVecDual(hesse_inv(k));
-          
+            hesse_inv_vec.Row(k) = SymMatToVecDual(hesse_inv(k));
+
           T_CalcShape (GetTIP(mip),  
                        SBLambda([&] (int nr,auto val)
                                 {
-                                  FlatVector<double> divshape = shape.Row(nr).Range(0,DIM);
-                                  divshape = val.DivShape();
-                                  for(int k = 0; k < DIM; k++)
-                                    divshape(k) += InnerProduct (hesse_inv_vec(k), val.Shape());
+                                  shape.Row(nr).Range(0,DIM) = val.DivShape() + hesse_inv_vec * val.Shape();
                                 }));
           return;
         }
 
+
+      if (true) 
+        {
+          // eval on reference element
+          
+          Mat<DIM> inv = mip.GetJacobianInverse();
+          Mat<DIM> jac = mip.GetJacobian();
+          double det = Det(jac);
+          
+          Vec<DIM,Mat<DIM>> hesse;
+          mip.CalcHesse (hesse);
+          
+          Vec<DIM> gradJ_xi = 0.0;
+          for (int i = 0; i < DIM; i++)
+            for (int j = 0; j < DIM; j++)
+              gradJ_xi += inv(j,i) * hesse(i).Col(j);
+
+          for (int i = 0; i < DIM; i++)
+            for (int j = 0; j < DIM; j++)
+              hesse(i).Col(j) -= jac(i,j) * gradJ_xi;
+          
+          Mat<DIM,DIM_STRESS> hesse_inv_vec;
+          for (int k = 0; k < DIM; k++)
+            hesse_inv_vec.Row(k) = 1/(det*det) * SymMatToVecDual(hesse(k));            
+          Mat<DIM> trans_div = 1/(det*det) * jac;
+          
+          T_CalcShape (GetTIPGrad<DIM>(mip.IP()),  
+                       SBLambda([&] (int nr,auto val)
+                                {
+                                  shape.Row(nr).Range(0,DIM) = trans_div * val.DivShape() + hesse_inv_vec * val.Shape();
+                                }));
+          return;
+        }
+
+      
+
+      
         /*  
         Mat<DIM> jac = mip.GetJacobian();
         Mat<DIM> inv_jac = mip.GetJacobianInverse();
@@ -449,7 +490,6 @@ namespace ngfem
         {
           if (DIM == DIMSPACE)
             {
-              // extern int myvar ; myvar = int(ET);
               const SIMD_BaseMappedIntegrationRule & bmir = mir;
               auto & mir2 = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&>(bmir);
               // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir2[i];
