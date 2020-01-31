@@ -650,6 +650,7 @@ kwargs : kwargs
                         if (definedon_reg.check() && definedon_reg().VB()==BND)
                           {
                             Array<double> defonlist;
+                            flags->SetFlag("definedon", defonlist); //empty
                             for (auto i : Range(definedon_reg().Mask().Size()))
                               if(definedon_reg().Mask().Test(i))
                                 defonlist.Append(i+1);
