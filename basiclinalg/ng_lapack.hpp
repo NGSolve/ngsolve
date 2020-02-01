@@ -39,7 +39,7 @@ namespace ngbla
     typedef int L_fp;  // ?
 
 
-#include "clapack.h"
+#include "ng_clapack.h"
   }
 
 
