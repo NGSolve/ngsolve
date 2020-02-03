@@ -191,6 +191,7 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
+      HeapReset hr(lh);
       mat = 1.0/mip.GetJacobiDet() * 
 	Trans (static_cast<const FEL&> (fel).GetCurlShape(mip.IP(), lh));
     }
@@ -207,6 +208,7 @@ namespace ngfem
 		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
+      HeapReset hr(lh);      
       y = (1.0/mip.GetJacobiDet()) * 
 	(Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)) * x);
     }
