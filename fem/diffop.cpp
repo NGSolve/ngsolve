@@ -260,7 +260,80 @@ namespace ngfem
     throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded for class ") + typeid(*this).name());
   }
 
-  
+  list<tuple<string,double>> DifferentialOperator ::
+  Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const
+  {
+    list<tuple<string,double>> timings;
+    LocalHeap lh(100000000);
+    Matrix<double,ColMajor> bmat(mir.Size()*Dim(), fel.GetNDof());
+    Vector<> coefs(fel.GetNDof());
+    Matrix<> values(mir.Size(), Dim());
+    
+    SIMD_IntegrationRule simd_ir(mir.IR());
+    auto & simd_mir = mir.GetTransformation()(simd_ir, lh);
+    Matrix<SIMD<double>> simd_bmat(Dim()*fel.GetNDof(), simd_mir.Size());
+    Matrix<SIMD<double>> simd_values(Dim(), mir.Size());
+    
+    double time;
+    constexpr size_t steps = 1000;
+
+    time = RunTiming([&]() {
+        for (size_t i = 0; i < steps; i++)
+          this -> CalcMatrix (fel, mir, bmat, lh);
+      });
+    timings.push_back(make_tuple("CalcBMatrix", time/steps*1e9/(bmat.Height()*bmat.Width())));
+    coefs = 1;
+    time = RunTiming([&]() {
+        for (size_t i = 0; i < steps; i++)
+          this -> Apply (fel, mir, coefs, values, lh);
+      });
+    timings.push_back(make_tuple("Appy", time/steps*1e9/(bmat.Height()*bmat.Width())));
+    values = 1;
+    time = RunTiming([&]() {
+        for (size_t i = 0; i < steps; i++)
+          this -> ApplyTrans (fel, mir, values, coefs, lh);
+      });
+    timings.push_back(make_tuple("AppyTrans", time/steps*1e9/(bmat.Height()*bmat.Width())));
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> CalcMatrix (fel, simd_mir, simd_bmat);
+          });
+        timings.push_back(make_tuple("SIMD - CalcBMatrix", time/steps*1e9/(bmat.Height()*bmat.Width())));
+      }
+    catch (ExceptionNOSIMD e) { ; } 
+
+
+    coefs = 1;
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> Apply (fel, simd_mir, coefs, simd_values);
+          });
+        timings.push_back(make_tuple("SIMD - Appy", time/steps*1e9/(bmat.Height()*bmat.Width())));
+      }
+    catch (ExceptionNOSIMD e) { ; } 
+
+    simd_values = SIMD<double> (1.0);
+    coefs = 0.0;
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> AddTrans (fel, simd_mir, simd_values, coefs);
+          });
+        timings.push_back(make_tuple("SIMD - AppyTrans", time/steps*1e9/(bmat.Height()*bmat.Width())));
+      }
+    catch (ExceptionNOSIMD e) { ; } 
+
+
+
+    
+    return timings;
+  }
+
 
   BlockDifferentialOperator :: ~BlockDifferentialOperator ()  { ; }
 
