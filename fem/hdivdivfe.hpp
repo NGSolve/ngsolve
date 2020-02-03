@@ -58,7 +58,7 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
-    virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedDivShape (const BaseMappedIntegrationPoint & mip,
       BareSliceMatrix<double> shape) const = 0;
 
 
@@ -278,12 +278,26 @@ namespace ngfem
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                                          BareSliceMatrix<double> shape) const override
     {
+      /*
       auto tip = this->algebraic_mapping ? TIP<DIM, AutoDiffDiff<DIM>>(GetTIP(mip)) : GetTIPHesse(mip);
       T_CalcShape (tip, 
                    SBLambda([&](int nr,auto val)
                             {
                               VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
                             }));
+      */
+      if (this->algebraic_mapping)
+        T_CalcShape (GetTIP(mip), 
+                     SBLambda([&](int nr,auto val)
+                              {
+                                VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                              }));
+      else
+        T_CalcShape (GetTIPHesse(mip), 
+                     SBLambda([&](int nr,auto val)
+                              {
+                                VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                              }));
     }
 
     /*
@@ -299,9 +313,10 @@ namespace ngfem
     */
     
 
-    virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedDivShape (const BaseMappedIntegrationPoint & bmip,
                                      BareSliceMatrix<double> shape) const override
     {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
       if (!this->algebraic_mapping)
         {
           T_CalcShape (GetTIPHesse(mip), 
@@ -397,8 +412,7 @@ namespace ngfem
           Mat<DIM> jac = mip.GetJacobian();
           double det = Det(jac);
           
-          Vec<DIM,Mat<DIM>> hesse;
-          mip.CalcHesse (hesse);
+          Vec<DIM,Mat<DIM>> hesse = mip.CalcHesse();
           
           Vec<DIM> gradJ_xi = 0.0;
           for (int i = 0; i < DIM; i++)
