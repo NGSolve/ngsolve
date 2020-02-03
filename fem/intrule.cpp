@@ -385,6 +385,8 @@ namespace ngfem
 
   template class MappedIntegrationPoint<0,0>;
   template class MappedIntegrationPoint<0,1>;
+  template class MappedIntegrationPoint<0,2>;
+  template class MappedIntegrationPoint<0,3>;
   template class MappedIntegrationPoint<1,1>;
   template class MappedIntegrationPoint<1,2>;
   template class MappedIntegrationPoint<2,2>;
@@ -392,8 +394,6 @@ namespace ngfem
   template class MappedIntegrationPoint<2,3>;
   template class MappedIntegrationPoint<3,3>;
   
-  template class MappedIntegrationPoint<0,2>;
-  template class MappedIntegrationPoint<0,3>;
 
 
 

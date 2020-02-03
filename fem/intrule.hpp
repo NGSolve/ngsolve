@@ -642,6 +642,18 @@ namespace ngfem
     void CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const;
 
     void CalcHesse (Vec<DIMR,Mat<DIMS,DIMS>> & ddx1) const;
+    Vec<DIMR,Mat<DIMS,DIMS>> CalcHesse() const
+    {
+      if constexpr(std::is_same<SCAL,double>::value)
+        {
+          Vec<DIMR,Mat<DIMS,DIMS>> hesse;
+          CalcHesse (hesse);
+          return hesse;
+        }
+      throw Exception ("CalcHesse not available for complex mips");
+    }
+
+
 
     void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const override;
   };
