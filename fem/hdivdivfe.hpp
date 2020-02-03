@@ -818,8 +818,8 @@ namespace ngfem
                       for(int delta=0; delta<DIM; delta++)
                         finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
               }
-            for (int i = 0; i < DIM; i++)
-              finvT_h_tilde_finv[i] *= mir[i].GetJacobiDet();
+            for (int j = 0; j < DIM; j++)
+              finvT_h_tilde_finv[j] *= mir[i].GetJacobiDet();
             
             // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
             // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
