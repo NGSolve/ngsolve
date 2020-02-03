@@ -452,6 +452,7 @@ when building the system matrices.
              l.append (ops.GetName(i));
            return l;
          },"returns list of available differential operators")
+    .def("__diffop__", &ProxyFunction::Evaluator)
     ;
 
   m.def("SetHeapSize",

@@ -227,7 +227,7 @@ namespace ngfem
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const DifferentialOperator & diffop2) const { return false; }
-    
+
     /// calculates the matrix
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
@@ -349,7 +349,8 @@ namespace ngfem
     {
       throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
     }
-    
+
+    virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
   };
 
 

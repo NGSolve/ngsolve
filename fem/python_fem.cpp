@@ -1987,6 +1987,14 @@ weights : list
 
   py::class_<DifferentialOperator, shared_ptr<DifferentialOperator>>
     (m, "DifferentialOperator")
+    .def("__timing__", [&] (const DifferentialOperator & diffop,
+                            const FiniteElement & fel, const ElementTransformation & trafo,
+                            const IntegrationRule & ir)
+         {
+           LocalHeap lh(1000000);
+           auto & mir = trafo(ir, lh);
+           return diffop.Timing (fel, mir);
+         })
     ;
 
   typedef BilinearFormIntegrator BFI;
