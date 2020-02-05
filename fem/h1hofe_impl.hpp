@@ -280,11 +280,11 @@ namespace ngfem
       for (int i = 0; i < N_EDGE; i++)
 	if (order_edge[i] >= 2)
 	  {
-	    INT<2> e = GetEdgeSort (i, vnums);
-	    
+	    // INT<2> e = GetEdgeSort (i, vnums);
+	    INT<2> e = GetVertexOrientedEdge (i);
 	    LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
 						lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-						lam[e[0]]*lam[e[1]], shape.Addr(ii));
+						lam[e[0]]*lam[e[1]], shape+ii);
 	    ii += order_edge[i]-1;
 	  }
     }
