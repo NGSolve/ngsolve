@@ -30,7 +30,7 @@ def VectorFacet (mesh, **args):
     return TangentialFacetFESpace(mesh, **args)
 
 def grad(func):
-    if type(func) == type(specialcf.normal(2)):
+    if "normal vector" in str(func):
         return specialcf.Weingarten(func.dim)
     if func.derivname == "grad":
         return func.Deriv()
@@ -43,7 +43,7 @@ def grad(func):
 
 def Grad(func):
     """ Jacobi-matrix"""
-    if type(func) == type(specialcf.normal(2)):
+    if "normal vector" in str(func):        
         return specialcf.Weingarten(func.dim)
     try:
         return func.Operator("Grad")

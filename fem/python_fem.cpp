@@ -409,6 +409,11 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
     NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
+    virtual string GetDescription() const override
+    {
+      return "normal vector";
+    }
+    
       using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
     {
@@ -1955,6 +1960,7 @@ weights : list
     .def_property_readonly("VB", &ElementTransformation::VB, "VorB (VOL, BND, BBND, BBBND)")
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim, "Space dimension of the element transformation")
     .def_property_readonly("elementid", &ElementTransformation::GetElementId, "Element ID of the element transformation")
+    .def_property_readonly("curved", &ElementTransformation::IsCurvedElement, "Is mapping non-affine ?")    
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, double x, double y, double z)
            {
              

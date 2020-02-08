@@ -336,7 +336,6 @@ namespace ngfem
                                 }));
           return;
         }
-
       // curved element
       
       if (false) // eval on physical element
@@ -429,7 +428,7 @@ namespace ngfem
           Mat<DIM> trans_div = 1/(det*det) * jac;
           
           T_CalcShape (GetTIPGrad<DIM>(mip.IP()),  
-                       SBLambda([&] (int nr,auto val)
+                       SBLambda([&] (int nr,auto val) LAMBDA_INLINE
                                 {
                                   shape.Row(nr).Range(0,DIM) = trans_div * val.DivShape() + hesse_inv_vec * val.Shape();
                                 }));
