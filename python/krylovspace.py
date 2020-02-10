@@ -42,7 +42,8 @@ class CGSolver(BaseMatrix):
         s.data = w
         wdn = w.InnerProduct(d, conjugate=conjugate)
         err0 = sqrt(abs(wdn))
-        self.errors.append(err0)
+
+        self.errors = [err0]
         if wdn==0:
             return u
 
