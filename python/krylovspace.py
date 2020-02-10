@@ -28,6 +28,10 @@ class CGSolver(BaseMatrix):
     def Mult(self, x : BaseVector, y : BaseVector) -> None:
         self.Solve(rhs=x, sol=y, initialize=True)
 
+    def Update(self):
+        if hasattr(self.pre, "Update"):
+            self.pre.Update()
+
     @TimeFunction
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
               initialize : bool = True) -> None:
