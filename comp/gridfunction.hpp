@@ -82,12 +82,9 @@ namespace ngcomp
     */
     virtual bool StoreUserData() const override { return true; }
 
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
-                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
     {
-      nonzero = true;
-      nonzero_deriv = false;
-      nonzero_dderiv = false;
+      nonzero = AutoDiffDiff<1,bool> (true);
     }
 
     // generation information for pickling:
@@ -142,7 +139,7 @@ namespace ngcomp
     ///
     virtual void Update ();
     ///
-    virtual void DoArchive (Archive & archive);
+    virtual void DoArchive (Archive & archive) override;
     ///  
     virtual BaseVector & GetVector (int comp = 0) { return *vec[comp]; }
     virtual const BaseVector & GetVector (int comp = 0) const  { return *vec[comp]; }
@@ -168,7 +165,7 @@ namespace ngcomp
     shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "GridFunction";
     }
@@ -180,9 +177,9 @@ namespace ngcomp
     
 
     ///
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
     ///
-    virtual Array<MemoryUsage> GetMemoryUsage () const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     // void Visualize(const string & name);
 
@@ -219,6 +216,9 @@ namespace ngcomp
       return res;
     }
 
+    shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
+    
+    
     ///
     virtual void GetElementVector (FlatArray<int> dnums,
 				   FlatVector<double> elvec) const

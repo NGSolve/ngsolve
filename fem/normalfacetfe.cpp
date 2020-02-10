@@ -14,7 +14,39 @@ namespace ngfem
 {  
 
 
+  template <int DIM>
+  auto GetHDivNormalTIP( const IntegrationPoint & ip);
+  
+  template<>
+  auto GetHDivNormalTIP<1>( const IntegrationPoint & ip)
+  {
+    TIP<1, AutoDiff<2>> tip(ip.FacetNr(), ip.VB());
+    tip.x.Value()= ip(0);
+    tip.x.DValue(1) = 1.0;
+    tip.x.DValue(0) = 0.0;
 
+    return tip;
+  }
+
+  template<>
+  auto GetHDivNormalTIP<2>( const IntegrationPoint & ip)
+  {
+    TIP<2, AutoDiff<3>> tip(ip.FacetNr(), ip.VB());
+    tip.x.Value()= ip(0);
+    tip.y.Value()= ip(1);
+
+    tip.x.DValue(0) = 0.0;
+    tip.x.DValue(1) = 1.0;
+    tip.x.DValue(2) = 0.0;
+
+    tip.y.DValue(0) = -1.0;
+    tip.y.DValue(1) = 0.0;
+    tip.y.DValue(2) = 0.0;
+
+    return tip;
+  }
+
+  
 
 
 
@@ -51,11 +83,44 @@ namespace ngfem
             continue;
           }
           
-        int first = first_facet_dof[ip.facetnr];
-        int p = facet_order[ip.facetnr][0];
+        int first = first_facet_dof[i];
+        int p = facet_order[i][0];
         
-        INT<2> e = GetVertexOrientedEdge(ip.facetnr);
+        INT<2> e = GetVertexOrientedEdge(i);
         Tx xi = lami[e[0]] - lami[e[1]];
+        
+        LegendrePolynomial (p, xi, 
+                            SBLambda([&](int nr, auto val)
+                                     {
+                                       shape[first+nr] = uDv (val, xi);
+                                     }));
+      }
+  }
+
+  template <> template<typename Tx, typename TFA>  
+  void NormalFacetVolumeFE_Shape<ET_QUAD>::
+  T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+  {
+    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
+    
+    Tx x = ip.x, y = ip.y;
+    //Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+
+    for (int i = 0; i < 4; i++)
+      {
+        if (ip.facetnr != i)
+          {
+            for (int j : Range(first_facet_dof[i], first_facet_dof[i+1]))
+              shape[j] = Du(Tx(0.0));
+            continue;
+          }
+          
+        int first = first_facet_dof[i];
+        int p = facet_order[i][0];
+        
+        INT<2> e = GetVertexOrientedEdge(i);
+        Tx xi = sigma[e[0]]-sigma[e[1]];
         
         LegendrePolynomial (p, xi, 
                             SBLambda([&](int nr, auto val)
@@ -236,13 +301,14 @@ namespace ngfem
   
   template<ELEMENT_TYPE ET>
   void NormalFacetFacetFE<ET>::CalcShape(const IntegrationPoint & ip,
-                                         SliceMatrix<> shape) const
+                                         FlatVector<> shape) const
   {
-    TIP<DIM,AutoDiff<DIM>> tip = ip;
+    auto tip = GetHDivNormalTIP<DIM>(ip);
     T_CalcShape (tip,
                  SBLambda([shape] (size_t i, auto val)
                           {
-                            shape.Row(i) = val.Value();
+                            auto vshape = HDiv2ShapeNew(val);
+                            shape(i) = vshape(DIM);
                           }));
   }
   
@@ -250,20 +316,7 @@ namespace ngfem
   void NormalFacetFacetFE<ET_SEGM>::T_CalcShape(TIP<DIM,Tx> tip,
                                                 TFA & shape) const
   {
-    // AutoDiff<1> x (ip(0),0);
-    /*
-    Tx x = tip.x;
-    ArrayMem<double, 10>  polx(order_inner[0]+1);
-    // orient
-    if ( vnums[0] > vnums[1])
-      x = 1-x;
-    
-    int ii = 0;
 
-    LegendrePolynomial (order_inner[0], 2*x.Value()-1, polx);
-    for ( int i = 0; i <= order_inner[0]; i++ )
-      shape(ii++,0) = 2 * polx[i] * x.DValue(0);
-    */
     Tx x = tip.x;
     if ( vnums[0] > vnums[1]) x = 1-x;
     Tx sx = 2*x-1;
@@ -287,46 +340,20 @@ namespace ngfem
   void NormalFacetFacetFE<ET_TRIG>::T_CalcShape(TIP<DIM,Tx> tip, 
                                                 TFA &  shape) const
   {
-    throw Exception ("normal facet not readsy 32424bnd");    
-    /*
-    AutoDiff<2> x (ip(0), 0);
-    AutoDiff<2> y (ip(1), 1);
 
-    int p = order_inner[0];
-    ArrayMem< double, 10> polx(p+1), poly(p+1);
-    int ii = 0;
+    Tx lam[4] = { tip.x, tip.y, 1-tip.x-tip.y } ;
 
-    AutoDiff<2> lami[3] = { x, y, 1-x-y };
-    int fav[3] = { 0, 1, 2};
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
-
-
-    double xi = lami[fav[0]].Value();
-    double eta = lami[fav[1]].Value();
-
-    AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
-    AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
-
-    LegendrePolynomial::EvalScaled (p, 2*xi+eta-1, 1-eta, polx);
-
-    Matrix<> polsy(p+1, p+1);
-    DubinerJacobiPolynomials<1,0> (p, 2*eta-1, polsy);
-
-    for (int i = 0; i <= order_inner[0]; i++)
-      for (int j = 0; j <= order_inner[0]-i; j++)
-	{
-	  double val = polx[i] * polsy(i,j);
-	  shape(ii,0) = val * adxi.DValue(0);  // lami[fav[0]].DValue(0);
-	  shape(ii,1) = val * adxi.DValue(1);  // lami[fav[0]].DValue(1);
-	  ii++;
-	  shape(ii,0) = val * adeta.DValue(0);  // lami[fav[1]].DValue(0);
-	  shape(ii,1) = val * adeta.DValue(1);  // lami[fav[1]].DValue(1);
-	  ii++;
-	}
-    */
-    auto x = tip.x;
+  
+    INT<4> f = GetVertexOrientedFace (0);
+    auto xi = lam[f[0]]-lam[f[2]];
+    auto eta = lam[f[1]]-lam[f[2]];
+    DubinerBasis::Eval (order_inner[0], lam[f[0]], lam[f[1]],
+                        SBLambda([&](int nr, auto val)
+                                 {
+                                   shape[nr] = wDu_Cross_Dv (xi, eta, val);
+                                 }));
+    
+    /*auto x = tip.x;
     auto y = tip.y;
 
     int ii = 0;
@@ -345,7 +372,7 @@ namespace ngfem
                                 {
                                   shape[ii] = uDv(Tx(val), adxi); ii++;
                                   shape[ii] = uDv(Tx(val), adeta); ii++;
-                                }));
+                                  }));*/
   }
 
   template<>
@@ -353,7 +380,7 @@ namespace ngfem
   {
     order = order_inner[0];
     int p = order_inner[0];
-    ndof = (p+1)*(p+2);
+    ndof = (p+1)*(p+2)/2;
   }
 
 
@@ -361,8 +388,10 @@ namespace ngfem
 
   template<>
   void NormalFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
-					  SliceMatrix<> shape) const
+					  FlatVector<> shape) const
   {
+    throw Exception ("normal facet not readsy 32424bnd");
+    /*
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
 
@@ -397,6 +426,7 @@ namespace ngfem
 	  shape(ii,1) = val * eta.DValue(1);
 	  ii++;
 	}
+    */
   }
 
   template<>

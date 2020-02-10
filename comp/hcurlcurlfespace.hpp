@@ -47,6 +47,12 @@ namespace ngcomp
 
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
+    {
+      static VorB nodes[] = { VOL, BND, BBND };
+      return FlatArray<VorB> (ma->GetDimension()-int(vb), &nodes[0]); 
+    }
     
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     

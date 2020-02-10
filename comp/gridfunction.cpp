@@ -344,6 +344,30 @@ namespace ngcomp
   }
 
 
+  shared_ptr<CoefficientFunction>
+  GridFunction :: Operator (shared_ptr<DifferentialOperator> diffop) const
+  {
+    shared_ptr<GridFunctionCoefficientFunction> coef;
+    auto self = dynamic_pointer_cast<GridFunction> (const_cast<GridFunction*>(this)->shared_from_this());
+    
+    switch (diffop->VB())
+      {
+      case VOL:
+        coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+        break;
+      case BND:
+        coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+        break;
+      case BBND:
+        coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+        break;
+      case BBBND:
+        throw Exception ("there are no Operators with BBBND");
+      }
+    coef->SetDimensions(diffop->Dimensions());
+    coef->generated_from_operator = name;
+    return coef;
+  }
 
 
   template <int N>
@@ -1588,6 +1612,21 @@ namespace ngcomp
   {
     if (var == shape.get())
       return diffop[VOL]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
+
+    if ( (CoefficientFunction*)gf == var)
+      return dir->Operator(diffop[0]);
+
+        /*
+    if (auto gfvar = dynamic_cast<const GridFunction*> (var))
+      if (this == const_cast<GridFunction*>(gfvar)->GetDeriv().get())
+        // if (gf == gfvar)
+        {
+          if (auto proxydir = dynamic_pointer_cast<ProxyFunction> (dir))
+            return proxydir -> Deriv();
+          throw Exception("direction must be a test-function");
+        }
+        */
+
     return CoefficientFunctionNoDerivative::Diff (var, dir);
   }
 

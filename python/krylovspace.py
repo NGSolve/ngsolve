@@ -47,7 +47,7 @@ class CGSolver(BaseMatrix):
             return u
 
         for it in range(maxsteps):
-            self.iterations = it
+            self.iterations = it+1
             w.data = mat * s
             wd = wdn
             as_s = s.InnerProduct(w, conjugate=conjugate)        

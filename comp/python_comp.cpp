@@ -23,6 +23,57 @@ using ngfem::ELEMENT_TYPE;
 typedef GridFunction GF;
 
 
+namespace ngcomp
+{
+
+  // shall move to fespace.hpp, but keep compilation time low douring testing ...
+  template <typename BASESPACE>
+  class VectorFESpace : public CompoundFESpace
+  {
+  public:
+    VectorFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                   bool checkflags = false)
+      : CompoundFESpace (ama, flags)
+    {
+      Array<string> dirichlet_comp;
+      string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
+      for (int i = 0; i <  ma->GetDimension(); i++)
+        {
+          Flags tmpflags = flags;
+          if (flags.StringFlagDefined(dirnames[i]))
+            tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
+          if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
+            tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
+          AddSpace (make_shared<BASESPACE> (ama, tmpflags));
+        }
+
+      for (auto vb : { VOL, BND, BBND, BBBND })
+        {
+          if (auto eval = spaces[0] -> GetEvaluator(vb))
+            evaluator[vb] = make_shared<VectorDifferentialOperator> (eval, ma->GetDimension());
+          if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
+            flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, ma->GetDimension());
+        }
+
+      auto additional = spaces[0]->GetAdditionalEvaluators();
+      for (int i = 0; i < additional.Size(); i++)
+        additional_evaluators.Set (additional.GetName(i),
+                                   make_shared<VectorDifferentialOperator>(additional[i], ma->GetDimension()));
+
+      type = "Vector"+(*this)[0]->type;
+    }
+
+    virtual string GetClassName () const override
+    {
+      return "Vector"+ (*this)[0]->GetClassName();
+    }
+    
+  };
+
+}
+
+
+
 
 class PyNumProc : public NumProc
 {
@@ -132,7 +183,11 @@ py::object MakeProxyFunction (shared_ptr<FESpace> fes,
     for (auto nt : node_types)
       {
         DifferentialSymbol dx(vb, nt, false, 0);
-        sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+        if (this -> Dimension() == 1)
+          sum->icfs += make_shared<Integral> (const_cast<DualProxyFunction*>(this)->shared_from_this()  * u, dx);
+        else
+          sum->icfs += make_shared<Integral> (InnerProduct(const_cast<DualProxyFunction*>(this)->shared_from_this(), u), dx);
+          
       }
     return sum;
   }
@@ -374,7 +429,7 @@ when building the system matrices.
     .def_property_readonly("derivname",
                   [](const spProxy self) -> string
                    {
-                     if (!self->Deriv()) return "";
+                     if (!self->Deriv() || !self->DerivEvaluator()) return "";
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
     .def("Operator",
@@ -397,6 +452,7 @@ when building the system matrices.
              l.append (ops.GetName(i));
            return l;
          },"returns list of available differential operators")
+    .def("__diffop__", &ProxyFunction::Evaluator)
     ;
 
   m.def("SetHeapSize",
@@ -1088,7 +1144,9 @@ rho : ngsolve.fem.CoefficientFunction
          py::arg("vector"))
     ;
 
-  
+  ExportFESpace<VectorFESpace<L2SurfaceHighOrderFESpace>> (m, "VectorSurfaceL2");
+  ExportFESpace<VectorFESpace<FacetFESpace>> (m, "VectorFacetFESpace");
+  ExportFESpace<VectorFESpace<FacetSurfaceFESpace>> (m, "VectorFacetSurface");
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
@@ -1332,9 +1390,9 @@ active_dofs : BitArray or None
     .def(py::init([] (shared_ptr<FESpace> & fes,
                       py::object active_dofs)
                   {
-                    shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
-                    if (compspace)
-                      cout << "yes, we can also compress a CompoundFESpace" << endl;
+                    // shared_ptr<CompoundFESpace> compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    // if (compspace)
+                      // cout << "yes, we can also compress a CompoundFESpace" << endl;
                     // throw py::type_error("cannot apply compression on CompoundFESpace - Use CompressCompound(..)");
                     auto ret = make_shared<CompressedFESpace> (fes);
                     shared_ptr<BitArray> actdofs = nullptr;
@@ -1433,6 +1491,11 @@ active_dofs : BitArray or None
 
                       throw Exception("cannot unpickle GridFunctionCoefficientFunction");
                     }))
+    .def("Trace",  [](shared_ptr<GridFunctionCoefficientFunction> self)
+         { return self; },
+         "take canonical boundary trace. This function is optional, added for consistency with proxies")
+    
+    
     ;
     
 
@@ -1602,6 +1665,10 @@ definedon : object
           {
             return self->GetDeriv();
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
+
+    .def("Trace",  [](shared_ptr<GF> self)
+         { return self; },
+         "take canonical boundary trace. This function is optional, added for consistency with proxies")
 
     .def("Operators", [] (shared_ptr<GF> self)
          {
@@ -1823,39 +1890,31 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<Integral, shared_ptr<Integral>> (m, "Integral")
     .def_property_readonly("coef", [] (shared_ptr<Integral> igl) { return igl->cf; })
+    .def_property_readonly("symbol", [] (shared_ptr<Integral> igl) { return igl->dx; })
     ;
      
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
-    .def ("__add__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
-          {
-            auto sum = make_shared<SumOfIntegrals>();
-            for (auto & ci : c1->icfs) sum->icfs += ci;
-            for (auto & ci : c2->icfs) sum->icfs += ci;
-            return sum;
-          })
-    .def ("__sub__", [] (shared_ptr<SumOfIntegrals> c1, shared_ptr<SumOfIntegrals> c2)
-          {
-            auto sum = make_shared<SumOfIntegrals>();
-            for (auto & ci : c1->icfs) sum->icfs += ci;
-            for (auto & ci : c2->icfs) sum->icfs += make_shared<Integral>(-1*(*ci));
-            return sum;
-          })
-    .def ("__rmul__", [] (shared_ptr<SumOfIntegrals> c1, double fac)
-          {
-            auto faccf = make_shared<SumOfIntegrals>();
-            for (auto & ci : c1->icfs) faccf->icfs += make_shared<Integral>(fac*(*ci));
-            return faccf;
-          })
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(float() * py::self)
+    .def("__len__", [](shared_ptr<SumOfIntegrals> igls)
+         { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
-          { return igls->icfs[nr]; })
+          {
+            if (nr < 0 || nr >= igls->icfs.Size())
+              throw py::index_error();
+            return igls->icfs[nr];
+          })
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
     ;
 
   py::class_<Variation> (m, "Variation")
     .def(py::init<shared_ptr<SumOfIntegrals>>())
+    .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     ;
   
   
@@ -2172,6 +2231,8 @@ gf : ngsolve.comp.GridFunction
                      return self.GetInnerMatrix();
                    }, "inner_matrix of the bilinear form"
                   )
+    .def("SetPreconditioner", &BF::SetPreconditioner)
+    .def("UnsetPreconditioner", &BF::UnsetPreconditioner)
     ;
 
   ///////////////////////////////// LinearForm //////////////////////////////////////////

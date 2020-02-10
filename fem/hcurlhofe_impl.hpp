@@ -1254,14 +1254,14 @@ namespace ngfem
                 INT<2> e = GetEdgeSort (i, vnums);
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
-                Vec<2,T> tau = mip.GetJacobian()*tauref;
+                auto tau = mip.GetJacobian()*tauref;
                 tau /= mip.GetMeasure();
 
                 LegendrePolynomial::Eval
                   (p, xi,
                    SBLambda([&] (size_t nr, T val)
                             {
-                              Vec<2,T> vshape = val * tau;
+                              auto vshape = val * tau;
                               if (nr==0)
                                 shape[i] = vshape;
                               else
@@ -1455,15 +1455,29 @@ namespace ngfem
       }
   }
 
+  
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
-  CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
   {
     shape = 0.0;
-    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
-      -> CalcDualShape2 (mip, SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
+    Iterate<4-DIM>
+      ([this,&bmip,shape](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+
+         if (bmip.DimSpace() == DIMSPACE)
+           {
+             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+             static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+               -> CalcDualShape2 (mip, SBLambda([shape] (size_t i, auto val)
+                                                {
+                                                  shape.Row(i) = val;
+                                                }));
+           }
+       });
   }
   
 
@@ -1471,59 +1485,84 @@ namespace ngfem
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
-  CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shapes) const
+  CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const
   {
-    shapes.AddSize(ndof*DIM, mir.Size()) = 0.0;
-    for (size_t i = 0; i < mir.Size(); i++)
-      static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
-        -> CalcDualShape2 (mir[i], SBLambda([shapes,i] (size_t j, Vec<DIM,SIMD<double>> val)
-                                            {
-                                              for (size_t k = 0; k < DIM; k++)
-                                                shapes(j*DIM+k, i) = val(k);
-                                            }));
+ 
+    Iterate<4-DIM>
+      ([this,&bmir,shapes](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             shapes.AddSize(ndof*DIMSPACE, mir.Size()) = 0.0;
+             for (size_t i = 0; i < mir.Size(); i++)
+               static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+                 -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
+                                                     {
+                                                       for (size_t k = 0; k < DIMSPACE; k++)
+                                                         shapes(j*DIMSPACE+k, i) = val(k);
+                                                     }));
+           }
+       });
   }
 
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
-  EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
-    for (size_t i = 0; i < mir.Size(); i++)
-      {
-        Vec<DIM,SIMD<double>> sum (SIMD<double>(0.0));
-        static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
-          -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, Vec<DIM,SIMD<double>> val)
-                                            {
-                                              sum += coefs(j) * val;
-                                            }));
-        for (size_t k = 0; k < DIM; k++)
-          values(k, i) = sum(k);
-      }
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIMSPACE,SIMD<double>> sum (SIMD<double>(0.0));
+                 static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+                   -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, auto val)
+                                                       {
+                                                         sum += coefs(j) * val;
+                                                       }));
+                 for (size_t k = 0; k < DIMSPACE; k++)
+                   values(k, i) = sum(k);
+               }
+           }
+       });
   }
 
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
-  AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+  AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<double> coefs) const
   {
-    for (size_t i = 0; i < mir.Size(); i++)
-      {
-        Vec<DIM,SIMD<double>> value;
-        for (size_t k = 0; k < DIM; k++)
-          value(k) = values(k, i);
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 Vec<DIMSPACE,SIMD<double>> value = values.Col(i);
+                 // for (size_t k = 0; k < DIMSPACE; k++)
+                 // value(k) = values(k, i);
         
-        static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
-          -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, Vec<DIM,SIMD<double>> val)
-                                              {
-                                                SIMD<double> sum = 0.0;
-                                                for (int k = 0; k < DIM; k++)
-                                                  sum += val(k) * value(k);
-                                                coefs(j) += HSum(sum);
-                                              }));
-      }
+                 static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+                   -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
+                                                       {
+                                                         coefs(j) += HSum(InnerProduct(value,val));
+                                                       }));
+               }
+           }
+       });
   }
 }
 

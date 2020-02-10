@@ -221,9 +221,10 @@ template <typename MIP, typename TFA>
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
 
-		Vec<2,T> nvref =Vec<2,T>(tauref[1],-tauref[0]);
-		Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref;
-                LegendrePolynomial::Eval
+		Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
+		// Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref; // original version - broken with curved elements
+		Vec<2,T> nv = L2Norm(tauref) / L2Norm(mip.GetJacobian()*tauref) * Cof(mip.GetJacobian()) * nvref; // new version
+		LegendrePolynomial::Eval
                   (p, xi,
                    SBLambda([&] (size_t nr, T val)
                             {
@@ -545,8 +546,8 @@ template <typename MIP, typename TFA>
 
 		
 		Vec<3,T> nvref = Cross(tauref1,tauref2);
-		Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref;
-
+		// Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref; // old version - broken with curved elements
+		Vec<3,T> nv = L2Norm(nvref) / L2Norm(Cross(mip.GetJacobian()*tauref1, mip.GetJacobian()*tauref2)) * Cof(mip.GetJacobian()) * nvref; // new version
 		DubinerBasis::Eval(order_facet[i][0], xi, eta,
                                    SBLambda([&] (size_t nr, auto val)
                                             {

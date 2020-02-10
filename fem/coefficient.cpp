@@ -11,7 +11,9 @@
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
+#ifdef NGS_PYTHON
 #include <core/python_ngcore.hpp> // for shallow archive
+#endif // NGS_PYTHON
 
 namespace ngstd
 {
@@ -118,6 +120,14 @@ namespace ngfem
   {
     throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
   }
+
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
+  Operator (shared_ptr<DifferentialOperator> diffop) const
+  {
+    throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
+  }
+
+
   
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
@@ -214,6 +224,7 @@ namespace ngfem
   }
   */
 
+  /*
   void CoefficientFunction :: 
   NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                   FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
@@ -223,7 +234,12 @@ namespace ngfem
     nonzero_deriv = false;
     nonzero_dderiv = false;
   }
-  
+  */
+  void CoefficientFunction :: 
+  NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> values) const
+  {
+    values = AutoDiffDiff<1,bool> (true);
+  }
 
   shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
 
@@ -569,7 +585,7 @@ namespace ngfem
       {
 	VectorMem<10> args(numarg);
 	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-        args.Range(0,ip.Dim()) = ip.GetPoint();
+        args.Range(0,ip.DimSpace()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -583,7 +599,7 @@ namespace ngfem
       {
 	VectorMem<10, Complex> args(numarg);
 	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-        args.Range(0,ip.Dim()) = ip.GetPoint();
+        args.Range(0,ip.DimSpace()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -603,7 +619,7 @@ namespace ngfem
     VectorMem<10,Complex> args(numarg);
     args = -47;
     // args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-    args.Range(0,ip.Dim()) = ip.GetPoint();
+    args.Range(0,ip.DimSpace()) = ip.GetPoint();
     for (int i = 0, an = 3; i < depends_on.Size(); i++)
       {
         int dim = depends_on[i]->Dimension();
@@ -630,7 +646,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
       ArrayMem<double,2000> mem(ir.Size()*numarg);
       FlatMatrix<> args(ir.Size(), numarg, &mem[0]);
       
-      int dim = ir[0].Dim();
+      int dim = ir[0].DimSpace();
       switch (dim)
         {
         case 2:
@@ -666,7 +682,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
     {
       Matrix<Complex> args(ir.Size(), numarg);
       for (int i = 0; i < ir.Size(); i++)
-	args.Row(i).Range(0,ir[i].Dim()) = ir[i].GetPoint();
+	args.Row(i).Range(0,ir[i].DimSpace()) = ir[i].GetPoint();
       
       for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	{
@@ -1095,13 +1111,20 @@ public:
     c1->Evaluate (ir, values);
     values.AddSize(ir.Size(), Dimension()) *= scal;
   }
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }
-
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    c1->NonZeroPattern (ud, values);
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -1193,12 +1216,26 @@ public:
     throw Exception ("can't diff complex CF (ScaleCoefficientFunctionC)");
   }
   
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    c1->NonZeroPattern (ud, values);
+  }
+  
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return scal * c1->Diff(var, dir);
+  }
+  
 };
 
 // ***********************************************************************************
@@ -1314,7 +1351,7 @@ public:
     return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
   }
   
-  
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1330,6 +1367,19 @@ public:
         nonzero_dderiv(i) = (v1(0) && dd2(i)) || (d1(0) && d2(i)) || (dd1(0) && v2(i));
       }
   }
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    int dim = Dimension();
+    Vector<AutoDiffDiff<1,bool>> v1(1), v2(dim);
+    c1->NonZeroPattern (ud, v1);
+    c2->NonZeroPattern (ud, v2);
+    for (size_t j = 0; j < dim; j++)
+      values(j) = v1(0) * v2(j);
+  }
+
+
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
@@ -1467,6 +1517,7 @@ public:
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
   */
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1483,6 +1534,17 @@ public:
     nonzero = nz;
     nonzero_deriv = nzd;
     nonzero_dderiv = nzdd;
+  }
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(dim1), v2(dim1);
+    c1->NonZeroPattern (ud, v1);
+    c2->NonZeroPattern (ud, v2);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < dim1; i++)
+      sum += v1(i)*v2(i);
+    values(0) = sum;
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -1642,7 +1704,8 @@ public:
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
   */
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1663,8 +1726,21 @@ public:
     nonzero_deriv = nzd;
     nonzero_dderiv = nzdd;
   }
+  */
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(DIM), v2(DIM);
+    c1->NonZeroPattern (ud, v1);
+    c2->NonZeroPattern (ud, v2);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < DIM; i++)
+      sum += v1(i)*v2(i);
+    values(0) = sum;
+  }
 
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -1824,7 +1900,8 @@ public:
     });
     code.body += Var(index,0,0).Assign( res.Func("sqrt"));
   }
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1841,7 +1918,23 @@ public:
     nonzero_deriv = nzd;
     nonzero_dderiv = nzd || nzdd;
   }
+  */
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(dim1);
+    c1->NonZeroPattern (ud, v1);
+
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < dim1; i++)
+      sum += v1(i);
+    values(0).Value() = sum.Value();
+    values(0).DValue(0) = sum.DValue(0);
+    values(0).DDValue(0) = sum.DValue(0) || sum.DDValue(0);
+  }
+
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -1959,7 +2052,7 @@ public:
     code.body += Var(index,0,0).Assign( res.Func("sqrt"));
   }
 
-  
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -1975,6 +2068,16 @@ public:
     nonzero = nz;
     nonzero_deriv = nzd;
     nonzero_dderiv = nzd || nzdd;
+  }
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(dim1);
+    c1->NonZeroPattern (ud, v1);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < dim1; i++)
+      sum = sum + v1(i);
+    values(0) = sum;
   }
 };
 
@@ -2035,6 +2138,7 @@ public:
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
 
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -2063,7 +2167,27 @@ public:
             nonzero_dderiv(i*hdims[1]+j) |= (m1(i,k) && mdd2(k,j)) || (md1(i,k) && md2(k,j)) || (mdd1(i,k) && m2(k,j));
           }
   }
+  */
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    FlatArray<int> hdims = Dimensions();
+    Vector<AutoDiffDiff<1,bool>> va(hdims[0]*inner_dim), vb(hdims[1]*inner_dim);
+    c1->NonZeroPattern (ud, va);
+    c2->NonZeroPattern (ud, vb);
+    
+    size_t d1 = hdims[1];
+
+    values = false;
+    
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < hdims[1]; k++)
+        for (size_t l = 0; l < inner_dim; l++)
+          values(j*d1+k) += va(j*inner_dim+l) * vb(l*d1+k);
+  }
+
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -2253,6 +2377,7 @@ public:
       }
   }
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -2276,7 +2401,22 @@ public:
           nonzero_dderiv(i) |= ((m1(i,j) && dd2(j)) || (md1(i,j) && d2(j)) || (mdd1(i,j) && v2(j)));
         }
   }
-
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    FlatArray<int> hdims = Dimensions();
+    Vector<AutoDiffDiff<1,bool>> va(hdims[0]*inner_dim), vb(inner_dim);
+    c1->NonZeroPattern (ud, va);
+    c2->NonZeroPattern (ud, vb);
+    
+    values = false;
+    
+    for (size_t i = 0; i < hdims[0]; i++)
+      for (size_t j = 0; j < inner_dim; j++)
+        values(i) += va(i*inner_dim+j) * vb(j);
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -2376,6 +2516,144 @@ public:
 
 
 
+class CrossProductCoefficientFunction : public T_CoefficientFunction<CrossProductCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  shared_ptr<CoefficientFunction> c2;
+  using BASE = T_CoefficientFunction<CrossProductCoefficientFunction>;
+public:
+  CrossProductCoefficientFunction() = default;
+  CrossProductCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                   shared_ptr<CoefficientFunction> ac2)
+    : T_CoefficientFunction(3, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+  {
+    if (c1->Dimension() != 3)
+      throw Exception("first factor of cross product does not have dim=3");
+    if (c2->Dimension() != 3)
+      throw Exception("second factor of cross product does not have dim=3");
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1).Shallow(c2);
+  }
+
+  virtual string GetDescription () const override
+  { return "cross-product"; }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    code.body += Var(index, 0).Assign (Var(inputs[0],1)*Var(inputs[1],2)-Var(inputs[0],2)*Var(inputs[1],1));
+    code.body += Var(index, 1).Assign (Var(inputs[0],2)*Var(inputs[1],0)-Var(inputs[0],0)*Var(inputs[1],2));
+    code.body += Var(index, 2).Assign (Var(inputs[0],0)*Var(inputs[1],1)-Var(inputs[0],1)*Var(inputs[1],0));
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> va(3), vb(3);
+    c1->NonZeroPattern (ud, va);
+    c2->NonZeroPattern (ud, vb);
+    
+    values(0) = va(1)*vb(2)+va(2)*vb(1);
+    values(1) = va(2)*vb(0)+va(0)*vb(2);
+    values(2) = va(0)*vb(1)+va(1)*vb(0);    
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto va = input[0];
+    auto vb = input[1];
+    
+    values(0) = va(1)*vb(2)+va(2)*vb(1);
+    values(1) = va(2)*vb(0)+va(0)*vb(2);
+    values(2) = va(0)*vb(1)+va(1)*vb(0);    
+  }
+  
+  using T_CoefficientFunction<CrossProductCoefficientFunction>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    throw Exception ("MultMatVecCF:: scalar evaluate for vector called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const override
+  {
+    Vec<3> va, vb;
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+    result = Cross(va, vb);
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const override
+  {
+    Vec<3> va, vb;
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+    result = Cross(va, vb);
+  }  
+
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    STACK_ARRAY(T, hmem1, ir.Size()*3);
+    STACK_ARRAY(T, hmem2, ir.Size()*3);
+    FlatMatrix<T,ORD> temp1(3, ir.Size(), &hmem1[0]);
+    FlatMatrix<T,ORD> temp2(3, ir.Size(), &hmem2[0]);
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+    for (size_t k = 0; k < ir.Size(); k++)
+      {
+        Vec<3,T> ai = temp1.Col(k);
+        Vec<3,T> bi = temp2.Col(k);
+        values.Col(k).Range(3) = Cross(ai, bi);
+      }
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    auto va = input[0];
+    auto vb = input[1];
+
+    for (size_t k = 0; k < ir.Size(); k++)
+      {
+        Vec<3,T> ai = va.Col(k);
+        Vec<3,T> bi = vb.Col(k);
+        values.Col(k).Range(3) = Cross(ai, bi);
+      }
+  }
+
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return CrossProduct(c1->Diff(var,dir),c2) + CrossProduct(c1, c2->Diff(var,dir));
+  }
+  
+  
+};
+
+
+
+
   
 class TransposeCoefficientFunction : public T_CoefficientFunction<TransposeCoefficientFunction>
 {
@@ -2418,6 +2696,7 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -2439,6 +2718,18 @@ public:
       FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_dderiv(0));
       m2 = Trans(m1);
     }
+  }
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    FlatArray<int> hdims = Dimensions();    
+    Vector<AutoDiffDiff<1,bool>> v1(hdims[0]*hdims[1]);
+    c1->NonZeroPattern (ud, v1);
+
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < hdims[1]; k++)
+        values(j*hdims[1]+k) = v1(k*hdims[0]+j);
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -2581,42 +2872,42 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
     nonzero = true;
     nonzero_deriv = true;
     nonzero_dderiv = true;
-    /*
-    FlatArray<int> hdims = Dimensions();    
-    Vector<bool> v1(D*D), d1(D*D), dd1(D*D);
-    c1->NonZeroPattern (ud, v1, d1, dd1);
-    {
-      FlatMatrix<bool> m1(hdims[1], hdims[0], &v1(0));
-      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero(0));
-      m2 = Trans(m1);
-    }
-    {
-      FlatMatrix<bool> m1(hdims[1], hdims[0], &d1(0));
-      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_deriv(0));
-      m2 = Trans(m1);
-    }
-    {
-      FlatMatrix<bool> m1(hdims[1], hdims[0], &dd1(0));
-      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_dderiv(0));
-      m2 = Trans(m1);
-    }
-    */
   }
+  */
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < v1.Size(); i++)
+      sum += v1(i);
+    values = sum;
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
+    auto v1 = input[0];
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < v1.Size(); i++)
+      sum += v1(i);
+    values = sum;
+    /*
     AutoDiffDiff<1,bool> add(true);
     add.DValue(0) = true;
     add.DDValue(0,0) = true;
     values = add;
+    */
     /*
     FlatArray<int> hdims = Dimensions();    
     auto in0 = input[0];
@@ -2725,49 +3016,67 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
     nonzero = true;
     nonzero_deriv = true;
     nonzero_dderiv = true;
-    /*
-    FlatArray<int> hdims = Dimensions();    
-    Vector<bool> v1(D*D), d1(D*D), dd1(D*D);
-    c1->NonZeroPattern (ud, v1, d1, dd1);
-    {
-      FlatMatrix<bool> m1(hdims[1], hdims[0], &v1(0));
-      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero(0));
-      m2 = Trans(m1);
-    }
-    {
-      FlatMatrix<bool> m1(hdims[1], hdims[0], &d1(0));
-      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_deriv(0));
-      m2 = Trans(m1);
-    }
-    {
-      FlatMatrix<bool> m1(hdims[1], hdims[0], &dd1(0));
-      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_dderiv(0));
-      m2 = Trans(m1);
-    }
-    */
   }
-
+  */
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
+    /*
     AutoDiffDiff<1,bool> add(true);
     add.DValue(0) = true;
     add.DDValue(0,0) = true;
     values = add;
-    /*
-    FlatArray<int> hdims = Dimensions();    
-    auto in0 = input[0];
-    for (size_t j = 0; j < hdims[0]; j++)
-      for (size_t k = 0; k < hdims[1]; k++)
-        values(j*hdims[1]+k) = in0(k*hdims[0]+j);
     */
+    Vector<AutoDiffDiff<1,bool>> in(D*D);
+    c1->NonZeroPattern (ud, in);
+    Array<FlatVector<AutoDiffDiff<1,bool>>> input{1UL};
+    input[0].AssignMemory(D*D, &in(0));
+    NonZeroPattern (ud, input, values);
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto sm = input[0];
+    AutoDiffDiff<1,bool> res;
+    switch (D)
+      {
+      case 1: 
+        res = sm(0);
+        break;
+      case 2:
+        res = sm(0)*sm(3)+sm(1)*sm(2);
+        break;
+      case 3:
+        res = 
+          sm(0) * (sm(4) * sm(8) + sm(5) * sm(7)) +
+          sm(1) * (sm(5) * sm(6) + sm(3) * sm(8)) +
+          sm(2) * (sm(3) * sm(7) + sm(4) * sm(6));
+        break;
+      default:
+	{
+	  cerr << "general det not implemented" << endl;
+	}
+      }
+
+    /*
+    Mat<D,D,AutoDiffDiff<1,bool>> hm;
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        hm(j,k) = in0(j*D+k);
+    cout << "Nonzero mat:" << endl << hm << endl;
+    values(0) = Det(hm);
+    cout << "nonzero det: " << values(0) << endl;
+    */
+    values(0) = res;
   }
   
   using T_CoefficientFunction<DeterminantCoefficientFunction<D>>::Evaluate;
@@ -2822,6 +3131,154 @@ public:
 
 
 
+template <int D>
+class CofactorCoefficientFunction : public T_CoefficientFunction<CofactorCoefficientFunction<D>>
+{
+  shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<CofactorCoefficientFunction<D>>;
+public:
+  CofactorCoefficientFunction() = default;
+  CofactorCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : T_CoefficientFunction<CofactorCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
+  {
+    this->SetDimensions (ngstd::INT<2> (D,D));
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    auto mat_var = Var("mat", index);
+    auto cof_var = Var("cof", index);
+    code.body += mat_var.Declare(mat_type);
+    code.body += cof_var.Declare(mat_type);
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
+
+    code.body += cof_var.Assign(mat_var.Func("Cof"), false);
+
+    for (int j = 0; j < D; j++)
+      for (int k = 0; k < D; k++)
+        code.body += Var(index, j, k).Assign(cof_var(j,k));
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
+
+  /*
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
+  {
+    nonzero = true;
+    nonzero_deriv = true;
+    nonzero_dderiv = true;
+  }
+  */
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < v1.Size(); i++)
+      sum += v1(i);
+    values = sum;
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < v1.Size(); i++)
+      sum += v1(i);
+    values = sum;
+    /*
+    AutoDiffDiff<1,bool> add(true);
+    add.DValue(0) = true;
+    add.DDValue(0,0) = true;
+    values = add;
+    */
+    /*
+    FlatArray<int> hdims = Dimensions();    
+    auto in0 = input[0];
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < hdims[1]; k++)
+        values(j*hdims[1]+k) = in0(k*hdims[0]+j);
+    */
+  }
+  using T_CoefficientFunction<CofactorCoefficientFunction<D>>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    throw Exception ("CofactorCF:: scalar evaluate for matrix called");
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & mir,
+                   BareSliceMatrix<T,ORD> result) const
+  {
+    c1->Evaluate (mir, result);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = result(j*D+k, i);
+        hm = Cof(hm);
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            result(j*D+k, i) = hm(j,k);
+      }
+  }  
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    size_t np = ir.Size();
+    auto in0 = input[0];
+
+    for (size_t i = 0; i < np; i++)
+      {
+        Mat<D,D,T> hm;
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            hm(j,k) = in0(j*D+k, i);
+        hm = Cof(hm);
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D; k++)
+            values(j*D+k, i) = hm(j,k);
+      }
+  }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    throw Exception ("Cofactor doesn't know how to differentiate, use PyCof instead");
+    // if (this == var) return dir;
+    // return (-1)*InverseCF(c1) * c1->Diff(var,dir) * InverseCF(c1);
+  }  
+};
+
+
+
+
+
+
 
 
 class SymmetricCoefficientFunction : public T_CoefficientFunction<SymmetricCoefficientFunction>
@@ -2864,6 +3321,7 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -2882,7 +3340,23 @@ public:
         }
     //cout << "non-zero result " << nonzero << endl;    
   }
+  */
 
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    int hd = Dimensions()[0];
+    c1->NonZeroPattern (ud, values);
+
+    for (int i = 0; i < hd; i++)
+      for (int j = 0; j < hd; j++)
+        {
+          int ii = i*hd+j;
+          int jj = j*hd+i;
+          values(ii) = values(ii)+values(jj);  // logical or
+        }
+  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
@@ -2988,6 +3462,7 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -3001,6 +3476,21 @@ public:
           nonzero(ii) |= nonzero(jj);
           nonzero_deriv(ii) |= nonzero_deriv(jj);
           nonzero_dderiv(ii) |= nonzero_dderiv(jj);
+        }
+  }
+  */
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    int hd = Dimensions()[0];
+    c1->NonZeroPattern (ud, values);
+    for (int i = 0; i < hd; i++)
+      for (int j = 0; j < hd; j++)
+        {
+          int ii = i*hd+j;
+          int jj = j*hd+i;
+          values(ii) = values(ii)+values(jj);   // logical or 
         }
   }
 
@@ -3114,7 +3604,8 @@ public:
   
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -3133,7 +3624,17 @@ public:
     nonzero_deriv = d;
     nonzero_dderiv = dd;
   }
-
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    int dim1 = c1->Dimension();
+    Vector<AutoDiffDiff<1,bool>> v1(dim1);
+    c1->NonZeroPattern (ud, v1);
+    values(0) = false;
+    for (int i = 0; i < dim1; i++)
+      values(0) = values(0)+v1(i);   // logical or
+  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
@@ -3308,9 +3809,47 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
     return make_shared<ScaleCoefficientFunctionC> (v1, c2); 
   }
 
+
+  struct GenericConj {
+    template <typename T> T operator() (T x) const { return Conj(x); } // from bla
+    static string Name() { return "conj"; }
+    SIMD<double> operator() (SIMD<double> x) const { return x; }
+    template<typename T>
+    AutoDiff<1,T> operator() (AutoDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+    template<typename T>
+    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+    void DoArchive(Archive& ar) {}
+  };
+
+  template <> 
+  shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericConj>::Diff(const CoefficientFunction * var,
+                                   shared_ptr<CoefficientFunction> dir) const
+  {
+    if (var == this) return dir;
+    cout << "Warning: differentiate conjugate by taking conjugate of derivative" << endl;
+    return ConjCF(c1->Diff(var, dir));
+  }
+
+
+  shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1)
+  {
+    return UnaryOpCF(c1, GenericConj(), GenericConj::Name());
+  }
+
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1,
                                                 shared_ptr<CoefficientFunction> c2)
   {
+    if (c2->IsComplex())
+      {
+        auto conj = ConjCF(c2);
+        if (conj->GetDescription() == c2->GetDescription())
+          cout << "Info: InnerProduct has been changed and takes now conjugate" << endl
+               << "since c2 is already a Conjugate operation, we don't take conjugate" << endl
+               << "is you don't want conjugate, use a*b" << endl;
+        else
+          c2 = conj;
+      }
     switch (c1->Dimension())
       {
       case 1:
@@ -3335,6 +3874,14 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
     
     // return make_shared<MultVecVecCoefficientFunction> (c1, c2);
   }
+
+
+  shared_ptr<CoefficientFunction> CrossProduct (shared_ptr<CoefficientFunction> c1,
+                                              shared_ptr<CoefficientFunction> c2)
+  {
+    return make_shared<CrossProductCoefficientFunction> (c1, c2);
+  }
+
 
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef)
   {
@@ -3371,6 +3918,20 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       }
   }
 
+  shared_ptr<CoefficientFunction> CofactorCF (shared_ptr<CoefficientFunction> coef)
+  {
+    auto dims = coef->Dimensions();
+    if (dims.Size() != 2) throw Exception("Cofactor of non-matrix");
+    if (dims[0] != dims[1]) throw Exception("Cofactor of non-quadratic matrix");
+    switch (dims[0])
+      {
+      case 1: return make_shared<CofactorCoefficientFunction<1>> (coef);
+      case 2: return make_shared<CofactorCoefficientFunction<2>> (coef);
+      case 3: return make_shared<CofactorCoefficientFunction<3>> (coef);
+      default:
+        throw Exception("Cofactor of matrix of size "+ToString(dims[0]) + " not available");
+      }
+  }
 
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef)
   {
@@ -3512,7 +4073,8 @@ public:
     if (this == var) return dir;
     return MakeComponentCoefficientFunction (c1->Diff(var, dir), comp);
   }  
-  
+
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -3522,6 +4084,14 @@ public:
     nonzero_deriv(0) = d1(comp);
     nonzero_dderiv(0) = dd1(comp);
   }  
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    values(0) = v1(comp);
+  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
@@ -3709,6 +4279,7 @@ public:
     return res(0);
   }
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv,
@@ -3732,6 +4303,21 @@ public:
               nonzero_deriv(i) |= nzdi(i);
               nonzero_dderiv(i) |= nzddi(i);
             }
+        }
+  }
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override 
+  {
+    size_t dim = Dimension();
+    Vector<AutoDiffDiff<1,bool>> nzi(dim);
+    values = AutoDiffDiff<1,bool> (false);
+    for (auto & aci : ci)
+      if (aci)
+        {
+          aci -> NonZeroPattern(ud, nzi);
+          for (size_t i = 0; i < values.Size(); i++)
+            values(i) += nzi(i);
         }
   }
   
@@ -4268,7 +4854,8 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
     {
       return Array<shared_ptr<CoefficientFunction>>( { cf_if, cf_then, cf_else } );
     }
-    
+
+    /*
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
     {
@@ -4284,7 +4871,18 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
           nonzero_dderiv(i) = dd1(i) || dd2(i);
         }
     }  
+    */
 
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      int dim = Dimension();
+      Vector<AutoDiffDiff<1,bool>> v1(dim), v2(dim);
+      cf_then->NonZeroPattern (ud, v1);
+      cf_else->NonZeroPattern (ud, v2);
+      values = v1+v2;
+    }
+    
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                  FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -4366,6 +4964,7 @@ public:
   } 
 
 
+  /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -4380,7 +4979,19 @@ public:
         base += dimi;
       }
   }
-
+  */
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    int base = 0;
+    for (auto cf : ci)
+      {
+        int dimi = cf->Dimension();
+        cf->NonZeroPattern(ud, values.Range(base,base+dimi));
+        base += dimi;
+      }
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
@@ -4866,6 +5477,16 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         }
     }
 
+
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      auto diff_cf = cf->Diff(var, dir);
+      return Compile (diff_cf, false, 0, 0);
+    }
+
+    
+    
     void RealCompile(int maxderiv, bool wait)
     {
         std::vector<string> link_flags;
@@ -4882,8 +5503,9 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         string parameters[3] = {"results", "deriv", "dderiv"};
 
         for (int deriv : Range(maxderiv+1))
-        for (auto simd : {false,true}) {
-            cout << IM(3) << "Compiled CF:" << endl;
+          for (auto simd : {false,true}) {
+            if (!simd && deriv == 0)
+              cout << IM(3) << "Compiled CF:" << endl;
             Code code;
             code.is_simd = simd;
             code.deriv = deriv;
@@ -4896,7 +5518,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
 
             for (auto i : Range(steps)) {
               auto& step = *steps[i];
-              cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
+              if (!simd && deriv == 0)              
+                cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
               step.GenerateCode(code, inputs[i],i);
             }
 
@@ -5083,7 +5706,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
         }
     }
-    
+
+    /*
     void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                          FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
     {
@@ -5112,21 +5736,32 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
           nonzero_deriv(i) = last(i).DValue(0);
           nonzero_dderiv(i) = last(i).DDValue(0);
         }
-
-      /*
-      Vector<bool> nonzero2 = nonzero;
-      Vector<bool> nonzero2_deriv = nonzero_deriv;
-      Vector<bool> nonzero2_dderiv = nonzero_dderiv;
-      cf->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-      for (int i = 0; i < nonzero.Size(); i++)
-        {
-          if (nonzero(i) != nonzero2(i)) cout << "diff nz" << endl;
-          if (nonzero_deriv(i) != nonzero2_deriv(i)) cout << "diff nzd" << endl;
-          if (nonzero_dderiv(i) != nonzero2_dderiv(i)) cout << "diff nzdd" << endl;
-        }
-      */
     }
-
+    */
+    void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+    {
+      typedef AutoDiffDiff<1,bool> T;
+      ArrayMem<T, 1000> hmem(totdim);
+      size_t mem_ptr = 0;
+      ArrayMem<FlatVector<T>,100> temp(steps.Size());
+      ArrayMem<FlatVector<T>,100> in(max_inputsize);
+      for (size_t i = 0; i < steps.Size(); i++)
+        {
+          new (&temp[i]) FlatVector<T> (dim[i], &hmem[mem_ptr]);
+          mem_ptr += dim[i];
+        }
+      
+      for (size_t i = 0; i < steps.Size(); i++)
+        {
+          auto inputi = inputs[i];
+          for (int nr : Range(inputi))
+            new (&in[nr]) FlatVector<T> (temp[inputi[nr]]);
+          steps[i] -> NonZeroPattern (ud, in.Range(0, inputi.Size()), temp[i]);
+        }
+      auto & last = temp.Last();
+      for (size_t i = 0; i < nonzero.Size(); i++)
+        nonzero(i) = last(i);
+    }
     
     void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
@@ -5661,6 +6296,16 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "RealCF";
     }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+    
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
       using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
@@ -5733,6 +6378,16 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       return "ImagCF";
     }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+    
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
@@ -5799,6 +6454,88 @@ class RealCF : public CoefficientFunctionNoDerivative
     return cf;
   }
 
+class LoggingCoefficientFunction : public T_CoefficientFunction<LoggingCoefficientFunction>
+{
+protected:
+  shared_ptr<CoefficientFunction> func;
+  unique_ptr<ostream> out;
+public:
+  LoggingCoefficientFunction (shared_ptr<CoefficientFunction> f, string logfile ) :
+      T_CoefficientFunction<LoggingCoefficientFunction>(f->Dimension(), f->IsComplex()),
+      func(f)
+    {
+      this->SetDimensions (func->Dimensions());
+      this->elementwise_constant = func->ElementwiseConstant();
+
+      if(logfile=="stdout")
+          out = make_unique<ostream>(cout.rdbuf());
+      else if(logfile=="stderr")
+          out = make_unique<ostream>(cerr.rdbuf());
+      else
+          out = make_unique<ofstream>(logfile);
+    }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      *out << "======== Evaluate(" << Demangle(typeid(ir).name()) << ", " << Demangle(typeid(values).name()) << ")\n";
+      *out << ir;
+      func->Evaluate(ir, values);
+      *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
+    }
+
+  template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+  {
+    *out << "======== Evaluate(" << Demangle(typeid(ir).name()) << ", " << Demangle(typeid(input).name()) << ", " << Demangle(typeid(values).name()) << ")\n";
+    *out << ir;
+    *out << "input = \n" << input;
+    func->Evaluate(ir, input, values);
+    *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
+  }
+
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ func }); }
+
+  void PrintReport (ostream & ost) const override
+    {
+      ost << "LoggingCF(";
+      func->PrintReport(ost);
+      ost << ")";
+    }
+
+  string GetDescription() const override
+    {
+      return "LoggingCF";
+    }
+
+  void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+    {
+      func->NonZeroPattern(ud, nonzero);
+    }
+
+  void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      func->NonZeroPattern(ud, input, values);
+    }
+
+  void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
+    {
+      func->TraverseTree(func_);
+      func_(*this);
+    }
+};
+
+shared_ptr<CoefficientFunction> LoggingCF(shared_ptr<CoefficientFunction> func, string logfile)
+{
+  return make_shared<LoggingCoefficientFunction>(func, logfile);
+}
+
 static RegisterClassForArchive<CoefficientFunction> regcf;
 static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction> regccf;
 static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;
@@ -5834,6 +6571,9 @@ static RegisterClassForArchive<InverseCoefficientFunction<3>, CoefficientFunctio
 static RegisterClassForArchive<DeterminantCoefficientFunction<1>, CoefficientFunction> regdetcf1;
 static RegisterClassForArchive<DeterminantCoefficientFunction<2>, CoefficientFunction> regdetcf2;
 static RegisterClassForArchive<DeterminantCoefficientFunction<3>, CoefficientFunction> regdetcf3;
+static RegisterClassForArchive<CofactorCoefficientFunction<1>, CoefficientFunction> regcof1;
+static RegisterClassForArchive<CofactorCoefficientFunction<2>, CoefficientFunction> regcof2;
+static RegisterClassForArchive<CofactorCoefficientFunction<3>, CoefficientFunction> regcof3;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericPlus>, CoefficientFunction> regcfplus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction> regcfminus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;

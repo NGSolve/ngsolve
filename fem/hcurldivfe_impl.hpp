@@ -40,8 +40,9 @@ namespace ngfem
   auto Sigma_gradv (AutoDiffDiff<D,T> av) { return T_Sigma_gradv<D,T>(av); }
 
   /* ############### div-free basis function WITH trace ############### */
+  /* Curl(grad(u) v) = Curl(grad(u)) v + grad(u) o-tiimes Curl(v) */
   /* For basis functions including the trace */
-  
+    
   template <int D, typename T> class T_Sigma_gradu_v;
   template <typename T> class T_Sigma_gradu_v<2,T>
   {
@@ -59,7 +60,7 @@ namespace ngfem
     }
 
     Vec<2,T> DivShape()
-    {     
+    {
       return Vec<2,T> (0.0,0.0);
     }
 

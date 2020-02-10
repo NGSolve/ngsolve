@@ -3,7 +3,8 @@
 */
 #include <comp.hpp>
 #include <../fem/hcurlhofe.hpp> 
-#include <../fem/hcurllofe.hpp> 
+#include <../fem/hcurllofe.hpp>
+#include <../fem/hcurlhdiv_dshape.hpp> 
 #include <multigrid.hpp>
 
 extern template class ngla::VFlatVector<double>;
@@ -11,77 +12,8 @@ extern template class ngla::VFlatVector<double>;
 namespace ngcomp 
 {
 
-
-/** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
-    template<int D, int BMATDIM>
-    void CalcDShapeOfHCurlFE(const HCurlFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
-      HeapReset hr(lh);
-      // bmatu = 0;
-      // evaluate dshape by numerical diff
-      //fel_u, eltrans, sip, returnval, lh
-      int nd_u = fel_u.GetNDof();
-      const IntegrationPoint& ip = sip.IP();//volume_ir[i];
-      const ElementTransformation & eltrans = sip.GetTransformation();
-      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ull(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_urr(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
-
-      double eps = 1e-4;
-      for (int j = 0; j < D; j++)   // d / dxj
-      {
-        IntegrationPoint ipl(ip);
-        ipl(j) -= eps;
-        MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
-
-        IntegrationPoint ipr(ip);
-        ipr(j) += eps;
-        MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
-
-        IntegrationPoint ipll(ip);
-        ipll(j) -= 2*eps;
-        MappedIntegrationPoint<D,D> sipll(ipll, eltrans);
-
-        IntegrationPoint iprr(ip);
-        iprr(j) += 2*eps;
-        MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
-
-        fel_u.CalcMappedShape (sipl, shape_ul);
-        fel_u.CalcMappedShape (sipr, shape_ur);
-        fel_u.CalcMappedShape (sipll, shape_ull);
-        fel_u.CalcMappedShape (siprr, shape_urr);
-
-        dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-
-        // dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
-        // dshape_u_ref = (1.0/(4*eps)) * (shape_urr-shape_ull);
-
-        /*
-	  for (int k = 0; k < nd_u; k++)
-          for (int l = 0; l < D; l++)
-          bmatu(k, j*D+l) = dshape_u_ref(k,l);
-        */
-        for (int l = 0; l < D; l++)
-          bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
-      }
-      
-      for (int j = 0; j < D; j++)
-	{
-	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      dshape_u_ref(k,l) = bmatu(k, l*D+j);
-	  
-	  dshape_u = dshape_u_ref * sip.GetJacobianInverse();
-
-	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      bmatu(k, l*D+j) = dshape_u(k,l);
-	}
-    }
-
-  
+  template <int D, typename FEL = HCurlFiniteElement<D-1> >
+  class DiffOpGradientBoundaryHCurl;
   
   /// Gradient operator for HCurl
   template <int D, typename FEL = HCurlFiniteElement<D> >
@@ -96,7 +28,9 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
     
-    static constexpr double eps() { return 1e-6; } 
+    static constexpr double eps() { return 1e-4; }
+
+    typedef DiffOpGradientBoundaryHCurl<D> DIFFOP_TRACE;
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -113,22 +47,13 @@ namespace ngcomp
     // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-                                                  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {
-      CalcDShapeOfHCurlFE<D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
-    /*
-    template <typename AFEL>
-    static void GenerateMatrix (const AFEL & fel, 
-                                const MappedIntegrationPoint<D,D> & sip,
-                                FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
-    {
-      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(), &mat(0,0));
-      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, hm, lh);
-    }
-    */
-    ///
+
+    
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
                        const TVX & x, TVY & y,
@@ -137,7 +62,7 @@ namespace ngcomp
       // typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeOfHCurlFE<D,D*D>(static_cast<const FEL&>(fel), mip, hm, lh);
+      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, hm, lh, eps());
       y = Trans(hm)*x;
     }
 
@@ -147,42 +72,13 @@ namespace ngcomp
 			    const TVX & x, TVY & by,
 			    LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCALX;      
-      // typedef typename TVY::TSCAL TSCAL;
-      // typedef typename MIP::TSCAL TSCAL;
+      ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
+    }
 
-      HeapReset hr(lh);
-      FlatMatrixFixWidth<D*D> bmatu(fel.GetNDof(),lh);
-      
-      auto & fel_u = static_cast<const FEL&>(fel);
-      int nd_u = fel.GetNDof();
-      auto y = by.Range(0,nd_u);
-      const IntegrationPoint& ip = mip.IP();
-      const ElementTransformation & eltrans = mip.GetTransformation();
-      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);
-      
-      FlatMatrix<TSCALX> hx(D,D,&x(0));
-      Mat<D,D,TSCALX> tx = mip.GetJacobianInverse() * hx;
-
-      y = 0;
-      for (int j = 0; j < D; j++)   // d / dxj
-	{
-	  IntegrationPoint ipl(ip);
-	  ipl(j) -= eps();
-	  MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
-
-	  IntegrationPoint ipr(ip);
-	  ipr(j) += eps();
-	  MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
-
-	  fel_u.CalcMappedShape (sipl, shape_ul);
-	  fel_u.CalcMappedShape (sipr, shape_ur);
-	  dshape_u_ref = (1.0/(2*eps())) * (shape_ur-shape_ul);
-          y += dshape_u_ref * tx.Row(j);
-	}
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
     }
 
     using DiffOp<DiffOpGradientHCurl<D>>::ApplySIMDIR;
@@ -190,120 +86,58 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
-      STACK_ARRAY(char, data, size);
-      LocalHeap lh(data, size);
-
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
-      auto & ir = mir.IR();
-      const ElementTransformation & trafo = mir.GetTransformation();
-      auto & fel_u = static_cast<const FEL&>(fel);
-      FlatMatrix<SIMD<double>> hxl(D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hxr(D, mir.IR().Size(), lh);
-      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
-
-      for (int m = 0; m < D*D; m++)
-        for (int k = 0; k < mir.Size(); k++)
-          y(m, k) = SIMD<double> (0.0);
-      
-      for (int j = 0; j < D; j++)
-        {
-          // hx = (F^-1 * x).Row(j)
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irl.Size(); k++)
-              {
-                irl[k] = ir[k];
-                irl[k](j) -= eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.Evaluate (mirl, x, hxl);
-          }
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
-              {
-                irr[k] = ir[k];              
-                irr[k](j) += eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.Evaluate (mirr, x, hxr);
-          }
-          hx = 1.0/(2*eps()) * (hxr-hxl);
-          
-          for (int k = 0; k < mir.Size(); k++)
-            {
-              auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D; l++)
-                {
-                  for (int m = 0; m < D; m++)
-                    y(m*D+l, k) += (jacinv(j,m) * hx(l, k));
-                }
-            }
-        }
+      ApplySIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
 
     using DiffOp<DiffOpGradientHCurl<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      int size = (bmir.Size()+1)*SIMD<double>::Size()*500;
-      STACK_ARRAY(char, data, size);
-      LocalHeap lh(data, size);
-
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
-      auto & ir = mir.IR();
-      const ElementTransformation & trafo = mir.GetTransformation();
-      auto & fel_u = static_cast<const FEL&>(fel);
-      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
-      
-      for (int j = 0; j < D; j++)
-        {
-          // hx = (F^-1 * x).Row(j)
-          for (int k = 0; k < mir.Size(); k++)
-            {
-              auto jacinv = mir[k].GetJacobianInverse();
-              for (int l = 0; l < D; l++)
-                {
-                  SIMD<double> sum = 0;
-                  for (int m = 0; m < D; m++)
-                    sum += jacinv(j,m) * x(m*D+l, k);
-                  hx(l,k) = (-(0.5/eps()) * sum);
-                }
-            }
-
-          {
-            HeapReset hr(lh);
-            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irl.Size(); k++)
-              {
-                irl[k] = ir[k];
-                irl[k](j) -= eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
-            fel_u.AddTrans (mirl, hx, y);
-          }
-          {
-            HeapReset hr(lh);
-            hx *= -1;
-            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
-            for (int k = 0; k < irr.Size(); k++)
-              {
-                irr[k] = ir[k];              
-                irr[k](j) += eps();
-              }
-            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
-            fel_u.AddTrans (mirr, hx, y);
-          }
-        }
+      AddTransSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
     
   };
 
+  /// Boundary Gradient operator for HCurl
+  template <int D, typename FEL>// = HCurlFiniteElement<D-1> >
+  class DiffOpGradientBoundaryHCurl : public DiffOp<DiffOpGradientBoundaryHCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
 
-  /// Gradient operator for HCurl
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
+    
+    static constexpr double eps() { return 1e-6; }
+
+    typedef void DIFFOP_TRACE;
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+                                                  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                                                              MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+  };
+  
+  template <int D>
+  class DiffOpHCurlDualBoundary;
+
+  /// Dual operator for HCurl
   template <int D>
   class DiffOpHCurlDual : public DiffOp<DiffOpHCurlDual<D> >
   {
@@ -314,6 +148,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
+
+    typedef DiffOpHCurlDualBoundary<D> DIFFOP_TRACE;
 
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlFiniteElement<D>&> (fel); }
@@ -339,22 +175,78 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
+      Cast(fel).CalcDualShape (mir, mat);      
     }
 
     using BASE::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
+      Cast(fel).EvaluateDual (mir, x, y);
     }
 
     using BASE::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
+      Cast(fel).AddDualTrans (mir, y, x);
     }    
+        
+  };
+
+  /// Gradient operator for HCurl
+  template <int D>
+  class DiffOpHCurlDualBoundary : public DiffOp<DiffOpHCurlDualBoundary<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlDualBoundary<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    typedef void DIFFOP_TRACE;
+
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlFiniteElement<D-1>&> (fel); }
+
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcDualShape (mir, mat);      
+    }
+
+    using BASE::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDual (mir, x, y);
+    }
+
+    using BASE::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddDualTrans (mir, y, x);
+    }   
         
   };
 
@@ -518,6 +410,10 @@ namespace ngcomp
       "  Use type 1 Nedelec elements";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HCurl space";
+    docu.Arg("gradientdomains") = "List[int] = None\n"
+      "  Remove high order gradients from domains where the value is 0.\n"
+      "  This list can be generated for example like this:\n"
+      "  graddoms = [1 if mat == 'iron' else 0 for mat in mesh.GetMaterials()]";
     return docu;
   }
 
@@ -1447,6 +1343,8 @@ namespace ngcomp
               hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
               FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
               hofe -> SetOrderEdge (aoe);
+              if (highest_order_dc)
+                hofe->SetOrderEdge (0, aoe[0]-1);
               hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
             } 
           else 

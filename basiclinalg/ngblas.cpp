@@ -63,6 +63,7 @@ namespace ngbla
       }
   }
 
+  
   /* ************************ Matrix * Vector ************************** */
 
 
@@ -80,8 +81,6 @@ namespace ngbla
   }
 
 
-  
-  
   NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     // constexpr int SW = SIMD<double>::Size();
@@ -145,8 +144,9 @@ namespace ngbla
   
   auto init_matvec = [] ()
   {
-    Iterate<std::size(dispatch_matvec)> ([&] (auto i)
+    Iterate<std::size(dispatch_matvec)-1> ([&] (auto i)
     { dispatch_matvec[i] = &MultMatVecShort<i>; });
+    dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
   }();
   
@@ -1290,9 +1290,9 @@ namespace ngbla
   {
     constexpr size_t bs = 256; // inner-product loop
     size_t wa = a.Width();
-    double *pa = &a(0);
-    double *pb = &b(0);
-    double *pc = &c(0);
+    double *pa = a.Data();
+    double *pb = b.Data();
+    double *pc = c.Data();
     for (size_t i = 0; i < wa; i += bs, pa+=bs, pb+=bs)
       TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
