@@ -42,11 +42,13 @@ namespace ngfem
         throw Exception("don't have a primal evaluator");
       }
     */
+    /*
     if (deriv_evaluator || trace_deriv_evaluator)
       deriv_proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex,
                                                 deriv_evaluator, nullptr,
                                                 trace_deriv_evaluator, nullptr,
 						ttrace_deriv_evaluator, nullptr);
+    */
     if (evaluator)
       SetDimensions (evaluator->Dimensions());
     else if (trace_evaluator)
@@ -65,7 +67,25 @@ namespace ngfem
       + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")));
   }
 
-
+  shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const
+  {
+    if (auto sp = deriv_proxy.lock())
+      return sp;
+    
+    if (deriv_evaluator || trace_deriv_evaluator)
+      {
+        auto sp = make_shared<ProxyFunction> (fes, testfunction, is_complex,
+                                              deriv_evaluator, nullptr,
+                                              trace_deriv_evaluator, nullptr,
+                                              ttrace_deriv_evaluator, nullptr);
+        sp -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
+        sp->is_other = is_other;
+        const_cast<ProxyFunction*>(this)->deriv_proxy = sp;
+        return sp;
+      }
+        
+    return nullptr;
+  }
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
@@ -86,6 +106,22 @@ namespace ngfem
     throw Exception (string("don't have a trace, primal evaluator = ")+
                      evaluator->Name());
   }
+
+  shared_ptr<ProxyFunction> ProxyFunction :: Other(shared_ptr<CoefficientFunction> _boundary_values) const
+  {
+    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
+    other->is_other = true;
+    // if (other->deriv_proxy)
+    // other->deriv_proxy->is_other = true;
+    other->boundary_values = _boundary_values;
+
+    for (int i = 0; i < additional_diffops.Size(); i++)
+      other->SetAdditionalEvaluator (additional_diffops.GetName(i), additional_diffops[i]);
+    
+    return other;
+  }
+
+
   
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -628,6 +664,23 @@ namespace ngfem
       nonzero(ud.trial_comp) = true;
   }
 
+  void ProxyFunction ::
+  NonZeroPattern (const class ProxyUserData & ud,
+                  FlatVector<AutoDiffDiff<1,bool>> values) const
+  {
+    Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
+    NonZeroPattern (ud, nz, nzd, nzdd);
+    for (size_t i = 0; i < values.Size(); i++)
+      {
+        values(i).Value() = nz(i);
+        values(i).DValue(0) = nzd(i);
+        values(i).DDValue(0) = nzdd(i);
+      }
+  }
+
+
+
+  
   shared_ptr<CoefficientFunction> ProxyFunction :: 
   Operator (const string & name) const
   {
@@ -636,6 +689,35 @@ namespace ngfem
     return GetAdditionalProxy (name); 
   }
 
+  
+  
+  shared_ptr<CoefficientFunction> ProxyFunction :: 
+  Operator (shared_ptr<DifferentialOperator> diffop) const
+  {
+    // whatever component is the diffop, take the component we are
+    
+    // first strip components
+    while (auto compdiffop = dynamic_pointer_cast<CompoundDifferentialOperator> (diffop))
+      diffop = compdiffop->BaseDiffOp();
+    
+    // figure out the compound-component from our base diffop
+    Array<int> comps;
+    auto hp = evaluator;
+    while (auto comphp = dynamic_pointer_cast<CompoundDifferentialOperator> (hp))
+      {
+        comps.Append (comphp->Component());
+        hp = comphp->BaseDiffOp();
+      }
+    // and now wrap ...
+    for (int i = comps.Size()-1; i >= 0; i--)
+      diffop = make_shared<CompoundDifferentialOperator> (diffop, comps[i]);
+    
+    auto proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
+    proxy -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());    
+    if (is_other)
+      proxy->is_other = true;
+    return proxy;
+  }
 
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
@@ -644,20 +726,34 @@ namespace ngfem
       return evaluator->DiffShape (const_cast<ProxyFunction*>(this)->shared_from_this(), dir);
     else if (var == this)
       return dir;
+
+    if (primaryproxy.get() == var)
+      return dir -> Operator(evaluator);
+    /*
+    if (auto proxyvar = dynamic_cast<const ProxyFunction*> (var))
+      {
+        // cout << "I am a proxy" << endl;
+        if (this == proxyvar->Deriv().get())
+          return dynamic_pointer_cast<ProxyFunction> (dir) -> Deriv();
+        if (this == proxyvar->Trace().get())
+          {
+            // cout << "I am the trace" << endl;
+            return dynamic_pointer_cast<ProxyFunction> (dir) -> Trace();
+          }
+      }
+    */
+
+    if (Dimension() == 1)
+      return make_shared<ConstantCoefficientFunction>(0);
     else
       {
-        if (Dimension() == 1)
-          return make_shared<ConstantCoefficientFunction>(0);
-        else
-          {
-            auto zero1 = make_shared<ConstantCoefficientFunction>(0);
-            Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
-            for (auto & z : zero_array)
-              z = zero1;
-            auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
-            zerovec->SetDimensions(Dimensions());
-            return zerovec;
-          }
+        auto zero1 = make_shared<ConstantCoefficientFunction>(0);
+        Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
+        for (auto & z : zero_array)
+          z = zero1;
+        auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
+        zerovec->SetDimensions(Dimensions());
+        return zerovec;
       }
   }
 
@@ -960,7 +1056,8 @@ namespace ngfem
     nonzeros_deriv = Matrix<bool>(cnttest, cnttrial);
 
     ProxyUserData ud;
-    Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    // Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : test_proxies.Range())
       for (int k2 : Range(0,test_proxies[k1]->Dimension()))
@@ -973,8 +1070,8 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
-                nonzeros(k,l) = nzvec(0);
+                cf -> NonZeroPattern (ud, nzvec);
+                nonzeros(k,l) = nzvec(0).Value();
                 l++;
               }
           k++;
@@ -996,8 +1093,9 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
-                nonzeros_deriv(k,l) = nzdvec(0);
+                cf -> NonZeroPattern (ud, nzvec); 
+                // nonzeros_deriv(k,l) = nzdvec(0);
+                nonzeros_deriv(k,l) = nzvec(0).DValue(0);
                 l++;
               }
           k++;
@@ -1735,7 +1833,7 @@ namespace ngfem
                 {
                   HeapReset hr(lh);
                   ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-                  SIMD_IntegrationRule ir_facet1(etfacet, fel_trial.Order()+fel_test.Order());
+                  SIMD_IntegrationRule ir_facet1(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
                   SIMD_IntegrationRule & ir_facet(userdefined_simd_intrules[etfacet] ?
                                                   *userdefined_simd_intrules[etfacet]
                                                   : ir_facet1);
@@ -3854,7 +3952,7 @@ namespace ngfem
     ProxyUserData ud;
     DummyFE<ET_TRIG> dummyfe;
     ud.fel = &dummyfe;
-    Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : trial_proxies.Range())
       for (int k2 : Range(0,trial_proxies[k1]->Dimension()))
@@ -3867,10 +3965,11 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = trial_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                cf -> NonZeroPattern (ud, nzvec);
                 // nzddvec(0) = true;
-                nonzeros(k,l) = nzddvec(0);
-                if (nzddvec(0))
+                // nonzeros(k,l) = nzddvec(0);
+                nonzeros(k,l) = nzvec(0).DDValue(0);
+                if (nzvec(0).DDValue(0))
                   nonzeros_proxies(k1,l1) = true;
                 l++;
               }
@@ -3878,9 +3977,14 @@ namespace ngfem
         }
     int cnt = 0;
     for (auto i : Range(nonzeros.Height()))
-      for (auto j : Range(nonzeros.Width()))
-        if (nonzeros(i,j)) cnt++;
-    
+      {
+        for (auto j : Range(nonzeros.Width()))
+          {
+            if (nonzeros(i,j)) cnt++;
+            cout << IM(6) << (nonzeros(i,j) ? "1" : "0");
+          }
+        cout << IM(6) << endl;
+      }
     cout << IM(6) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(6) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;
   }

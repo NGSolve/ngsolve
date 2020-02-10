@@ -114,7 +114,8 @@ ANY                  1 1 1 1 | 15
     Array<bool> definedon[4];
 
     /// prototype: what are the Dirichlet boundaries ?
-    BitArray dirichlet_boundaries;
+    BitArray dirichlet_constraints[4];
+    BitArray & dirichlet_boundaries = dirichlet_constraints[1];
 
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;
@@ -1157,7 +1158,9 @@ ANY                  1 1 1 1 | 15
     // virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
 
     IntRange GetRange (int spacenr) const
-    { 
+    {
+      if (spacenr+1 >= cummulative_nd.Size())
+        throw Exception("spacenr >= cummulative_nd.Size() in CompoundFESpace!");
       return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
     }
 

@@ -18,26 +18,25 @@ namespace ngfem
 
 
   template <int DIM, typename T>
-  class TIP
+  class TIP;
+  /*
   {
   public:
     int8_t facetnr = -1;
     VorB vb = VOL;
 
-    // T x; // dummy
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    explicit TIP (Vec<0,T> v) { ; }
-    // TIP (const IntegrationPoint & ip) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) { ; }
+    // explicit TIP (Vec<0,T> v) { ; }
     template <typename T1, typename T2>    
     TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
   };
-
+  */
+  
   template <typename T>
   class TIP<0,T>
   {
@@ -45,16 +44,22 @@ namespace ngfem
     int8_t facetnr = -1;
     VorB vb = VOL;
 
+    // [[deprecated("Use TIP(facetnr, vb) instead")]]    
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<0,T2> & tip)
+      : facetnr(tip.facetnr), vb(tip.vb) { }
+
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    // TIP (T _x) : x(_x) { ; }
-    explicit TIP (Vec<0,T> v) { ; }    
-    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
+    explicit TIP (Vec<0,T> v, int8_t afacetnr=-1, VorB avb=VOL)
+      : facetnr(afacetnr), vb(avb) { ; }    
     template <typename T1, typename T2>
     TIP (TIP<0,T1> ip1, TIP<0,T2> ip2) { ; } 
   };
@@ -67,20 +72,30 @@ namespace ngfem
     T x;
     int8_t facetnr = -1;
     VorB vb = VOL;
-    
+
+    // [[deprecated("Use TIP(facetnr, vb) instead")]]    
     TIP () = default;
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<1,T2> & tip)
+      : x(tip.x), facetnr(tip.facetnr), vb(tip.vb) { } 
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    TIP (T _x) : x(_x) { ; }
-    explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
-    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
+    TIP (T _x, int8_t afacetnr, VorB avb)
+      : x(_x), facetnr(afacetnr), vb(avb) { ; }
+    
+    explicit TIP (Vec<1,T> v, int8_t afacetnr = -1, VorB avb = VOL)
+      : x(v(0)), facetnr(afacetnr), vb(avb) { ; }
+    
     template <typename T1, typename T2>
     TIP (TIP<1,T1> ip1, TIP<1,T2> ip2)
-      : x(ip1.x, ip2.x) { ; } 
+      : x(ip1.x, ip2.x), facetnr(ip1.facetnr), vb(ip1.vb) { ; } 
   };
 
   template <typename T>
@@ -92,18 +107,26 @@ namespace ngfem
     VorB vb = VOL;
     
     TIP () = default;
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<2,T2> & tip)
+      : x(tip.x), y(tip.y), facetnr(tip.facetnr), vb(tip.vb) { }
+
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    TIP (T _x, T _y) : x(_x), y(_y) { ; }
-    explicit TIP (Vec<2,T> v) : x(v(0)), y(v(1)) { ; }        
-    // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)) { ; } 
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)), y(ip(1)) { ; } 
+    TIP (T _x, T _y, int8_t afacetnr, VorB avb)
+      : x(_x), y(_y), facetnr(afacetnr), vb(avb) { ; }
+    explicit TIP (Vec<2,T> v, int8_t afacetnr = -1, VorB avb = VOL)
+      : x(v(0)), y(v(1)), facetnr(afacetnr), vb(avb) { ; }
+    
     template <typename T1, typename T2>
     TIP (TIP<2,T1> ip1, TIP<2,T2> ip2)
-      : x(ip1.x, ip2.x), y(ip1.y, ip2.y) { ; } 
+      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), facetnr(ip1.facetnr), vb(ip1.vb) { ; } 
   };
   template <typename T>
   class TIP<3,T>
@@ -114,20 +137,35 @@ namespace ngfem
     VorB vb = VOL;
 
     TIP () = default;
+    TIP (int8_t afacetnr, VorB avb)
+      : facetnr(afacetnr), vb(avb) { } 
+    
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
+    template <typename T2>
+    TIP (const TIP<3,T2> & tip)
+      : x(tip.x), y(tip.y), z(tip.z), facetnr(tip.facetnr), vb(tip.vb) { }
+    
     TIP & operator= (const TIP &) = default;
     TIP & operator= (TIP &&) = default;
     
-    TIP (T _x, T _y, T _z) : x(_x), y(_y), z(_z) { ; }
-    explicit TIP (Vec<3,T> v) : x(v(0)), y(v(1)), z(v(2)) { ; }            
-    // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }     
-    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }
+    TIP (T _x, T _y, T _z, int8_t afacetnr, VorB avb)
+      : x(_x), y(_y), z(_z), facetnr(afacetnr), vb(avb) { ; }
+    
+    explicit TIP (Vec<3,T> v, int8_t afacetnr = -1, VorB avb = VOL)
+      : x(v(0)), y(v(1)), z(v(2)), facetnr(afacetnr), vb(avb) { ; }
+    
     template <typename T1, typename T2>    
     TIP (TIP<3,T1> ip1, TIP<3,T2> ip2)
-      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z) { ; } 
+      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z),
+        facetnr(ip1.facetnr), vb(ip1.vb) { ; } 
   };
 
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<0,T> tip)
+  {
+    return ost;
+  }
   template <typename T>
   inline ostream & operator<< (ostream & ost, TIP<1,T> tip)
   {
@@ -269,12 +307,33 @@ namespace ngfem
         adp[i] = AutoDiff<DIM> (pi[i], i);
       return adp;
     }
-    
-    INLINE operator TIP<0,double> () const { return TIP<0,double>(); }
-    INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0]); }
-    INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1]); }
-    INLINE operator TIP<3,double> () const { return TIP<3,double>(pi[0], pi[1], pi[2]); } 
 
+    /*
+    template <int DIM> 
+    INLINE operator Vec<DIM, AutoDiff<DIM>> () const
+    {
+      Vec<DIM, AutoDiff<DIM> > adp;
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (pi[i], i);
+      return adp;
+    }
+    */
+
+    INLINE operator TIP<0,double> () const { return TIP<0,double>(facetnr, vb); }
+    INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0], facetnr, vb); }
+    INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1], facetnr, vb); }
+    INLINE operator TIP<3,double> () const { return TIP<3,double>(pi[0], pi[1], pi[2], facetnr, vb); } 
+
+    INLINE operator TIP<0,AutoDiff<0>> () const
+    { return TIP<0,AutoDiff<0>>(facetnr, vb); } 
+    INLINE operator TIP<1,AutoDiff<1>> () const
+    { return TIP<1,AutoDiff<1>>(AutoDiff<1> (pi[0],0), facetnr, vb); }
+    INLINE operator TIP<2,AutoDiff<2>> () const
+    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1), facetnr, vb); }
+    INLINE operator TIP<3,AutoDiff<3>> () const
+    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2), facetnr, vb); } 
+
+    /*
     INLINE operator TIP<0,AutoDiff<0>> () const
     { return TIP<0,AutoDiff<0>>(); } 
     INLINE operator TIP<1,AutoDiff<1>> () const
@@ -283,11 +342,18 @@ namespace ngfem
     { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1)); }
     INLINE operator TIP<3,AutoDiff<3>> () const
     { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2)); } 
-
+    */
+    
+    template <int D>
+    INLINE ngfem::TIP<D,double> TIp() const;
+    
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };
 
+  template <int D> INLINE ngfem::TIP<D,double> IntegrationPoint :: TIp() const
+  { return ngfem::TIP<D,double> (*this); }
+  
 
   struct MeshPoint
   {
@@ -343,11 +409,16 @@ namespace ngfem
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
 
+    // implemented in elementtransforamtion.hpp
+    INLINE int DimElement() const; // { return eltrans->ElementDim(); }
+    INLINE int DimSpace() const; // { return eltrans->SpaceDim(); } 
+    
     FlatVector<Complex> GetPointComplex() const;
     FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
-    NGS_DLL_HEADER int Dim() const;  
-    VorB VB() const; 
+    // [[deprecated("Use DimSpace instead")]]
+    // NGS_DLL_HEADER int Dim() const;  
+    // VorB ElementVB() const; 
     bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
     virtual void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const { ; } 
@@ -420,13 +491,15 @@ namespace ngfem
   template <int DIMS, int DIMR, typename SCAL = double> 
   class MappedIntegrationPoint : public DimMappedIntegrationPoint<DIMR,SCAL>
   {
+    static_assert(DIMS <= DIMR, "DIM-source > DIM-range !!");
   private:
     /// Jacobi matrix
     Mat<DIMR,DIMS,SCAL> dxdxi;
     /// for boundary points
     using DimMappedIntegrationPoint<DIMR,SCAL>::normalvec;
     using DimMappedIntegrationPoint<DIMR,SCAL>::tangentialvec;
-    using DimMappedIntegrationPoint<DIMR,SCAL>::det;    
+    using DimMappedIntegrationPoint<DIMR,SCAL>::det;
+
   public:
     typedef SCAL TSCAL;
     ///
@@ -558,7 +631,7 @@ namespace ngfem
     }
 
     ///
-    INLINE VorB VB() const { return VorB(DIMR-DIMS); }
+    // INLINE VorB VB() const { return VorB(DIMR-DIMS); }
     //INLINE int IsBoundary () const { return DIMS != DIMR; }
 
     ///
@@ -569,6 +642,18 @@ namespace ngfem
     void CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const;
 
     void CalcHesse (Vec<DIMR,Mat<DIMS,DIMS>> & ddx1) const;
+    Vec<DIMR,Mat<DIMS,DIMS>> CalcHesse() const
+    {
+      if constexpr(std::is_same<SCAL,double>::value)
+        {
+          Vec<DIMR,Mat<DIMS,DIMS>> hesse;
+          CalcHesse (hesse);
+          return hesse;
+        }
+      throw Exception ("CalcHesse not available for complex mips");
+    }
+
+
 
     void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const override;
   };
@@ -1395,6 +1480,9 @@ namespace ngfem
 
     auto begin () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, 0); }
     auto end () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, Size()); }
+
+    int DimElement() const;
+    int DimSpace() const;
     
     virtual SliceMatrix<> GetPoints() const = 0;
     virtual SliceMatrix<Complex> GetPointsComplex() const
@@ -1612,7 +1700,6 @@ namespace ngstd
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
 
     int FacetNr() const { return facetnr; }
-    // int & FacetNr() { return facetnr; }
     void SetFacetNr (int afacetnr, ngfem::VorB avb = ngfem::BND)
     { facetnr = afacetnr; vb = avb; }      
     INLINE ngfem::VorB VB() const { return vb; } 
@@ -1628,12 +1715,24 @@ namespace ngstd
 
     template <int D>
     INLINE ngfem::TIP<D,SIMD<double>> TIp() const;
-    INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
-    INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0]); }
-    INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
-    INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); } 
+    INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(facetnr, vb); }
+    INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0], facetnr, vb); }
+    INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1], facetnr, vb); }
+    INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2], facetnr, vb); } 
+
+    /*
+    template <int DIM> 
+    INLINE operator Vec<DIM, AutoDiff<DIM,SIMD<double>>> () const
+    {
+      Vec<DIM, AutoDiff<DIM,SIMD<double>> > adp;
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM,SIMD<double>> (x[i], i);
+      return adp;
+    }
+    */
   };
 
+  /*
   template <> INLINE ngfem::TIP<0,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<0>() const
   { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
   template <> INLINE ngfem::TIP<1,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<1>() const
@@ -1642,7 +1741,14 @@ namespace ngstd
   { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
   template <> INLINE ngfem::TIP<3,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<3>() const
   { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); }
-
+  */
+  template <int D> INLINE ngfem::TIP<D,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp() const
+  {
+    // return ngfem::TIP<D,ngstd::SIMD<double>> (*this);
+    ngfem::TIP<D,ngstd::SIMD<double>> tip = *this;
+    return tip;
+  }
+  
   
   template <>
   class SIMD<ngfem::BaseMappedIntegrationPoint>
@@ -1662,6 +1768,9 @@ namespace ngstd
     const SIMD<ngfem::IntegrationPoint> & IP () const { return ip; }
     const ngfem::ElementTransformation & GetTransformation () const { return *eltrans; }
     // int GetIPNr() const { return ip.Nr(); }
+
+    int DimElement() const;
+    int DimSpace() const;
 
     void SetMeasure (SIMD<double> _measure) { measure = _measure; }
     SIMD<double> GetMeasure() const { return measure; }
@@ -1695,6 +1804,7 @@ namespace ngstd
   template <int DIMS, int DIMR>
   class SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>> : public SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>
   {
+    static_assert(DIMS <= DIMR, "DIM-source > DIM-range !!");    
   protected:
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::measure;
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::det;
@@ -1841,148 +1951,327 @@ namespace ngstd
 
 namespace ngfem
 {
+  template <int D>
+  INLINE auto GetTIP (const IntegrationPoint & ip)
+  {
+    return ngfem::TIP<D,double> (ip);
+  }
+
+  template <int D>
+  INLINE auto GetTIPGrad (const IntegrationPoint & ip)
+  {
+    TIP<D,AutoDiff<D>> tip = ip;
+    return tip;
+    // return TIP<D,AutoDiff<D>>(ip);
+  }
+
+  template <int D>
+  INLINE auto GetTIP (const SIMD<IntegrationPoint> & ip)
+  {
+    // return ngfem::TIP<D,SIMD<double> (ip);
+    return ip.TIp<D>();
+  }
+  
+  template <int D>
+  INLINE auto GetTIPGrad (const SIMD<IntegrationPoint> & ip)
+  {
+    Vec<D, AutoDiff<D,SIMD<double>>> adp = ip;
+    return TIP<D,AutoDiff<D,SIMD<double>>> (adp, ip.FacetNr(), ip.VB());
+    // TIP<D,AutoDiff<D,SIMD<double>>> tip = ip;
+    // return tip;
+    // return TIP<D,AutoDiff<D>>(ip);
+  }
+
+  
   template<int DIMS, int DIMR>
-  INLINE void GetTIP( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip, TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> & adp);
+  INLINE void GetTIP1( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip, TIP<DIMS,AutoDiff<DIMR,SIMD<double>>> & adp);
 
-    template<int DIMR>
-    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip, TIP<0,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
-    { }
-
-    template<int DIMR>
-    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<1,DIMR>> & mip, TIP<1,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
-    {
-      Mat<1,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
-      const auto &ip = mip.IP();
-      adp.x.Value() = ip(0);
-      for (int j = 0; j < DIMR; j++)
-        adp.x.DValue(j) = ijac(0,j);
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-    }
-
-  
-    template<int DIMR>
-    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<2,DIMR>> & mip, TIP<2,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
-    {
-      Mat<2,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
-      const auto &ip = mip.IP();
-      adp.x.Value() = ip(0);
-      adp.y.Value() = ip(1);
-      for (int j = 0; j < DIMR; j++)
-        adp.x.DValue(j) = ijac(0,j);
-      for (int j = 0; j < DIMR; j++)
-        adp.y.DValue(j) = ijac(1,j);
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-    }
-
-  
-    template<int DIMR>
-    INLINE void GetTIP(const SIMD<MappedIntegrationPoint<3,DIMR>> & mip, TIP<3, AutoDiffRec<DIMR,SIMD<double>>> & adp) 
-    {
-      Mat<3,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
-      const auto &ip = mip.IP();
-      adp.x.Value() = ip(0);
-      adp.y.Value() = ip(1);
-      adp.z.Value() = ip(2);
-      for (int j = 0; j < DIMR; j++)
-        adp.x.DValue(j) = ijac(0,j);
-      for (int j = 0; j < DIMR; j++)
-        adp.y.DValue(j) = ijac(1,j);
-      for (int j = 0; j < DIMR; j++)
-        adp.z.DValue(j) = ijac(2,j);
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-    }
-
-
-
-
-
-  template<int DIMS, int DIMR>
-  INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip) -> TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>>;
-
-    template<int DIMR>
-    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip) -> TIP<0,AutoDiffRec<DIMR,SIMD<double>>>
-    {
-      TIP<0,AutoDiffRec<DIMR,SIMD<double>>> adp;
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-      return adp;
-    }
-
-    template<int DIMR>
-    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<1,DIMR>> & mip) -> TIP<1,AutoDiffRec<DIMR,SIMD<double>>>
-    {
-      TIP<1,AutoDiffRec<DIMR,SIMD<double>>> adp;
-      Mat<1,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
-      const auto &ip = mip.IP();
-      adp.x.Value() = ip(0);
-      for (int j = 0; j < DIMR; j++)
-        adp.x.DValue(j) = ijac(0,j);
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-      return adp;
-    }
-
-  
-    template<int DIMR>
-    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<2,DIMR>> & mip) -> TIP<2,AutoDiffRec<DIMR,SIMD<double>>>
-    {
-      TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp;      
-      Mat<2,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
-      const auto &ip = mip.IP();
-      adp.x.Value() = ip(0);
-      adp.y.Value() = ip(1);
-      for (int j = 0; j < DIMR; j++)
-        adp.x.DValue(j) = ijac(0,j);
-      for (int j = 0; j < DIMR; j++)
-        adp.y.DValue(j) = ijac(1,j);
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-      return adp;
-    }
-
-  
-    template<int DIMR>
-    INLINE auto GetTIP(const SIMD<MappedIntegrationPoint<3,DIMR>> & mip) -> TIP<3, AutoDiffRec<DIMR,SIMD<double>>>
-    {
-      Mat<3,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
-      TIP<3, AutoDiffRec<DIMR,SIMD<double>>> adp;
-      const auto &ip = mip.IP();
-      adp.x.Value() = ip(0);
-      adp.y.Value() = ip(1);
-      adp.z.Value() = ip(2);
-      for (int j = 0; j < DIMR; j++)
-        adp.x.DValue(j) = ijac(0,j);
-      for (int j = 0; j < DIMR; j++)
-        adp.y.DValue(j) = ijac(1,j);
-      for (int j = 0; j < DIMR; j++)
-        adp.z.DValue(j) = ijac(2,j);
-      adp.facetnr = mip.IP().FacetNr();
-      adp.vb = mip.IP().VB();
-      return adp;
-    }
-
-
-
-
-  template<int DIMS, int DIMR>
-  INLINE auto GetTIP( const MappedIntegrationPoint<DIMS,DIMR> & mip) -> TIP<DIMS,AutoDiffRec<DIMR>>;
+  template<int DIMR>
+  INLINE void GetTIP1( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip, TIP<0,AutoDiff<DIMR,SIMD<double>>> & adp) 
+  {
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
   
   template<int DIMR>
-  INLINE auto GetTIP( const MappedIntegrationPoint<0,DIMR> & mip) -> TIP<0,AutoDiffRec<DIMR>>
+  INLINE void GetTIP1 (const SIMD<MappedIntegrationPoint<1,DIMR>> & mip, TIP<1,AutoDiff<DIMR,SIMD<double>>> & adp) 
   {
-    TIP<0,AutoDiffRec<DIMR>> adp;
+    Mat<1,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+    const auto &ip = mip.IP();
+    adp.x.Value() = ip(0);
+    for (int j = 0; j < DIMR; j++)
+      adp.x.DValue(j) = ijac(0,j);
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
+  
+  
+  template<int DIMR>
+  INLINE void GetTIP1 (const SIMD<MappedIntegrationPoint<2,DIMR>> & mip, TIP<2,AutoDiff<DIMR,SIMD<double>>> & adp) 
+  {
+    Mat<2,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+    const auto &ip = mip.IP();
+    adp.x.Value() = ip(0);
+    adp.y.Value() = ip(1);
+    for (int j = 0; j < DIMR; j++)
+      adp.x.DValue(j) = ijac(0,j);
+    for (int j = 0; j < DIMR; j++)
+      adp.y.DValue(j) = ijac(1,j);
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
+  
+  
+    template<int DIMR>
+    INLINE void GetTIP1 (const SIMD<MappedIntegrationPoint<3,DIMR>> & mip, TIP<3, AutoDiff<DIMR,SIMD<double>>> & adp) 
+    {
+      Mat<3,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      adp.z.Value() = ip(2);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
+    }
+
+
+
+
+
+
+  
+  template<int DIMS, int DIMR>
+  INLINE auto GetTIP (const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip)
+  {
+    TIP<DIMS,AutoDiff<DIMR,SIMD<double>>> tip(mip.IP().FacetNr(), mip.IP().VB());
+    GetTIP1 (mip, tip);
+    return tip;
+  }
+
+  /*
+    template<int DIMR>
+    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip) -> TIP<0,AutoDiff<DIMR,SIMD<double>>>
+    {
+      TIP<0,AutoDiff<DIMR,SIMD<double>>> adp;
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
+      return adp;
+    }
+
+    template<int DIMR>
+    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<1,DIMR>> & mip) -> TIP<1,AutoDiff<DIMR,SIMD<double>>>
+    {
+      TIP<1,AutoDiff<DIMR,SIMD<double>>> adp;
+      Mat<1,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
+      return adp;
+    }
+
+  
+    template<int DIMR>
+    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<2,DIMR>> & mip) -> TIP<2,AutoDiff<DIMR,SIMD<double>>>
+    {
+      TIP<2,AutoDiff<DIMR,SIMD<double>>> adp;      
+      Mat<2,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
+      return adp;
+    }
+
+  
+    template<int DIMR>
+    INLINE auto GetTIP(const SIMD<MappedIntegrationPoint<3,DIMR>> & mip) -> TIP<3, AutoDiff<DIMR,SIMD<double>>>
+    {
+      Mat<3,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      TIP<3, AutoDiff<DIMR,SIMD<double>>> adp;
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      adp.z.Value() = ip(2);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.z.DValue(j) = ijac(2,j);
+      adp.facetnr = mip.IP().FacetNr();
+      adp.vb = mip.IP().VB();
+      return adp;
+    }
+  */
+
+
+  template <int DIMS, int DIMR>
+  INLINE void GetTIP1( const MappedIntegrationPoint<DIMS,DIMR> & mip);
+  
+  template<int DIMR>
+  INLINE void GetTIP1( const MappedIntegrationPoint<0,DIMR> & mip, TIP<0,AutoDiff<DIMR>> & adp)
+  {
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
+
+  template<int DIMR>
+  INLINE void GetTIP1( const MappedIntegrationPoint<1,DIMR> & mip, TIP<1,AutoDiff<DIMR>> & adp)
+  {
+    // TIP<1,AutoDiff<DIMR>> adp;
+    Mat<1,DIMR> ijac = mip.GetJacobianInverse();
+    const auto &ip = mip.IP();
+    adp.x.Value() = ip(0);
+    for (int j = 0; j < DIMR; j++)
+      adp.x.DValue(j) = ijac(0,j);
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
+  
+  template<int DIMR>
+  INLINE void GetTIP1( const MappedIntegrationPoint<2,DIMR> & mip, TIP<2,AutoDiff<DIMR>> &adp)
+  {
+    Mat<2,DIMR> ijac = mip.GetJacobianInverse();
+    const auto &ip = mip.IP();
+    adp.x.Value() = ip(0);
+    adp.y.Value() = ip(1);
+    for (int j = 0; j < DIMR; j++)
+      adp.x.DValue(j) = ijac(0,j);
+    for (int j = 0; j < DIMR; j++)
+      adp.y.DValue(j) = ijac(1,j);
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
+
+  
+  template<int DIMR>
+  INLINE void GetTIP1(const MappedIntegrationPoint<3,DIMR> & mip, TIP<3, AutoDiff<DIMR>> & adp)
+  {
+    Mat<3,DIMR> ijac = mip.GetJacobianInverse();
+    const auto &ip = mip.IP();
+    adp.x.Value() = ip(0);
+    adp.y.Value() = ip(1);
+    adp.z.Value() = ip(2);
+    for (int j = 0; j < DIMR; j++)
+      adp.x.DValue(j) = ijac(0,j);
+    for (int j = 0; j < DIMR; j++)
+      adp.y.DValue(j) = ijac(1,j);
+    for (int j = 0; j < DIMR; j++)
+      adp.z.DValue(j) = ijac(2,j);
+    adp.facetnr = mip.IP().FacetNr();
+    adp.vb = mip.IP().VB();
+  }
+
+  
+
+  template<int DIMS, int DIMR>
+  INLINE auto GetTIP (const MappedIntegrationPoint<DIMS,DIMR> & mip) //  -> TIP<DIMS,AutoDiff<DIMR>>;
+  {
+    TIP<DIMS,AutoDiff<DIMR>> tip(mip.IP().FacetNr(), mip.IP().VB());
+    GetTIP1(mip, tip);
+    return tip;
+  }
+
+
+  template <int DIMS, int DIMR>
+  auto GetTIPHesse (const MappedIntegrationPoint<DIMS, DIMR> & mip)
+  {
+    Vec<DIMR, Mat<DIMS,DIMS>> hesse;
+    mip.CalcHesse(hesse);
+    Mat<DIMS,DIMR> ijac = mip.GetJacobianInverse();
+    
+    Vec<DIMR, Mat<DIMR,DIMR>> hessemapped;
+    for (int i = 0; i < DIMR; i++)
+      hessemapped(i) =  Trans(ijac) * hesse(i) * ijac; 
+
+    Vec<DIMS, Mat<DIMR,DIMR>> hessemapped2 = Mat<DIMR,DIMR>(0.0);
+    for (int i =  0; i < DIMR; i++)
+      for (int j = 0; j < DIMS; j++)
+        hessemapped2(j) += ijac(j,i) * hessemapped(i);
+
+    TIP<DIMS, AutoDiffDiff<DIMR>> tip = GetTIP(mip);
+    
+    if constexpr(DIMS >= 1)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.x.DDValue(j,k) = -hessemapped2(0)(j,k);
+    if constexpr(DIMS >= 2)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.y.DDValue(j,k) = -hessemapped2(1)(j,k);
+    if constexpr(DIMS >= 3)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.z.DDValue(j,k) = -hessemapped2(2)(j,k);
+    
+    return tip;
+  }
+
+
+  template <int DIMS, int DIMR>
+  auto GetTIPHesse (const SIMD<MappedIntegrationPoint<DIMS, DIMR>> & mip)
+  {
+    Vec<DIMR, Mat<DIMS,DIMS, SIMD<double>>> hesse;
+    mip.CalcHesse(hesse);
+    Mat<DIMS,DIMR, SIMD<double>> ijac = mip.GetJacobianInverse();
+    
+    Vec<DIMR, Mat<DIMR,DIMR, SIMD<double>>> hessemapped;
+    for (int i = 0; i < DIMR; i++)
+      hessemapped(i) =  Trans(ijac) * hesse(i) * ijac; 
+
+    Vec<DIMS, Mat<DIMR,DIMR, SIMD<double>>> hessemapped2 = Mat<DIMR,DIMR,SIMD<double>>(0.0);
+    for (int i =  0; i < DIMR; i++)
+      for (int j = 0; j < DIMS; j++)
+        hessemapped2(j) += ijac(j,i) * hessemapped(i);
+
+    TIP<DIMS, AutoDiffDiff<DIMR, SIMD<double>>> tip = GetTIP(mip);
+    
+    if constexpr(DIMS >= 1)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.x.DDValue(j,k) = -hessemapped2(0)(j,k);
+    if constexpr(DIMS >= 2)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.y.DDValue(j,k) = -hessemapped2(1)(j,k);
+    if constexpr(DIMS >= 3)
+      for (int j = 0; j < DIMR; j++)
+        for (int k = 0; k < DIMR; k++)
+          tip.z.DDValue(j,k) = -hessemapped2(2)(j,k);
+    
+    return tip;
+  }
+
+
+  
+  /*
+  template<int DIMR>
+  INLINE auto GetTIP( const MappedIntegrationPoint<0,DIMR> & mip) -> TIP<0,AutoDiff<DIMR>>
+  {
+    TIP<0,AutoDiff<DIMR>> adp;
     adp.facetnr = mip.IP().FacetNr();
     adp.vb = mip.IP().VB();
     return adp;
   }
 
     template<int DIMR>
-    INLINE auto GetTIP( const MappedIntegrationPoint<1,DIMR> & mip) -> TIP<1,AutoDiffRec<DIMR>>
+    INLINE auto GetTIP( const MappedIntegrationPoint<1,DIMR> & mip) -> TIP<1,AutoDiff<DIMR>>
     {
-      TIP<1,AutoDiffRec<DIMR>> adp;
+      TIP<1,AutoDiff<DIMR>> adp;
       Mat<1,DIMR> ijac = mip.GetJacobianInverse();
       const auto &ip = mip.IP();
       adp.x.Value() = ip(0);
@@ -1995,9 +2284,9 @@ namespace ngfem
 
   
     template<int DIMR>
-    INLINE auto GetTIP( const MappedIntegrationPoint<2,DIMR> & mip) -> TIP<2,AutoDiffRec<DIMR>>
+    INLINE auto GetTIP( const MappedIntegrationPoint<2,DIMR> & mip) -> TIP<2,AutoDiff<DIMR>>
     {
-      TIP<2,AutoDiffRec<DIMR>> adp;      
+      TIP<2,AutoDiff<DIMR>> adp;      
       Mat<2,DIMR> ijac = mip.GetJacobianInverse();
       const auto &ip = mip.IP();
       adp.x.Value() = ip(0);
@@ -2013,10 +2302,10 @@ namespace ngfem
 
   
     template<int DIMR>
-    INLINE auto GetTIP(const MappedIntegrationPoint<3,DIMR> & mip) -> TIP<3, AutoDiffRec<DIMR>>
+    INLINE auto GetTIP(const MappedIntegrationPoint<3,DIMR> & mip) -> TIP<3, AutoDiff<DIMR>>
     {
       Mat<3,DIMR> ijac = mip.GetJacobianInverse();
-      TIP<3, AutoDiffRec<DIMR>> adp;
+      TIP<3, AutoDiff<DIMR>> adp;
       const auto &ip = mip.IP();
       adp.x.Value() = ip(0);
       adp.y.Value() = ip(1);
@@ -2031,7 +2320,7 @@ namespace ngfem
       adp.vb = mip.IP().VB();
       return adp;
     }
-
+  */
 
   
 

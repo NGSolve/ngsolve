@@ -12,19 +12,7 @@ ngsolve.comp ... function spaces, forms
 import netgen
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
-def TmpRedraw(*args, **kwargs):
-    if solve._Redraw(*args, **kwargs):
-        try:
-            import netgen
-            import tkinter
-            cnt = 0
-            while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT) and cnt < 100):
-                cnt += 1
-        except:
-            pass
-
-solve.Redraw = TmpRedraw
-del TmpRedraw
+from netgen import Redraw
 
 from pyngcore import BitArray, TaskManager, SetNumThreads
 from .ngstd import Timers, Timer, IntRange
@@ -36,24 +24,25 @@ from .la import BaseMatrix, BaseVector, BlockVector, BlockMatrix, \
 from .fem import BFI, LFI, CoefficientFunction, Parameter, ET, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
-    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Trace, Inv, Det, \
+    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Trace, Inv, Det, Cof, Cross, \
     specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
-    IntegrationRule, IfPos
+    IntegrationRule, IfPos, VoxelCoefficient
 from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     BilinearForm, LinearForm, GridFunction, Preconditioner, \
     MultiGridPreconditioner, ElementId, FESpace, H1, HCurl, \
     HDiv, L2, VectorH1, VectorL2, SurfaceL2, HDivDiv, HCurlCurl, HCurlDiv, \
     HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
     NormalFacetFESpace, \
-    FacetSurface, NumberSpace, Periodic, Discontinuous, Compress, \
+    FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
+    NumberSpace, Periodic, Discontinuous, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, MPI_Init
-from .solve import Redraw, BVP, CalcFlux, Draw, DrawFlux, \
+from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, PyTrace, \
-    PyDet, Cross, Cof, PyInv, PySym, PySkew, OuterProduct, TimeFunction
+    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize
 from . import solvers
 
 

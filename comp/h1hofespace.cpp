@@ -81,6 +81,9 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
+    static bool SupportsVB (VorB checkvb) { return true; }
+
+
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -99,34 +102,86 @@ namespace ngcomp
     }
   };
 
-  template <int DIM_SPC, VorB VB = VOL>
-  class DiffOpDualVectorH1 : public DiffOp<DiffOpDualVectorH1<DIM_SPC> >
+
+  
+  template <int _DIM_SPACE, int _DIM_ELEMENT>
+  class DiffOpDualH1 : public DiffOpDual<_DIM_SPACE>
+  {
+  public:
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = _DIM_ELEMENT };
+
+    typedef DiffOpDualH1<_DIM_SPACE, _DIM_ELEMENT-1> DIFFOP_TRACE;
+  };
+  
+  template <int _DIM_SPACE>
+  class DiffOpDualH1<_DIM_SPACE,0> : public DiffOpId<_DIM_SPACE>
+  {
+  public:    
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = 0 };
+
+    typedef void DIFFOP_TRACE;
+  };
+
+
+  /// dual operator for VectorH1
+  template <int D>
+  class DiffOpDualVector : public DiffOp<DiffOpDualVector<D> >
   {
   public:
     enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-VB };
-    enum { DIM_DMAT = DIM_SPC };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
+
     static bool SupportsVB (VorB checkvb) { return true; }
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       mat = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
+      for (int i = 0; i < DIM_SPACE; i++)
         {
           auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[i]);
           feli.CalcDualShape (mip, mat.Row(i).Range(fel.GetRange(i)));
         }
     }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
+    }
+  };
+  
+  template <int _DIM_SPACE, int _DIM_ELEMENT>
+  class DiffOpDualVectorH1 : public DiffOpDualVector<_DIM_SPACE>
+  {
+  public:
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = _DIM_ELEMENT };
+
+    typedef DiffOpDualVectorH1<_DIM_SPACE, _DIM_ELEMENT-1> DIFFOP_TRACE;
+  };
+  
+  template <int _DIM_SPACE>
+  class DiffOpDualVectorH1<_DIM_SPACE,0> : public DiffOpId<_DIM_SPACE>
+  {
+  public:    
+    enum { DIM_SPACE = _DIM_SPACE };
+    enum { DIM_ELEMENT = 0 };
+
+    typedef void DIFFOP_TRACE;
   };
 
-
-
-
+  
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -224,7 +279,7 @@ namespace ngcomp
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,1>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
-          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>();          
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>();
           break;
         }
       case 3:
@@ -284,12 +339,12 @@ namespace ngcomp
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());
-        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<2>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ());
         break;
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
 	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
-	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<3>>> ());
+	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ());
 	break;
       default:
         ;
@@ -946,8 +1001,13 @@ into the wirebasket.
                  hofe -> SetVertexNumbers (ngel.vertices);
 
                  if (et.DIM >= 1)
-                   hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-
+                   {
+                     // hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+                     auto edges = ngel.Edges();
+                     for (auto i : Range(edges))
+                       hofe->SetOrderEdge (i, order_edge[edges[i]] - (highest_order_dc ? 1 : 0));
+                   }
+                 
                  if (et.DIM >= 2)
                    hofe -> SetOrderFace (0, order_face[ma->GetSElFace(ei.Nr())]);
                  
@@ -2233,8 +2293,17 @@ into the wirebasket.
       : CompoundFESpace(ama, flags)
     {
       type = "VectorH1";
+      Array<string> dirichlet_comp;
+      string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
       for (int i = 0; i <  ma->GetDimension(); i++)
-        AddSpace (make_shared<H1HighOrderFESpace> (ama, flags));
+        {
+          Flags tmpflags = flags;
+          if (flags.StringFlagDefined(dirnames[i]))
+            tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
+          if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
+            tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
+          AddSpace (make_shared<H1HighOrderFESpace> (ama, tmpflags));
+        }
 
       switch (ma->GetDimension())
         {
@@ -2246,20 +2315,53 @@ into the wirebasket.
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
-          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2,2>>> ());
+          additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<2>>>(), 2));
+          additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>>(), 2));
           break;
           
         case 3:
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
-          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();          
+          // flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();
+          flux_evaluator[BND] = make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>(), 3);
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>>();
+          
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
-          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
+          additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<3>>>(), 3));
+          additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>>(), 3));          
           break;
         }
     }
+
+  DocInfo VectorH1FESpace :: GetDocu ()
+  {
+    DocInfo docu = CompoundFESpace::GetDocu();
+    
+    docu.Arg("dirichletx") = "regexpr\n"
+      "  Regular expression string defining the dirichlet boundary\n"
+      "  on the first component of VectorH1.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichletx = 'top|right'";
+    docu.Arg("dirichlety") = "regexpr\n"
+      "  Dirichlet boundary for the second component";
+    docu.Arg("dirichletz") = "regexpr\n"
+      "  Dirichlet boundary for the third component";
+    docu.Arg("dirichletx_bbnd") = "regexpr\n"
+      "  Regular expression string defining the dirichlet bboundary,\n"
+      "  i.e. points in 2D and edges in 3D, on the first component.\n"
+      "  More than one bboundary can be combined by the | operator,\n"
+      "  i.e.: dirichletx_bbnd = 'top|right'";
+    docu.Arg("dirichlety_bbnd") = "regexpr\n"
+      "  Dirichlet bboundary for the second component";
+    docu.Arg("dirichletz_bbnd") = "regexpr\n"
+      "  Dirichlet bboundary for the third component";
+
+    return docu;
+  }
     
   void VectorH1FESpace::SetOrder (ELEMENT_TYPE et, TORDER order)
   {

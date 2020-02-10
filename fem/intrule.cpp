@@ -85,6 +85,50 @@ namespace ngfem
     throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
   }
 
+  /*
+  int BaseMappedIntegrationPoint :: DimElement() const
+  {
+    switch(eltrans->VB())
+      {
+      case VOL:
+        switch (eltrans->SpaceDim())
+	  {
+          case 1: return 1;
+          case 2: return 2;
+          case 3: return 3;
+          }
+        break;
+      case BND:
+        switch (eltrans->SpaceDim())
+	  {
+          case 1: return 0;
+          case 2: return 1;
+          case 3: return 2;
+          }
+        break;
+      case BBND:
+        switch (eltrans->SpaceDim())
+	  {
+          case 2: return 0;
+          case 3: return 1;
+          }
+        break;
+      case BBBND:
+        switch (eltrans->SpaceDim())
+	  {
+          case 3: return 0;
+          }
+        break;
+      }
+    throw Exception("BaseMappedIntegrationPoint::DimElement, illegal dimension");
+  }
+  
+  int BaseMappedIntegrationPoint :: DimSpace() const
+  {
+    return eltrans->SpaceDim();
+  }
+*/
+  
   FlatVector<Complex> BaseMappedIntegrationPoint :: GetPointComplex() const
   {
     if (is_complex)
@@ -144,17 +188,23 @@ namespace ngfem
       }
     throw Exception("BaseMappedIntegrationPoint::GetPointComplex, is not complex");
   }
-  
+
+  /*
   int BaseMappedIntegrationPoint :: Dim() const
   {
     return eltrans->SpaceDim();
   }
-
-  VorB BaseMappedIntegrationPoint :: VB() const
+  */
+  
+  /*
+  VorB BaseMappedIntegrationPoint :: ElementVB() const
   {
-    return eltrans->VB();
+    // cout << "BaseMappedIP, eltrans->VB = " << eltrans->VB() << ", ip.vb = " << ip.VB() << endl;
+    return ip.VB();
+    // return eltrans->VB();
   }
-
+  */
+  
 
   template <int S, int R, typename SCAL>
   void MappedIntegrationPoint<S,R,SCAL> :: 
@@ -335,6 +385,8 @@ namespace ngfem
 
   template class MappedIntegrationPoint<0,0>;
   template class MappedIntegrationPoint<0,1>;
+  template class MappedIntegrationPoint<0,2>;
+  template class MappedIntegrationPoint<0,3>;
   template class MappedIntegrationPoint<1,1>;
   template class MappedIntegrationPoint<1,2>;
   template class MappedIntegrationPoint<2,2>;
@@ -342,8 +394,6 @@ namespace ngfem
   template class MappedIntegrationPoint<2,3>;
   template class MappedIntegrationPoint<3,3>;
   
-  template class MappedIntegrationPoint<0,2>;
-  template class MappedIntegrationPoint<0,3>;
 
 
 
@@ -399,6 +449,52 @@ namespace ngfem
     for (auto & mip : mir)
       ost << mip << endl;
     return ost;
+  }
+
+
+  int BaseMappedIntegrationRule :: DimElement() const
+  {
+    return eltrans.ElementDim();
+    /*
+    switch(eltrans.VB())
+      {
+      case VOL:
+        switch (eltrans.SpaceDim())
+	  {
+          case 1: return 1;
+          case 2: return 2;
+          case 3: return 3;
+          }
+        break;
+      case BND:
+        switch (eltrans.SpaceDim())
+	  {
+          case 1: return 0;
+          case 2: return 1;
+          case 3: return 2;
+          }
+        break;
+      case BBND:
+        switch (eltrans.SpaceDim())
+	  {
+          case 2: return 0;
+          case 3: return 1;
+          }
+        break;
+      case BBBND:
+        switch (eltrans.SpaceDim())
+	  {
+          case 3: return 0;
+          }
+        break;
+      }
+    throw Exception("BaseMappedIntegrationRule::DimElement, illegal dimension");
+    */
+  }
+
+  int BaseMappedIntegrationRule :: DimSpace() const
+  {
+    return eltrans.SpaceDim();
   }
 
   
@@ -3212,7 +3308,11 @@ namespace ngfem
     dimension = ir.Dim();
     for (int i = 0; i < Size(); i++)
       (*this)[i] = [&] (int j) { int nr = i*SIMD<IntegrationPoint>::Size()+j;
-                                 return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
+                                 bool regularip = nr < ir.Size();
+                                 IntegrationPoint ip = ir[regularip ? nr : ir.Size()-1];
+                                 if (!regularip) ip.SetWeight(0);
+                                 return ip; };
+    // return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
@@ -4004,6 +4104,16 @@ namespace ngstd
       case 3: return static_cast<const SIMD<ngfem::DimMappedIntegrationPoint<3>>&> (*this).GetPoint();
       }
     throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
+  }
+
+  int SIMD<ngfem::BaseMappedIntegrationPoint> ::  DimElement() const
+  {
+    return eltrans->ElementDim();
+  }
+
+  int SIMD<ngfem::BaseMappedIntegrationPoint> ::  DimSpace() const
+  {
+    return eltrans->SpaceDim();
   }
 
   

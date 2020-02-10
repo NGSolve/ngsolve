@@ -1,7 +1,7 @@
 from ngsolve.ngstd import Timer
 from ngsolve.fem import *
 from ngsolve.comp import *
-from ngsolve.comp import DifferentialSymbol
+from ngsolve.bla import Norm
 
 x = CoordCF(0)
 y = CoordCF(1)
@@ -30,6 +30,8 @@ def VectorFacet (mesh, **args):
     return TangentialFacetFESpace(mesh, **args)
 
 def grad(func):
+    if "normal vector" in str(func):
+        return specialcf.Weingarten(func.dim)
     if func.derivname == "grad":
         return func.Deriv()
     add = func.Operator("grad")
@@ -41,6 +43,8 @@ def grad(func):
 
 def Grad(func):
     """ Jacobi-matrix"""
+    if "normal vector" in str(func):        
+        return specialcf.Weingarten(func.dim)
     try:
         return func.Operator("Grad")
     except:
@@ -93,10 +97,10 @@ def PyDet(mat):
               +mat[1,0]*(mat[2,1]*mat[0,2]-mat[2,2]*mat[0,1]) \
               +mat[2,0]*(mat[0,1]*mat[1,2]-mat[0,2]*mat[1,1])
 
-def Cross(a,b):
+def PyCross(a,b):
     return CoefficientFunction( (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]) )
 
-def Cof(m):
+def PyCof(m):
     if m.dims[0] == 1:
         return CoefficientFunction(1, dims=(1,1))
     elif m.dims[0] == 2:
@@ -125,7 +129,7 @@ def PySkew(m):
     return 0.5*(m-m.trans)
 
 def OuterProduct(a, b):
-    return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
+    return CoefficientFunction( (a,), dims=(a.dim,1)) * CoefficientFunction( (b,), dims=(b.dim,1)).trans
 
 def TimeFunction(func, name=None):
     name = name or func.__qualname__
@@ -138,3 +142,5 @@ def TimeFunction(func, name=None):
 
 
 
+def Normalize (v):
+    return 1/Norm(v) * v

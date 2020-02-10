@@ -257,12 +257,13 @@ namespace ngfem
     {
        for (size_t i = 0; i < bmir.Size(); i++)
         {
-          Mat<DIM,DIM,SIMD<double>> mat;
+          Vec<DIM*DIM,SIMD<double>> mat;
 	  
 	  auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
 
-	  for (size_t k = 0; k < DIM*DIM; k++)
-	    mat(k) = values(k,i);
+	  //for (size_t k = 0; k < DIM*DIM; k++)
+	  //  mat(k) = values(k,i);
+          mat = values.Col(i);
 	  
 	  Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
           TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
@@ -273,12 +274,7 @@ namespace ngfem
                                  SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
                                            {                                          
 					     Vec<DIM*DIM,SIMD<double>> vecshape = val.Shape();
-                                             
-                                             SIMD<double> sum = 0.0;
-                                             for (size_t k = 0; k < DIM*DIM; k++)
-                                               sum += mat(k) * vecshape(k);
-                                             
-                                             *pcoefs += HSum(sum);
+                                             *pcoefs += HSum(InnerProduct(mat,vecshape));
                                              pcoefs += dist;
                                            }));
         }
@@ -716,7 +712,7 @@ namespace ngfem
   };
 
 
-    template <> class HCurlDivFE<ET_QUAD> : public T_HCurlDivFE<ET_QUAD> 
+  template <> class HCurlDivFE<ET_QUAD> : public T_HCurlDivFE<ET_QUAD> 
   {
     
   public:
@@ -729,13 +725,13 @@ namespace ngfem
       for (int i=0; i<4; i++)
 	{
 	  ndof += order_facet[i]+1;
-	  order = max2(order, order_facet[i]);
+	  order = max2(order, order_facet[i]); 
 	}
-      
+      order += 1; //lo facet functions are linear
       int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;    
       
       order = max2(order, order_inner);
-      order += 4;
+      //order += 4; // I think this is wrong! PL
       ndof += ninner;
 
       if (order_trace > -1)
@@ -743,31 +739,29 @@ namespace ngfem
 	  ndof += (order_trace+1)*(order_trace+1);
 	  order = max2(order, order_trace);
 	}
-     
     }
     
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
-    {
+    {      
       auto x = ip.x, y = ip.y;
       Tx lx[4] ={1-x, x, x, 1-x};
       Tx ly[4] = {1-y, 1-y, y, y};
       //Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
       Tx edgebubbles[4] = {(1-x)*x, x*(1-x), y*(1-y), (1-y)*y};
 
-      typedef decltype(x.Value()+x.Value()) T;
+      // typedef decltype(x.Value()+x.Value()) T;
      		  
       int ii = 0;
       
       int oi=order_inner;
       int ot = order_trace;
       
-      int maxorder_facet =
+      int maxorder_facet  =
         max2(order_facet[3],max2(order_facet[0],max2(order_facet[1],order_facet[2])));
-
-
-      ArrayMem<Tx,20> ha(maxorder_facet);
-      ArrayMem<Tx,20> v(oi), u(oi);
+      
+      ArrayMem<Tx,20> ha(maxorder_facet+1);
+      ArrayMem<Tx,20> v(oi+3), u(oi+3);
       for (int i = 0; i < 4; i++)
         {
 	  INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
@@ -780,20 +774,24 @@ namespace ngfem
           for (int l = 0; l <= order_facet[i]; l++)	    
 	    shape[ii++] = Sigma_gradv(eta*ha[l]);	 
         }
-           
+
+      // polynomials in x direction. First one is  quadratic
       IntLegNoBubble::EvalMult (oi+2, lx[0]-lx[1], 0.25*lx[0]*lx[1], u);
+      // polynomials in y direction. First one is  quadratic
       IntLegNoBubble::EvalMult (oi+2, ly[0]-ly[2], 0.25*ly[0]*ly[2], v);
 
       // constants in diagonal
       // off-diagonal constant functions are provided by edge functions
 
       
-      shape[ii++] = u_Sigma_gradv(AutoDiffDiff<2,T>(1.0), lx[0]*ly[0]);
+      //shape[ii++] = u_Sigma_gradv(AutoDiffDiff<2,T>(1.0), lx[0]*ly[0]);
+      shape[ii++] = Sigma_gradv(lx[0]*ly[0]);
+      
       //shape[ii++] = u_Sigma_gradv(lx[0]-lx[1], lx[0]*ly[0]);
 	
       //shape[ii++] = Sigma_gradu_v(lx[0],ly[0]);
 
-      if (ot>-1)
+      if (ot>-1)	
 	shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
 
       //provide mixed functions in the diagonal
@@ -1063,7 +1061,10 @@ namespace ngfem
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-					    shape.Row(nr).AddSize(DIM_STRESS) = val;
+					    if (DIM==1)
+					      shape.Row(nr).AddSize(DIM_STRESS) = val;
+					    else
+					      shape.Row(nr).AddSize(DIM+1) = val;					    
                                           }));
     }
 
@@ -1083,7 +1084,8 @@ namespace ngfem
 	if (DIM==1)
 	  shape.Row(nr).AddSize(DIM_STRESS) = val;
 	else
-	  shape.Row(nr).AddSize(1) = val;
+	  throw ExceptionNOSIMD(string("HCurlDiv - CalcMappedShape on surface elements only on (surface)DIM==1"));
+	//shape.Row(nr).AddSize(1) = val;
       }));      
     }
 
@@ -1167,8 +1169,8 @@ namespace ngfem
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {            
-      auto x = ip.x, y= ip.y;
-      AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };
+      auto x = ip.x, y= ip.y;      
+      AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };      
       
       int ii = 0;
 

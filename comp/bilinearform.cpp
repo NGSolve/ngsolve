@@ -3115,6 +3115,7 @@ namespace ngcomp
 
                  for (auto & bfi : VB_parts[vb])
                    {
+                     HeapReset hr(lh);
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
                      if (!bfi->DefinedOnElement (el.Nr())) continue;
                      
@@ -3140,6 +3141,23 @@ namespace ngcomp
                              (*testout) << "elveclin = " << endl << elveclin << endl;
                              (*testout) << "elmat = " << endl << elmat << endl;
                            }
+
+                         if (elmat_ev)
+                            {
+                              testout->precision(8);
+                              
+                              (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+#ifdef LAPACK
+                              LapackEigenSystem(elmat, lh);
+#else
+                              Vector<SCAL> lami(elmat.Height());
+                              Matrix<SCAL> evecs(elmat.Height());
+                              
+                              CalcEigenSystem (elmat, lami, evecs);
+                              (*testout) << "lami = " << endl << lami << endl;
+#endif
+                              // << "evecs = " << endl << evecs << endl;
+                            } 
                        }
                      catch (Exception & e)
                        {

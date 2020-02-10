@@ -42,6 +42,16 @@ def test_arnoldi():
 
     Draw(laplace(evec),mesh,"laplace")
 
+def test_newton_with_dirichlet():
+    mesh = Mesh (unit_square.GenerateMesh(maxh=0.3))
+    V = H1(mesh, order=3, dirichlet=[1,2,3,4])
+    u,v = V.TnT()
+    a = BilinearForm(V)
+    a += (grad(u) * grad(v) + 3*u**3*v- 1 * v)*dx
+    gfu = GridFunction(V)
+    dirichlet = GridFunction(V)
+    dirichlet.Set(0)
+    newton = solvers.Newton(a, gfu, dirichletvalues=dirichlet.vec)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@
 
 #include "../fem/h1lofe.hpp"
 #include <parallelngs.hpp>
+#include <regex>
 
 using namespace ngmg;
 
@@ -107,6 +108,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if (print)
 	  *testout << "dirichlet_boundaries:" << endl << dirichlet_boundaries << endl;
       }
+
+    if (flags.StringFlagDefined("dirichlet"))
+      {
+        dirichlet_constraints[BND].SetSize (ma->GetNRegions(BND));
+        dirichlet_constraints[BND].Clear();
+        
+        std::regex pattern(flags.GetStringFlag("dirichlet"));
+        for (int i : Range(ma->GetNRegions(BND)))
+          if (std::regex_match (ma->GetMaterial(BND, i), pattern))
+            dirichlet_constraints[BND].SetBit(i);
+      }
+
+    
+    if (flags.StringFlagDefined("dirichlet_bbnd"))
+      {
+        dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
+        dirichlet_constraints[BBND].Clear();
+        
+        std::regex pattern(flags.GetStringFlag("dirichlet_bbnd"));
+        for (int i : Range(ma->GetNRegions(BBND)))
+          if (std::regex_match (ma->GetMaterial(BBND, i), pattern))
+            dirichlet_constraints[BBND].SetBit(i);
+      }
+
     
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
@@ -306,6 +331,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  Regular expression string defining the dirichlet boundary.\n"
       "  More than one boundary can be combined by the | operator,\n"
       "  i.e.: dirichlet = 'top|right'";
+    docu.Arg("dirichlet_bbnd") = "regexpr\n"
+      "  Regular expression string defining the dirichlet bboundary,\n"
+      "  i.e. points in 2D and edges in 3D.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichlet_bbnd = 'top|right'";
     docu.Arg("definedon") = "Region or regexpr\n"
       "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
       "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
@@ -362,8 +392,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dirichlet_edge = false;
     dirichlet_face = false;
 
-    // for clang compatibility ... 
-    // #pragma omp parallel    
+    /*
     {
       if (dirichlet_boundaries.Size())
         for (Ngs_Element ngel : ma->Elements(BND))  // .OmpSplit())
@@ -376,6 +405,25 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 dirichlet_face[ngel.Faces()[0]] = true;
             }
     }
+    */
+    for (auto vb : { BND, BBND, BBND })
+      {
+        auto & dc = dirichlet_constraints[int(vb)];
+        if (dc.Size())
+          for (Ngs_Element ngel : ma->Elements(vb)) 
+            if (dc[ngel.GetIndex()])
+              {
+                dirichlet_vertex[ngel.Vertices()] = true;
+                // if (dim >= 2)
+                if (dim-vb >= 1)
+                  dirichlet_edge[ngel.Edges()] = true;
+                // if (dim == 3)
+                if (dim-vb >= 2)
+                  dirichlet_face[ngel.Faces()[0]] = true;
+              }
+      }
+
+    
 
     if (print)
       {
@@ -418,21 +466,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     /*
     if (dirichlet_boundaries.Size())
-      for (ElementId ei : ma->Elements<BND>())
-	if (dirichlet_boundaries[ma->GetElIndex(ei)])
-	  {
-	    GetDofNrs (ei, dnums);
-	    for (int d : dnums)
-	      if (d != -1) dirichlet_dofs.Set (d);
-	  }
-    */
-
-    if (dirichlet_boundaries.Size())
       for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
           for (int d : el.GetDofs())
             if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
+    */
 
+    for (auto vb : { BND, BBND, BBND })
+      {
+        auto & dc = dirichlet_constraints[int(vb)];
+        if (dc.Size())
+          for (FESpace::Element el : Elements(vb))
+            if (dc[el.GetIndex()])
+              for (int d : el.GetDofs())
+                if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
+      }
+    
     /*
     Array<DofId> dnums;
     for (auto i : Range(dirichlet_vertex))

@@ -16,6 +16,7 @@ cmake %SRC_DIR% ^
         -G"%CMAKE_GENERATOR%" ^
         -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL_PREFIX% ^
         %CMAKE_CONFIG% ^
+        -DUSE_NATIVE_ARCH=%NG_USE_NATIVE_ARCH% ^
         -DUSE_OCC=ON ^
         -DOCC_LIBRARY=C:/install_opencascade_7.4.0_static/win64/vc14/lib/TKernel.lib ^
         -DOCC_INCLUDE_DIR=C:/install_opencascade_7.4.0_static/inc ^

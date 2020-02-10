@@ -592,7 +592,7 @@ namespace ngla
   double S_BaseVector<double> :: InnerProduct (const BaseVector & v2, bool conjugate) const;
 
 
-#if not defined(FILE_BASEVECTOR_CPP)
+#if !defined(FILE_BASEVECTOR_CPP)
   extern template class S_BaseVector<double>;
   extern template class S_BaseVector<Complex>;
 #endif
