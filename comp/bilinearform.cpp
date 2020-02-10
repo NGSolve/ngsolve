@@ -2863,6 +2863,7 @@ namespace ngcomp
 
                  for (auto & bfi : VB_parts[vb])
                    {
+                     HeapReset hr(lh);
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
                      if (!bfi->DefinedOnElement (el.Nr())) continue;
                      
