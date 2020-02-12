@@ -252,6 +252,9 @@ endif()
 
 #######################################################################
 if (USE_HYPRE)
+  if (NOT NETGEN_USE_MPI)
+      message(FATAL_ERROR "Hypre needs MPI to be enabled, but Netgen was configured without MPI!")
+  endif (NOT NETGEN_USE_MPI)
   find_package(HYPRE REQUIRED)
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS HYPRE)
   include_directories(${HYPRE_INCLUDES})
