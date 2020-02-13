@@ -614,7 +614,10 @@ template <int D>
   class WeingartenCF : public CoefficientFunctionNoDerivative
   {
   public:
-    WeingartenCF () : CoefficientFunctionNoDerivative(D*D,false) { ; }
+    WeingartenCF () : CoefficientFunctionNoDerivative(D*D,false)
+    {
+      SetDimensions(Array<int> ( { D, D } ));
+    }
 
     void DoArchive(Archive& ar) override
     {
