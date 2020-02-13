@@ -121,6 +121,7 @@ namespace ngfem
 
   void Integrator :: AppendCurvePoint(const FlatVector<double> & point, const FlatVector<double> & tangent)
   {
+    is_curve_integrator = true;
     if(continuous_curveparts.Size() == 0)
       continuous_curveparts.Append(0);
     Vector<> * vec = new Vector<>(3);
