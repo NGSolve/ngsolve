@@ -350,7 +350,7 @@ namespace ngfem
       throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
     }
 
-    virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
+    NGS_DLL_HEADER virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
   };
 
 
