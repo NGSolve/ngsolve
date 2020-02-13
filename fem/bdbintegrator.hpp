@@ -1649,7 +1649,7 @@ public:
   int GetDimension () const override { return DIM; }
 
   ///
-  string Name () const override { return "BDB integrator"; }
+  string Name () const override { return "B integrator"; }
 };
 
 
