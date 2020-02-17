@@ -143,9 +143,7 @@ namespace ngcomp
     }
     
     bool AllDofsTogether(){return all_dofs_together;};
-
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
-
+    
   };
 
 
