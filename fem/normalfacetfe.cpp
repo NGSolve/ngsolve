@@ -173,6 +173,13 @@ namespace ngfem
     throw ExceptionNOSIMD("NormalFacetVolume::T_CalcShape missing element "+ToString(ET));
   }
 
+  template <ELEMENT_TYPE ET> template<typename MIP, typename TFA>  
+  void NormalFacetVolumeFE<ET>::
+  CalcDualShape2 (MIP mip, int fnr, TFA & shape) const
+  {
+    throw Exception("NormalFacetVolume::CalcDualShape2 missing element "+ToString(ET));
+  }
+
   template <> template<typename Tx, typename TFA>  
   void NormalFacetVolumeFE<ET_TRIG>::
   T_CalcShape (Tx hx[DIM], int fanr, TFA & shape) const
@@ -190,6 +197,36 @@ namespace ngfem
                                  {
                                    shape[first+nr] = uDv (val, xi);
                                  }));
+  }
+
+  template <> template<typename MIP, typename TFA>  
+  void NormalFacetVolumeFE<ET_TRIG>::
+  CalcDualShape2 (MIP mip, int fanr, TFA & shape) const
+  {
+    auto & ip = mip.IP();
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+    T x = ip(0), y = ip(1);
+    T lami[3] = { x, y, 1-x-y };
+    Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+
+    int first = first_facet_dof[fanr];
+    int p = facet_order[fanr][0];
+
+    if (ip.VB() == BND)
+      {
+        INT<2> e = GetVertexOrientedEdge(fanr);
+        T xi = lami[e[0]] - lami[e[1]];
+        Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
+        Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
+        Vec<2,T> nv = L2Norm(tauref) / L2Norm(mip.GetJacobian()*tauref) * Cof(mip.GetJacobian()) * nvref;
+        
+        LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              shape[first+nr] = val * nv;
+                            }));
+      }
   }
 
 
@@ -1031,7 +1068,7 @@ namespace ngfem
   void NormalFacetVolumeFE<ET> :: CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
     {
       shape = 0.0;
-      cout << "HALLO!" << endl;
+      this -> CalcDualShape2 (mip, mip.IP().FacetNr(), SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
     }
 
   
