@@ -157,43 +157,6 @@ namespace ngcomp
   };
 
 
-  template <int D>
-  class DiffOpFacetSurfaceDual : public DiffOp<DiffOpFacetSurfaceDual<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
-    
-    typedef void DIFFOP_TRACE;    
-    
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      int facetnr = mip.IP().FacetNr();
-      if (facetnr >= 0)
-        {
-          mat = 0.0;
-          const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (bfel);
-          fel_facet.Facet(facetnr).CalcDualShape(mip, 
-                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
-        }
-      else
-        {
-          if (mip.IP().VB() == BND)
-            throw Exception("SurfaceFacet diffop calcdualshape not implemented yet for VB = BND!");
-            // {
-            //   const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
-            //   fel.CalcDualShape (mip, mat.Row(0));
-            // }
-          else
-            throw Exception("cannot evaluate facet-fe inside element");
-        }
-    }
-  };
 
 
   FacetSurfaceFESpace ::  FacetSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
@@ -521,26 +484,6 @@ namespace ngcomp
   }
   
   // ------------------------------------------------------------------------
-    
-  SymbolTable<shared_ptr<DifferentialOperator>>
-  FacetSurfaceFESpace :: GetAdditionalEvaluators () const
-  {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch (ma->GetDimension())
-      {
-      case 1:
-        break;
-      case 2:
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpFacetSurfaceDual<2>>> ());
-	break;
-      case 3:
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpFacetSurfaceDual<3>>> ());
-	break;
-      default:
-        break;
-      }
-    return additional;
-  }
 
   static RegisterFESpace<FacetSurfaceFESpace> init_facet ("facetsurface");
 }
