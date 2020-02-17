@@ -85,6 +85,9 @@ namespace ngcomp
     virtual void GetEdgeDofNrs (int elnum, Array<DofId> & dnums) const override;
     virtual void GetFaceDofNrs (int felnr, Array<DofId> & dnums) const override;
     virtual void GetInnerDofNrs (int felnr, Array<DofId> & dnums) const override;
+
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
+
   };
 
 }
