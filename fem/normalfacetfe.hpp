@@ -156,7 +156,10 @@ namespace ngfem
 
     using TBASE::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
-    
+
+    using TBASE::CalcDualShape;
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+
     virtual int GetNExtraShapes( int facet) const {return 0;}
     virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
 
