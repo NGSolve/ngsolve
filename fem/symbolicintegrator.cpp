@@ -2948,7 +2948,18 @@ namespace ngfem
 
     if (LocalFacetNr2==-1) throw Exception ("SymbolicFacetBFI: LocalFacetNr2==-1");
 
-    int maxorder = max2 (fel1.Order(), fel2.Order());
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
+    bool is_mixedfe2 = typeid(fel2) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe2 = static_cast<const MixedFiniteElement*> (&fel2);
+    const FiniteElement & fel2_trial = is_mixedfe2 ? mixedfe2->FETrial() : fel2;
+    const FiniteElement & fel2_test = is_mixedfe2 ? mixedfe2->FETest() : fel2;
+
+    if (is_mixedfe1 != is_mixedfe2) throw Exception("both sides should have the same type of mixity");
+    
+    int maxorder = max2(max2 (fel1_trial.Order(), fel1_test.Order()), max2 (fel2_trial.Order(), fel2_test.Order()));
 
     auto eltype1 = trafo1.GetElementType();
     auto eltype2 = trafo2.GetElementType();
@@ -2999,8 +3010,8 @@ namespace ngfem
             // proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
             proxyvalues(i,STAR,STAR) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
 
-          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*fel1.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*fel1.GetNDof());
-          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*fel1.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*fel1.GetNDof());
+          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*fel1_trial.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*fel1_trial.GetNDof());
+          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*fel1_test.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*fel1_test.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
@@ -3019,21 +3030,21 @@ namespace ngfem
                   int ii = i+j;
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
                   if (proxy1->IsOther())
-                    proxy1->Evaluator()->CalcMatrix(fel2, mir2[ii], bmat1, lh);
+                    proxy1->Evaluator()->CalcMatrix(fel2_trial, mir2[ii], bmat1, lh);
                   else
-                    proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
+                    proxy1->Evaluator()->CalcMatrix(fel1_trial, mir1[ii], bmat1, lh);
                   
                   if (proxy2->IsOther())
-                    proxy2->Evaluator()->CalcMatrix(fel2, mir2[ii], bmat2, lh);
+                    proxy2->Evaluator()->CalcMatrix(fel2_test, mir2[ii], bmat2, lh);
                   else
-                    proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                    proxy2->Evaluator()->CalcMatrix(fel1_test, mir1[ii], bmat2, lh);
                   
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
                 }
 
-              IntRange r1 = proxy1->Evaluator()->UsedDofs(proxy1->IsOther() ? fel2 : fel1);
-              IntRange r2 = proxy2->Evaluator()->UsedDofs(proxy2->IsOther() ? fel2 : fel1);
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(proxy1->IsOther() ? fel2_trial : fel1_trial);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(proxy2->IsOther() ? fel2_test : fel1_test);
               loc_elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
             }
         }

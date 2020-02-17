@@ -490,9 +490,11 @@ namespace ngcomp
         TableCreator<int> creator2(maxind);
         for ( ; !creator2.Done(); creator2++)
           {
+            int offset=0;
 	    for(VorB vb  : {VOL, BND, BBND})
 	      {
 		int nre = ma->GetNE(vb);
+                offset += nre;
 		for (int i = 0; i < nre; i++)
 		  {
 		    auto eid = ElementId(vb,i);
@@ -509,38 +511,36 @@ namespace ngcomp
 		    for (int d : dnums)
 		      if (IsRegularDof(d)) creator2.Add (shift+i, d);
 		  }
+              }
 		
-		/*
-		// just not tested ...
-		for (int i = 0; i < specialelements.Size(); i++)
-		{
-                specialelements[i]->GetDofNrs (dnums);
+            // just not tested ...
+            for (int i = 0; i < specialelements.Size(); i++)
+            {
+              specialelements[i]->GetDofNrs (dnums);
 		
-                for (int j = 0; j < dnums.Size(); j++)
-		if (dnums[j] != -1)
-		creator2.Add (ne+nse+i, dnums[j]);
-		}
+              for (int j = 0; j < dnums.Size(); j++)
+                if (dnums[j] != -1)
+                  creator2.Add (offset+i, dnums[j]);
+            }
+            offset += specialelements.Size();	
+            if (fespace2->UsesDGCoupling())
+              //add dofs of neighbour elements as well
+              for (int i = 0; i < nf; i++)
+              {
+                nbelems.SetSize(0);
+                ma->GetFacetElements(i,elnums);
+                for (int k=0; k<elnums.Size(); k++)
+                  nbelems.Append(elnums[k]);
 		
-		if (fespace2->UsesDGCoupling())
-		//add dofs of neighbour elements as well
-		for (int i = 0; i < nf; i++)
-                {
-		nbelems.SetSize(0);
-		ma->GetFacetElements(i,elnums);
-		for (int k=0; k<elnums.Size(); k++)
-		nbelems.Append(elnums[k]);
-		
-		for (int k=0;k<nbelems.Size();k++){
-		int elnr=nbelems[k];
-		if (!fespace2->DefinedOn (ma->GetElIndex(elnr))) continue;
-		fespace2->GetDofNrs (elnr, dnums);
-		for (int j = 0; j < dnums.Size(); j++)
-		if (dnums[j] != -1)
-		creator2.Add (ne+nse+nspe+i, dnums[j]);
-		}
+                for (int k=0;k<nbelems.Size();k++){
+                  int elnr=nbelems[k];
+                  if (!fespace2->DefinedOn (ma->GetElIndex(elnr))) continue;
+                  fespace2->GetDofNrs (elnr, dnums);
+                  for (int j = 0; j < dnums.Size(); j++)
+                    if (dnums[j] != -1)
+                      creator2.Add (offset+i, dnums[j]);
                 }
-		*/
-	      }
+              }
 	  }
 
         /*
@@ -2429,6 +2429,7 @@ namespace ngcomp
 
           {
             cout << IM(3) << "assemble mixed bilinearform" << endl;
+            ma->PushStatus ("Assemble Matrix");
       
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
@@ -2511,7 +2512,258 @@ namespace ngcomp
             if (VB_parts[BBBND].Size()) throw Exception ("mixed biforms don't support bbboundary terms");
             */
             
-            if (facetwise_skeleton_parts[VOL].Size()) throw Exception ("mixed biforms don't support skeleton terms");
+            //if (facetwise_skeleton_parts[VOL].Size()) throw Exception ("mixed biforms don't support skeleton terms");
+
+            if (facetwise_skeleton_parts[VOL].Size())
+            { // inner facets
+              // auto vb = VOL;
+              size_t nf = ma->GetNFacets();
+              size_t ne = ma->GetNE(VOL);
+              BitArray fine_facet(nf);
+              fine_facet.Clear();
+              Array<int> elfacets;
+                
+              for (int i = 0; i < ne; ++i)
+              {
+                auto elfacets = ma->GetElFacets(ElementId(VOL,i));
+                for (auto f : elfacets) fine_facet.SetBit(f);
+              }
+                
+              ProgressOutput progress(ma,string("assemble inner facet"), nf);
+              for (auto colfacets : fespace->FacetColoring())
+              {
+                SharedLoop2 sl(colfacets.Size());
+                ParallelJob
+                  ( [&] (const TaskInfo & ti) 
+                    {
+                      LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                      Array<int> elnums_per(2, lh);
+                      Array<int> dnums_trial, dnums_test, dnums1_trial, dnums1_test, 
+                        dnums2_trial, dnums2_test, elnums, fnums, vnums1, vnums2;
+                      for (int il : sl)
+                      {
+                        int i = colfacets[il];
+                        progress.Update();
+                        if (!fine_facet.Test(i)) continue;
+                        HeapReset hr(lh);
+                                  
+                        int el1 = -1, el2 = -1;
+                          
+                        ma->GetFacetElements(i,elnums);
+
+                        //if (i == asdf)
+
+                        el1 = elnums[0];
+
+                        int fac2 = i;
+                        // timerDG1.Stop();
+                        if(elnums.Size() < 2)
+                        {
+                          int facet2 = ma->GetPeriodicFacet(i);
+                          if(facet2 > i)
+                          {
+                            ma->GetFacetElements (facet2, elnums_per);
+                            elnums.Append(elnums_per[0]);
+                            fac2 = facet2;
+                          }
+                          else
+                            continue;
+                        }
+                          
+                        if(elnums.Size()<2) continue;
+                          
+                        el2 = elnums[1];
+                                  
+                        ElementId ei1(VOL, el1);
+                        ElementId ei2(VOL, el2);
+                          
+                        fnums = ma->GetElFacets(ei1);
+                        int facnr1 = fnums.Pos(i);
+                          
+                        fnums = ma->GetElFacets(ei2);
+                        int facnr2 = fnums.Pos(fac2);
+
+                        const FiniteElement & fel1_trial = fespace->GetFE (ei1, lh);
+                        const FiniteElement & fel1_test = fespace2->GetFE (ei1, lh);
+                        MixedFiniteElement fel1(fel1_trial, fel1_test);
+                        const FiniteElement & fel2_trial = fespace->GetFE (ei2, lh);
+                        const FiniteElement & fel2_test = fespace2->GetFE (ei2, lh);
+                        MixedFiniteElement fel2(fel2_trial, fel2_test);
+                        // const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
+                        // const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
+                          
+                        ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+                        ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
+                          
+
+                        fespace->GetDofNrs (ei1, dnums1_trial);
+                        fespace->GetDofNrs (ei2, dnums2_trial);
+                        
+                        dnums_trial=dnums1_trial;
+                        dnums_trial.Append(dnums2_trial);
+
+                        fespace2->GetDofNrs (ei1, dnums1_test);
+                        fespace2->GetDofNrs (ei2, dnums2_test);
+                        
+                        dnums_test=dnums1_test;
+                        dnums_test.Append(dnums2_test);
+                        
+                        // fespace->GetDofNrs (ei1, dnums1);
+                        // dnums=dnums1;
+                        // fespace->GetDofNrs (ei2, dnums2);
+                        // dnums.Append(dnums2);
+                          
+                        vnums1 = ma->GetElVertices (ei1);
+                        vnums2 = ma->GetElVertices (ei2);
+
+                        bool inconsistent_ndof = false;
+                        inconsistent_ndof |= fel1_test.GetNDof() != dnums1_test.Size();
+                        inconsistent_ndof |= fel2_test.GetNDof() != dnums2_test.Size();
+                        inconsistent_ndof |= fel1_trial.GetNDof() != dnums1_trial.Size();
+                        inconsistent_ndof |= fel2_trial.GetNDof() != dnums2_trial.Size();
+                        
+                        if(inconsistent_ndof)
+                        {
+                          cout << "facet, neighbouring fel(1): Trial NDof() = " << fel1_trial.GetNDof() << endl;
+                          cout << "facet, neighbouring fel(1): Test NDof() = " << fel1_test.GetNDof() << endl;
+                          cout << "facet, neighbouring fel(2): Trial NDof() = " << fel2_trial.GetNDof() << endl;
+                          cout << "facet, neighbouring fel(2): Test NDof() = " << fel2_test.GetNDof() << endl;
+                          cout << "facet, neighbouring fel(1): dnums1_trial.Size() = " << dnums1_trial.Size() << endl;
+                          cout << "facet, neighbouring fel(1): dnums1_test.Size() = " << dnums1_test.Size() << endl;
+                          cout << "facet, neighbouring fel(2): dnums2_trial.Size() = " << dnums2_trial.Size() << endl;
+                          cout << "facet, neighbouring fel(2): dnums2_test.Size() = " << dnums2_test.Size() << endl;
+                          throw Exception ( "Inconsistent number of degrees of freedom " );
+                        }
+
+                        for (auto & bfi : facetwise_skeleton_parts[VOL])
+                        {
+                          if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
+                          if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
+                          if (!bfi->DefinedOnElement(i)) continue;                        
+                              
+                          // if (check_unused)
+                          //   for (auto d : dnums)
+                          //     if (IsRegularDof(d)) useddof[d] = true;
+                              
+                          FlatMatrix<SCAL> elmat(dnums_test.Size()*fespace->GetDimension(),
+                                                 dnums_trial.Size()*fespace->GetDimension(), lh);
+                              
+                          {
+                            bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+                                                  fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                          }
+                              
+                          fespace->TransformMat (ei1, elmat.Rows(0,dnums1_test.Size()), TRANSFORM_MAT_LEFT);
+                          fespace->TransformMat (ei2, elmat.Rows(dnums1_test.Size(),dnums2_test.Size()), TRANSFORM_MAT_LEFT);
+                          fespace->TransformMat (ei1, elmat.Cols(0,dnums1_trial.Size()), TRANSFORM_MAT_RIGHT);
+                          fespace->TransformMat (ei2, elmat.Cols(dnums1_trial.Size(),dnums2_trial.Size()), TRANSFORM_MAT_RIGHT);
+                              
+                          if (printelmat)
+                          {
+                            testout->precision(8);
+                                  
+                            (*testout) << "facet-elnum= " << i << endl;
+                            (*testout) << "integrator " << bfi->Name() << endl;
+                            (*testout) << "dnums1_trial = " << endl << dnums1_trial << endl;
+                            (*testout) << "dnums1_test = " << endl << dnums1_test << endl;
+                            (*testout) << "dnums2_trial = " << endl << dnums2_trial << endl;
+                            (*testout) << "dnums2_test = " << endl << dnums2_test << endl;
+                            (*testout) << "element1-index = " << eltrans1.GetElementIndex() << endl;
+                            (*testout) << "element2-index = " << eltrans2.GetElementIndex() << endl;
+                            (*testout) << "elmat = " << endl << elmat << endl;
+                          }
+                              
+                          // ArrayMem<int, 50> dnums;
+                          // dnums.SetSize(0);
+                          // dnums.Append(dnums1);
+                          // dnums.Append(dnums2);
+                              
+                          ArrayMem<int, 50> map_trial(dnums_trial.Size());
+                          for (int i = 0; i < map_trial.Size(); i++) map_trial[i] = i;
+                          QuickSortI (dnums_trial, map_trial);
+                              
+                          ArrayMem<int,50> compressed_dnums_trial;
+                          compressed_dnums_trial.SetSize(0);
+                              
+                          ArrayMem<int,50> dnums_to_compressed_trial(dnums_trial.Size());
+                          int compressed_dofs_trial = 0;
+                          for (int i = 0; i < dnums_trial.Size(); ++i)
+                          {
+                            if (i==0 || (dnums_trial[map_trial[i]] != dnums_trial[map_trial[i-1]]))
+                            {
+                              compressed_dnums_trial.Append(dnums_trial[map_trial[i]]);
+                              dnums_to_compressed_trial[map_trial[i]] = compressed_dofs_trial++;
+                            }
+                            else
+                            {
+                              dnums_to_compressed_trial[map_trial[i]] = dnums_to_compressed_trial[map_trial[i-1]];
+                            }
+                          }
+
+                          ArrayMem<int, 50> map_test(dnums_test.Size());
+                          for (int i = 0; i < map_test.Size(); i++) map_test[i] = i;
+                          QuickSortI (dnums_test, map_test);
+                              
+                          ArrayMem<int,50> compressed_dnums_test;
+                          compressed_dnums_test.SetSize(0);
+                              
+                          ArrayMem<int,50> dnums_to_compressed_test(dnums_test.Size());
+                          int compressed_dofs_test = 0;
+                          for (int i = 0; i < dnums_test.Size(); ++i)
+                          {
+                            if (i==0 || (dnums_test[map_test[i]] != dnums_test[map_test[i-1]]))
+                            {
+                              compressed_dnums_test.Append(dnums_test[map_test[i]]);
+                              dnums_to_compressed_test[map_test[i]] = compressed_dofs_test++;
+                            }
+                            else
+                            {
+                              dnums_to_compressed_test[map_test[i]] = dnums_to_compressed_test[map_test[i-1]];
+                            }
+                          }
+                              
+                          FlatMatrix<SCAL> compressed_elmat(compressed_dofs_test * fespace->GetDimension(),
+                                                            compressed_dofs_trial * fespace->GetDimension(), lh);
+                          compressed_elmat = 0.0;
+                          for (int i = 0; i < dnums_test.Size(); ++i)
+                            for (int j = 0; j < dnums_trial.Size(); ++j)
+                              compressed_elmat(dnums_to_compressed_test[i],dnums_to_compressed_trial[j]) += elmat(i,j);
+                              
+                          if (elmat_ev)
+                          {
+                            testout->precision(8);
+                                  
+                            (*testout) << "elind1 = " << eltrans1.GetElementIndex() << endl;
+                            (*testout) << "elind2 = " << eltrans2.GetElementIndex() << endl;
+#ifdef LAPACK
+                            LapackEigenSystem(compressed_elmat, lh);
+#else
+                            Vector<SCAL> lami(compressed_elmat.Height());
+                            Matrix<SCAL> evecs(compressed_elmat.Height());
+                                  
+                            CalcEigenSystem (compressed_elmat, lami, evecs);
+                            (*testout) << "lami = " << endl << lami << endl;
+#endif
+                            // << "evecs = " << endl << evecs << endl;
+                          }
+                              
+                          //                    for(int k=0; k<elmat.Height(); k++)
+                          //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
+                          //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
+
+                          // cout << "compressed_elmat:" << compressed_elmat << endl;
+                          // cout << "compressed_dnums_test:" << compressed_dnums_test << endl;
+                          // cout << "compressed_dnums_trial:" << compressed_dnums_trial << endl;
+                          
+                          AddElementMatrix (compressed_dnums_test, compressed_dnums_trial, compressed_elmat, ElementId(BND,i), lh);
+                        }
+                      }
+                    });
+              }
+              progress.Done();
+            }
+            
+            
             if (facetwise_skeleton_parts[BND].Size()) throw Exception ("mixed biforms don't support skeleton terms");
             if (elementwise_skeleton_parts.Size()) throw Exception ("mixed biforms don't support elementwise skeleton terms");
             
@@ -2519,7 +2771,7 @@ namespace ngcomp
 
             
             
-            cout << endl;
+            //cout << endl;
           }
 
         //  WriteMatrix (*testout);
