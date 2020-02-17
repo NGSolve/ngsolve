@@ -337,8 +337,8 @@ namespace ngfem
     LegendrePolynomial (p, xi.Value(), 
                         SBLambda([&](int nr, double val)
                                  {
-                                   shape(first+nr,0) = val * xi.DValue(0);
-                                   shape(first+nr,1) = val * xi.DValue(1);
+                                   shape(first+nr,0) = -val * xi.DValue(0);
+                                   shape(first+nr,1) = -val * xi.DValue(1);
                                  }));
   }
 
