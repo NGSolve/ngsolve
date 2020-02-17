@@ -695,6 +695,25 @@ namespace ngcomp
       dnums.Append(j);
   }
 
+  SymbolTable<shared_ptr<DifferentialOperator>>
+  VectorFacetFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch (ma->GetDimension())
+      {
+      case 1:
+        break;
+      case 2:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
+        break;
+      case 3:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        break;
+      default:
+        break;
+      }
+    return additional;
+  }
 
   static RegisterFESpace<VectorFacetFESpace> init_vfacet ("vectorfacet");
 

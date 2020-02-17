@@ -905,6 +905,12 @@ namespace ngfem
     first_facet_dof[4] = ndof;
   }
 
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET> :: CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
+  {
+    shape = 0.0;
+    cout << "HI!" << endl;
+  }
   
   template class VectorFacetFacetFE<ET_SEGM>;
   template class VectorFacetFacetFE<ET_TRIG>;
