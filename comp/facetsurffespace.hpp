@@ -97,7 +97,8 @@ namespace ngcomp
     {
       dnums.SetSize(0);
     }
-    
+
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
   };
 
 }
