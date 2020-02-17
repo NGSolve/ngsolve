@@ -219,21 +219,7 @@ namespace ngfem
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
     static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape);
   }
-
-  template<ELEMENT_TYPE ET>
-  void FacetFE<ET>::CalcFacetDualShapeVolIP(int fnr, const BaseMappedIntegrationPoint & ip,
-                                        BareSliceVector<> shape) const
-  {
-    //shape = 0.0;
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &>(ip);
-    cout <<"Hallo!!" << endl;
-    //double pt[DIM];
-    //for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    //static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape);
-    
-    //static_cast<const FacetFE<ET>*>(this)->CalcDualShape2Fnr(fnr, pt, shape);
-  }
-
+  
   template<ELEMENT_TYPE ET>
   void FacetFE<ET>::CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
                                          BareSliceMatrix<SIMD<double>> shape) const 

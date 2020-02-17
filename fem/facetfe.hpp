@@ -40,12 +40,6 @@ namespace ngfem
     {
       fe.CalcFacetShapeVolIP(fnr, ip, shape);
     }
-
-    using ScalarFiniteElement<D>::CalcDualShape;
-    HD virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const override
-    {
-      fe.CalcFacetDualShapeVolIP(fnr, mip, shape);
-    }
     
     HD virtual void CalcShape (const SIMD_IntegrationRule & ir, 
                                BareSliceMatrix<SIMD<double>> shape) const override
@@ -133,8 +127,6 @@ namespace ngfem
 
 
     virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, 
-				      BareSliceVector<> shape) const = 0;
-    virtual void CalcFacetDualShapeVolIP (int fnr, const BaseMappedIntegrationPoint & ip, 
 				      BareSliceVector<> shape) const = 0;
     virtual void CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
                                       BareSliceMatrix<SIMD<double>> shape) const = 0;

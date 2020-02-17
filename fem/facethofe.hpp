@@ -75,9 +75,6 @@ namespace ngfem
 
     virtual void CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
                                       BareSliceMatrix<SIMD<double>> shape) const override;
-
-    virtual void CalcFacetDualShapeVolIP (int fnr, const BaseMappedIntegrationPoint & ip, 
-				      BareSliceVector<> shape) const override;
     
     virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
                                      BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override;
@@ -89,12 +86,6 @@ namespace ngfem
   private:
     template<typename Tx, typename TFA>  
     void T_CalcShapeFNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const;
-
-    template<typename Tx, typename TFA>  
-    void CalcDualShape2FNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const
-    {
-      throw Exception("CalcDualShape2FNr not implemented");
-    }
   };
 
 #ifdef FILE_FACETHOFE_CPP
