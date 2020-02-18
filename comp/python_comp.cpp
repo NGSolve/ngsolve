@@ -1598,7 +1598,7 @@ parallel : bool
 )raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB vb, py::object definedon)
+            VorB vb, py::object definedon, bool dualdiffop)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
@@ -1613,13 +1613,14 @@ parallel : bool
               return;
             }            
             if (reg)
-              SetValues (cf, *self, *reg, NULL, glh);
+              SetValues (cf, *self, *reg, NULL, glh, dualdiffop);
             else
-              SetValues (cf, *self, vb, NULL, glh);
+              SetValues (cf, *self, vb, NULL, glh, dualdiffop);
          },
-          py::arg("coefficient"),
-          py::arg("VOL_or_BND")=VOL,
-         py::arg("definedon")=DummyArgument(), docu_string(R"raw_string(
+         py::arg("coefficient"),
+         py::arg("VOL_or_BND")=VOL,
+         py::arg("definedon")=DummyArgument(),
+         py::arg("dual")=false, docu_string(R"raw_string(
 Set values
 
 Parameters:
@@ -1632,6 +1633,10 @@ VOL_or_BND : ngsolve.comp.VorB
 
 definedon : object
   input definedon region
+
+dual : bool
+  If set to true dual shapes are used, otherwise local L2-projection is used.
+  Default is False.
 
 )raw_string"))
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")

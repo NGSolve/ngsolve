@@ -11,7 +11,7 @@
 #include <comp.hpp>
 #include <variant>
 #include <optional>
-
+#include "../fem/integratorcf.hpp"
 namespace ngcomp
 { 
 
@@ -386,23 +386,35 @@ namespace ngcomp
 		  VorB vb,
                   const Region * reg, 
 		  DifferentialOperator * diffop,
-		  LocalHeap & clh)
+		  LocalHeap & clh,
+                  bool dualdiffop)
   {
+    cout << "HERE!" << endl;
+    cout << "dual = " << dualdiffop << endl;
     static Timer sv("timer setvalues"); RegionTimer r(sv);
 
     auto fes = u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
     int dim   = fes->GetDimension();
     ma->PushStatus("setvalues");
-
+    /*
     if (!diffop)
-      diffop = fes->GetEvaluator(vb).get();
-    shared_ptr<BilinearFormIntegrator> bli = fes->GetIntegrator(vb);
-    shared_ptr<BilinearFormIntegrator> single_bli = bli;
+      {
+        if (dualdiffop)
+          {
+            if (!fes->GetAdditionalEvaluators().Used("dual"))
+              throw Exception(string("Dual diffop does not exist for ") + fes->GetClassName() + string("!"));
+            diffop = fes->GetAdditionalEvaluators()["dual"];
+          }
+        else
+          diffop = fes->GetEvaluator(vb).get();
+      }
+    Array<shared_ptr<BilinearFormIntegrator>> bli = fes->GetIntegrator(vb);
+    Array<shared_ptr<BilinearFormIntegrator>> single_bli = bli;
     if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli))
       single_bli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli)->BlockPtr();
     
-    if (!bli)
+    if (!bli || dualdiffop)
       {
         cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
         if (!fes->GetEvaluator(vb))
@@ -414,184 +426,457 @@ namespace ngcomp
         auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
-                                                nullptr, nullptr, nullptr, nullptr, nullptr);
-        bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
+                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
+        if (dualdiffop)
+          {
+            auto dual  = make_shared<DualProxyFunction> (*(test->GetAdditionalProxy("dual")));
+            
+            Array<VorB> node_types { fes->GetDualShapeNodes(vb) };
+            bli = Array<make_shared<SymbolicBilinearFormIntegrator>();
+    
+            auto sum = make_shared<SumOfIntegrals>();
+            for (auto nt : node_types)
+              {
+                DifferentialSymbol dx(vb, nt, false, 0);
+                if (dual -> Dimension() == 1)
+                  sum->icfs += make_shared<Integral> (dual->shared_from_this()  * trial, dx);
+                else
+                  sum->icfs += make_shared<Integral> (InnerProduct(dual->shared_from_this(), trial), dx);
+              }
+            for (auto icf : sum->icfs)
+             {
+               shared_ptr<BilinearFormIntegrator> bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, icf->dx.vb, icf->dx.element_vb);
+               (*bli.get()) += bfi;
+             }
+          }
+        else
+          {
+            
+            bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
+          }
         single_bli = bli;
         // throw Exception ("no integrator available");
       }
+    */
 
-    int dimflux = diffop ? diffop->Dim() : bli->DimFlux(); 
-    if (coef -> Dimension() != dimflux)
-      throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
-                      ", but coefficient-dim = " + ToString(coef->Dimension()));
     Array<int> cnti(fes->GetNDof());
     cnti = 0;
 
-    u.GetVector() = 0.0;
+    if (dualdiffop)
+      {
+        if (!diffop)
+          {
+            if (!fes->GetAdditionalEvaluators().Used("dual"))
+              throw Exception(string("Dual diffop does not exist for ") + fes->GetClassName() + string("!"));
+            diffop = fes->GetAdditionalEvaluators()["dual"].get();
+          }
 
-    ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
-    bool use_simd = true;
+        //I think diffop should be null as we want the sum of integrals!!! Or?
+        diffop = nullptr;
+        
+        Array<shared_ptr<BilinearFormIntegrator>> bli;
+        Array<shared_ptr<BilinearFormIntegrator>> single_bli;
+        
+        if (!fes->GetEvaluator(vb))
+          throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
+        auto single_evaluator =  fes->GetEvaluator(vb);
+        if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+          single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+        
+        auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
+                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto dual  = make_shared<DualProxyFunction> (*(test->GetAdditionalProxy("dual")));
+            
+        Array<VorB> node_types { fes->GetDualShapeNodes(vb) };
+    
+        auto sum = make_shared<SumOfIntegrals>();
+        for (auto nt : node_types)
+          {
+            DifferentialSymbol dx(vb, nt, false, 0);
+            if (dual -> Dimension() == 1)
+              sum->icfs += make_shared<Integral> (dual->shared_from_this()  * trial, dx);
+            else
+              sum->icfs += make_shared<Integral> (InnerProduct(dual->shared_from_this(), trial), dx);
+          }
+        for (auto icf : sum->icfs)
+          {
+            shared_ptr<BilinearFormIntegrator> bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, icf->dx.vb, icf->dx.element_vb);
+            bli.Append(bfi);
+          }
+         
+        single_bli = bli;
+
+        int dimflux = diffop ? diffop->Dim() : bli[0]->DimFlux(); 
+        if (coef -> Dimension() != dimflux)
+          throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
+                          ", but coefficient-dim = " + ToString(coef->Dimension()));
+        
+        
+        u.GetVector() = 0.0;
+        
+        ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
+        bool use_simd = true;
+        
+        
+        IterateElements 
+          (*fes, vb, clh, 
+           [&] (FESpace::Element ei, LocalHeap & lh)
+           {
+             progress.Update ();
+             
+             if (reg)
+               {
+                 if (!reg->Mask().Test(ei.GetIndex())) return;
+               }
+             else
+               {
+                 if (vb==BND && !fes->IsDirichletBoundary(ei.GetIndex()))
+                   return;
+               }
+             
+             const FiniteElement & fel = fes->GetFE (ei, lh);
+             const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
+             
+             // Array<int> dnums(fel.GetNDof(), lh);
+             // fes.GetDofNrs (ei, dnums);
+             
+             FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL> fluxi(dimflux, lh);
+             
+             if (use_simd)
+               {
+                 try
+                   {
+                     SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+                     FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
+                     
+                     auto & mir = eltrans(ir, lh);
+                     
+                     coef->Evaluate (mir, mfluxi);
+                     
+                     for (size_t j : Range(ir))
+                       mfluxi.Col(j) *= mir[j].GetWeight();
+                     
+                     elflux = SCAL(0.0);
+                     if (diffop)
+                       diffop -> AddTrans (fel, mir, mfluxi, elflux);
+                     else
+                       throw ExceptionNOSIMD("need diffop");
+                     
+                     if (dim > 1) //  && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
+                       {
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                         elmat = 0.0;
+                         for (auto sbfi : single_bli )
+                           sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, lh);                      
+                         FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                         
+                         for (int j = 0; j < dim; j++)
+                           invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
+                       }
+                     else
+                       {
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                         elmat = 0.0;
+                         for (auto blis : bli )
+                           blis->CalcElementMatrixAdd (fel, eltrans, elmat, lh);
+                         
+                         if (true)
+                           {
+                             CalcInverse(elmat);
+                             elfluxi = elmat * elflux;
+                           }
+                         else
+                           {
+                             LapackInverse (elmat);
+                             elfluxi = elmat * elflux;
+                           }
+                       }
+                     
+                     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
+                     
+                     u.GetElementVector (ei.GetDofs(), elflux);
+                     elfluxi += elflux;
+                     u.SetElementVector (ei.GetDofs(), elfluxi);
+                     
+                     for (auto d : ei.GetDofs())
+                       if (IsRegularDof(d)) cnti[d]++;
+                     
+                     return;
+                   }
+                 catch (ExceptionNOSIMD e)
+                   {
+                     use_simd = false;
+                     cout << IM(4) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
+                   }
+               }
+             
+             IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+             FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
+             
+             BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+             
+             coef->Evaluate (mir, mfluxi);
+             
+             for (int j : Range(ir))
+               mfluxi.Row(j) *= mir[j].GetWeight();
+             
+             if (diffop)
+               diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
+             else
+               {
+                 for (auto blis : bli )
+                   blis->ApplyBTrans (fel, mir, mfluxi, elflux, lh);
+               }
+             
+             if (dim > 1)
+               {
+                 FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                 elmat = 0.0;
+                 for (auto sbfi : single_bli) 
+                   sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, lh);
+                 FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                 
+                 for (int j = 0; j < dim; j++)
+                   invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
+               }
+             else
+               {
+                 FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
+                 elmat = 0.0;
+                 for (auto blis : bli )
+                   blis->CalcElementMatrix (fel, eltrans, elmat, lh);
+                 
+                 if (true)
+                   {
+                     CalcInverse(elmat);
+                     elfluxi = elmat * elflux;
+                   }
+                 else
+                   {
+                     LapackInverse (elmat);
+                     elfluxi = elmat * elflux;
+                   }
+               }
+             
+             fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
+             
+             u.GetElementVector (ei.GetDofs(), elflux);
+             elfluxi += elflux;
+             u.SetElementVector (ei.GetDofs(), elfluxi);
+             
+             for (auto d : ei.GetDofs())
+               if (d != -1) cnti[d]++;
+             
+           });
+        progress.Done();
+      }
+    else
+      {
+        if (!diffop)
+          diffop = fes->GetEvaluator(vb).get();
+        shared_ptr<BilinearFormIntegrator> bli = fes->GetIntegrator(vb);
+        shared_ptr<BilinearFormIntegrator> single_bli = bli;
+        if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli))
+          single_bli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli)->BlockPtr();
+    
+        if (!bli)
+          {
+            cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
+            if (!fes->GetEvaluator(vb))
+              throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
+            auto single_evaluator =  fes->GetEvaluator(vb);
+            if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+              single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+        
+            auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
+                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
+            auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
+                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
+            bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
+          
+            single_bli = bli;
+            // throw Exception ("no integrator available");
+          }
+            
+
+        int dimflux = diffop ? diffop->Dim() : bli->DimFlux(); 
+        if (coef -> Dimension() != dimflux)
+          throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
+                          ", but coefficient-dim = " + ToString(coef->Dimension()));
+        Array<int> cnti(fes->GetNDof());
+        cnti = 0;
+        
+        u.GetVector() = 0.0;
+        
+        ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
+        bool use_simd = true;
+        
+        
+        IterateElements 
+          (*fes, vb, clh, 
+           [&] (FESpace::Element ei, LocalHeap & lh)
+           {
+             progress.Update ();
+             
+             if (reg)
+               {
+                 if (!reg->Mask().Test(ei.GetIndex())) return;
+               }
+             else
+               {
+                 if (vb==BND && !fes->IsDirichletBoundary(ei.GetIndex()))
+                   return;
+               }
+             
+             const FiniteElement & fel = fes->GetFE (ei, lh);
+             const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
+             
+             // Array<int> dnums(fel.GetNDof(), lh);
+             // fes.GetDofNrs (ei, dnums);
+             
+             FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL> fluxi(dimflux, lh);
+             
+             if (use_simd)
+               {
+                 try
+                   {
+                     SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+                     FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
+                     
+                     auto & mir = eltrans(ir, lh);
+                     
+                     coef->Evaluate (mir, mfluxi);
+                     
+                     for (size_t j : Range(ir))
+                       mfluxi.Col(j) *= mir[j].GetWeight();
+                     
+                     elflux = SCAL(0.0);
+                     if (diffop)
+                       diffop -> AddTrans (fel, mir, mfluxi, elflux);
+                     else
+                       throw ExceptionNOSIMD("need diffop");
+                     
+                     if (dim > 1) //  && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
+                       {
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                         single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);                      
+                         FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                         
+                         for (int j = 0; j < dim; j++)
+                           invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
+                       }
+                     else
+                       {
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                         bli->CalcElementMatrix (fel, eltrans, elmat, lh);
+                         
+                         // Transform solution inverse instead
+                         // fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                         // fes->TransformVec (ei, elflux, TRANSFORM_RHS);
+                         // if (fel.GetNDof() < 50)
+                         if (true)
+                           {
+                             // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                             // invelmat.Mult (elflux, elfluxi);
+                             
+                             CalcLDL<SCAL,ColMajor> (Trans(elmat));
+                             elfluxi = elflux;
+                             SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
+                           }
+                         else
+                           {
+                             LapackInverseSPD (elmat);
+                             elfluxi = elmat * elflux;
+                           }
+                       }
+                     
+                     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
+                     
+                     u.GetElementVector (ei.GetDofs(), elflux);
+                     elfluxi += elflux;
+                     u.SetElementVector (ei.GetDofs(), elfluxi);
+                     
+                     for (auto d : ei.GetDofs())
+                       if (IsRegularDof(d)) cnti[d]++;
+                     
+                     return;
+                   }
+                 catch (ExceptionNOSIMD e)
+                   {
+                     use_simd = false;
+                     cout << IM(4) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
+                   }
+               }
+             
+             IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+             FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
+             
+             BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+             
+             coef->Evaluate (mir, mfluxi);
+             
+             for (int j : Range(ir))
+               mfluxi.Row(j) *= mir[j].GetWeight();
+             
+             if (diffop)
+               diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
+             else
+               bli->ApplyBTrans (fel, mir, mfluxi, elflux, lh);
+             
+             if (dim > 1)
+               {
+                 FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                 // const BlockBilinearFormIntegrator & bbli = 
+                 // dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
+                 // bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
+                 single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);
+                 FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                 
+                 for (int j = 0; j < dim; j++)
+                   invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
+               }
+             else
+               {
+                 FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
+                 bli->CalcElementMatrix (fel, eltrans, elmat, lh);
+                 
+                 // Transform solution inverse instead
+                 // fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                 // fes->TransformVec (ei, elflux, TRANSFORM_RHS);
+                 // if (fel.GetNDof() < 50)
+                 if (true)
+                   {
+                     CalcLDL<SCAL,ColMajor> (Trans(elmat));
+                     elfluxi = elflux;
+                     SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
+                   }
+                 else
+                   {
+                     LapackInverse (elmat);
+                     elfluxi = elmat * elflux;
+                   }
+               }
+             
+             fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
+             
+             u.GetElementVector (ei.GetDofs(), elflux);
+             elfluxi += elflux;
+             u.SetElementVector (ei.GetDofs(), elfluxi);
+             
+             for (auto d : ei.GetDofs())
+               if (d != -1) cnti[d]++;
+             
+           });
+        progress.Done();
+      }
 
     
-    IterateElements 
-      (*fes, vb, clh, 
-       [&] (FESpace::Element ei, LocalHeap & lh)
-       {
-          progress.Update ();
-
-          if (reg)
-            {
-              if (!reg->Mask().Test(ei.GetIndex())) return;
-            }
-          else
-            {
-              if (vb==BND && !fes->IsDirichletBoundary(ei.GetIndex()))
-                return;
-            }
-          
-	  const FiniteElement & fel = fes->GetFE (ei, lh);
-	  const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
-
-          // Array<int> dnums(fel.GetNDof(), lh);
-          // fes.GetDofNrs (ei, dnums);
-
-	  FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
-	  FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
-	  FlatVector<SCAL> fluxi(dimflux, lh);
-
-          if (use_simd)
-            {
-              try
-                {
-                  SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
-                  FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
-                  
-                  auto & mir = eltrans(ir, lh);
-
-                  coef->Evaluate (mir, mfluxi);
-          
-                  for (size_t j : Range(ir))
-                    mfluxi.Col(j) *= mir[j].GetWeight();
-
-                  elflux = SCAL(0.0);
-                  if (diffop)
-                    diffop -> AddTrans (fel, mir, mfluxi, elflux);
-                  else
-                    throw ExceptionNOSIMD("need diffop");
-
-                  if (dim > 1) //  && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
-                    {
-                      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
-                      single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);                      
-                      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-                      
-                      for (int j = 0; j < dim; j++)
-                        invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
-                    }
-                  else
-                    {
-                      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
-                      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
-
-                      // Transform solution inverse instead
-                      // fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                      // fes->TransformVec (ei, elflux, TRANSFORM_RHS);
-                      // if (fel.GetNDof() < 50)
-                      if (true)
-                        {
-                          // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-                          // invelmat.Mult (elflux, elfluxi);
-
-                          CalcLDL<SCAL,ColMajor> (Trans(elmat));
-                          elfluxi = elflux;
-                          SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
-                        }
-                      else
-                        {
-                          LapackInverseSPD (elmat);
-                          elfluxi = elmat * elflux;
-                        }
-                    }
-                  
-                  fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-                  
-                  u.GetElementVector (ei.GetDofs(), elflux);
-                  elfluxi += elflux;
-                  u.SetElementVector (ei.GetDofs(), elfluxi);
-                  
-                  for (auto d : ei.GetDofs())
-                    if (IsRegularDof(d)) cnti[d]++;
-                  
-                  return;
-                }
-              catch (ExceptionNOSIMD e)
-                {
-                  use_simd = false;
-                  cout << IM(4) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
-                }
-            }
-          
-	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
-	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
-
-	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-
-	  coef->Evaluate (mir, mfluxi);
-          
-	  for (int j : Range(ir))
-	    mfluxi.Row(j) *= mir[j].GetWeight();
-
-	  if (diffop)
-	    diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
-	  else
-	    bli->ApplyBTrans (fel, mir, mfluxi, elflux, lh);
-
-	  if (dim > 1)
-	    {
-	      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
-	      // const BlockBilinearFormIntegrator & bbli = 
-              // dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
-	      // bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
-              single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);
-	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-              
-	      for (int j = 0; j < dim; j++)
-                invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
-	    }
-	  else
-	    {
-	      FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
-	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
-
-              // Transform solution inverse instead
-	      // fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      // fes->TransformVec (ei, elflux, TRANSFORM_RHS);
-              // if (fel.GetNDof() < 50)
-              if (true)
-                {
-                  CalcLDL<SCAL,ColMajor> (Trans(elmat));
-                  elfluxi = elflux;
-                  SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
-                }
-              else
-                {
-                  LapackInverse (elmat);
-                  elfluxi = elmat * elflux;
-                }
-	    }
-
-	  fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-
-          u.GetElementVector (ei.GetDofs(), elflux);
-          elfluxi += elflux;
-          u.SetElementVector (ei.GetDofs(), elfluxi);
-	  
-          for (auto d : ei.GetDofs())
-            if (d != -1) cnti[d]++;
-
-       });
-
-    progress.Done();
 
     
 #ifdef PARALLEL
@@ -623,24 +908,26 @@ namespace ngcomp
 				 GridFunction & u,
 				 VorB vb,
 				 DifferentialOperator * diffop,
-				 LocalHeap & clh)
+				 LocalHeap & clh,
+                                 bool dualdiffop)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh);
+      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop);
     else
-      SetValues<double> (coef, u, vb, nullptr, diffop, clh);
+      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop);
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
 				 GridFunction & u,
 				 const Region & reg, 
 				 DifferentialOperator * diffop,
-				 LocalHeap & clh)
+				 LocalHeap & clh,
+                                 bool dualdiffop)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh);
+      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop);
     else
-      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh);
+      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop);
   }
 
 
