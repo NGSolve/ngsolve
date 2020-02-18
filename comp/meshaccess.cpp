@@ -704,6 +704,8 @@ namespace ngcomp
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const override
     {
+      NETGEN_CHECK_RANGE(dxdxi.Width(), DIMS, DIMS+1);
+      NETGEN_CHECK_RANGE(DIMR, 0, dxdxi.Height()+1);
       // dxdxi = mat;
       FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
@@ -711,6 +713,7 @@ namespace ngcomp
     virtual void CalcPoint (const IntegrationPoint & ip,
 			    FlatVector<> point) const override
     {
+      NETGEN_CHECK_RANGE(DIMR, 0, point.Size()+1);
       // point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
       FlatVec<DIMR> (&point(0)) = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
     }
@@ -718,6 +721,10 @@ namespace ngcomp
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, FlatMatrix<> dxdxi) const override
     {
+      NETGEN_CHECK_RANGE(dxdxi.Width(), DIMS, DIMS+1);
+      NETGEN_CHECK_RANGE(DIMR, 0, dxdxi.Height()+1);
+      NETGEN_CHECK_RANGE(DIMR, 0, point.Size()+1);
+
       FlatVec<DIMR> (&point(0)) = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
       FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
