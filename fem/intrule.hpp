@@ -19,23 +19,6 @@ namespace ngfem
 
   template <int DIM, typename T>
   class TIP;
-  /*
-  {
-  public:
-    int8_t facetnr = -1;
-    VorB vb = VOL;
-
-    TIP () = default;
-    TIP (const TIP &) = default;
-    TIP (TIP &&) = default;
-    TIP & operator= (const TIP &) = default;
-    TIP & operator= (TIP &&) = default;
-    
-    // explicit TIP (Vec<0,T> v) { ; }
-    template <typename T1, typename T2>    
-    TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
-  };
-  */
   
   template <typename T>
   class TIP<0,T>
@@ -44,7 +27,7 @@ namespace ngfem
     int8_t facetnr = -1;
     VorB vb = VOL;
 
-    // [[deprecated("Use TIP(facetnr, vb) instead")]]    
+    [[deprecated("Use TIP(facetnr, vb) instead")]]    
     TIP () = default;
     TIP (const TIP &) = default;
     TIP (TIP &&) = default;
@@ -73,7 +56,7 @@ namespace ngfem
     int8_t facetnr = -1;
     VorB vb = VOL;
 
-    // [[deprecated("Use TIP(facetnr, vb) instead")]]    
+    [[deprecated("Use TIP(facetnr, vb) instead")]]    
     TIP () = default;
     TIP (int8_t afacetnr, VorB avb)
       : facetnr(afacetnr), vb(avb) { } 
@@ -105,7 +88,8 @@ namespace ngfem
     T x, y;
     int8_t facetnr = -1;
     VorB vb = VOL;
-    
+
+    [[deprecated("Use TIP(facetnr, vb) instead")]]        
     TIP () = default;
     TIP (int8_t afacetnr, VorB avb)
       : facetnr(afacetnr), vb(avb) { } 
@@ -136,6 +120,7 @@ namespace ngfem
     int8_t facetnr = -1;
     VorB vb = VOL;
 
+    [[deprecated("Use TIP(facetnr, vb) instead")]]            
     TIP () = default;
     TIP (int8_t afacetnr, VorB avb)
       : facetnr(afacetnr), vb(avb) { } 
@@ -185,7 +170,7 @@ namespace ngfem
 
   
   /// An integration point 
-  class /* alignas(8) */ IntegrationPoint
+  class IntegrationPoint
   {
   private:
     /// number within integration Rule
@@ -199,7 +184,7 @@ namespace ngfem
     /// co-dimension of point (0..vol, 1..bnd, 2..bbnd, 3..bbbnd=vertex)
     VorB vb = VOL;
     ///
-    bool precomputed_geometry;
+    // bool precomputed_geometry;
   public:
     ///
     INLINE IntegrationPoint & operator=(const IntegrationPoint & aip)
@@ -209,7 +194,7 @@ namespace ngfem
       pi[1] = aip(1);
       pi[2] = aip(2);
       weight = aip.Weight();
-      precomputed_geometry = aip.precomputed_geometry;
+      // precomputed_geometry = aip.precomputed_geometry;
       facetnr = aip.facetnr;
       vb = aip.vb;
       return *this;
@@ -224,7 +209,7 @@ namespace ngfem
       pi[2] = api[2];
       weight = aw;
       facetnr = -1;
-      precomputed_geometry = 0;
+      // precomputed_geometry = 0;
     }
 
     ///
@@ -236,7 +221,7 @@ namespace ngfem
       pi[2] = p3;
       weight = aw;
       facetnr = -1;
-      precomputed_geometry = 0;
+      // precomputed_geometry = 0;
     }
 
     ///
@@ -248,7 +233,7 @@ namespace ngfem
       pi[2] = (ap.Size() >= 3) ? ap(2) : 0;
       weight = aw;
       facetnr = -1;
-      precomputed_geometry = 0;
+      // precomputed_geometry = 0;
     }
 
 
@@ -260,15 +245,15 @@ namespace ngfem
 	pi[j] = ap(j);
       weight = aw;
       facetnr = -1;
-      precomputed_geometry = 0;
+      // precomputed_geometry = 0;
     }
 
     ///
     INLINE IntegrationPoint (const IntegrationPoint & aip)
     { *this = aip; }
 
-    void SetPrecomputedGeometry(bool value) { precomputed_geometry = value; }
-    bool GetPrecomputedGeometry() const { return precomputed_geometry; }
+    // void SetPrecomputedGeometry(bool value) { precomputed_geometry = value; }
+    // bool GetPrecomputedGeometry() const { return precomputed_geometry; }
     ///
     INLINE void SetNr (int anr) { nr = anr; }
     ///
@@ -288,12 +273,11 @@ namespace ngfem
     INLINE int Nr () const { return nr; }
 
     /// global number of ip
-    INLINE int IPNr () const { return -1; }
+    // INLINE int IPNr () const { return -1; }
 
     INLINE FlatVec<3, double> Point() { return &pi[0]; }
     INLINE FlatVec<3, const double> Point() const { return &pi[0]; }
 
-    // INLINE int & FacetNr() { return facetnr; }
     void SetFacetNr (int afacetnr, VorB avb = BND)
     { facetnr = afacetnr; vb = avb; }
     INLINE auto FacetNr() const { return facetnr; }
@@ -308,17 +292,6 @@ namespace ngfem
       return adp;
     }
 
-    /*
-    template <int DIM> 
-    INLINE operator Vec<DIM, AutoDiff<DIM>> () const
-    {
-      Vec<DIM, AutoDiff<DIM> > adp;
-      for (int i = 0; i < DIM; i++)
-        adp[i] = AutoDiff<DIM> (pi[i], i);
-      return adp;
-    }
-    */
-
     INLINE operator TIP<0,double> () const { return TIP<0,double>(facetnr, vb); }
     INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0], facetnr, vb); }
     INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1], facetnr, vb); }
@@ -332,22 +305,10 @@ namespace ngfem
     { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1), facetnr, vb); }
     INLINE operator TIP<3,AutoDiff<3>> () const
     { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2), facetnr, vb); } 
-
-    /*
-    INLINE operator TIP<0,AutoDiff<0>> () const
-    { return TIP<0,AutoDiff<0>>(); } 
-    INLINE operator TIP<1,AutoDiff<1>> () const
-    { return TIP<1,AutoDiff<1>>(AutoDiff<1> (pi[0],0)); }
-    INLINE operator TIP<2,AutoDiff<2>> () const
-    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1)); }
-    INLINE operator TIP<3,AutoDiff<3>> () const
-    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2)); } 
-    */
     
     template <int D>
     INLINE ngfem::TIP<D,double> TIp() const;
     
-    ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };
 
@@ -375,7 +336,6 @@ namespace ngfem
   {
   protected:
     /// IP on the reference element
-    // const IntegrationPoint * ip;
     IntegrationPoint ip;
     /// computed by the transformation
     const ElementTransformation * eltrans;
@@ -658,24 +618,6 @@ namespace ngfem
     void IntegrationRuleFromPoint(std::function<void(const BaseMappedIntegrationRule&)> func) const override;
   };
 
-
-
-  
-  /*
-  template <int DIM> 
-  INLINE Vec<DIM, AutoDiff<DIM>> Mip2Ad (const MappedIntegrationPoint<DIM,DIM> & mip)
-  {
-    Vec<DIM, AutoDiff<DIM> > adp;
-
-    for (int i = 0; i < DIM; i++)
-      adp[i].Value() = mip.IP()(i);
-    for (int i = 0; i < DIM; i++)
-      for (int j = 0; j < DIM; j++)
-        adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
-    
-    return adp;
-  }
-  */
 
 
   inline ostream & operator<< (ostream & ost, const BaseMappedIntegrationPoint & mip)
@@ -2132,7 +2074,6 @@ namespace ngfem
   template<int DIMR>
   INLINE void GetTIP1( const MappedIntegrationPoint<1,DIMR> & mip, TIP<1,AutoDiff<DIMR>> & adp)
   {
-    // TIP<1,AutoDiff<DIMR>> adp;
     Mat<1,DIMR> ijac = mip.GetJacobianInverse();
     const auto &ip = mip.IP();
     adp.x.Value() = ip(0);
