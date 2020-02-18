@@ -1782,7 +1782,8 @@ namespace ngbla
     */
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      NETGEN_CHECK_RANGE(first, 0, Height());
+      // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
+      NETGEN_CHECK_RANGE(first, 0, adist);  
       return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
