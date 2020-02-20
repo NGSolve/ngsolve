@@ -3569,6 +3569,52 @@ deformation : ngsolve.comp.GridFunction
      ;
 
    
+   m.def("ConvertOperator" [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
+			       shared_ptr<ProxyFunction> trial_proxy, optional<Region> definedon,
+			       VorB vb, bool localop, bool parmat, bool use_simd) {
+             if(definedon.has_value())
+               if(auto defregion = get_if<Region>(&*definedon); defregion)
+                 vb = VorB(*defregion);
+
+	 }, py::arg("spacea"), py::arg("spaceb"),
+	 py::arg("trial_proxy") = nullptr,
+	 py::arg("definedon") = nullptr,
+	 py::arg("vb") = VOL,
+	 py::arg("localop") = false,
+	 py::arg("parmat") = true,
+	 py::arg("use_simd") = true,
+     docu_string(R"raw_string(
+A conversion operator between FESpaces. Embedding if spacea is a subspace of spaceb, otherwise an interpolation operator
+defined by element-wise application of dual shapes (and averaging between elements).
+
+Parameters:
+
+spacea: ngsolve.comp.FESpace
+  the origin space
+
+spaceb: ngsolve.comp.FESpace
+  the goal space
+
+trial_proxy: ngsolve.comp.ProxyFunction
+  (optional) Must be a trial-proxy on spacea. If given, the operator converts trial_proxy(funca) to spaceb.
+
+definedon: object
+  what pary of the domain to restrict the operator to
+
+vb: ngsolve.comp.VorB
+  what kind of co-dimension elements to convert on VOL, BND, BBND, ...
+
+localop: bool
+  True -> do not average across MPI boundaries. No effect for non MPI-paralell space. Use carefully!! Default false.
+
+parmat: bool
+  If True, returns a ParallelMatrix for MPI-parallel spaces. If False, or for non MPI-parallel spaces, returns a local BaseMatrix. Default true.
+
+use_simd:
+  False -> Do not use SIMD for setting up the Matrix. Default true. (for debugging purposes).
+)raw_string")
+	 );
+
    m.def("MPI_Init", [&]()
 	 {
 	   const char * progname = "ngslib";
