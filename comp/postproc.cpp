@@ -395,67 +395,6 @@ namespace ngcomp
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
     int dim   = fes->GetDimension();
     ma->PushStatus("setvalues");
-    /*
-    if (!diffop)
-      {
-        if (dualdiffop)
-          {
-            if (!fes->GetAdditionalEvaluators().Used("dual"))
-              throw Exception(string("Dual diffop does not exist for ") + fes->GetClassName() + string("!"));
-            diffop = fes->GetAdditionalEvaluators()["dual"];
-          }
-        else
-          diffop = fes->GetEvaluator(vb).get();
-      }
-    Array<shared_ptr<BilinearFormIntegrator>> bli = fes->GetIntegrator(vb);
-    Array<shared_ptr<BilinearFormIntegrator>> single_bli = bli;
-    if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli))
-      single_bli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli)->BlockPtr();
-    
-    if (!bli || dualdiffop)
-      {
-        cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
-        if (!fes->GetEvaluator(vb))
-          throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
-        auto single_evaluator =  fes->GetEvaluator(vb);
-        if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
-          single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
-        
-        auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
-                                                nullptr, nullptr, nullptr, nullptr, nullptr);
-        auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
-                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
-        if (dualdiffop)
-          {
-            auto dual  = make_shared<DualProxyFunction> (*(test->GetAdditionalProxy("dual")));
-            
-            Array<VorB> node_types { fes->GetDualShapeNodes(vb) };
-            bli = Array<make_shared<SymbolicBilinearFormIntegrator>();
-    
-            auto sum = make_shared<SumOfIntegrals>();
-            for (auto nt : node_types)
-              {
-                DifferentialSymbol dx(vb, nt, false, 0);
-                if (dual -> Dimension() == 1)
-                  sum->icfs += make_shared<Integral> (dual->shared_from_this()  * trial, dx);
-                else
-                  sum->icfs += make_shared<Integral> (InnerProduct(dual->shared_from_this(), trial), dx);
-              }
-            for (auto icf : sum->icfs)
-             {
-               shared_ptr<BilinearFormIntegrator> bfi = make_shared<SymbolicBilinearFormIntegrator> (icf->cf, icf->dx.vb, icf->dx.element_vb);
-               (*bli.get()) += bfi;
-             }
-          }
-        else
-          {
-            
-            bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
-          }
-        single_bli = bli;
-        // throw Exception ("no integrator available");
-      }
-    */
 
     Array<int> cnti(fes->GetNDof());
     cnti = 0;

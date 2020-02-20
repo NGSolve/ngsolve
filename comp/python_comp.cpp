@@ -1598,20 +1598,20 @@ parallel : bool
 )raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB vb, py::object definedon, bool use_simd, bool dualdiffop)
+            VorB vb, py::object definedon, bool dualdiffop, bool use_simd)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
-	   Region * reg = nullptr;
-	   if (py::extract<Region&> (definedon).check())
-	     reg = &py::extract<Region&>(definedon)();
+            Region * reg = nullptr;
+            if (py::extract<Region&> (definedon).check())
+              reg = &py::extract<Region&>(definedon)();
             
-	   py::gil_scoped_release release;
+            py::gil_scoped_release release;
 
             if(tpspace)
-	      {
-		Transfer2TPMesh(cf.get(),self.get(),glh);
-		return;
-	      }            
+            {
+              Transfer2TPMesh(cf.get(),self.get(),glh);
+              return;
+            }            
             if (reg)
               SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd);
             else
@@ -1620,8 +1620,8 @@ parallel : bool
          py::arg("coefficient"),
          py::arg("VOL_or_BND")=VOL,
          py::arg("definedon")=DummyArgument(),
-	 py::arg("use_simd")=true,
-         py::arg("dual")=false, docu_string(R"raw_string(
+	 py::arg("dual")=false,
+         py::arg("use_simd")=true, docu_string(R"raw_string(
 Set values
 
 Parameters:
@@ -1638,6 +1638,9 @@ definedon : object
 dual : bool
   If set to true dual shapes are used, otherwise local L2-projection is used.
   Default is False.
+
+use_simd : bool
+  If set to false does not use SIMD (for debugging).
 
 )raw_string"))
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
