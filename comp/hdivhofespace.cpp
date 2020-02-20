@@ -24,59 +24,6 @@
 namespace ngcomp
 {
 
-  template <int D>
-  class DiffOpHDivDual : public DiffOp<DiffOpHDivDual<D> >
-  {
-  public:
-    typedef DiffOp<DiffOpHDivDual<D>> BASE;
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
-
-    static auto & Cast (const FiniteElement & fel) 
-    { return static_cast<const HDivFiniteElement<D>&> (fel); }
-
-    
-    template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      Cast(fel).CalcDualShape (mip, Trans(mat));
-    }
-    template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      // fel.CalcDualShape (mip, mat);
-      throw Exception(string("DiffOpHDivDual not available for mat ")+typeid(mat).name());
-    }
-
-    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> mat)
-    {
-      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
-    }
-
-    using BASE::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
-    }
-
-    using BASE::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
-    }    */
-        
-  };
   
   HDivHighOrderFESpace ::  
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)

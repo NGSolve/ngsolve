@@ -328,24 +328,51 @@ namespace ngfem
     int first = first_facet_dof[fanr];
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
-
-    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG);
-
-    int fav[2] = { edges[fanr][0], edges[fanr][1] };
-    int j1 = 0, j2 = 1;
-    if(vnums[fav[j1]] > vnums[fav[j2]]) swap(j1,j2); 
-
     AutoDiff<2> lami[3] = {x, y, 1-x-y};  
 
     int p = facet_order[fanr][0];
-
-    AutoDiff<2> xi = lami[fav[j1]] - lami[fav[j2]];
+    INT<2> e = GetVertexOrientedEdge(fanr);
+    AutoDiff<2> xi = lami[e[1]]-lami[e[0]];
+    
     LegendrePolynomial (p, xi.Value(), 
                         SBLambda([&](int nr, double val)
                                  {
-                                   shape(first+nr,0) = val * xi.DValue(0);
-                                   shape(first+nr,1) = val * xi.DValue(1);
+                                   shape(first+nr,0) = -val * xi.DValue(0);
+                                   shape(first+nr,1) = -val * xi.DValue(1);
                                  }));
+  }
+
+  template<>
+  template<typename MIP, typename TFA>  
+  void VectorFacetVolumeFE<ET_TRIG> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  {
+    auto & ip = mip.IP();
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+    T x = ip(0), y = ip(1);
+    T lam[3] = { x, y, 1-x-y };
+    Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+
+    int first = first_facet_dof[fnr];
+    
+    if (ip.VB() == BND)
+      {
+        size_t ii = 0;
+        int p = facet_order[fnr][0];
+        
+        INT<2> e = GetVertexOrientedEdge(fnr);
+        T xi = lam[e[1]]-lam[e[0]];
+        Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
+        auto tau = mip.GetJacobian()*tauref;
+        tau /= mip.GetMeasure();
+        
+        LegendrePolynomial::Eval
+          (p, xi,
+           SBLambda([&] (size_t nr, T val)
+                    {
+                      shape[first+nr] = val*tau;
+                    }));
+    
+      }
   }
 
   template<>
@@ -390,6 +417,8 @@ namespace ngfem
       }
     first_facet_dof[3] = ndof;
   }
+
+ 
 
   /* **************************** Volume Quad ********************************* */
 
@@ -465,6 +494,13 @@ namespace ngfem
 	ndof += facet_order[i][0] + 1;
       }
     first_facet_dof[4] = ndof;
+  }
+
+  template<>
+  template<typename MIP, typename TFA>  
+  void VectorFacetVolumeFE<ET_QUAD> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  {
+    throw Exception("calcdualshape2 not implemented for ET_QUAD VectorFacetVolumeFE ");
   }
 
   
@@ -584,6 +620,14 @@ namespace ngfem
       }
     first_facet_dof[4] = ndof;
   }
+
+  template<>
+  template<typename MIP, typename TFA>  
+  void VectorFacetVolumeFE<ET_TET> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  {
+    throw Exception("calcdualshape2 not implemented for ET_TET VectorFacetVolumeFE ");
+  }
+
 
   /* **************************** Volume Prism ********************************* */
 
@@ -772,6 +816,13 @@ namespace ngfem
     first_facet_dof[5] = ndof;
   }
 
+  template<>
+  template<typename MIP, typename TFA>  
+  void VectorFacetVolumeFE<ET_PRISM> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  {
+    throw Exception("calcdualshape2 not implemented for ET_PRISM VectorFacetVolumeFE ");
+  }
+
 
   /* **************************** Volume Hex ********************************* */
 
@@ -837,6 +888,13 @@ namespace ngfem
 	ndof += 2* (facet_order[i][0]+1) * (facet_order[i][0]+1);
       }
     first_facet_dof[6] = ndof;
+  }
+
+  template<>
+  template<typename MIP, typename TFA>  
+  void VectorFacetVolumeFE<ET_HEX> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  {
+    throw Exception("calcdualshape2 not implemented for ET_HEX VectorFacetVolumeFE ");
   }
 
 
@@ -905,6 +963,89 @@ namespace ngfem
     first_facet_dof[4] = ndof;
   }
 
+  template<>
+  template<typename MIP, typename TFA>  
+  void VectorFacetVolumeFE<ET_PYRAMID> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  {
+    throw Exception("calcdualshape2 not implemented for ET_PYRAMID VectorFacetVolumeFE ");
+  }
+
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET> :: CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
+  {
+    shape = 0.0;
+    Switch<4-DIM>
+      (bmip.DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
+       {
+         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+         this->CalcDualShape2 (mip, mip.IP().FacetNr(),
+                               SBLambda ([&] (size_t i, auto val)
+                                         {
+                                           shape.Row(i) = val;
+                                         }));
+       });
+  }
+
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET> :: CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    Switch<4-DIM>
+      (bmir.DimSpace()-DIM,[this,&bmir,shapes](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+         shapes.AddSize(ndof*DIMSPACE, mir.Size()) = 0.0;
+         for (size_t i = 0; i < mir.Size(); i++)
+           this->CalcDualShape2 (mir[i], mir[i].IP().FacetNr(),
+                                 SBLambda ([shapes,i,DIMSPACE] (size_t j, auto val)
+                                           {
+                                             for (size_t k = 0; k < DIMSPACE; k++)
+                                               shapes(j*DIMSPACE+k, i) = val(k);
+                                           }));
+       });
+  }
+
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET> :: EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  {
+    Switch<4-DIM>
+      (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+         for (size_t i = 0; i < mir.Size(); i++)
+           {
+             Vec<DIMSPACE,SIMD<double>> sum (SIMD<double>(0.0));
+             this -> CalcDualShape2 (mir[i], mir[i].IP().FacetNr(),
+                                     SBLambda([&sum, coefs] (size_t j, auto val)
+                                              {
+                                                sum += coefs(j) * val;
+                                              }));
+             for (size_t k = 0; k < DIMSPACE; k++)
+               values(k, i) = sum(k);
+           }
+       });
+  }
+
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET> :: AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const
+  {
+    Switch<4-DIM>
+      (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+         for (size_t i = 0; i < mir.Size(); i++)
+           {
+             Vec<DIMSPACE,SIMD<double>> value = values.Col(i);
+             this -> CalcDualShape2 (mir[i], mir[i].IP().FacetNr(),
+                                     SBLambda([value, coefs] (size_t j, auto val)
+                                              {
+                                                coefs(j) += HSum(InnerProduct(value,val));
+                                              }));
+           }
+       });
+  }
   
   template class VectorFacetFacetFE<ET_SEGM>;
   template class VectorFacetFacetFE<ET_TRIG>;
