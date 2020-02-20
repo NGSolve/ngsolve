@@ -132,16 +132,6 @@ namespace ngcomp
     
   };
 
-  template <int D>
-  class FacetSurfaceMassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdFacetSurface<D>, DiagDMat<DiffOpIdFacetSurface<D>::DIM_DMAT>, FiniteElement>
-  {
-    typedef T_BDBIntegrator<DiffOpIdFacetSurface<D>, DiagDMat<DiffOpIdFacetSurface<D>::DIM_DMAT>, FiniteElement> BASE;
-  public:
-    using  T_BDBIntegrator<DiffOpIdFacetSurface<D>, DiagDMat<DiffOpIdFacetSurface<D>::DIM_DMAT>, FiniteElement>::T_BDBIntegrator;
-
-    virtual string Name () const { return "FacetSurface-Mass"; }
-  };
 
     /// Identity on boundary
   template <int D, typename FEL = ScalarFiniteElement<D-2> >
