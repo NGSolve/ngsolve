@@ -530,7 +530,13 @@ namespace ngcomp
 
 		     /** Invert Element Matrix and Solve for RHS **/
 		     CalcInverse(elmat); // Not Symmetric !
-		     elfluxi = elmat * elflux;
+
+		     if (dim > 1) {
+		       for (int j = 0; j < dim; j++)
+			 { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+		     }
+		     else
+		       { elfluxi = elmat * elflux; }
 
 		     /** Write into large vector **/
 		     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
@@ -606,7 +612,13 @@ namespace ngcomp
 
 	     /** Invert Element Matrix and Solve for RHS **/
 	     CalcInverse(elmat); // Not Symmetric !
-	     elfluxi = elmat * elflux;
+
+	     if (dim > 1) {
+	       for (int j = 0; j < dim; j++)
+		 { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+	     }
+	     else
+	       { elfluxi = elmat * elflux; }
              
 	     /** Write into large vector **/
              fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
