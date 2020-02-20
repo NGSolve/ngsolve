@@ -5,6 +5,9 @@
 
 namespace ngfem
 {
+
+  extern shared_ptr<CoefficientFunction> GetNormalVectorCF (int dim);
+  
   class DifferentialSymbol
   {
   public:
@@ -81,7 +84,11 @@ namespace ngfem
           if (icf->dx.vb == VOL)
             deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
           else
-            deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + sdivdir*icf->cf, icf->dx);            
+            {
+              auto n = GetNormalVectorCF(sgrad->Dimensions()[0]);
+              deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) +
+                                                     (sdivdir - InnerProduct(sgrad*n, n) ) * icf->cf, icf->dx);            
+            }
         }
       return deriv;
     }

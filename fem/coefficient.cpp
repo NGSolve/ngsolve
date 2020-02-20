@@ -3629,11 +3629,16 @@ public:
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     int dim1 = c1->Dimension();
+    int d = c1->Dimensions()[0];
     Vector<AutoDiffDiff<1,bool>> v1(dim1);
     c1->NonZeroPattern (ud, v1);
     values(0) = false;
+    /*
     for (int i = 0; i < dim1; i++)
       values(0) = values(0)+v1(i);   // logical or
+    */
+    for (int i = 0; i < d; i++)
+      values(0) = values(0)+v1(i*(d+1));   // logical or
   }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -3641,10 +3646,15 @@ public:
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     int dim1 = c1->Dimension();
+    int d = c1->Dimensions()[0];
     auto in0 = input[0];
     values(0) = false;
+    /*
     for (int i = 0; i < dim1; i++)
       values(0) = values(0)+in0(i);   // logical or
+    */
+    for (int i = 0; i < d; i++)
+      values(0) = values(0)+in0(i*(d+1));   // logical or
   }
 
   using T_CoefficientFunction<TraceCoefficientFunction>::Evaluate;
