@@ -455,41 +455,6 @@ namespace ngfem
   int BaseMappedIntegrationRule :: DimElement() const
   {
     return eltrans.ElementDim();
-    /*
-    switch(eltrans.VB())
-      {
-      case VOL:
-        switch (eltrans.SpaceDim())
-	  {
-          case 1: return 1;
-          case 2: return 2;
-          case 3: return 3;
-          }
-        break;
-      case BND:
-        switch (eltrans.SpaceDim())
-	  {
-          case 1: return 0;
-          case 2: return 1;
-          case 3: return 2;
-          }
-        break;
-      case BBND:
-        switch (eltrans.SpaceDim())
-	  {
-          case 2: return 0;
-          case 3: return 1;
-          }
-        break;
-      case BBBND:
-        switch (eltrans.SpaceDim())
-	  {
-          case 3: return 0;
-          }
-        break;
-      }
-    throw Exception("BaseMappedIntegrationRule::DimElement, illegal dimension");
-    */
   }
 
   int BaseMappedIntegrationRule :: DimSpace() const
@@ -1341,7 +1306,7 @@ namespace ngfem
 	}
       };
 
-    ip.SetPrecomputedGeometry(true);
+    // ip.SetPrecomputedGeometry(true);
     return ip;
   }
 

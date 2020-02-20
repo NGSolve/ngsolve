@@ -531,7 +531,41 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
       deriv = 0.0;
     }
     */
+
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == shape.get())
+        return -TransposeCF(dir->Operator("Gradboundary")) * const_cast<NormalVectorCF*>(this)->shared_from_this();
+      return CoefficientFunctionNoDerivative::Diff(var, dir);
+    }
+    
   };
+
+namespace ngfem
+{
+  shared_ptr<CF> GetNormalVectorCF (int dim)
+  { 
+    switch(dim)
+      { 
+      case 1:
+        return make_shared<NormalVectorCF<1>>();
+      case 2:
+        return make_shared<NormalVectorCF<2>>();
+      case 3:
+        return make_shared<NormalVectorCF<3>>();
+      case 4:
+        return make_shared<NormalVectorCF<4>>();
+      case 5:
+        return make_shared<NormalVectorCF<5>>();
+      case 6:
+        return make_shared<NormalVectorCF<6>>();
+      default:
+        throw Exception (string("Normal-vector not implemented for dimension")
+                         +ToString(dim));
+      }
+  }
+}
 
   template <int D>
   class TangentialVectorCF : public CoefficientFunctionNoDerivative
