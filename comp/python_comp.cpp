@@ -1598,28 +1598,29 @@ parallel : bool
 )raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB vb, py::object definedon, bool dualdiffop)
+            VorB vb, py::object definedon, bool use_simd, bool dualdiffop)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
-            Region * reg = nullptr;
-            if (py::extract<Region&> (definedon).check())
-              reg = &py::extract<Region&>(definedon)();
+	   Region * reg = nullptr;
+	   if (py::extract<Region&> (definedon).check())
+	     reg = &py::extract<Region&>(definedon)();
             
-            py::gil_scoped_release release;
+	   py::gil_scoped_release release;
 
             if(tpspace)
-            {
-              Transfer2TPMesh(cf.get(),self.get(),glh);
-              return;
-            }            
+	      {
+		Transfer2TPMesh(cf.get(),self.get(),glh);
+		return;
+	      }            
             if (reg)
-              SetValues (cf, *self, *reg, NULL, glh, dualdiffop);
+              SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd);
             else
-              SetValues (cf, *self, vb, NULL, glh, dualdiffop);
+              SetValues (cf, *self, vb, NULL, glh, dualdiffop, use_simd);
          },
          py::arg("coefficient"),
          py::arg("VOL_or_BND")=VOL,
          py::arg("definedon")=DummyArgument(),
+	 py::arg("use_simd")=true,
          py::arg("dual")=false, docu_string(R"raw_string(
 Set values
 
