@@ -41,7 +41,7 @@ namespace ngcomp
 		  VorB vb,
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh,
-                  bool dualdiffop = false);
+                  bool dualdiffop = false, bool use_simd = true);
   
   extern NGS_DLL_HEADER 
   void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -49,7 +49,7 @@ namespace ngcomp
 		  const Region & region, 
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh,
-                  bool dualdiffop = false);
+                  bool dualdiffop = false, bool use_simd = true);
   
 
 
