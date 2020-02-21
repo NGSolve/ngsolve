@@ -631,6 +631,26 @@ namespace ngcomp
       dnums.Append(j);
   }
 
+  SymbolTable<shared_ptr<DifferentialOperator>>
+  NormalFacetFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch (ma->GetDimension())
+      {
+      case 1:
+        break;
+      case 2:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
+	break;
+      case 3:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
+	break;
+      default:
+        break;
+      }
+    return additional;
+  }
+
 
   static RegisterFESpace<NormalFacetFESpace> init_vfacet ("normalfacet");
 

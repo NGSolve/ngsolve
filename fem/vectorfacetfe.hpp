@@ -137,10 +137,9 @@ namespace ngfem
     }
 
     using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcMappedShape;
-
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
 				  BareSliceMatrix<SIMD<double>> shapes) const override;
-    
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
                            BareSliceMatrix<SIMD<double>> values) const override;
     
@@ -149,11 +148,24 @@ namespace ngfem
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
+
+    template<typename MIP, typename TFA>  
+    void CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const;
     
     virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
 
     virtual int GetNExtraShapes( int facet) const {return 0;}
     virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
+
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::ndof;
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcDualShape;
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override;
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override;
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::EvaluateDual;
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::AddDualTrans;
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
+                               BareSliceVector<double> coefs) const override;
 
     virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const
     {
