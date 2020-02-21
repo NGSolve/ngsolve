@@ -3569,14 +3569,40 @@ deformation : ngsolve.comp.GridFunction
      ;
 
    
-   m.def("ConvertOperator" [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
-			       shared_ptr<ProxyFunction> trial_proxy, optional<Region> definedon,
-			       VorB vb, bool localop, bool parmat, bool use_simd) {
-             if(definedon.has_value())
-               if(auto defregion = get_if<Region>(&*definedon); defregion)
-                 vb = VorB(*defregion);
+   m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
+				shared_ptr<ProxyFunction> trial_proxy, optional<Region> definedon,
+				VorB vb, bool localop, bool parmat, bool use_simd) -> shared_ptr<BaseMatrix> {
 
-	 }, py::arg("spacea"), py::arg("spaceb"),
+	   const Region* reg = NULL;
+	   if( definedon.has_value() ) {
+	     reg = &(*definedon);
+	     vb = VorB(*definedon);
+	   }
+
+	   shared_ptr<BaseMatrix> op;
+
+	   if ( trial_proxy == nullptr )
+	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, reg, localop, parmat, use_simd); }
+	   else {
+	     if ( !trial_proxy->IsTrialFunction() )
+	       { throw Exception("Need a trial-proxy, but got a test-proxy!"); }
+	     shared_ptr<DifferentialOperator> eval;
+	     if ( vb == VOL )
+	       { eval = trial_proxy->Evaluator(); }
+	     else if ( vb == BND )
+	       { eval = trial_proxy->TraceEvaluator(); }
+	     else if ( vb == BBND )
+	       { eval = trial_proxy->TTraceEvaluator(); }
+	     else
+	       { throw Exception("ProxyFunction has no BBBND evaluator!"); }
+	     if ( eval == nullptr )
+	       { throw Exception(string("trial-proxy has no evaluator vor vb = ") + to_string(vb) + string("!")); }
+	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, reg, localop, parmat, use_simd);
+	   }
+
+	   return op;
+	 },
+	 py::arg("spacea"), py::arg("spaceb"),
 	 py::arg("trial_proxy") = nullptr,
 	 py::arg("definedon") = nullptr,
 	 py::arg("vb") = VOL,
@@ -3584,8 +3610,7 @@ deformation : ngsolve.comp.GridFunction
 	 py::arg("parmat") = true,
 	 py::arg("use_simd") = true,
      docu_string(R"raw_string(
-A conversion operator between FESpaces. Embedding if spacea is a subspace of spaceb, otherwise an interpolation operator
-defined by element-wise application of dual shapes (and averaging between elements).
+A conversion operator between FESpaces. Embedding if spacea is a subspace of spaceb, otherwise an interpolation operator defined by element-wise application of dual shapes (and averaging between elements).
 
 Parameters:
 
@@ -3596,22 +3621,22 @@ spaceb: ngsolve.comp.FESpace
   the goal space
 
 trial_proxy: ngsolve.comp.ProxyFunction
-  (optional) Must be a trial-proxy on spacea. If given, the operator converts trial_proxy(funca) to spaceb.
+  (optional) Must be a trial-proxy on spacea. If given, instead of a FE-function funca from spacea, the operator converts trial_proxy(funca) to spaceb.
 
 definedon: object
-  what pary of the domain to restrict the operator to
+  what part of the domain to restrict the operator to
 
 vb: ngsolve.comp.VorB
   what kind of co-dimension elements to convert on VOL, BND, BBND, ...
 
 localop: bool
-  True -> do not average across MPI boundaries. No effect for non MPI-paralell space. Use carefully!! Default false.
+  True -> do not average across MPI boundaries. No effect for non MPI-paralell space. Use carefully!!
 
 parmat: bool
-  If True, returns a ParallelMatrix for MPI-parallel spaces. If False, or for non MPI-parallel spaces, returns a local BaseMatrix. Default true.
+  If True, returns a ParallelMatrix for MPI-parallel spaces. If False, or for non MPI-parallel spaces, returns a local BaseMatrix.
 
 use_simd:
-  False -> Do not use SIMD for setting up the Matrix. Default true. (for debugging purposes).
+  False -> Do not use SIMD for setting up the Matrix. (for debugging purposes).
 )raw_string")
 	 );
 
