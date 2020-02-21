@@ -423,7 +423,8 @@ namespace ngcomp
 	for (VorB avb = VOL; avb < vb; avb++) {
 	  dual_evaluator = dual_evaluator->GetTrace();
 	  if ( dual_evaluator == nullptr )
-	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + to_string(avb) + string("!")); }
+	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + \
+			      to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
 	}
         if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
           dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
