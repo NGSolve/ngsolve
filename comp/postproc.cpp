@@ -409,21 +409,24 @@ namespace ngcomp
 	else if ( diffop != fes->GetAdditionalEvaluators()["dual"].get() )
 	  { throw Exception("diffop has to be nullptr or dual diffop!"); }
         
+	/** Trial-Proxy **/
         if (!fes->GetEvaluator(vb))
           throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
         auto single_evaluator =  fes->GetEvaluator(vb);
         if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
           single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
-        
         auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
+
+	/** Test-Proxy (dual) **/
 	auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
 	for (VorB avb = VOL; avb < vb; avb++) {
 	  dual_evaluator = dual_evaluator->GetTrace();
 	  if ( dual_evaluator == nullptr )
 	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + to_string(avb) + string("!")); }
 	}
-
+        if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
+          dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
 	auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
 					       nullptr, nullptr, nullptr, nullptr, nullptr);
     
