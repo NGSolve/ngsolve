@@ -424,6 +424,20 @@ namespace ngfem
                 LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<double> flux,
+		BareSliceVector<double> x, 
+		LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<Complex> flux,
+		BareSliceVector<Complex> x, 
+		LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<double>> flux,
