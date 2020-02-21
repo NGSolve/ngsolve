@@ -154,9 +154,15 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
 
+    template<typename MIP, typename TFA>  
+    void CalcDualShape2 (MIP mip, int fnr, TFA & shape) const;
+
     using TBASE::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
-    
+
+    using TBASE::CalcDualShape;
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+
     virtual int GetNExtraShapes( int facet) const {return 0;}
     virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
 
