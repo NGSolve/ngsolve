@@ -46,7 +46,8 @@ namespace ngcomp
     for (VorB avb = VOL; avb < vb; avb++) {
       dual_evaluator = dual_evaluator->GetTrace();
       if ( dual_evaluator == nullptr )
-	{ throw Exception(space_b->GetClassName() + string(" has no dual trace operator for vb = ") + to_string(avb) + string("!")); }
+	{ throw Exception(space_b->GetClassName() + string(" has no dual trace operator for vb = ")
+			  + to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
     }
     auto dual_b = make_shared<ProxyFunction>(space_b, true, false, dual_evaluator,
 					     nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -123,7 +124,7 @@ namespace ngcomp
 
     /** Alloc Matrix **/
     auto graph = cgraph.MoveTable();
-    cout << " have graph: " << endl << graph << endl;
+    // cout << " have graph: " << endl << graph << endl;
     Array<int> perow(space_b->GetNDof() * dimb);
     for (auto k : Range(perow))
       { perow[k] = graph[k].Size(); }
