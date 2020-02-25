@@ -186,6 +186,7 @@ namespace ngcomp
 
     void AddSpecialElement (unique_ptr<SpecialElement> spel);
     auto & GetSpecialElements() const { return specialelements; }
+    void DeleteSpecialElement(size_t index);
     void DeleteSpecialElements();
 
     /// for static condensation of internal bubbles

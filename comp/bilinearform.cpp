@@ -309,6 +309,12 @@ namespace ngcomp
     specialelements_timestamp = GetNextTimeStamp();
   }
 
+  void BilinearForm :: DeleteSpecialElement(size_t index)
+  {
+    specialelements.DeleteElement(index);
+    specialelements_timestamp = GetNextTimeStamp();
+  }
+
   void BilinearForm :: DeleteSpecialElements()
   {
     // for(auto el : specialelements)
