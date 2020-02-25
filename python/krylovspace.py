@@ -3,6 +3,8 @@ from ngsolve import Projector, Norm, TimeFunction, BaseMatrix, Preconditioner, I
     Norm, sqrt, Vector, Matrix, BaseVector, BitArray
 from typing import Optional, Callable
 import logging
+from netgen.libngpy._meshing import _PushStatus, _GetStatus, _SetThreadPercentage
+from math import log
 
 class CGSolver(BaseMatrix):
     def __init__(self, mat : BaseMatrix, pre : Optional[Preconditioner] = None,
@@ -35,6 +37,9 @@ class CGSolver(BaseMatrix):
     @TimeFunction
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
               initialize : bool = True) -> None:
+        old_status = _GetStatus()
+        _PushStatus("CG Solve")
+        _SetThreadPercentage(0)
         self.sol = sol if sol is not None else self.mat.CreateRowVector()
         d, w, s = self._tmp_vecs
         u, mat, pre, conjugate, tol, maxsteps, callback = self.sol, self.mat, self.pre, self.conjugate, \
@@ -48,8 +53,10 @@ class CGSolver(BaseMatrix):
         err0 = sqrt(abs(wdn))
 
         self.errors = [err0]
-        if wdn==0:
+        if wdn==err0:
             return u
+        lwstart = log(err0)
+        logerrstop = log(err0 * tol)
 
         for it in range(maxsteps):
             self.iterations = it+1
@@ -73,9 +80,14 @@ class CGSolver(BaseMatrix):
             self.logger.info("iteration " + str(it) + " error = " + str(err))
             if callback is not None:
                 callback(it,err)
+            _SetThreadPercentage(100.*max(it/maxsteps, (log(err)-lwstart)/(logerrstop - lwstart)))
             if err < tol*err0: break
         else:
             self.logger.warning("CG did not converge to tol")
+        if old_status[0] != "idle":
+            _PushStatus(old_status[0])
+            _SetThreadPercentage(old_status[1])
+            
         
 
 
