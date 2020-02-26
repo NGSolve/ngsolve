@@ -4,17 +4,23 @@ namespace ngcomp
 {
 
   template<class SCAL>
-  shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<CompoundFESpace> comp_space,
-					  int inda, int indb,
+  shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b,
+					  // int inda, int indb,
 					  shared_ptr<DifferentialOperator> diffop,
 					  VorB vb, const Region * reg, LocalHeap & clh,
 					  bool localop = false, bool parmat = true, bool use_simd = true)
   {
     /** Solves gfb = diffop(gfa), where gfb is a function from space_b and gfa one from space_a **/
 
-    /** Compound space is used for element-coloring **/
-    shared_ptr<FESpace> space_a = (*comp_space)[inda];
-    shared_ptr<FESpace> space_b = (*comp_space)[indb];
+    // /** Compound space is used for element-coloring **/
+    // shared_ptr<FESpace> space_a = (*comp_space)[inda];
+    // shared_ptr<FESpace> space_b = (*comp_space)[indb];
+    auto ma = space_b->GetMeshAccess();
+
+    auto ngmesh = ma->GetNetgenMesh();
+    int curve_order = ngmesh->GetCurvedElements().GetOrder();
+
+    int bonus_int_order = (curve_order > 1) ? ma->GetDimension() - 1 : 0;
 
     if ( parmat && (space_a->IsParallel() != space_b->IsParallel()) )
       { throw Exception("Cannot form ConvertOperator between a parallel and a local space!"); }
@@ -74,80 +80,99 @@ namespace ngcomp
       auto bb_bfi = make_shared<SymbolicBilinearFormIntegrator>(bb, vb, element_vb);
       bb_bfi->SetSimdEvaluate(use_simd);
       bb_bfis.Append(bb_bfi);
+      if ( element_vb != VOL ) { // SEEMS to only be a problem for BND (and maybe BBND)
+	ab_bfi->SetBonusIntegrationOrder(bonus_int_order);
+	bb_bfi->SetBonusIntegrationOrder(bonus_int_order);
+      }
     }
-    
-    // cout << " ab_bfis: " << endl << ab_bfis << endl;
-    // cout << " bb_bfis: " << endl << bb_bfis << endl;
 
     /** Utility **/
-    auto it_els = [&](auto lam) {
-      // cout << " called it_els !" << endl;
-      // cout << " VB " << vb << endl;
-      // cout << " ma NE " << comp_space->GetMeshAccess()->GetNE(vb) << endl;
-      IterateElements(*comp_space, vb, clh,
-		      [&](FESpace::Element ei, LocalHeap & lh)
-      {
-	// cout << " use element " << ElementId(ei) << " ? " << endl;
-	if ( (!space_a->DefinedOn(vb, ei.GetIndex())) || (!space_b->DefinedOn(vb, ei.GetIndex())) )
-	  { return; }
-	if ( reg && !reg->Mask().Test(ei.GetIndex()) )
-	  { return; }
-	// cout << " use element " << ElementId(ei) << " ! " << endl;
-	lam(ei, lh);
-      });
-    };
 
     /** Create Matrix Graph **/
     int dima = space_a->GetDimension(), dimb = space_b->GetDimension();
 
-    if ( (dima != 1) || (dimb != 1) )
-      { throw Exception("multidim space convert TODO!!"); }
+    // if ( (dima != 1) || (dimb != 1) )
+      // { throw Exception("multidim space convert TODO!!"); }
 
-    TableCreator<int> cgraph(space_b->GetNDof() * dimb);
-    Array<DofId> dnums_a(100), dnums_b(100);
-    for (; !cgraph.Done(); cgraph++ )
-      it_els([&](FESpace::Element & ei, LocalHeap & lh) {
-	  ElementId eid(ei);
-	  space_a->GetDofNrs(eid, dnums_a, ANY_DOF); // get rid of UNUSED DOFs
-	  space_b->GetDofNrs(eid, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
-	  for (auto db : dnums_b)
-	    if (IsRegularDof(db))
-	      for (auto da : dnums_a)
-		if (IsRegularDof(da)) {
-		  for (auto lb : Range(dimb)) {
-		    auto x = dimb * db + lb;
-		    for (auto la : Range(dima))
-		      { cgraph.Add(x, dima * da + la); }
-		  }
-		}
-	});
+    int nthreads = (task_manager == nullptr) ? 1 : task_manager->GetNumThreads();
+    Array<int> tmdsa(nthreads), tmdsb(nthreads);
+    tmdsa = 0; tmdsb = 0;
+    TableCreator<int> crnrs(ma->GetNE(vb)), ccnrs(ma->GetNE(vb));
+    for (; !crnrs.Done(); crnrs++, ccnrs++ )
+      ParallelForRange
+	(ma->GetNE(vb), [&](IntRange r)
+	 {
+	   Array<DofId> dnums_a(100), dnums_b(100);
+	   int tid = (task_manager == nullptr) ? 0 : task_manager->GetThreadId();
+	   int& maxdsa = tmdsa[tid], maxdsb = tmdsb[tid];
+	   for (auto i : r) {
+	     ElementId eid(vb, i);
+	     Ngs_Element el = ma->GetElement(eid);
+	     if ( (!space_a->DefinedOn(vb, el.GetIndex())) || (!space_b->DefinedOn(vb, el.GetIndex())) )
+	       { return; }
+	     if ( reg && !reg->Mask().Test(el.GetIndex()) )
+	       { return; }
+	     space_a->GetDofNrs(eid, dnums_a, ANY_DOF); // get rid of UNUSED DOFs
+	     maxdsa = max2(maxdsa, int(dnums_a.Size()));
+	     for (auto da : dnums_a)
+	       if (IsRegularDof(da)) {
+		 auto ba = dima * da;
+		 for (auto l : Range(dima))
+		   { ccnrs.Add(i, ba + l); }
+	       }
+	     space_b->GetDofNrs(eid, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
+	     maxdsb = max2(maxdsb, int(dnums_b.Size()));
+	     for (auto db : dnums_b)
+	       if (IsRegularDof(db)) {
+		 auto bb = dimb * db;
+		 for (auto l : Range(dimb))
+		   { crnrs.Add(i, bb + l); }
+	       }
+	   }
+	 });
+    int maxds_a = 0, maxds_b = 0;
+    for (auto k : Range(tmdsa)) {
+      maxds_a = max2(maxds_a, tmdsa[k]);
+      maxds_b = max2(maxds_b, tmdsb[k]);
+    }
 
     /** Alloc Matrix **/
-    auto graph = cgraph.MoveTable();
-    // cout << " have graph: " << endl << graph << endl;
-    Array<int> perow(space_b->GetNDof() * dimb);
-    for (auto k : Range(perow))
-      { perow[k] = graph[k].Size(); }
-    auto spmat = make_shared<SparseMatrix<SCAL>> (perow, space_a->GetNDof() * dima);
-    for (auto k : Range(perow)) {
-      QuickSort(graph[k]);
-      spmat->GetRowIndices(k) = graph[k];
-    }
+    Table<int> rnrs = crnrs.MoveTable(), cnrs = ccnrs.MoveTable();
+    MatrixGraph graph (space_b->GetNDof() * dimb, space_a->GetNDof() * dimb, rnrs, cnrs, false);
+
+    auto spmat = make_shared<SparseMatrix<SCAL>> (graph, true);
     spmat->AsVector() = 0;
 
-    /** Fill Matrix **/
-    Array<int> cnt_b(spmat->Height()); cnt_b = 0;
-    auto fill_lam = [&](FESpace::Element & ei, LocalHeap & lh) {
+    /** Fill Matrix - with lambdas, we can use the same code for SIMD and non-SIMD cases **/
+    Array<int> cnt_b(space_b->GetNDof()); cnt_b = 0;
+    auto it_els = [&](auto lam) {
+      IterateElements(*space_b, vb, clh, // !! use space_b element coloring !!
+		      [&](FESpace::Element fei, LocalHeap & lh)
+      {
+	if ( (!space_a->DefinedOn(vb, fei.GetIndex())) || (!space_b->DefinedOn(vb, fei.GetIndex())) )
+	  { return; }
+	if ( reg && !reg->Mask().Test(fei.GetIndex()) )
+	  { return; }
+	lam(fei, lh);
+      });
+    };
+    auto fill_lam = [&](FESpace::Element & fei, LocalHeap & lh) {
       /** Get Finite Elements / Element Transformation **/
-      const FiniteElement & fel = ei.GetFE();
-      const auto & comp_fel = static_cast<const CompoundFiniteElement&>(fel);
-      const FiniteElement & fela = comp_fel[inda];
-      const FiniteElement & felb = comp_fel[indb];
+      const ElementTransformation & eltrans = fei.GetTrafo();
+      ElementId ei(fei);
+      const FiniteElement & fela = space_a->GetFE(ei, lh);
+      const FiniteElement & felb = fei.GetFE();
       MixedFiniteElement felab (fela, felb);
-      const ElementTransformation & eltrans = ei.GetTrafo();
+
+      Array<int> dnums_a(maxds_a, lh), dnums_b(maxds_b, lh);
+      space_a->GetDofNrs(ei, dnums_a, ANY_DOF); // get rid of UNUSED DOFs [[ ACTUALLY, NO, also need right elmat dnrs! ]]
+      space_b->GetDofNrs(ei, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
+
+      if (dnums_b.Size() == 0) // (compressed space)
+	{ return; }
 
       /** Calc mass/dual and mixed mass/dual matrices **/
-      FlatMatrix<SCAL> bamat(felb.GetNDof() * dima, fela.GetNDof() * dima, lh); bamat = 0.0;
+      FlatMatrix<SCAL> bamat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh); bamat = 0.0;
       FlatMatrix<SCAL> bbmat(felb.GetNDof() * dimb, felb.GetNDof() * dimb, lh); bbmat = 0.0;
       for (auto bfi : ab_bfis)
 	{ bfi->CalcElementMatrixAdd(felab, eltrans, bamat, lh); }
@@ -157,22 +182,36 @@ namespace ngcomp
       /** Calc Elmat **/
       // cout << " bamat " << endl << bamat << endl;
       // cout << " bbmat " << endl << bbmat << endl;
+
       CalcInverse(bbmat); // NOT symmetric!!
+
       // cout << " bbmat inv " << endl << bbmat << endl;
-      FlatMatrix<SCAL> elmat(felb.GetNDof(), fela.GetNDof(), lh);
+
+      FlatMatrix<SCAL> elmat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh);
       elmat = bbmat * bamat;
+
       // cout << " elmat " << endl << elmat << endl;
 
+      // cout << " add elmat, dofs B " << endl << dnums_b << endl;
+      // cout << " add elmat, dofs A " << endl << dnums_a << endl;
+
       /** Write into SparseMatrix **/
-      space_a->GetDofNrs(ei, dnums_a, ANY_DOF); // get rid of UNUSED DOFs
-      space_b->GetDofNrs(ei, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
+      if(  (dima == 1) && (dimb == 1) )
+	{ spmat->AddElementMatrix(dnums_b, dnums_a, elmat, false); } // should be taken care of by fespace coloring
+      else
+	{
+	  FlatArray<int> mddb(dnums_b.Size() * dimb, lh);
+	  for (auto k : Range(dnums_b))
+	    for (auto l : Range(dimb))
+	      { mddb[k * dimb + l] = dimb * dnums_b[k] + l; }
+	  FlatArray<int> mdda(dnums_a.Size() * dima, lh);
+	  for (auto k : Range(dnums_a))
+	    for (auto l : Range(dima))
+	      { mdda[k * dima + l] = dima * dnums_a[k] + l; }
+	  spmat->AddElementMatrix(mddb, mdda, elmat, false);
+	}
 
-      // cout << " add elmat, rownums " << endl << dnums_b << endl;
-      // cout << " add elmat, colnums " << endl << dnums_a << endl;
-
-      spmat->AddElementMatrix(dnums_b, dnums_a, elmat, false); // should be taken care of by fespace coloring
-
-      for (auto dnum : dnums_b)
+      for (auto dnum : dnums_b) // space_b element coloring!!
 	if (IsRegularDof(dnum))
 	  { cnt_b[dnum]++; }
     };
@@ -180,7 +219,7 @@ namespace ngcomp
     if (use_simd) {
       it_els([&](FESpace::Element & ei, LocalHeap & lh) {
 	  try { fill_lam(ei, lh); }
-	  catch (ExceptionNOSIMD e) { /** Turn off SIMD, try again! **/
+	  catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
 	    for (auto bfi : ab_bfis)
 	      { bfi->SetSimdEvaluate(false); }
 	    for (auto bfi : bb_bfis)
@@ -197,13 +236,16 @@ namespace ngcomp
       { AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
 #endif
 
-    for (auto rownr : Range(spmat->Height()))
-      if (cnt_b[rownr] > 1) {
-	double fac = 1.0 / double(cnt_b[rownr]);
-	auto rvs = spmat->GetRowValues(rownr);
-	for (auto & v : rvs)
-	  { v *= fac; }
+    for (auto dofnr : Range(size_t(spmat->Height()/dimb))) {
+      if (cnt_b[dofnr] > 1) {
+	double fac = 1.0 / double(cnt_b[dofnr]);
+	for (auto rownr : Range(dimb * dofnr, dimb * (dofnr+1))) {
+	  auto rvs = spmat->GetRowValues(rownr);
+	  for (auto & v : rvs)
+	    { v *= fac; }
+	}
       }
+    }
 
     shared_ptr<BaseMatrix> op = spmat;
 
@@ -223,18 +265,18 @@ namespace ngcomp
     if ( space_a->IsComplex() != space_b->IsComplex() ) // b complex and a real could work in principle (?)
       { throw Exception("Cannot convert between complex and non-complex space!"); }
 
-    Flags flags;
-    auto cs = make_shared<CompoundFESpace>(space_a->GetMeshAccess(), flags);
-    cs->AddSpace(space_a);
-    cs->AddSpace(space_b);
-    cs->Update();
-    cs->FinalizeUpdate();
+    // Flags flags;
+    // auto cs = make_shared<CompoundFESpace>(space_a->GetMeshAccess(), flags);
+    // cs->AddSpace(space_a);
+    // cs->AddSpace(space_b);
+    // cs->Update();
+    // cs->FinalizeUpdate();
 
     shared_ptr<BaseMatrix> op;
     if (space_b->IsComplex())
-      { op = ConvertOperator<Complex> (cs, 0, 1, diffop, vb, reg, lh, localop, parmat, use_simd); }
+      { op = ConvertOperator<Complex> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd); }
     else
-      { op = ConvertOperator<double> (cs, 0, 1, diffop, vb, reg, lh, localop, parmat, use_simd); }
+      { op = ConvertOperator<double> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd); }
 
     return op;
   } // ConvertOperator
