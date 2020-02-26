@@ -309,6 +309,12 @@ namespace ngcomp
     specialelements_timestamp = GetNextTimeStamp();
   }
 
+  void BilinearForm :: DeleteSpecialElement(size_t index)
+  {
+    specialelements.DeleteElement(index);
+    specialelements_timestamp = GetNextTimeStamp();
+  }
+
   void BilinearForm :: DeleteSpecialElements()
   {
     // for(auto el : specialelements)
@@ -3525,14 +3531,14 @@ namespace ngcomp
             const SpecialElement & el = *specialelements[i];
             el.GetDofNrs (dnums);
 
-            FlatVector<SCAL> elvec(dnums.Size(), clh);
+            FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), clh);
             lin.GetIndirect (dnums, elvec);
           
             for (int j = 0; j < dnums.Size(); j++)
               if (IsRegularDof(dnums[j]))
                 useddof[dnums[j]] = true;
           
-            FlatMatrix<SCAL> elmat(dnums.Size(), clh);
+            FlatMatrix<SCAL> elmat(dnums.Size() * fespace->GetDimension(), clh);
             el.CalcLinearizedElementMatrix(elvec, elmat, clh);
           
             AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
