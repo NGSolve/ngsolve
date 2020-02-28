@@ -512,11 +512,9 @@ namespace ngfem
     HeapReset hr(lh);
     FlatMatrix<double> hflux(flux.Height(), diffop->Dim(), lh);
     for (auto k : (comp == -1) ? Range(0, dim) : Range(comp, comp+1)) {
-      for (int k = 0; k < dim; k++) {
-	for (auto l : Range(diffop->Dim()))
-	  { hflux.Col(l) = flux.Col(dim * l + k); }
-	diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
-      }
+      for (auto l : Range(diffop->Dim()))
+	{ hflux.Col(l) = flux.Col(dim * l + k); }
+      diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
     }
   }
 
@@ -530,11 +528,9 @@ namespace ngfem
     HeapReset hr(lh);
     FlatMatrix<Complex> hflux(flux.Height(), diffop->Dim(), lh);
     for (auto k : (comp == -1) ? Range(0, dim) : Range(comp, comp+1)) {
-      for (int k = 0; k < dim; k++) {
-	for (auto l : Range(diffop->Dim()))
-	  { hflux.Col(l) = flux.Col(dim * l + k); }
-	diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
-      }
+      for (auto l : Range(diffop->Dim()))
+	{ hflux.Col(l) = flux.Col(dim * l + k); }
+      diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
     }
   }
 
