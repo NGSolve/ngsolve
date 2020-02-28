@@ -511,20 +511,13 @@ namespace ngfem
   {
     HeapReset hr(lh);
     FlatMatrix<double> hflux(flux.Height(), diffop->Dim(), lh);
-    if (comp == -1)
-      {
-        for (int k = 0; k < dim; k++)
-          {
-            hflux = flux.Cols(k, dim);
-            diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
-          }
+    for (auto k : (comp == -1) ? Range(0, dim) : Range(comp, comp+1)) {
+      for (int k = 0; k < dim; k++) {
+	for (auto l : Range(diffop->Dim()))
+	  { hflux.Col(l) = flux.Col(dim * l + k); }
+	diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
       }
-    else
-      {
-        hflux = flux.Cols(comp, dim);
-        x.Range(0,dim*fel.GetNDof()) = 0.0;
-        diffop->ApplyTrans(fel, mir, hflux, x.Slice(comp,dim), lh);
-      }
+    }
   }
 
   void BlockDifferentialOperator ::
@@ -536,20 +529,13 @@ namespace ngfem
   {
     HeapReset hr(lh);
     FlatMatrix<Complex> hflux(flux.Height(), diffop->Dim(), lh);
-    if (comp == -1)
-      {
-        for (int k = 0; k < dim; k++)
-          {
-            hflux = flux.Cols(k, dim);
-            diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
-          }
+    for (auto k : (comp == -1) ? Range(0, dim) : Range(comp, comp+1)) {
+      for (int k = 0; k < dim; k++) {
+	for (auto l : Range(diffop->Dim()))
+	  { hflux.Col(l) = flux.Col(dim * l + k); }
+	diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
       }
-    else
-      {
-        hflux = flux.Cols(comp, dim);
-        x.Range(0,dim*fel.GetNDof()) = 0.0;
-        diffop->ApplyTrans(fel, mir, hflux, x.Slice(comp,dim), lh);
-      }
+    }
   }
 
   void BlockDifferentialOperator ::
