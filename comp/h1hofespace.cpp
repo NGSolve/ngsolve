@@ -308,9 +308,9 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        additional_evaluators.Set ("Grad", blockit(flux_evaluator[VOL]) );
+        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
         if (ma->GetDimension() >= 2)        
-          additional_evaluators.Set ("Gradboundary", blockit(flux_evaluator[BND]) );
+          additional_evaluators.Set ("Gradboundary", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[BND], dimension));
       }
     else
       {
