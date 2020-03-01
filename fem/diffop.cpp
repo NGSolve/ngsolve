@@ -502,7 +502,38 @@ namespace ngfem
       }
   }
 
-    
+  void BlockDifferentialOperator ::
+  ApplyTrans (const FiniteElement & fel,
+	      const BaseMappedIntegrationRule & mir,
+	      FlatMatrix<double> flux,
+	      BareSliceVector<double> x, 
+	      LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<double> hflux(flux.Height(), diffop->Dim(), lh);
+    for (auto k : (comp == -1) ? Range(0, dim) : Range(comp, comp+1)) {
+      for (auto l : Range(diffop->Dim()))
+	{ hflux.Col(l) = flux.Col(dim * l + k); }
+      diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
+    }
+  }
+
+  void BlockDifferentialOperator ::
+  ApplyTrans (const FiniteElement & fel,
+	      const BaseMappedIntegrationRule & mir,
+	      FlatMatrix<Complex> flux,
+	      BareSliceVector<Complex> x, 
+	      LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<Complex> hflux(flux.Height(), diffop->Dim(), lh);
+    for (auto k : (comp == -1) ? Range(0, dim) : Range(comp, comp+1)) {
+      for (auto l : Range(diffop->Dim()))
+	{ hflux.Col(l) = flux.Col(dim * l + k); }
+      diffop->ApplyTrans(fel, mir, hflux, x.Slice(k,dim), lh);
+    }
+  }
+
   void BlockDifferentialOperator ::
   AddTrans (const FiniteElement & fel,
             const SIMD_BaseMappedIntegrationRule & mir,
