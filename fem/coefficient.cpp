@@ -3645,7 +3645,7 @@ public:
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    int dim1 = c1->Dimension();
+    // int dim1 = c1->Dimension();
     int d = c1->Dimensions()[0];
     auto in0 = input[0];
     values(0) = false;
