@@ -540,8 +540,8 @@ namespace ngcomp
 		
                 for (int k=0;k<nbelems.Size();k++){
                   int elnr=nbelems[k];
-                  if (!fespace2->DefinedOn (ma->GetElIndex(elnr))) continue;
-                  fespace2->GetDofNrs (elnr, dnums);
+                  if (!fespace2->DefinedOn (ElementId(VOL,elnr))) continue;
+                  fespace2->GetDofNrs (ElementId(VOL,elnr), dnums);
                   for (int j = 0; j < dnums.Size(); j++)
                     if (dnums[j] != -1)
                       creator2.Add (offset+i, dnums[j]);
