@@ -71,7 +71,10 @@ namespace ngfem
 #ifdef WIN32
       library->Load(prefix+".dll");
 #else
-      library->Load("./"+prefix+".so");
+      char *temp = getcwd(nullptr, 0);
+      string cwd(temp);
+      free(temp);
+      library->Load(cwd+"/"+prefix+".so");
 #endif
       return library;
     }
