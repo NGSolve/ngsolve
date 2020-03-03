@@ -656,7 +656,7 @@ namespace ngcomp
         Iterate<2>
           ([&](auto i)
            {
-             constexpr auto DIM = i+2;
+             constexpr auto DIM = i.value+2;
              if(mesh->GetDimension() == DIM)
                {
                  // Delete special elements created by me
@@ -677,6 +677,7 @@ namespace ngcomp
                    (master.VB(), lh,
                     [&] (Ngs_Element el, LocalHeap& lh)
                     {
+		      constexpr auto DIM = i.value+2; // Declare DIM again (MSVC bug)
                       HeapReset hr(lh);
                       if(!mask.Test(el.GetIndex())) return;
                       auto& trafo = mesh->GetTrafo(el, lh);
