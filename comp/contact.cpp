@@ -152,7 +152,7 @@ namespace ngcomp
     result = 0;
     if (!master.Mask().Test(el1.GetIndex())) return;
 
-    int intorder2 = 10*displacement->GetFESpace()->GetOrder();
+    int intorder2 = 2*displacement->GetFESpace()->GetOrder();
 
     auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
 
@@ -161,7 +161,7 @@ namespace ngcomp
     trafo1_def.CalcPoint(ip1, p1);
 
     double mindist = 1e99;
-    result = 0;
+    result = 1./0.;
 
     // find all bound-2 elements closer to p1 than h
     netgen::Point<DIM> ngp1;
@@ -186,14 +186,12 @@ namespace ngcomp
          auto & trafo2 = ma->GetTrafo (el2, lh);
          auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-         IntegrationRule ir2(trafo2.GetElementType(), intorder2);
-         MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-         MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
+         auto & ir2 = SelectIntegrationRule(trafo2.GetElementType(), intorder2);
 
-         for (auto j : Range(mir2_def))
+         for (auto &ip : ir2)
            {
-             const auto & mip2 = mir2_def[j];
-             const auto & p2 = mip2.GetPoint();
+             Vec<DIM> p2;
+             trafo2_def.CalcPoint(ip, p2);
              double dist = L2Norm(p1-p2);
              if (dist<h && dist < mindist)
                {
