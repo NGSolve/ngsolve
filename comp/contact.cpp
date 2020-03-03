@@ -161,7 +161,7 @@ namespace ngcomp
     trafo1_def.CalcPoint(ip1, p1);
 
     double mindist = 1e99;
-    result = 1./0.;
+    result = std::numeric_limits<double>::infinity();
 
     // find all bound-2 elements closer to p1 than h
     netgen::Point<DIM> ngp1;
