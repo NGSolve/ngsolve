@@ -3584,7 +3584,7 @@ The created object must be kept alive in python as long as
 operations of it are used!
 )delimiter")
      .def("AddEnergy", &ContactBoundary::AddEnergy)
-     // .def("AddIntegrator", &ContactBoundary::AddIntegrator)
+     .def("AddIntegrator", &ContactBoundary::AddIntegrator)
      .def("Update", &ContactBoundary::Update,
           py::arg("gf"), py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,
