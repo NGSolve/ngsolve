@@ -244,10 +244,6 @@ namespace ngcomp
          auto proxy = dynamic_cast<ProxyFunction*>(&nodecf);
          if (proxy && !proxy->IsTestFunction() && !trial_proxies.Contains(proxy))
            trial_proxies.Append(proxy);
-
-         auto gap = dynamic_cast<GapFunction*>(&nodecf);
-         if (gap)
-           gap_function = &nodecf;
        });
   }
 
@@ -257,7 +253,7 @@ namespace ngcomp
                                    FlatVector<double> elx,
                                    LocalHeap& lh)
   {
-    ProxyUserData ud(trial_proxies.Size(), 1, lh);
+    ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
     ud.fel = & m_fel;
 
@@ -289,7 +285,7 @@ namespace ngcomp
                                FlatVector<double> ely,
                                LocalHeap& lh)
   {
-    ProxyUserData ud(trial_proxies.Size(), 1, lh);
+    ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
     ud.fel = & m_fel;
 
@@ -342,7 +338,7 @@ namespace ngcomp
                                         LocalHeap& lh)
   {
     HeapReset hr(lh);
-    ProxyUserData ud(trial_proxies.Size(), 1, lh);
+    ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
     ud.fel = & m_fel;
 
@@ -453,6 +449,165 @@ namespace ngcomp
         }
   }
 
+  ContactIntegrator::ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
+                                       shared_ptr<FESpace> _fes)
+    : cf(_cf), fes(_fes)
+  {
+    cf->TraverseTree
+      ([&](CoefficientFunction& nodecf)
+       {
+         auto proxy = dynamic_cast<ProxyFunction*>(&nodecf);
+         if (proxy && !proxy->IsTestFunction() && !trial_proxies.Contains(proxy))
+           trial_proxies.Append(proxy);
+
+         if(proxy && proxy->IsTestFunction() && !test_proxies.Contains(proxy))
+           test_proxies.Append(proxy);
+       });
+  }
+
+  void ContactIntegrator::ApplyAdd(const FiniteElement& m_fel,
+                                   const FiniteElement& s_fel,
+                                   const BaseMappedIntegrationRule& m_mir,
+                                   FlatVector<double> elx,
+                                   FlatVector<double> ely,
+                                   LocalHeap& lh)
+  {
+    HeapReset hr(lh);
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & m_fel;
+
+    for(auto proxy : trial_proxies)
+      {
+        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        if(proxy->IsOther())
+          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+                                    ud.GetMemory(proxy), lh);
+        else
+          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+                                    ud.GetMemory(proxy), lh);
+      }
+
+    FlatVector ely1(ely.Size(), lh);
+    FlatMatrix<> val(m_mir.Size(), 1, lh);
+
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+        FlatMatrix<> proxyvalues(m_mir.Size(), proxy->Dimension(), lh);
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (m_mir, val);
+            proxyvalues.Col(k) = val.Col(0);
+          }
+
+        for (int i = 0; i < m_mir.Size(); i++)
+          proxyvalues.Row(i) *= m_mir[i].GetWeight();
+
+        IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*m_fel.GetNDof(), ely.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*m_fel.GetNDof());
+        ely1 = 0.;
+        if(proxy->IsOther())
+          proxy->Evaluator()->ApplyTrans(s_fel, *m_mir.GetOtherMIR(), proxyvalues, ely1.Range(test_range), lh);
+        else
+          proxy->Evaluator()->ApplyTrans(m_fel, m_mir, proxyvalues, ely1.Range(test_range), lh);
+        ely += ely1;
+      }
+  }
+
+  void ContactIntegrator::CalcLinearizedAdd(const FiniteElement& m_fel,
+                                            const FiniteElement& s_fel,
+                                            const BaseMappedIntegrationRule& m_mir,
+                                            FlatVector<double> elx,
+                                            FlatMatrix<double> elmat,
+                                            LocalHeap& lh)
+  {
+    HeapReset hr(lh);
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & m_fel;
+
+    for(auto proxy : trial_proxies)
+      {
+        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        if(proxy->IsOther())
+          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+                                    ud.GetMemory(proxy), lh);
+        else
+          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+                                    ud.GetMemory(proxy), lh);
+      }
+
+    FlatMatrix<> dderiv(m_mir.Size(), 1,lh);
+    FlatMatrix<AutoDiff<1>> dval(m_mir.Size(), 1, lh);
+
+    for (int k1 : Range(trial_proxies))
+      for (int l1 : Range(test_proxies)) // ss
+        {
+          HeapReset hr(lh);
+
+          auto proxy1 = trial_proxies[k1];
+          auto proxy2 = test_proxies[l1];
+
+          FlatTensor<3> proxyvalues(lh, m_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+          for (int k = 0; k < proxy1->Dimension(); k++)
+            for (int l = 0; l < proxy2->Dimension(); l++)
+              {
+                ud.trialfunction = proxy1;
+                ud.trial_comp = k;
+                ud.testfunction = proxy2;
+                ud.test_comp = l;
+
+                cf -> Evaluate (m_mir, dval);
+                for (size_t i = 0; i < m_mir.Size(); i++)
+                  proxyvalues(i,l,k) = dval(i,0).DValue(0);
+              }
+
+          for (int i = 0; i < m_mir.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= m_mir[i].GetWeight();
+
+          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*m_fel.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*m_fel.GetNDof());
+          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*m_fel.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*m_fel.GetNDof());
+
+          auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
+
+          int bs = m_mir.Size();
+          FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), loc_elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), loc_elmat.Height(), lh);
+
+          bdbmat1 = 0.;
+          bbmat2 = 0.;
+
+          const auto& s_mir = *m_mir.GetOtherMIR();
+
+          for (size_t j = 0; j < bs; j++)
+            {
+              size_t ii = j;
+              IntRange r3 = proxy2->Dimension() * IntRange(j,j+1);
+
+              {
+                if(proxy1->IsOther())
+                  proxy1->Evaluator()->CalcMatrix(s_fel, s_mir[ii], bmat1, lh);
+                else
+                  proxy1->Evaluator()->CalcMatrix(m_fel, m_mir[ii], bmat1, lh);
+                if(proxy2->IsOther())
+                  proxy2->Evaluator()->CalcMatrix(s_fel, s_mir[ii], bmat2, lh);
+                else
+                  proxy2->Evaluator()->CalcMatrix(m_fel, m_mir[ii], bmat2, lh);
+              }
+
+              bdbmat1.Rows(r3) = proxyvalues(ii,STAR,STAR) * bmat1;
+              bbmat2.Rows(r3) = bmat2;
+            }
+          loc_elmat += Trans(bbmat2) * bdbmat1;
+        }
+  }
+
   ContactBoundary::ContactBoundary(shared_ptr<FESpace> _fes,
                                    Region _master, Region _slave)
     : master(_master), slave(_slave), fes(_fes)
@@ -473,6 +628,11 @@ namespace ngcomp
   void ContactBoundary::AddEnergy(shared_ptr<CoefficientFunction> form)
   {
     energies.Append(make_shared<ContactEnergy>(form, fes));
+  }
+
+  void ContactBoundary::AddIntegrator(shared_ptr<CoefficientFunction> form)
+  {
+    integrators.Append(make_shared<ContactIntegrator>(form, fes));
   }
 
   void ContactBoundary::Update(shared_ptr<GridFunction> displacement_,
@@ -557,6 +717,8 @@ namespace ngcomp
   double ContactElement<DIM>::Energy(FlatVector<double> elx,
                                      LocalHeap& lh) const
   {
+    if(cb->GetIntegrators().Size())
+      throw Exception("Energy does not work with contact integrators!");
     auto& m_trafo = fes->GetMeshAccess()->GetTrafo(pair.master_el, lh);
     double energy = 0.;
     m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
@@ -595,6 +757,8 @@ namespace ngcomp
               const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 ce->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
+              for(const auto& ci : cb->GetIntegrators())
+                ci->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
             });
        });
   }
@@ -618,6 +782,8 @@ namespace ngcomp
               const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 ce->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);
+              for(const auto& ci : cb->GetIntegrators())
+                ci->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);
             });
        });
   }

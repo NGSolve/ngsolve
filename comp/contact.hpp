@@ -83,7 +83,6 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> cf;
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies;
-    CoefficientFunction * gap_function;
 
   public:
     ContactEnergy(shared_ptr<CoefficientFunction> _cf,
@@ -110,19 +109,47 @@ namespace ngcomp
                            LocalHeap& lh);
   };
 
+  class ContactIntegrator
+  {
+    shared_ptr<CoefficientFunction> cf;
+    shared_ptr<FESpace> fes;
+    Array<ProxyFunction*> trial_proxies, test_proxies;
+    CoefficientFunction * gap_function;
+
+  public:
+    ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
+                      shared_ptr<FESpace> _fes);
+
+    void ApplyAdd(const FiniteElement& m_fel,
+                  const FiniteElement& s_fel,
+                  const BaseMappedIntegrationRule& m_mir,
+                  FlatVector<double> elx,
+                  FlatVector<double> ely,
+                  LocalHeap& lh);
+
+    void CalcLinearizedAdd(const FiniteElement& m_fel,
+                           const FiniteElement& s_fel,
+                           const BaseMappedIntegrationRule& m_mir,
+                           FlatVector<double> elx,
+                           FlatMatrix<double> elmat,
+                           LocalHeap& lh);
+  };
+
+
   class ContactBoundary
   {
     shared_ptr<GapFunction> gap;
     shared_ptr<CoefficientFunction> normal;
     Region master, slave;
     Array<shared_ptr<ContactEnergy>> energies;
+    Array<shared_ptr<ContactIntegrator>> integrators;
     shared_ptr<FESpace> fes;
   public:
     ContactBoundary(shared_ptr<FESpace> _fes, Region _master,
                     Region _slave);
 
     void AddEnergy(shared_ptr<CoefficientFunction> form);
-    // void AddIntegrator(shared_ptr<CoefficientFunction> form);
+    void AddIntegrator(shared_ptr<CoefficientFunction> form);
 
     // Update search tree for gap function, if bf is not
     // nullptr, update SpecialElements of bf
@@ -133,6 +160,7 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> Gap() const { return gap; }
     shared_ptr<CoefficientFunction> Normal() const { return normal; }
     const auto& GetEnergies() const { return energies; }
+    const auto& GetIntegrators() const { return integrators; }
     shared_ptr<FESpace> GetFESpace() const { return fes; }
   };
 
