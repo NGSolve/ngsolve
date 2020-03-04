@@ -262,47 +262,39 @@ namespace ngcomp
 
     if (!no_low_order_space)
       low_order_space = make_shared<NodalFESpace> (ma, loflags);
-
-    auto blockit = [&](auto diffop) -> shared_ptr<DifferentialOperator> {
-      if (dimension > 1)
-	{ return make_shared<BlockDifferentialOperator> (diffop, dimension); }
-      else
-	{ return diffop; }
-    };
-
     switch (ma->GetDimension())
       {
       case 1:
         {
-          evaluator[VOL] = blockit(make_shared<T_DifferentialOperator<DiffOpId<1>>>());
-          flux_evaluator[VOL] = blockit(make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
-          evaluator[BND] = blockit(make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>());
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
           break;
         }
       case 2:
         {
           // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-          evaluator[VOL] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<2,2>>>());
-          flux_evaluator[VOL] = blockit(make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-          evaluator[BND] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<2,1>>>());
-          flux_evaluator[BND] = blockit(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>());
-          evaluator[BBND] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>());
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,1>>>();
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<2,0>>>();
           break;
         }
       case 3:
         {
           // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          evaluator[VOL] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<3,3>>>());
-          flux_evaluator[VOL] = blockit(make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-          evaluator[BND] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<3,2>>>());
-          flux_evaluator[BND] = blockit(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>());
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,2>>>();
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
           // evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          evaluator[BBND] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<3,1>>>());
-	  flux_evaluator[BBND] = blockit(make_shared<T_DifferentialOperator<DiffOpGradientBBoundary<3>>>());
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,1>>>();
+	  flux_evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpGradientBBoundary<3>>>();
           // evaluator[BBBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          evaluator[BBBND] = blockit(make_shared<T_DifferentialOperator<DiffOpIdH1<3,0>>>());
+          evaluator[BBBND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,0>>>();
           break;
         }
       }
@@ -311,6 +303,13 @@ namespace ngcomp
         additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
         if (ma->GetDimension() >= 2)        
           additional_evaluators.Set ("Gradboundary", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[BND], dimension));
+        for (auto vb : { VOL,BND, BBND, BBBND })
+          {
+            if (evaluator[vb])
+              evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+            if (flux_evaluator[vb])
+              flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);
+          }
       }
     else
       {
@@ -340,12 +339,12 @@ namespace ngcomp
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());
-        additional_evaluators.Set ("dual", blockit(make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ()));
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ());
         break;
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
 	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
-        additional_evaluators.Set ("dual", blockit(make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ()));
+	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ());
 	break;
       default:
         ;
