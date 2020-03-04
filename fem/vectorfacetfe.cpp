@@ -356,7 +356,6 @@ namespace ngfem
     
     if (ip.VB() == BND)
       {
-        size_t ii = 0;
         int p = facet_order[fnr][0];
         
         INT<2> e = GetVertexOrientedEdge(fnr);

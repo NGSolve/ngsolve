@@ -16,6 +16,7 @@
 #include "numberfespace.hpp"
 #include "compressedfespace.hpp"
 #include "../fem/integratorcf.hpp"
+#include "contact.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -3653,6 +3654,31 @@ use_simd:
 	   // ngcore::ntasks = MyMPI_GetNTasks(MPI_COMM_WORLD);
 	   return NgMPI_Comm(MPI_COMM_WORLD);
 	 });
+
+   py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
+     (m, "ContactBoundary")
+     .def(py::init<shared_ptr<FESpace>, Region, Region>(),
+          R"delimiter(
+Class for managing contact interfaces.
+The created object must be kept alive in python as long as
+operations of it are used!
+)delimiter")
+     .def("AddEnergy", &ContactBoundary::AddEnergy)
+     .def("AddIntegrator", &ContactBoundary::AddIntegrator)
+     .def("Update", &ContactBoundary::Update,
+          py::arg("gf"), py::arg("bf") = nullptr,
+          py::arg("intorder") = 4, py::arg("maxdist") = 0.,
+          R"delimiter(
+Update searchtree for gap function.
+If bf is given add specialelements corresponding to
+integrationrules of order 'intorder' on each master
+element to BilinearForm bf.
+`maxdist` is the maximum distance where this function is accurate.
+If `maxdist` == 0. then 2*meshsize is used.
+)delimiter")
+     .def_property_readonly("gap", &ContactBoundary::Gap)
+     .def_property_readonly("normal", &ContactBoundary::Normal)
+     ;
 
   /////////////////////////////////////////////////////////////////////////////////////
 }
