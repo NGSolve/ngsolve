@@ -586,11 +586,12 @@ def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondor
             p[0],p[1],p[2] = x,y,z
            
     for k in range(len(found)):
-        for i in range(len(mesh.Points())):
-            if abs(mesh.Points()[i][0]-bbbpts[k][0])+abs(mesh.Points()[i][1]-bbbpts[k][1])+abs(mesh.Points()[i][2]-bbbpts[k][2]) < 1e-6:
+        i = 0
+        for p in mesh.Points():
+            if abs(p.p[0]-bbbpts[k][0])+abs(p.p[1]-bbbpts[k][1])+abs(p.p[2]-bbbpts[k][2]) < 1e-6:
                 indbbbpts[k] = pids[i]
                 found[k] = True
-                    
+            i += 1
     for k in range(len(found)):
         if found[k] == False:
             raise Exception("bbbpnt[",k,"] not in structured mesh!")

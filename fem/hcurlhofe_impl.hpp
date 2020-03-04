@@ -1466,8 +1466,6 @@ namespace ngfem
     Switch<4-DIM>
       (bmip.DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
        {
-         constexpr int DIMSPACE = DIM+CODIM.value;
-
          auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
          static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
            -> CalcDualShape2 (mip, SBLambda([shape] (size_t i, auto val)
