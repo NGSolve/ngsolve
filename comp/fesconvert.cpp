@@ -134,7 +134,7 @@ namespace ngcomp
 
     /** Alloc Matrix **/
     Table<int> rnrs = crnrs.MoveTable(), cnrs = ccnrs.MoveTable();
-    MatrixGraph graph (space_b->GetNDof() * dimb, space_a->GetNDof() * dimb, rnrs, cnrs, false);
+    MatrixGraph graph (space_b->GetNDof() * dimb, space_a->GetNDof() * dima, rnrs, cnrs, false);
 
     auto spmat = make_shared<SparseMatrix<SCAL>> (graph, true);
     spmat->AsVector() = 0;
