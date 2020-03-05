@@ -54,7 +54,7 @@ namespace ngcomp
     void Evaluate(const BaseMappedIntegrationRule & mir,
                   BareSliceMatrix<> result) const override;
 
-    optional<ContactPair<DIM>> CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip) const;
+    optional<ContactPair<DIM>> CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip, LocalHeap& lh) const;
   };
 
   template<int DIM>
