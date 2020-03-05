@@ -340,7 +340,7 @@ namespace ngcomp
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());
 	if (dimension > 1)
-	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ()), dimension); }
+	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>>(), dimension)); }
 	else
 	  { additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ()); }
         break;
@@ -348,7 +348,7 @@ namespace ngcomp
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
 	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
 	if (dimension > 1)
-	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ()), dimension); }
+	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> (), dimension)); }
 	else
 	  { additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ()); }
 	break;
