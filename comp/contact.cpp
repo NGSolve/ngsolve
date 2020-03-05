@@ -4,9 +4,9 @@
 namespace ngcomp
 {
   template<int DIM>
-  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1) const
+  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh) const
   {
-    LocalHeapMem<10000> lh("gapfunction");
+    HeapReset hr(lh);
     int intorder2 = 10*displacement->GetFESpace()->GetOrder();
     auto & ip1 = mip1.IP();
     auto & trafo1 = mip1.GetTransformation();
@@ -683,7 +683,7 @@ namespace ngcomp
                       MappedIntegrationRule<DIM-1, DIM> mir(ir, trafo, lh);
                       for(const auto& mip : mir)
                         {
-                          auto pair = tgap->CreateContactPair(mip);
+                          auto pair = tgap->CreateContactPair(mip, lh);
                           if(pair.has_value())
                             {
                               lock_guard<mutex> guard(add_mutex);
