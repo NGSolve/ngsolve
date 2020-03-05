@@ -80,10 +80,6 @@ namespace ngcomp
       auto bb_bfi = make_shared<SymbolicBilinearFormIntegrator>(bb, vb, element_vb);
       bb_bfi->SetSimdEvaluate(use_simd);
       bb_bfis.Append(bb_bfi);
-      if ( element_vb != VOL ) { // SEEMS to only be a problem for BND (and maybe BBND)
-	ab_bfi->SetBonusIntegrationOrder(bonus_int_order);
-	bb_bfi->SetBonusIntegrationOrder(bonus_int_order);
-      }
     }
 
     /** Utility **/
