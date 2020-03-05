@@ -616,6 +616,17 @@ namespace ngcomp
     return 0;
   }
 
+
+  FlatArray<VorB> VectorFacetFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { BND, VOL };
+    if (int(vb) > 1)
+      { return FlatArray<VorB> (0, nullptr); }
+    else
+      { return FlatArray<VorB> (1, &nodes[int(vb)]); }
+  }
+
+
   shared_ptr<Table<int>> VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   { 
     return nullptr;
