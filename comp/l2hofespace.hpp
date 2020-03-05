@@ -86,6 +86,8 @@ namespace ngcomp
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;
     
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
@@ -233,6 +235,8 @@ namespace ngcomp
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
+
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 
     template <int DIM>
     void SolveM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * region,
