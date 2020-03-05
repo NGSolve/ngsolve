@@ -65,6 +65,8 @@ namespace ngcomp
 
     virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }
 
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }
 
