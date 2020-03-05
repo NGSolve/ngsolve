@@ -1,6 +1,3 @@
-#ifndef FILE_INTEGRATORCF
-#define FILE_INTEGRATORCF
-
 // WIP, need a bit more design ...
 
 namespace ngfem
@@ -143,5 +140,3 @@ namespace ngfem
   };
   
 }
-
-#endif
