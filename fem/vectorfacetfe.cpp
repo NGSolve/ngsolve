@@ -325,21 +325,12 @@ namespace ngfem
     for (int i = 0; i < ndof; i++)
       shape(i, 0) = shape(i, 1) = 0;
 
-    int first = first_facet_dof[fanr];
-
-    AutoDiff<2> x(ip(0), 0), y(ip(1),1);
-    AutoDiff<2> lami[3] = {x, y, 1-x-y};  
-
-    int p = facet_order[fanr][0];
-    INT<2> e = GetVertexOrientedEdge(fanr);
-    AutoDiff<2> xi = lami[e[1]]-lami[e[0]];
-    
-    LegendrePolynomial (p, xi.Value(), 
-                        SBLambda([&](int nr, double val)
-                                 {
-                                   shape(first+nr,0) = -val * xi.DValue(0);
-                                   shape(first+nr,1) = -val * xi.DValue(1);
-                                 }));
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
+    T_CalcShape(&tip.x, fanr,
+		SBLambda([&](size_t j, auto s) {
+		    shape.Row(j) = s.Value();
+		  })
+		);
   }
 
   template<>
@@ -627,45 +618,33 @@ namespace ngfem
     typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
     auto & ip = mip.IP();
     T x = ip(0), y = ip(1), z = ip(2);
-    if constexpr(is_same<T, double>::value == 0) {
-	    throw ExceptionNOSIMD("VectorFacetVolumeFE<ET_TET>::CalcDualShape2 no SIMD!");
-      }
-    else {
 
-      T lam[4] = { x, y, z, 1-x-y-z };
-      Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+    T lam[4] = { x, y, z, 1-x-y-z };
+    Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
 
-      int ii = first_facet_dof[fnr];
+    int ii = first_facet_dof[fnr];
 
-      // INT<4> fav = GetFaceSort (fnr, vnums);
-      INT<4> fav = GetVertexOrientedFace(fnr);
-      Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
-      Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
-      T xi = lam[fav[0]];
-      T eta = lam[fav[1]];
+    // INT<4> fav = GetFaceSort (fnr, vnums);
+    INT<4> fav = GetVertexOrientedFace(fnr);
+    Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
+    Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
+    T xi = lam[fav[0]];
+    T eta = lam[fav[1]];
     
-      Matrix<> tauhat(3,2);
-      tauhat.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
-      tauhat.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
-      Matrix<> tau(3,2);
-      // (dShat/dS) *F * tauhat
-      // tau = L2Norm(Cross(adxi,adeta)) / ( L2Norm(Cross(mip.GetJacobian()*adxi, mip.GetJacobian()*adeta)) * mip.GetMeasure() ) * mip.GetJacobian() * tauhat;
-      tau = mip.GetJacobian() * tauhat;
-      cout << " tauref  " << L2Norm(adxi) << endl;
-      Vec<3> tau1 = mip.GetJacobian() * adxi;
-      cout << " tau     " << L2Norm(tau1) << endl;
-      cout << " measure " << mip.GetMeasure() << endl;
-      tau /= mip.GetMeasure();
-      // tau = L2Norm(Cross(adxi,adeta)) / ( L2Norm(Cross(mip.GetJacobian()*adxi, mip.GetJacobian()*adeta)) ) * mip.GetJacobian() * tauhat;
-      cout << "final tau " << L2Norm(tau) << endl;
-	
-      DubinerBasis::Eval(order, xi, eta,
-			 SBLambda([&] (size_t nr, auto val)
-				  {
-				    shape[ii++] = tau * Vec<2,T>(val, 0);
-				    shape[ii++] = tau * Vec<2,T>(0, val);
-				  }));
-    }
+    Matrix<T> tauhat(3,2);
+    tauhat.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
+    tauhat.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
+    Matrix<T> tau(3,2);
+    // (dShat/dS) *F * tauhat
+    tau = mip.GetJacobian() * tauhat;
+    tau /= mip.GetMeasure();
+
+    DubinerBasis::Eval(order, xi, eta,
+		       SBLambda([&] (size_t nr, auto val)
+				{
+				  shape[ii++] = tau * Vec<2,T>(val, 0);
+				  shape[ii++] = tau * Vec<2,T>(0, val);
+				}));
   }
 
   /* **************************** Volume Prism ********************************* */
