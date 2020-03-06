@@ -657,7 +657,6 @@ namespace ngcomp
 
     void Refine ();
     void Curve (int order);
-    int GetCurveOrder ();
 
     void HPRefinement (int levels, double factor = 0.125)
     {

@@ -668,9 +668,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("order"),
          "Curve the mesh elements for geometry approximation of given order")
 
-    .def("GetCurveOrder", &MeshAccess::GetCurveOrder,
-	 "")
-
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
           {
