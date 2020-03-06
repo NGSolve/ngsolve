@@ -3572,7 +3572,8 @@ deformation : ngsolve.comp.GridFunction
    
    m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
 				shared_ptr<ProxyFunction> trial_proxy, optional<Region> definedon,
-				VorB vb, bool localop, bool parmat, bool use_simd) -> shared_ptr<BaseMatrix> {
+				VorB vb, bool localop, bool parmat, bool use_simd,
+				int bonus_io_ab, int bonus_io_bb) -> shared_ptr<BaseMatrix> {
 
 	   const Region* reg = NULL;
 	   if( definedon.has_value() ) {
@@ -3583,7 +3584,7 @@ deformation : ngsolve.comp.GridFunction
 	   shared_ptr<BaseMatrix> op;
 
 	   if ( trial_proxy == nullptr )
-	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, reg, localop, parmat, use_simd); }
+	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, reg, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb); }
 	   else {
 	     if ( !trial_proxy->IsTrialFunction() )
 	       { throw Exception("Need a trial-proxy, but got a test-proxy!"); }
@@ -3598,7 +3599,7 @@ deformation : ngsolve.comp.GridFunction
 	       { throw Exception("ProxyFunction has no BBBND evaluator!"); }
 	     if ( eval == nullptr )
 	       { throw Exception(string("trial-proxy has no evaluator vor vb = ") + to_string(vb) + string("!")); }
-	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, reg, localop, parmat, use_simd);
+	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, reg, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb);
 	   }
 
 	   return op;
@@ -3610,6 +3611,8 @@ deformation : ngsolve.comp.GridFunction
 	 py::arg("localop") = false,
 	 py::arg("parmat") = true,
 	 py::arg("use_simd") = true,
+	 py::arg("bonus_intorder_ab") = 0,
+	 py::arg("bonus_intorder_bb") = 0,
      docu_string(R"raw_string(
 A conversion operator between FESpaces. Embedding if spacea is a subspace of spaceb, otherwise an interpolation operator defined by element-wise application of dual shapes (and averaging between elements).
 
@@ -3638,6 +3641,10 @@ parmat: bool
 
 use_simd:
   False -> Do not use SIMD for setting up the Matrix. (for debugging purposes).
+
+bonus_intorder_ab/bb: int
+  Bonus integration order for spacea/spaceb and spaceb/spaceb integrals. Can be useful for curved elements. Should only be necessary for
+spacea/spaceb integrals.
 )raw_string")
 	 );
 
