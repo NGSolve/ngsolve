@@ -1958,6 +1958,11 @@ namespace ngcomp
     mesh.Curve(order);
   } 
   
+  int MeshAccess :: GetCurveOrder ()
+  {
+    return mesh.GetCurveOrder();
+  }
+
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);
