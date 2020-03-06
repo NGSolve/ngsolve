@@ -8,7 +8,8 @@ namespace ngcomp
 					  // int inda, int indb,
 					  shared_ptr<DifferentialOperator> diffop,
 					  VorB vb, const Region * reg, LocalHeap & clh,
-					  bool localop = false, bool parmat = true, bool use_simd = true)
+					  bool localop = false, bool parmat = true, bool use_simd = true,
+					  int bonus_intorder_ab = 0, int bonus_intorder_bb = 0)
   {
     /** Solves gfb = diffop(gfa), where gfb is a function from space_b and gfa one from space_a **/
 
@@ -19,8 +20,6 @@ namespace ngcomp
 
     auto ngmesh = ma->GetNetgenMesh();
     int curve_order = ngmesh->GetCurvedElements().GetOrder();
-
-    int bonus_int_order = (curve_order > 1) ? ma->GetDimension() - 1 : 0;
 
     if ( parmat && (space_a->IsParallel() != space_b->IsParallel()) )
       { throw Exception("Cannot form ConvertOperator between a parallel and a local space!"); }
@@ -76,10 +75,12 @@ namespace ngcomp
       }
       auto ab_bfi = make_shared<SymbolicBilinearFormIntegrator>(ab, vb, element_vb);
       ab_bfi->SetSimdEvaluate(use_simd);
+      ab_bfi->SetBonusIntegrationOrder(bonus_intorder_ab);
       ab_bfis.Append(ab_bfi);
       auto bb_bfi = make_shared<SymbolicBilinearFormIntegrator>(bb, vb, element_vb);
       bb_bfi->SetSimdEvaluate(use_simd);
       bb_bfis.Append(bb_bfi);
+      bb_bfi->SetBonusIntegrationOrder(bonus_intorder_bb);
     }
 
     /** Utility **/
@@ -256,7 +257,8 @@ namespace ngcomp
 
   shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b, VorB vb, LocalHeap & lh,
 					  shared_ptr<DifferentialOperator> diffop, const Region * reg,
-					  bool localop, bool parmat, bool use_simd)
+					  bool localop, bool parmat, bool use_simd,
+					  int bonus_intorder_ab, int bonus_intorder_bb)
   {
     if ( space_a->IsComplex() != space_b->IsComplex() ) // b complex and a real could work in principle (?)
       { throw Exception("Cannot convert between complex and non-complex space!"); }
@@ -270,9 +272,11 @@ namespace ngcomp
 
     shared_ptr<BaseMatrix> op;
     if (space_b->IsComplex())
-      { op = ConvertOperator<Complex> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd); }
+      { op = ConvertOperator<Complex> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd,
+				       bonus_intorder_ab, bonus_intorder_bb); }
     else
-      { op = ConvertOperator<double> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd); }
+      { op = ConvertOperator<double> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd,
+				      bonus_intorder_ab, bonus_intorder_bb); }
 
     return op;
   } // ConvertOperator
