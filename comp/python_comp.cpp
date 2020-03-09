@@ -1182,7 +1182,7 @@ used_idnrs : list of int = None
 
 )delimiter"))
     .def(py::init([] (shared_ptr<FESpace> & fes,
-                      py::object phase, py::object use_idnrs )
+                      optional<py::list> phase, py::object use_idnrs )
                   {
                     Flags flags = fes->GetFlags();
                     shared_ptr<Array<int>> a_used_idnrs;
@@ -1191,41 +1191,50 @@ used_idnrs : list of int = None
                     else
                       throw Exception("Argument for use_idnrs in Periodic must be list of identification numbers (int)");
                     shared_ptr<PeriodicFESpace> perfes;
-                    auto ext = py::extract<py::list>(phase);
-                    if(ext.check())
+                    if(phase.has_value() && py::len(*phase) > 0)
                       {
-                        auto a_phase = make_shared<Array<Complex>>(py::len(ext()));
-                        for (auto i : Range(a_phase->Size()))
+                        auto lphase = *phase;
+                        py::extract<double> ed(lphase[0]);
+                        if(ed.check())
                           {
-                            auto ext_value = py::extract<Complex>(ext()[i]);
-                            if(ext_value.check())
-                              (*a_phase)[i] = ext_value();
-                            else
-                              throw Exception("Periodic FESpace needs a list of complex castable values as parameter phase");
+                            auto a_phase = make_shared<Array<double>>(py::len(*phase));
+                            for (auto i : Range(a_phase->Size()))
+                              (*a_phase)[i] = py::cast<double>(lphase[i]);
+                            perfes = make_shared<QuasiPeriodicFESpace<double>>(fes,flags,a_used_idnrs,a_phase);
                           }
-                        perfes = make_shared<QuasiPeriodicFESpace>(fes,flags,a_used_idnrs,a_phase);
-                      }
-                    else if (py::isinstance<DummyArgument>(phase) || phase.is_none())
-                      {
-                        perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
+                        else
+                          {
+                            auto a_phase = make_shared<Array<Complex>>(py::len(*phase));
+                            for (auto i : Range(a_phase->Size()))
+                              (*a_phase)[i] = py::cast<Complex>(lphase[i]);
+                            perfes = make_shared<QuasiPeriodicFESpace<Complex>>(fes,flags,a_used_idnrs,a_phase);
+                          }
                       }
                     else
-                      throw Exception("Periodic FESpace needs a list of complex castable values as parameter 'phase'");
+                      perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
                     perfes->Update();
                     perfes->FinalizeUpdate();
                     return perfes;
-                  }), py::arg("fespace"), py::arg("phase")=DummyArgument(),
+                  }), py::arg("fespace"), py::arg("phase")=nullopt,
                   py::arg("use_idnrs")=py::list())
     .def(py::pickle([](const PeriodicFESpace* per_fes)
                     {
                       py::list idnrs;
                       for (auto idnr : *per_fes->GetUsedIdnrs())
                         idnrs.append(idnr);
-                      auto quasiper_fes = dynamic_cast<const QuasiPeriodicFESpace*>(per_fes);
-                      if(quasiper_fes)
+                      auto quasiper_fes_d = dynamic_cast<const QuasiPeriodicFESpace<double>*>(per_fes);
+                      if(quasiper_fes_d)
                         {
                           py::list fac;
-                          for(auto factor : *quasiper_fes->GetFactors())
+                          for(auto factor : *quasiper_fes_d->GetFactors())
+                            fac.append(factor);
+                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
+                        }
+                      auto quasiper_fes_c = dynamic_cast<const QuasiPeriodicFESpace<Complex>*>(per_fes);
+                      if(quasiper_fes_c)
+                        {
+                          py::list fac;
+                          for(auto factor : *quasiper_fes_c->GetFactors())
                             fac.append(factor);
                           return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
                         }
@@ -1233,22 +1242,33 @@ used_idnrs : list of int = None
                     },
                     [] (py::tuple state) -> shared_ptr<PeriodicFESpace>
                     {
+                      shared_ptr<PeriodicFESpace> fes;
                       auto idnrs = make_shared<Array<int>>();
                       for (auto id : state[1].cast<py::list>())
                         idnrs->Append(id.cast<int>());
                       if(py::len(state)==3)
                         {
-                          auto facs = make_shared<Array<Complex>>();
-                          for (auto fac : state[2].cast<py::list>())
-                            facs->Append(fac.cast<Complex>());
-                          auto fes = make_shared<QuasiPeriodicFESpace>
-                            (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
-                          fes->Update();
-                          fes->FinalizeUpdate();
-                          return fes;
+                          auto pyfacs = state[2].cast<py::list>();
+                          if(py::extract<double>(pyfacs[0]).check())
+                            {
+                              auto facs = make_shared<Array<double>>();
+                              for(auto fac : pyfacs)
+                                facs->Append(fac.cast<double>());
+                              fes = make_shared<QuasiPeriodicFESpace<double>>
+                                (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
+                            }
+                          else
+                            {
+                              auto facs = make_shared<Array<Complex>>();
+                              for (auto fac : pyfacs)
+                                facs->Append(fac.cast<Complex>());
+                              fes = make_shared<QuasiPeriodicFESpace<Complex>>
+                                (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
+                            }
                         }
-                      auto fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
-                                                              Flags(),idnrs);
+                      else
+                        fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
+                                                           Flags(),idnrs);
                       fes->Update();
                       fes->FinalizeUpdate();
                       return fes;

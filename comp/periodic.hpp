@@ -78,18 +78,19 @@ namespace ngcomp
     virtual void DofMapped(size_t from, size_t to, size_t idnr) { ; }
   };
 
+  template<typename TSCAL>
   class QuasiPeriodicFESpace : public PeriodicFESpace
   {
-    shared_ptr<Array<Complex>> factors;
-    Array<Complex> dof_factors;
+    shared_ptr<Array<TSCAL>> factors;
+    Array<TSCAL> dof_factors;
     Array<set<size_t>> master_dofs;
 
   public:
-    QuasiPeriodicFESpace (shared_ptr<FESpace> fespace, const Flags & flag, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors);
+    QuasiPeriodicFESpace (shared_ptr<FESpace> fespace, const Flags & flag, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<TSCAL>> afactors);
 
     void Update() override;
 
-    shared_ptr<Array<Complex>> GetFactors() const { return factors; }
+    shared_ptr<Array<TSCAL>> GetFactors() const { return factors; }
 
     virtual void VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override;
     virtual void VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override;
