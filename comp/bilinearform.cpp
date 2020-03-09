@@ -2466,10 +2466,8 @@ namespace ngcomp
                          
                          MixedFiniteElement fel(fel1, fel2);
                          bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
-                         /*
-                           fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                           fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
-                         */
+                         fespace->TransformMat(ei, elmat, TRANSFORM_MAT_RIGHT);
+                         fespace2->TransformMat(ei, elmat, TRANSFORM_MAT_LEFT);
                          AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                        }
                    });
