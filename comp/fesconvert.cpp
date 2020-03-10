@@ -3,6 +3,14 @@
 namespace ngcomp
 {
 
+  template<int BSA, int BSB, typename SCAL> struct TM_TRAIT { typedef Mat<BSA, BSB, SCAL> type; };
+  template<> struct TM_TRAIT<1, 1, double> { typedef double type; };
+  template<> struct TM_TRAIT<1, 1, Complex> { typedef Complex type; };
+
+  template<int BSA, int BSB, typename SCAL> using TM = typename TM_TRAIT<BSA, BSB, SCAL>::type;
+  template<int BSA, int BSB, typename SCAL> using TSPM = SparseMatrix<TM<BSA, BSB, SCAL>>;
+
+
   template<class SCAL>
   shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b,
 					  // int inda, int indb,
@@ -112,19 +120,13 @@ namespace ngcomp
 	     space_a->GetDofNrs(eid, dnums_a, ANY_DOF); // get rid of UNUSED DOFs
 	     maxdsa = max2(maxdsa, int(dnums_a.Size()));
 	     for (auto da : dnums_a)
-	       if (IsRegularDof(da)) {
-		 auto ba = dima * da;
-		 for (auto l : Range(dima))
-		   { ccnrs.Add(i, ba + l); }
-	       }
+	       if (IsRegularDof(da))
+		 { ccnrs.Add(i, da); }
 	     space_b->GetDofNrs(eid, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
 	     maxdsb = max2(maxdsb, int(dnums_b.Size()));
 	     for (auto db : dnums_b)
-	       if (IsRegularDof(db)) {
-		 auto bb = dimb * db;
-		 for (auto l : Range(dimb))
-		   { crnrs.Add(i, bb + l); }
-	       }
+	       if (IsRegularDof(db))
+		 { crnrs.Add(i, db); }
 	   }
 	 });
     int maxds_a = 0, maxds_b = 0;
@@ -133,14 +135,12 @@ namespace ngcomp
       maxds_b = max2(maxds_b, tmdsb[k]);
     }
 
-    /** Alloc Matrix **/
+
+    /** Alloc Matrix and Fill Matrix - with lambdas, we can use the same code for SIMD and non-SIMD cases **/
     Table<int> rnrs = crnrs.MoveTable(), cnrs = ccnrs.MoveTable();
-    MatrixGraph graph (space_b->GetNDof() * dimb, space_a->GetNDof() * dima, rnrs, cnrs, false);
+    MatrixGraph graph (space_b->GetNDof(), space_a->GetNDof(), rnrs, cnrs, false);
 
-    auto spmat = make_shared<SparseMatrix<SCAL>> (graph, true);
-    spmat->AsVector() = 0;
 
-    /** Fill Matrix - with lambdas, we can use the same code for SIMD and non-SIMD cases **/
     Array<int> cnt_b(space_b->GetNDof()); cnt_b = 0;
     auto it_els = [&](auto lam) {
       IterateElements(*space_b, vb, clh, // !! use space_b element coloring !!
@@ -153,98 +153,99 @@ namespace ngcomp
 	lam(fei, lh);
       });
     };
-    auto fill_lam = [&](FESpace::Element & fei, LocalHeap & lh) {
-      /** Get Finite Elements / Element Transformation **/
-      const ElementTransformation & eltrans = fei.GetTrafo();
-      ElementId ei(fei);
-      const FiniteElement & fela = space_a->GetFE(ei, lh);
-      const FiniteElement & felb = fei.GetFE();
-      MixedFiniteElement felab (fela, felb);
 
-      Array<int> dnums_a(maxds_a, lh), dnums_b(maxds_b, lh);
-      space_a->GetDofNrs(ei, dnums_a, ANY_DOF); // get rid of UNUSED DOFs [[ ACTUALLY, NO, also need right elmat dnrs! ]]
-      space_b->GetDofNrs(ei, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
+    shared_ptr<BaseSparseMatrix> bspmat;
+    Switch<MAX_SYS_DIM>(dima-1, [&](auto DAMO) { // note: Switch<N> is [0..N-1], dim is [1..N]
+	constexpr int DIMA1 = DAMO + 1;
+	Switch<MAX_SYS_DIM>(dimb-1, [&](auto DBMO) {
+	    constexpr int DIMA = DIMA1; // otherwise gcc complains about captured value not being a constexpression
+	    constexpr int DIMB = DBMO + 1;
+	    if constexpr( (DIMA == DIMB) ||
+			  ( (DIMA == 1) || (DIMB == 1) ) ) { // so we do not try to instantiate SparseMatrix<Mat<2,3,SCAL>> etc.
+		auto spmat = make_shared<TSPM<DIMB, DIMA, SCAL>>(graph, true);
+	      spmat->AsVector() = 0;
+	      bspmat = spmat;
 
-      if (dnums_b.Size() == 0) // (compressed space)
-	{ return; }
+	      auto fill_lam = [&](FESpace::Element & fei, LocalHeap & lh) {
+		/** Get Finite Elements / Element Transformation **/
+		const ElementTransformation & eltrans = fei.GetTrafo();
+		ElementId ei(fei);
+		const FiniteElement & fela = space_a->GetFE(ei, lh);
+		const FiniteElement & felb = fei.GetFE();
+		MixedFiniteElement felab (fela, felb);
 
-      /** Calc mass/dual and mixed mass/dual matrices **/
-      FlatMatrix<SCAL> bamat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh); bamat = 0.0;
-      FlatMatrix<SCAL> bbmat(felb.GetNDof() * dimb, felb.GetNDof() * dimb, lh); bbmat = 0.0;
-      for (auto bfi : ab_bfis)
-	{ bfi->CalcElementMatrixAdd(felab, eltrans, bamat, lh); }
-      for (auto bfi : bb_bfis)
-	{ bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, lh); }
+		Array<int> dnums_a(maxds_a, lh), dnums_b(maxds_b, lh);
+		space_a->GetDofNrs(ei, dnums_a, ANY_DOF); // get rid of UNUSED DOFs [[ ACTUALLY, NO, also need right elmat dnrs! ]]
+		space_b->GetDofNrs(ei, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
 
-      /** Calc Elmat **/
-      // cout << " bamat " << endl << bamat << endl;
-      // cout << " bbmat " << endl << bbmat << endl;
+		if (dnums_b.Size() == 0) // (compressed space)
+		  { return; }
 
-      CalcInverse(bbmat); // NOT symmetric!!
+		/** Calc mass/dual and mixed mass/dual matrices **/
+		FlatMatrix<SCAL> bamat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh); bamat = 0.0;
+		FlatMatrix<SCAL> bbmat(felb.GetNDof() * dimb, felb.GetNDof() * dimb, lh); bbmat = 0.0;
+		for (auto bfi : ab_bfis)
+		  { bfi->CalcElementMatrixAdd(felab, eltrans, bamat, lh); }
+		for (auto bfi : bb_bfis)
+		  { bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, lh); }
 
-      // cout << " bbmat inv " << endl << bbmat << endl;
+		/** Calc Elmat **/
+		// cout << " bamat " << endl << bamat << endl;
+		// cout << " bbmat " << endl << bbmat << endl;
 
-      FlatMatrix<SCAL> elmat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh);
-      elmat = bbmat * bamat;
+		CalcInverse(bbmat); // NOT symmetric!!
 
-      // cout << " elmat " << endl << elmat << endl;
+		// cout << " bbmat inv " << endl << bbmat << endl;
 
-      // cout << " add elmat, dofs B " << endl << dnums_b << endl;
-      // cout << " add elmat, dofs A " << endl << dnums_a << endl;
+		FlatMatrix<SCAL> elmat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh);
+		elmat = bbmat * bamat;
 
-      /** Write into SparseMatrix **/
-      if(  (dima == 1) && (dimb == 1) )
-	{ spmat->AddElementMatrix(dnums_b, dnums_a, elmat, false); } // should be taken care of by fespace coloring
-      else
-	{
-	  FlatArray<int> mddb(dnums_b.Size() * dimb, lh);
-	  for (auto k : Range(dnums_b))
-	    for (auto l : Range(dimb))
-	      { mddb[k * dimb + l] = dimb * dnums_b[k] + l; }
-	  FlatArray<int> mdda(dnums_a.Size() * dima, lh);
-	  for (auto k : Range(dnums_a))
-	    for (auto l : Range(dima))
-	      { mdda[k * dima + l] = dima * dnums_a[k] + l; }
-	  spmat->AddElementMatrix(mddb, mdda, elmat, false);
-	}
+		// cout << " elmat " << endl << elmat << endl;
 
-      for (auto dnum : dnums_b) // space_b element coloring!!
-	if (IsRegularDof(dnum))
-	  { cnt_b[dnum]++; }
-    };
+		// cout << " add elmat, dofs B " << endl << dnums_b << endl;
+		// cout << " add elmat, dofs A " << endl << dnums_a << endl;
 
-    if (use_simd) {
-      it_els([&](FESpace::Element & ei, LocalHeap & lh) {
-	  try { fill_lam(ei, lh); }
-	  catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
-	    for (auto bfi : ab_bfis)
-	      { bfi->SetSimdEvaluate(false); }
-	    for (auto bfi : bb_bfis)
-	      { bfi->SetSimdEvaluate(false); }
-	    fill_lam(ei, lh);
-	  }
-	});
-    }
-    else // use_simd
-      { it_els(fill_lam); }
+		/** Write into SparseMatrix - conversion to block-entries happens in AddElementMatrix, neat! **/
+		spmat->AddElementMatrix(dnums_b, dnums_a, elmat, false); // should be taken care of by fespace coloring
 
+		for (auto dnum : dnums_b) // space_b element coloring!!
+		  if (IsRegularDof(dnum))
+		    { cnt_b[dnum]++; }
+	      };
+
+	      if (use_simd) {
+		it_els([&](FESpace::Element & ei, LocalHeap & lh) {
+		    try { fill_lam(ei, lh); }
+		    catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
+		      for (auto bfi : ab_bfis)
+			{ bfi->SetSimdEvaluate(false); }
+		      for (auto bfi : bb_bfis)
+			{ bfi->SetSimdEvaluate(false); }
+		      fill_lam(ei, lh);
+		    }
+		  });
+	      }
+	      else // use_simd
+		{ it_els(fill_lam); }
+	      
 #ifdef PARALLEL
-    if (space_b->IsParallel() && !localop)
-      { AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
+	      if (space_b->IsParallel() && !localop)
+		{ AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
 #endif
 
-    for (auto dofnr : Range(size_t(spmat->Height()/dimb))) {
-      if (cnt_b[dofnr] > 1) {
-	double fac = 1.0 / double(cnt_b[dofnr]);
-	for (auto rownr : Range(dimb * dofnr, dimb * (dofnr+1))) {
-	  auto rvs = spmat->GetRowValues(rownr);
-	  for (auto & v : rvs)
-	    { v *= fac; }
-	}
-      }
-    }
+	      for (auto dofnr : Range(spmat->Height())) {
+		if (cnt_b[dofnr] > 1) {
+		  double fac = 1.0 / double(cnt_b[dofnr]);
+		  auto rvs = spmat->GetRowValues(dofnr);
+		  for (auto & v : rvs)
+		    { v *= fac; }
+		}
+	      }
+	      } // (DIMA == 1) || (DIMB == 1)
+	  });
+      });
 
-    shared_ptr<BaseMatrix> op = spmat;
+    shared_ptr<BaseMatrix> op = bspmat;
 
     if ( parmat && space_a->IsParallel() ) {
       op = make_shared<ParallelMatrix> (op, space_a->GetParallelDofs(), space_b->GetParallelDofs(),
