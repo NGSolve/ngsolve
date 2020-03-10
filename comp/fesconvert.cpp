@@ -26,9 +26,6 @@ namespace ngcomp
     // shared_ptr<FESpace> space_b = (*comp_space)[indb];
     auto ma = space_b->GetMeshAccess();
 
-    auto ngmesh = ma->GetNetgenMesh();
-    int curve_order = ngmesh->GetCurvedElements().GetOrder();
-
     if ( parmat && (space_a->IsParallel() != space_b->IsParallel()) )
       { throw Exception("Cannot form ConvertOperator between a parallel and a local space!"); }
 
