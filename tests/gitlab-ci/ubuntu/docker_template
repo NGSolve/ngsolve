@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get update && apt-get -y install libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev ccache openssh-client 
 RUN apt-get update && apt-get -y install python3 libpython3-dev python3-pytest python3-numpy python3-pip
-RUN apt-get update && apt-get -y install liboce-ocaf-dev libsuitesparse-dev python3-tk pandoc zip
+RUN apt-get update && apt-get -y install liboce-ocaf-dev libsuitesparse-dev python3-tk pandoc zip libcgns-dev libhdf5-dev
 RUN pip3 install sphinx sphinx_rtd_theme ipython nbsphinx jupyter-client nbstripout ipykernel
 RUN pip3 install numpy scipy matplotlib
 RUN pip3 install git+https://github.com/sizmailov/pybind11-stubgen.git
