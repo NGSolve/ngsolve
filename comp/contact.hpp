@@ -28,6 +28,7 @@ namespace ngcomp
     { }
 
     virtual void Update(shared_ptr<GridFunction> gf, int intorder_, double h_) = 0;
+    void Draw();
   };
 
   template <int DIM>
@@ -136,7 +137,7 @@ namespace ngcomp
   };
 
 
-  class ContactBoundary
+  class ContactBoundary : public netgen::UserVisualizationObject
   {
     shared_ptr<GapFunction> gap;
     shared_ptr<CoefficientFunction> normal;
@@ -144,9 +145,17 @@ namespace ngcomp
     Array<shared_ptr<ContactEnergy>> energies;
     Array<shared_ptr<ContactIntegrator>> integrators;
     shared_ptr<FESpace> fes;
+
+    // For visualization only
+    bool draw_pairs = false;
+    Array<Vec<3>> master_points;
+    Array<Vec<3>> slave_points;
   public:
+    void Draw();
     ContactBoundary(shared_ptr<FESpace> _fes, Region _master,
-                    Region _slave);
+                    Region _slave, bool draw_pairs);
+
+    ~ContactBoundary();
 
     void AddEnergy(shared_ptr<CoefficientFunction> form);
     void AddIntegrator(shared_ptr<CoefficientFunction> form);
