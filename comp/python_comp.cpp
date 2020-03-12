@@ -3597,12 +3597,12 @@ deformation : ngsolve.comp.GridFunction
 
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
-     .def(py::init<shared_ptr<FESpace>, Region, Region>(),
+     .def(py::init<shared_ptr<FESpace>, Region, Region, bool>(),
           R"delimiter(
 Class for managing contact interfaces.
 The created object must be kept alive in python as long as
 operations of it are used!
-)delimiter")
+)delimiter", py::arg("fes"), py::arg("master"), py::arg("slave"), py::arg("draw_pairs")=false)
      .def("AddEnergy", &ContactBoundary::AddEnergy)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator)
      .def("Update", &ContactBoundary::Update,
