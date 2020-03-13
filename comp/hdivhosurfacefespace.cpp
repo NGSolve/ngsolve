@@ -2,6 +2,7 @@
 #include <../fem/hdivlofe.hpp>  
 #include <../fem/hdivhofe.hpp>  
 #include <../fem/hdivhofefo.hpp>  
+#include <../fem/hcurlhdiv_dshape.hpp> 
 
 namespace ngcomp
 {
@@ -133,86 +134,10 @@ public:
 };
 
   
- template<int D>
-    void CalcDShapeOfHDivSurfaceFE(const HDivFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D+1>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
-      HeapReset hr(lh);
-      bmatu = 0;
-      
-      int nd_u = fel_u.GetNDof();
-      const IntegrationPoint& ip = sip.IP();
-      
-      const ElementTransformation & eltrans = sip.GetTransformation();
-      FlatMatrixFixWidth<D> shape_ul_ref(nd_u, lh);
-      FlatMatrixFixWidth<D+1> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ur_ref(nd_u, lh);
-      FlatMatrixFixWidth<D+1> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ull_ref(nd_u, lh);
-      FlatMatrixFixWidth<D+1> shape_ull(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_urr_ref(nd_u, lh);
-      FlatMatrixFixWidth<D+1> shape_urr(nd_u, lh);
-      FlatMatrixFixWidth<D+1> dshape_u_ref(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref_2(nd_u, lh);
-      FlatMatrixFixWidth<D+1> dshape_u(nd_u, lh);
-      
-      double eps = 1e-4;    
-      
-      for (int j = 0; j < D; j++)   // d / dxj
-      {
-        IntegrationPoint ipl(ip);
-        ipl(j) -= eps;
-        MappedIntegrationPoint<D,D+1> sipl(ipl, eltrans);
-
-        IntegrationPoint ipr(ip);
-        ipr(j) += eps;
-        MappedIntegrationPoint<D,D+1> sipr(ipr, eltrans);
-
-        IntegrationPoint ipll(ip);
-        ipll(j) -= 2*eps;
-        MappedIntegrationPoint<D,D+1> sipll(ipll, eltrans);
-
-        IntegrationPoint iprr(ip);
-        iprr(j) += 2*eps;
-        MappedIntegrationPoint<D,D+1> siprr(iprr, eltrans);
-
-	//Calc mapped shape using piola trafo
-	fel_u.CalcShape (ipl, shape_ul_ref);	
-	shape_ul =Trans((1.0 / sipl.GetJacobiDet()) * sipl.GetJacobian() * Trans(shape_ul_ref));
-	
-	fel_u.CalcShape (ipr, shape_ur_ref);
-	shape_ur = Trans((1.0 / sipr.GetJacobiDet()) * sipr.GetJacobian () * Trans(shape_ur_ref));
-	
-	fel_u.CalcShape (ipll, shape_ull_ref);
-	shape_ull = Trans((1.0 / sipll.GetJacobiDet()) * sipll.GetJacobian() * Trans(shape_ull_ref));
-	
-	fel_u.CalcShape (iprr, shape_urr_ref);
-	shape_urr = Trans((1.0 / siprr.GetJacobiDet()) * siprr.GetJacobian() * Trans(shape_urr_ref));
-
-        dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-
-	
-        for (int l = 0; l < D+1; l++)
-          bmatu.Col(j*(D+1)+l) = dshape_u_ref.Col(l);
-      }
-      
-      for (int j = 0; j < D+1; j++)
-	{
-	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      dshape_u_ref_2(k,l) = bmatu(k, l*(D+1)+j);
-
-	 
-	  dshape_u = dshape_u_ref_2 * sip.GetJacobianInverse();	
-	  
-	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D+1; l++)
-	      bmatu(k, l*(D+1)+j) = dshape_u(k,l);
-	}
-    }
-
   
   //Gradient operator of HDivSurface
   template <int D, typename FEL = HDivFiniteElement<D-1> >
-  class DiffOpGradientHdivSurface : public DiffOp<DiffOpGradientHdivSurface<D> >
+  class DiffOpGradientHDivSurface : public DiffOp<DiffOpGradientHDivSurface<D> >
   {
   public:
     enum { DIM = 1 };
@@ -221,7 +146,7 @@ public:
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
 
-    //static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
     static constexpr double eps() { return 1e-4; }
 
     template <typename AFEL, typename MIP, typename MAT,
@@ -229,7 +154,7 @@ public:
                                                   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {      
-      CalcDShapeOfHDivSurfaceFE<D-1>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
@@ -240,7 +165,7 @@ public:
       // typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeOfHDivSurfaceFE<D-1>(static_cast<const FEL&>(fel), mip, hm, lh);
+      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, hm, lh, eps());
       y = Trans(hm)*x;
     }
 
@@ -248,24 +173,24 @@ public:
      static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
-      throw Exception("in DiffOpGradientHdivSurface::GenerateMatrixSIMDIR");
+      throw Exception("in DiffOpGradientHDivSurface::GenerateMatrixSIMDIR");
     }
 
     
-    using DiffOp<DiffOpGradientHdivSurface<D>>::ApplySIMDIR;
+    using DiffOp<DiffOpGradientHDivSurface<D>>::ApplySIMDIR;
     
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      throw Exception("in DiffOpGradientHdivSurface::ApplySIMDIR");
+      throw Exception("in DiffOpGradientHDivSurface::ApplySIMDIR");
     }
 
 
-    using DiffOp<DiffOpGradientHdivSurface<D>>::AddTransSIMDIR;    
+    using DiffOp<DiffOpGradientHDivSurface<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      throw Exception("in DiffOpGradientHdivSurface::AddTransSIMDIR");
+      throw Exception("in DiffOpGradientHDivSurface::AddTransSIMDIR");
 
     }
     */
@@ -736,7 +661,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
       case 2:
 	throw Exception("wrong dimension"); 
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdivSurface<3>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDivSurface<3>>> ()); break;
       default:
         ;
 	}
