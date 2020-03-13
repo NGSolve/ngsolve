@@ -1498,12 +1498,12 @@ namespace ngcomp
   }
 
 
-  template <int D, typename FEL = HDivFiniteElement<D-1> >
-  class DiffOpGradientBoundaryHDiv;
+  template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
+  class DiffOpGradientTraceHDiv;
   
   /// Gradient operator for HDiv
   template <int D, typename FEL = HDivFiniteElement<D> >
-  class DiffOpGradientHdiv : public DiffOp<DiffOpGradientHdiv<D> >
+  class DiffOpGradientHDiv : public DiffOp<DiffOpGradientHDiv<D> >
   {
   public:
     enum { DIM = 1 };
@@ -1515,7 +1515,7 @@ namespace ngcomp
     
     static constexpr double eps() { return 1e-4; }
 
-    typedef DiffOpGradientBoundaryHDiv<D> DIFFOP_TRACE;
+    typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -1565,7 +1565,7 @@ namespace ngcomp
       ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
     }
 
-    using DiffOp<DiffOpGradientHdiv<D>>::ApplySIMDIR;
+    using DiffOp<DiffOpGradientHDiv<D>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -1574,7 +1574,7 @@ namespace ngcomp
       
 
     
-    using DiffOp<DiffOpGradientHdiv<D>>::AddTransSIMDIR;
+    using DiffOp<DiffOpGradientHDiv<D>>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
@@ -1582,8 +1582,44 @@ namespace ngcomp
     }
   };
 
-  /// Boundary gradient operator for HDiv
+
+  /// Trace gradient operator for HDiv
   template <int D, typename FEL>
+  class DiffOpGradientTraceHDiv : public DiffOp<DiffOpGradientTraceHDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    
+    static constexpr double eps() { return 1e-4; }
+
+    typedef void DIFFOP_TRACE;
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+  };
+
+  
+  /// Boundary gradient operator for HDiv
+  template <int D, typename FEL = HDivFiniteElement<D>>
   class DiffOpGradientBoundaryHDiv : public DiffOp<DiffOpGradientBoundaryHDiv<D> >
   {
   public:
@@ -1624,13 +1660,14 @@ namespace ngcomp
     switch (ma->GetDimension())
       {
       case 1:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<1>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<1>>> ()); break;
       case 2:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<2>>> ());
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
 	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
 	break;
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<3>>> ());
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientBoundaryHDiv<3>>> ());
+	additional.Set ("gradbnd", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
 	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
 	break;
       default:
