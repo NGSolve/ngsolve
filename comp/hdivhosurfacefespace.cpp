@@ -169,20 +169,27 @@ public:
       y = Trans(hm)*x;
     }
 
-    /*
-     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			    const TVX & x, TVY & by,
+			    LocalHeap & lh) 
     {
-      throw Exception("in DiffOpGradientHDivSurface::GenerateMatrixSIMDIR");
+      ApplyTransDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
     }
 
     
-    using DiffOp<DiffOpGradientHDivSurface<D>>::ApplySIMDIR;
+    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), static_cast<const SIMD_MappedIntegrationRule<D-1,D> &>(bmir), mat, eps());
+      }*/
+
     
+    using DiffOp<DiffOpGradientHDivSurface<D>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      throw Exception("in DiffOpGradientHDivSurface::ApplySIMDIR");
+      ApplySIMDDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
 
 
@@ -190,10 +197,8 @@ public:
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      throw Exception("in DiffOpGradientHDivSurface::AddTransSIMDIR");
-
+      AddTransSIMDDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
-    */
   };
 
   HDivHighOrderSurfaceFESpace ::  
