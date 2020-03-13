@@ -1056,9 +1056,19 @@ namespace ngla
   public:
     DynamicVecExpression (shared_ptr<BaseVector> aa) : a(aa) { ; }
     void AssignTo (double s, BaseVector & v2) const override
-    { v2.Set (s, *a); }
+    {
+      if (v2.Size() != a->Size())
+        throw Exception ("vector sizes don't fit, dest.size = "+ToString(v2.Size())+
+                         " source size = " + ToString(a->Size()));
+      v2.Set (s, *a);
+    }
     void AddTo (double s, BaseVector & v2) const override
-    { v2.Add (s, *a); }
+    {
+      if (v2.Size() != a->Size())
+        throw Exception ("vector sizes don't fit, dest.size = "+ToString(v2.Size())+
+                         " source size = " + ToString(a->Size()));
+      v2.Add (s, *a);
+    }
     void AssignTo (Complex s, BaseVector & v2) const override
     { v2.Set (s, *a); }
     void AddTo (Complex s, BaseVector & v2) const override
