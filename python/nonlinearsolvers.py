@@ -1,6 +1,7 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
 from ngsolve import Projector, Norm
+from .utils import TimeFunction
 
 class NewtonSolver:
     def __init__(self, a, u, rhs=None, freedofs=None,
@@ -16,6 +17,7 @@ class NewtonSolver:
         else:
             self.freedofs = freedofs or u.space.FreeDofs(a.condense)
 
+    @TimeFunction
     def Solve(self, maxit=100, maxerr=1e-11, dampfactor=1,
               printing=False, callback=None, linesearch=False,
               printenergy=False, print_wrong_direction=True):
