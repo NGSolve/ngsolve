@@ -1618,40 +1618,6 @@ namespace ngcomp
   };
 
   
-  /// Boundary gradient operator for HDiv
-  template <int D, typename FEL = HDivFiniteElement<D>>
-  class DiffOpGradientBoundaryHDiv : public DiffOp<DiffOpGradientBoundaryHDiv<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 1 };
-    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
-    
-    static constexpr double eps() { return 1e-4; }
-
-    typedef void DIFFOP_TRACE;
-    ///
-    template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
-    {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
-    }
-    
-    template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
-    {
-      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
-    }
-  };
-
 
   SymbolTable<shared_ptr<DifferentialOperator>>
   HDivHighOrderFESpace :: GetAdditionalEvaluators () const
@@ -1666,8 +1632,7 @@ namespace ngcomp
 	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
 	break;
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientBoundaryHDiv<3>>> ());
-	additional.Set ("gradbnd", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
+	additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
 	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
 	break;
       default:
