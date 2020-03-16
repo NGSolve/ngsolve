@@ -246,17 +246,11 @@ namespace ngla
     
     void AssignTo (double s, BaseVector & v2) const override
     {
-      if (v2.Size() != m->Height())
-        throw Exception ("mat-vec sizes don't fit, dest.size = "+ToString(v2.Size())+
-                         " matrix height = " + ToString(m->Height()));
       m->Mult(*v, v2);
       v2 *= s;
     }
     void AddTo (double s, BaseVector & v2) const override
     {
-      if (v2.Size() != m->Height())
-        throw Exception ("mat-vec sizes don't fit, dest.size = "+ToString(v2.Size())+
-                         " matrix height = " + ToString(m->Height()));
       m->MultAdd (s, *v, v2);
     }
     void AssignTo (Complex s, BaseVector & v2) const override
