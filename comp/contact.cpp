@@ -1,12 +1,15 @@
-#include <incopengl.hpp>
+// #define GL_SILENCE_DEPRECATION 
+// #include <GL/gl.h>
+// #include <OpenGL/gl.h>
+// #include <incopengl.hpp>
 
 #include "contact.hpp"
 
-namespace netgen
-{
-  extern void AddUserVisualizationObject (UserVisualizationObject * vis);
-  extern void DeleteUserVisualizationObject (UserVisualizationObject * vis);
-}
+// namespace netgen
+// {
+//   extern void AddUserVisualizationObject (UserVisualizationObject * vis);
+//   extern void DeleteUserVisualizationObject (UserVisualizationObject * vis);
+// }
 
 
 namespace ngcomp
@@ -752,8 +755,8 @@ namespace ngcomp
                                    Region _master, Region _slave, bool draw_pairs_)
     : master(_master), slave(_slave), fes(_fes), draw_pairs(draw_pairs_)
   {
-    if(draw_pairs)
-      AddUserVisualizationObject (this);
+//     if(draw_pairs)
+//       AddUserVisualizationObject (this);
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       {
@@ -769,7 +772,7 @@ namespace ngcomp
 
   ContactBoundary :: ~ContactBoundary()
   {
-    DeleteUserVisualizationObject (this);
+//     DeleteUserVisualizationObject (this);
   }
 
   void ContactBoundary :: Draw()
@@ -777,6 +780,7 @@ namespace ngcomp
     if(!draw_pairs)
       return;
 
+    /*
     glBegin (GL_LINES);
     for (auto i : Range(master_points.Size()))
       {
@@ -786,6 +790,7 @@ namespace ngcomp
         glVertex3d (sp(0), sp(1), sp(2));
       }
     glEnd();
+    */
   }
 
   void ContactBoundary::AddEnergy(shared_ptr<CoefficientFunction> form)
