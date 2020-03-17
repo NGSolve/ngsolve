@@ -20,7 +20,7 @@ class NewtonSolver:
     @TimeFunction
     def Solve(self, maxit=100, maxerr=1e-11, dampfactor=1,
               printing=False, callback=None, linesearch=False,
-              printenergy=False, print_wrong_direction=True):
+              printenergy=False, print_wrong_direction=False):
         numit = 0
         err = 1.
         a, u, w, r,uh = self.a, self.u, self.w, self.r, self.uh
@@ -185,5 +185,6 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
                         printing=printing,
                         callback=callback,
                         linesearch=linesearch,
-                        printenergy=printing)
+                        printenergy=printing,
+                        print_wrong_direction=True)
 
