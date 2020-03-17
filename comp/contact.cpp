@@ -320,6 +320,8 @@ namespace ngcomp
     netgen::Box<DIM> box(ngp1, ngp1);
     box.Increase(h);
 
+    auto & mip = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip);
+
     searchtree->GetFirstIntersecting
       (box.PMin(), box.PMax(),
        [&] (int elnr2)
@@ -338,7 +340,7 @@ namespace ngcomp
 
          Vec<DIM> p2;
          IntegrationPoint ip2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, {0}, mindist, trafo2_def, ip2, p2 );
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, mip.GetNV(), mindist, trafo2_def, ip2, p2 );
          if(dist<mindist && dist < h)
          {
            mindist = dist;
