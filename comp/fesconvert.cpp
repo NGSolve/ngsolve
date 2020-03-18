@@ -47,7 +47,7 @@ namespace ngcomp
 					   nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
-    auto trial_b = make_shared<ProxyFunction>(space_a, false, false, space_b->GetEvaluator(vb),
+    auto trial_b = make_shared<ProxyFunction>(space_b, false, false, space_b->GetEvaluator(vb),
 					      nullptr, nullptr, nullptr, nullptr, nullptr);
 
     if (!space_b->GetAdditionalEvaluators().Used("dual"))
