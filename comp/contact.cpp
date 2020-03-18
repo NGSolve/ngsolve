@@ -1,8 +1,161 @@
+// #define GL_SILENCE_DEPRECATION 
+// #include <GL/gl.h>
+// #include <OpenGL/gl.h>
+// #include <incopengl.hpp>
 
 #include "contact.hpp"
 
+// namespace netgen
+// {
+//   extern void AddUserVisualizationObject (UserVisualizationObject * vis);
+//   extern void DeleteUserVisualizationObject (UserVisualizationObject * vis);
+// }
+
+
 namespace ngcomp
 {
+  // Quadratic approximation of distance to pmaster
+  template<int DIM>
+  struct T2
+  {
+    Mat<DIM> a;
+    Vec<DIM> b;
+    Vec<DIM> x0;
+
+    template<int DIMR>
+    T2( MappedIntegrationPoint<DIM, DIMR> & mip, Vec<DIMR> pmaster ) : x0(mip.IP().Point())
+    {
+      IntegrationPoint ip {x0};
+      auto jac = mip.GetJacobian();
+      auto hesse = mip.CalcHesse();
+      Vec<DIMR> dist = mip.GetPoint() - pmaster;
+
+      if constexpr (DIM==1)
+        b = 2*InnerProduct(jac,dist);
+      else
+        b = 2*Trans(jac)*dist;
+
+      a = 2*Trans(jac)*jac;
+      for (int d : Range(DIMR))
+        a += dist[d] * hesse[d];
+    }
+
+    Vec<DIM> CalcMinimumOnSegment( Vec<DIM> x1, Vec<DIM> x2 )
+    {
+      auto v = x2-x1;
+      Vec<DIM> va = a*v;
+      double lam = InnerProduct(v,b) - InnerProduct(va,x2+x0);
+      lam /= InnerProduct(va,v);
+      lam = min(lam,1.0);
+      lam = max(lam,0.0);
+      return lam*x1 + (1-lam)*x2;
+    }
+
+    Vec<DIM> CalcMinimum( )
+    {
+      return Inv(a)*(a*x0-b);
+    }
+
+    double operator() (Vec<DIM> x)
+    {
+      x -= x0;
+      return InnerProduct(x, a*x) + InnerProduct(b,x);
+    }
+  };
+
+  template<int DIMS, int DIMR>
+  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const ElementTransformation & trafo, IntegrationPoint & ip, Vec<DIMR> & p)
+  // input arguments: pmaster, n, h (maximum distance), trafo
+  // output arguments: ip, p
+  {
+    Vec<DIMS> min_lam = 0;
+    double min_dist = 1e99;
+
+    min_lam = 1./(DIMS+1);
+
+    // Todo: line search, stop criterion
+    for( auto i : Range(4) )
+    {
+      ip = min_lam;
+      MappedIntegrationPoint<DIMS, DIMR> mip{ip, trafo};
+      T2<DIMS> t2{mip, pmaster};
+      bool is_front = InnerProduct(n, mip.GetNV()) < 0;
+
+      if constexpr (DIMS==1)
+      {
+        // check end points
+        for(double lam : {0.,1.})
+        {
+          auto dist = t2(lam);
+          if(is_front && dist<min_dist)
+          {
+            min_dist = dist;
+            min_lam = lam;
+          }
+        }
+
+        auto lam = t2.CalcMinimum();
+        auto dist = t2(lam);
+        if(is_front && lam[0]>0 && lam[0] < 1)
+        {
+          min_dist = dist;
+          min_lam = lam;
+        }
+      }
+      if constexpr (DIMS==2)
+      {
+        // TODO: Handle quad elements
+
+        // check corner points
+        ArrayMem<Vec<DIMS>, 5> points{ {0,0}, {0,1}, {1,0} };
+        for (Vec<DIMS> lam : points)
+        {
+          auto d = t2(lam);
+          if(is_front && d < min_dist)
+          {
+            min_dist = d;
+            min_lam = lam;
+          }
+        }
+
+        ArrayMem<Vec<DIMS>, 5> lam;
+        ArrayMem<double, 5> dist;
+
+        auto l = t2.CalcMinimum();
+        if(l[0]>0 && l[1]>0 && l[0]<1 && l[1]<1 && l[0]+l[1]<1)
+        {
+          lam.Append(l);
+          dist.Append(t2(lam.Last()));
+        }
+
+        lam.Append(t2.CalcMinimumOnSegment( {0,0}, {1,0} ));
+        dist.Append(t2(lam.Last()));
+
+        lam.Append(t2.CalcMinimumOnSegment( {1,0}, {0,1} ));
+        dist.Append(t2(lam.Last()));
+
+        lam.Append(t2.CalcMinimumOnSegment( {0,1}, {0,0} ));
+        dist.Append(t2(lam.Last()));
+
+        for(auto i : Range(lam.Size()))
+        {
+          if(is_front && dist[i]<min_dist && InnerProduct(n , mip.GetNV())<0)
+          {
+            min_dist = dist[i];
+            min_lam = lam[i];
+          }
+        }
+      }
+    }
+
+    if(min_dist > h)
+      return min_dist;
+
+    ip = min_lam;
+    trafo.CalcPoint( ip, p );
+    return L2Norm(pmaster-p);
+  }
+
   template<int DIM>
   optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh) const
   {
@@ -18,7 +171,7 @@ namespace ngcomp
 
     // find closest point
 
-    double mindist = 1e99;
+    double mindist = h;
     IntegrationPoint ip2_min;
     bool intersect = false;
     int el2_min(-1);
@@ -31,6 +184,7 @@ namespace ngcomp
     netgen::Box<DIM> box(ngp1, ngp1);
     box.Increase(h);
 
+    Vec<DIM> p2_min;
     searchtree->GetFirstIntersecting
       (box.PMin(), box.PMax(),
        [&] (int elnr2)
@@ -48,29 +202,25 @@ namespace ngcomp
          auto & trafo2 = ma->GetTrafo(el2, lh);
          auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-         IntegrationRule ir2(trafo2.GetElementType(), intorder2);
-         MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-         MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
-
-         for (auto j : Range(mir2_def))
-           {
-             const auto & mip2 = mir2_def[j];
-             const auto & p2 = mip2.GetPoint();
-             double dist = L2Norm(p1-p2);
-             if (dist<h && dist < mindist &&
-                 InnerProduct(mip1_def.GetNV(), mip2.GetNV()) < 0)
-               {
-                 mindist = dist;
-                 el2_min = el2.Nr();
-                 ip2_min = mip2.IP();
-                 intersect = true;
-               }
-           }
+         IntegrationPoint ip2;
+         Vec<DIM> p2;
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, mip1_def.GetNV(), mindist, trafo2_def, ip2, p2 );
+         if(dist<mindist && dist < h)
+         {
+           mindist = dist;
+           el2_min = el2.Nr();
+           ip2_min = ip2;
+           p2_min = p2;
+           intersect = true;
+         }
          return false;
        });
+
     if(intersect)
+    {
       return ContactPair<DIM>{el1, ElementId(BND,el2_min),
           ip1, ip2_min};
+    }
     return nullopt;
   }
 
@@ -170,6 +320,8 @@ namespace ngcomp
     netgen::Box<DIM> box(ngp1, ngp1);
     box.Increase(h);
 
+    auto & mip = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip);
+
     searchtree->GetFirstIntersecting
       (box.PMin(), box.PMax(),
        [&] (int elnr2)
@@ -186,19 +338,14 @@ namespace ngcomp
          auto & trafo2 = ma->GetTrafo (el2, lh);
          auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-         auto & ir2 = SelectIntegrationRule(trafo2.GetElementType(), intorder2);
-
-         for (auto &ip : ir2)
-           {
-             Vec<DIM> p2;
-             trafo2_def.CalcPoint(ip, p2);
-             double dist = L2Norm(p1-p2);
-             if (dist<h && dist < mindist)
-               {
-                 mindist = dist;
-                 result = p2-p1;
-               }
-           }
+         Vec<DIM> p2;
+         IntegrationPoint ip2;
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, mip.GetNV(), mindist, trafo2_def, ip2, p2 );
+         if(dist<mindist && dist < h)
+         {
+           mindist = dist;
+           result = p2-p1;
+         }
          return false;
        });
   }
@@ -607,9 +754,11 @@ namespace ngcomp
   }
 
   ContactBoundary::ContactBoundary(shared_ptr<FESpace> _fes,
-                                   Region _master, Region _slave)
-    : master(_master), slave(_slave), fes(_fes)
+                                   Region _master, Region _slave, bool draw_pairs_)
+    : master(_master), slave(_slave), fes(_fes), draw_pairs(draw_pairs_)
   {
+//     if(draw_pairs)
+//       AddUserVisualizationObject (this);
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       {
@@ -621,6 +770,29 @@ namespace ngcomp
         gap = make_shared<T_GapFunction<3>>(mesh, master, slave);
         normal = make_shared<DisplacedNormal<3>>();
       }
+  }
+
+  ContactBoundary :: ~ContactBoundary()
+  {
+//     DeleteUserVisualizationObject (this);
+  }
+
+  void ContactBoundary :: Draw()
+  {
+    if(!draw_pairs)
+      return;
+
+    /*
+    glBegin (GL_LINES);
+    for (auto i : Range(master_points.Size()))
+      {
+        auto & mp = master_points[i];
+        auto & sp = slave_points[i];
+        glVertex3d (mp(0), mp(1), mp(2));
+        glVertex3d (sp(0), sp(1), sp(2));
+      }
+    glEnd();
+    */
   }
 
   void ContactBoundary::AddEnergy(shared_ptr<CoefficientFunction> form)
@@ -637,6 +809,12 @@ namespace ngcomp
                                shared_ptr<BilinearForm> bf,
                                int intorder, double h)
   {
+    if(draw_pairs)
+    {
+      slave_points.SetSize(0);
+      master_points.SetSize(0);
+    }
+
     auto displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", displacement_->GetFlags());
     displacement->Update();
     displacement->GetVector() = displacement_->GetVector();
@@ -688,6 +866,20 @@ namespace ngcomp
                             {
                               lock_guard<mutex> guard(add_mutex);
                               bf->AddSpecialElement(make_unique<ContactElement<DIM>>(*pair, this));
+                              if(draw_pairs)
+                              {
+                                HeapReset hr(lh);
+                                auto & t1_def = trafo.AddDeformation(displacement.get(), lh);
+                                Vec<3> p1 = 0;
+                                t1_def.CalcPoint(pair->master_ip, p1);
+                                master_points.Append(p1);
+
+                                auto & t2 = mesh->GetTrafo(pair->slave_el, lh);
+                                auto & t2_def = t2.AddDeformation(displacement.get(), lh);
+                                Vec<3> p2 = 0;
+                                t2_def.CalcPoint(pair->slave_ip, p2);
+                                slave_points.Append(p2);
+                              }
                             }
                         }
                     });
