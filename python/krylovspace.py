@@ -24,6 +24,12 @@ class CGSolver(BaseMatrix):
         self.errors = []
         self.iterations = 0
 
+    def Height(self) -> int:
+        return self.mat.width
+
+    def Width(self) -> int:
+        return self.mat.height
+
     def IsComplex(self) -> bool:
         return self.mat.IsComplex()
 

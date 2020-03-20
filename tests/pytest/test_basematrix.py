@@ -1,7 +1,12 @@
+
 import pytest
 from ngsolve import *
 
 class MyMatrix(BaseMatrix):
+    def __init__ (self,n):
+        super(MyMatrix, self).__init__()
+        self.n = n
+    
     def IsComplex(self):
         return False
 
@@ -16,10 +21,16 @@ class MyMatrix(BaseMatrix):
             y[i] = s*sum(x[i:])
 
     def CreateColVector(self):
-        return CreateVVector(5)
+        return CreateVVector(self.n)
 
+    def Height(self):
+        return self.n
+
+    def Width(self):
+        return self.n
+    
 def test_derive_basematrix():
-    m = MyMatrix()
+    m = MyMatrix(5)
 
     x = CreateVVector(5)
     y = CreateVVector(5)
@@ -40,8 +51,8 @@ def test_derive_basematrix():
 
 
 def test_derive_basematrix_lifetime():
-    m = MyMatrix()@MyMatrix()
-    m1 = MyMatrix()
+    m = MyMatrix(5)@MyMatrix(5)
+    m1 = MyMatrix(5)
 
     x = CreateVVector(5)
     y = CreateVVector(5)

@@ -19,8 +19,14 @@ namespace ngfem
   DiffShape (shared_ptr<CoefficientFunction> proxy,
              shared_ptr<CoefficientFunction> dir)
   {
-    return -TransposeCF(dir->Operator("Gradboundary")) * proxy;
-    // return -dir->Operator("grad") * proxy;
+    // return -TransposeCF(dir->Operator("Gradboundary")) * proxy;
+
+    int dim = dir->Dimension();
+    auto n = NormalVectorCF(dim);
+    n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+    auto Pn = n * TransposeCF(n);
+    return  Pn * dir->Operator("Gradboundary") * proxy
+      -TransposeCF(dir->Operator("Gradboundary")) * proxy;
   }
 
 
