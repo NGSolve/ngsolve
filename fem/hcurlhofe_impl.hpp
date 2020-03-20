@@ -977,6 +977,171 @@ namespace ngfem
 
 
 
+  template<> template <typename MIP, typename TFA>
+  inline void HCurlHighOrderFE_Shape<ET_HEX> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    // T lam[4] = { x, y, z, 1-x-y-z };
+    // Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+    // T lam[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
+    // (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
+    T sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+                (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
+    Vec<3> pnts[8] = 
+      { 
+	{ 0, 0, 0 },
+	{ 1, 0, 0 },
+	{ 1, 1, 0 },
+	{ 0, 1, 0 },
+	{ 0, 0, 1 },
+	{ 1, 0, 1 },
+	{ 1, 1, 1 },
+	{ 0, 1, 1 }
+      };
+    
+    
+    int facetnr = ip.FacetNr();
+    int ii = 12;
+
+    if (ip.VB() == BBND)
+      { // edge shapes
+        for (int i = 0; i < 12; i++)
+          {
+            int p = order_edge[i];
+            if (i == facetnr)
+              {
+                INT<2> e = GetEdgeSort (i, vnums);
+                T xi = sigma[e[1]]-sigma[e[0]];
+                Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
+                Vec<3,T> tau = mip.GetJacobian()*tauref;
+                tau /= mip.GetMeasure();
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              Vec<3,T> vshape = val * tau;
+                              if (nr==0)
+                                shape[i] = vshape;
+                              else
+                                shape[ii+nr-1] = vshape;
+                            }));
+              }
+            ii += p;
+          }
+      }
+    else
+      {
+        throw Exception ("H(curl)-hex: dual shapes supported only on edges");
+        for (int i = 0; i < 12; i++)
+          ii += order_edge[i];
+      }
+
+    /*
+      // just copied from tet, needs adaption ...
+    if (ip.VB() == BND)
+      {
+	//AutoDiff<3,T> xa(ip(0), 0), ya(ip(1),1), za(ip(2),2);
+	//AutoDiff<3,T> lami[4] = { xa, ya, za, (T)(1.0) };
+
+	for (int f = 0; f < 4; f++)
+	  {
+	    int p = order_face[f][0];
+	     if (f == facetnr)
+	       {
+		 INT<4> fav = GetFaceSort (facetnr, vnums);
+		 //AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
+		 //AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
+		 Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
+		 Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
+		 T xi = lam[fav[0]];
+		 T eta = lam[fav[1]];
+		 
+		 Matrix<> F(3,2);
+		 F.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
+		 F.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
+		 
+		 Matrix<> Ftmp(2,2);
+		 Ftmp = Trans(F)*F;
+		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
+		 
+		 DubinerBasis::Eval(order-2, xi, eta,
+                                    SBLambda([&] (size_t nr, auto val)
+                                             {
+                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
+                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
+                                             }));
+		 LegendrePolynomial::Eval(order-2,xi,
+					  SBLambda([&] (size_t nr, auto val)
+						   {
+						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
+						   }));
+	       }
+	     else
+	      ii += (p+1)*(p-1);
+	  }
+      }
+    else
+      {
+        for (int i = 0; i < 4; i++)
+	  {
+	    int p = order_face[i][0];
+	    ii += (p+1)*(p-1);
+	  }
+      }
+    if (ip.VB() == VOL)
+      {
+	// auto xphys = mip.GetPoint()(0);
+        // auto yphys = mip.GetPoint()(1);
+	// auto zphys = mip.GetPoint()(2);
+	
+	LegendrePolynomial leg;
+	JacobiPolynomialAlpha jac1(1);    
+	leg.EvalScaled1Assign 
+	  (order-3, lam[2]-lam[3], lam[2]+lam[3],
+	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
+		     {
+		       // JacobiPolynomialAlpha jac(2*k+1);
+		       JacobiPolynomialAlpha jac2(2*k+2);
+		       
+		       jac1.EvalScaledMult1Assign
+			 (order-3-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
+				    {
+				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
+				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
+						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
+							     {
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*z);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val, 0, 0);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0, val, 0);
+							     }));
+				      jac2.IncAlpha2();
+				    }));
+		       jac1.IncAlpha2();
+		     }));
+
+
+        DubinerBasis::Eval(order-3, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
+                                    }));
+      }
+    */
+  }
+
+
+
+
+
+
+
+
+  
+
   //------------------------------------------------------------------------
   //            Pyramid
   //------------------------------------------------------------------------
@@ -1319,6 +1484,100 @@ namespace ngfem
       }
   }
 
+  template<> template <typename MIP, typename TFA>
+  inline void HCurlHighOrderFE_Shape<ET_QUAD> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    // shape = 0;
+    auto & ip = mip.IP();
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+    T x = ip(0), y = ip(1);
+    // T lam[3] = { x, y, 1-x-y };
+    Vec<2,T> pnts[4] = { { 0, 0 },
+	{ 1, 0 },
+	{ 1, 1 },
+	{ 0, 1 } };
+    T sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+    int facetnr = ip.FacetNr();
+
+    if (ip.VB() == BND)
+      { // facet shapes
+        int ii = 4;
+        for (int i = 0; i < 4; i++)
+          {
+            int p = order_edge[i];
+            if (i == facetnr)
+              {
+                INT<2> e = GetEdgeSort (i, vnums);
+                T xi = sigma[e[1]]-sigma[e[0]];
+                Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
+                auto tau = mip.GetJacobian()*tauref;
+                tau /= mip.GetMeasure();
+
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              auto vshape = val * tau;
+                              if (nr==0)
+                                shape[i] = vshape;
+                              else
+                                shape[ii+nr-1] = vshape;
+                            }));
+              }
+            ii += p;
+          }
+      }
+    if (ip.VB() == VOL)
+      { // inner shapes
+        throw Exception ("quad dual, inner not supported");
+        int ii = 3;
+        for (int i = 0; i < 3; i++)
+          ii += order_edge[i];
+
+        /*// now come the inner ...
+        Vec<2,AutoDiff<2,T>> adp(mip);
+        
+        //AutoDiff<2> adx(x,0);
+        //AutoDiff<2> ady(y,1);
+        
+        AutoDiff<2,T> adx = adp(0);
+        AutoDiff<2,T> ady = adp(1);
+        
+        AutoDiff<2,T> l2 = 1-adx-ady;
+
+        ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
+        LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
+        LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
+        int p = order_face[0][0];
+        for (int i = 0; i < p; i++)
+          for (int j = 0; j < p-i; j++)
+            if (i > 0 || j > 0)
+              shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
+        for (int i = 1; i <= p; i++)
+          for (int j = 1; j <= p-i; j++)
+            shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+	
+	*/
+	
+	// auto xphys = mip.GetPoint()(0);
+        // auto yphys = mip.GetPoint()(1);
+        DubinerBasis::Eval(order-2, x, y,
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
+                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
+                                    }));
+	LegendrePolynomial::Eval(order-2,x,
+				 SBLambda([&] (size_t nr, auto val)
+					  {
+					    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,val);
+					  }));
+	
+      }
+  }
+
+  
 
   template<> template <typename MIP, typename TFA>
   inline void HCurlHighOrderFE_Shape<ET_TET> ::

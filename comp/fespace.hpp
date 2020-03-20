@@ -1418,7 +1418,7 @@ namespace ngcore
     { 
       if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) return MPI_CHAR;
       if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_INT;
-      cout << "please provide MPI_Datatype for COUPLING_TYPE" << endl;
+      std::cout << "please provide MPI_Datatype for COUPLING_TYPE" << endl;
       exit(1);
     }
   };
