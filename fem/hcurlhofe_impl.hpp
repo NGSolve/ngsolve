@@ -1596,7 +1596,7 @@ namespace ngfem
       { // edge shapes
         for (int i = 0; i < 6; i++)
           {
-            int p = order_edge[i];
+            int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
                 INT<2> e = GetEdgeSort (i, vnums);
@@ -1621,7 +1621,7 @@ namespace ngfem
     else
       {
         for (int i = 0; i < 6; i++)
-          ii += order_edge[i];
+          ii += order_edge[i] * usegrad_edge[i];
       }
     if (ip.VB() == BND)
       {
@@ -1714,6 +1714,74 @@ namespace ngfem
       }
   }
 
+  template<> template <typename MIP, typename TFA>
+  inline void HCurlHighOrderFE_Shape<ET_PRISM> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    // shape = 0;
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    T lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    T muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
+
+    T sigma[6];
+    for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
+
+    Vec<3> pnts[6] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 0 },
+                       { 1, 0, 1 }, { 1, 1, 0 }, { 0, 0, 1 }};
+    int facetnr = ip.FacetNr();
+    int ii = 9;
+
+    if (ip.VB() == BBND)
+      {
+        for (int i = 0; i < 9; i++)
+          {
+            if(order_edge[i] > 1) throw Exception("Dual shapes for prisms for order > 1 not implemented!");
+            int p = order_edge[i] * usegrad_edge[i];
+            if (i == facetnr)
+              {
+                INT<2> e = GetEdgeSort (i, vnums);
+                T xi = lam[e[1]]-lam[e[0]];
+                Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
+                Vec<3,T> tau = mip.GetJacobian()*tauref;
+                tau /= mip.GetMeasure();
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              Vec<3,T> vshape = val * tau;
+                              if (nr==0)
+                                shape[i] = vshape;
+                              else
+                                shape[ii+nr-1] = vshape;
+                            }));
+              }
+            ii += p;
+          }
+      }
+    else
+      {
+        for (int i = 0; i < 9; i++)
+          ii += order_edge[i] * usegrad_edge[i];
+      }
+    if (ip.VB() == BND)
+      {
+        // TODO
+      }
+    else
+      {
+        for (int i = 0; i < 4; i++)
+	  {
+	    int p = order_face[i][0];
+	    ii += (p+1)*(p-1);
+	  }
+      }
+    if (ip.VB() == VOL)
+      {
+        // TODO
+      }
+  }
   
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
