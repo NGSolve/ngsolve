@@ -81,10 +81,10 @@ namespace ngla
     ~MumpsInverse ();
 
     ///
-    int VHeight() const { return height; }
+    int VHeight() const { return height/entrysize; }
     
     ///
-    int VWidth() const { return height; }
+    int VWidth() const { return height/entrysize; }
     ///
     virtual bool IsComplex() const { return iscomplex; }
     ///
