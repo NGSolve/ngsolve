@@ -34,12 +34,7 @@ class NewtonSolver:
             a.AssembleLinearization(u.vec)
             a.Apply(u.vec, r)
 
-            if self.inverse in ("sparsecholesky", "given") and self.inv:
-                self.inv.Update()
-            else:
-                self.inv = a.mat.Inverse(self.freedofs,
-                                         inverse=self.inverse)
-
+            self._UpdateInverse()
             if self.rhs is not None:
                 r.data -= self.rhs.vec
             if a.condense:
@@ -84,12 +79,19 @@ class NewtonSolver:
     def SetDirichlet(self, dirichletvalues):
         a, u, w, r = self.a, self.u, self.w, self.r
         a.AssembleLinearization(u.vec)
-        self.inv = a.mat.Inverse(self.freedofs, inverse=self.inverse)
-
+        self._UpdateInverse()
         w.data = dirichletvalues-u.vec
         r.data = a.mat * w
         w.data -= self.inv*r
         u.vec.data += w
+
+    def _UpdateInverse(self):
+        if self.inverse in ("sparsecholesky", "given") and self.inv:
+            self.inv.Update()
+        else:
+            self.inv = self.a.mat.Inverse(self.freedofs,
+                                          inverse=self.inverse)
+
 
 def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", \
                dirichletvalues=None, dampfactor=1, printing=True, callback=None):
