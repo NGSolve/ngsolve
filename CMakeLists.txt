@@ -20,7 +20,6 @@ option( USE_PARDISO      "enable pardiso sparse direct solver")
 option( USE_UMFPACK      "enable umfpack sparse direct solver" ON)
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
-option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
@@ -317,12 +316,6 @@ if(USE_UMFPACK)
   endif()
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_UMFPACK)
 endif(USE_UMFPACK)
-
-#######################################################################
-if(USE_NUMA)
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_NUMA)
-    find_library(NUMA_LIB libnuma.so)
-endif(USE_NUMA)
 
 
 #######################################################################
