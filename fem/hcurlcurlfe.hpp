@@ -7,7 +7,6 @@
 /* Date:   June 2018                                                 */
 /*********************************************************************/
 
-
 namespace ngfem
 {
 
@@ -109,9 +108,21 @@ namespace ngfem
   }
 
   template <typename T>
+  Vec<6, AutoDiff<3,T>> SymDyadProd(Vec<3,T> a, Vec<3,T> b)
+  {
+    return Vec<6, AutoDiff<3,T>>(2*a(0)*b(0),2*a(1)*b(1),2*a(2)*b(2), a(1)*b(2)+a(2)*b(1), a(0)*b(2)+a(2)*b(0),a(1)*b(0)+a(0)*b(1));
+  }
+
+  template <typename T>
   Vec<3,AutoDiff<2,T>> SymDyadProd(AutoDiff<2,T> a, AutoDiff<2,T> b)
   {
     return Vec<3,AutoDiff<2,T>>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
+  }
+
+  template <typename T>
+  Vec<3,AutoDiff<2,T>> SymDyadProd(Vec<2,T> a, Vec<2,T> b)
+  {
+    return Vec<3,AutoDiff<2,T>>(2*a(0)*b(0),2*a(1)*b(1),a(1)*b(0)+a(0)*b(1));
   }
 
   template <typename T>
@@ -170,12 +181,35 @@ namespace ngfem
     AutoDiffDiff<2,T> u;
   public:
     T_EpsGrad  (AutoDiffDiff<2,T> au) : u(au) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(0,0), u.DDValue(1,1), u.DDValue(0,1)); }
+    Vec<3,T> Shape()
+    {
+      return Vec<3,T> (u.DDValue(0,0), u.DDValue(1,1), u.DDValue(0,1));
+    }
     Vec<2,T> CurlShape() { return Vec<2,T> (0.0, 0.0); }
   };
   
   template <int D, typename T>
   auto EpsGrad (AutoDiffDiff<D,T> au) { return T_EpsGrad<D,T>(au); }
+
+  // ***************** wEpsGrad ****************************** */
+  // w*eps (nabla u)
+  
+  template <int D, typename T> class T_wEpsGrad;
+  template <typename T> class T_wEpsGrad<2,T>
+  {
+    AutoDiffDiff<2,T> u;
+    AutoDiff<1,T> w;
+  public:
+    T_wEpsGrad  (AutoDiffDiff<2,T> au, AutoDiff<1,T> aw) : u(au), w(aw) { ; }
+    Vec<6,T> Shape()
+    {
+      return w.Value()*Vec<6,T> (u.DDValue(0,0), u.DDValue(1,1), u.DDValue(2,2), u.DDValue(1,2), u.DDValue(0,2), u.DDValue(0,1));
+    }
+    Vec<9,T> CurlShape() { return Vec<9,T> (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); }
+  };
+  
+  template <int D, typename T>
+  auto wEpsGrad (AutoDiffDiff<D,T> au, AutoDiff<1,T> aw) { return T_wEpsGrad<D,T>(au, aw); }
   
   
   // ***************** Eps_u_Gradv ****************************** */
@@ -275,7 +309,7 @@ namespace ngfem
     }
 
    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const override
-    {    
+    {
       Vec<DIM,AutoDiff<DIM>> tip = ip;
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (tip), SBLambda ([shape](size_t nr, auto val)      {
                                                                  
@@ -287,6 +321,7 @@ namespace ngfem
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                             BareSliceMatrix<double> shapes) const override
     {
+
       /*
         Here I would need GetTIP for AutoDiffDiffRec
         Switch<4-DIM>
@@ -442,6 +477,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const override
     {
+
       Switch<4-DIM>
         (bmir.DimSpace()-DIM,[this, &bmir, shapes](auto CODIM)
          {
@@ -607,19 +643,20 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y;
-      Tx llami[4] ={x, y, 1-x-y};
+      Tx llami[3] ={x, y, 1-x-y};
       typedef decltype(x.Value()+x.Value()) T;      
       AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
       AutoDiff<2,T> ddlami[3] ={ xx, yy, 1-xx-yy };
       int ii = 0;
 
+
       int maxorder_facet =
         max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
       ArrayMem<Tx,20> ha(maxorder_facet+1);
       ArrayMem<Tx,20> u(order_inner[0]+2), v(order_inner[0]+2);
       
-      for (int i = 0; i < 3; i++)
+      /*for (int i = 0; i < 3; i++)
         {
           INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort(i,vnums);
 	  Tx ls = llami[e[0]], le = llami[e[1]];
@@ -630,6 +667,19 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
 
           for (int l = 0; l <= order_facet[i][0]; l++)
             shape[ii++] = EpsGrad (ha[l]);
+            }*/
+
+      for (int i = 0; i < 3; i++)
+        {
+          INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+          AutoDiff<2,T> ls = ddlami[e[0]], le = ddlami[e[1]];
+
+          Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
+
+          LegendrePolynomial::EvalScaled(order_facet[i][0], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+                            {
+                              shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
+                            }));
         }
 
 
@@ -734,29 +784,87 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
         ndof += order_facet[i][0]+1;
         order = max2(order, order_facet[i][0]);
       }
-      int ninner = order_inner[0]*order_inner[0] + (order_inner[0]+2)*order_inner[0]*2 + 2*order_inner[0] +1;
+      int ninner = order_inner[0]*order_inner[0] + (order_inner[0]+2)*order_inner[0]*2  +1;//+ 2*order_inner[0];
       order = max2(order, order_inner[0]);
       order += 1;
       ndof += ninner;
+
     }
     
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y;
-      Tx lx[4] = {1-x, x, x, 1-x};
-      Tx ly[4] = {1-y, 1-y, y, y};
+      Tx llx[4] ={1-x, x, x, 1-x};
+      Tx lly[4] ={1-y, 1-y, y, y};
+      typedef decltype(x.Value()+x.Value()) T;
+      AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<2,T> lx[4] ={ 1-xx, xx, xx, 1-xx };
+      AutoDiff<2,T> ly[4] ={ 1-yy,1-yy, yy,yy };
+      AutoDiff<2,T> lami[4] = {(1-xx)*(1-yy),xx*(1-yy),xx*yy,(1-xx)*yy};  
+      AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy};  
       
       int ii = 0;
 
-
-      ArrayMem<Tx,20> u(order+2), v(order+2);
+      ArrayMem<AutoDiff<2,T>,20> v(order+2), u(order+2);
       
+     
       for (int i = 0; i < 4; i++)
         {
           INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
-          Tx xi = lx[e[1]]+ly[e[1]]-lx[e[0]]-ly[e[0]];
-          Tx eta = lx[e[0]]*ly[e[0]]+lx[e[1]]*ly[e[1]];
+          AutoDiff<2,T> xi  = sigma[e[1]]-sigma[e[0]];
+          AutoDiff<2,T> lam_e = lami[e[0]]+lami[e[1]];  
+          Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(xi,xi);
+
+
+          IntLegNoBubble::
+            EvalMult (order_edge[i], 
+                      xi, lam_e, SBLambda ([&](int i, auto val)
+                                           {
+                                             shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
+                                           }));
+        }
+
+
+
+      int oi = order_inner[0];
+
+      Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(Vec<2,T>(2,0),Vec<2,T>(0,2)); //(0,0,  0,1) * P(y) * P(x)
+      AutoDiff<2,T> eta = ly[2]-ly[1];
+      AutoDiff<2,T> xi = lx[1]-lx[0];
+      LegendrePolynomial (oi, eta, v);
+      LegendrePolynomial (oi, xi, u);
+
+      for (int i = 0; i <= oi; i++)
+        for (int j = 0; j <= oi; j++)
+          {
+            shape[ii++] = T_REGGE_Shape<2,T>(u[i]*v[j]*symdyadic);
+          }
+
+      
+      auto symdyad = lx[1]*lx[0]*SymDyadProd(Vec<2,T>(0,1),Vec<2,T>(0,1));//x*(1-x)*(0,0,  0,1) * P(y) * P(x)
+      for (int i = 0; i < oi; i++)
+        for (int j = 0; j <= oi; j++)
+          {
+            shape[ii++] = T_REGGE_Shape<2,T>(u[i]*v[j]*symdyad);
+          }
+
+      symdyad = ly[2]*ly[1]*SymDyadProd(Vec<2,T>(1,0),Vec<2,T>(1,0)); //y*(1-y)*(1,0,  0,0) * P(x) * P(y)
+      
+      for (int j = 0; j < oi; j++)
+        for (int i = 0; i <= oi; i++)
+          {
+            shape[ii++] = T_REGGE_Shape<2,T>(u[i]*v[j]*symdyad);
+          }
+
+      //old version
+      //ArrayMem<Tx,20> u(order+2);
+      /*for (int i = 0; i < 4; i++)
+        {
+          INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+          Tx xi = llx[e[1]]+lly[e[1]]-llx[e[0]]-lly[e[0]];
+          Tx eta = llx[e[0]]*lly[e[0]]+llx[e[1]]*lly[e[1]];
 
 	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
 
@@ -764,12 +872,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           for (int l = 0; l <= order_facet[i][0]; l++)
             shape[ii++] = Eps_u_Gradv (eta, u[l]);
         }
-
-      int oi = order_inner[0];
-
-      IntegratedLegendreMonomialExt::Calc(oi+3,lx[0]-lx[1],u);
-      IntegratedLegendreMonomialExt::Calc(oi+3,ly[0]-ly[2],v);
-
+      
+      IntegratedLegendreMonomialExt::Calc(oi+3,llx[0]-llx[1],u);
+      IntegratedLegendreMonomialExt::Calc(oi+3,lly[0]-lly[2],v);
 
       for(int i = 0; i <= oi-1; i++)
         for(int j = 0; j <= oi-1; j++)
@@ -787,28 +892,41 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       {
         shape[ii++] = Eps_u_Gradv(u[i], ly[0]);
         shape[ii++] = Eps_u_Gradv(v[i], lx[0]);
-      }
+        }*/
+
+      
+      
     };
 
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
+      auto & ip = mip.IP();
       typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T; 
-      auto ip = mip.IP();
-      Vec<2,AutoDiff<2,T>> adip = ip;
-      auto tip = TIP<2,AutoDiffDiff<2,T>>(adip);
-         
-      AutoDiffDiff<2,T> x = tip.x, y = tip.y;
-      AutoDiffDiff<2,T> lx[4] ={1-x, x, x, 1-x};
-      AutoDiffDiff<2,T> ly[4] = {1-y, 1-y, y, y};
-      int ii = 0;
 
-      T xx = ip(0), yy = ip(1);
-      int facetnr = mip.IP().FacetNr();
-      T lam[4] = { 1-xx-yy+xx*yy, xx*(1-yy), xx*yy, yy*(1-xx) };
-      Vec<2,T> pnts[4] = { { 0, 0 }, { 1, 0 } , { 1, 1 }, { 0, 1 } };
+      T x = ip(0), y = ip(1);
+      T lx[4] = { 1-x, x, x, 1-x };
+      T ly[4] = { 1-y, 1-y, y, y };
+      T lam[4] = { 1-x-y+x*y, x*(1-y), x*y, y*(1-x) };
+      T sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
+
+      /*Vec<2,AutoDiff<2,T>> adip = ip;
+      auto tip = TIP<2,AutoDiffDiff<2,T>>(adip);
+      AutoDiffDiff<2,T> xxx = tip.x, yyy = tip.y;
+      AutoDiff<2,T> xx(xxx.Value(), &xxx.DValue(0));
+      AutoDiff<2,T> yy(yyy.Value(), &yyy.DValue(0));
+      AutoDiff<2,T> lami[4] = {(1-xx)*(1-yy),xx*(1-yy),xx*yy,(1-xx)*yy};  
+      AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy}; */ 
       
-      ArrayMem<AutoDiffDiff<2,T>,20> u(order+2), v(order+2);
+      Vec<2,T> pnts[4] = {  { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+      
+      ArrayMem<T,20> v(order+2), u(order+2);
+
+      //Mat<2,2,T> tmp(0.0);
+
       
       if (mip.IP().VB() == BND)
         { // facet shapes
@@ -820,7 +938,8 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                 {             
                   INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
                   
-                  T xi = lam[e[0]]-lam[e[1]];
+                  //T xi = lam[e[0]]-lam[e[1]];
+                  T xi  = sigma[e[1]]-sigma[e[0]];
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
                   
                   
@@ -833,6 +952,30 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                               {
                                 shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
                                 }));
+                  /*INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+                  AutoDiff<2,T> xi  = sigma[e[1]]-sigma[e[0]];
+                  AutoDiff<2,T> lam_e = lami[e[0]]+lami[e[1]];  
+                  Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(xi,xi);
+
+
+                  IntLegNoBubble::
+                    EvalMult (order_edge[i], 
+                              xi, lam_e, SBLambda ([&](int nr, auto val)
+                                                   {
+                                                     VecToSymMat<2>(T_REGGE_Shape<2,T>(val*symdyadic).Shape(),tmp);
+                                                     shape[nr + ii] = mip.GetJacobian()*tmp*Trans(mip.GetJacobian());
+                                                     }));*/
+                  /*AutoDiff<2,T> xi  = sigma[e[1]]-sigma[e[0]];
+                  AutoDiff<2,T> lam_e = lami[e[0]]+lami[e[1]];  
+                  Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(xi,xi);
+
+
+                  IntLegNoBubble::
+                    EvalMult (p,xi, lam_e, SBLambda ([&](int nr, auto val)
+                                                   {
+                                                     VecToSymMat<2>(T_REGGE_Shape<2,T>(val*symdyadic).Shape(),tmp);
+                                                     shape[nr + ii] = 1/mip.GetMeasure()*tmp;
+                                                     }));*/
                 }
               ii += (p+1);
             }
@@ -846,9 +989,37 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       if (mip.IP().VB() == VOL)
         {
           auto p = order_inner[0];
+         
+          T eta = ly[2]-ly[1];
+          T xi = lx[1]-lx[0];
+          LegendrePolynomial (p, eta, v);
+          LegendrePolynomial (p, xi, u);
+          
+          for (int i = 0; i <= p; i++)
+            for (int j = 0; j <= p; j++)
+              {
+                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,1},{1,0}}))*Trans(mip.GetJacobian());
+              }
+          
+          
+          //auto symdyad = lx[1]*lx[0]*SymDyadProd(Vec<2,T>(0,1),Vec<2,T>(0,1));//x*(1-x)*(0,0,  0,1) * P(y) * P(x)
+          for (int i = 0; i < p; i++)
+            for (int j = 0; j <= p; j++)
+              {
+                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,0},{0,1}}))*Trans(mip.GetJacobian());
+              }
+          
+          //symdyad = ly[2]*ly[1]*SymDyadProd(Vec<2,T>(1,0),Vec<2,T>(1,0)); //y*(1-y)*(1,0,  0,0) * P(x) * P(y)
+          
+          for (int j = 0; j < p; j++)
+            for (int i = 0; i <= p; i++)
+              {
+                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{1,0},{0,0}}))*Trans(mip.GetJacobian());
+              }
+      
           //INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
-
-          IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
+          
+          /*IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
           IntegratedLegendreMonomialExt::Calc(p+3,ly[0]-ly[2],v);
 
           Mat<2,2,T> tmp;
@@ -878,7 +1049,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
               shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*tmp*Trans(mip.GetJacobian());
               VecToSymMat<2>(Eps_u_Gradv(v[i], lx[0]).Shape(),tmp);
               shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*tmp*Trans(mip.GetJacobian());
-            }
+              }*/
         }
     }
   };
@@ -1137,18 +1308,15 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     }
 
   };
-
+  */
 
   template <> class HCurlCurlFE<ET_PRISM> : public T_HCurlCurlFE<ET_PRISM> 
   {
   public:
-    // order k+1 for certain components, for inner and boundary shapes
-    // analysis from TDNNS paper for case xx1=0, zz1=xx2=zz2=1 for inner and boundary shapes
-    // however, works also when boundary order is not increased.. check
     enum { incrorder_xx1 = 0};
-    enum { incrorder_zz1 = 1};
-    enum { incrorder_xx2 = 1};
-    enum { incrorder_zz2 = 1};
+    enum { incrorder_zz1 = 0};
+    enum { incrorder_xx2 = 0};
+    enum { incrorder_zz2 = 0};
     enum { incrorder_xx1_bd = 0};
     enum { incrorder_zz1_bd = 0};
     enum { incrorder_xx2_bd = 0};
@@ -1159,343 +1327,252 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     {
       order = 0;
       ndof = 0;
+
+      for (int i=0; i < 9; i++)
+        {
+          ndof += order_edge[i]+1;
+          order = max2(order,order_edge[i]);
+        }
+
       for (int i=0; i<2; i++)
-      {
-        ndof += (order_facet[i][0]+1+incrorder_zz1_bd)*(order_facet[i][0]+2+incrorder_zz1_bd)/2;
-        order = max2(order, order_facet[i][0]+incrorder_zz1_bd);
-      }
+        {
+          ndof += 3*(order_facet[i][0])*(order_facet[i][0]+1)/2;
+          order = max2(order, order_facet[i][0]);
+        }
+
       for (int i=2; i<5; i++)
-      {
-        ndof += (order_facet[i][0]+1+incrorder_xx1_bd)*(order_facet[i][1]+1+incrorder_xx2_bd);
-        order = max2(order, order_facet[i][0]+incrorder_xx2_bd);
-      }
-      int oi0 = order_inner[0];
-      int oi2 = order_inner[2];
-      int ninner = 3*((oi0+1+incrorder_xx1)*(oi0+incrorder_xx1))/2 *(oi2+1+incrorder_xx2) 
-        + (oi0+1)*(oi0+2)*(oi2+1) 
-        + (oi0+1+incrorder_zz1)*(oi0+2+incrorder_zz1)*(oi2-1+incrorder_zz2)/2;
-      ndof += ninner; 
+        {
+          ndof += order_facet[i][0]*order_facet[i][0] + (order_facet[i][0]+2)*order_facet[i][0]*2 +1;
+          order = max2(order, order_facet[i][0]);
+        }
+      int p = order_inner[0];
+      int ninner =  p > 0 ? (3*p*(p)*(p+1)/2 + (p+1)*(2*p*(p-1)/2 + (p+2)*(p-1)/2)) : 0;
+              
+      ndof += ninner;
 
-      order = max3(order, oi0+incrorder_zz1, oi2+incrorder_zz2);
-
+      order = 1+max2(order, p);
     }
-
-    // works only with old-style Transformation
-    // does not work with CalcMappedShape
-   template <typename Tx, typename TFA> 
-    void T_CalcShape_Complex (TIP<3,Tx> ip, TFA & shape) const
-    {
-      AutoDiffDiff<2> x(ip.x.Value(),0);
-      AutoDiffDiff<2> y(ip.y.Value(),1);
-      AutoDiff<2> xd(ip.x.Value(),0);
-      AutoDiff<2> yd(ip.y.Value(),1);
-      AutoDiff<1> z(ip.z.Value(), 0);
-      AutoDiffDiff<2> lami[6] ={ x,y,1-x-y,x,y,1-x-y };
-      AutoDiff<2> lamid[6] ={ xd,yd,1-xd-yd,xd,yd,1-xd-yd };
-      AutoDiff<1> lamiz[6] ={ 1-z,1-z,1-z,z,z,z };
-
-      int ii = 0;
-      
-      int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
-
-      const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
-
-      ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+2);
-      ArrayMem<AutoDiffDiff<2>,20> u(order+2), v(order+3);
-      ArrayMem<AutoDiff<2>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<1>,20> leg_w(order+2);
-
-      
-      // Trig faces, (p+1)(p+2)/2
-      for (int fa=0; fa<2; fa++)
-      {
-        int fav[3] ={faces[fa][0],faces[fa][1],faces[fa][2]};
-
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        
-        leg_u.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
-        leg_v.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_zz1_bd,lamid[fav[0]]-lamid[fav[1]],1-lamid[fav[0]]-lamid[fav[1]],leg_u);
-        LegendrePolynomial::Eval(order_facet[fa][0]+incrorder_zz1_bd,2 * lamid[fav[2]] - 1,leg_v);
-
-        for(int j = 0; j <= order_facet[fa][0]+incrorder_zz1_bd; j++)
-          for(int k = 0; k <= order_facet[fa][0]+incrorder_zz1_bd-j; k++)
-            shape[ii++] = S_zz(leg_u[j],leg_v[k],lamiz[fav[0]]);
-      }
-      // quad faces -- use face bubbles of trig multiplied by leg_w
-      // (px+1)(pz+1)
-      for(int fa = 2; fa < 5; fa++)
-      {
-        int fmax = 0;
-        for(int j = 1; j < 4; j++)
-          if(vnums[faces[fa][j]] > vnums[faces[fa][fmax]]) fmax = j;
-
-        int fz,ftrig;
-
-        fz = 3 - fmax;
-        ftrig = fmax^1;
-
-        fmax = faces[fa][fmax];
-        fz = faces[fa][fz];
-        ftrig = faces[fa][ftrig];
-
-
-        // int orderz = order_facet[fa][1];
-
-        bool rotate = false;
-        if(vnums[fz] > vnums[ftrig]) rotate = true;
-        leg_w.SetSize(order_facet[fa][1]+incrorder_xx2_bd+1);
-        ha.SetSize(order_facet[fa][0]+incrorder_xx1_bd+1);
-        LegendrePolynomial::Eval(order_facet[fa][1]+incrorder_xx2_bd,lamiz[fmax]*2-1,leg_w);
-
-
-        // edge functions are all div-free!
-        IntegratedLegendreMonomialExt::CalcTrigExt(order_facet[fa][0]+incrorder_xx1_bd+2,
-          lami[fmax]-lami[ftrig],1-lami[fmax]-lami[ftrig],ha);
-
-        if(rotate)
-          for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
-            for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
-            {
-              shape[ii++] = Prism_wSigmaGradu(ha[l],leg_w[k]);
-            }
-
-        else
-          for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
-            for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
-            {
-              shape[ii++] = Prism_wSigmaGradu(ha[l],leg_w[k]);
-            }
-
-
-      }
-
-
-
-      int oi = order_inner[0];
-      leg_u.SetSize(oi+incrorder_zz1+1);
-      leg_v.SetSize(oi+incrorder_zz1+1);
-      leg_w.SetSize(oi+incrorder_xx2+1);
-      u.SetSize(oi-1+incrorder_xx1+1);
-      v.SetSize(oi-1+incrorder_xx1+1);
-
-      ScaledLegendrePolynomial(oi+incrorder_zz1, lamid[0]-lamid[1], 1-lamid[0]-lamid[1], leg_u);
-      LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lamid[2]-1, leg_v);
-      LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lamiz[0]-1, leg_w);
-
-      // ------------------------------------
-      // based on elasticity-complex-based triangle shapes
-      IntegratedLegendreMonomialExt::CalcTrigExt(oi-1+incrorder_xx1+2,lami[0]-lami[1],1-lami[0]-lami[1],u);
-      LegendrePolynomial::EvalMult(oi-1+incrorder_xx1,2*lami[2]-1, lami[2], v);
-      for(int k=0; k<=oi+incrorder_xx2; k++)
-      {
-        for(int i = 0; i <= oi-1+incrorder_xx1; i++)
-        {
-          for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
-          {
-            shape[ii++] = Prism_wSigmaGradu(u[i]*v[j],leg_w[k]);
-            shape[ii++] = Prism_wType2(u[i],v[j],leg_w[k]);
-          }
-        }
-        for(int i = 0; i <= oi-1+incrorder_xx1; i++)
-        {
-          for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
-          {
-            if(j > 0)
-            {
-              shape[ii++] = Prism_wType3(u[i],v[j],leg_w[k]);
-            }
-          }
-        }
-        for (int i = 0; i < oi+incrorder_xx1; i++)
-        {
-          shape[ii++] = Prism_wType4 (lami[0], -lami[1], v[i],leg_w[k]);
-        }
-
-      }
-
-      // S_xz
-      for (int i=0; i<=oi; i++)
-      {
-        for (int j=0; j+i<=oi; j++)
-        {
-          AutoDiff<2> uv = leg_u[i]*leg_v[j];
-          for (int k=0; k<=oi; k++)
-          {
-            shape[ii++] = S_xz(0,uv, leg_w[k]);
-            shape[ii++] = S_xz(1,uv, leg_w[k]);
-          }
-        }
-      }
-
-      // S_zz
-      for(int k=0; k<=oi-2+incrorder_zz2; k++)
-      {
-        AutoDiff<1> bubw = leg_w[k]*lamiz[0]*(1-lamiz[0]);
-        for(int i=0; i<=oi+incrorder_zz1; i++)
-        {
-          for(int j=0; j<=oi+incrorder_zz1-i; j++)
-          {
-            shape[ii++] = S_zz(leg_u[i],leg_v[j],bubw);
-          }
-        }
-      }
-
-
-      };
-
-
-
-
-    // alternative to T_CalcShape, with "simpler" shape functions,
-    // that are described in anisotropic paper
-    // works with CalcMappedShape etc. routines, also for curved elements
+    
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y, z = ip.z;
+      Tx llx[6] ={ x, y, 1-x-y, x, y, 1-x-y };
+      Tx llz[6] ={ 1-z,1-z,1-z,z,z,z };
       typedef decltype(x.Value()+x.Value()) T;
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
       AutoDiff<3,T> zz(z.Value(), &z.DValue(0));
       AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
       AutoDiff<3,T> lz[6] ={ 1-zz,1-zz,1-zz,zz,zz,zz };
+
       int ii = 0;
       
-      // int maxorder_facet =
-      // max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
       const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
 
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
       ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
 
+      //horizontal edge shapes
+      for (int i = 0; i < 6; i++)
+        {
+          INT<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
+          AutoDiff<3,T> ls = lx[e[0]], le = lx[e[1]], lm = lz[e[0]];
+
+          Vec<6, AutoDiff<3,T>> symdyadic = lm*SymDyadProd(ls,le);
+
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape,lm] (size_t nr, auto val)
+                            {
+                              shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
+                            }));
+        }
+
+
+
+      //vertical edge shapes
+      for (int i = 6; i < 9; i++)
+        {
+          INT<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
+          AutoDiff<3,T> ls = lx[e[0]], lm1 = lz[e[0]], lm2 = lz[e[1]];
+          Vec<6, AutoDiff<3,T>> symdyadic = ls*SymDyadProd(lm1,lm1);
+          LegendrePolynomial (order_edge[i],lm1-lm2, leg_v);
+
+          for (int j=0; j <= order_edge[i]; j++)
+            shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
+        }
       
-      // Trig faces, (p+1)(p+2)/2
-      for (int fa=0; fa<2; fa++)
-      {
-        int fav[3] ={faces[fa][0],faces[fa][1],faces[fa][2]};
 
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        
-        leg_u.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
-        leg_v.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],lx[fav[0]]+lx[fav[1]],leg_u);
-        LegendrePolynomial::Eval(order_facet[fa][0]+incrorder_zz1_bd,2 * lx[fav[2]] - 1,leg_v);
 
-        for(int j = 0; j <= order_facet[fa][0]+incrorder_zz1_bd; j++)
-          for(int k = 0; k <= order_facet[fa][0]+incrorder_zz1_bd-j; k++)
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]*lz[fav[0]]);
-      }
-      // quad faces -- use face bubbles of trig multiplied by leg_w
-      // (px+1)(pz+1)
+      //horizontal face shaps
+      for(int fa = 0; fa < 2; fa++)
+        {
+          if (order_facet[fa][0] > 0)
+            {
+              INT<4> f = ET_trait<ET_PRISM>::GetFaceSort(fa, vnums);
+              AutoDiff<3,T> ls = lx[f[0]], le = lx[f[1]], lt = lx[f[2]], lm = lz[f[0]];
+              
+              Vec<6, AutoDiff<3,T>> symdyadic1 = lm*lt*SymDyadProd(ls,le);
+              Vec<6, AutoDiff<3,T>> symdyadic2 = lm*ls*SymDyadProd(lt,le);
+              Vec<6, AutoDiff<3,T>> symdyadic3 = lm*le*SymDyadProd(ls,lt);
+              
+              DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
+                                 SBLambda([symdyadic1,symdyadic2,symdyadic3,lm, &ii, shape] (size_t nr, auto val)
+                                          {
+                                            shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                            shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                            shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
+                                          }));
+            }
+        }
+
+
+      //vertical face shaps
       for(int fa = 2; fa < 5; fa++)
-      {
-        int fmax = 0;
-        for(int j = 1; j < 4; j++)
-          if(vnums[faces[fa][j]] > vnums[faces[fa][fmax]]) fmax = j;
+        {
+          int of = order_facet[fa][0];
+          //INT<4> f = ET_trait<ET_PRISM>::GetFaceSort (fa, vnums);
+          
+          int fmax = 0;
+          for(int j = 1; j < 4; j++)
+            if(vnums[faces[fa][j]] > vnums[faces[fa][fmax]]) fmax = j;
+          
+          int fz,ftrig;
+          fz = 3 - fmax;
+          ftrig = fmax^1;          
+          fmax = faces[fa][fmax];
+          fz = faces[fa][fz];
+          ftrig = faces[fa][ftrig];
+          
+          AutoDiff<3,T> eta = lz[fz]-lz[fmax];
+          AutoDiff<3,T> xi = lx[ftrig]-lx[fmax];
 
-        int fz,ftrig;
+          LegendrePolynomial (of, eta, leg_v);
+          LegendrePolynomial (of, xi, leg_u);
 
-        fz = 3 - fmax;
-        ftrig = fmax^1;
+          auto W = uDv_minus_vDu(lx[ftrig],lx[fmax]);
+          Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(GetGradient(eta),W.Value());   //^= (0,1, 1,0) * P(y)
+          for (int j = 0; j <= of; j++)
+            shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
 
-        fmax = faces[fa][fmax];
-        fz = faces[fa][fz];
-        ftrig = faces[fa][ftrig];
-
-
-        // int orderz = order_facet[fa][1];
-
-        bool rotate = false;
-        if(vnums[fz] > vnums[ftrig]) rotate = true;
-        leg_w.SetSize(order_facet[fa][1]+incrorder_xx2_bd+1);
-        LegendrePolynomial::Eval(order_facet[fa][1]+incrorder_xx2_bd,lz[fmax]*2-1,leg_w);
-
-
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_xx1_bd, lx[fmax]-lx[ftrig], lx[fmax]+lx[ftrig], leg_u);      
-
-        if(rotate)
-          for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
-            for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
+          if (of > 0)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[fmax], lz[fz], lx[fmax], lx[ftrig], leg_u[l]* leg_w[k]);
+              IntLegNoBubble::EvalScaledMult (of-1, xi, lx[ftrig]+lx[fmax], lx[ftrig]*lx[fmax],
+                                SBLambda ([&](int nr, auto val)
+                                          {
+                                            auto tmp = Du (val);
+                                            auto symdyadic = SymDyadProd(GetGradient(eta),tmp.Value());
+                                            for (int j = 0; j <= of; j++)
+                                              shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
+                                          }));
             }
+          auto symdyad = lx[ftrig]*lx[fmax]*SymDyadProd(eta,eta);  //^= x*(1-x)*(0,0, 0,1) * P(x) * P(y)
+          for (int i = 0; i < of; i++)
+            for (int j = 0; j <= of; j++)
+              {
+                shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*symdyad);
+              }
 
-        else
-          for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
-            for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
+          symdyad = lz[fz]*lz[fmax]*SymDyadProd(lx[ftrig],lx[fmax]);    //^= y*(1-y)*(1,0, 0,0) * P(x)*P(y)
+          for (int j = 0; j < of; j++)
+            for (int i = 0; i <= of; i++)
+              {
+                shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*symdyad);
+              }
+        }
+      
+      //inner shapes
+      int p = order_inner[0];
+      if (p > 0)
+        {
+          
+          INT<4> f = ET_trait<ET_PRISM>::GetFaceSort(0, vnums);
+
+          AutoDiff<3,T> ls = lx[f[0]], le = lx[f[1]], lt = lx[f[2]], lm = lz[0], ln = lz[3];
+
+          Vec<6, AutoDiff<3,T>> symdyadic1 = lm*ln*lt*SymDyadProd(ls,le);
+          Vec<6, AutoDiff<3,T>> symdyadic2 = lm*ln*ls*SymDyadProd(lt,le);
+          Vec<6, AutoDiff<3,T>> symdyadic3 = lm*ln*le*SymDyadProd(ls,lt);
+
+          AutoDiff<3,T> eta = lz[0]-lz[4];
+          LegendrePolynomial (p, eta, leg_w);
+                
+          DubinerBasis::Eval(p-1, ls,le,
+                             SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape,p,leg_w] (size_t nr, auto val)
+                                      {
+                                        for(int j=0; j < p; j++)
+                                          {
+                                            shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*val*symdyadic1);
+                                            shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*val*symdyadic2);
+                                            shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*val*symdyadic3);
+                                          }
+                                      }));
+          
+
+          if(p > 1)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fmax], lx[ftrig], lz[fmax], lz[fz], leg_u[l]* leg_w[k]);
+              Vec<6, AutoDiff<3,T>> symdyadic = ls*le*lt*SymDyadProd(eta,eta);
+              DubinerBasis::Eval(p-2, ls,le,
+                                 SBLambda([symdyadic, &ii, shape,p,leg_w] (size_t nr, auto val)
+                                      {
+                                        for(int j=0; j <= p; j++)
+                                          {
+                                            shape[ii++] = T_REGGE_Shape<3,T>(val*leg_w[j]*symdyadic);
+                                          }
+                                      }));
+
+              DubinerBasis::EvalMult(p-2, ls, le,ls*le*lt, 
+                                     SBLambda
+                                     ([&](int nr, auto val)
+                                      {
+                                        auto tmp = Du(val);
+                                        Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                        for(int j=0; j <= p; j++)
+                                          {
+                                            shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
+                                          }
+                                      }));
+
+              auto xi  = ls-le;
+            	
+              TrigShapesInnerLegendre::CalcSplitted(p+1, xi, lt, leg_u,leg_v);
+              
+              // other combination
+              for (int j = 0; j < p-1; j++)
+                for (int k = 0; k < p-1-j; k++)
+                  {
+                    auto tmp = uDv_minus_vDu (leg_v[k], leg_u[j]);
+                    auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                    for(int l=0; l <= p; l++)
+                      {
+                        shape[ii++] = T_REGGE_Shape<3,T>(leg_w[l]*symdyadic);
+                      }
+                  }
+              // rec_pol * Nedelec0 
+              for (int j = 0; j < p-1; j++)
+                {
+                  auto tmp = wuDv_minus_wvDu (le, ls, leg_v[j]);
+                  auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                  for(int l=0; l <= p; l++)
+                      {
+                        shape[ii++] = T_REGGE_Shape<3,T>(leg_w[l]*symdyadic);
+                      }
+                }
+              
+
             }
-
-
-      }
-
-
-
-      int oi = order_inner[0];
-      leg_u.SetSize(oi+incrorder_zz1+1);
-      leg_v.SetSize(oi+incrorder_zz1+1);
-      leg_w.SetSize(oi+incrorder_xx2+1);
-
-      ScaledLegendrePolynomial(oi+incrorder_zz1, lx[0]-lx[1], lx[0]+lx[1], leg_u);
-      LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lx[2]-1, leg_v);
-      LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lz[0]-1, leg_w);
-
-      for(int k=0; k<=oi+incrorder_xx2; k++)
-      {
-        for(int i = 0; i <= oi-1+incrorder_xx1; i++)
-        {
-          for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[1], lz[0], lz[0], lx[2]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[2], lx[0], lz[0], lz[0], lx[1]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[1], lx[2], lz[0], lz[0], lx[0]*leg_u[i]*leg_v[j]* leg_w[k]);
-          }
         }
-      }
-
-
-      // S_xz
-      for (int i=0; i<=oi; i++)
-      {
-        for (int j=0; j+i<=oi; j++)
-        {
-          for (int k=0; k<=oi; k++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[0], lx[1], lx[0], lx[0], leg_u[i]*leg_v[j]*leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[0], lx[0], lx[1], lx[1], leg_u[i]*leg_v[j]*leg_w[k]);
-          }
-        }
-      }
-
-      // S_zz
-      for(int k=0; k<=oi-2+incrorder_zz2; k++)
-      {
-        AutoDiff<3,T> bubw = leg_w[k]*lz[0]*(1-lz[0]);
-        for(int i=0; i<=oi+incrorder_zz1; i++)
-        {
-          for(int j=0; j<=oi+incrorder_zz1-i; j++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[2], lx[1], lx[1], leg_u[i]*leg_v[j]*bubw);
-          }
-        }
-      }
-
 
     };
 
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type ET_PRISM");
+    }
+
   };
 
-  */
 
   
   template <> class HCurlCurlFE<ET_TET> : public T_HCurlCurlFE<ET_TET> 
@@ -1839,7 +1916,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TRIG>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_QUAD>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TET>;
-  //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_PRISM>;
+  HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_PRISM>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_HEX>;
 }
 
