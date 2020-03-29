@@ -66,6 +66,13 @@ public:
   {
     Cast(fel).CalcMappedShape (mir, mat);
   }
+
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TraceCF(dir->Operator("Gradboundary"))*proxy + dir->Operator("Gradboundary") * proxy;
+  }
   
 };
 
@@ -130,6 +137,13 @@ public:
     }
 
   static string Name() { return "div"; }
+
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TraceCF(dir->Operator("Gradboundary"))*proxy;     
+  }
 
 };
 

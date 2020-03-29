@@ -1515,8 +1515,7 @@ active_dofs : BitArray or None
                     }))
     .def("Trace",  [](shared_ptr<GridFunctionCoefficientFunction> self)
          { return self->GetTrace(); },
-         "take canonical boundary trace.")
-    
+         "take canonical boundary trace.")    
     
     ;
     
@@ -1689,7 +1688,7 @@ definedon : object
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
     .def("Trace",  [](shared_ptr<GF> self)
-         { return self; },
+         { return self->GetTrace(); },
          "take canonical boundary trace. This function is optional, added for consistency with proxies")
 
     .def("Operators", [] (shared_ptr<GF> self)
