@@ -29,6 +29,28 @@ namespace ngfem
       -TransposeCF(dir->Operator("Gradboundary")) * proxy;
   }
 
+  template <int DIM_SPC>
+  shared_ptr<CoefficientFunction> DiffOpGradVectorH1<DIM_SPC> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TransposeCF(dir->Operator("Grad")) * proxy;
+  }
+
+  
+  template <int DIM_SPC>
+  shared_ptr<CoefficientFunction> DiffOpGradBoundaryVectorH1<DIM_SPC> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    int dim = dir->Dimension();
+    auto n = NormalVectorCF(dim);
+    n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+    auto Pn = n * TransposeCF(n);
+    return  Pn * dir->Operator("Gradboundary") * proxy
+      -TransposeCF(dir->Operator("Gradboundary")) * proxy;
+  }
+
 
   template class NGS_DLL_HEADER DiffOpGradient<1>;
   template class NGS_DLL_HEADER DiffOpGradient<2>;
