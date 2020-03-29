@@ -184,17 +184,17 @@ namespace ngfem
     cl_TangentialVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return 0;
     }
-    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
     {
       if (ip.DimSpace() != D)
         throw Exception("illegal dim of tangential vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
     }
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
         string miptype;
         if(code.is_simd)
           miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
@@ -208,11 +208,20 @@ namespace ngfem
     }
 
       using CoefficientFunctionNoDerivative::Evaluate;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     {
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
+    }
+
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      //d/dt tang|t=0 = dX*tang - ((dX*tang)*tang)*tang
+      if (var == shape.get())
+        return dir->Operator("Gradboundary") * const_cast<cl_TangentialVectorCF*>(this)->shared_from_this() - ((dir->Operator("Gradboundary")*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this())*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this())*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this();    
+      return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
   };
 
@@ -265,6 +274,14 @@ namespace ngfem
     {
       values.AddSize(D*D, ir.Size()) = Trans(ir.GetJacobian());
       }*/
+
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == shape.get())
+        throw Exception("Shape derivative not implemented yet for JacobianMatrixCF");
+      return CoefficientFunctionNoDerivative::Diff(var, dir);
+    }
   };
 
   shared_ptr<CoefficientFunction> JacobianMatrixCF (int dim)
@@ -381,6 +398,15 @@ namespace ngfem
         }
       
     }
+
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == shape.get())
+        throw Exception("Shape derivative not implemented yet for WeingartenCF");
+      return CoefficientFunctionNoDerivative::Diff(var, dir);
+    }
+
     
   };
 
