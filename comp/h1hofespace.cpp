@@ -2315,6 +2315,7 @@ into the wirebasket.
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
+          additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2,2>>> ());
           additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<2>>>(), 2));
           additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>>(), 2));
@@ -2330,6 +2331,7 @@ into the wirebasket.
           
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
+          additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
           additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<3>>>(), 3));
           additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>>(), 3));          

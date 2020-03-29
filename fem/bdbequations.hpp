@@ -1761,7 +1761,11 @@ namespace ngfem
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
           feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
         }
-    }    
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
     
   };
 
@@ -1853,7 +1857,11 @@ namespace ngfem
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
           feli.AddGradTrans (mir, y.Rows(i*DIM_SPC, (i+1)*DIM_SPC), x.Range(fel.GetRange(i)));
         }
-    }    
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
 
@@ -1887,6 +1895,10 @@ namespace ngfem
       for (int i = 0; i < DIM_SPC; i++)
         mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(mapped_hmat);
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
   

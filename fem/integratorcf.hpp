@@ -70,6 +70,8 @@ namespace ngfem
     {
       auto deriv = make_shared<SumOfIntegrals>();
       auto grad = dir->Operator("grad");
+      if (!grad)
+        throw Exception("In SumOfIntegrals::DiffShape: dir does not have a grad operator");
       auto divdir = TraceCF(grad);
       auto sgrad = dynamic_pointer_cast<ProxyFunction>(grad)->Trace();
       auto sdivdir = TraceCF(sgrad);
@@ -80,8 +82,8 @@ namespace ngfem
             deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
           else
             {
-              auto n = NormalVectorCF(sgrad->Dimensions()[0]);
-
+              //auto n = NormalVectorCF(sgrad->Dimensions()[0]);
+              
               deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) +
                                                      (sdivdir  /* - InnerProduct(sgrad*n, n) */ ) * icf->cf, icf->dx);
             }
