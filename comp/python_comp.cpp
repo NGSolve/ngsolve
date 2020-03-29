@@ -1514,8 +1514,8 @@ active_dofs : BitArray or None
                       throw Exception("cannot unpickle GridFunctionCoefficientFunction");
                     }))
     .def("Trace",  [](shared_ptr<GridFunctionCoefficientFunction> self)
-         { return self; },
-         "take canonical boundary trace. This function is optional, added for consistency with proxies")
+         { return self->GetTrace(); },
+         "take canonical boundary trace.")
     
     
     ;

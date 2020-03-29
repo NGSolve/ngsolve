@@ -95,7 +95,8 @@ namespace ngcomp
     
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
-    
+
+    shared_ptr<GridFunctionCoefficientFunction> GetTrace() const;
   };
 
 
