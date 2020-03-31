@@ -582,6 +582,13 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
+
+   virtual shared_ptr<CoefficientFunction>
+   DiffShape (shared_ptr<CoefficientFunction> proxy,
+              shared_ptr<CoefficientFunction> dir) const override
+  {
+    return diffop->DiffShape(proxy,dir);
+  }
 };
 
 
