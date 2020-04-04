@@ -1729,7 +1729,7 @@ namespace ngfem
     for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
 
     Vec<3> pnts[6] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 0 },
-                       { 1, 0, 1 }, { 1, 1, 0 }, { 0, 0, 1 }};
+                       { 1, 0, 1 }, { 0, 1, 1 }, { 0, 0, 1 }};
     int facetnr = ip.FacetNr();
     int ii = 9;
 
@@ -1742,7 +1742,7 @@ namespace ngfem
             if (i == facetnr)
               {
                 INT<2> e = GetEdgeSort (i, vnums);
-                T xi = lam[e[1]]-lam[e[0]];
+                T xi = sigma[e[1]] - sigma[e[2]];
                 Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
                 Vec<3,T> tau = mip.GetJacobian()*tauref;
                 tau /= mip.GetMeasure();
