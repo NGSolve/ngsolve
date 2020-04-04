@@ -1514,9 +1514,8 @@ active_dofs : BitArray or None
                       throw Exception("cannot unpickle GridFunctionCoefficientFunction");
                     }))
     .def("Trace",  [](shared_ptr<GridFunctionCoefficientFunction> self)
-         { return self; },
-         "take canonical boundary trace. This function is optional, added for consistency with proxies")
-    
+         { return self->GetTrace(); },
+         "take canonical boundary trace.")    
     
     ;
     
@@ -1698,7 +1697,7 @@ use_simd : bool
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
     .def("Trace",  [](shared_ptr<GF> self)
-         { return self; },
+         { return self->GetTrace(); },
          "take canonical boundary trace. This function is optional, added for consistency with proxies")
 
     .def("Operators", [] (shared_ptr<GF> self)

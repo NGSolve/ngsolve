@@ -100,11 +100,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#ifdef USE_NUMA
-#include <numa.h>
-#include <sched.h>
-#endif
-
 
 #ifdef __CUDACC__
 #define CUDA

@@ -211,7 +211,7 @@ namespace ngcomp
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans (mir, y, x);
-      }
+    }
   };
 
   template<int D>
@@ -843,7 +843,7 @@ namespace ngcomp
                   }
                 break;
               case ET_QUAD:
-                ndof += of[0]*of[0] + (of[0]+2)*(of[0])*2 + 2*of[0] + 1;
+                ndof += of[0]*of[0] + (of[0]+2)*(of[0])*2  + 1;//+ 2*of[0];
                 if(issurfacespace && discontinuous)
                   {
                     for (auto e : ma->GetElEdges(ei))
@@ -874,16 +874,24 @@ namespace ngcomp
                   }
                 break;
               case ET_QUAD:
-                ndof += oi[0]*oi[0] + (oi[0]+2)*(oi[0])*2 + 2*oi[0] + 1;
+                ndof += oi[0]*oi[0] + (oi[0]+2)*(oi[0])*2 + 1;// + 2*oi[0];
                 if(discontinuous)
                   {
                     for (auto f : ma->GetElFacets(ei))
                       ndof += first_facet_dof[f+1] - first_facet_dof[f];            
                   }
-                //throw Exception("Hcurlcurl Quad not implemented yet");
                 break;
               case ET_PRISM:
-                throw Exception("Hcurlcurl Prism not implemented yet");
+                if (oi[0] > 0)
+                  ndof += 3*oi[0]*(oi[0])*(oi[0]+1)/2 + (oi[0]+1)*(2*oi[0]*(oi[0]-1)/2 + (oi[0]+2)*(oi[0]-1)/2);
+                
+                if(discontinuous)
+                  {
+                    for (auto f : ma->GetElFacets(ei))
+                      ndof += first_facet_dof[f+1] - first_facet_dof[f];
+                    for (auto ed : ma->GetElEdges(ei))
+                      ndof += first_edge_dof[ed+1] - first_edge_dof[ed];
+                  }
                 break;
               case ET_HEX:
                 throw Exception("Hcurlcurl Hex not implemented yet");
@@ -919,6 +927,7 @@ namespace ngcomp
             *testout << "Hcurlcurl firsteldof = " << first_element_dof << endl;
           }
       }
+
     
     UpdateCouplingDofArray();
   }
@@ -1106,18 +1115,21 @@ namespace ngcomp
           fe->ComputeNDof();
           return *fe;
         }
-        /*case ET_PRISM:
-          {
+      case ET_PRISM:
+        {
           auto fe = new (alloc) HCurlCurlFE<ET_PRISM> (order);
           fe->SetVertexNumbers (ngel.vertices);
           int ii = 0;
+          for(auto e : ngel.Edges())
+            fe->SetOrderEdge(ii++,order_edge[e][0]);
+          ii = 0;
           for(auto f : ngel.Facets())
-          fe->SetOrderFacet(ii++,order_facet[f]);
+            fe->SetOrderFacet(ii++,order_facet[f]);
           fe->SetOrderInner(order_inner[ei.Nr()]);
           fe->ComputeNDof();
           return *fe;
-          }
-          case ET_HEX:
+        }
+        /*case ET_HEX:
           {
           auto fe = new (alloc) HCurlCurlFE<ET_HEX> (order);
           fe->SetVertexNumbers (ngel.vertices);

@@ -130,7 +130,13 @@ public:
   {
     Cast(fel).AddTrans (mir, y, x);
   }    
-  
+
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TraceCF(dir->Operator("Grad"))*proxy + dir->Operator("Grad") * proxy;
+  }
 };
 
 
@@ -213,8 +219,14 @@ public:
                               BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
     Cast(fel).AddDivTrans (mir, y.Row(0), x);
-  }    
-  
+  }
+
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TraceCF(dir->Operator("Grad"))*proxy;
+  }
   
 };
 
@@ -318,7 +330,7 @@ public:
                               BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
     Cast(fel).AddTrans (mir, y, x);
-  }    
+  }
 };
 
 //Dual diffop
