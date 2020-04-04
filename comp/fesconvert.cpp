@@ -11,15 +11,19 @@ namespace ngcomp
   template<int BSA, int BSB, typename SCAL> using TSPM = SparseMatrix<TM<BSA, BSB, SCAL>>;
 
 
-  template<class SCAL>
+  template<class SCAL, int DIMA, int DIMB>
   shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b,
 					  // int inda, int indb,
 					  shared_ptr<DifferentialOperator> diffop,
 					  VorB vb, const Region * reg, LocalHeap & clh,
+					  shared_ptr<BitArray> range_dofs = nullptr,
 					  bool localop = false, bool parmat = true, bool use_simd = true,
 					  int bonus_intorder_ab = 0, int bonus_intorder_bb = 0)
   {
     /** Solves gfb = diffop(gfa), where gfb is a function from space_b and gfa one from space_a **/
+
+    /** Other Sparse-Matrix templates are not instantiated **/
+    static_assert( (DIMA <= MAX_SYS_DIM) && (DIMB <= MAX_SYS_DIM) && ( (DIMA == DIMB) || (DIMA == 1) || (DIMB == 1) ) );
 
     // /** Compound space is used for element-coloring **/
     // shared_ptr<FESpace> space_a = (*comp_space)[inda];
@@ -93,6 +97,9 @@ namespace ngcomp
     /** Create Matrix Graph **/
     int dima = space_a->GetDimension(), dimb = space_b->GetDimension();
 
+    if ( (dima != DIMA) || (dimb != DIMB) )
+      { throw Exception("Dimensons and template parameters do not match in ConvertOperator!"); }
+
     // if ( (dima != 1) || (dimb != 1) )
       // { throw Exception("multidim space convert TODO!!"); }
 
@@ -122,7 +129,7 @@ namespace ngcomp
 	     space_b->GetDofNrs(eid, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
 	     maxdsb = max2(maxdsb, int(dnums_b.Size()));
 	     for (auto db : dnums_b)
-	       if (IsRegularDof(db))
+	       if (IsRegularDof(db) && (!range_dofs || range_dofs->Test(db)) )
 		 { crnrs.Add(i, db); }
 	   }
 	 });
@@ -152,95 +159,102 @@ namespace ngcomp
     };
 
     shared_ptr<BaseSparseMatrix> bspmat;
-    Switch<MAX_SYS_DIM>(dima-1, [&](auto DAMO) { // note: Switch<N> is [0..N-1], dim is [1..N]
-	constexpr int DIMA1 = DAMO + 1;
-	Switch<MAX_SYS_DIM>(dimb-1, [&](auto DBMO) {
-	    constexpr int DIMA = DIMA1; // otherwise gcc complains about captured value not being a constexpression
-	    constexpr int DIMB = DBMO + 1;
-	    if constexpr( (DIMA == DIMB) ||
-			  ( (DIMA == 1) || (DIMB == 1) ) ) { // so we do not try to instantiate SparseMatrix<Mat<2,3,SCAL>> etc.
-		auto spmat = make_shared<TSPM<DIMB, DIMA, SCAL>>(graph, true);
-	      spmat->AsVector() = 0;
-	      bspmat = spmat;
+    /** This does not work with gcc 7 **/
+    // Switch<MAX_SYS_DIM>(dima-1, [&](auto DAMO) { // note: Switch<N> is [0..N-1], dim is [1..N]
+    // 	constexpr int DIMA1 = DAMO + 1;
+    // 	Switch<MAX_SYS_DIM>(dimb-1, [&](auto DBMO) {
+    // 	    constexpr int DIMA = DIMA1; // otherwise gcc complains about captured value not being a constexpression
+    // 	    constexpr int DIMB = DBMO + 1;
+    // 	    if constexpr( (DIMA == DIMB) ||
+    // 			  ( (DIMA == 1) || (DIMB == 1) ) ) { // so we do not try to instantiate SparseMatrix<Mat<2,3,SCAL>> etc.
+    auto spmat = make_shared<TSPM<DIMB, DIMA, SCAL>>(graph, true);
+    spmat->AsVector() = 0;
+    bspmat = spmat;
 
-	      auto fill_lam = [&](FESpace::Element & fei, LocalHeap & lh) {
-		/** Get Finite Elements / Element Transformation **/
-		const ElementTransformation & eltrans = fei.GetTrafo();
-		ElementId ei(fei);
-		const FiniteElement & fela = space_a->GetFE(ei, lh);
-		const FiniteElement & felb = fei.GetFE();
-		MixedFiniteElement felab (fela, felb);
+    auto fill_lam = [&](FESpace::Element & fei, LocalHeap & lh) {
+      /** Get Finite Elements / Element Transformation **/
+      const ElementTransformation & eltrans = fei.GetTrafo();
+      ElementId ei(fei);
+      const FiniteElement & fela = space_a->GetFE(ei, lh);
+      const FiniteElement & felb = fei.GetFE();
+      MixedFiniteElement felab (fela, felb);
 
-		Array<int> dnums_a(maxds_a, lh), dnums_b(maxds_b, lh);
-		space_a->GetDofNrs(ei, dnums_a, ANY_DOF); // get rid of UNUSED DOFs [[ ACTUALLY, NO, also need right elmat dnrs! ]]
-		space_b->GetDofNrs(ei, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
+      Array<int> dnums_a(maxds_a, lh), dnums_b(maxds_b, lh);
+      space_a->GetDofNrs(ei, dnums_a, ANY_DOF); // get rid of UNUSED DOFs [[ ACTUALLY, NO, also need right elmat dnrs! ]]
+      space_b->GetDofNrs(ei, dnums_b, ANY_DOF); // get rid of UNUSED DOFs
 
-		if (dnums_b.Size() == 0) // (compressed space)
-		  { return; }
+      if (dnums_b.Size() == 0) // (compressed space)
+	{ return; }
 
-		/** Calc mass/dual and mixed mass/dual matrices **/
-		FlatMatrix<SCAL> bamat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh); bamat = 0.0;
-		FlatMatrix<SCAL> bbmat(felb.GetNDof() * dimb, felb.GetNDof() * dimb, lh); bbmat = 0.0;
-		for (auto bfi : ab_bfis)
-		  { bfi->CalcElementMatrixAdd(felab, eltrans, bamat, lh); }
-		for (auto bfi : bb_bfis)
-		  { bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, lh); }
+      /** Calc mass/dual and mixed mass/dual matrices **/
+      FlatMatrix<SCAL> bamat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh); bamat = 0.0;
+      FlatMatrix<SCAL> bbmat(felb.GetNDof() * dimb, felb.GetNDof() * dimb, lh); bbmat = 0.0;
+      for (auto bfi : ab_bfis)
+	{ bfi->CalcElementMatrixAdd(felab, eltrans, bamat, lh); }
+      for (auto bfi : bb_bfis)
+	{ bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, lh); }
 
-		/** Calc Elmat **/
-		// cout << " bamat " << endl << bamat << endl;
-		// cout << " bbmat " << endl << bbmat << endl;
+      /** Calc Elmat **/
+      // cout << " bamat " << endl << bamat << endl;
+      // cout << " bbmat " << endl << bbmat << endl;
 
-		CalcInverse(bbmat); // NOT symmetric!!
+      CalcInverse(bbmat); // NOT symmetric!!
 
-		// cout << " bbmat inv " << endl << bbmat << endl;
+      // cout << " bbmat inv " << endl << bbmat << endl;
 
-		FlatMatrix<SCAL> elmat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh);
-		elmat = bbmat * bamat;
+      FlatMatrix<SCAL> elmat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh);
+      elmat = bbmat * bamat;
 
-		// cout << " elmat " << endl << elmat << endl;
+      // cout << " elmat " << endl << elmat << endl;
 
-		// cout << " add elmat, dofs B " << endl << dnums_b << endl;
-		// cout << " add elmat, dofs A " << endl << dnums_a << endl;
+      // cout << " add elmat, dofs B " << endl << dnums_b << endl;
+      // cout << " add elmat, dofs A " << endl << dnums_a << endl;
 
-		/** Write into SparseMatrix - conversion to block-entries happens in AddElementMatrix, neat! **/
-		spmat->AddElementMatrix(dnums_b, dnums_a, elmat, false); // should be taken care of by fespace coloring
+      /** Set rownrs we do not want to write to -1 **/
+      if (range_dofs != nullptr)
+	for (auto & dnum : dnums_b)
+	  if ( IsRegularDof(dnum) && !range_dofs->Test(dnum))
+	    { dnum = -1; }
 
-		for (auto dnum : dnums_b) // space_b element coloring!!
-		  if (IsRegularDof(dnum))
-		    { cnt_b[dnum]++; }
-	      };
+      /** Write into SparseMatrix - conversion to block-entries happens in AddElementMatrix, neat! **/
+      spmat->AddElementMatrix(dnums_b, dnums_a, elmat, false); // should be taken care of by fespace coloring
 
-	      if (use_simd) {
-		it_els([&](FESpace::Element & ei, LocalHeap & lh) {
-		    try { fill_lam(ei, lh); }
-		    catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
-		      for (auto bfi : ab_bfis)
-			{ bfi->SetSimdEvaluate(false); }
-		      for (auto bfi : bb_bfis)
-			{ bfi->SetSimdEvaluate(false); }
-		      fill_lam(ei, lh);
-		    }
-		  });
-	      }
-	      else // use_simd
-		{ it_els(fill_lam); }
+      for (auto dnum : dnums_b) // space_b element coloring!!
+	if (IsRegularDof(dnum))
+	  { cnt_b[dnum]++; }
+    };
+
+    if (use_simd) {
+      it_els([&](FESpace::Element & ei, LocalHeap & lh) {
+	  try { fill_lam(ei, lh); }
+	  catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
+	    for (auto bfi : ab_bfis)
+	      { bfi->SetSimdEvaluate(false); }
+	    for (auto bfi : bb_bfis)
+	      { bfi->SetSimdEvaluate(false); }
+	    fill_lam(ei, lh);
+	  }
+	});
+    }
+    else // use_simd
+      { it_els(fill_lam); }
 	      
 #ifdef PARALLEL
-	      if (space_b->IsParallel() && !localop)
-		{ AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
+    if (space_b->IsParallel() && !localop)
+      { AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
 #endif
 
-	      for (auto dofnr : Range(spmat->Height())) {
-		if (cnt_b[dofnr] > 1) {
-		  double fac = 1.0 / double(cnt_b[dofnr]);
-		  auto rvs = spmat->GetRowValues(dofnr);
-		  for (auto & v : rvs)
-		    { v *= fac; }
-		}
-	      }
-	      } // (DIMA == 1) || (DIMB == 1)
-	  });
-      });
+    for (auto dofnr : Range(spmat->Height())) {
+      if ( (cnt_b[dofnr] > 1) && ( !range_dofs || range_dofs->Test(dofnr) ) ) {
+	double fac = 1.0 / double(cnt_b[dofnr]);
+	auto rvs = spmat->GetRowValues(dofnr);
+	for (auto & v : rvs)
+	  { v *= fac; }
+      }
+    }
+      // 	      } // (DIMA == 1) || (DIMB == 1)
+      // 	  });
+      // });
 
     shared_ptr<BaseMatrix> op = bspmat;
 
@@ -255,26 +269,36 @@ namespace ngcomp
 
   shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b, VorB vb, LocalHeap & lh,
 					  shared_ptr<DifferentialOperator> diffop, const Region * reg,
-					  bool localop, bool parmat, bool use_simd,
+					  shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
 					  int bonus_intorder_ab, int bonus_intorder_bb)
   {
     if ( space_a->IsComplex() != space_b->IsComplex() ) // b complex and a real could work in principle (?)
       { throw Exception("Cannot convert between complex and non-complex space!"); }
 
-    // Flags flags;
-    // auto cs = make_shared<CompoundFESpace>(space_a->GetMeshAccess(), flags);
-    // cs->AddSpace(space_a);
-    // cs->AddSpace(space_b);
-    // cs->Update();
-    // cs->FinalizeUpdate();
-
     shared_ptr<BaseMatrix> op;
-    if (space_b->IsComplex())
-      { op = ConvertOperator<Complex> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd,
-				       bonus_intorder_ab, bonus_intorder_bb); }
-    else
-      { op = ConvertOperator<double> (space_a, space_b, diffop, vb, reg, lh, localop, parmat, use_simd,
-				      bonus_intorder_ab, bonus_intorder_bb); }
+
+    /** This is a workaround because nested Switch does not work with gcc 7 **/
+    int dima = space_a->GetDimension();
+    Switch<MAX_SYS_DIM>(dima - 1, [&](auto DAMO) {
+	constexpr int DIMA = DAMO + 1;
+	int dimb = space_b->GetDimension();
+	if (dimb == 1) {
+	  if (space_b->IsComplex())
+	    { op = ConvertOperator<Complex, DIMA, 1> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+						      bonus_intorder_ab, bonus_intorder_bb); }
+	  else
+	    { op = ConvertOperator<double, DIMA, 1> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+						     bonus_intorder_ab, bonus_intorder_bb); }
+	}
+	else if (dimb == dima) {
+	  if (space_b->IsComplex())
+	    { op = ConvertOperator<Complex, DIMA, DIMA> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+							 bonus_intorder_ab, bonus_intorder_bb); }
+	  else
+	    { op = ConvertOperator<double, DIMA, DIMA> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+							bonus_intorder_ab, bonus_intorder_bb); }
+	}
+      });
 
     return op;
   } // ConvertOperator
