@@ -239,6 +239,8 @@ namespace ngfem
       
       // RT_0-normal low order shapes
       shape[0] = Tx(fswap);
+
+      if(p < 1) return;
       
       ArrayMem<AutoDiff<2, Tx>, 20> adpol1(p);
       ArrayMem<AutoDiff<2, Tx>, 20> adpol2(p);

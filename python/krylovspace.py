@@ -10,7 +10,8 @@ class CGSolver(BaseMatrix):
     def __init__(self, mat : BaseMatrix, pre : Optional[Preconditioner] = None,
                  freedofs : Optional[BitArray] = None,
                  conjugate : bool = False, tol : float = 1e-12, maxsteps : int = 100,
-                 callback : Optional[Callable[[int, float], None]] = None):
+                 callback : Optional[Callable[[int, float], None]] = None,
+                 printing=False):
         super().__init__()
         self.mat = mat
         assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
@@ -21,8 +22,19 @@ class CGSolver(BaseMatrix):
         self.callback = callback
         self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
         self.logger = logging.getLogger("CGSolver")
+
+        self.printing = printing
+        if printing:
+            self.handler = handler = logging.StreamHandler()
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
+
         self.errors = []
         self.iterations = 0
+
+    def __del__(self):
+        if self.printing:
+            self.logger.removeHandler(self.handler)
 
     def Height(self) -> int:
         return self.mat.width
