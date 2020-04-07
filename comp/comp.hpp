@@ -77,6 +77,7 @@ namespace ngcomp
 #include "reorderedfespace.hpp"
 
 #include "facetsurffespace.hpp"
+#include "fesconvert.hpp"
 
 // #include "bddc.hpp"
 #include "vtkoutput.hpp"

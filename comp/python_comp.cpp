@@ -1618,7 +1618,7 @@ parallel : bool
 )raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB vb, py::object definedon)
+            VorB vb, py::object definedon, bool dualdiffop, bool use_simd)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
@@ -1633,13 +1633,15 @@ parallel : bool
               return;
             }            
             if (reg)
-              SetValues (cf, *self, *reg, NULL, glh);
+              SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd);
             else
-              SetValues (cf, *self, vb, NULL, glh);
+              SetValues (cf, *self, vb, NULL, glh, dualdiffop, use_simd);
          },
-          py::arg("coefficient"),
-          py::arg("VOL_or_BND")=VOL,
-         py::arg("definedon")=DummyArgument(), docu_string(R"raw_string(
+         py::arg("coefficient"),
+         py::arg("VOL_or_BND")=VOL,
+         py::arg("definedon")=DummyArgument(),
+	 py::arg("dual")=false,
+         py::arg("use_simd")=true, docu_string(R"raw_string(
 Set values
 
 Parameters:
@@ -1652,6 +1654,13 @@ VOL_or_BND : ngsolve.comp.VorB
 
 definedon : object
   input definedon region
+
+dual : bool
+  If set to true dual shapes are used, otherwise local L2-projection is used.
+  Default is False.
+
+use_simd : bool
+  If set to false does not use SIMD (for debugging).
 
 )raw_string"))
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
@@ -3580,6 +3589,88 @@ deformation : ngsolve.comp.GridFunction
      ;
 
    
+   m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
+				shared_ptr<ProxyFunction> trial_proxy, optional<Region> definedon,
+				VorB vb, shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
+				int bonus_io_ab, int bonus_io_bb) -> shared_ptr<BaseMatrix> {
+
+	   const Region* reg = NULL;
+	   if( definedon.has_value() ) {
+	     reg = &(*definedon);
+	     vb = VorB(*definedon);
+	   }
+
+	   shared_ptr<BaseMatrix> op;
+
+	   if ( trial_proxy == nullptr )
+	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb); }
+	   else {
+	     if ( !trial_proxy->IsTrialFunction() )
+	       { throw Exception("Need a trial-proxy, but got a test-proxy!"); }
+	     shared_ptr<DifferentialOperator> eval;
+	     if ( vb == VOL )
+	       { eval = trial_proxy->Evaluator(); }
+	     else if ( vb == BND )
+	       { eval = trial_proxy->TraceEvaluator(); }
+	     else if ( vb == BBND )
+	       { eval = trial_proxy->TTraceEvaluator(); }
+	     else
+	       { throw Exception("ProxyFunction has no BBBND evaluator!"); }
+	     if ( eval == nullptr )
+	       { throw Exception(string("trial-proxy has no evaluator vor vb = ") + to_string(vb) + string("!")); }
+	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb);
+	   }
+
+	   return op;
+	 },
+	 py::arg("spacea"), py::arg("spaceb"),
+	 py::arg("trial_proxy") = nullptr,
+	 py::arg("definedon") = nullptr,
+	 py::arg("vb") = VOL,
+	 py::arg("range_dofs") = nullptr,
+	 py::arg("localop") = false,
+	 py::arg("parmat") = true,
+	 py::arg("use_simd") = true,
+	 py::arg("bonus_intorder_ab") = 0,
+	 py::arg("bonus_intorder_bb") = 0,
+     docu_string(R"raw_string(
+A conversion operator between FESpaces. Embedding if spacea is a subspace of spaceb, otherwise an interpolation operator defined by element-wise application of dual shapes (and averaging between elements).
+
+Parameters:
+
+spacea: ngsolve.comp.FESpace
+  the origin space
+
+spaceb: ngsolve.comp.FESpace
+  the goal space
+
+trial_proxy: ngsolve.comp.ProxyFunction
+  (optional) Must be a trial-proxy on spacea. If given, instead of a FE-function funca from spacea, the operator converts trial_proxy(funca) to spaceb.
+
+definedon: object
+  what part of the domain to restrict the operator to
+
+vb: ngsolve.comp.VorB
+  what kind of co-dimension elements to convert on VOL, BND, BBND, ...
+
+range_dofs: ngsolve.ngstd.BitArray
+  Projects out DOFs in the range where range_dofs are not set
+
+localop: bool
+  True -> do not average across MPI boundaries. No effect for non MPI-paralell space. Use carefully!!
+
+parmat: bool
+  If True, returns a ParallelMatrix for MPI-parallel spaces. If False, or for non MPI-parallel spaces, returns a local BaseMatrix.
+
+use_simd:
+  False -> Do not use SIMD for setting up the Matrix. (for debugging purposes).
+
+bonus_intorder_ab/bb: int
+  Bonus integration order for spacea/spaceb and spaceb/spaceb integrals. Can be useful for curved elements. Should only be necessary for
+spacea/spaceb integrals.
+)raw_string")
+	 );
+
    m.def("MPI_Init", [&]()
 	 {
 	   const char * progname = "ngslib";
