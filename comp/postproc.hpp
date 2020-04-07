@@ -40,14 +40,16 @@ namespace ngcomp
 		  GridFunction & u,
 		  VorB vb,
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
-		  LocalHeap & clh);
+		  LocalHeap & clh,
+                  bool dualdiffop = false, bool use_simd = true);
   
   extern NGS_DLL_HEADER 
   void SetValues (shared_ptr<CoefficientFunction> coef,
 		  GridFunction & u,
 		  const Region & region, 
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
-		  LocalHeap & clh);
+		  LocalHeap & clh,
+                  bool dualdiffop = false, bool use_simd = true);
   
 
 

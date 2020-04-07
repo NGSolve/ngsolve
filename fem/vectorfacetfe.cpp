@@ -325,21 +325,12 @@ namespace ngfem
     for (int i = 0; i < ndof; i++)
       shape(i, 0) = shape(i, 1) = 0;
 
-    int first = first_facet_dof[fanr];
-
-    AutoDiff<2> x(ip(0), 0), y(ip(1),1);
-    AutoDiff<2> lami[3] = {x, y, 1-x-y};  
-
-    int p = facet_order[fanr][0];
-    INT<2> e = GetVertexOrientedEdge(fanr);
-    AutoDiff<2> xi = lami[e[1]]-lami[e[0]];
-    
-    LegendrePolynomial (p, xi.Value(), 
-                        SBLambda([&](int nr, double val)
-                                 {
-                                   shape(first+nr,0) = -val * xi.DValue(0);
-                                   shape(first+nr,1) = -val * xi.DValue(1);
-                                 }));
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
+    T_CalcShape(&tip.x, fanr,
+		SBLambda([&](size_t j, auto s) {
+		    shape.Row(j) = s.Value();
+		  })
+		);
   }
 
   template<>
@@ -362,8 +353,8 @@ namespace ngfem
         T xi = lam[e[1]]-lam[e[0]];
         Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
         auto tau = mip.GetJacobian()*tauref;
-        tau /= mip.GetMeasure();
-        
+	tau /= mip.GetMeasure();
+
         LegendrePolynomial::Eval
           (p, xi,
            SBLambda([&] (size_t nr, T val)
@@ -624,9 +615,37 @@ namespace ngfem
   template<typename MIP, typename TFA>  
   void VectorFacetVolumeFE<ET_TET> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_TET VectorFacetVolumeFE ");
-  }
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
 
+    T lam[4] = { x, y, z, 1-x-y-z };
+    Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+
+    int ii = first_facet_dof[fnr];
+
+    // INT<4> fav = GetFaceSort (fnr, vnums);
+    INT<4> fav = GetVertexOrientedFace(fnr);
+    Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
+    Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
+    T xi = lam[fav[0]];
+    T eta = lam[fav[1]];
+    
+    Matrix<T> tauhat(3,2);
+    tauhat.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
+    tauhat.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
+    Matrix<T> tau(3,2);
+    // (dShat/dS) *F * tauhat
+    tau = mip.GetJacobian() * tauhat;
+    tau /= mip.GetMeasure();
+
+    DubinerBasis::Eval(order, xi, eta,
+		       SBLambda([&] (size_t nr, auto val)
+				{
+				  shape[ii++] = tau * Vec<2,T>(val, 0);
+				  shape[ii++] = tau * Vec<2,T>(0, val);
+				}));
+  }
 
   /* **************************** Volume Prism ********************************* */
 

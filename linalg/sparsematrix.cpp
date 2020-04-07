@@ -1966,8 +1966,58 @@ namespace ngla
 
   template class SparseMatrixTM<double>;
   template class SparseMatrixTM<Complex>;
+  template class SparseMatrix<double>;
+  template class SparseMatrix<Complex>;
+  template class SparseMatrix<double, Complex, Complex>;
+  template class SparseMatrixSymmetric<double>;
+  template class SparseMatrixSymmetric<Complex>;
+  template class SparseMatrixSymmetric<double, Complex>;
 
 
+#define INST_A_SPM(N, M, SCAL)			  \
+  template class SparseMatrixTM<Mat<N, M, SCAL>>; \
+  template class SparseMatrix<Mat<N, M, SCAL>>;	  \
+
+#define INST_SPMS(N)					      \
+  INST_A_SPM(N, N, double);				      \
+  INST_A_SPM(1, N, double);				      \
+  INST_A_SPM(N, 1, double);				      \
+  INST_A_SPM(N, N, Complex);				      \
+  INST_A_SPM(1, N, Complex);				      \
+  INST_A_SPM(N, 1, Complex);				      \
+  template class SparseMatrixSymmetric<Mat<N, N, double>>;    \
+  template class SparseMatrixSymmetric<Mat<N, N, Complex>>;
+
+  /** Do this case by hand - otherwise duplicate instantiation N,N and 1,N etc**/
+  INST_A_SPM(1, 1, double);
+  INST_A_SPM(1, 1, Complex);
+  template class SparseMatrixSymmetric<Mat<1, 1, double>>;	\
+  template class SparseMatrixSymmetric<Mat<1, 1, Complex>>;
+
+  
+#if MAX_SYS_DIM >= 2
+  INST_SPMS(2);
+#endif
+#if MAX_SYS_DIM >= 3
+  INST_SPMS(3);
+#endif
+#if MAX_SYS_DIM >= 4
+  INST_SPMS(4);
+#endif
+#if MAX_SYS_DIM >= 5
+  INST_SPMS(5);
+#endif
+#if MAX_SYS_DIM >= 6
+  INST_SPMS(6);
+#endif
+#if MAX_SYS_DIM >= 7
+  INST_SPMS(7);
+#endif
+#if MAX_SYS_DIM >= 8
+  INST_SPMS(8);
+#endif
+
+  /**
 #if MAX_SYS_DIM >= 1
   template class SparseMatrixTM<Mat<1,1,double> >;
   template class SparseMatrixTM<Mat<1,1,Complex> >;
@@ -2000,7 +2050,7 @@ namespace ngla
   template class SparseMatrixTM<Mat<8,8,double> >;
   template class SparseMatrixTM<Mat<8,8,Complex> >;
 #endif
-
+  **/
 
   /*
   template class SparseMatrixSymmetricTM<double>;
@@ -2047,13 +2097,8 @@ namespace ngla
 
 
 
-  template class SparseMatrix<double>;
-  template class SparseMatrix<Complex>;
-  template class SparseMatrix<double, Complex, Complex>;
 
-
-
-
+  /**
 #if MAX_SYS_DIM >= 1
   template class SparseMatrix<Mat<1,1,double> >;
   template class SparseMatrix<Mat<1,1,Complex> >;
@@ -2126,6 +2171,7 @@ namespace ngla
   template class SparseMatrixSymmetric<Mat<8,8,double> >;
   template class SparseMatrixSymmetric<Mat<8,8,Complex> >;
 #endif
+  **/
 
 #ifdef CACHEBLOCKSIZE
   template class SparseMatrixSymmetric<double, Vec<CACHEBLOCKSIZE> >;

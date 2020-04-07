@@ -746,82 +746,49 @@ namespace ngla
   SPARSEMATRIX_EXTERN template class SparseMatrix<double>;
   SPARSEMATRIX_EXTERN template class SparseMatrix<Complex>;
   SPARSEMATRIX_EXTERN template class SparseMatrix<double, Complex, Complex>;
-
-#if MAX_SYS_DIM >= 1
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<1,1,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<2,2,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<3,3,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<4,4,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<5,5,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<6,6,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<7,7,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<8,8,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<8,8,Complex> >;
-#endif
-
-
-
-
-
+  
   SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<double>;
   SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Complex>;
   SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<double, Complex>;
 
+#define INST_SPMS(N) \
+  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<N, N, double>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<1, N, double>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<N, 1, double>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<N, N, Complex>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<1, N, Complex>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<N, 1, Complex>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<N, N, double>>; \
+  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<N, N, Complex>>;
+
 
 #if MAX_SYS_DIM >= 1
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<1,1,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<1,1,Complex> >;
+  INST_SPMS(1);
 #endif
 #if MAX_SYS_DIM >= 2
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<2,2,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<2,2,Complex> >;
+  INST_SPMS(2);
 #endif
 #if MAX_SYS_DIM >= 3
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<3,3,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<3,3,Complex> >;
+  INST_SPMS(3);
 #endif
 #if MAX_SYS_DIM >= 4
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<4,4,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<4,4,Complex> >;
+  INST_SPMS(4);
 #endif
 #if MAX_SYS_DIM >= 5
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<5,5,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<5,5,Complex> >;
+  INST_SPMS(5);
 #endif
 #if MAX_SYS_DIM >= 6
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<6,6,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<6,6,Complex> >;
+  INST_SPMS(6);
 #endif
 #if MAX_SYS_DIM >= 7
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<7,7,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<7,7,Complex> >;
+  INST_SPMS(7);
 #endif
 #if MAX_SYS_DIM >= 8
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<8,8,double> >;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<8,8,Complex> >;
+  INST_SPMS(8);
 #endif
 
+#undef INST_SPMS
+#undef SPARSEMATRIX_EXTERN
 
 
 #endif
