@@ -11,13 +11,14 @@ class CGSolver(BaseMatrix):
                  freedofs : Optional[BitArray] = None,
                  conjugate : bool = False, tol : float = 1e-12, maxsteps : int = 100,
                  callback : Optional[Callable[[int, float], None]] = None,
-                 printing=False):
+                 printing=False, abstol=None):
         super().__init__()
         self.mat = mat
         assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
         self.pre = pre if pre else Projector(freedofs, True)
         self.conjugate = conjugate
         self.tol = tol
+        self.abstol = abstol
         self.maxsteps = maxsteps
         self.callback = callback
         self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
@@ -74,7 +75,10 @@ class CGSolver(BaseMatrix):
         if wdn==err0:
             return u
         lwstart = log(err0)
-        logerrstop = log(err0 * tol)
+        errstop = err0 * tol
+        if self.abstol is not None:
+            errstop = max(errstop, self.abstol)
+        logerrstop = log(errstop)
 
         for it in range(maxsteps):
             self.iterations = it+1
@@ -99,7 +103,7 @@ class CGSolver(BaseMatrix):
             if callback is not None:
                 callback(it,err)
             _SetThreadPercentage(100.*max(it/maxsteps, (log(err)-lwstart)/(logerrstop - lwstart)))
-            if err < tol*err0: break
+            if err < errstop: break
         else:
             self.logger.warning("CG did not converge to tol")
         if old_status[0] != "idle":
