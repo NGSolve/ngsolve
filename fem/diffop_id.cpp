@@ -9,7 +9,7 @@ namespace ngfem
   DiffShape (shared_ptr<CoefficientFunction> proxy,
              shared_ptr<CoefficientFunction> dir)
   {
-    return make_shared<ConstantCoefficientFunction>(0);
+    return ZeroCF(Array<int>());
   }
 
   template <int DIM_SPC, VorB VB>
@@ -17,10 +17,7 @@ namespace ngfem
   DiffShape (shared_ptr<CoefficientFunction> proxy,
              shared_ptr<CoefficientFunction> dir)
   {
-    Array<shared_ptr<CoefficientFunction>> cflist(DIM_SPC);
-    for (int i : Range(DIM_SPC))
-      cflist[i] = make_shared<ConstantCoefficientFunction>(0);
-    return MakeVectorialCoefficientFunction(move(cflist));
+    return ZeroCF(Array<int>( {DIM_SPC} ));
   }
 
   //Why do I need to specify this explicitly? See end of this file...
@@ -30,10 +27,7 @@ namespace ngfem
   DiffShape (shared_ptr<CoefficientFunction> proxy,
              shared_ptr<CoefficientFunction> dir)
   {
-    Array<shared_ptr<CoefficientFunction>> cflist(3);
-    for (int i : Range(3))
-      cflist[i] = make_shared<ConstantCoefficientFunction>(0);
-    return MakeVectorialCoefficientFunction(move(cflist));
+    return ZeroCF(Array<int>( {3} ));
   }
 
 
