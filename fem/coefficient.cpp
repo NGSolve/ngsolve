@@ -3268,9 +3268,25 @@ public:
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
-    throw Exception ("Cofactor doesn't know how to differentiate, use PyCof instead");
-    // if (this == var) return dir;
-    // return (-1)*InverseCF(c1) * c1->Diff(var,dir) * InverseCF(c1);
+    if (this == var) return dir;
+    if (this->Dimensions()[0] <= 2)
+      {
+        //Cofactor Matrix linear in 2d (in 1d Cofactor Matrix = 0)
+        return CofactorCF(c1->Diff(var,dir));
+      }
+    else //3d
+      {
+        //formula follows from Cayley–Hamilton
+        //Cof(A) = 0.5*(tr(A)**2 - tr(A**2))I - tr(A)A^T +(AA)^T
+
+        Array<shared_ptr<CoefficientFunction>> cflist(9);
+        for (int i : Range(9))
+          cflist[i] = make_shared<ConstantCoefficientFunction>(int( i==0 || i==4 || i==8));
+        auto id = MakeVectorialCoefficientFunction(move(cflist));
+        id->SetDimensions( Array({3,3}) );
+        //return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*id - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->Diff(var,dir);
+        return  0.5*(2*TraceCF(c1)*TraceCF(c1->Diff(var,dir)) - TraceCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir)))*id - TraceCF(c1->Diff(var,dir))*TransposeCF(c1) - TraceCF(c1)*TransposeCF(c1->Diff(var,dir)) + TransposeCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir));
+      }
   }  
 };
 
