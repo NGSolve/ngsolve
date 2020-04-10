@@ -743,7 +743,7 @@ namespace ngfem
       }
     */
 
-    if (Dimension() == 1)
+    /*if (Dimension() == 1)
       return make_shared<ConstantCoefficientFunction>(0);
     else
       {
@@ -754,7 +754,9 @@ namespace ngfem
         auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
         zerovec->SetDimensions(Dimensions());
         return zerovec;
-      }
+        }*/
+    return ZeroCF(Dimensions());
+
   }
 
   
