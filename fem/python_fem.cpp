@@ -867,7 +867,7 @@ cf : ngsolve.CoefficientFunction
                   throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
                 int dim = var->Dimension();
                 Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
-                auto zero = make_shared<ConstantCoefficientFunction>(0);
+                auto zero = ZeroCF(Array<int>());//make_shared<ConstantCoefficientFunction>(0);
                 auto one =  make_shared<ConstantCoefficientFunction>(1);
                 for (int i = 0; i < dim; i++)
                   {
