@@ -996,6 +996,7 @@ wait : bool
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
+  m.def("Id", [] (int dim) { return IdentityCF(dim); }, "Identity matrix of given dimension");
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
