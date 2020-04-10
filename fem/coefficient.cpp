@@ -2751,6 +2751,7 @@ public:
 
   void DoArchive(Archive& ar) override
   {
+    BASE::DoArchive(ar);
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -2829,15 +2830,7 @@ public:
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    //When ZeroCF is merged
-    //return ZeroCF(this->Dimensions());
-    int hd = this->Dimensions()[0];
-    Array<shared_ptr<CoefficientFunction>> cflist(hd*hd);
-    for (int i : Range(hd*hd))
-      cflist[i] = make_shared<ConstantCoefficientFunction>(0);
-    auto zero = MakeVectorialCoefficientFunction(move(cflist));
-    zero->SetDimensions( Array({hd,hd}) );
-    return zero;
+    return ZeroCF(this->Dimensions());
   }
 };
   
