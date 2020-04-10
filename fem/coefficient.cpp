@@ -135,20 +135,7 @@ namespace ngfem
     if (var == this)
       return dir;
     else
-      {
-        if (Dimension() == 1)
-          return make_shared<ConstantCoefficientFunction>(0);
-        else
-          {
-            auto zero1 = make_shared<ConstantCoefficientFunction>(0);
-            Array<shared_ptr<CoefficientFunction>> zero_array(Dimension());
-            for (auto & z : zero_array)
-              z = zero1;
-            auto zerovec = MakeVectorialCoefficientFunction(move(zero_array));
-            zerovec->SetDimensions(Dimensions());
-            return zerovec;
-          }
-      }
+      return ZeroCF(Dimensions());
   }
   
   
@@ -998,6 +985,105 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 }
 
 
+class ZeroCoefficientFunction : public T_CoefficientFunction<ZeroCoefficientFunction>
+{
+  using BASE = T_CoefficientFunction<ZeroCoefficientFunction>;
+public:
+  ZeroCoefficientFunction () : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  {
+    SetDimension(1);
+  }
+  
+  ZeroCoefficientFunction (int dim) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  {
+    SetDimension(dim);
+  }
+
+  ZeroCoefficientFunction (int dim1, int dim2) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  {
+    SetDimensions(Array( {dim1,dim2} ));
+  }
+
+  void DoArchive (Archive & archive) override
+  {
+    BASE::DoArchive(archive);
+  }
+
+  virtual void PrintReport (ostream & ost) const override
+  {
+    ost << "ZeroCoefficientFunction";
+  }
+
+  virtual string GetDescription() const override
+  {
+    return "ZeroCF";
+  }
+
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    FlatArray<int> hdims = Dimensions();        
+    for (int i : Range(hdims[0]))
+      for (int j : Range(hdims[1]))
+        code.body += Var(index,i,j).Assign(string("0.0"));
+  }
+
+  using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    if (Dimension() > 1)
+      throw Exception ("ZeroCF:: scalar evaluate for non scalar called");
+    return 0.0;
+  }
+ 
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const override
+  {
+    result = 0.0;
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    values.AddSize(Dimension(), ir.Size()) = T(0.0);
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    values.AddSize(Dimension(), ir.Size()) = T(0.0);
+  }
+
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    values = AutoDiffDiff<1,bool>(false);
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    values = AutoDiffDiff<1,bool>(false);
+  }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    return const_cast<ZeroCoefficientFunction*>(this)->shared_from_this();
+  }
+  
+};
 
 
   
@@ -3758,6 +3844,16 @@ cl_BinaryOpCF<GenericPlus>::Diff(const CoefficientFunction * var,
 
 shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
 {
+  if (c1->GetDescription() == "ZeroCF")
+    {
+      if (c2->GetDescription() == "ZeroCF")
+        return c1;
+      else
+        return c2;
+    }
+  else if (c2->GetDescription() == "ZeroCF")
+    return c1;
+  
   return BinaryOpCF (c1, c2, gen_plus, "+");
 }
 
@@ -3773,6 +3869,16 @@ cl_BinaryOpCF<GenericMinus>::Diff(const CoefficientFunction * var,
 
 shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
 {
+  if (c1->GetDescription() == "ZeroCF")
+    {
+      if (c2->GetDescription() == "ZeroCF")
+        return c1;
+      else
+        return -c2;
+    }
+  else if (c2->GetDescription() == "ZeroCF")
+    return c1;
+
   return BinaryOpCF (c1, c2, gen_minus, "-");
 }
 
@@ -3797,6 +3903,20 @@ cl_BinaryOpCF<GenericDiv>::Diff(const CoefficientFunction * var,
 
 shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
+    if (c1->GetDescription() == "ZeroCF" || c2->GetDescription() == "ZeroCF")
+      {
+        if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
+          return ZeroCF(Array( {c1->Dimensions()[0],c2->Dimensions()[1]} ));
+        if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
+          return ZeroCF(Array( {c1->Dimensions()[0]} ));
+        if (c1->Dimension() > 1 && c2->Dimension() > 1)
+          return ZeroCF(Array<int>( {} ));
+        if ( (c1->Dimension() == 1 && c2->Dimension() > 1) || (c1->Dimension() > 1 && c2->Dimension() == 1))
+          return ZeroCF(Array( {c1->Dimension()*c2->Dimension()} ));
+
+        return ZeroCF(Array<int>( {} ));
+          
+      }
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       return make_shared<MultMatMatCoefficientFunction> (c1, c2);
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
@@ -3827,11 +3947,21 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
   shared_ptr<CoefficientFunction> operator* (double v1, shared_ptr<CoefficientFunction> c2)
   {
+    if (c2->GetDescription() == "ZeroCF")
+      return c2;
+    else if (v1 == double(0))
+      return ZeroCF(c2->Dimensions());
+
     return make_shared<ScaleCoefficientFunction> (v1, c2); 
   }
   
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2)
   {
+    if (c2->GetDescription() == "ZeroCF")
+      return c2;
+    else if (v1 == Complex(0))
+      return ZeroCF(c2->Dimensions());
+
     return make_shared<ScaleCoefficientFunctionC> (v1, c2); 
   }
 
@@ -3860,12 +3990,17 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
   shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1)
   {
+    if (c1->GetDescription() == "ZeroCF")
+      return c1;
     return UnaryOpCF(c1, GenericConj(), GenericConj::Name());
   }
 
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1,
                                                 shared_ptr<CoefficientFunction> c2)
   {
+    if (c1->GetDescription() == "ZeroCF" || c2->GetDescription() == "ZeroCF")
+      return ZeroCF( Array<int>() );
+        
     if (c2->IsComplex())
       {
         auto conj = ConjCF(c2);
@@ -3905,12 +4040,33 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   shared_ptr<CoefficientFunction> CrossProduct (shared_ptr<CoefficientFunction> c1,
                                               shared_ptr<CoefficientFunction> c2)
   {
+    if (c1->GetDescription() == "ZeroCF" || c2->GetDescription() == "ZeroCF")
+      return ZeroCF( c1->Dimensions() );
+    
     return make_shared<CrossProductCoefficientFunction> (c1, c2);
+  }
+
+
+  shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims)
+  {
+    if (dims.Size() == 2)
+      return make_shared<ZeroCoefficientFunction> (dims[0], dims[1]);
+    else if (dims.Size() == 1)
+      return make_shared<ZeroCoefficientFunction> (dims[0]);
+    else
+      return make_shared<ZeroCoefficientFunction> ();
   }
 
 
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef)
   {
+    if (coef->GetDescription() == "ZeroCF")
+      {
+        auto dims = coef->Dimensions();
+        coef->SetDimensions( Array( {dims[1], dims[0]}) );
+        return coef;
+      }
+    
     return make_shared<TransposeCoefficientFunction> (coef);
   }
 
@@ -3946,6 +4102,9 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
   shared_ptr<CoefficientFunction> CofactorCF (shared_ptr<CoefficientFunction> coef)
   {
+    if (coef->GetDescription() == "ZeroCF")
+      return coef;
+    
     auto dims = coef->Dimensions();
     if (dims.Size() != 2) throw Exception("Cofactor of non-matrix");
     if (dims[0] != dims[1]) throw Exception("Cofactor of non-quadratic matrix");
@@ -3961,21 +4120,33 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
   shared_ptr<CoefficientFunction> SymmetricCF (shared_ptr<CoefficientFunction> coef)
   {
+    if (coef->GetDescription() == "ZeroCF")
+      return coef;
+
     return make_shared<SymmetricCoefficientFunction> (coef);
   }
 
   shared_ptr<CoefficientFunction> SkewCF (shared_ptr<CoefficientFunction> coef)
   {
+    if (coef->GetDescription() == "ZeroCF")
+      return coef;
+
     return make_shared<SkewCoefficientFunction> (coef);
   }
 
   shared_ptr<CoefficientFunction> TraceCF (shared_ptr<CoefficientFunction> coef)
   {
+    if (coef->GetDescription() == "ZeroCF")
+      return ZeroCF(Array<int>());
+    
     return make_shared<TraceCoefficientFunction> (coef);
   }
 
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef)
   {
+    if (coef->GetDescription() == "ZeroCF")
+      return ZeroCF(Array<int>());
+    
     if (coef->IsComplex())
       return make_shared<NormCoefficientFunctionC> (coef);
     else
@@ -3989,6 +4160,8 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
+    if (c1->GetDescription() == "ZeroCF")
+      return c1;
     if (c2->Dimensions().Size() == 0 && c1->Dimensions().Size() > 0)
       return (make_shared<ConstantCoefficientFunction>(1.0)/c2)*c1;
     return BinaryOpCF (c1, c2, gen_div, "/");
@@ -4127,11 +4300,13 @@ public:
   }
 };
 
-  shared_ptr<CoefficientFunction>
-  MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
-  {
-    return make_shared<ComponentCoefficientFunction> (c1, comp);
-  }
+shared_ptr<CoefficientFunction>
+MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
+{
+  if (c1->GetDescription() == "ZeroCF")
+    return ZeroCF( Array<int>({}) );
+  return make_shared<ComponentCoefficientFunction> (c1, comp);
+}
 
 
 
@@ -4238,7 +4413,7 @@ public:
         ci_deriv.Append (cf->Diff(var, dir));
       else
         ci_deriv.Append (nullptr);
-    return make_shared<DomainWiseCoefficientFunction> (move (ci_deriv));
+    return MakeDomainWiseCoefficientFunction(move (ci_deriv));
   }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -4361,7 +4536,10 @@ public:
   shared_ptr<CoefficientFunction>
   MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
   {
-    return make_shared<DomainWiseCoefficientFunction> (move (aci));
+    for(auto cf : aci)
+      if (cf->GetDescription() != "ZeroCF")
+        return make_shared<DomainWiseCoefficientFunction> (move (aci));
+    return ZeroCF(Array<int>({static_cast<int>(aci.Size())}));
   }
 
 
@@ -5124,7 +5302,7 @@ public:
         diff_ci.Append (cf->Diff(var, dir));
       else
         diff_ci.Append (nullptr);
-    auto veccf = make_shared<VectorialCoefficientFunction> (move(diff_ci));
+    auto veccf = MakeVectorialCoefficientFunction (move(diff_ci));
     veccf->SetDimensions(Dimensions());
     return veccf;
   }  
@@ -5154,7 +5332,10 @@ public:
   shared_ptr<CoefficientFunction>
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
   {
-    return make_shared<VectorialCoefficientFunction> (move (aci));
+    for (auto cf : aci)
+      if (cf->GetDescription() != "ZeroCF")
+        return make_shared<VectorialCoefficientFunction> (move (aci));
+    return ZeroCF( Array<int>( {static_cast<int>(aci.Size())}) );
   }
 
 
