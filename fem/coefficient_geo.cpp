@@ -220,7 +220,7 @@ namespace ngfem
     {
       //d/dt tang|t=0 = dX*tang - ((dX*tang)*tang)*tang
       if (var == shape.get())
-        return dir->Operator("Gradboundary") * const_cast<cl_TangentialVectorCF*>(this)->shared_from_this() - ((dir->Operator("Gradboundary")*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this())*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this())*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this();    
+        return dir->Operator("Gradboundary") * const_cast<cl_TangentialVectorCF*>(this)->shared_from_this() - InnerProduct(dir->Operator("Gradboundary")*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this(),const_cast<cl_TangentialVectorCF*>(this)->shared_from_this())*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this();    
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
   };
@@ -403,7 +403,21 @@ namespace ngfem
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
       if (var == shape.get())
-        throw Exception("Shape derivative not implemented yet for WeingartenCF");
+        {
+          int dim = dir->Dimension();
+          auto n = NormalVectorCF(dim);
+          n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+          auto Pn = n * TransposeCF(n);
+
+          auto WG = const_cast<cl_WeingartenCF*>(this)->shared_from_this();
+          auto dX = dir->Operator("Gradboundary");
+          Array<shared_ptr<CoefficientFunction>> cflist(1);
+          cflist[0] = TransposeCF(dir->Operator("hesseboundary"))*n;
+          auto Hn2 = MakeVectorialCoefficientFunction(move(cflist));
+          Hn2->SetDimensions( Array({dim,dim}) );
+          
+          return -Hn2 - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
+        }
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
 
