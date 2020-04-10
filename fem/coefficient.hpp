@@ -1296,6 +1296,8 @@ public:
 shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                           OP lam, /* OPC lamc, */ string name="undefined")
 {
+  if (c1->GetDescription() == "ZeroCF")
+    return c1;
   return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
 }
 
@@ -1656,6 +1658,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> IdentityCF (int dim);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
