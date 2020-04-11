@@ -6860,6 +6860,8 @@ static RegisterClassForArchive<NormCoefficientFunction, CoefficientFunction> reg
 static RegisterClassForArchive<NormCoefficientFunctionC, CoefficientFunction> regnormcfc;
 static RegisterClassForArchive<MultMatMatCoefficientFunction, CoefficientFunction> regmultmatmatcf;
 static RegisterClassForArchive<MultMatVecCoefficientFunction, CoefficientFunction> regmultmatveccf;
+static RegisterClassForArchive<ZeroCoefficientFunction, CoefficientFunction> regzerocf;
+static RegisterClassForArchive<IdentityCoefficientFunction, CoefficientFunction> regidentitycf;
 static RegisterClassForArchive<TransposeCoefficientFunction, CoefficientFunction> regtransposecf;
 static RegisterClassForArchive<SymmetricCoefficientFunction, CoefficientFunction> regsymmetriccf;
 static RegisterClassForArchive<SkewCoefficientFunction, CoefficientFunction> regskewcf;
