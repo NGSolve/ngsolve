@@ -936,7 +936,32 @@ namespace ngfem
              shared_ptr<CoefficientFunction> dir) const 
   {
     throw Exception("DiffShape not implemented for VectorDifferentialOp");
-    // return TransposeCF (diffop->DiffShape(TransposeCF(proxy), dir));
+
+    /*cout << "diffopname = " << diffop->Name() << endl;
+    cout << "diffop dims = " << diffop->Dimensions() << endl;
+    cout << "proxy =";
+    proxy->PrintReport(cout);
+    cout << "dim = " << dim << endl;
+    cout << "diffop dim = " << diffop->Dim() << endl;*/
+
+    int ddim = diffop->Dim();
+    Array<shared_ptr<CoefficientFunction>> proxys(dim);
+    
+    for (int i = 0; i < dim; i++)
+      {
+        Array<shared_ptr<CoefficientFunction>> tmp(ddim);
+        for(int j = 0; j < diffop->Dim(); j++)
+            tmp[j] = MakeComponentCoefficientFunction(proxy,i*dim+j);
+        proxys[i] = MakeVectorialCoefficientFunction(move(tmp));
+      }
+    
+    Array<shared_ptr<CoefficientFunction>> cflist(dim);
+    for (int i = 0; i < dim; i++)
+        cflist[i] = diffop->DiffShape(proxys[i], dir);
+    auto result = MakeVectorialCoefficientFunction(move(cflist));
+    result->SetDimensions( Array({dim,diffop->Dim()}) );
+
+    return result;
   }
 
 
