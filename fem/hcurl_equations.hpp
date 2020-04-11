@@ -562,7 +562,13 @@ namespace ngfem
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir)
     {
-      return -TransposeCF(dir->Operator("Gradboundary")) * proxy;      
+      int dim = dir->Dimension();
+      auto n = NormalVectorCF(dim);
+      n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+      auto Pn = n * TransposeCF(n);
+      
+      return (2*SymmetricCF(Pn * dir->Operator("Gradboundary"))
+            -TransposeCF(dir->Operator("Gradboundary"))) * proxy;      
     }
     
   };
@@ -656,6 +662,14 @@ public:
   {
     y.Range(0,fel.GetNDof()) =
       ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
+  }
+
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    auto grad = dir->Operator("Gradboundary");
+    return -TraceCF(grad)*proxy + grad * proxy;
   }
 };
 
