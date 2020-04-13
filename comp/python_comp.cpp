@@ -2397,7 +2397,7 @@ integrator : ngsolve.fem.LFI
   
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
-  auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix, NGS_Object>(m, "Preconditioner");
+  auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix, NGS_Object>(m, "Preconditioner", py::dynamic_attr());
   prec_class
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
