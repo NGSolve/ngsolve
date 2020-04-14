@@ -44,7 +44,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False):
     """
     Generate a structured 2D mesh
 
@@ -69,6 +69,15 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
       Mapping to transform the generated points. If None, the identity mapping is used.
     
 
+    bbpts : list
+      List of points which should be handled as BBND and are named with bbnames. The mesh (nx, ny and mapping) must be constructed in such a way that the bbpts coincide with generated points. Otherwise an Exception is thrown.
+
+    bbnames : list
+      List of bbnd names as strings. Size must coincide with size of bbpts. Otherwise an Exception is thrown.
+
+    flip_triangles : bool
+      If set tot True together with quads=False the quads are cut the other way round
+
     Returns
     -------
     (ngsolve.mesh)
@@ -77,6 +86,16 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
     """
     mesh = Mesh()
     mesh.dim=2
+
+    if (bbpts and bbnames) and len(bbpts) != len(bbnames):
+        raise Exception("Lenght of bbnames does not coincide with length of bbpts!")
+
+    found = []
+    indbbpts = []
+    if bbpts:
+        for i in range(len(bbpts)):
+            found.append(False)
+            indbbpts.append(None)
 
     pids = []
     if periodic_y:
@@ -126,8 +145,12 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
                     el.curved=False
                 mesh.Add(el)
             else:
-                pnum1 = [base,base+1,base+nx+1]
-                pnum2 = [base+1,base+nx+2,base+nx+1]
+                if flip_triangles:
+                    pnum1 = [base,base+1,base+nx+2]
+                    pnum2 = [base,base+nx+2,base+nx+1]
+                else:
+                    pnum1 = [base,base+1,base+nx+1]
+                    pnum2 = [base+1,base+nx+2,base+nx+1]
                 elpids1 = [pids[p] for p in pnum1]
                 elpids2 = [pids[p] for p in pnum2]
                 mesh.Add(Element2D(idx_dom,elpids1)) 
@@ -158,6 +181,21 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
             x,y = mapping(x,y)
             p[0] = x
             p[1] = y
+
+    for k in range(len(found)):
+        i = 0
+        for p in mesh.Points():
+            if abs(p.p[0]-bbpts[k][0])+abs(p.p[1]-bbpts[k][1]) < 1e-6:
+                indbbpts[k] = pids[i]
+                found[k] = True
+            i += 1
+    for k in range(len(found)):
+        if found[k] == False:
+            raise Exception("bbpnt[",k,"] not in structured mesh!")
+
+    for i in range(len(indbbpts)):
+        mesh.Add(Element0D(indbbpts[i], index=i+1))
+        mesh.SetCD2Name(i+1, bbnames[i])
             
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
@@ -491,7 +529,7 @@ if __name__ == "__main__":
 
 
 
-def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondorder=False, bbbpts=None, bbbnames=None):
+def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondorder=False, bbbpts=None, bbbnames=None, flip_triangles=False):
     """
     Generate a structured 2D surface mesh in 3D
 
@@ -517,6 +555,9 @@ def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondor
 
     bbbnames : list
       List of bbbnd names as strings. Size must coincide with size of bbbpts. Otherwise an Exception is thrown.
+
+    flip_triangles : bool
+      If set tot True together with quads=False the quads are cut the other way round
 
     Returns
     -------
@@ -555,8 +596,12 @@ def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondor
                     el.curved=False
                 mesh.Add(el)
             else:
-                pnum1 = [base,base+1,base+nx+1]
-                pnum2 = [base+1,base+nx+2,base+nx+1]
+                if flip_triangles:
+                    pnum1 = [base,base+1,base+nx+2]
+                    pnum2 = [base,base+nx+2,base+nx+1]
+                else:
+                    pnum1 = [base,base+1,base+nx+1]
+                    pnum2 = [base+1,base+nx+2,base+nx+1]
                 elpids1 = [pids[p] for p in pnum1]
                 elpids2 = [pids[p] for p in pnum2]
                 mesh.Add(Element2D(1,elpids1)) 
