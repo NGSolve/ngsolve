@@ -2131,9 +2131,12 @@ alpha : double
 
   m.def("VoxelCoefficient",
         [](py::tuple pystart, py::tuple pyend, py::array values,
-           bool linear)
+           bool linear, py::object trafocf)
         -> shared_ptr<CoefficientFunction>
         {
+          shared_ptr<CoefficientFunction> trafo;
+          try { trafo = MakeCoefficient(trafocf); }
+          catch(...) { trafo=nullptr; }
           Array<string> allowed_types = { "float64", "complex128" };
           if(!allowed_types.Contains(py::cast<string>(values.dtype().attr("name"))))
             throw Exception("Only float64 and complex128 dtype arrays allowed!");
@@ -2153,16 +2156,16 @@ alpha : double
               for(auto i : Range(vals))
                 vals[i] = c_array.at(i);
               return make_shared<VoxelCoefficientFunction<Complex>>
-                (start, end, dim_vals, move(vals), linear);
+                (start, end, dim_vals, move(vals), linear, trafo);
             }
           auto d_array = py::cast<py::array_t<double>>(values.attr("ravel")());
           Array<double> vals(values.size());
           for(auto i : Range(vals))
             vals[i] = d_array.at(i);
           return make_shared<VoxelCoefficientFunction<double>>
-            (start, end, dim_vals, move(vals), linear);
+              (start, end, dim_vals, move(vals), linear, trafo);
         }, py::arg("start"), py::arg("end"), py::arg("values"),
-        py::arg("linear")=true, R"delimiter(CoefficientFunction defined on a grid.
+        py::arg("linear")=true, py::arg("trafocf")=DummyArgument(), R"delimiter(CoefficientFunction defined on a grid.
 
 Start and end mark the cartesian boundary of domain. The function will be continued by a constant function outside of this box. Inside a cartesian grid will be created by the dimensions of the numpy input array 'values'. This array must have the dimensions of the mesh and the values stored as:
 x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
