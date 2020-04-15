@@ -7,6 +7,9 @@ namespace ngfem
   T VoxelCoefficientFunction<T> :: T_Evaluate(const BaseMappedIntegrationPoint& ip) const
   {
     auto pnt = ip.GetPoint();
+    if (trafocf)
+      trafocf->Evaluate(ip,pnt);
+    
     ArrayMem<size_t, 3> ind;
     ArrayMem<double, 3> weight;
     for(auto i : Range(start))
