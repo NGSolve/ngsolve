@@ -685,22 +685,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                              {
                                Array<MeshPoint> points;
                                points.SetAllocSize(self->GetNE() * rule.Size());
-                               LocalHeap lh(100000, "MapElements");
                                for(auto el : self->Elements(vb))
-                                 {
-                                   HeapReset hr(lh);
-                                   auto& trafo = self->GetTrafo(el, lh);
-                                   auto& mir = trafo(rule, lh);
-                                   for(const auto& mip : mir)
-                                     {
-                                       // auto p = mip.GetPoint();
-                                       auto p = mip.IP();
-                                       double x = p(0);
-                                       double y = self->GetDimension() > 1 ? p(1) : 0.;
-                                       double z = self->GetDimension() > 2 ? p(2) : 0.;
-                                       points.Append({x, y, z, self, vb, int(el.Nr())});
-                                     }
-                                 }
+                                 for(const auto& p : rule)
+                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
                                return MoveToNumpyArray(points);
                              })
 
