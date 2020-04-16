@@ -693,10 +693,11 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                                    auto& mir = trafo(rule, lh);
                                    for(const auto& mip : mir)
                                      {
-                                       auto p = mip.GetPoint();
-                                       double x = p[0];
-                                       double y = self->GetDimension() > 1 ? p[1] : 0.;
-                                       double z = self->GetDimension() > 2 ? p[2] : 0.;
+                                       // auto p = mip.GetPoint();
+                                       auto p = mip.IP();
+                                       double x = p(0);
+                                       double y = self->GetDimension() > 1 ? p(1) : 0.;
+                                       double z = self->GetDimension() > 2 ? p(2) : 0.;
                                        points.Append({x, y, z, self, vb, int(el.Nr())});
                                      }
                                  }
