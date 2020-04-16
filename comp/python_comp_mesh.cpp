@@ -680,6 +680,28 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
 	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
+    .def("MapToAllElements", [](MeshAccess* self, IntegrationRule& rule, VorB vb)
+         -> py::array_t<MeshPoint>
+                             {
+                               Array<MeshPoint> points;
+                               points.SetAllocSize(self->GetNE() * rule.Size());
+                               LocalHeap lh(100000, "MapElements");
+                               for(auto el : self->Elements(vb))
+                                 {
+                                   HeapReset hr(lh);
+                                   auto& trafo = self->GetTrafo(el, lh);
+                                   auto& mir = trafo(rule, lh);
+                                   for(const auto& mip : mir)
+                                     {
+                                       auto p = mip.GetPoint();
+                                       double x = p[0];
+                                       double y = self->GetDimension() > 1 ? p[1] : 0.;
+                                       double z = self->GetDimension() > 2 ? p[2] : 0.;
+                                       points.Append({x, y, z, self, vb, int(el.Nr())});
+                                     }
+                                 }
+                               return MoveToNumpyArray(points);
+                             })
 
     ;
     PyDefVectorized(mesh_access, "__call__",
