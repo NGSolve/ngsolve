@@ -1472,6 +1472,7 @@ weights : list
                                             throw py::index_error();
                                           return ir[nr];
                                         }, py::arg("nr"), "Return integration point at given position")
+    .def("__len__", &IntegrationRule::Size)
     .def("Integrate", [](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
