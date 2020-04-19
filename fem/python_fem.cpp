@@ -1022,14 +1022,31 @@ wait : bool
            if (!self->IsComplex())
              {
                Array<double> vals(npoints * self->Dimension());
-               ParallelFor(Range(npoints), [&](size_t i)
+               ParallelForRange(Range(npoints), [&](IntRange r)
                            {
-                             LocalHeapMem<1000> lh("CF evaluate");
-                             auto& mp = pts(i);
-                             auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
-                             auto& mip = trafo(IntegrationPoint(mp.x,mp.y,mp.z),lh);
-                             FlatVector<double> fv(self->Dimension(), &vals[i*self->Dimension()]);
-                             self->Evaluate(mip, fv);
+                             LocalHeapMem<10000> lh("CF evaluate");
+                             IntegrationRule ir;
+
+                             for (auto i = r.begin(); i < r.end();  )
+                               {
+                                 HeapReset hr(lh);
+                                 auto& mp = pts(i);
+                                 auto ei = ElementId(mp.vb, mp.nr);
+                                 auto& trafo = mp.mesh->GetTrafo(ei, lh);
+                                 ir.SetSize(0);
+
+                                 auto first = i;
+                                 ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+                                 i++;
+                                 while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+16)
+                                   {
+                                     ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                     i++;
+                                   }
+                                 auto& mir = trafo(ir, lh);
+                                 FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                 self->Evaluate(mir, fm);
+                               }
                            });
                np_array = MoveToNumpyArray(vals);
              }
