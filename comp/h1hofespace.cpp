@@ -2331,8 +2331,8 @@ into the wirebasket.
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
-          //flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();
-          flux_evaluator[BND] = make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>(), 3);
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();
+          //flux_evaluator[BND] = make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>(), 3);
           evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>>();
           
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
