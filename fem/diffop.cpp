@@ -935,15 +935,6 @@ namespace ngfem
   DiffShape (shared_ptr<CoefficientFunction> proxy,
              shared_ptr<CoefficientFunction> dir) const 
   {
-    throw Exception("DiffShape not implemented for VectorDifferentialOp");
-
-    /*cout << "diffopname = " << diffop->Name() << endl;
-    cout << "diffop dims = " << diffop->Dimensions() << endl;
-    cout << "proxy =";
-    proxy->PrintReport(cout);
-    cout << "dim = " << dim << endl;
-    cout << "diffop dim = " << diffop->Dim() << endl;*/
-
     int ddim = diffop->Dim();
     Array<shared_ptr<CoefficientFunction>> proxys(dim);
     
