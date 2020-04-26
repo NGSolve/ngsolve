@@ -37,6 +37,9 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
 
 void CutElement3d()
 {
+
+#define ORDER 2 // TODO: define order outside
+
   int sumback = 0;
   if (dot(clipping_plane, vec4(p0.xyz,1.0)) > 0.0) sumback++;
   if (dot(clipping_plane, vec4(p1.xyz,1.0)) > 0.0) sumback++;
@@ -45,7 +48,7 @@ void CutElement3d()
 
 #if ORDER==1
   if (sumback == 0 || sumback == 4)
-    return;          
+    return;
 #else // ORDER==1
   if (dot(clipping_plane, vec4(p03.xyz,1.0)) > 0.0) sumback++;
   if (dot(clipping_plane, vec4(p13.xyz,1.0)) > 0.0) sumback++;
@@ -53,7 +56,7 @@ void CutElement3d()
   if (dot(clipping_plane, vec4(p01.xyz,1.0)) > 0.0) sumback++;
   if (dot(clipping_plane, vec4(p02.xyz,1.0)) > 0.0) sumback++;
   if (dot(clipping_plane, vec4(p12.xyz,1.0)) > 0.0) sumback++;
-  if (sumback == 0 || sumback == 10) return;          
+  if (sumback == 0 || sumback == 10) return;
 #endif
 
 
@@ -80,7 +83,6 @@ void CutElement3d()
     vec4 p[4];
     vec4 p4;
 
-#define ORDER 2 // TODO: define order outside
 #if ORDER==1
     for (int i=0; i<4; ++i)
       p[i] = psub[i].x*p0 + psub[i].y*p1 + psub[i].z*p2 + psub[i].w*p3;
