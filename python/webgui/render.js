@@ -265,28 +265,6 @@ function init () {
     }
 
 
-//     console.log("Do some timings:")
-//     var t0 = performance.now();
-//     var n = 100*1000*1000;
-//     var veca = new Float32Array(n);
-//     var vecb = new Float32Array(n);
-//     for (var i = 0; i < n; i++) {
-//         veca[i] = 1;
-//         vecb[i] = i;
-//     }
-//     var t1 = performance.now();
-//     console.log("vector reset " + (t1 - t0) + " milliseconds.");
-//     var sum = 0.0;
-//     console.log ("do inner");
-//     for (var j = 0; j < n; j++)
-//         sum += veca[j] * vecb[j];
-//     var t2 = performance.now();
-//     console.log("inner product: sum = " + sum + " time = " + (t2 - t1) + " milliseconds.");
-//     for (var j = 0; j < n; j++)
-//         veca[j] += 3.7 * vecb[j];
-//     var t3 = performance.now();
-//     console.log("daxpy time = " + (t3 - t2) + " milliseconds.");
-
   animate();
 }
 
@@ -523,111 +501,59 @@ function createClippingPlaneMesh(data)
     });
 
 
-    const sd = 10;
+    const sd = 20;    // with texture: only 10
     const nverts = 6*sd*sd*sd;
-    var vertid = new Float32Array(nverts);
+    var vertid = new Float32Array(4*nverts);
     const D = render_data.funcdim;
-    for(var k=0; k<nverts; k++)
-        vertid[k] = k;
-
-    var subtets = new Float32Array(3*4*nverts);
 
     var ii = 0;
+    var kk = 0;
     for (var i=0; i<sd; i++) {
 
       for (var j=0; j<=i; j++) {
-        for (var k=0; k<=i-j; k++) {
-            subtets[ii++] = j;
-            subtets[ii++] = k;
-            subtets[ii++] = i-j-k;
-
-            subtets[ii++] = j+1;
-            subtets[ii++] = k;
-            subtets[ii++] = i-j-k;
-
-            subtets[ii++] = j;
-            subtets[ii++] = k+1;
-            subtets[ii++] = i-j-k;
-
-            subtets[ii++] = j;
-            subtets[ii++] = k;
-            subtets[ii++] = i-j-k+1;
+          for (var k=0; k<=i-j; k++) {
+              for (var l = 0; l < 6; l++) {
+                  vertid[4*kk+0] = 0*6 + l;
+                  vertid[4*kk+1] = j;
+                  vertid[4*kk+2] = k;
+                  vertid[4*kk+3] = i-j-k;
+                  kk++;
+              }
           }
         }
-
+        
       for (var j=0; j<=i-1; j++) {
-        for (var k=0; k<=i-1-j; k++) {
-            var poct = new Array(6);
-
-            poct[0] = new Array(3);
-            poct[0][0] = j    +1;
-            poct[0][1] = k      ;
-            poct[0][2] = i-j-k-1;
-
-            poct[1] = new Array(3);
-            poct[1][0] = j      ;
-            poct[1][1] = k    +1;
-            poct[1][2] = i-j-k-1+1;
-
-            poct[2] = new Array(3);
-            poct[2][0] = j      ;
-            poct[2][1] = k      ;
-            poct[2][2] = i-j-k-1+1;
-
-            poct[3] = new Array(3);
-            poct[3][0] = j    +1;
-            poct[3][1] = k      ;
-            poct[3][2] = i-j-k-1+1;
-
-            poct[4] = new Array(3);
-            poct[4][0] = j    +1;
-            poct[4][1] = k    +1;
-            poct[4][2] = i-j-k-1;
-
-            poct[5] = new Array(3);
-            poct[5][0] = j      ;
-            poct[5][1] = k    +1;
-            poct[5][2] = i-j-k-1;
-
-            // diag 0-1
-          // tet 0123, 0134, 0145, 0152
-          var p = [0,1,2,3, 0,1,3,4, 0,1,4,5, 0,1,5,2];
-          for (var pi=0; pi<16; pi++)
-            for(var jj =0; jj<3; jj++)
-              subtets[ii++] = poct[p[pi]][jj];
+          for (var k=0; k<=i-1-j; k++) {
+              for (var m = 0; m < 4; m++)
+                  for (var l = 0; l < 6; l++) {
+                      vertid[4*kk+0] = (m+1)*6 + l;                    
+                      vertid[4*kk+1] = j;
+                      vertid[4*kk+2] = k;
+                      vertid[4*kk+3] = i-j-k-1;
+                      kk++;
+                  }
           }
-        }
-
+      }
+        
       // with i>2 hexes fit into subdivided tets, add tet with point (1,1,1) in hex
       for (var j=0; j<=i-2; j++) {
         for (var k=0; k<=i-2-j; k++) {
-            subtets[ii++] = j+1;
-            subtets[ii++] = k+1;
-            subtets[ii++] = i-2-j-k+1;
+            for (var l = 0; l < 6; l++) {
+                vertid[4*kk+0] = 5*6 + l;                                    
+                vertid[4*kk+1] = j+1;
+                vertid[4*kk+2] = k+1;
+                vertid[4*kk+3] = i-1-j-k;
+                kk++;
+            }
 
-            subtets[ii++] = j;
-            subtets[ii++] = k+1;
-            subtets[ii++] = i-2-j-k+1;
-
-            subtets[ii++] = j+1;
-            subtets[ii++] = k;
-            subtets[ii++] = i-2-j-k+1;
-
-            subtets[ii++] = j+1;
-            subtets[ii++] = k+1;
-            subtets[ii++] = i-2-j-k;
         }
       }
 
     }
 
-  var subtets_tex = new THREE.DataTexture( subtets, 4*10*10*10, 1, THREE.RGBFormat, THREE.FloatType );
-  uniforms.subtets_tex = new THREE.Uniform(subtets_tex);
-
-
     var geo = new THREE.InstancedBufferGeometry();
-    geo.setAttribute( 'position', new THREE.Float32BufferAttribute( vertid, 1 ));
-    geo.setAttribute( 'vertid',   new THREE.Float32BufferAttribute( vertid, 1 ));
+    geo.setAttribute( 'position', new THREE.Float32BufferAttribute( vertid, 4 ));
+    geo.setAttribute( 'vertid',   new THREE.Float32BufferAttribute( vertid, 4 ));
 
     var ii = 0;
     geo.setAttribute( 'p0',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );

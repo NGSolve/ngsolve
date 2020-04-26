@@ -1,4 +1,3 @@
-uniform sampler2D subtets_tex;
 uniform int n_segments;
 
 varying vec3 p_;
@@ -21,7 +20,7 @@ attribute vec3 v1;
 attribute vec3 v2;
 attribute vec3 v3;
 
-attribute float vertid;
+attribute vec4 vertid;
 
 void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val1)
 {
@@ -60,25 +59,55 @@ void CutElement3d()
 #endif
 
 
-  int ivertid = int(vertid);
+  float dx = 1.0/float(n_segments);
 
-  int isubtet = ivertid/6;
+  int ivertid = int(vertid.x);
+  vec3 anchor = vertid.yzw * dx;
+  
   int vert = ivertid - (ivertid/3)*3;
   int trig = ivertid/3;
-
   trig = trig - (trig/2)*2;
+  int classnr = ivertid/6;
+
 
   vec4 psub[4];
-  float sd = 10.;
-
-  for (int i=0; i<4; ++i)
-  {
-    float s = (0.5+float(4*isubtet+i))/(4.*sd*sd*sd);
-    psub[i].xyz = texture2D(subtets_tex, vec2(s, 0.5)).xyz/float(n_segments);
-    psub[i].w = 1.0-psub[i].x-psub[i].y-psub[i].z;
+  if (classnr == 0) {
+    psub[0].xyz = anchor;
+    psub[1].xyz = anchor+vec3(dx,0.0,0.0);
+    psub[2].xyz = anchor+vec3(0.0,dx,0.0);
+    psub[3].xyz = anchor+vec3(0.0,0.0,dx);
+  } else if (classnr == 1) {
+    psub[0].xyz = anchor+vec3(dx,0.0,0.0);
+    psub[1].xyz = anchor+vec3(0.0,dx,dx);
+    psub[2].xyz = anchor+vec3(0.0,0.0,dx);
+    psub[3].xyz = anchor+vec3(dx,0.0,dx);
+  } else if (classnr == 2) {
+    psub[0].xyz = anchor+vec3(dx,0.0,0.0);
+    psub[1].xyz = anchor+vec3(0.0,dx,dx);
+    psub[2].xyz = anchor+vec3(dx,0.0,dx);
+    psub[3].xyz = anchor+vec3(dx,dx,0.0);
+  } else if (classnr == 3) {
+    psub[0].xyz = anchor+vec3(dx,0.0,0.0);
+    psub[1].xyz = anchor+vec3(0.0,dx,dx);
+    psub[2].xyz = anchor+vec3(dx,dx,0.0);
+    psub[3].xyz = anchor+vec3(0.0,dx,0.0);
+  } else if (classnr == 4) {
+    psub[0].xyz = anchor+vec3(dx,0.0,0.0);
+    psub[1].xyz = anchor+vec3(0.0,dx,dx);
+    psub[2].xyz = anchor+vec3(0.0,dx,0.0);
+    psub[3].xyz = anchor+vec3(0.0,0.0,dx);
+  } else if (classnr == 5) {
+    psub[0].xyz = anchor;
+    psub[1].xyz = anchor+vec3(-dx,0.0,0.0);
+    psub[2].xyz = anchor+vec3(0.0,-dx,0.0);
+    psub[3].xyz = anchor+vec3(0.0,0.0,-dx);
   }
 
-    int n_back = 0;
+  for (int i=0; i<4; ++i)
+    psub[i].w = 1.0-psub[i].x-psub[i].y-psub[i].z;  
+
+
+    int n_back = 0;                                 
     int n_front = 0;
     vec4 p[4];
     vec4 p4;
@@ -93,19 +122,12 @@ void CutElement3d()
       float l1 = psub[i].y;
       float l2 = psub[i].z;
       float l3 = psub[i].w;
-      p[i] = l0*(2.*l0-1.) * p0;
-      p[i] += l1*(2.*l1-1.) * p1;
-      p[i] += l2*(2.*l2-1.) * p2;
-      p[i] += l3*(2.*l3-1.) * p3;
-
-      p[i] += 4. * l0*l1 * p01;
-      p[i] += 4. * l0*l2 * p02;
-      p[i] += 4. * l0*l3 * p03;
-      p[i] += 4. * l1*l2 * p12;
-      p[i] += 4. * l1*l3 * p13;
-      p[i] += 4. * l2*l3 * p23;
+      p[i] = l0*(2.*l0-1.) * p0 + l1*(2.*l1-1.) * p1
+         + l2*(2.*l2-1.) * p2 + l3*(2.*l3-1.) * p3
+         + 4. * l0*l1 * p01 + 4. * l0*l2 * p02
+         + 4. * l0*l3 * p03 + 4. * l1*l2 * p12
+         + 4. * l1*l3 * p13 + 4. * l2*l3 * p23;
     }
-
 #endif // ORDER==1
     vec3 v[4];
     v[0] = v0;
