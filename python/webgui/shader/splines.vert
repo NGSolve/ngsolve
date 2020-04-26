@@ -1,5 +1,5 @@
 varying vec3 p_;
-varying vec3 normal_;
+// varying vec3 normal_;
 
 uniform int n_segments;
 
