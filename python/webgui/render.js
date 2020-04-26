@@ -676,7 +676,7 @@ function render() {
 
   if( clipping_function_object != null )
   {
-    clipping_function_object.visible = gui_status.clipping_function;
+    clipping_function_object.visible = gui_status.clipping_function && gui_status.clipping;
     const sd = gui_status.subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
   }
