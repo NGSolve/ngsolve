@@ -37,6 +37,26 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
 
 void CutElement3d()
 {
+  int sumback = 0;
+  if (dot(clipping_plane, vec4(p0.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p1.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p2.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p3.xyz,1.0)) > 0.0) sumback++;
+
+#if ORDER==1
+  if (sumback == 0 || sumback == 4)
+    return;          
+#else // ORDER==1
+  if (dot(clipping_plane, vec4(p03.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p13.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p23.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p01.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p02.xyz,1.0)) > 0.0) sumback++;
+  if (dot(clipping_plane, vec4(p12.xyz,1.0)) > 0.0) sumback++;
+  if (sumback == 0 || sumback == 10) return;          
+#endif
+
+
   int ivertid = int(vertid);
 
   int isubtet = ivertid/6;
