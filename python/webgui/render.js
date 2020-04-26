@@ -441,7 +441,8 @@ function createCurvedMesh(data)
     }
 
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute(position, 2 ));
-
+    geo.boundingSphere = new THREE.Sphere(mesh_center, mesh_radius);
+    
     const defines = {MESH_2D: true, ORDER:render_data.geomorder};
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'trigsplines.vert', defines ),
@@ -471,7 +472,8 @@ function createCurvedWireframe(data)
         geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[3]), 3 ));
 
     geo.maxInstancedCount = n_verts;
-
+    geo.boundingSphere = new THREE.Sphere(mesh_center, mesh_radius);
+    
     const defines = {ORDER: render_data.geomorder};
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'splines.vert', defines ),
