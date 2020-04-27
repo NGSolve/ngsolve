@@ -330,7 +330,6 @@ function init () {
 
   if(render_data.show_wireframe)
   {
-    console.log("geometry order = "+render_data.geomorder);
     wireframe_object = createCurvedWireframe(render_data);
     centerObject(wireframe_object, mesh_center)
     pivot.add(wireframe_object);
@@ -549,7 +548,7 @@ function createCurvedMesh(data)
 
     var updateSolution = function( data ) {
             var i = 0;
-            const order = render_data.geomorder;
+            const order = render_data.order2d;
             if(order == 1) {
                 geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
                 geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
@@ -610,7 +609,7 @@ function createCurvedMesh(data)
 
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute(position, 2 ));
 
-    const defines = {MESH_2D: true, ORDER:render_data.geomorder};
+    const defines = {MESH_2D: true, ORDER:render_data.order2d};
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'trigsplines.vert', defines ),
         fragmentShader: getShader( 'function.frag', defines ),
@@ -635,12 +634,12 @@ function createCurvedWireframe(data)
     geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[0]), 3 ));
     geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[1]), 3 ));
     geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[2]), 3 ));
-    if(render_data.geomorder >= 3)
+    if(render_data.order2d >= 3)
         geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[3]), 3 ));
 
     geo.maxInstancedCount = n_verts;
 
-    const defines = {ORDER: render_data.geomorder};
+    const defines = {ORDER: render_data.order2d};
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'splines.vert', defines ),
         fragmentShader: getShader( 'splines.frag', defines ),
@@ -681,9 +680,10 @@ function createClippingVectors(data)
 
 function createClippingPlaneMesh(data)
 {
+   const defines = {ORDER: render_data.order3d};
     var material = new THREE.RawShaderMaterial({
-        vertexShader: getShader( 'clipping_vectors.vert' ),
-        fragmentShader: getShader( 'clipping_vectors.frag' ),
+        vertexShader: getShader( 'clipping_vectors.vert', defines ),
+        fragmentShader: getShader( 'clipping_vectors.frag', defines ),
         side: THREE.DoubleSide,
         uniforms: uniforms
     });
