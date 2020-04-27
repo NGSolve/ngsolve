@@ -1,5 +1,6 @@
 uniform sampler2D subtets_tex;
 uniform int n_segments;
+uniform vec4 clipping_plane;
 
 varying vec3 p_;
 varying vec3 normal_;
@@ -30,8 +31,9 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
   p_ = position.xyz;
   value_ =  mix(val0, val1, a);
   value_.x = position.w; // TODO: define (scalar or vector)
-  vec4 modelViewPosition = viewMatrix * vec4(position.xyz, 1.0);
-  gl_Position = projectionMatrix * modelViewPosition;
+  // vec4 modelViewPosition = viewMatrix * vec4(position.xyz, 1.0);
+  // gl_Position = projectionMatrix * modelViewPosition;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
 }
 
 
