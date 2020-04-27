@@ -40,8 +40,6 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
 void CutElement3d()
 {
 
-#define ORDER 2 // TODO: define order outside
-
   int sumback = 0;
   if (dot(clipping_plane, vec4(p0.xyz,1.0)) > 0.0) sumback++;
   if (dot(clipping_plane, vec4(p1.xyz,1.0)) > 0.0) sumback++;
