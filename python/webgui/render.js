@@ -814,10 +814,13 @@ function createClippingPlaneMesh(data)
     return mesh;
 }
 
+var requestId = 0;
 function animate () {
-  // framerate controlled by browser
-  requestAnimationFrame( render );
+  // Don't request a frame if another one is currently in the pipeline
+  if(requestId == 0)
+    requestId = requestAnimationFrame( render );
 }
+
 function centerObject(object, center_vec)  {
   object.translateX(-center_vec.x);
   object.translateY(-center_vec.y);
@@ -826,6 +829,7 @@ function centerObject(object, center_vec)  {
 
 
 function render() {
+  requestId = 0;
   if( wireframe_object != null )
   {
     wireframe_object.visible = gui_status.edges;
