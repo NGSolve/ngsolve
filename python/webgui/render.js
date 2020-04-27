@@ -403,15 +403,20 @@ function init () {
 
   if(render_data.show_clipping_function || render_data.show_surface_function)
   {
-    uniforms.colormap_min = new THREE.Uniform( render_data.funcmin );
-    uniforms.colormap_max = new THREE.Uniform( render_data.funcmax );
+    const cmin = render_data.funcmin;
+    const cmax = render_data.funcmax;
+    uniforms.colormap_min = new THREE.Uniform( cmin );
+    uniforms.colormap_max = new THREE.Uniform( cmax );
+    gui_status.colormap_min = cmin;
+    gui_status.colormap_max = cmax;
+
+    const cstep = 1e-6 * (cmax-cmin);
+    gui.add(gui_status, "colormap_min", cmin, cmax, cstep).onChange(animate);
+    gui.add(gui_status, "colormap_max", cmin, cmax, cstep).onChange(animate);
+
     gui_status.colormap_ncolors = 8;
-    gui_status.colormap_min = render_data.funcmin;
-    gui_status.colormap_max = render_data.funcmax;
     gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(updateColormap);
-    gui.add(gui_status, "colormap_min").onChange(animate);
-    gui.add(gui_status, "colormap_max").onChange(animate);
-    updateColormap(8);
+    updateColormap();
   }
     else
     {
@@ -420,7 +425,7 @@ function init () {
       gui_status.colormap_ncolors = 8;
       gui_status.colormap_min = -1;
       gui_status.colormap_max = 1;
-      updateColormap(8);
+      updateColormap();
     }
 
 
