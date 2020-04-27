@@ -3,10 +3,12 @@ var clipping_plane, clipping_plane_frag;
 var three_clipping_plane;
 var world_clipping_plane;
 var light_dir;
-var light_mat;
 
 var uniforms = {};
-var gui_status;
+var gui_status = {
+  Clipping: { enable: false, vectors:false, x: 0.3, y: 0.7, z: 10, dist: 0.3 },
+  Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
+};
 
 var wireframe_object;
 var mesh_object;
@@ -317,14 +319,13 @@ function init () {
   light_dir = new THREE.Vector3(0.5,0.5,1.5);
   light_dir.normalize();
   uniforms.light_dir = new THREE.Uniform(light_dir);
-  light_mat = new THREE.Vector4(0.3, 0.7, 10, 0.3); // ambient, diffuse, shininess, specularity
+  var light_mat = new THREE.Vector4(0.3, 0.7, 10, 0.3); // ambient, diffuse, shininess, specularity
   uniforms.light_mat = new THREE.Uniform(light_mat);
 
   uniforms.do_clipping = new THREE.Uniform( false );
 
-  gui_status = {};
   gui = new dat.GUI();
-
+  console.log("GUI", gui);
   mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
   mesh_radius = render_data.mesh_radius;
 
@@ -350,6 +351,7 @@ function init () {
   }
 
 
+  gui_clipping = gui.addFolder("Clipping");
   if( /* have_webgl2 && */ render_data.show_clipping_function)
   {
     console.log("create clipping function");
@@ -373,8 +375,7 @@ function init () {
     uniforms.grid_size = new THREE.Uniform( gui_status.grid_size );
     uniforms.write_vector_values = new THREE.Uniform( 0.0 );
 
-    gui_status.clipping_vectors = false;
-    gui.add(gui_status, "clipping_vectors").onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "vectors").onChange(animate);
     clipping_vectors_object = createClippingVectors(render_data);
     scene.add(clipping_vectors_object);
     console.log("clipping vectors", clipping_vectors_object);
@@ -386,17 +387,11 @@ function init () {
   controls2.update();
   controls2.addEventListener('change', animate );
 
-  gui_status.clipping = false;
-  gui_status.clipping_x = 0.0;
-  gui_status.clipping_y = 0.0;
-  gui_status.clipping_z = 1.0;
-  gui_status.clipping_dist = 0.0;
-
-  gui.add(gui_status, "clipping").onChange(animate);
-  gui.add(gui_status, "clipping_x", -1.0, 1.0).onChange(animate);
-  gui.add(gui_status, "clipping_y", -1.0, 1.0).onChange(animate);
-  gui.add(gui_status, "clipping_z", -1.0, 1.0).onChange(animate);
-  gui.add(gui_status, "clipping_dist", -3.0, 3.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
 
 
 
@@ -426,6 +421,13 @@ function init () {
       gui_status.colormap_max = 1;
       updateColormap();
     }
+
+  gui_light = gui.addFolder("Light");
+  gui_light.add(gui_status.Light, "ambient", 0.0, 1.0).onChange(animate);
+  gui_light.add(gui_status.Light, "diffuse", 0.0, 1.0).onChange(animate);
+  gui_light.add(gui_status.Light, "shininess", 0.0, 100.0).onChange(animate);
+  gui_light.add(gui_status.Light, "specularity", 0.0, 1.0).onChange(animate);
+
 
 
 //     console.log("Do some timings:")
@@ -854,14 +856,14 @@ function render() {
 
   if( clipping_function_object != null )
   {
-    clipping_function_object.visible = gui_status.clipping_function && gui_status.clipping;
+    clipping_function_object.visible = gui_status.clipping_function && gui_status.Clipping.enable;
     const sd = gui_status.subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
   }
 
-  three_clipping_plane.normal.set(gui_status.clipping_x, gui_status.clipping_y, gui_status.clipping_z);
+  three_clipping_plane.normal.set(gui_status.Clipping.x, gui_status.Clipping.y, gui_status.Clipping.z);
   three_clipping_plane.normal.normalize();
-  three_clipping_plane.constant = gui_status.clipping_dist-three_clipping_plane.normal.dot(mesh_center);
+  three_clipping_plane.constant = gui_status.Clipping.dist-three_clipping_plane.normal.dot(mesh_center);
 
   // console.log("three_clipping_plane normal and const", three_clipping_plane.normal, three_clipping_plane.constant);
 
@@ -874,7 +876,7 @@ function render() {
 
   world_clipping_plane = three_clipping_plane.clone();
 
-  world_clipping_plane.constant = gui_status.clipping_dist;
+  world_clipping_plane.constant = gui_status.Clipping.dist;
   world_clipping_plane.applyMatrix4( pivot.matrix)
   // console.log("world_clipping_plane.normal and dist", world_clipping_plane.normal, world_clipping_plane.constant);
 
@@ -884,9 +886,9 @@ function render() {
     world_clipping_plane.normal.z,
     world_clipping_plane.constant);
   
-  uniforms.do_clipping.value = gui_status.clipping;
+  uniforms.do_clipping.value = gui_status.Clipping.enable;
 
-  if(gui_status.clipping)
+  if(gui_status.Clipping.enable)
     renderer.clippingPlanes = [world_clipping_plane];
 
   if(gui_status.colormap_ncolors)
@@ -896,8 +898,8 @@ function render() {
   }
 
   if(clipping_vectors_object != null)
-    clipping_vectors_object.visible = gui_status.clipping_vectors;
-  if(gui_status.clipping_vectors)
+    clipping_vectors_object.visible = gui_status.Clipping.vectors;
+  if(gui_status.Clipping.vectors)
   {
     // updateClippingPlaneCamera();
     // uniforms.write_vector_values.value = 1.0;
@@ -906,6 +908,12 @@ function render() {
     // renderer.render(buffer_scene, buffer_camera);
     // uniforms.write_vector_values.value = 0.0;
   }
+
+
+  uniforms.light_mat.value.x = gui_status.Light.ambient;
+  uniforms.light_mat.value.y = gui_status.Light.diffuse;
+  uniforms.light_mat.value.z = gui_status.Light.shininess;
+  uniforms.light_mat.value.w = gui_status.Light.specularity;
 
   renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
   renderer.setRenderTarget(null);
