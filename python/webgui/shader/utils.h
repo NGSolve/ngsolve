@@ -6,7 +6,8 @@ uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
-uniform vec4 clipping_plane;
+// uniform vec4 clipping_plane;
+uniform vec4 clipping_plane_frag; // just for testing
 uniform bool do_clipping;
 
 uniform sampler2D tex_colormap;
@@ -231,7 +232,7 @@ bool isBehindClippingPlane(vec3 pos)
 #ifdef NO_CLIPPING
   return false;
 #else // NO_CLIPPING
-  return do_clipping && dot(clipping_plane, vec4(pos, 1.0)) < 0.0;
+  return do_clipping && dot(clipping_plane_frag, vec4(pos, 1.0)) < 0.0;
 #endif // NO_CLIPPING
 }
 

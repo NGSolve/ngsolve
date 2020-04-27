@@ -3,6 +3,7 @@ uniform float grid_size;
 uniform vec3 clipping_plane_c;
 uniform vec3 clipping_plane_t1;
 uniform vec3 clipping_plane_t2;
+uniform vec4 clipping_plane;
 
 // default attributes (from arrow-geometry)
 attribute vec3 position;
