@@ -1714,7 +1714,7 @@ namespace ngcomp
     
     int SmoothingType = int(precflags.GetNumFlag("blocktype",2)); 
     bool excl_grads = precflags.GetDefineFlag("exclude_grads"); 
-    cout << " EXCLUDE GRADS " << excl_grads << endl; 
+    cout << IM(5) << " EXCLUDE GRADS " << excl_grads << endl;
     
     Array<int> vnums; 
     // Array<int> orient; 
@@ -1741,7 +1741,7 @@ namespace ngcomp
 	  {
 
 	    if (creator.GetMode() == 1)
-	      cout << "High order AFW blocks " << endl;
+	      cout << IM(5) << "High order AFW blocks " << endl;
 		
 	    for (int i = 0; i < ned; i++)
 	      if (!IsDirichletEdge(i) && fine_edge[i])
@@ -1768,41 +1768,41 @@ namespace ngcomp
 
 
 
-    cout << "SmoothingType " << SmoothingType << endl; 
-    cout << " Use H(Curl)-Block smoothing " ;
+    cout << IM(5) << "SmoothingType " << SmoothingType << endl;
+    cout << IM(5) << " Use H(Curl)-Block smoothing " ;
     switch(SmoothingType) 
       {
       case 4: // former 11 
-	cout << " AFW(loE) + E + F + I (noClusters)" << endl; 
+	cout << IM(5) << " AFW(loE) + E + F + I (noClusters)" << endl;
 	ncnt = nv  + ned + nfa + ni + augmented*nv;
 	break;  
       case 5: //	
-	cout << " AFW(hoE) + E + F + I (noClusters)" << endl; 
+	cout << IM(5) << " AFW(hoE) + E + F + I (noClusters)" << endl;
 	ncnt = nv  + ned + nfa + ni;
 	break; 	
       case 1: // former 10 
-	cout << " Line-Clustering and  AFW(loE)  " << endl; 
+	cout << IM(5) << " Line-Clustering and  AFW(loE)  " << endl;
 	ncnt = nv + ned + nfa + ni; 
 	break;
       case 2: // former 26 
-	cout << " Line-Clustering and AFW(hoE)  " << endl; 
+	cout << IM(5) << " Line-Clustering and AFW(hoE)  " << endl;
 	ncnt = nv + ned + nfa + ni;
 	break;
       case 3: // former 23 (equal to HCurl-Old-SmoothingBlocks)  
-	cout << " Line-Clustering: AFW(hoE) - (horizE)F - (trigF)I " << endl; 
+	cout << IM(5) << " Line-Clustering: AFW(hoE) - (horizE)F - (trigF)I " << endl;
 	// horiz-quadface-stack(horiz-edge,top-bot-trig-Faces, inner)" << endl; 
 	ncnt = nv + ned + nfa +ni; 
 	break;
       case 6: // der hier is nur fuer testzwecke !!!  
-	cout << "Jacobi (Diag)" << endl; 
+	cout << IM(5) << "Jacobi (Diag)" << endl;
 	ncnt = nv  + ned + nfa + ni;
 	break;  
       case 7: 
-	cout << "EDGE-blocks (noClusters)" << endl; 
+	cout << IM(5) << "EDGE-blocks (noClusters)" << endl;
 	ncnt = nv  + ned;
 	break; 
       case 21:
-	cout << "wave equation blocks" << endl;
+	cout << IM(5) << "wave equation blocks" << endl;
 	ncnt = ned + nfa;
 	break;
       default: 
@@ -2529,7 +2529,7 @@ namespace ngcomp
     size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
 
 
-    cout << "called createdirectsolverclusters" << endl;
+    cout << IM(3) << "called createdirectsolverclusters" << endl;
     // 
     if (precflags.NumFlagDefined ("ds_order"))
       {
@@ -2583,7 +2583,7 @@ namespace ngcomp
 
     int clustertype = int(precflags.GetNumFlag("ds_cluster",4));  
 
-    cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
+    cout << IM(3) << " DirectSolverCluster Clustertype " << clustertype << endl;
     if(clustertype==0)
       return(0);
 	   
