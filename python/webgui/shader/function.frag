@@ -27,6 +27,12 @@ void main()
   }
 #endif // SKIP_FACE_CHECK
 
-  vec4 color = getColor(value_.x);
+  float value;
+  if(function_mode==0.0) value = value_.x;
+  if(function_mode==1.0) value = value_.y;
+  if(function_mode==2.0) value = value_.z;
+  if(function_mode==3.0) value = length(value_);
+
+  vec4 color = getColor(value);
   gl_FragColor = calcLight( color, p_, norm, inside);
 }

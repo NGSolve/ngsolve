@@ -6,6 +6,7 @@ var light_dir;
 
 var uniforms = {};
 var gui_status = {
+  eval: "0",
   Clipping: { enable: false, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
@@ -365,8 +366,10 @@ function init () {
     gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
   }
 
+  uniforms.function_mode = new THREE.Uniform( 0 );
   if(render_data.funcdim>1)
   {
+    gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"abs":3}).onChange(animate);
     gui_vec = gui.addFolder("Vectors");
     gui_vec.add(gui_status.Vectors, "show").onChange(animate);
     gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(updateGridsize);
@@ -384,7 +387,6 @@ function init () {
     uniforms.clipping_plane_t2 = new THREE.Uniform( new THREE.Vector3() );
     uniforms.vectors_offset = new THREE.Uniform( gui_status.Vectors.offset );
     uniforms.grid_size = new THREE.Uniform( gui_status.Vectors.grid_size );
-    uniforms.function_mode = new THREE.Uniform( 0 );
 
     clipping_vectors_object = createClippingVectors(render_data);
     pivot.add(clipping_vectors_object);
@@ -832,10 +834,10 @@ function render() {
     renderer.setRenderTarget(buffer_texture);
     renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
     renderer.render(buffer_scene, buffer_camera);
-    uniforms.function_mode.value = 0;
   }
 
 
+  uniforms.function_mode.value = parseInt(gui_status.eval);
   uniforms.light_mat.value.x = gui_status.Light.ambient;
   uniforms.light_mat.value.y = gui_status.Light.diffuse;
   uniforms.light_mat.value.z = gui_status.Light.shininess;
