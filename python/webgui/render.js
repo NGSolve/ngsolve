@@ -1,12 +1,12 @@
 var scene, renderer, camera, mesh;
-var clipping_plane, clipping_plane_frag;
+var clipping_plane;
 var three_clipping_plane;
 var world_clipping_plane;
 var light_dir;
 
 var uniforms = {};
 var gui_status = {
-  Clipping: { enable: false, vectors:false, x: 0.3, y: 0.7, z: 10, dist: 0.3 },
+  Clipping: { enable: false, vectors:false, x: 1.0, y: 0.0, z: 0.0, dist: 0.3 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
 };
 
@@ -204,11 +204,11 @@ function updateClippingPlaneCamera()
   var target = plane_center.clone();
   target.addScaledVector(plane0.normal, -1);
 
-  // buffer_camera.position.copy(position);
-  // buffer_camera.up = t2;
-  // buffer_camera.lookAt(target);
-  // buffer_camera.updateProjectionMatrix();
-  // buffer_camera.updateMatrix();
+  buffer_camera.position.copy(position);
+  buffer_camera.up = t2;
+  buffer_camera.lookAt(target);
+  buffer_camera.updateProjectionMatrix();
+  buffer_camera.updateMatrix();
 
   uniforms.clipping_plane_c.value = plane_center;
   uniforms.clipping_plane_t1.value = t1;
@@ -231,12 +231,14 @@ function updateGridsize()
   const n = gui_status.grid_size;
   buffer_texture = new THREE.WebGLRenderTarget( n, n, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, type: THREE.HalfFloatType, format: THREE.RGBAFormat });
   uniforms.tex_values = new THREE.Uniform(buffer_texture.texture);
-  // buffer_camera = new THREE.OrthographicCamera( -mesh_radius, mesh_radius, mesh_radius, -mesh_radius, -10, 10 );
+  buffer_camera = new THREE.OrthographicCamera( -mesh_radius, mesh_radius, mesh_radius, -mesh_radius, -10, 10 );
   animate();
 }
 
 function init () {
   console.log("init");
+  mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
+  mesh_radius = render_data.mesh_radius;
     if (render_data.websocket_url)
       websocket = new WebSocket(render_data.websocket_url);
     var canvas = document.createElement( 'canvas' );
@@ -278,7 +280,7 @@ function init () {
   // var axesHelper_pivot = new THREE.AxesHelper( 1 );
   // pivot.add(axesHelper_pivot);
 
-  // buffer_scene = new THREE.Scene();
+  buffer_scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(
     40,                                         //FOV
@@ -308,12 +310,10 @@ function init () {
   controls2.enableZoom = true;
   controls2.enablePan = false;  
   clipping_plane = new THREE.Vector4(0,0,1,-1.7);
-  clipping_plane_frag = clipping_plane.clone();
   uniforms.clipping_plane = new THREE.Uniform( clipping_plane ); 
   /* should cliping plane in pivot world be calculated in shader insted of passing it? 
     currently not done because it is needed here anyways
   */
-  uniforms.clipping_plane_frag = new THREE.Uniform( clipping_plane_frag); 
   three_clipping_plane  = new THREE.Plane( );
 
   light_dir = new THREE.Vector3(0.5,0.5,1.5);
@@ -326,13 +326,10 @@ function init () {
 
   gui = new dat.GUI();
   console.log("GUI", gui);
-  mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
-  mesh_radius = render_data.mesh_radius;
 
   if(render_data.show_wireframe)
   {
     wireframe_object = createCurvedWireframe(render_data);
-    centerObject(wireframe_object, mesh_center)
     pivot.add(wireframe_object);
     uniforms.n_segments = new THREE.Uniform(5);
     gui_status.subdivision = 5;
@@ -344,9 +341,8 @@ function init () {
   if(render_data.show_mesh)
   {
       mesh_object = createCurvedMesh(render_data);
-      centerObject(mesh_object, mesh_center)
-
-      pivot.add( mesh_object );      gui_status.elements = true;
+      pivot.add( mesh_object );
+      gui_status.elements = true;
       gui.add(gui_status, "elements").onChange(animate);
   }
 
@@ -354,17 +350,14 @@ function init () {
   gui_clipping = gui.addFolder("Clipping");
   if( /* have_webgl2 && */ render_data.show_clipping_function)
   {
-    console.log("create clipping function");
-    clipping_function_object = createClippingPlaneMesh(render_data);
-    centerObject(clipping_function_object, mesh_center)
-    pivot.add(clipping_function_object);
     gui_status.clipping_function = true;
     gui.add(gui_status, "clipping_function").onChange(animate);
 
-    // var buffer_clipping = createClippingPlaneMesh(render_data);
-    // buffer_scene.add(buffer_clipping);
-    // clipping_function_object = buffer_clipping.clone();
-    // pivot.add(clipping_function_object);
+    var buffer_clipping = createClippingPlaneMesh(render_data);
+    buffer_scene.add(buffer_clipping);
+
+    clipping_function_object = buffer_clipping.clone();
+    pivot.add(clipping_function_object);
 
 
     uniforms.clipping_plane_c = new THREE.Uniform( new THREE.Vector3() );
@@ -377,7 +370,7 @@ function init () {
 
     gui_clipping.add(gui_status.Clipping, "vectors").onChange(animate);
     clipping_vectors_object = createClippingVectors(render_data);
-    scene.add(clipping_vectors_object);
+    pivot.add(clipping_vectors_object);
     console.log("clipping vectors", clipping_vectors_object);
     console.log("scene", scene);
     updateGridsize();
@@ -430,6 +423,9 @@ function init () {
 
 
 
+// pivot.translateX(-mesh_center.x);
+// pivot.translateY(-mesh_center.y);
+// pivot.translateZ(-mesh_center.z);
 scene.add( pivot );
 
 controls = new CustomControls(camera, pivot, renderer.domElement );
@@ -752,13 +748,6 @@ function animate () {
     requestId = requestAnimationFrame( render );
 }
 
-function centerObject(object, center_vec)  {
-  object.translateX(-center_vec.x);
-  object.translateY(-center_vec.y);
-  object.translateZ(-center_vec.z);
-}
-
-
 function render() {
   requestId = 0;
   if( wireframe_object != null )
@@ -785,14 +774,14 @@ function render() {
 
   if( clipping_function_object != null )
   {
-    clipping_function_object.visible = gui_status.clipping_function && gui_status.Clipping.enable;
     const sd = gui_status.subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
+    clipping_function_object.visible = gui_status.clipping_function && gui_status.Clipping.enable;
   }
 
   three_clipping_plane.normal.set(gui_status.Clipping.x, gui_status.Clipping.y, gui_status.Clipping.z);
   three_clipping_plane.normal.normalize();
-  three_clipping_plane.constant = gui_status.Clipping.dist-three_clipping_plane.normal.dot(mesh_center);
+  three_clipping_plane.constant = gui_status.Clipping.dist; // -three_clipping_plane.normal.dot(mesh_center);
 
   // console.log("three_clipping_plane normal and const", three_clipping_plane.normal, three_clipping_plane.constant);
 
@@ -827,15 +816,20 @@ function render() {
   }
 
   if(clipping_vectors_object != null)
+  {
     clipping_vectors_object.visible = gui_status.Clipping.vectors;
+    const sd = gui_status.subdivision;
+    clipping_vectors_object.geometry.setDrawRange(0, 6*sd*sd*sd)
+  }
+
   if(gui_status.Clipping.vectors)
   {
-    // updateClippingPlaneCamera();
-    // uniforms.write_vector_values.value = 1.0;
-    // renderer.setRenderTarget(buffer_texture);
-    // renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
-    // renderer.render(buffer_scene, buffer_camera);
-    // uniforms.write_vector_values.value = 0.0;
+    updateClippingPlaneCamera();
+    uniforms.write_vector_values.value = 1.0;
+    renderer.setRenderTarget(buffer_texture);
+    renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
+    renderer.render(buffer_scene, buffer_camera);
+    uniforms.write_vector_values.value = 0.0;
   }
 
 
