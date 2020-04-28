@@ -92,7 +92,6 @@ var CustomControls = function (cameraObject, pivotObject, domElement) {
 
   function keydown(event) {
     var needs_update = false;
-    event.preventDefault();
     // TODO:  should a moving camera be allowed? 
     if (event.shiftKey){ // pan
       if (event.keyCode == scope.keys.DOWN) {
@@ -132,6 +131,7 @@ var CustomControls = function (cameraObject, pivotObject, domElement) {
     }
 
     if(needs_update) {
+      event.preventDefault();
       scope.update();
     }
 
@@ -160,8 +160,8 @@ var CustomControls = function (cameraObject, pivotObject, domElement) {
   }
 
 
-  window.addEventListener( 'keydown', keydown, false );
-  scope.domElement.addEventListener( 'wheel', wheel, false );
+  // window.addEventListener( 'keydown', keydown, false );
+  // scope.domElement.addEventListener( 'wheel', wheel, false );
 
 
 	// make sure element can receive keys.
@@ -305,7 +305,7 @@ function init () {
   controls2 = new THREE.OrbitControls (camera, renderer.domElement);
   controls2.enabled = true;
   controls2.enableKeys = false;
-  controls2.enableZoom = false;
+  controls2.enableZoom = true;
   controls2.enablePan = false;  
   clipping_plane = new THREE.Vector4(0,0,1,-1.7);
   clipping_plane_frag = clipping_plane.clone();
