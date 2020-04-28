@@ -2822,20 +2822,20 @@ namespace ngfem
   }
 
 
+  template<typename TSCAL>
   void SymbolicFacetLinearFormIntegrator ::
-  CalcFacetVector (const FiniteElement & fel1, int LocalFacetNr,
-                   const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
-                   const ElementTransformation & strafo,  
-                   FlatVector<double> elvec,
-                   LocalHeap & lh) const
+  T_CalcFacetVector (const FiniteElement & fel1, int LocalFacetNr,
+                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
+                     const ElementTransformation & strafo,
+                     FlatVector<TSCAL> elvec,
+                     LocalHeap & lh) const
   {
     static Timer t("SymbolicFacetLFI::CalcFacetVector - boundary", 2);
     HeapReset hr(lh);
 
-
     elvec = 0;
     
-    FlatVector<> elvec1(elvec.Size(), lh);
+    FlatVector<TSCAL> elvec1(elvec.Size(), lh);
 
     int maxorder = fel1.Order();
 
@@ -2860,11 +2860,11 @@ namespace ngfem
     
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr);
     
-    FlatMatrix<> val(ir_facet.Size(), 1,lh);
+    FlatMatrix<TSCAL> val(ir_facet.Size(), 1,lh);
     for (auto proxy : proxies)
       {
         HeapReset hr(lh);
-        FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
+        FlatMatrix<TSCAL> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
         
         for (int k = 0; k < proxy->Dimension(); k++)
           {
@@ -2884,9 +2884,27 @@ namespace ngfem
       }
   }
 
+  void SymbolicFacetLinearFormIntegrator::
+  CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
+                  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                  const ElementTransformation & seltrans,
+                  FlatVector<double> elvec,
+                  LocalHeap & lh) const
+  {
+    T_CalcFacetVector(volumefel, LocalFacetNr, eltrans, ElVertices, seltrans,
+                      elvec, lh);
+  }
 
-
-  
+  void SymbolicFacetLinearFormIntegrator::
+  CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
+                  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                  const ElementTransformation & seltrans,
+                  FlatVector<Complex> elvec,
+                  LocalHeap & lh) const
+  {
+    T_CalcFacetVector(volumefel, LocalFacetNr, eltrans, ElVertices, seltrans,
+                      elvec, lh);
+  }
   
   SymbolicFacetBilinearFormIntegrator ::
   SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool eb)
@@ -2937,14 +2955,62 @@ namespace ngfem
     cout << IM(6) << "cumulated trial_proxy dims " << trial_cum << endl;
   }
 
-
-  void SymbolicFacetBilinearFormIntegrator ::
-  CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
-                   const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
-                   const FiniteElement & fel2, int LocalFacetNr2,
-                   const ElementTransformation & trafo2, FlatArray<int> & ElVertices2,
+  void SymbolicFacetBilinearFormIntegrator::
+  CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                   const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                   const FiniteElement & volumefel2, int LocalFacetNr2,
+                   const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
                    FlatMatrix<double> elmat,
                    LocalHeap & lh) const
+  {
+    T_CalcFacetMatrix(volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+                      volumefel2, LocalFacetNr2, eltrans2, ElVertices2,
+                      elmat, lh);
+  }
+
+  void SymbolicFacetBilinearFormIntegrator::
+  CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                   const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                   const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                   FlatMatrix<double> elmat,
+                   LocalHeap & lh) const
+  {
+    T_CalcFacetMatrix(volumefel, LocalFacetNr, eltrans, ElVertices,
+                      seltrans, SElVertices, elmat, lh);
+  }
+
+  void SymbolicFacetBilinearFormIntegrator::
+  CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                   const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                   const FiniteElement & volumefel2, int LocalFacetNr2,
+                   const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                   FlatMatrix<Complex> elmat,
+                   LocalHeap & lh) const
+  {
+    T_CalcFacetMatrix(volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+                      volumefel2, LocalFacetNr2, eltrans2, ElVertices2,
+                      elmat, lh);
+  }
+
+  void SymbolicFacetBilinearFormIntegrator::
+  CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                   const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                   const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                   FlatMatrix<Complex> elmat,
+                   LocalHeap & lh) const
+  {
+    T_CalcFacetMatrix(volumefel, LocalFacetNr, eltrans, ElVertices,
+                      seltrans, SElVertices, elmat, lh);
+  }
+
+  template<typename TSCAL>
+  void SymbolicFacetBilinearFormIntegrator ::
+  T_CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
+                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                     const FiniteElement & fel2, int LocalFacetNr2,
+                     const ElementTransformation & trafo2, FlatArray<int> & ElVertices2,
+                     FlatMatrix<TSCAL> elmat,
+                     LocalHeap & lh) const
   {
     elmat = 0.0;
 
@@ -2986,12 +3052,12 @@ namespace ngfem
       for (int l1 : Range(test_proxies))
         {
           HeapReset hr(lh);
-          FlatMatrix<> val(mir1.Size(), 1,lh);
+          FlatMatrix<TSCAL> val(mir1.Size(), 1,lh);
           
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = test_proxies[l1];
 
-          FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          FlatTensor<3,TSCAL> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
 
           mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
           mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
@@ -3024,8 +3090,8 @@ namespace ngfem
             {
               int rest = min2(size_t(BS), mir1.Size()-i);
               HeapReset hr(lh);
-              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
-              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
+              FlatMatrix<TSCAL,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
+              FlatMatrix<TSCAL,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
 
               for (int j = 0; j < rest; j++)
                 {
@@ -3047,19 +3113,18 @@ namespace ngfem
 
               IntRange r1 = proxy1->Evaluator()->UsedDofs(proxy1->IsOther() ? fel2_trial : fel1_trial);
               IntRange r2 = proxy2->Evaluator()->UsedDofs(proxy2->IsOther() ? fel2_test : fel1_test);
-              loc_elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+              loc_elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1);
             }
         }
   }
 
-
-
+  template<typename TSCAL>
   void SymbolicFacetBilinearFormIntegrator ::
-  CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
-                   const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
-                   const ElementTransformation & strafo, FlatArray<int> & SElVertices1,
-                   FlatMatrix<double> elmat,
-                   LocalHeap & lh) const
+  T_CalcFacetMatrix(const FiniteElement & fel1, int LocalFacetNr1,
+                    const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                    const ElementTransformation & strafo, FlatArray<int> & SElVertices1,
+                    FlatMatrix<TSCAL> elmat,
+                    LocalHeap & lh) const
   {
     elmat = 0.0;
 
@@ -3085,13 +3150,13 @@ namespace ngfem
       for (int l1 : Range(test_proxies))
         {
           HeapReset hr(lh);
-          FlatMatrix<> val(mir1.Size(), 1, lh);
+          FlatMatrix<TSCAL> val(mir1.Size(), 1, lh);
           
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = test_proxies[l1];
           if (proxy1->IsOther() || proxy2->IsOther()) continue;
 
-          FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          FlatTensor<3, TSCAL> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
           
           for (size_t k = 0; k < proxy1->Dimension(); k++)
             for (size_t l = 0; l < proxy2->Dimension(); l++)
@@ -3116,8 +3181,8 @@ namespace ngfem
             {
               size_t rest = min2(size_t(BS), mir1.Size()-i);
               HeapReset hr(lh);
-              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
-              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+              FlatMatrix<TSCAL,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<TSCAL,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
 
               for (size_t j = 0; j < rest; j++)
                 {
