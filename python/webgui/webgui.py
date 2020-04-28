@@ -104,10 +104,11 @@ def writeHTML(d):
     # return frame
 
 class WebGLScene:
-    def __init__(self, cf, mesh, start_websocket=False):
+    def __init__(self, cf, mesh, order, start_websocket=False):
         import threading
         self.cf = cf
         self.mesh = mesh
+        self.order = order
         self.have_websocket = start_websocket
         if start_websocket:
             self.connected = set()
@@ -122,7 +123,7 @@ class WebGLScene:
     def Redraw(self):
         import numpy
         if self.have_websocket and len(self.connected):
-            d = BuildRenderData(self.mesh, self.cf)
+            d = BuildRenderData(self.mesh, self.cf, self.order)
             values = numpy.array(d["Bezier_trig_points"], dtype=numpy.float32)
 
             self.loop.call_soon_threadsafe(self._send, values.tobytes())
@@ -151,7 +152,7 @@ class WebGLScene:
 
 bezier_trig_trafos = { }  # cache trafos for different orders
         
-def BuildRenderData(mesh, func):
+def BuildRenderData(mesh, func, order=None):
 
     timer = ngs.Timer("BuildRenderData")
     timer1 = ngs.Timer("points")
@@ -176,19 +177,22 @@ def BuildRenderData(mesh, func):
             for j in range(3):
                 points.append(myp[j])
 
+
     d = {}
     d['positions'] = points
     timer1.Stop()
-    # transform point-values to Bernsteinbasis
-    # og = mesh.GetCurveOrder()
-    og = 3
-    if og>1:
-        og = 3 # only implemented order 3 so far
-    d['geomorder'] = og
-    # print ("geometryorder = ", og)
+
+    order = order or mesh.GetCurveOrder()
+    order2d = min(order, 3)
+    order3d = min(order, 2)
+    d['order2d'] = order2d
+    d['order3d'] = order3d
+    print("d",d)
+
     d['show_wireframe'] = False
     d['show_mesh'] = False
-    if og>0:
+    if order2d>0:
+        og = order2d
         d['show_wireframe'] = True
         d['show_mesh'] = True
         timer2.Start()
@@ -196,6 +200,7 @@ def BuildRenderData(mesh, func):
         timer3Bvals = ngs.Timer("timer3, bezier")
         timer3Bvals.Start()
 
+        # transform point-values to Bernsteinbasis
         def Binomial(n,i): return math.factorial(n) / math.factorial(i) / math.factorial(n-i)
         def Bernstein(x, i, n): return Binomial(n,i) * x**i*(1-x)**(n-i)
         Bvals = ngs.Matrix(og+1,og+1)
@@ -311,7 +316,7 @@ def BuildRenderData(mesh, func):
             tets = []
 
             cf = ngs.CoefficientFunction((ngs.x,ngs.y,ngs.z,func[0]))
-            if og==1:
+            if order3d==1:
                 ir = ngs.IntegrationRule( [(1,0,0), (0,1,0), (0,0,1), (0,0,0)], [0]*4 )
             else:
                 ir = ngs.IntegrationRule( [
@@ -342,9 +347,9 @@ def BuildRenderData(mesh, func):
 
 def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *args, **kwargs): # currently assumes 2D mesh
     if 'order' in kwargs:
-        _order=kwargs['order']
+        order=kwargs['order']
     else:
-        _order = 1
+        order = None
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -355,12 +360,12 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
 
     if isinstance(mesh_or_func, ngs.GridFunction):
         func = mesh_or_func
-        mesh = mesh_or_none or func.mesh
+        mesh = mesh_or_none or func.space.mesh
         
-    d = BuildRenderData(mesh, func)
+    d = BuildRenderData(mesh, func, order=order)
     if websocket:
         d['websocket_url'] = "ws://localhost:" + str(websocket_port)
 
-    scene = WebGLScene(func, mesh, websocket)
+    scene = WebGLScene(func, mesh, order, websocket)
     writeHTML(d)
     return scene

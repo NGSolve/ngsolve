@@ -1,18 +1,20 @@
 var scene, renderer, camera, mesh;
-var clipping_plane;
+var clipping_plane, clipping_plane_frag;
 var three_clipping_plane;
+var world_clipping_plane;
 var light_dir;
-var light_mat;
-var animate_light = false;
 
 var uniforms = {};
-var gui_status;
+var gui_status = {
+  Clipping: { enable: false, vectors:false, x: 0.3, y: 0.7, z: 10, dist: 0.3 },
+  Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
+};
 
 var wireframe_object;
 var mesh_object;
 var clipping_function_object;
 var clipping_vectors_object;
-var controls;
+var controls, controls2;
 
 var have_webgl2 = false;
 
@@ -25,7 +27,155 @@ var buffer_camera;
 var mesh_center;
 var mesh_radius;
 
-init();
+var pivot;
+
+var CustomControls = function (cameraObject, pivotObject, domElement) {
+  if ( domElement === undefined ) console.log( 'domElement is undefined' );
+	if ( domElement === document ) console.error( '"document" should not be used as the target "domElement". Please use "renderer.domElement" instead.' );
+  if ( !cameraObject.isPerspectiveCamera ) console.error('camera must be perspective camera');
+
+
+  this.cameraObject = cameraObject;
+  this.pivotObject = pivotObject;
+  this.domElement = domElement;
+
+  this.keys = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, CLOCKWISE: 65, COUNTERCLOCKWISE: 83};
+
+  this.rotation_step_degree = 10;
+  this.pan_step = 0.05;
+  this.camera_step = 0.2;
+
+  // not to change from outside
+  var changeEvent = { type: 'change' };
+  // could maybe left out:
+	var startEvent = { type: 'start' }; 
+	var endEvent = { type: 'end' };
+
+  var scope = this;
+  
+
+  this.update = function () {
+
+    return function update() {
+
+      scope.pivotObject.updateMatrix(); // needed or clipping is not working propperly
+      // console.log("update mat: ", Date.now()); 
+      scope.cameraObject.updateProjectionMatrix();
+      scope.dispatchEvent( changeEvent );
+    };  
+
+  }()
+
+  this.rotateObject = function () {
+    // takes normalized axis in world coordinates
+
+    var world_to_local = new THREE.Matrix4();
+    var axis_local = new THREE.Vector3()
+    return function(axis_world = new THREE.Vector3(0,0,1), deg = 30) {
+      world_to_local.getInverse(scope.pivotObject.matrix);
+      axis_local.copy(axis_world).transformDirection( world_to_local );
+      scope.pivotObject.rotateOnAxis(axis_local, THREE.Math.degToRad(deg));
+
+    };
+  }();  
+
+  this.panObject = function () {
+    // takes direction in world coordinates
+    var world_to_local = new THREE.Matrix4();
+    var dir_local = new THREE.Vector3()
+    return function(dir_world = new THREE.Vector3(0,0,1), dist = 0.05) {
+      world_to_local.getInverse(scope.pivotObject.matrix);
+      dir_local.copy(dir_world).transformDirection( world_to_local );
+      scope.pivotObject.translateOnAxis(dir_local, dist);
+    };
+  }();  
+
+  function keydown(event) {
+    var needs_update = false;
+    // TODO:  should a moving camera be allowed? 
+    if (event.shiftKey){ // pan
+      if (event.keyCode == scope.keys.DOWN) {
+        needs_update = true;
+        scope.panObject(new THREE.Vector3(0, -1, 0), scope.pan_step)
+      } else if (event.keyCode == scope.keys.UP) {
+        needs_update = true;
+        scope.panObject(new THREE.Vector3(0, 1, 0), scope.pan_step)
+      } else if (event.keyCode == scope.keys.LEFT) {
+        needs_update = true;
+        scope.panObject(new THREE.Vector3(-1, 0, 0), scope.pan_step)
+      } else if (event.keyCode == scope.keys.RIGHT) {
+        needs_update = true;
+        scope.panObject(new THREE.Vector3(1, 0, 0), scope.pan_step)
+      } 
+  
+    } else { // rotate
+      if (event.keyCode == scope.keys.DOWN) {
+        needs_update = true;
+        scope.rotateObject(new THREE.Vector3(1, 0, 0), scope.rotation_step_degree)
+      } else if (event.keyCode == scope.keys.UP) {
+        needs_update = true;
+        scope.rotateObject(new THREE.Vector3(-1, 0, 0), scope.rotation_step_degree)
+      } else if (event.keyCode == scope.keys.LEFT) {
+        needs_update = true;
+        scope.rotateObject(new THREE.Vector3(0, -1, 0), scope.rotation_step_degree)
+      } else if (event.keyCode == scope.keys.RIGHT) {
+        needs_update = true;
+        scope.rotateObject(new THREE.Vector3(0, 1, 0), scope.rotation_step_degree)
+      } else if (event.keyCode == scope.keys.CLOCKWISE) {
+        needs_update = true;
+        scope.rotateObject(new THREE.Vector3(0, 0, 1), scope.rotation_step_degree)
+      } else if (event.keyCode == scope.keys.COUNTERCLOCKWISE) {
+        needs_update = true;
+        scope.rotateObject(new THREE.Vector3(0, 0, -1), scope.rotation_step_degree)
+      } 
+    }
+
+    if(needs_update) {
+      event.preventDefault();
+      scope.update();
+    }
+
+  }
+
+  function wheel(event) {
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    scope.dispatchEvent( startEvent);
+
+    if (event.deltaY < 0) {
+      cameraObject.position.z = Math.max(
+        cameraObject.position.z-scope.camera_step, scope.cameraObject.near);
+
+    } else if (event.deltaY > 0) {
+      cameraObject.position.z = Math.min(
+        cameraObject.position.z+scope.camera_step, scope.cameraObject.far);
+    }
+
+    scope.update();
+
+    scope.dispatchEvent( endEvent );
+
+  }
+
+
+  // window.addEventListener( 'keydown', keydown, false );
+  // scope.domElement.addEventListener( 'wheel', wheel, false );
+
+
+	// make sure element can receive keys.
+
+	if ( scope.domElement.tabIndex === - 1 ) {
+
+		scope.domElement.tabIndex = 0;
+
+	}
+
+};
+
+CustomControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+CustomControls.prototype.constructor = CustomControls;
 
 function updateClippingPlaneCamera()
 {
@@ -35,6 +185,7 @@ function updateClippingPlaneCamera()
   var plane0 = three_clipping_plane.clone();
   plane0.constant = 0.0;
   const normal = three_clipping_plane.normal;
+
 
   var t2 = new THREE.Vector3();
   if(normal.z<0.5)
@@ -53,11 +204,11 @@ function updateClippingPlaneCamera()
   var target = plane_center.clone();
   target.addScaledVector(plane0.normal, -1);
 
-  buffer_camera.position.copy(position);
-  buffer_camera.up = t2;
-  buffer_camera.lookAt(target);
-  buffer_camera.updateProjectionMatrix();
-  buffer_camera.updateMatrix();
+  // buffer_camera.position.copy(position);
+  // buffer_camera.up = t2;
+  // buffer_camera.lookAt(target);
+  // buffer_camera.updateProjectionMatrix();
+  // buffer_camera.updateMatrix();
 
   uniforms.clipping_plane_c.value = plane_center;
   uniforms.clipping_plane_t1.value = t1;
@@ -80,11 +231,12 @@ function updateGridsize()
   const n = gui_status.grid_size;
   buffer_texture = new THREE.WebGLRenderTarget( n, n, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, type: THREE.HalfFloatType, format: THREE.RGBAFormat });
   uniforms.tex_values = new THREE.Uniform(buffer_texture.texture);
-  buffer_camera = new THREE.OrthographicCamera( -mesh_radius, mesh_radius, mesh_radius, -mesh_radius, -10, 10 );
+  // buffer_camera = new THREE.OrthographicCamera( -mesh_radius, mesh_radius, mesh_radius, -mesh_radius, -10, 10 );
   animate();
 }
 
 function init () {
+  console.log("init");
     if (render_data.websocket_url)
       websocket = new WebSocket(render_data.websocket_url);
     var canvas = document.createElement( 'canvas' );
@@ -119,8 +271,14 @@ function init () {
 
 
   scene = new THREE.Scene();
+  // var axesHelper_scene = new THREE.AxesHelper(10);
+  // scene.add(axesHelper_scene);
 
-  buffer_scene = new THREE.Scene();
+  pivot = new THREE.Group();
+  // var axesHelper_pivot = new THREE.AxesHelper( 1 );
+  // pivot.add(axesHelper_pivot);
+
+  // buffer_scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(
     40,                                         //FOV
@@ -135,7 +293,7 @@ function init () {
     console.log("camera init", camera_init);
     // should we compute center point on server or client ? (JS)
     // EDIT: temporarily done on server
-    // scene.translateX(-render_data.mesh_center[0]).translateY(-render_data.mesh_center[1]).translateZ(-render_data.mesh_center[2]);
+    // scene.translateX(-mesh_center[0]).translateY(-mesh_center[1]).translateZ(-mesh_center[2]);
 
   window.addEventListener( 'resize', function () {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -144,32 +302,38 @@ function init () {
     animate();
   }, false );
 
-  controls = new THREE.OrbitControls (camera, renderer.domElement);
+  controls2 = new THREE.OrbitControls (camera, renderer.domElement);
+  controls2.enabled = true;
+  controls2.enableKeys = false;
+  controls2.enableZoom = true;
+  controls2.enablePan = false;  
   clipping_plane = new THREE.Vector4(0,0,1,-1.7);
-  uniforms.clipping_plane = new THREE.Uniform( clipping_plane );
+  clipping_plane_frag = clipping_plane.clone();
+  uniforms.clipping_plane = new THREE.Uniform( clipping_plane ); 
+  /* should cliping plane in pivot world be calculated in shader insted of passing it? 
+    currently not done because it is needed here anyways
+  */
+  uniforms.clipping_plane_frag = new THREE.Uniform( clipping_plane_frag); 
   three_clipping_plane  = new THREE.Plane( );
 
   light_dir = new THREE.Vector3(0.5,0.5,1.5);
   light_dir.normalize();
   uniforms.light_dir = new THREE.Uniform(light_dir);
-  light_mat = new THREE.Vector4(0.3, 0.7, 10, 0.3); // ambient, diffuse, shininess, specularity
+  var light_mat = new THREE.Vector4(0.3, 0.7, 10, 0.3); // ambient, diffuse, shininess, specularity
   uniforms.light_mat = new THREE.Uniform(light_mat);
 
   uniforms.do_clipping = new THREE.Uniform( false );
 
-
-  gui_status = {};
   gui = new dat.GUI();
-
+  console.log("GUI", gui);
   mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
   mesh_radius = render_data.mesh_radius;
 
   if(render_data.show_wireframe)
   {
-    console.log("geometry order = "+render_data.geomorder);
     wireframe_object = createCurvedWireframe(render_data);
-    scene.add(wireframe_object);
-
+    centerObject(wireframe_object, mesh_center)
+    pivot.add(wireframe_object);
     uniforms.n_segments = new THREE.Uniform(5);
     gui_status.subdivision = 5;
     gui.add(gui_status, "subdivision", 1,20,1).onChange(animate);
@@ -180,20 +344,28 @@ function init () {
   if(render_data.show_mesh)
   {
       mesh_object = createCurvedMesh(render_data);
-      scene.add(mesh_object);
-      gui_status.elements = true;
+      centerObject(mesh_object, mesh_center)
+
+      pivot.add( mesh_object );      gui_status.elements = true;
       gui.add(gui_status, "elements").onChange(animate);
   }
 
 
+  gui_clipping = gui.addFolder("Clipping");
   if( /* have_webgl2 && */ render_data.show_clipping_function)
   {
-    var buffer_clipping = createClippingPlaneMesh(render_data);
-    buffer_scene.add(buffer_clipping);
-    clipping_function_object = buffer_clipping.clone();
-    scene.add(clipping_function_object);
+    console.log("create clipping function");
+    clipping_function_object = createClippingPlaneMesh(render_data);
+    centerObject(clipping_function_object, mesh_center)
+    pivot.add(clipping_function_object);
     gui_status.clipping_function = true;
     gui.add(gui_status, "clipping_function").onChange(animate);
+
+    // var buffer_clipping = createClippingPlaneMesh(render_data);
+    // buffer_scene.add(buffer_clipping);
+    // clipping_function_object = buffer_clipping.clone();
+    // pivot.add(clipping_function_object);
+
 
     uniforms.clipping_plane_c = new THREE.Uniform( new THREE.Vector3() );
     uniforms.clipping_plane_t1 = new THREE.Uniform( new THREE.Vector3() );
@@ -203,8 +375,7 @@ function init () {
     uniforms.grid_size = new THREE.Uniform( gui_status.grid_size );
     uniforms.write_vector_values = new THREE.Uniform( 0.0 );
 
-    gui_status.clipping_vectors = false;
-    gui.add(gui_status, "clipping_vectors").onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "vectors").onChange(animate);
     clipping_vectors_object = createClippingVectors(render_data);
     scene.add(clipping_vectors_object);
     console.log("clipping vectors", clipping_vectors_object);
@@ -212,47 +383,34 @@ function init () {
     updateGridsize();
   }
 
-  controls.target.set(0.0, 0.0, 0.0);
-  controls.update();
-  controls.addEventListener('change', animate );
+  controls2.target.set(0.0, 0.0, 0.0);
+  controls2.update();
+  controls2.addEventListener('change', animate );
 
-  if (animate_light) {
-    gui_status.light_source_x = 0.5;
-    gui_status.light_source_y = 0.5;
-    gui_status.light_source_z = 1.5;
-    gui_status.ambient_lighting = 0.3;
-
-    gui.add(gui_status, "light_source_x", -5.0, 5.0).onChange(animate);
-    gui.add(gui_status, "light_source_y", -5.0, 5.0).onChange(animate);
-    gui.add(gui_status, "light_source_z", -5.0, 5.0).onChange(animate);
-    gui.add(gui_status, "ambient_lighting", 0, 1.0).onChange(animate);
-  }
-
-  gui_status.clipping = false;
-  gui_status.clipping_x = 0.0;
-  gui_status.clipping_y = 0.0;
-  gui_status.clipping_z = 1.0;
-  gui_status.clipping_dist = 0.0;
-
-  gui.add(gui_status, "clipping").onChange(animate);
-  gui.add(gui_status, "clipping_x", -1.0, 1.0).onChange(animate);
-  gui.add(gui_status, "clipping_y", -1.0, 1.0).onChange(animate);
-  gui.add(gui_status, "clipping_z", -1.0, 1.0).onChange(animate);
-  gui.add(gui_status, "clipping_dist", -3.0, 3.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
+  gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
 
 
 
   if(render_data.show_clipping_function || render_data.show_surface_function)
   {
-    uniforms.colormap_min = new THREE.Uniform( render_data.funcmin );
-    uniforms.colormap_max = new THREE.Uniform( render_data.funcmax );
+    const cmin = render_data.funcmin;
+    const cmax = render_data.funcmax;
+    uniforms.colormap_min = new THREE.Uniform( cmin );
+    uniforms.colormap_max = new THREE.Uniform( cmax );
+    gui_status.colormap_min = cmin;
+    gui_status.colormap_max = cmax;
+
+    const cstep = 1e-6 * (cmax-cmin);
+    gui.add(gui_status, "colormap_min", cmin, cmax, cstep).onChange(animate);
+    gui.add(gui_status, "colormap_max", cmin, cmax, cstep).onChange(animate);
+
     gui_status.colormap_ncolors = 8;
-    gui_status.colormap_min = render_data.funcmin;
-    gui_status.colormap_max = render_data.funcmax;
     gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(updateColormap);
-    gui.add(gui_status, "colormap_min").onChange(animate);
-    gui.add(gui_status, "colormap_max").onChange(animate);
-    updateColormap(8);
+    updateColormap();
   }
     else
     {
@@ -261,9 +419,21 @@ function init () {
       gui_status.colormap_ncolors = 8;
       gui_status.colormap_min = -1;
       gui_status.colormap_max = 1;
-      updateColormap(8);
+      updateColormap();
     }
 
+  gui_light = gui.addFolder("Light");
+  gui_light.add(gui_status.Light, "ambient", 0.0, 1.0).onChange(animate);
+  gui_light.add(gui_status.Light, "diffuse", 0.0, 1.0).onChange(animate);
+  gui_light.add(gui_status.Light, "shininess", 0.0, 100.0).onChange(animate);
+  gui_light.add(gui_status.Light, "specularity", 0.0, 1.0).onChange(animate);
+
+
+
+scene.add( pivot );
+
+controls = new CustomControls(camera, pivot, renderer.domElement );
+controls.addEventListener('change', animate);
 
   animate();
 }
@@ -359,7 +529,7 @@ function createCurvedMesh(data)
 
     var updateSolution = function( data ) {
             var i = 0;
-            const order = render_data.geomorder;
+            const order = render_data.order2d;
             if(order == 1) {
                 geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
                 geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
@@ -421,7 +591,7 @@ function createCurvedMesh(data)
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute(position, 2 ));
     geo.boundingSphere = new THREE.Sphere(mesh_center, mesh_radius);
     
-    const defines = {MESH_2D: true, ORDER:render_data.geomorder};
+    const defines = {MESH_2D: true, ORDER:render_data.order2d};
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'trigsplines.vert', defines ),
         fragmentShader: getShader( 'function.frag', defines ),
@@ -446,13 +616,13 @@ function createCurvedWireframe(data)
     geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[0]), 3 ));
     geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[1]), 3 ));
     geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[2]), 3 ));
-    if(render_data.geomorder >= 3)
+    if(render_data.order2d >= 3)
         geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[3]), 3 ));
 
     geo.maxInstancedCount = n_verts;
     geo.boundingSphere = new THREE.Sphere(mesh_center, mesh_radius);
     
-    const defines = {ORDER: render_data.geomorder};
+    const defines = {ORDER: render_data.order2d};
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'splines.vert', defines ),
         fragmentShader: getShader( 'splines.frag', defines ),
@@ -493,9 +663,10 @@ function createClippingVectors(data)
 
 function createClippingPlaneMesh(data)
 {
+   const defines = {ORDER: render_data.order3d};
     var material = new THREE.RawShaderMaterial({
-        vertexShader: getShader( 'clipping_vectors.vert' ),
-        fragmentShader: getShader( 'clipping_vectors.frag' ),
+        vertexShader: getShader( 'clipping_vectors.vert', defines ),
+        fragmentShader: getShader( 'clipping_vectors.frag', defines ),
         side: THREE.DoubleSide,
         uniforms: uniforms
     });
@@ -574,12 +745,22 @@ function createClippingPlaneMesh(data)
     return mesh;
 }
 
+var requestId = 0;
 function animate () {
-  // framerate controlled by browser
-  requestAnimationFrame( render );
+  // Don't request a frame if another one is currently in the pipeline
+  if(requestId == 0)
+    requestId = requestAnimationFrame( render );
 }
 
+function centerObject(object, center_vec)  {
+  object.translateX(-center_vec.x);
+  object.translateY(-center_vec.y);
+  object.translateZ(-center_vec.z);
+}
+
+
 function render() {
+  requestId = 0;
   if( wireframe_object != null )
   {
     wireframe_object.visible = gui_status.edges;
@@ -604,35 +785,40 @@ function render() {
 
   if( clipping_function_object != null )
   {
-    clipping_function_object.visible = gui_status.clipping_function && gui_status.clipping;
+    clipping_function_object.visible = gui_status.clipping_function && gui_status.Clipping.enable;
     const sd = gui_status.subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
   }
 
-  clipping_plane.x = gui_status.clipping_x;
-  clipping_plane.y = gui_status.clipping_y;
-  clipping_plane.z = gui_status.clipping_z;
-  clipping_plane.w = 0.0;
-  clipping_plane.normalize();
-  clipping_plane.w = gui_status.clipping_dist;
+  three_clipping_plane.normal.set(gui_status.Clipping.x, gui_status.Clipping.y, gui_status.Clipping.z);
+  three_clipping_plane.normal.normalize();
+  three_clipping_plane.constant = gui_status.Clipping.dist-three_clipping_plane.normal.dot(mesh_center);
 
-  if (animate_light) {
-    lighting.x = gui_status.light_source_x;
-    lighting.y = gui_status.light_source_y;
-    lighting.z = gui_status.light_source_z;
-    lighting.w = gui_status.ambient_lighting;
-  }
+  // console.log("three_clipping_plane normal and const", three_clipping_plane.normal, three_clipping_plane.constant);
 
-  uniforms.do_clipping.value = gui_status.clipping;
-
+  clipping_plane.set(
+    three_clipping_plane.normal.x,
+    three_clipping_plane.normal.y,
+    three_clipping_plane.normal.z,
+    three_clipping_plane.constant);
   renderer.clippingPlanes = [];
-  three_clipping_plane.normal.x = clipping_plane.x;
-  three_clipping_plane.normal.y = clipping_plane.y;
-  three_clipping_plane.normal.z = clipping_plane.z;
-  three_clipping_plane.constant = clipping_plane.w;
-  three_clipping_plane.normalize();
-  if(gui_status.clipping)
-    renderer.clippingPlanes = [three_clipping_plane];
+
+  world_clipping_plane = three_clipping_plane.clone();
+
+  world_clipping_plane.constant = gui_status.Clipping.dist;
+  world_clipping_plane.applyMatrix4( pivot.matrix)
+  // console.log("world_clipping_plane.normal and dist", world_clipping_plane.normal, world_clipping_plane.constant);
+
+  clipping_plane_frag.set(
+    world_clipping_plane.normal.x,
+    world_clipping_plane.normal.y,
+    world_clipping_plane.normal.z,
+    world_clipping_plane.constant);
+  
+  uniforms.do_clipping.value = gui_status.Clipping.enable;
+
+  if(gui_status.Clipping.enable)
+    renderer.clippingPlanes = [world_clipping_plane];
 
   if(gui_status.colormap_ncolors)
   {
@@ -641,18 +827,27 @@ function render() {
   }
 
   if(clipping_vectors_object != null)
-    clipping_vectors_object.visible = gui_status.clipping_vectors;
-  if(gui_status.clipping_vectors)
+    clipping_vectors_object.visible = gui_status.Clipping.vectors;
+  if(gui_status.Clipping.vectors)
   {
-    updateClippingPlaneCamera();
-    uniforms.write_vector_values.value = 1.0;
-    renderer.setRenderTarget(buffer_texture);
-    renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
-    renderer.render(buffer_scene, buffer_camera);
-    uniforms.write_vector_values.value = 0.0;
+    // updateClippingPlaneCamera();
+    // uniforms.write_vector_values.value = 1.0;
+    // renderer.setRenderTarget(buffer_texture);
+    // renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
+    // renderer.render(buffer_scene, buffer_camera);
+    // uniforms.write_vector_values.value = 0.0;
   }
+
+
+  uniforms.light_mat.value.x = gui_status.Light.ambient;
+  uniforms.light_mat.value.y = gui_status.Light.diffuse;
+  uniforms.light_mat.value.z = gui_status.Light.shininess;
+  uniforms.light_mat.value.w = gui_status.Light.specularity;
 
   renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
   renderer.setRenderTarget(null);
   renderer.render( scene, camera );
 }
+
+
+init();
