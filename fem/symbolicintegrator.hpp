@@ -757,15 +757,30 @@ public:
   public:
     SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 
-    virtual VorB VB() const { return vb; }
-    virtual bool BoundaryForm() const { return vb == BND; }
+    virtual VorB VB() const override { return vb; }
+    virtual bool BoundaryForm() const override { return vb == BND; }
 
-    NGS_DLL_HEADER virtual void
-    CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
-                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                     const ElementTransformation & seltrans,
-                     FlatVector<double> elvec,
-                     LocalHeap & lh) const;
+    NGS_DLL_HEADER void
+    CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
+                    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                    const ElementTransformation & seltrans,
+                    FlatVector<double> elvec,
+                    LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER void
+    CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
+                    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                    const ElementTransformation & seltrans,
+                    FlatVector<Complex> elvec,
+                    LocalHeap & lh) const override;
+
+  private:
+    template<typename TSCAL>
+    void T_CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+                            const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                            const ElementTransformation & seltrans,
+                            FlatVector<TSCAL> elvec,
+                            LocalHeap & lh) const;
   };
 
 
@@ -807,6 +822,21 @@ public:
                      LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
+    CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                     const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                     const FiniteElement & volumefel2, int LocalFacetNr2,
+                     const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                     FlatMatrix<Complex> elmat,
+                     LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
+    CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                     const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                     FlatMatrix<Complex> elmat,
+                     LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
     CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                                const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                                const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
@@ -840,6 +870,21 @@ public:
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
 
+  private:
+    template<typename TSCAL>
+    void T_CalcFacetMatrix(const FiniteElement & volumefel1, int LocalFacetNr1,
+                           const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                           const FiniteElement & volumefel2, int LocalFacetNr2,
+                           const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                           FlatMatrix<TSCAL> elmat,
+                           LocalHeap & lh) const;
+
+    template<typename TSCAL>
+    void T_CalcFacetMatrix(const FiniteElement & volumefel, int LocalFacetNr,
+                           const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                           const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                           FlatMatrix<TSCAL> elmat,
+                           LocalHeap & lh) const;
   };
 
   class SymbolicEnergy : public BilinearFormIntegrator
