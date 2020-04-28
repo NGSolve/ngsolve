@@ -384,7 +384,7 @@ function init () {
     uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
     uniforms.complex_deform = new THREE.Uniform( 0.0 );
   }
-  else if(render_data.func_dim>1)
+  else if(render_data.funcdim>1)
     gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
 
   uniforms.function_mode = new THREE.Uniform( 0 );
@@ -743,7 +743,7 @@ function createClippingPlaneMesh(data)
     if(render_data.order3d==2)
       names = names.concat(['p03', 'p13', 'p23', 'p01', 'p02', 'p12' ]);
 
-    if(render_data.fundim>1)
+    if(render_data.funcdim>1)
     {
       names = names.concat(['v0_1', 'v2_3']);
       if(render_data.order3d==2)
@@ -785,7 +785,6 @@ function render() {
         if(gui_status.subdivision !== undefined)
         {
             uniforms.n_segments.value = gui_status.subdivision;
-            // mesh_object.geometry.maxInstancedCount = gui_status.n_segments * gui_status.n_segments;
             mesh_object.geometry.setDrawRange(0, 3*gui_status.subdivision*gui_status.subdivision)
         }
     }
@@ -832,8 +831,6 @@ function render() {
   if(clipping_vectors_object != null)
   {
     clipping_vectors_object.visible = gui_status.Vectors.show;
-    const sd = gui_status.subdivision;
-    clipping_vectors_object.geometry.setDrawRange(0, 6*sd*sd*sd)
     uniforms.vectors_offset.value = gui_status.Vectors.offset;
   }
 
