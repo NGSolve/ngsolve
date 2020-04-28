@@ -148,6 +148,8 @@ class WebGLScene:
         self.loop.run_until_complete(self.server)
         self.loop.run_forever()
 
+    def __repr__(self):
+        return ""
 
 
 bezier_trig_trafos = { }  # cache trafos for different orders
