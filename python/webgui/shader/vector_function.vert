@@ -3,7 +3,6 @@ uniform float grid_size;
 uniform vec3 clipping_plane_c;
 uniform vec3 clipping_plane_t1;
 uniform vec3 clipping_plane_t2;
-uniform vec4 clipping_plane;
 
 // default attributes (from arrow-geometry)
 attribute vec3 position;
@@ -67,7 +66,8 @@ void main() {
     p_ += grid_size* (arrowid.x-0.5) * clipping_plane_t1;
     p_ += grid_size* (arrowid.y-0.5) * clipping_plane_t2;
     p_ += size*rotate(position, quat); 
-    p_ -= 0.8*size*clipping_plane.xyz;
+    // p_ -= 0.8*size*clipping_plane.xyz;
+
 
     // diffuse-shading
     normal_ = rotate(normalMatrix * normal, quat);

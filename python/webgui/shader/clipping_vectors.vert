@@ -1,5 +1,4 @@
 uniform int n_segments;
-uniform vec4 clipping_plane;
 
 varying vec3 p_;
 varying vec3 normal_;
