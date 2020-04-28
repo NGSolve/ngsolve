@@ -353,11 +353,15 @@ function init () {
   if(render_data.mesh_dim == 3)
   {
     gui_clipping = gui.addFolder("Clipping");
-    gui_status.clipping_function = true;
-    gui.add(gui_status, "clipping_function").onChange(animate);
 
-    clipping_function_object = createClippingPlaneMesh(render_data);
-    pivot.add(clipping_function_object);
+    if(render_data.show_clipping_function)
+    {
+      gui_status.clipping_function = true;
+      gui.add(gui_status, "clipping_function").onChange(animate);
+
+      clipping_function_object = createClippingPlaneMesh(render_data);
+      pivot.add(clipping_function_object);
+    }
 
     gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
     gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);

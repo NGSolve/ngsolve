@@ -310,51 +310,52 @@ def BuildRenderData(mesh, func, order=None):
 
 
     timer4.Start()
-    if func:
-        d['show_surface_function'] = True
 
-        if mesh.dim==3:
-            p0 = []
-            p1 = []
-            p2 = []
-            p3 = []
-            values = []
-            tets = []
+    if mesh.dim==3:
+        p0 = []
+        p1 = []
+        p2 = []
+        p3 = []
+        values = []
+        tets = []
 
-            if order3d==1:
-                ir = ngs.IntegrationRule( [(1,0,0), (0,1,0), (0,0,1), (0,0,0)], [0]*4 )
-            else:
-                ir = ngs.IntegrationRule( [
-                    (1,0,0),
-                    (0,1,0),
-                    (0,0,1),
-                    (0,0,0),
-                    (0.5,0,0),
-                    (0,0.5,0),
-                    (0,0,0.5),
-                    (0.5,0.5,0),
-                    (0.5,0,0.5),
-                    (0,0.5,0.5) ],
-                    [0]*10 )
-            pts = mesh.MapToAllElements(ir, ngs.VOL)
-            pmat = func1(pts)
+        if order3d==1:
+            ir = ngs.IntegrationRule( [(1,0,0), (0,1,0), (0,0,1), (0,0,0)], [0]*4 )
+        else:
+            ir = ngs.IntegrationRule( [
+                (1,0,0),
+                (0,1,0),
+                (0,0,1),
+                (0,0,0),
+                (0.5,0,0),
+                (0,0.5,0),
+                (0,0,0.5),
+                (0.5,0.5,0),
+                (0.5,0,0.5),
+                (0,0.5,0.5) ],
+                [0]*10 )
+        pts = mesh.MapToAllElements(ir, ngs.VOL)
+        pmat = func1(pts)
 
-            ne = mesh.GetNE(ngs.VOL)
-            pmat = pmat.reshape(ne, len(ir), 4)
+        ne = mesh.GetNE(ngs.VOL)
+        pmat = pmat.reshape(ne, len(ir), 4)
+        funcmin = min(funcmin, np.min(pmat))
+        funcmax = max(funcmax, np.max(pmat))
+        points3d = []
+        for i in range(len(ir)):
+            points3d.append(pmat[:,i,:].flatten().tolist())
+
+        if func2:
+            pmat = func2(pts).reshape(ne, len(ir)//2, 4)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
-            points3d = []
-            for i in range(len(ir)):
+            for i in range(len(ir)//2):
                 points3d.append(pmat[:,i,:].flatten().tolist())
-
-            if func2:
-                pmat = func2(pts).reshape(ne, len(ir)//2, 4)
-                funcmin = min(funcmin, np.min(pmat))
-                funcmax = max(funcmax, np.max(pmat))
-                for i in range(len(ir)//2):
-                    points3d.append(pmat[:,i,:].flatten().tolist())
-            d['points3d'] = points3d
-            d['show_clipping_function'] = True
+        d['points3d'] = points3d
+        if func:
+            d['show_clipping_function'] = mesh.dim==3
+    if func:
+        d['show_surface_function'] = True
         d['funcmin'] = funcmin
         d['funcmax'] = funcmax
     timer4.Stop()
