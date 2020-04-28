@@ -181,6 +181,7 @@ def BuildRenderData(mesh, func, order=None):
 
 
     d = {}
+    d['mesh_dim'] = mesh.dim
     d['positions'] = points
     timer1.Stop()
 
@@ -293,8 +294,14 @@ def BuildRenderData(mesh, func, order=None):
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
-            for i in range(ndtrig):
-                Bezier_points.append(BezierPnts[i].flatten().tolist())
+            if og==1:
+                for i in range(ndtrig):
+                    Bezier_points.append(BezierPnts[i].flatten().tolist())
+            else:
+                # TODO: This is wrong (we need to transpose, reshape is not enough)
+                BezierPnts = BezierPnts.reshape(len(ir)//2, mesh.GetNE(vb), 4)
+                for i in range(ndtrig//2):
+                    Bezier_points.append(BezierPnts[i].flatten().tolist())
             d['funcdim'] = func.dim
 
         d['Bezier_trig_points'] = Bezier_points    

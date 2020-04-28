@@ -1,6 +1,6 @@
 varying vec3 p_;
 varying vec3 normal_;
-varying float value_;
+varying vec3 value_;
 uniform int n_segments;
 
 attribute vec2 position;
@@ -13,10 +13,11 @@ void main()
   float w = 1.0-u-v;
 
   vec4 position = GetPositionAndScalar(u,v);
+  value_.x = position.w;
+  value_.yz = GetVectorValues(u,v);
   normal_ = GetNormal(u,v);
 
   vec4 p = modelMatrix * vec4(position.xyz,1);
-  value_ = position.w;
   p_ = p.xyz / p.w;
   vec4 modelViewPosition = modelViewMatrix * vec4(position.xyz, 1.0); //0.. dir, 1.. pos
   normal_ =  normalMatrix*normal_;
