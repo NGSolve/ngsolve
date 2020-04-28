@@ -719,29 +719,19 @@ function createClippingPlaneMesh(data)
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute( vertid, 4 ));
     geo.setAttribute( 'vertid',   new THREE.Float32BufferAttribute( vertid, 4 ));
 
-    var ii = 0;
-    geo.setAttribute( 'p0',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-    geo.setAttribute( 'p1',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-    geo.setAttribute( 'p2',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-    geo.setAttribute( 'p3',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
+    var names = [ 'p0', 'p1', 'p2', 'p3' ];
     if(render_data.order3d==2)
+      names = names.concat(['p03', 'p13', 'p23', 'p01', 'p02', 'p12' ]);
+
+    if(render_data.fundim>1)
     {
-      geo.setAttribute( 'p03',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'p13',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'p23',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'p01',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'p02',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'p12',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
+      names = names.concat(['v0_1', 'v2_3']);
+      if(render_data.order3d==2)
+        names = names.concat(['v03_13', 'v23_01', 'v02_12']);
     }
 
-    geo.setAttribute( 'v0_1',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-    geo.setAttribute( 'v2_3',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-    if(render_data.order3d==2)
-    {
-      geo.setAttribute( 'v03_13',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'v23_01',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-      geo.setAttribute( 'v02_12',       new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[ii++]), 4 ) );
-    }
+    for (var i in names)
+      geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[i]), 4 ) );
 
     geo.maxInstancedCount = render_data.points3d[0].length/4;
 
