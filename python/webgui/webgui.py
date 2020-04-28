@@ -157,40 +157,42 @@ bezier_trig_trafos = { }  # cache trafos for different orders
 def BuildRenderData(mesh, func, order=None):
 
     timer = ngs.Timer("BuildRenderData")
-    timer1 = ngs.Timer("points")
     timer2 = ngs.Timer("edges")
     timer3 = ngs.Timer("els")
     timer3minmax = ngs.Timer("els minmax")
     timer4 = ngs.Timer("func")
     
     timer.Start()
-    timer1.Start()
-    p = mesh.ngmesh.Points()
-    points = []
 
     #TODO: handle quads and non-smooth functions
-    #TODO: handle discontinuous functions
     #TODO: subdivision
-    # print ("ne2d = ", len(mesh.ngmesh.Elements2D()))
-    if False:   # currently not used, should be vectorized if needed again
-      for el in mesh.ngmesh.Elements2D():
-        for v in el.vertices:
-            myp = p[v.nr]
-            for j in range(3):
-                points.append(myp[j])
-
 
     d = {}
     d['mesh_dim'] = mesh.dim
-    d['positions'] = points
-    timer1.Stop()
-
     order = order or mesh.GetCurveOrder()
     order2d = min(order, 3)
     order3d = min(order, 2)
     d['order2d'] = order2d
     d['order3d'] = order3d
-    print("d",d)
+
+
+    func2 = None
+    if func and func.is_complex:
+        d['is_complex'] = True
+        func1 = func[0].real
+        func2 = ngs.CoefficientFunction( (func[0].imag, 0.0) )
+        d['funcdim'] = 2
+    elif func and func.dim>1:
+        func1 = func[0]
+        func2 = ngs.CoefficientFunction( tuple(func[i] if i<func.dim else 0.0 for i in range(1,3)) ) # max 3-dimensional functions
+        d['funcdim'] = func.dim
+    elif func:
+        func1 = func
+        d['funcdim'] = 1
+    else:
+        func1 = ngs.CoefficientFunction(0.0)
+        d['funcdim'] = 0
+    func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
 
     d['show_wireframe'] = False
     d['show_mesh'] = False
@@ -270,8 +272,7 @@ def BuildRenderData(mesh, func, order=None):
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         pts = mesh.MapToAllElements(ir, vb)
-        hfunc = ngs.CoefficientFunction(0) if func == None else func[0]
-        pmat = ngs.CoefficientFunction( (ngs.x, ngs.y,ngs.z, hfunc) ) (pts)
+        pmat = ngs.CoefficientFunction( func1 ) (pts)
         timer3minmax.Start()
         funcmin = np.min(pmat[:,3])
         funcmax = np.max(pmat[:,3])
@@ -287,9 +288,8 @@ def BuildRenderData(mesh, func, order=None):
             Bezier_points.append(BezierPnts[i].flatten().tolist())
         timer3list.Stop()        
 
-        if func and func.dim>1:
-            hfunc = ngs.CoefficientFunction( tuple(func[i] if i<func.dim else 0.0 for i in range(1,3)) ) # max 3-dimensional functions
-            pmat = ngs.CoefficientFunction( hfunc ) (pts)
+        if func2:
+            pmat = ngs.CoefficientFunction( func2 ) (pts)
             pmat = pmat.reshape(mesh.GetNE(vb), len(ir), 2)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
@@ -301,7 +301,6 @@ def BuildRenderData(mesh, func, order=None):
                 BezierPnts = BezierPnts.transpose((1,0,2)).reshape(mesh.GetNE(vb), len(ir)//2, 4).transpose((1,0,2))
                 for i in range(ndtrig//2):
                     Bezier_points.append(BezierPnts[i].flatten().tolist())
-            d['funcdim'] = func.dim
 
         d['Bezier_trig_points'] = Bezier_points    
         d['mesh_center'] = list(mesh_center)
@@ -322,7 +321,6 @@ def BuildRenderData(mesh, func, order=None):
             values = []
             tets = []
 
-            cf = ngs.CoefficientFunction((ngs.x,ngs.y,ngs.z,func[0]))
             if order3d==1:
                 ir = ngs.IntegrationRule( [(1,0,0), (0,1,0), (0,0,1), (0,0,0)], [0]*4 )
             else:
@@ -339,7 +337,7 @@ def BuildRenderData(mesh, func, order=None):
                     (0,0.5,0.5) ],
                     [0]*10 )
             pts = mesh.MapToAllElements(ir, ngs.VOL)
-            pmat = cf(pts)
+            pmat = func1(pts)
 
             ne = mesh.GetNE(ngs.VOL)
             pmat = pmat.reshape(ne, len(ir), 4)
@@ -349,11 +347,8 @@ def BuildRenderData(mesh, func, order=None):
             for i in range(len(ir)):
                 points3d.append(pmat[:,i,:].flatten().tolist())
 
-            if func.dim>1:
-                fd = min(func.dim, 3)
-                cf = ngs.CoefficientFunction( tuple([func[i] for i in range(1,fd)] + [0.0]*(3-fd)) )
-                print("dim", cf.dim, func.dim)
-                pmat = cf(pts).reshape(ne, len(ir)//2, 4)
+            if func2:
+                pmat = func2(pts).reshape(ne, len(ir)//2, 4)
                 funcmin = min(funcmin, np.min(pmat))
                 funcmax = max(funcmax, np.max(pmat))
                 for i in range(len(ir)//2):
@@ -362,7 +357,6 @@ def BuildRenderData(mesh, func, order=None):
             d['show_clipping_function'] = True
         d['funcmin'] = funcmin
         d['funcmax'] = funcmax
-        d['funcdim'] = func.dim
     timer4.Stop()
     timer.Stop()
     return d

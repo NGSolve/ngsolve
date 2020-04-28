@@ -6,7 +6,7 @@ var light_dir;
 
 var uniforms = {};
 var gui_status = {
-  eval: "0",
+  Complex: { eval: 0, phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
   Clipping: { enable: false, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
@@ -366,10 +366,26 @@ function init () {
     gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
   }
 
+  if(render_data.is_complex)
+  {
+    gui_status.eval = 5;
+    gui.add(gui_status, "eval", {"real": 5,"imag":6,"norm":7}).onChange(animate);
+
+    cgui = gui.addFolder("Complex");
+    cgui.add(gui_status.Complex, "phase", 0, 2*Math.PI, 0.001).onChange(animate);
+    cgui.add(gui_status.Complex, "animate").onChange(animate);
+    cgui.add(gui_status.Complex, "speed", 0.0, 1, 0.0001).onChange(animate);
+    if(render_data.mesh_dim==2)
+      cgui.add(gui_status.Complex, "deform", 0.0, 1, 0.001).onChange(animate);
+    uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
+    uniforms.complex_deform = new THREE.Uniform( 0.0 );
+  }
+  else if(render_data.func_dim>1)
+    gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+
   uniforms.function_mode = new THREE.Uniform( 0 );
   if(render_data.funcdim>1)
   {
-    gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"abs":3}).onChange(animate);
     gui_vec = gui.addFolder("Vectors");
     gui_vec.add(gui_status.Vectors, "show").onChange(animate);
     gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(updateGridsize);
@@ -817,6 +833,14 @@ function render() {
     uniforms.vectors_offset.value = gui_status.Vectors.offset;
   }
 
+  if(render_data.is_complex)
+  {
+    uniforms.complex_scale.value.x = Math.cos(gui_status.Complex.phase);
+    uniforms.complex_scale.value.y = Math.sin(gui_status.Complex.phase);
+    if(render_data.mesh_dim==2)
+      uniforms.complex_deform.value = gui_status.Complex.deform;
+  }
+
   if(gui_status.Vectors.show)
   {
     updateClippingPlaneCamera();
@@ -836,6 +860,18 @@ function render() {
   renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
   renderer.setRenderTarget(null);
   renderer.render( scene, camera );
+
+  if(gui_status.Complex.animate)
+  {
+    gui_status.Complex.phase += gui_status.Complex.speed;
+    if(gui_status.Complex.phase>2*Math.PI)
+      gui_status.Complex.phase -= 2*Math.PI;
+
+    for (var i in gui.__controllers) {
+      gui.__controllers[i].updateDisplay();
+    }
+    animate();
+  }
 }
 
 

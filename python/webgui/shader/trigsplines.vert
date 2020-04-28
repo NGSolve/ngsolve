@@ -17,6 +17,8 @@ void main()
   value_.yz = GetVectorValues(u,v);
   normal_ = GetNormal(u,v);
 
+  position.z += GetValue(complex_deform*value_);
+
   vec4 p = modelMatrix * vec4(position.xyz,1);
   p_ = p.xyz / p.w;
   vec4 modelViewPosition = modelViewMatrix * vec4(position.xyz, 1.0); //0.. dir, 1.. pos
