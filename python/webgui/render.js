@@ -6,7 +6,8 @@ var light_dir;
 
 var uniforms = {};
 var gui_status = {
-  Complex: { eval: 0, phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
+  eval: 0,
+  Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
   Clipping: { enable: false, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
@@ -31,6 +32,16 @@ var mesh_center;
 var mesh_radius;
 
 var pivot;
+
+function readB64(base64) {
+    var binary_string = window.atob(base64);
+    var len = binary_string.length;
+    var bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return new Float32Array( bytes.buffer );
+}
 
 var CustomControls = function (cameraObject, pivotObject, domElement) {
   if ( domElement === undefined ) console.log( 'domElement is undefined' );
@@ -555,48 +566,27 @@ function createCurvedMesh(data)
     var updateSolution = function( data ) {
             var i = 0;
             const order = render_data.order2d;
+            var names;
+
             if(order == 1) {
-                geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-              if(render_data.funcdim>1) {
-                geo.setAttribute( 'v0', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 2 ));
-                geo.setAttribute( 'v1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 2 ));
-                geo.setAttribute( 'v2', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 2 ));
-              }
+              names = ['p0', 'p1', 'p2']
+              if(render_data.funcdim>1)
+                names = names.concat(['v0', 'v1', 'v2' ]);
+            }
+            if(order == 2) {
+              names = ['p00', 'p01', 'p02', 'p10', 'p11', 'p20'];
+              if(render_data.funcdim>1)
+                names = names.concat([ 'vec00_01', 'vec02_10', 'vec11_20' ]);
+            }
+            if(order == 3) {
+              names = [ 'p00', 'p01', 'p02', 'p03', 'p10', 'p11', 'p12', 'p20', 'p21', 'p30'];
+              if(render_data.funcdim>1)
+                names = names.concat([ 'vec00_01', 'vec02_03', 'vec10_11', 'vec12_20', 'vec21_30']);
             }
 
-            if(order >= 2) {
-                geo.setAttribute( 'p00', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p01', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p02', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                if(order>=3)
-                    geo.setAttribute( 'p03', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p10', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p11', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                if(order>=3)
-                    geo.setAttribute( 'p12', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p20', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-            }
-            if(order >= 3) {
-                geo.setAttribute( 'p21', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'p30', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-            }
-            if(render_data.funcdim>1) {
-              if(order == 2) {
-                geo.setAttribute( 'vec00_01', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'vec02_10', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'vec11_20', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-              }
-              else {
-                geo.setAttribute( 'vec00_01', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'vec02_03', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'vec10_11', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'vec12_20', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'vec21_30', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-              }
-            }
-      animate();
+            for (var i in names)
+              geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(data[i]), 4 ) );
+            animate();
     }
     updateSolution(render_data.Bezier_trig_points);
 
@@ -630,7 +620,7 @@ function createCurvedMesh(data)
 
 function createCurvedWireframe(data)
 {
-    const n_verts = render_data.Bezier_points[0].length/3;
+    const n_verts = render_data.Bezier_points[0].length/3/3*2/4; // 3 components, 2/3 b64 ratio, 4 bytes per float
     var geo = new THREE.InstancedBufferGeometry();
 
     var inst = new Float32Array(21); // 20 = max value of n_segments
@@ -638,11 +628,12 @@ function createCurvedWireframe(data)
         inst[i] = i;
 
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute( inst, 1 ));
-    geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[0]), 3 ));
-    geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[1]), 3 ));
-    geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[2]), 3 ));
+    geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[0]), 3 ));
+    geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[1]), 3 ));
+    if(render_data.order2d >= 2)
+        geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[2]), 3 ));
     if(render_data.order2d >= 3)
-        geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( new Float32Array( render_data.Bezier_points[3]), 3 ));
+        geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[3]), 3 ));
 
     geo.maxInstancedCount = n_verts;
     geo.boundingSphere = new THREE.Sphere(mesh_center, mesh_radius);
@@ -751,9 +742,7 @@ function createClippingPlaneMesh(data)
     }
 
     for (var i in names)
-      geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( new Float32Array(render_data.points3d[i]), 4 ) );
-
-    geo.maxInstancedCount = render_data.points3d[0].length/4;
+      geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(render_data.points3d[i]), 4 ) );
 
     mesh = new THREE.Mesh( geo, material );
 

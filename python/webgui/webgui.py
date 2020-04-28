@@ -218,7 +218,7 @@ def BuildRenderData(mesh, func, order=None):
         # print (iBvals)
 
                 
-        Bezier_points = [ [] for i in range(og+1) ]
+        Bezier_points = [ '' for i in range(og+1) ]
 
         # TODO: Quads
         ir0 = ngs.IntegrationRule( [(i/og,0) for i in range(og+1)], [0,]*(og+1) )
@@ -235,7 +235,7 @@ def BuildRenderData(mesh, func, order=None):
             timer3list = ngs.Timer("timer2 - make list")
             timer3list.Start()        
             for i in range(og+1):
-                Bezier_points[i] += BezierPnts[i].flatten().tolist()
+                Bezier_points[i] += encodeData(BezierPnts[i])
             timer3list.Stop()        
 
         d['Bezier_points'] = Bezier_points
@@ -285,7 +285,7 @@ def BuildRenderData(mesh, func, order=None):
         timer3list = ngs.Timer("timer3 - make list")
         timer3list.Start()        
         for i in range(ndtrig):
-            Bezier_points.append(BezierPnts[i].flatten().tolist())
+            Bezier_points.append(encodeData(BezierPnts[i]))
         timer3list.Stop()        
 
         if func2:
@@ -296,11 +296,11 @@ def BuildRenderData(mesh, func, order=None):
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
-                    Bezier_points.append(BezierPnts[i].flatten().tolist())
+                    Bezier_points.append(encodeData(BezierPnts[i]))
             else:
                 BezierPnts = BezierPnts.transpose((1,0,2)).reshape(mesh.GetNE(vb), len(ir)//2, 4).transpose((1,0,2))
                 for i in range(ndtrig//2):
-                    Bezier_points.append(BezierPnts[i].flatten().tolist())
+                    Bezier_points.append(encodeData(BezierPnts[i]))
 
         d['Bezier_trig_points'] = Bezier_points    
         d['mesh_center'] = list(mesh_center)
@@ -343,14 +343,14 @@ def BuildRenderData(mesh, func, order=None):
         funcmax = max(funcmax, np.max(pmat))
         points3d = []
         for i in range(len(ir)):
-            points3d.append(pmat[:,i,:].flatten().tolist())
+            points3d.append(encodeData(pmat[:,i,:]))
 
         if func2:
             pmat = func2(pts).reshape(ne, len(ir)//2, 4)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
             for i in range(len(ir)//2):
-                points3d.append(pmat[:,i,:].flatten().tolist())
+                points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d
         if func:
             d['show_clipping_function'] = mesh.dim==3
@@ -386,3 +386,9 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
     scene = WebGLScene(func, mesh, order, websocket)
     writeHTML(d)
     return scene
+
+def encodeData( array ):
+    from base64 import b64encode
+    values = np.array(array.flatten(), dtype=np.float32)
+    return b64encode(values).decode("ascii")
+
