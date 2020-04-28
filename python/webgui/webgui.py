@@ -360,7 +360,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
 
     if isinstance(mesh_or_func, ngs.GridFunction):
         func = mesh_or_func
-        mesh = mesh_or_none or func.mesh
+        mesh = mesh_or_none or func.space.mesh
         
     d = BuildRenderData(mesh, func, order=order)
     if websocket:
