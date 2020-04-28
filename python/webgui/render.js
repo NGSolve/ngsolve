@@ -593,13 +593,12 @@ function createCurvedMesh(data)
     if(websocket != null)
     {
       websocket.onmessage = async function(ev) {
-        const buffer = await new Response(ev.data).arrayBuffer();
-        var values = new Array(10);
-        const n = buffer.byteLength/40;
-        for(var i=0; i<10; i++)
-          values[i] = new Float32Array(buffer, i*4*n, n);
-        new Float32Array(buffer);
-        updateSolution(values);
+        console.log("got data", ev.data);
+        fr = new FileReader();
+        fr.onload = function() {
+          updateSolution(JSON.parse(this.result));
+        };
+        fr.readAsText(ev.data);
       };
     }
 

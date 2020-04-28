@@ -121,12 +121,11 @@ class WebGLScene:
             asyncio.ensure_future(websocket.send(data))
 
     def Redraw(self):
-        import numpy
+        import numpy, json
         if self.have_websocket and len(self.connected):
             d = BuildRenderData(self.mesh, self.cf, self.order)
-            values = numpy.array(d["Bezier_trig_points"], dtype=numpy.float32)
-
-            self.loop.call_soon_threadsafe(self._send, values.tobytes())
+            data = json.dumps(d["Bezier_trig_points"])
+            self.loop.call_soon_threadsafe(self._send, data.encode('ascii'))
 
     async def _handler(self, websocket, path):
         import websockets
