@@ -15,10 +15,11 @@ attribute vec4 p01;
 attribute vec4 p02;
 attribute vec4 p12;
 
-attribute vec3 v0;
-attribute vec3 v1;
-attribute vec3 v2;
-attribute vec3 v3;
+attribute vec4 v0_1;
+attribute vec4 v2_3;
+attribute vec4 v03_13;
+attribute vec4 v23_01;
+attribute vec4 v02_12;
 
 attribute vec4 vertid;
 
@@ -28,7 +29,6 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
   vec4 position =  mix(x0, x1, a);
   p_ = position.xyz;
   value_ =  mix(val0, val1, a);
-  value_.x = position.w; // TODO: define (scalar or vector)
   // vec4 modelViewPosition = viewMatrix * vec4(position.xyz, 1.0);
   // gl_Position = projectionMatrix * modelViewPosition;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
@@ -110,10 +110,19 @@ void CutElement3d()
     int n_front = 0;
     vec4 p[4];
     vec4 p4;
+    vec3 v[4];
 
 #if ORDER==1
     for (int i=0; i<4; ++i)
+    {
       p[i] = psub[i].x*p0 + psub[i].y*p1 + psub[i].z*p2 + psub[i].w*p3;
+      v[i].x = p[i].w;
+    }
+
+    v[0].yz = v0_1.xy;
+    v[1].yz = v0_1.zw;
+    v[2].yz = v2_3.xy;
+    v[3].yz = v2_3.zw;
 #else // ORDER==1
     for (int i=0; i<4; ++i)
     {
@@ -126,13 +135,15 @@ void CutElement3d()
          + 4. * l0*l1 * p01 + 4. * l0*l2 * p02
          + 4. * l0*l3 * p03 + 4. * l1*l2 * p12
          + 4. * l1*l3 * p13 + 4. * l2*l3 * p23;
+
+      v[i].x = p[i].w;
+      v[i].yz = l0*(2.*l0-1.) * v0_1.xy + l1*(2.*l1-1.) * v0_1.zw
+         + l2*(2.*l2-1.) * v2_3.xy + l3*(2.*l3-1.) * v2_3.zw
+         + 4. * l0*l1 * v23_01.zw + 4. * l0*l2 * v02_12.xy
+         + 4. * l0*l3 * v03_13.xy + 4. * l1*l2 * v02_12.zw
+         + 4. * l1*l3 * v03_13.zw + 4. * l2*l3 * v23_01.xy;
     }
 #endif // ORDER==1
-    vec3 v[4];
-    v[0] = v0;
-    v[1] = v1;
-    v[2] = v2;
-    v[3] = v3;
 
     // front/back:   shift-register
     // ending v:  ther v-th front/back point
