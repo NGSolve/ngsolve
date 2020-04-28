@@ -298,8 +298,7 @@ def BuildRenderData(mesh, func, order=None):
                 for i in range(ndtrig):
                     Bezier_points.append(BezierPnts[i].flatten().tolist())
             else:
-                # TODO: This is wrong (we need to transpose, reshape is not enough)
-                BezierPnts = BezierPnts.reshape(len(ir)//2, mesh.GetNE(vb), 4)
+                BezierPnts = BezierPnts.transpose((1,0,2)).reshape(mesh.GetNE(vb), len(ir)//2, 4).transpose((1,0,2))
                 for i in range(ndtrig//2):
                     Bezier_points.append(BezierPnts[i].flatten().tolist())
             d['funcdim'] = func.dim
