@@ -6,8 +6,9 @@ var light_dir;
 
 var uniforms = {};
 var gui_status = {
-  Clipping: { enable: false, vectors:false, x: 1.0, y: 0.0, z: 0.0, dist: 0.3 },
+  Clipping: { enable: false, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
+  Vectors: { show: false, grid_size: 10, offset: 0.0 },
 };
 
 var wireframe_object;
@@ -21,6 +22,7 @@ var have_webgl2 = false;
 var websocket = null;
 
 var buffer_scene;
+var buffer_object;
 var buffer_texture;
 var buffer_camera;
 
@@ -179,7 +181,7 @@ CustomControls.prototype.constructor = CustomControls;
 
 function updateClippingPlaneCamera()
 {
-  const n = gui_status.grid_size;
+  const n = gui_status.Vectors.grid_size;
   var plane_center = new THREE.Vector3();
   three_clipping_plane.projectPoint(mesh_center, plane_center);
   var plane0 = three_clipping_plane.clone();
@@ -228,7 +230,7 @@ function updateClippingPlaneCamera()
 
 function updateGridsize()
 {
-  const n = gui_status.grid_size;
+  const n = gui_status.Vectors.grid_size;
   buffer_texture = new THREE.WebGLRenderTarget( n, n, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, type: THREE.HalfFloatType, format: THREE.RGBAFormat });
   uniforms.tex_values = new THREE.Uniform(buffer_texture.texture);
   buffer_camera = new THREE.OrthographicCamera( -mesh_radius, mesh_radius, mesh_radius, -mesh_radius, -10, 10 );
@@ -309,7 +311,7 @@ function init () {
   controls2.enableKeys = false;
   controls2.enableZoom = true;
   controls2.enablePan = false;  
-  clipping_plane = new THREE.Vector4(0,0,1,-1.7);
+  clipping_plane = new THREE.Vector4(0,0,1,0);
   uniforms.clipping_plane = new THREE.Uniform( clipping_plane ); 
   /* should cliping plane in pivot world be calculated in shader insted of passing it? 
     currently not done because it is needed here anyways
@@ -347,32 +349,45 @@ function init () {
   }
 
 
-  gui_clipping = gui.addFolder("Clipping");
-  if( /* have_webgl2 && */ render_data.show_clipping_function)
+  if(render_data.mesh_dim == 3)
   {
+    gui_clipping = gui.addFolder("Clipping");
     gui_status.clipping_function = true;
     gui.add(gui_status, "clipping_function").onChange(animate);
 
-    var buffer_clipping = createClippingPlaneMesh(render_data);
-    buffer_scene.add(buffer_clipping);
-
-    clipping_function_object = buffer_clipping.clone();
+    clipping_function_object = createClippingPlaneMesh(render_data);
     pivot.add(clipping_function_object);
 
+    gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
+  }
+
+  if(render_data.funcdim>1)
+  {
+    gui_vec = gui.addFolder("Vectors");
+    gui_vec.add(gui_status.Vectors, "show").onChange(animate);
+    gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(updateGridsize);
+    gui_vec.add(gui_status.Vectors, "offset", -1.0, 1.0, 0.001).onChange(animate);
+
+    if(render_data.mesh_dim==2)
+      buffer_object = mesh_object.clone();
+    else
+      buffer_object = clipping_function_object.clone();
+
+    buffer_scene.add(buffer_object);
 
     uniforms.clipping_plane_c = new THREE.Uniform( new THREE.Vector3() );
     uniforms.clipping_plane_t1 = new THREE.Uniform( new THREE.Vector3() );
     uniforms.clipping_plane_t2 = new THREE.Uniform( new THREE.Vector3() );
-    gui_status.grid_size = 10;
-    gui.add(gui_status, "grid_size", 1, 100, 1).onChange(updateGridsize);
-    uniforms.grid_size = new THREE.Uniform( gui_status.grid_size );
-    uniforms.write_vector_values = new THREE.Uniform( 0.0 );
+    uniforms.vectors_offset = new THREE.Uniform( gui_status.Vectors.offset );
+    uniforms.grid_size = new THREE.Uniform( gui_status.Vectors.grid_size );
+    uniforms.function_mode = new THREE.Uniform( 0 );
 
-    gui_clipping.add(gui_status.Clipping, "vectors").onChange(animate);
     clipping_vectors_object = createClippingVectors(render_data);
     pivot.add(clipping_vectors_object);
-    console.log("clipping vectors", clipping_vectors_object);
-    console.log("scene", scene);
     updateGridsize();
   }
 
@@ -380,26 +395,18 @@ function init () {
   controls2.update();
   controls2.addEventListener('change', animate );
 
-  gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
-  gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
-  gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
-  gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
-  gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
-
-
-
   if(render_data.show_clipping_function || render_data.show_surface_function)
   {
     const cmin = render_data.funcmin;
-    const cmax = render_data.funcmax;
+    const cmax = Math.abs(render_data.funcmax);
     uniforms.colormap_min = new THREE.Uniform( cmin );
     uniforms.colormap_max = new THREE.Uniform( cmax );
     gui_status.colormap_min = cmin;
     gui_status.colormap_max = cmax;
 
     const cstep = 1e-6 * (cmax-cmin);
-    gui.add(gui_status, "colormap_min", cmin, cmax, cstep).onChange(animate);
-    gui.add(gui_status, "colormap_max", cmin, cmax, cstep).onChange(animate);
+    gui.add(gui_status, "colormap_min", cmin, 2*cmax, cstep).onChange(animate);
+    gui.add(gui_status, "colormap_max", cmin, 2*cmax, cstep).onChange(animate);
 
     gui_status.colormap_ncolors = 8;
     gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(updateColormap);
@@ -531,9 +538,9 @@ function createCurvedMesh(data)
                 geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
                 geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
               if(render_data.funcdim>1) {
-                geo.setAttribute( 'v0', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'v1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
-                geo.setAttribute( 'v2', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 4 ));
+                geo.setAttribute( 'v0', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 2 ));
+                geo.setAttribute( 'v1', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 2 ));
+                geo.setAttribute( 'v2', new THREE.InstancedBufferAttribute( new Float32Array( data[i++]), 2 ));
               }
             }
 
@@ -641,28 +648,16 @@ function createClippingVectors(data)
 
 
   const geo = new THREE.InstancedBufferGeometry().fromGeometry(new THREE.ConeGeometry(0.5, 1, 10));
-    geo.frustumCulled = false;
-
-//     var vertid = new Float32Array(3);
-//     for(var k=0; k<3; k++)
-//         vertid[k] = k;
-// 
-//     geo.setAttribute( 'vertid',   new THREE.Float32BufferAttribute( vertid, 1 ));
-//     geo.setAttribute( 'position',   new THREE.Float32BufferAttribute( vertid, 1 ));
-
-
     var mesh = new THREE.Mesh(geo, material);
-    geo.frustumCulled = false;
-    mesh.frustumCulled = false;
     return mesh;
 }
 
 function createClippingPlaneMesh(data)
 {
-   const defines = {ORDER: render_data.order3d};
+   const defines = {ORDER: render_data.order3d, SKIP_FACE_CHECK: 1, NO_CLIPPING: 1};
     var material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'clipping_vectors.vert', defines ),
-        fragmentShader: getShader( 'clipping_vectors.frag', defines ),
+        fragmentShader: getShader( 'function.frag', defines ),
         side: THREE.DoubleSide,
         uniforms: uniforms
     });
@@ -786,6 +781,7 @@ function render() {
 
   if( clipping_function_object != null )
   {
+    uniforms.n_segments.value = gui_status.subdivision;
     const sd = gui_status.subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
     clipping_function_object.visible = gui_status.clipping_function && gui_status.Clipping.enable;
@@ -823,19 +819,20 @@ function render() {
 
   if(clipping_vectors_object != null)
   {
-    clipping_vectors_object.visible = gui_status.Clipping.vectors;
+    clipping_vectors_object.visible = gui_status.Vectors.show;
     const sd = gui_status.subdivision;
     clipping_vectors_object.geometry.setDrawRange(0, 6*sd*sd*sd)
+    uniforms.vectors_offset.value = gui_status.Vectors.offset;
   }
 
-  if(gui_status.Clipping.vectors)
+  if(gui_status.Vectors.show)
   {
     updateClippingPlaneCamera();
-    uniforms.write_vector_values.value = 1.0;
+    uniforms.function_mode.value = 4;
     renderer.setRenderTarget(buffer_texture);
     renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
     renderer.render(buffer_scene, buffer_camera);
-    uniforms.write_vector_values.value = 0.0;
+    uniforms.function_mode.value = 0;
   }
 
 

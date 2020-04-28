@@ -109,9 +109,9 @@ vec2 GetVectorValues(float u, float v)
   vec2 v00 = vec00_01.xy;
   vec2 v01 = vec00_01.zw;
   vec2 v02 = vec02_10.xy;
-  vec2 v10 = vec00_01.zw;
+  vec2 v10 = vec02_10.zw;
   vec2 v11 = vec11_20.xy;
-  vec2 v20 = vec00_01.zw;
+  vec2 v20 = vec11_20.zw;
 
   vec2 values = b00*v00+b01*v01+b02*v02 +
     b10*v10+b11*v11 +
