@@ -798,12 +798,6 @@ function render() {
   world_clipping_plane.applyMatrix4( pivot.matrix)
   // console.log("world_clipping_plane.normal and dist", world_clipping_plane.normal, world_clipping_plane.constant);
 
-  clipping_plane_frag.set(
-    world_clipping_plane.normal.x,
-    world_clipping_plane.normal.y,
-    world_clipping_plane.normal.z,
-    world_clipping_plane.constant);
-  
   uniforms.do_clipping.value = gui_status.Clipping.enable;
 
   if(gui_status.Clipping.enable)
