@@ -15,6 +15,7 @@ var gui_status_default = {
   colormap_ncolors: 8,
   colormap_min: 0,
   colormap_max: 1.0,
+  deformation: 0.0,
   Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
   Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
@@ -455,6 +456,9 @@ function init () {
   uniforms.function_mode = new THREE.Uniform( 0 );
   if(render_data.funcdim>1)
   {
+    uniforms.deformation = new THREE.Uniform( gui_status.deformation );
+    gui.add(gui_status, "deformation", 0.0, 1.0, 0.0001).onChange(animate);
+
     gui_vec = gui.addFolder("Vectors");
     gui_vec.add(gui_status.Vectors, "show").onChange(animate);
     gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(updateGridsize);
@@ -880,6 +884,9 @@ function render() {
   // console.log("world_clipping_plane.normal and dist", world_clipping_plane.normal, world_clipping_plane.constant);
 
   uniforms.do_clipping.value = gui_status.Clipping.enable;
+
+  if(render_data.funcdim>1)
+    uniforms.deformation.value = gui_status.deformation;
 
   if(gui_status.Clipping.enable)
     renderer.clippingPlanes = [world_clipping_plane];

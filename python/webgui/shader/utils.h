@@ -25,6 +25,7 @@ uniform vec4 light_mat; // x=ambient, y=diffuse, z=shininess, w=specularity
 uniform float function_mode;
 uniform vec2 complex_scale;
 uniform float complex_deform;
+uniform float deformation;
 
 float GetValue( vec3 value )
 {
