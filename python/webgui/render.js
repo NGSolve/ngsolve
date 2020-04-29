@@ -4,6 +4,8 @@ var three_clipping_plane;
 var world_clipping_plane;
 var light_dir;
 
+var container, stats;
+
 var uniforms = {};
 var gui_status = {
   eval: 0,
@@ -32,6 +34,10 @@ var mesh_center;
 var mesh_radius;
 
 var pivot;
+
+var label_style  = '-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; onselectstart="return false;';
+label_style += 'onmousedown="return false; user-select:none;-o-user-select:none;unselectable="on";';
+label_style += 'position: absolute; z-index: 100; display:block;';
 
 function readB64(base64) {
     var binary_string = window.atob(base64);
@@ -283,7 +289,24 @@ function init () {
   //and this sets the canvas' size.
   renderer.setSize( window.innerWidth, window.innerHeight );
   renderer.setClearColor( 0xffffff, 1 );
-  document.body.appendChild( renderer.domElement );
+
+  container = document.createElement( 'div' );
+  document.body.appendChild( container );
+
+  container.appendChild( renderer.domElement );
+
+  stats = new Stats();
+  stats.showPanel(0); // Panel 0 = fps
+  stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+  container.appendChild( stats.domElement );
+
+  // label with NGSolve version at right lower corner
+  var version_div = document.createElement("div");
+  style = 'bottom: 10px; right: 10px';
+  newDiv.setAttribute("style",label_style+style);
+  var version_text = document.createTextNode("NGSolve " + render_data.ngsolve_version);
+  newDiv.appendChild(version_text)
+  container.appendChild(version_div);
 
 
   scene = new THREE.Scene();
@@ -752,6 +775,8 @@ function animate () {
   // Don't request a frame if another one is currently in the pipeline
   if(requestId == 0)
     requestId = requestAnimationFrame( render );
+
+  stats.update();
 }
 
 function render() {

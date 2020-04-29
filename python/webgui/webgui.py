@@ -35,6 +35,7 @@ html_template = """
           <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
           <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/controls/OrbitControls.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
           {shader}
           <script>
             var render_data = {data}
@@ -167,6 +168,7 @@ def BuildRenderData(mesh, func, order=None):
     #TODO: subdivision
 
     d = {}
+    d['ngsolve_version'] = ngs.__version__
     d['mesh_dim'] = mesh.dim
     order = order or mesh.GetCurveOrder()
     order2d = min(order, 3)
