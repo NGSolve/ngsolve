@@ -8,7 +8,7 @@ var uniforms = {};
 var gui_status = {
   eval: 0,
   Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
-  Clipping: { enable: false, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
+  Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
 };
@@ -361,26 +361,6 @@ function init () {
   }
 
 
-  if(render_data.mesh_dim == 3)
-  {
-    gui_clipping = gui.addFolder("Clipping");
-
-    if(render_data.show_clipping_function)
-    {
-      gui_status.clipping_function = true;
-      gui.add(gui_status, "clipping_function").onChange(animate);
-
-      clipping_function_object = createClippingPlaneMesh(render_data);
-      pivot.add(clipping_function_object);
-    }
-
-    gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
-    gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
-    gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
-    gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
-    gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
-  }
-
   if(render_data.is_complex)
   {
     gui_status.eval = 5;
@@ -397,6 +377,25 @@ function init () {
   }
   else if(render_data.funcdim>1)
     gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+
+
+  if(render_data.mesh_dim == 3)
+  {
+    gui_clipping = gui.addFolder("Clipping");
+    if(render_data.show_clipping_function)
+    {
+      gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
+
+      clipping_function_object = createClippingPlaneMesh(render_data);
+      pivot.add(clipping_function_object);
+    }
+
+    gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
+  }
 
   uniforms.function_mode = new THREE.Uniform( 0 );
   if(render_data.funcdim>1)
@@ -783,7 +782,7 @@ function render() {
     uniforms.n_segments.value = gui_status.subdivision;
     const sd = gui_status.subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
-    clipping_function_object.visible = gui_status.clipping_function && gui_status.Clipping.enable;
+    clipping_function_object.visible = gui_status.Clipping.function && gui_status.Clipping.enable;
   }
 
   three_clipping_plane.normal.set(gui_status.Clipping.x, gui_status.Clipping.y, gui_status.Clipping.z);
