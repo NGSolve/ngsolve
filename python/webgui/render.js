@@ -7,13 +7,23 @@ var light_dir;
 var container, stats;
 
 var uniforms = {};
-var gui_status = {
+var gui_status_default = {
   eval: 0,
+  subdivision: 5,
+  edges: true,
+  elements: true,
+  colormap_ncolors: 8,
+  colormap_min: 0,
+  colormap_max: 1.0,
   Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
   Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
+  Misc: { stats: "-1" },
 };
+var gui_status = JSON.parse(JSON.stringify(gui_status_default)); // deep-copy settings
+var gui_functions = { };
+var phase_controller;
 
 var wireframe_object;
 var mesh_object;
@@ -47,6 +57,30 @@ function readB64(base64) {
         bytes[i] = binary_string.charCodeAt(i);
     }
     return new Float32Array( bytes.buffer );
+}
+
+function setKeys (dst, src) {
+  for(var key in dst) {
+    if(typeof(dst[key])=="object" && src[key] !== undefined)
+      setKeys(dst[key], src[key]);
+    else
+    {
+      dst[key] = src[key];
+    }
+  }
+}
+
+function setGuiSettings (settings) {
+  setKeys(gui_status, settings);
+  stats.showPanel(parseInt(gui_status.Misc.stats));
+  for (var i in gui.__controllers)
+  gui.__controllers[i].updateDisplay();
+  for (var f in gui.__folders) {
+    const folder = gui.__folders[f];
+    for (var i in folder.__controllers)
+      folder.__controllers[i].updateDisplay();
+  }
+  animate();
 }
 
 var CustomControls = function (cameraObject, pivotObject, domElement) {
@@ -296,16 +330,16 @@ function init () {
   container.appendChild( renderer.domElement );
 
   stats = new Stats();
-  stats.showPanel(0); // Panel 0 = fps
+  stats.showPanel(-1); // Panel -1 = hidden, 0 = fps, 1 = ms per frame, 2 = memory usage
   stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
   container.appendChild( stats.domElement );
 
   // label with NGSolve version at right lower corner
   var version_div = document.createElement("div");
   style = 'bottom: 10px; right: 10px';
-  newDiv.setAttribute("style",label_style+style);
+  version_div.setAttribute("style",label_style+style);
   var version_text = document.createTextNode("NGSolve " + render_data.ngsolve_version);
-  newDiv.appendChild(version_text)
+  version_div.appendChild(version_text)
   container.appendChild(version_div);
 
 
@@ -369,9 +403,7 @@ function init () {
     wireframe_object = createCurvedWireframe(render_data);
     pivot.add(wireframe_object);
     uniforms.n_segments = new THREE.Uniform(5);
-    gui_status.subdivision = 5;
     gui.add(gui_status, "subdivision", 1,20,1).onChange(animate);
-    gui_status.edges = true;
     gui.add(gui_status, "edges").onChange(animate);
   }
 
@@ -379,18 +411,18 @@ function init () {
   {
       mesh_object = createCurvedMesh(render_data);
       pivot.add( mesh_object );
-      gui_status.elements = true;
       gui.add(gui_status, "elements").onChange(animate);
   }
 
 
   if(render_data.is_complex)
   {
+    gui_status_default.eval = 5;
     gui_status.eval = 5;
     gui.add(gui_status, "eval", {"real": 5,"imag":6,"norm":7}).onChange(animate);
 
     cgui = gui.addFolder("Complex");
-    cgui.add(gui_status.Complex, "phase", 0, 2*Math.PI, 0.001).onChange(animate);
+    phase_controller = cgui.add(gui_status.Complex, "phase", 0, 2*Math.PI, 0.001).onChange(animate);
     cgui.add(gui_status.Complex, "animate").onChange(animate);
     cgui.add(gui_status.Complex, "speed", 0.0, 1, 0.0001).onChange(animate);
     if(render_data.mesh_dim==2)
@@ -454,28 +486,20 @@ function init () {
   {
     const cmin = render_data.funcmin;
     const cmax = Math.abs(render_data.funcmax);
-    uniforms.colormap_min = new THREE.Uniform( cmin );
-    uniforms.colormap_max = new THREE.Uniform( cmax );
     gui_status.colormap_min = cmin;
     gui_status.colormap_max = cmax;
+    gui_status_default.colormap_min = cmin;
+    gui_status_default.colormap_max = cmax;
 
     const cstep = 1e-6 * (cmax-cmin);
     gui.add(gui_status, "colormap_min", cmin, 2*cmax, cstep).onChange(animate);
     gui.add(gui_status, "colormap_max", cmin, 2*cmax, cstep).onChange(animate);
 
-    gui_status.colormap_ncolors = 8;
     gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(updateColormap);
-    updateColormap();
   }
-    else
-    {
-      uniforms.colormap_min = new THREE.Uniform( -1 );
-      uniforms.colormap_max = new THREE.Uniform( 1 );
-      gui_status.colormap_ncolors = 8;
-      gui_status.colormap_min = -1;
-      gui_status.colormap_max = 1;
-      updateColormap();
-    }
+  uniforms.colormap_min = new THREE.Uniform( gui_status.colormap_min );
+  uniforms.colormap_max = new THREE.Uniform( gui_status.colormap_max );
+  updateColormap();
 
   gui_light = gui.addFolder("Light");
   gui_light.add(gui_status.Light, "ambient", 0.0, 1.0).onChange(animate);
@@ -483,7 +507,34 @@ function init () {
   gui_light.add(gui_status.Light, "shininess", 0.0, 100.0).onChange(animate);
   gui_light.add(gui_status.Light, "specularity", 0.0, 1.0).onChange(animate);
 
-
+  gui_misc = gui.addFolder("Misc");
+  gui_misc.add(gui_status.Misc, "stats", {"none":-1, "FPS":0, "ms":1, "memory":2}).onChange(function(show_fps) {
+      stats.showPanel( parseInt(show_fps) );
+  });
+  gui_functions['reset settings'] = function() {
+    setGuiSettings(gui_status_default);
+  };
+  gui_functions['store settings'] = function() {
+    document.cookie = "gui_status="+btoa(JSON.stringify(gui_status));
+  };
+  gui_functions['load settings'] = function() {
+    var name = "gui_status="
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) == ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        const s = JSON.parse(atob(c.substring(name.length, c.length)));
+        setGuiSettings(s);
+      }
+    }
+  };
+  gui_misc.add(gui_functions, "reset settings");
+  gui_misc.add(gui_functions, "store settings");
+  gui_misc.add(gui_functions, "load settings");
 
 // pivot.translateX(-mesh_center.x);
 // pivot.translateY(-mesh_center.y);
@@ -615,7 +666,6 @@ function createCurvedMesh(data)
     if(websocket != null)
     {
       websocket.onmessage = async function(ev) {
-        console.log("got data", ev.data);
         fr = new FileReader();
         fr.onload = function() {
           updateSolution(JSON.parse(this.result));
@@ -880,11 +930,25 @@ function render() {
     if(gui_status.Complex.phase>2*Math.PI)
       gui_status.Complex.phase -= 2*Math.PI;
 
-    for (var i in gui.__controllers) {
-      gui.__controllers[i].updateDisplay();
-    }
+    phase_controller.updateDisplay();
     animate();
   }
+}
+
+function getCookie(cname) {
+  var name = cname + "=";
+  var decodedCookie = decodeURIComponent(document.cookie);
+  var ca = decodedCookie.split(';');
+  for(var i = 0; i <ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
 }
 
 
