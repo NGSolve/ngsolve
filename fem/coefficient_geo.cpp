@@ -413,10 +413,10 @@ namespace ngfem
           auto dX = dir->Operator("Gradboundary");
           Array<shared_ptr<CoefficientFunction>> cflist(1);
           cflist[0] = TransposeCF(dir->Operator("hesseboundary"))*n;
-          auto Hn2 = MakeVectorialCoefficientFunction(move(cflist));
-          Hn2->SetDimensions( Array({dim,dim}) );
+          auto Hn = MakeVectorialCoefficientFunction(move(cflist));
+          Hn->SetDimensions( Array({dim,dim}) );
           
-          return -Hn2 - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
+          return -Hn - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
         }
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
