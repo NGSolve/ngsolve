@@ -46,7 +46,15 @@ namespace ngcomp
           else
             throw Exception("cannot evaluate facet-fe inside element");
         }
-    }  
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return ZeroCF(Array<int>());
+    }
+
   };
   
   /// Identity
@@ -128,6 +136,12 @@ namespace ngcomp
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
 
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return ZeroCF(Array<int>());
+    }
 
     
   };
@@ -153,6 +167,14 @@ namespace ngcomp
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return ZeroCF(Array<int>());
+    }
+
 
   };
 

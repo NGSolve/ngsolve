@@ -92,6 +92,14 @@ namespace ngcomp
                                           y.Row(0),
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return ZeroCF(Array<int>());
+    }
+
   }; 
 
 
