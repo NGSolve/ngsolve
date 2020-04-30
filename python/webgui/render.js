@@ -20,7 +20,7 @@ var gui_status_default = {
   Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
-  Misc: { stats: "-1" },
+  Misc: { stats: "-1", reduce_subdivision: false },
 };
 var gui_status = JSON.parse(JSON.stringify(gui_status_default)); // deep-copy settings
 var gui_functions = { };
@@ -84,64 +84,68 @@ function setGuiSettings (settings) {
   animate();
 }
 
-var CustomControls = function (cameraObject, pivotObject, domElement) {
+var CameraControls = function (cameraObject, pivotObject, domElement) {
   if ( domElement === undefined ) console.log( 'domElement is undefined' );
 	if ( domElement === document ) console.error( '"document" should not be used as the target "domElement". Please use "renderer.domElement" instead.' );
   if ( !cameraObject.isPerspectiveCamera ) console.error('camera must be perspective camera');
-
 
   this.cameraObject = cameraObject;
   this.pivotObject = pivotObject;
   this.domElement = domElement;
 
+  this.transmat = new THREE.Matrix4();
+  this.rotmat = new THREE.Matrix4();
+  this.centermat = new THREE.Matrix4();
+  this.transformationmat = new THREE.Matrix4();
+  this.scale = 1.0/mesh_radius;
+
+  this.centermat.makeTranslation(-mesh_center.x, -mesh_center.y, -mesh_center.z);
+
+  this.mode = null;
+
   this.keys = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, CLOCKWISE: 65, COUNTERCLOCKWISE: 83};
 
-  this.rotation_step_degree = 10;
+  this.rotation_step_degree = 0.05;
   this.pan_step = 0.05;
   this.camera_step = 0.2;
 
   // not to change from outside
   var changeEvent = { type: 'change' };
-  // could maybe left out:
-	var startEvent = { type: 'start' }; 
-	var endEvent = { type: 'end' };
 
   var scope = this;
   
+  this.reset = function () {
+    scope.transmat.identity();
+    scope.rotmat.identity();
+    scope.centermat.identity();
+    scope.transformationmat.identity();
+    scope.scale = 1.0/mesh_radius;
+    scope.centermat.makeTranslation(-mesh_center.x, -mesh_center.y, -mesh_center.z);
+    scope.update();
+  }
 
   this.update = function () {
-
+    var scale_vec = new THREE.Vector3();
     return function update() {
-
-      scope.pivotObject.updateMatrix(); // needed or clipping is not working propperly
-      // console.log("update mat: ", Date.now()); 
-      scope.cameraObject.updateProjectionMatrix();
+      scale_vec.setScalar(scope.scale);
+      scope.pivotObject.matrix.copy(scope.transmat).multiply(scope.rotmat).scale(scale_vec).multiply(scope.centermat);
       scope.dispatchEvent( changeEvent );
     };  
-
   }()
 
   this.rotateObject = function () {
-    // takes normalized axis in world coordinates
-
-    var world_to_local = new THREE.Matrix4();
-    var axis_local = new THREE.Vector3()
-    return function(axis_world = new THREE.Vector3(0,0,1), deg = 30) {
-      world_to_local.getInverse(scope.pivotObject.matrix);
-      axis_local.copy(axis_world).transformDirection( world_to_local );
-      scope.pivotObject.rotateOnAxis(axis_local, THREE.Math.degToRad(deg));
-
+    var mat = new THREE.Matrix4();
+    return function(axis, rad) {
+      mat.makeRotationAxis(axis, rad);
+      scope.rotmat.premultiply(mat);
     };
   }();  
 
   this.panObject = function () {
-    // takes direction in world coordinates
-    var world_to_local = new THREE.Matrix4();
-    var dir_local = new THREE.Vector3()
-    return function(dir_world = new THREE.Vector3(0,0,1), dist = 0.05) {
-      world_to_local.getInverse(scope.pivotObject.matrix);
-      dir_local.copy(dir_world).transformDirection( world_to_local );
-      scope.pivotObject.translateOnAxis(dir_local, dist);
+    var mat = new THREE.Matrix4();
+    return function(dir, dist) {
+      mat.makeTranslation(dist*dir.x, dist*dir.y, dist*dir.z);
+      scope.transmat.premultiply(mat);
     };
   }();  
 
@@ -192,31 +196,61 @@ var CustomControls = function (cameraObject, pivotObject, domElement) {
 
   }
 
-  function wheel(event) {
+  function onMouseDown(event) {
+    if(event.button==0) {
+      event.preventDefault();
+      scope.mode = "rotate";
+    }
+    if(event.button==1) {
+      event.preventDefault();
+      scope.mode = "move";
+    }
+  }
 
-    event.preventDefault();
-    event.stopPropagation();
+  function onMouseUp(event) {
+    scope.mode = null;
+    scope.dispatchEvent( changeEvent );
+  }
 
-    scope.dispatchEvent( startEvent);
+  function onMouseMove(event) {
+    var needs_update = false;
 
-    if (event.deltaY < 0) {
-      cameraObject.position.z = Math.max(
-        cameraObject.position.z-scope.camera_step, scope.cameraObject.near);
-
-    } else if (event.deltaY > 0) {
-      cameraObject.position.z = Math.min(
-        cameraObject.position.z+scope.camera_step, scope.cameraObject.far);
+    if(scope.mode=="rotate")
+    {
+      needs_update = true;
+      scope.rotateObject(new THREE.Vector3(1, 0, 0), 0.01*event.movementY);
+      scope.rotateObject(new THREE.Vector3(0, 1, 0), 0.01*event.movementX);
     }
 
-    scope.update();
+    if(scope.mode=="move")
+    {
+      needs_update = true;
+      scope.panObject(new THREE.Vector3(1, 0, 0), 0.002*event.movementX);
+      scope.panObject(new THREE.Vector3(0, -1, 0), 0.002*event.movementY);
+    }
 
-    scope.dispatchEvent( endEvent );
-
+    if(needs_update) {
+      event.preventDefault();
+      scope.update();
+    }
   }
 
 
-  // window.addEventListener( 'keydown', keydown, false );
-  // scope.domElement.addEventListener( 'wheel', wheel, false );
+  function wheel(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    var s = Math.exp(-0.001*event.deltaY);
+    scope.scale *=  s ;
+    scope.update();
+  }
+
+  scope.domElement.addEventListener( 'mouseup', onMouseUp, false );
+  scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
+  window.addEventListener( 'mousemove', onMouseMove, false );
+
+  window.addEventListener( 'keydown', keydown, false );
+  scope.domElement.addEventListener( 'wheel', wheel, false );
 
 
 	// make sure element can receive keys.
@@ -227,10 +261,11 @@ var CustomControls = function (cameraObject, pivotObject, domElement) {
 
 	}
 
+  this.reset();
 };
 
-CustomControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-CustomControls.prototype.constructor = CustomControls;
+CameraControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+CameraControls.prototype.constructor = CameraControls;
 
 function updateClippingPlaneCamera()
 {
@@ -349,6 +384,7 @@ function init () {
   // scene.add(axesHelper_scene);
 
   pivot = new THREE.Group();
+  pivot.matrixAutoUpdate = false;
   // var axesHelper_pivot = new THREE.AxesHelper( 1 );
   // pivot.add(axesHelper_pivot);
 
@@ -376,11 +412,11 @@ function init () {
     animate();
   }, false );
 
-  controls2 = new THREE.OrbitControls (camera, renderer.domElement);
-  controls2.enabled = true;
-  controls2.enableKeys = false;
-  controls2.enableZoom = true;
-  controls2.enablePan = false;  
+//   controls2 = new THREE.OrbitControls (camera, renderer.domElement);
+//   controls2.enabled = true;
+//   controls2.enableKeys = false;
+//   controls2.enableZoom = true;
+//   controls2.enablePan = false;  
   clipping_plane = new THREE.Vector4(0,0,1,0);
   uniforms.clipping_plane = new THREE.Uniform( clipping_plane ); 
   /* should cliping plane in pivot world be calculated in shader insted of passing it? 
@@ -482,9 +518,9 @@ function init () {
     updateGridsize();
   }
 
-  controls2.target.set(0.0, 0.0, 0.0);
-  controls2.update();
-  controls2.addEventListener('change', animate );
+//   controls2.target.set(0.0, 0.0, 0.0);
+//   controls2.update();
+//   controls2.addEventListener('change', animate );
 
   if(render_data.show_clipping_function || render_data.show_surface_function)
   {
@@ -540,12 +576,19 @@ function init () {
   gui_misc.add(gui_functions, "store settings");
   gui_misc.add(gui_functions, "load settings");
 
+  gui_misc.add(gui_status.Misc, "reduce_subdivision");
+
+  gui_functions['center'] = function() {
+    controls.reset();
+  };
+  gui.add(gui_functions, "center").onChange(animate);
+
 // pivot.translateX(-mesh_center.x);
 // pivot.translateY(-mesh_center.y);
 // pivot.translateZ(-mesh_center.z);
 scene.add( pivot );
 
-controls = new CustomControls(camera, pivot, renderer.domElement );
+controls = new CameraControls(camera, pivot, renderer.domElement );
 controls.addEventListener('change', animate);
 
   animate();
@@ -835,13 +878,17 @@ function animate () {
 
 function render() {
   requestId = 0;
+  var subdivision = gui_status.subdivision;
+  if(gui_status.Misc.reduce_subdivision && controls.mode != null)
+    subdivision = Math.ceil(subdivision/2);
+  
   if( wireframe_object != null )
   {
     wireframe_object.visible = gui_status.edges;
     if(gui_status.subdivision !== undefined)
     {
-      uniforms.n_segments.value = gui_status.subdivision;
-      wireframe_object.geometry.setDrawRange(0, gui_status.subdivision+1)
+      uniforms.n_segments.value = subdivision;
+      wireframe_object.geometry.setDrawRange(0, subdivision+1)
     }
   }
 
@@ -850,16 +897,16 @@ function render() {
         mesh_object.visible = gui_status.elements;
         if(gui_status.subdivision !== undefined)
         {
-            uniforms.n_segments.value = gui_status.subdivision;
-            mesh_object.geometry.setDrawRange(0, 3*gui_status.subdivision*gui_status.subdivision)
+            uniforms.n_segments.value = subdivision;
+            mesh_object.geometry.setDrawRange(0, 3*subdivision*subdivision)
         }
     }
 
 
   if( clipping_function_object != null )
   {
-    uniforms.n_segments.value = gui_status.subdivision;
-    const sd = gui_status.subdivision;
+    uniforms.n_segments.value = subdivision;
+    const sd = subdivision;
     clipping_function_object.geometry.setDrawRange(0, 6*sd*sd*sd)
     clipping_function_object.visible = gui_status.Clipping.function && gui_status.Clipping.enable;
   }

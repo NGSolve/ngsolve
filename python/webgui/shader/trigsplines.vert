@@ -20,7 +20,7 @@ void main()
   position.z += GetValue(complex_deform*value_);
   position.xyz += deformation*value_;
 
-  vec4 p = modelMatrix * vec4(position.xyz,1);
+  vec4 p = vec4(position.xyz,1);
   p_ = p.xyz / p.w;
   vec4 modelViewPosition = modelViewMatrix * vec4(position.xyz, 1.0); //0.. dir, 1.. pos
   normal_ =  normalMatrix*normal_;
