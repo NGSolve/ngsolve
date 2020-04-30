@@ -75,17 +75,33 @@ namespace ngfem
       auto divdir = TraceCF(grad);
       auto sgrad = dynamic_pointer_cast<ProxyFunction>(grad)->Trace();
       auto sdivdir = TraceCF(sgrad);
+
+      auto tang = TangentialVectorCF(dir->Dimension());
+      tang -> SetDimensions( Array<int> ( { dir->Dimension(), 1 } ) );
+      auto bsdivdir = InnerProduct(sgrad*tang,tang);
       
       for (auto & icf : icfs)
         {
-          if (icf->dx.vb == VOL)
-            deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
-          else
+          switch (icf->dx.vb)
             {
-              //auto n = NormalVectorCF(sgrad->Dimensions()[0]);
-              
-              deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) +
-                                                     (sdivdir  /* - InnerProduct(sgrad*n, n) */ ) * icf->cf, icf->dx);
+            case VOL:
+              if (icf->dx.element_vb == VOL)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
+              else
+                throw Exception("In DiffShape: for vb=VOL only element_vb=VOL implemented!");
+              break;
+            case BND:
+              if (icf->dx.element_vb == VOL)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + sdivdir*icf->cf, icf->dx);
+              else if (icf->dx.element_vb == BND && dir->Dimension() == 3)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + bsdivdir*icf->cf, icf->dx);
+              else if (icf->dx.element_vb == BND && dir->Dimension() == 2)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir), icf->dx);
+              else
+                throw Exception("In DiffShape: for vb=BND something went wrong!");
+              break;
+            default:
+              throw Exception("In DiffShape: for vb="+ToString(icf->dx.vb)+" and element_vb="+ToString(icf->dx.element_vb) + " not implemented!");
             }
         }
       return deriv;
