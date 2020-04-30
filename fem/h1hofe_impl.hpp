@@ -51,6 +51,11 @@ namespace ngfem
   }
 
 
+  template<>
+  inline void H1HighOrderFE_Shape<ET_POINT> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    shape[0] = 1.0;
+  }
 
   /* *********************** Segment  **********************/  
 
@@ -68,6 +73,31 @@ namespace ngfem
         EdgeOrthoPol::
           EvalMult (order_edge[0]-2, 
                     lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
+      }
+  }
+
+
+  template<>
+  inline void H1HighOrderFE_Shape<ET_SEGM> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    auto & ip = mip.IP();
+    shape = 0.0;
+    double lam[2] = { ip(0), 1 - ip(0) };
+
+    if (ip.VB() == BND)
+      {
+	for (size_t i = 0; i < 2; i++)
+	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
+      }
+
+    // edge-based shapes
+    if ( (ip.VB() == VOL) && (order_edge[0] >= 2) )
+      {
+	INT<2> e = GetVertexOrientedEdge(0);
+	EdgeOrthoPol::
+	  EvalScaledMult (order_edge[0]-2, 
+			  lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			  1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]]*/, shape+2);
       }
   }
 
