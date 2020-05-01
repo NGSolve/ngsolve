@@ -738,7 +738,7 @@ function createCurvedMesh(data)
 
 function createCurvedWireframe(data)
 {
-    const n_verts = render_data.Bezier_points[0].length/3/3*2/4; // 3 components, 2/3 b64 ratio, 4 bytes per float
+    const n_verts = render_data.Bezier_points[0].length/3/4*3/4; // 3 components, 3/4 b64 ratio, 4 bytes per float
     var geo = new THREE.InstancedBufferGeometry();
 
     var inst = new Float32Array(21); // 20 = max value of n_segments
