@@ -153,14 +153,20 @@ class WebGLScene:
 
 
 bezier_trig_trafos = { }  # cache trafos for different orders
-        
+
+timer = ngs.Timer("BuildRenderData")
+timer2 = ngs.Timer("edges")
+timermult = ngs.Timer("timer2 - mult")
+timer3 = ngs.Timer("els")
+timer3Bvals = ngs.Timer("timer3, bezier")
+timer3minmax = ngs.Timer("els minmax")
+timer2list = ngs.Timer("timer2 - make list")
+timer3list = ngs.Timer("timer3 - make list")
+timer4 = ngs.Timer("func")
+
+    
 def BuildRenderData(mesh, func, order=None):
 
-    timer = ngs.Timer("BuildRenderData")
-    timer2 = ngs.Timer("edges")
-    timer3 = ngs.Timer("els")
-    timer3minmax = ngs.Timer("els minmax")
-    timer4 = ngs.Timer("func")
     
     timer.Start()
 
@@ -203,7 +209,6 @@ def BuildRenderData(mesh, func, order=None):
         d['show_mesh'] = True
         timer2.Start()
 
-        timer3Bvals = ngs.Timer("timer3, bezier")
         timer3Bvals.Start()
 
         # transform point-values to Bernsteinbasis
@@ -219,26 +224,28 @@ def BuildRenderData(mesh, func, order=None):
         # print (iBvals)
 
                 
-        Bezier_points = [ '' for i in range(og+1) ]
+        Bezier_points = [] 
 
         # TODO: Quads
-        ir0 = ngs.IntegrationRule( [(i/og,0) for i in range(og+1)], [0,]*(og+1) )
-        ir1 = ngs.IntegrationRule( [(0, i/og) for i in range(og+1)], [0,]*(og+1) )
-        ir2 = ngs.IntegrationRule( [(i/og,1.0-i/og) for i in range(og+1)], [0,]*(og+1) )
+        ipts = [(i/og,0) for i in range(og+1)] + [(0, i/og) for i in range(og+1)] + [(i/og,1.0-i/og) for i in range(og+1)]
+        ir = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
-        for ir in [ir0, ir1, ir2]:
-            vb = [ngs.VOL, ngs.BND][mesh.dim-2]
-            pts = mesh.MapToAllElements(ir, vb)
-            pmat = ngs.CoefficientFunction( (ngs.x, ngs.y,ngs.z) ) (pts)
-            pmat = pmat.reshape(mesh.GetNE(vb), len(ir), 3)
-            BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+        vb = [ngs.VOL, ngs.BND][mesh.dim-2]
+        pts = mesh.MapToAllElements(ir, vb)
+        pmat = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z) ) (pts)
 
-            timer3list = ngs.Timer("timer2 - make list")
-            timer3list.Start()        
-            for i in range(og+1):
-                Bezier_points[i] += encodeData(BezierPnts[i])
-            timer3list.Stop()        
+        timermult.Start()
+        pmat = pmat.reshape(-1, og+1, 3)
+        BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+        timermult.Stop()
+        
+        timer2list.Start()        
+        for i in range(og+1):
+            Bezier_points.append(encodeData(BezierPnts[i]))
+        timer2list.Stop()        
 
+
+            
         d['Bezier_points'] = Bezier_points
 
         timer2.Stop()
@@ -277,13 +284,14 @@ def BuildRenderData(mesh, func, order=None):
         timer3minmax.Start()
         funcmin = np.min(pmat[:,3])
         funcmax = np.max(pmat[:,3])
-        mesh_center = (np.max(pmat[:,0:3], axis=0)+np.min(pmat[:,0:3], axis=0))/2
-        mesh_radius = np.linalg.norm(np.max(pmat[:,0:3], axis=0)-np.min(pmat[:,0:3], axis=0))/2
+        pmin = np.min(pmat[:,0:3], axis=0)
+        pmax = np.max(pmat[:,0:3], axis=0)
+        mesh_center = (pmin+pmax)/2
+        mesh_radius = np.linalg.norm(pmax-pmin)/2
         timer3minmax.Stop()
         pmat = pmat.reshape(mesh.GetNE(vb), len(ir), 4)
         BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
 
-        timer3list = ngs.Timer("timer3 - make list")
         timer3list.Start()        
         for i in range(ndtrig):
             Bezier_points.append(encodeData(BezierPnts[i]))
@@ -388,8 +396,12 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
     writeHTML(d)
     return scene
 
+tencode = ngs.Timer("encode")
 def encodeData( array ):
     from base64 import b64encode
+    tencode.Start()
     values = np.array(array.flatten(), dtype=np.float32)
-    return b64encode(values).decode("ascii")
+    res = b64encode(values).decode("ascii")
+    tencode.Stop()
+    return res
 

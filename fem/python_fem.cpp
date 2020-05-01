@@ -1022,9 +1022,11 @@ wait : bool
            if (!self->IsComplex())
              {
                Array<double> vals(npoints * self->Dimension());
+               constexpr size_t maxp = 16;
                ParallelForRange(Range(npoints), [&](IntRange r)
                            {
-                             LocalHeapMem<10000> lh("CF evaluate");
+                             LocalHeapMem<50000> lh("CF evaluate");
+                             Matrix<SIMD<double>> simdvals(self->Dimension(), maxp / SIMD<double>::Size());
                              IntegrationRule ir;
 
                              for (auto i = r.begin(); i < r.end();  )
@@ -1038,14 +1040,24 @@ wait : bool
                                  auto first = i;
                                  ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
                                  i++;
-                                 while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+16)
+                                 while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
                                    {
                                      ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
                                      i++;
                                    }
+                                 /*
                                  auto& mir = trafo(ir, lh);
                                  FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
                                  self->Evaluate(mir, fm);
+                                 */
+                                 SIMD_IntegrationRule simd_ir(ir, lh);
+                                 auto& mir = trafo(simd_ir, lh);                                 
+                                 self->Evaluate(mir, simdvals);
+                                 
+                                 FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                 SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
+                                                      &simdvals(0,0)[0]);
+                                 fm = Trans(simdfm);
                                }
                            });
                np_array = MoveToNumpyArray(vals);
