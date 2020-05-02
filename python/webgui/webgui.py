@@ -165,7 +165,7 @@ timer3list = ngs.Timer("timer3 - make list")
 timer4 = ngs.Timer("func")
 
     
-def BuildRenderData(mesh, func, order=None):
+def BuildRenderData(mesh, func, order=2):
 
     
     timer.Start()
@@ -176,7 +176,9 @@ def BuildRenderData(mesh, func, order=None):
     d = {}
     d['ngsolve_version'] = ngs.__version__
     d['mesh_dim'] = mesh.dim
-    order = order or mesh.GetCurveOrder()
+    # order = order or mesh.GetCurveOrder()
+    if (not func) and (mesh.GetCurveOrder()==1):
+        order=1
     order2d = min(order, 3)
     order3d = min(order, 2)
     d['order2d'] = order2d
@@ -375,7 +377,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
     if 'order' in kwargs:
         order=kwargs['order']
     else:
-        order = None
+        order = 2
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
