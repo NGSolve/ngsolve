@@ -348,8 +348,8 @@ def BuildRenderData(mesh, func, order=None):
 
         ne = mesh.GetNE(ngs.VOL)
         pmat = pmat.reshape(ne, len(ir), 4)
-        funcmin = min(funcmin, np.min(pmat))
-        funcmax = max(funcmax, np.max(pmat))
+        funcmin = min(funcmin, np.min(pmat[:,:,3]))
+        funcmax = max(funcmax, np.max(pmat[:,:,3]))
         points3d = []
         for i in range(len(ir)):
             points3d.append(encodeData(pmat[:,i,:]))
