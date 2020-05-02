@@ -196,16 +196,17 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
 
   }
 
-  function onMouseDown(event) {
-    if(event.button==0) {
-      event.preventDefault();
-      scope.mode = "rotate";
+    function onMouseDown(event) {
+        if(event.button==0) {
+            event.preventDefault();
+            scope.mode = "rotate";
+        }
+        if(event.button==2) {
+            event.preventDefault();
+            scope.mode = "move";
+        }
+        event.stopPropagation();
     }
-    if(event.button==1) {
-      event.preventDefault();
-      scope.mode = "move";
-    }
-  }
 
   function onMouseUp(event) {
     scope.mode = null;
@@ -225,8 +226,8 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
     if(scope.mode=="move")
     {
       needs_update = true;
-      scope.panObject(new THREE.Vector3(1, 0, 0), 0.002*event.movementX);
-      scope.panObject(new THREE.Vector3(0, -1, 0), 0.002*event.movementY);
+      scope.panObject(new THREE.Vector3(1, 0, 0), 0.004*event.movementX);
+      scope.panObject(new THREE.Vector3(0, -1, 0), 0.004*event.movementY);
     }
 
     if(needs_update) {
@@ -244,10 +245,17 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
     scope.scale *=  s ;
     scope.update();
   }
-
-  scope.domElement.addEventListener( 'mouseup', onMouseUp, false );
-  scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
-  window.addEventListener( 'mousemove', onMouseMove, false );
+    
+    function contextmenu( event ) {
+        event.preventDefault();
+    }
+    
+    
+    // scope.domElement.addEventListener( 'mouseup', onMouseUp, false );
+    window.addEventListener( 'mouseup', onMouseUp, false );
+    scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
+    scope.domElement.addEventListener( 'contextmenu', contextmenu, false );
+    window.addEventListener( 'mousemove', onMouseMove, false );
 
   window.addEventListener( 'keydown', keydown, false );
   scope.domElement.addEventListener( 'wheel', wheel, false );
