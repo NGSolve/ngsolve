@@ -213,6 +213,7 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
     scope.dispatchEvent( changeEvent );
   }
 
+
   function onMouseMove(event) {
     var needs_update = false;
 
@@ -236,7 +237,47 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
     }
   }
 
+    var oldtouch = new THREE.Vector2(0,0);
+    var olddelta = 0;
+    var touchfirst = true;
+    
+    function onTouchStart(event) {
+        touchfirst = true;
+    }
+    
+    function onTouchMove(event) {
+        
+        event.preventDefault();
 
+	switch ( event.touches.length ) {
+	case 1:
+            var pos = new THREE.Vector2(event.touches[0].pageX, event.touches[0].pageY);
+            if (!touchfirst) {
+                scope.rotateObject(new THREE.Vector3(1, 0, 0), 0.01*(pos.y-oldtouch.y));
+                scope.rotateObject(new THREE.Vector3(0, 1, 0), 0.01*(pos.x-oldtouch.x));
+            }
+            oldtouch = pos;
+            touchfirst = false;
+            scope.update();
+	    break;
+
+	default: // 2 or more
+	    var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+	    var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+	    var delta = Math.sqrt( dx * dx + dy * dy );
+            if (!touchfirst) {            
+                var s = Math.exp(0.01*(delta-olddelta));
+                scope.scale *=  s;
+            }
+            touchfirst = false;
+            scope.update();            
+            olddelta = delta;
+	    break;
+	}
+  }
+
+
+    
   function wheel(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -256,6 +297,9 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
     scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
     scope.domElement.addEventListener( 'contextmenu', contextmenu, false );
     window.addEventListener( 'mousemove', onMouseMove, false );
+
+    scope.domElement.addEventListener( 'touchstart', onTouchStart, false );    
+    scope.domElement.addEventListener( 'touchmove', onTouchMove, false );
 
   window.addEventListener( 'keydown', keydown, false );
   scope.domElement.addEventListener( 'wheel', wheel, false );
