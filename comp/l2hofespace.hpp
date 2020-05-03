@@ -190,6 +190,8 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
