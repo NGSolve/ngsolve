@@ -3590,8 +3590,8 @@ deformation : ngsolve.comp.GridFunction
 
    
    m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
-				shared_ptr<ProxyFunction> trial_proxy, optional<Region> definedon,
-				VorB vb, shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
+				shared_ptr<ProxyFunction> trial_proxy, shared_ptr<CoefficientFunction> trial_cf,
+				optional<Region> definedon, VorB vb, shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
 				int bonus_io_ab, int bonus_io_bb) -> shared_ptr<BaseMatrix> {
 
 	   const Region* reg = NULL;
@@ -3602,9 +3602,7 @@ deformation : ngsolve.comp.GridFunction
 
 	   shared_ptr<BaseMatrix> op;
 
-	   if ( trial_proxy == nullptr )
-	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb); }
-	   else {
+	   if (trial_proxy != nullptr) {
 	     if ( !trial_proxy->IsTrialFunction() )
 	       { throw Exception("Need a trial-proxy, but got a test-proxy!"); }
 	     shared_ptr<DifferentialOperator> eval;
@@ -3618,13 +3616,16 @@ deformation : ngsolve.comp.GridFunction
 	       { throw Exception("ProxyFunction has no BBBND evaluator!"); }
 	     if ( eval == nullptr )
 	       { throw Exception(string("trial-proxy has no evaluator vor vb = ") + to_string(vb) + string("!")); }
-	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb);
+	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb);
 	   }
+	   else
+	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb); }
 
 	   return op;
 	 },
 	 py::arg("spacea"), py::arg("spaceb"),
 	 py::arg("trial_proxy") = nullptr,
+	 py::arg("trial_cf") = nullptr,
 	 py::arg("definedon") = nullptr,
 	 py::arg("vb") = VOL,
 	 py::arg("range_dofs") = nullptr,
@@ -3646,6 +3647,9 @@ spaceb: ngsolve.comp.FESpace
 
 trial_proxy: ngsolve.comp.ProxyFunction
   (optional) Must be a trial-proxy on spacea. If given, instead of a FE-function funca from spacea, the operator converts trial_proxy(funca) to spaceb.
+
+trial_proxy: ngsolve.comp.CoefficientFunction
+  (optional) Same as trial_proxy, but takes any CoefficientFunction. Use at your own peril.
 
 definedon: object
   what part of the domain to restrict the operator to

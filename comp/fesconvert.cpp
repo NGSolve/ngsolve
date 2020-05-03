@@ -14,7 +14,7 @@ namespace ngcomp
   template<class SCAL, int DIMA, int DIMB>
   shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b,
 					  // int inda, int indb,
-					  shared_ptr<DifferentialOperator> diffop,
+					  shared_ptr<DifferentialOperator> diffop, shared_ptr<CoefficientFunction> trial_cf,
 					  VorB vb, const Region * reg, LocalHeap & clh,
 					  shared_ptr<BitArray> range_dofs = nullptr,
 					  bool localop = false, bool parmat = true, bool use_simd = true,
@@ -41,13 +41,15 @@ namespace ngcomp
 
     /** Proxies and Integrators **/
 
-    shared_ptr<ProxyFunction> trial_a;
-    if ( !diffop ) { // Probably most of the time
-      trial_a = make_shared<ProxyFunction>(space_a, false, false, space_a->GetEvaluator(vb),
+    shared_ptr<CoefficientFunction> trial_a;
+    if (trial_cf != nullptr)
+      { trial_a = trial_cf; }
+    else if ( diffop != nullptr ) {
+      trial_a = make_shared<ProxyFunction>(space_a, false, false, diffop,
 					   nullptr, nullptr, nullptr, nullptr, nullptr);
     }
-    else {
-      trial_a = make_shared<ProxyFunction>(space_a, false, false, diffop,
+    else { // Probably most of the time
+      trial_a = make_shared<ProxyFunction>(space_a, false, false, space_a->GetEvaluator(vb),
 					   nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
@@ -268,7 +270,7 @@ namespace ngcomp
 
 
   shared_ptr<BaseMatrix> ConvertOperator (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b, VorB vb, LocalHeap & lh,
-					  shared_ptr<DifferentialOperator> diffop, const Region * reg,
+					  shared_ptr<DifferentialOperator> diffop, shared_ptr<CoefficientFunction> trial_cf, const Region * reg,
 					  shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
 					  int bonus_intorder_ab, int bonus_intorder_bb)
   {
@@ -284,18 +286,18 @@ namespace ngcomp
 	int dimb = space_b->GetDimension();
 	if (dimb == 1) {
 	  if (space_b->IsComplex())
-	    { op = ConvertOperator<Complex, DIMA, 1> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+	    { op = ConvertOperator<Complex, DIMA, 1> (space_a, space_b, diffop, trial_cf, vb, reg, lh, range_dofs, localop, parmat, use_simd,
 						      bonus_intorder_ab, bonus_intorder_bb); }
 	  else
-	    { op = ConvertOperator<double, DIMA, 1> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+	    { op = ConvertOperator<double, DIMA, 1> (space_a, space_b, diffop, trial_cf, vb, reg, lh, range_dofs, localop, parmat, use_simd,
 						     bonus_intorder_ab, bonus_intorder_bb); }
 	}
 	else if (dimb == dima) {
 	  if (space_b->IsComplex())
-	    { op = ConvertOperator<Complex, DIMA, DIMA> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+	    { op = ConvertOperator<Complex, DIMA, DIMA> (space_a, space_b, diffop, trial_cf, vb, reg, lh, range_dofs, localop, parmat, use_simd,
 							 bonus_intorder_ab, bonus_intorder_bb); }
 	  else
-	    { op = ConvertOperator<double, DIMA, DIMA> (space_a, space_b, diffop, vb, reg, lh, range_dofs, localop, parmat, use_simd,
+	    { op = ConvertOperator<double, DIMA, DIMA> (space_a, space_b, diffop, trial_cf, vb, reg, lh, range_dofs, localop, parmat, use_simd,
 							bonus_intorder_ab, bonus_intorder_bb); }
 	}
       });
