@@ -192,7 +192,18 @@ namespace ngfem
       }
   }
 
+  void BaseScalarFiniteElement ::   
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<Complex> coefs, BareVector<SIMD<Complex>> values) const
+  {
+    STACK_ARRAY(SIMD<double>, mem, 2*ir.Size());
+    FlatMatrix<SIMD<double>> hvals(2, ir.Size(), mem);
+    Evaluate (ir,
+              SliceMatrix(GetNDof(), 2, 2*coefs.Dist(), (double*)&coefs(0)), hvals);
+    for (size_t i = 0; i < ir.Size(); i++)
+      values(i) = SIMD<Complex>(hvals(0,i), hvals(1,i));
+  }
 
+  
   template<int D>
   void ScalarFiniteElement<D> :: 
   EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, BareSliceMatrix<> vals) const
