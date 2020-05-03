@@ -1029,35 +1029,56 @@ wait : bool
                              Matrix<SIMD<double>> simdvals(self->Dimension(), maxp / SIMD<double>::Size());
                              IntegrationRule ir;
 
-                             for (auto i = r.begin(); i < r.end();  )
+                             try
                                {
-                                 HeapReset hr(lh);
-                                 auto& mp = pts(i);
-                                 auto ei = ElementId(mp.vb, mp.nr);
-                                 auto& trafo = mp.mesh->GetTrafo(ei, lh);
-                                 ir.SetSize(0);
-
-                                 auto first = i;
-                                 ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
-                                 i++;
-                                 while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                 for (auto i = r.begin(); i < r.end(); )
                                    {
-                                     ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                     HeapReset hr(lh);
+                                     auto& mp = pts(i);
+                                     auto ei = ElementId(mp.vb, mp.nr);
+                                     auto& trafo = mp.mesh->GetTrafo(ei, lh);
+                                     ir.SetSize(0);
+                                     
+                                     auto first = i;
+                                     ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
                                      i++;
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                       {
+                                         ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                         i++;
+                                       }
+                                     SIMD_IntegrationRule simd_ir(ir, lh);
+                                     auto& mir = trafo(simd_ir, lh);                                 
+                                     self->Evaluate(mir, simdvals);
+                                     
+                                     FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                     SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
+                                                          &simdvals(0,0)[0]);
+                                     fm = Trans(simdfm);
                                    }
-                                 /*
-                                 auto& mir = trafo(ir, lh);
-                                 FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
-                                 self->Evaluate(mir, fm);
-                                 */
-                                 SIMD_IntegrationRule simd_ir(ir, lh);
-                                 auto& mir = trafo(simd_ir, lh);                                 
-                                 self->Evaluate(mir, simdvals);
-                                 
-                                 FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
-                                 SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
-                                                      &simdvals(0,0)[0]);
-                                 fm = Trans(simdfm);
+                               }
+                             catch (ExceptionNOSIMD e)
+                               {
+                                 for (auto i = r.begin(); i < r.end(); )
+                                   {
+                                     HeapReset hr(lh);
+                                     auto& mp = pts(i);
+                                     auto ei = ElementId(mp.vb, mp.nr);
+                                     auto& trafo = mp.mesh->GetTrafo(ei, lh);
+                                     ir.SetSize(0);
+                                     
+                                     auto first = i;
+                                     ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+                                     i++;
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                       {
+                                         ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                         i++;
+                                       }
+                                     auto& mir = trafo(ir, lh);
+                                     FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                     self->Evaluate(mir, fm);
+                                   }
                                }
                            });
                np_array = MoveToNumpyArray(vals);
