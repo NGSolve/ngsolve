@@ -1287,11 +1287,22 @@ global system.
           flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
       }
     }
+
+    additional_evaluators.Set ("dual", evaluator[BND]);
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
   {
     ;
+  }
+
+  FlatArray<VorB> L2SurfaceHighOrderFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL };
+    if (vb == BND)
+      { return FlatArray<VorB> (1, &nodes[0]); }
+    else
+      { return FlatArray<VorB> (0, nullptr); }
   }
 
   DocInfo L2SurfaceHighOrderFESpace :: GetDocu ()
