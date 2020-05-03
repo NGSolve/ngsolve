@@ -388,6 +388,12 @@ namespace ngfem
       Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
     }
 
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+    }
+
 
 
     template <typename MIP, class TVX, class TVY>
