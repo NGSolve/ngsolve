@@ -643,7 +643,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y;
-      Tx llami[3] ={x, y, 1-x-y};
+      // Tx llami[3] ={x, y, 1-x-y};
       typedef decltype(x.Value()+x.Value()) T;      
       AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
@@ -795,8 +795,8 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y;
-      Tx llx[4] ={1-x, x, x, 1-x};
-      Tx lly[4] ={1-y, 1-y, y, y};
+      // Tx llx[4] ={1-x, x, x, 1-x};
+      // Tx lly[4] ={1-y, 1-y, y, y};
       typedef decltype(x.Value()+x.Value()) T;
       AutoDiff<2,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<2,T> yy(y.Value(), &y.DValue(0));
@@ -907,7 +907,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       T x = ip(0), y = ip(1);
       T lx[4] = { 1-x, x, x, 1-x };
       T ly[4] = { 1-y, 1-y, y, y };
-      T lam[4] = { 1-x-y+x*y, x*(1-y), x*y, y*(1-x) };
+      // T lam[4] = { 1-x-y+x*y, x*(1-y), x*y, y*(1-x) };
       T sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
 
       /*Vec<2,AutoDiff<2,T>> adip = ip;
@@ -1357,8 +1357,8 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
       Tx x = ip.x, y = ip.y, z = ip.z;
-      Tx llx[6] ={ x, y, 1-x-y, x, y, 1-x-y };
-      Tx llz[6] ={ 1-z,1-z,1-z,z,z,z };
+      // Tx llx[6] ={ x, y, 1-x-y, x, y, 1-x-y };
+      // Tx llz[6] ={ 1-z,1-z,1-z,z,z,z };
       typedef decltype(x.Value()+x.Value()) T;
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
@@ -1382,7 +1382,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
 
           Vec<6, AutoDiff<3,T>> symdyadic = lm*SymDyadProd(ls,le);
 
-          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape,lm] (size_t nr, auto val)
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
                               shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
                             }));
@@ -1417,7 +1417,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
               Vec<6, AutoDiff<3,T>> symdyadic3 = lm*le*SymDyadProd(ls,lt);
               
               DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
-                                 SBLambda([symdyadic1,symdyadic2,symdyadic3,lm, &ii, shape] (size_t nr, auto val)
+                                 SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
                                           {
                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
