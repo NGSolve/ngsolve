@@ -57,7 +57,7 @@ namespace ngcomp
     if (!space_b->GetAdditionalEvaluators().Used("dual"))
       throw Exception(string("Dual diffop does not exist for ") + space_b->GetClassName() + string("!"));
     auto dual_evaluator = space_b->GetAdditionalEvaluators()["dual"];
-    for (VorB avb = VOL; avb < vb; avb++) {
+    for (VorB avb = dual_evaluator->VB(); avb < vb; avb++) {
       dual_evaluator = dual_evaluator->GetTrace();
       if ( dual_evaluator == nullptr )
 	{ throw Exception(space_b->GetClassName() + string(" has no dual trace operator for vb = ")
