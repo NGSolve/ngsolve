@@ -406,7 +406,7 @@ function init () {
     else
     {
         console.log('your browser/OS/drivers do not support WebGL2');
-        var context = canvas.getContext( { alpha: false } );
+        var context = canvas.getContext( 'webgl', { alpha: false } );
     }
 
     renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context } );
