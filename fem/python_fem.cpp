@@ -1049,7 +1049,7 @@ wait : bool
                                        }
                                      SIMD_IntegrationRule simd_ir(ir, lh);
                                      auto& mir = trafo(simd_ir, lh);                                 
-                                     self->Evaluate(mir, simdvals);
+                                     self->Evaluate(mir, simdvals.Cols(0, simd_ir.Size()));
                                      
                                      FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
                                      SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
