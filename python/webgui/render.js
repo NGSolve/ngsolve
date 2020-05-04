@@ -20,11 +20,14 @@ var gui_status_default = {
   Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
-  Misc: { stats: "-1", reduce_subdivision: false },
+  Misc: { stats: "-1", reduce_subdivision: false, "version": true, "axes": true },
 };
 var gui_status = JSON.parse(JSON.stringify(gui_status_default)); // deep-copy settings
 var gui_functions = { };
 var phase_controller;
+
+var axes_object;
+var version_object;
 
 var wireframe_object;
 var mesh_object;
@@ -132,6 +135,8 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
     return function update() {
       scale_vec.setScalar(scope.scale);
       scope.pivotObject.matrix.copy(scope.transmat).multiply(scope.rotmat).scale(scale_vec).multiply(scope.centermat);
+
+      axes_object.setRotationFromMatrix(scope.rotmat);
       scope.dispatchEvent( changeEvent );
     };  
   }()
@@ -426,22 +431,21 @@ function init () {
   container.appendChild( stats.domElement );
 
   // label with NGSolve version at right lower corner
-  var version_div = document.createElement("div");
+  version_object = document.createElement("div");
   style = 'bottom: 10px; right: 10px';
-  version_div.setAttribute("style",label_style+style);
+  version_object.setAttribute("style",label_style+style);
   var version_text = document.createTextNode("NGSolve " + render_data.ngsolve_version);
-  version_div.appendChild(version_text)
-  container.appendChild(version_div);
+  version_object.appendChild(version_text)
+  container.appendChild(version_object);
 
 
   scene = new THREE.Scene();
-  // var axesHelper_scene = new THREE.AxesHelper(10);
-  // scene.add(axesHelper_scene);
+  axes_object = new THREE.AxesHelper(0.2);
+  axes_object.translateX(-0.9).translateY(-0.9);
+  scene.add(axes_object);
 
   pivot = new THREE.Group();
   pivot.matrixAutoUpdate = false;
-  // var axesHelper_pivot = new THREE.AxesHelper( 1 );
-  // pivot.add(axesHelper_pivot);
 
   buffer_scene = new THREE.Scene();
 
@@ -634,6 +638,10 @@ function init () {
   gui_misc.add(gui_functions, "load settings");
 
   gui_misc.add(gui_status.Misc, "reduce_subdivision");
+  gui_misc.add(gui_status.Misc, "axes").onChange(animate);
+  gui_misc.add(gui_status.Misc, "version").onChange(function(value) {
+      version_object.style.visibility = value ? "visible" : "hidden";
+    });
 
   gui_functions['center'] = function() {
     controls.reset();
@@ -940,6 +948,7 @@ function animate () {
 
 function render() {
   requestId = 0;
+  axes_object.visible = gui_status.Misc.axes;
   var subdivision = gui_status.subdivision;
   if(gui_status.Misc.reduce_subdivision && controls.mode != null)
     subdivision = Math.ceil(subdivision/2);
