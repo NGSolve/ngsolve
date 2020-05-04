@@ -525,7 +525,9 @@ function init () {
     cgui.add(gui_status.Complex, "speed", 0.0, 1, 0.0001).onChange(animate);
     uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
   }
-  else if(render_data.funcdim>1)
+  else if(render_data.funcdim==2)
+    gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
+  else if(render_data.funcdim==3)
     gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
 
 
