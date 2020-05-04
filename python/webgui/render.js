@@ -20,7 +20,7 @@ var gui_status_default = {
   Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
   Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
   Vectors: { show: false, grid_size: 10, offset: 0.0 },
-  Misc: { stats: "-1", reduce_subdivision: false, "version": true, "axes": true },
+  Misc: { stats: "-1", reduce_subdivision: false, "version": true, "axes": true, "colormap": true },
 };
 var gui_status = JSON.parse(JSON.stringify(gui_status_default)); // deep-copy settings
 var gui_functions = { };
@@ -28,6 +28,7 @@ var phase_controller;
 
 var axes_object;
 var version_object;
+var colormap_object = null;
 
 var wireframe_object;
 var mesh_object;
@@ -638,6 +639,10 @@ function init () {
   gui_misc.add(gui_functions, "load settings");
 
   gui_misc.add(gui_status.Misc, "reduce_subdivision");
+
+  if(colormap_object)
+    gui_misc.add(gui_status.Misc, "colormap");
+
   gui_misc.add(gui_status.Misc, "axes").onChange(animate);
   gui_misc.add(gui_status.Misc, "version").onChange(function(value) {
       version_object.style.visibility = value ? "visible" : "hidden";
@@ -718,6 +723,40 @@ function updateColormap( )
   colormap_texture.magFilter = THREE.NearestFilter;
   colormap_texture.needsUpdate = true;
   uniforms.tex_colormap = { value: colormap_texture};
+
+  if(colormap_object == null)
+  {
+    var geo = new THREE.Geometry();
+    const sx = 0.7;
+    const sy = 0.03;
+    const px = -0.3;
+    const py = 1.00;
+    geo.vertices.push(new THREE.Vector3(-sx+px,  sy+py, 0.0));
+    geo.vertices.push(new THREE.Vector3(-sx+px, -sy+py, 0.0));
+    geo.vertices.push(new THREE.Vector3( sx+px, -sy+py, 0.0));
+    geo.vertices.push(new THREE.Vector3( sx+px,  sy+py, 0.0));
+    geo.faces.push(new THREE.Face3(0, 1, 2));
+    geo.faces.push(new THREE.Face3(2, 3, 0));
+
+    geo.faceVertexUvs[0] = [];
+    geo.faceVertexUvs[0].push([
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(1, 0)
+    ]);
+    geo.faceVertexUvs[0].push([
+      new THREE.Vector2(1, 0),
+      new THREE.Vector2(1, 0),
+      new THREE.Vector2(0, 0)
+    ]);
+
+    geo.uvsNeedUpdate = true;
+    material = new THREE.MeshBasicMaterial({depthTest: false, map: colormap_texture, side: THREE.DoubleSide, wireframe: false});
+    colormap_object = new THREE.Mesh( geo, material );
+    scene.add(colormap_object)
+  }
+  else
+    colormap_object.material.map = colormap_texture;
 
   animate();
 }
@@ -954,6 +993,9 @@ function animate () {
 function render() {
   requestId = 0;
   axes_object.visible = gui_status.Misc.axes;
+  if(colormap_object)
+    colormap_object.visible = gui_status.Misc.colormap;
+
   var subdivision = gui_status.subdivision;
   if(gui_status.Misc.reduce_subdivision && controls.mode != null)
     subdivision = Math.ceil(subdivision/2);
