@@ -806,7 +806,7 @@ function createCurvedMesh(data)
     mesh_material.polygonOffsetFactor = 1;
     mesh_material.polygonOffsetUnits = 1;
 
-    var mesh = new THREE.Mesh( geo, wireframe_material );
+    var mesh = new THREE.Mesh( geo, mesh_material );
     return mesh;
 }
 
