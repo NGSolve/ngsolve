@@ -13,7 +13,7 @@ var gui_status_default = {
   edges: true,
   elements: true,
   colormap_ncolors: 8,
-  colormap_min: 0,
+  colormap_min: -1.0,
   colormap_max: 1.0,
   deformation: 0.0,
   Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
@@ -724,7 +724,7 @@ function updateColormap( )
   colormap_texture.needsUpdate = true;
   uniforms.tex_colormap = { value: colormap_texture};
 
-  if(colormap_object == null)
+  if(render_data.funcdim>0 && colormap_object == null)
   {
     var geo = new THREE.Geometry();
     const sx = 0.7;
@@ -755,7 +755,8 @@ function updateColormap( )
     colormap_object = new THREE.Mesh( geo, material );
     scene.add(colormap_object)
   }
-  else
+
+  if(colormap_object != null)
     colormap_object.material.map = colormap_texture;
 
   animate();
