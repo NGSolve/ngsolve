@@ -196,11 +196,24 @@ namespace ngcomp
         integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
+
+    additional_evaluators.Set ("dual", evaluator[VOL]);
   }
   
 
   FacetFESpace :: ~FacetFESpace ()
   { ; }
+
+
+  FlatArray<VorB> FacetFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL, BND };
+    if ( (vb == VOL) || (vb == BND) )
+      { return FlatArray<VorB> (1, &nodes[1 - int(vb)]); }
+    else
+      { return FlatArray<VorB> (0, nullptr); }
+  }
+
 
   DocInfo FacetFESpace :: GetDocu()
   {
