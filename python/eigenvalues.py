@@ -9,7 +9,21 @@ except:
     pass
 
 
-def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True):
+def Orthogonalize (vecs, mat):
+    mv = []
+    for i in range(len(vecs)):
+        for j in range(i):
+            vecs[i] -= InnerProduct(vecs[i], mv[j]) * vecs[j]
+            
+        hv = mat.CreateRowVector()
+        hv.data = mat * vecs[i]
+        norm = sqrt(InnerProduct(vecs[i], hv))
+        vecs[i] *= 1/norm
+        hv *= 1/norm
+        mv.append (hv)
+
+
+def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
     """preconditioned inverse iteration"""
 
     r = mata.CreateRowVector()
@@ -38,6 +52,9 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True):
             vecs[j].data = uvecs[j]
             r.data = mata * vecs[j] - lams[j] * matm * vecs[j]
             vecs[num+j].data = pre * r
+
+        if GramSchmidt:
+            Orthogonalize (vecs, matm)
 
         for j in range(2*num):
             Av.data = mata * vecs[j]
