@@ -17,8 +17,12 @@ void main()
   value_.yz = GetVectorValues(u,v);
   normal_ = GetNormal(u,v);
 
-  position.z += GetValue(complex_deform*value_);
+#ifdef DEFORMATION
   position.xyz += deformation*value_;
+#endif
+#ifdef DEFORMATION_2D
+  position.z += GetValue(deformation*value_);
+#endif
 
   vec4 p = vec4(position.xyz,1);
   p_ = p.xyz / p.w;
