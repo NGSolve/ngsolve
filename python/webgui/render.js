@@ -833,6 +833,11 @@ function createCurvedWireframe(data)
         uniforms: uniforms
     });
 
+    wireframe_material.polygonOffset = true;
+    wireframe_material.depthTest = true;
+    wireframe_material.polygonOffsetFactor = 1;
+    wireframe_material.polygonOffsetUnits = 0.1;
+
     var wireframe = new THREE.Line( geo, wireframe_material );
     return wireframe;
 }
