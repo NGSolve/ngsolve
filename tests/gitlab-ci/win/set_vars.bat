@@ -8,3 +8,5 @@ set PATH=%NETGENDIR%;%PATH%
 set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
 set CLCACHE_BASEDIR=%CI_DIR%
 set HOME=%USERPROFILE%
+ccache . -c
+ccache . -s
