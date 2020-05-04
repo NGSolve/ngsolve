@@ -795,12 +795,17 @@ function createCurvedMesh(data)
     else if(have_z_deformation)
       defines.DEFORMATION_2D = 1;
 
-    var wireframe_material = new THREE.RawShaderMaterial({
+    var mesh_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'trigsplines.vert', defines ),
         fragmentShader: getShader( 'function.frag', defines ),
         side: THREE.DoubleSide,
         uniforms: uniforms
     });
+
+    mesh_material.polygonOffset = true;
+    mesh_material.polygonOffsetFactor = 1;
+    mesh_material.polygonOffsetUnits = 1;
+
     var mesh = new THREE.Mesh( geo, wireframe_material );
     return mesh;
 }
@@ -832,11 +837,6 @@ function createCurvedWireframe(data)
         fragmentShader: getShader( 'splines.frag', defines ),
         uniforms: uniforms
     });
-
-    wireframe_material.polygonOffset = true;
-    wireframe_material.depthTest = true;
-    wireframe_material.polygonOffsetFactor = 1;
-    wireframe_material.polygonOffsetUnits = 0.1;
 
     var wireframe = new THREE.Line( geo, wireframe_material );
     return wireframe;
