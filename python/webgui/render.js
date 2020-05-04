@@ -46,6 +46,9 @@ var mesh_radius;
 
 var pivot;
 
+var have_deformation = render_data.mesh_dim == render_data.funcdim && !render_data.is_complex;
+var have_z_deformation = render_data.mesh_dim == 2 && render_data.funcdim>0;
+
 var label_style  = '-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; onselectstart="return false;';
 label_style += 'onmousedown="return false; user-select:none;-o-user-select:none;unselectable="on";';
 label_style += 'position: absolute; z-index: 100; display:block;';
@@ -504,6 +507,12 @@ function init () {
   }
 
 
+  if(have_z_deformation || have_deformation)
+  {
+    gui.add(gui_status, "deformation", 0.0, 1.0, 0.0001).onChange(animate);
+    uniforms.deformation = new THREE.Uniform( gui_status.deformation );
+  }
+
   if(render_data.is_complex)
   {
     gui_status_default.eval = 5;
@@ -514,10 +523,7 @@ function init () {
     phase_controller = cgui.add(gui_status.Complex, "phase", 0, 2*Math.PI, 0.001).onChange(animate);
     cgui.add(gui_status.Complex, "animate").onChange(animate);
     cgui.add(gui_status.Complex, "speed", 0.0, 1, 0.0001).onChange(animate);
-    if(render_data.mesh_dim==2)
-      cgui.add(gui_status.Complex, "deform", 0.0, 1, 0.001).onChange(animate);
     uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
-    uniforms.complex_deform = new THREE.Uniform( 0.0 );
   }
   else if(render_data.funcdim>1)
     gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
@@ -542,11 +548,8 @@ function init () {
   }
 
   uniforms.function_mode = new THREE.Uniform( 0 );
-  if(render_data.funcdim>1)
+  if(render_data.funcdim>1 && !render_data.is_complex)
   {
-    uniforms.deformation = new THREE.Uniform( gui_status.deformation );
-    gui.add(gui_status, "deformation", 0.0, 1.0, 0.0001).onChange(animate);
-
     gui_vec = gui.addFolder("Vectors");
     gui_vec.add(gui_status.Vectors, "show").onChange(animate);
     gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(updateGridsize);
@@ -776,7 +779,12 @@ function createCurvedMesh(data)
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute(position, 2 ));
     geo.boundingSphere = new THREE.Sphere(mesh_center, mesh_radius);
     
-    const defines = {MESH_2D: true, ORDER:render_data.order2d};
+    var defines = {MESH_2D: 1, ORDER:render_data.order2d};
+    if(have_deformation)
+      defines.DEFORMATION = 1;
+    else if(have_z_deformation)
+      defines.DEFORMATION_2D = 1;
+
     var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'trigsplines.vert', defines ),
         fragmentShader: getShader( 'function.frag', defines ),
@@ -984,7 +992,7 @@ function render() {
 
   uniforms.do_clipping.value = gui_status.Clipping.enable;
 
-  if(render_data.funcdim>1)
+  if(have_deformation || have_z_deformation)
     uniforms.deformation.value = gui_status.deformation;
 
   if(gui_status.Clipping.enable)
@@ -1006,8 +1014,6 @@ function render() {
   {
     uniforms.complex_scale.value.x = Math.cos(gui_status.Complex.phase);
     uniforms.complex_scale.value.y = Math.sin(gui_status.Complex.phase);
-    if(render_data.mesh_dim==2)
-      uniforms.complex_deform.value = gui_status.Complex.deform;
   }
 
   if(gui_status.Vectors.show)
