@@ -207,9 +207,9 @@ namespace ngcomp
 
   FlatArray<VorB> FacetFESpace :: GetDualShapeNodes (VorB vb) const
   {
-    static VorB nodes[] = { BND };
-    if (vb == VOL)
-      { return FlatArray<VorB> (1, &nodes[0]); }
+    static VorB nodes[] = { VOL, BND };
+    if ( (vb == VOL) || (vb == BND) )
+      { return FlatArray<VorB> (1, &nodes[int(vb)]); }
     else
       { return FlatArray<VorB> (0, nullptr); }
   }
