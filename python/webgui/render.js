@@ -538,7 +538,7 @@ function init () {
     gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
     gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
     gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
-    gui_clipping.add(gui_status.Clipping, "dist", -3.0, 3.0).onChange(animate);
+    gui_clipping.add(gui_status.Clipping, "dist", -1.2*mesh_radius, 1.2*mesh_radius).onChange(animate);
   }
 
   uniforms.function_mode = new THREE.Uniform( 0 );
