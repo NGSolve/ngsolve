@@ -1,8 +1,11 @@
 var scene, renderer, camera, mesh;
+var ortho_camera;
 var clipping_plane;
 var three_clipping_plane;
 var world_clipping_plane;
 var light_dir;
+
+var colormap_divs, colormap_labels;
 
 var container, stats;
 
@@ -34,7 +37,7 @@ var wireframe_object;
 var mesh_object;
 var clipping_function_object;
 var clipping_vectors_object;
-var controls, controls2;
+var controls;
 
 var have_webgl2 = false;
 
@@ -88,6 +91,46 @@ function setGuiSettings (settings) {
     for (var i in folder.__controllers)
       folder.__controllers[i].updateDisplay();
   }
+  animate();
+}
+
+function onResize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const aspect = w/h;
+  ortho_camera = new THREE.OrthographicCamera( -aspect, aspect, 1.0, -1.0, -100, 100 );
+  if(colormap_object)
+  {
+    const x0 = -aspect*0.93;
+    const y0 = 0.93;
+    colormap_object.position.set(x0, 0.95, 0.0);
+    colormap_object.updateWorldMatrix();
+
+    const n = colormap_labels.length;
+    const y = Math.round(0.5*(0.05+0.07)*window.innerHeight);
+    for(var i=0; i<n; i++)
+    {
+      const x = Math.round(0.5*window.innerWidth*(1.0 + (x0+i/(n-1))/aspect));
+      colormap_divs[i].setAttribute("style",label_style+`transform: translate(-50%, 0%); left: ${x}px; top: ${y}px` );
+    }
+  }
+  camera.aspect = aspect;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  animate();
+}
+
+function updateColormapLabels()
+{
+  const n = colormap_labels.length;
+  const min = gui_status.colormap_min;
+  const inc = (gui_status.colormap_max-min)/n;
+  if(gui_status.Misc.colormap)
+    for(var i=0; i<n; i++)
+      colormap_labels[i].nodeValue = (min+inc*i).toPrecision(2);
+  else
+    for(var i=0; i<n; i++)
+      colormap_labels[i].nodeValue = "";
   animate();
 }
 
@@ -410,6 +453,7 @@ function init () {
     }
 
     renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context } );
+    renderer.autoClear = false;
     console.log("Renderer", renderer);
 
 
@@ -441,9 +485,8 @@ function init () {
 
 
   scene = new THREE.Scene();
-  axes_object = new THREE.AxesHelper(0.2);
-  axes_object.translateX(-0.9).translateY(-0.9);
-  scene.add(axes_object);
+  axes_object = new THREE.AxesHelper(0.15);
+  axes_object.translateX(-0.8).translateY(-0.8);
 
   pivot = new THREE.Group();
   pivot.matrixAutoUpdate = false;
@@ -465,12 +508,7 @@ function init () {
     // EDIT: temporarily done on server
     // scene.translateX(-mesh_center[0]).translateY(-mesh_center[1]).translateZ(-mesh_center[2]);
 
-  window.addEventListener( 'resize', function () {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    animate();
-  }, false );
+  window.addEventListener( 'resize', onResize, false );
 
 //   controls2 = new THREE.OrbitControls (camera, renderer.domElement);
 //   controls2.enabled = true;
@@ -594,8 +632,8 @@ function init () {
     gui_status_default.colormap_max = cmax;
 
     const cstep = 1e-6 * (cmax-cmin);
-    gui.add(gui_status, "colormap_min", cmin, 2*cmax, cstep).onChange(animate);
-    gui.add(gui_status, "colormap_max", cmin, 2*cmax, cstep).onChange(animate);
+    gui.add(gui_status, "colormap_min", cmin, 2*cmax, cstep).onChange(updateColormapLabels);
+    gui.add(gui_status, "colormap_max", cmin, 2*cmax, cstep).onChange(updateColormapLabels);
 
     gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(updateColormap);
   }
@@ -641,7 +679,7 @@ function init () {
   gui_misc.add(gui_status.Misc, "reduce_subdivision");
 
   if(colormap_object)
-    gui_misc.add(gui_status.Misc, "colormap");
+    gui_misc.add(gui_status.Misc, "colormap").onChange(updateColormapLabels);
 
   gui_misc.add(gui_status.Misc, "axes").onChange(animate);
   gui_misc.add(gui_status.Misc, "version").onChange(function(value) {
@@ -661,7 +699,7 @@ scene.add( pivot );
 controls = new CameraControls(camera, pivot, renderer.domElement );
 controls.addEventListener('change', animate);
 
-  animate();
+  onResize();
 }
 
 function getShader(name, defines)
@@ -727,14 +765,10 @@ function updateColormap( )
   if(render_data.funcdim>0 && colormap_object == null)
   {
     var geo = new THREE.Geometry();
-    const sx = 0.7;
-    const sy = 0.03;
-    const px = -0.3;
-    const py = 1.00;
-    geo.vertices.push(new THREE.Vector3(-sx+px,  sy+py, 0.0));
-    geo.vertices.push(new THREE.Vector3(-sx+px, -sy+py, 0.0));
-    geo.vertices.push(new THREE.Vector3( sx+px, -sy+py, 0.0));
-    geo.vertices.push(new THREE.Vector3( sx+px,  sy+py, 0.0));
+    geo.vertices.push(new THREE.Vector3( 0,   0, 0.0));
+    geo.vertices.push(new THREE.Vector3( 0,-0.07, 0.0));
+    geo.vertices.push(new THREE.Vector3( 1,-0.07, 0.0));
+    geo.vertices.push(new THREE.Vector3( 1,   0, 0.0));
     geo.faces.push(new THREE.Face3(0, 1, 2));
     geo.faces.push(new THREE.Face3(2, 3, 0));
 
@@ -753,7 +787,22 @@ function updateColormap( )
     geo.uvsNeedUpdate = true;
     material = new THREE.MeshBasicMaterial({depthTest: false, map: colormap_texture, side: THREE.DoubleSide, wireframe: false});
     colormap_object = new THREE.Mesh( geo, material );
-    scene.add(colormap_object)
+
+    // Create 5 html div/text elements for numbers
+    colormap_labels = [];
+    colormap_divs = [];
+    var labels_object = document.createElement("div");
+    for(var i=0; i<5; i++)
+    {
+      var label = document.createElement("div");
+      var t = document.createTextNode("");
+      label.appendChild(t)
+      colormap_divs.push(label);
+      colormap_labels.push(t);
+      labels_object.appendChild(label);
+    }
+    container.appendChild(labels_object);
+    updateColormapLabels();
   }
 
   if(colormap_object != null)
@@ -994,9 +1043,6 @@ function animate () {
 function render() {
   requestId = 0;
   axes_object.visible = gui_status.Misc.axes;
-  if(colormap_object)
-    colormap_object.visible = gui_status.Misc.colormap;
-
   var subdivision = gui_status.subdivision;
   if(gui_status.Misc.reduce_subdivision && controls.mode != null)
     subdivision = Math.ceil(subdivision/2);
@@ -1081,6 +1127,7 @@ function render() {
     uniforms.function_mode.value = 4;
     renderer.setRenderTarget(buffer_texture);
     renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
+    renderer.clear(true, true, true);
     renderer.render(buffer_scene, buffer_camera);
   }
 
@@ -1092,8 +1139,17 @@ function render() {
   uniforms.light_mat.value.w = gui_status.Light.specularity;
 
   renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
+  renderer.clear(true, true, true);
   renderer.setRenderTarget(null);
   renderer.render( scene, camera );
+
+
+  if(colormap_object && gui_status.Misc.colormap)
+    renderer.render( colormap_object, ortho_camera );
+
+  if(axes_object && gui_status.Misc.axes)
+    renderer.render( axes_object, camera );
+
 
   if(gui_status.Complex.animate)
   {
