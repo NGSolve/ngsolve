@@ -405,13 +405,12 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
     # x-y-plane, largest z-coord: ("top")
     AddSurfEls((nx+1)*(ny+1)*(nz+1)-1, -(ny+1)*(nz+1), nx, -(nz+1), ny, facenr=6) 
 
-    if cuboid_mapping:
-        netmesh.SetBCName(0,"back")
-        netmesh.SetBCName(1,"left")
-        netmesh.SetBCName(2,"front")
-        netmesh.SetBCName(3,"right")
-        netmesh.SetBCName(4,"bottom")
-        netmesh.SetBCName(5,"top")
+    netmesh.SetBCName(0,"back")
+    netmesh.SetBCName(1,"left")
+    netmesh.SetBCName(2,"front")
+    netmesh.SetBCName(3,"right")
+    netmesh.SetBCName(4,"bottom")
+    netmesh.SetBCName(5,"top")
     
     netmesh.Compress()
 
