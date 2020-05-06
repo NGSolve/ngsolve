@@ -32,11 +32,8 @@ html_template = """
         </style>
     </head>
     <body>
-          <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
-          <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/controls/OrbitControls.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
           {shader}
+          <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"></script>
           <script>
             var render_data = {data}
             {render}
@@ -69,6 +66,16 @@ class MyIFrame(object):
                                   width=self.width,
                                   height=self.height)
 
+def readShadersB64():
+    from glob import glob 
+    import os.path
+    from base64 import b64encode
+    import json
+    codes = {}
+    for name, code in shader_codes.items():
+        codes[name] = b64encode(code.encode("ascii")).decode("ascii")
+    return json.dumps(codes)
+
 def readShaders():
     from glob import glob 
     import os.path
@@ -84,24 +91,30 @@ def readShaders():
     return codes
 
 def writeHTML(d):
+    global render_js_code
     import json
     data = json.dumps(d)
 
     html = html_template.replace('{shader}', readShaders() )
     html = html.replace('{data}', data )
     html = html.replace('{render}', render_js_code )
+    render_js_code = "var render_data = {}\n".format(data) + render_js_code
+    render_js_code = "var shaders = {}\n".format(readShadersB64()) + render_js_code
 
-    from IPython.display import display, IFrame
+    from IPython.display import display, IFrame, Javascript
+
+    print('execute js code')
+#     return Javascript(render_js_code)
 
     ## write to html and use iframe<src="./output.html">
     open('output.html','w').write( html )
     # frame = IFrame(src='./output.html', width=700, height=400)
 
     # use <iframe srcdoc=html> to display html inline
-    html = html.replace('"', '&quot;')
-    frame = MyIFrame(srcdoc=html, width="100%", height=400)
-
-    display(frame)
+#     html = html.replace('"', '&quot;')
+#     frame = MyIFrame(srcdoc=html, width="100%", height=400)
+# 
+#     display(frame)
     # return frame
 
 class WebGLScene:
@@ -395,8 +408,8 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
         d['websocket_url'] = "ws://localhost:" + str(websocket_port)
 
     scene = WebGLScene(func, mesh, order, websocket)
-    writeHTML(d)
-    return scene
+    return writeHTML(d)
+#     return scene
 
 tencode = ngs.Timer("encode")
 def encodeData( array ):
