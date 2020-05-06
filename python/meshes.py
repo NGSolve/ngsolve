@@ -59,6 +59,9 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
     ny : int
       Number of cells in y-direction.
 
+    secondorder : bool
+      If True, second order curved elements are used.
+
     periodic_x: bool
       If True, the left and right boundaries are identified to generate a periodic mesh in x-direction.
 
@@ -68,7 +71,6 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
     mapping: lamda
       Mapping to transform the generated points. If None, the identity mapping is used.
     
-
     bbpts : list
       List of points which should be handled as BBND and are named with bbnames. The mesh (nx, ny and mapping) must be constructed in such a way that the bbpts coincide with generated points. Otherwise an Exception is thrown.
 
@@ -248,6 +250,9 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
     nz : int
       Number of cells in z-direction.
 
+    secondorder : bool
+      If True, second order curved elements are used.
+ 
     periodic_x: bool
       If True, the left and right boundaries are identified to generate a periodic mesh in x-direction.
 
@@ -274,7 +279,7 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
         if ny == None:
             nz = nx
         else:
-            raise("MakeStructured3DMesh: No default value for nz if nx and ny are provided")
+            raise Exception("MakeStructured3DMesh: No default value for nz if nx and ny are provided")
     if ny == None:
         ny = nx
         
