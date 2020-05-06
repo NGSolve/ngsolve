@@ -180,7 +180,8 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
       scale_vec.setScalar(scope.scale);
       scope.pivotObject.matrix.copy(scope.transmat).multiply(scope.rotmat).scale(scale_vec).multiply(scope.centermat);
 
-      axes_object.setRotationFromMatrix(scope.rotmat);
+      const aspect = window.innerWidth/window.innerHeight;
+      axes_object.matrixWorld.makeTranslation(-0.85*aspect, -0.85, 0).multiply(scope.rotmat);
       scope.dispatchEvent( changeEvent );
     };  
   }()
@@ -486,7 +487,7 @@ function init () {
 
   scene = new THREE.Scene();
   axes_object = new THREE.AxesHelper(0.15);
-  axes_object.translateX(-0.8).translateY(-0.8);
+  axes_object.matrixAutoUpdate = false;
 
   pivot = new THREE.Group();
   pivot.matrixAutoUpdate = false;
@@ -1144,11 +1145,12 @@ function render() {
   renderer.render( scene, camera );
 
 
+  renderer.clippingPlanes = [];
   if(colormap_object && gui_status.Misc.colormap)
     renderer.render( colormap_object, ortho_camera );
 
   if(axes_object && gui_status.Misc.axes)
-    renderer.render( axes_object, camera );
+    renderer.render( axes_object, ortho_camera );
 
 
   if(gui_status.Complex.animate)
