@@ -1,11 +1,16 @@
-require.config({ paths: {
+// JUPYTER_CODE_BEGIN
+console.log("load ngsolve_webgui.js");
+requirejs.config({ paths: {
   THREE: "https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min",
   Stats: "https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min",
   dat: "https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui"
 }});
 
-require.undef('ngsolve_webgui');
-define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], (THREE, Stats, dat, widgets) => {
+requirejs.undef('ngsolve_webgui');
+console.log("define", define);
+define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], function (THREE, Stats, dat, widgets) {
+// JUPYTER_CODE_END
+
   function readB64(base64) {
     var binary_string = window.atob(base64);
     var len = binary_string.length;
@@ -1200,8 +1205,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], (THR
     }
   }
 
-  console.log("export NGSView");
-
+// JUPYTER_CODE_BEGIN
   // TODO: Don't set global variable render_data->store it in scene
   var render_data;
 
@@ -1226,3 +1230,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], (THR
 
   return {NGSView};
 });
+// JUPYTER_CODE_END
+
+// HTML_CODE_BEGIN
+let scene = new NGSViewC();
+scene.init(document.body);
+// HTML_CODE_END

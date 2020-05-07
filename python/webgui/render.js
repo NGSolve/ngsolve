@@ -1,13 +1,3 @@
-var Stats, dat, THREE;
-
-// var THREE = require(["https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min"]);
-// console.log("three", THREE);
-require.config({ paths: {
-  THREE: "https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min",
-  Stats: "https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min",
-  dat: "https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui"
-}});
-
 var scene, renderer, camera, mesh;
 var ortho_camera;
 var clipping_plane;
@@ -379,6 +369,9 @@ var CameraControls = function (cameraObject, pivotObject, domElement) {
   this.reset();
 };
 
+CameraControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+CameraControls.prototype.constructor = CameraControls;
+
 function updateClippingPlaneCamera()
 {
   const n = gui_status.Vectors.grid_size;
@@ -437,17 +430,8 @@ function updateGridsize()
   animate();
 }
 
-function init (THREE_, dat_, Stats_) {
-  console.log("THREE", THREE_);
-  console.log("dat", dat_);
-  console.log("Stats", Stats_);
-  THREE = THREE_;
-  dat = dat_;
-  Stats = Stats_;
-
-  CameraControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-  CameraControls.prototype.constructor = CameraControls;
-
+function init () {
+  console.log("init");
   mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
   mesh_radius = render_data.mesh_radius;
     if (render_data.websocket_url)
@@ -487,14 +471,14 @@ function init (THREE_, dat_, Stats_) {
 
   container.appendChild( renderer.domElement );
 
-//   stats = new Stats();
-//   stats.showPanel(-1); // Panel -1 = hidden, 0 = fps, 1 = ms per frame, 2 = memory usage
-//   stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
-//   container.appendChild( stats.domElement );
+  stats = new Stats();
+  stats.showPanel(-1); // Panel -1 = hidden, 0 = fps, 1 = ms per frame, 2 = memory usage
+  stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+  container.appendChild( stats.domElement );
 
   // label with NGSolve version at right lower corner
   version_object = document.createElement("div");
-  var style = 'bottom: 10px; right: 10px';
+  style = 'bottom: 10px; right: 10px';
   version_object.setAttribute("style",label_style+style);
   var version_text = document.createTextNode("NGSolve " + render_data.ngsolve_version);
   version_object.appendChild(version_text)
@@ -547,7 +531,7 @@ function init (THREE_, dat_, Stats_) {
 
   uniforms.do_clipping = new THREE.Uniform( false );
 
-  var gui = new dat.GUI();
+  gui = new dat.GUI();
   console.log("GUI", gui);
 
   if(render_data.show_wireframe)
@@ -658,16 +642,16 @@ function init (THREE_, dat_, Stats_) {
   uniforms.colormap_max = new THREE.Uniform( gui_status.colormap_max );
   updateColormap();
 
-  let gui_light = gui.addFolder("Light");
+  gui_light = gui.addFolder("Light");
   gui_light.add(gui_status.Light, "ambient", 0.0, 1.0).onChange(animate);
   gui_light.add(gui_status.Light, "diffuse", 0.0, 1.0).onChange(animate);
   gui_light.add(gui_status.Light, "shininess", 0.0, 100.0).onChange(animate);
   gui_light.add(gui_status.Light, "specularity", 0.0, 1.0).onChange(animate);
 
-  let gui_misc = gui.addFolder("Misc");
-//   gui_misc.add(gui_status.Misc, "stats", {"none":-1, "FPS":0, "ms":1, "memory":2}).onChange(function(show_fps) {
-//       stats.showPanel( parseInt(show_fps) );
-//   });
+  gui_misc = gui.addFolder("Misc");
+  gui_misc.add(gui_status.Misc, "stats", {"none":-1, "FPS":0, "ms":1, "memory":2}).onChange(function(show_fps) {
+      stats.showPanel( parseInt(show_fps) );
+  });
   gui_functions['reset settings'] = function() {
     setGuiSettings(gui_status_default);
   };
@@ -730,17 +714,14 @@ function getShader(name, defines)
   for(var key in defines)
     s += "#define " + key + " " + defines[key] + "\\n"
 
-
-  var utils = window.atob(shaders['utils.h']);
-  var shader = window.atob(shaders[name]).trim();
-//   var utils = document.getElementById( 'utils.h' ).textContent.trim();
-//   var shader = document.getElementById( name ).textContent.trim();
+  var utils = document.getElementById( 'utils.h' ).textContent.trim();
+  var shader = document.getElementById( name ).textContent.trim();
   return s + "// START FILE: utils.h \\n" + utils +'\\n// START FILE: ' + name + "\\n" + shader;
 }
 
 function updateColormap( )
 {
-  var n_colors = gui_status.colormap_ncolors;
+  n_colors = gui_status.colormap_ncolors;
   var colormap_data = new Float32Array(4*n_colors);
 
   var col_blue = new THREE.Vector3(0,0,1);
@@ -751,8 +732,7 @@ function updateColormap( )
 
   for (var i=0; i<n_colors; i++)
   {
-    let x = 1.0/(n_colors-1) * i;
-    let hx, color;
+    x = 1.0/(n_colors-1) * i;
     if (x < 0.25)
     {
       hx = 4.0*x;
@@ -806,7 +786,7 @@ function updateColormap( )
     ]);
 
     geo.uvsNeedUpdate = true;
-    var material = new THREE.MeshBasicMaterial({depthTest: false, map: colormap_texture, side: THREE.DoubleSide, wireframe: false});
+    material = new THREE.MeshBasicMaterial({depthTest: false, map: colormap_texture, side: THREE.DoubleSide, wireframe: false});
     colormap_object = new THREE.Mesh( geo, material );
 
     // Create 5 html div/text elements for numbers
@@ -1058,7 +1038,7 @@ function animate () {
   if(requestId == 0)
     requestId = requestAnimationFrame( render );
 
-//   stats.update();
+  stats.update();
 }
 
 function render() {
@@ -1201,4 +1181,4 @@ function getCookie(cname) {
 }
 
 
-require(['THREE', 'dat', 'Stats'], init);
+init();
