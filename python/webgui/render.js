@@ -806,7 +806,7 @@ function updateColormap( )
     ]);
 
     geo.uvsNeedUpdate = true;
-    material = new THREE.MeshBasicMaterial({depthTest: false, map: colormap_texture, side: THREE.DoubleSide, wireframe: false});
+    var material = new THREE.MeshBasicMaterial({depthTest: false, map: colormap_texture, side: THREE.DoubleSide, wireframe: false});
     colormap_object = new THREE.Mesh( geo, material );
 
     // Create 5 html div/text elements for numbers
