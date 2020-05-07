@@ -3,7 +3,7 @@ add_custom_target(webgui.py ALL
   SOURCES
     webgui.py
     render.js
-    ngswidgets.js
+    ngsolve_webgui.js
     shader/clipping_vectors.vert
     shader/function.frag
     shader/splines.frag
