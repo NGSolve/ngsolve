@@ -7,7 +7,13 @@ import ngsolve as ngs
 shader_codes = {}
 render_js_code = ""
 
-websocket_port = 8765
+def haveIPython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
 html_template = """
 <!DOCTYPE html>
 <html>
@@ -32,7 +38,9 @@ html_template = """
         </style>
     </head>
     <body>
-          <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"></script>
+          <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
           <script>
             {render}
           </script>
@@ -40,7 +48,30 @@ html_template = """
 </html>
 """
 
+# cut lines in code between tok_start and tok_end
+def preprocessCode(code, tok_start, tok_end):
+    lines = render_js_code.split('\n')
+    out = ""
+    
+    skip = False
+    for l in lines:
+        if l==tok_start:
+            skip=True
 
+        if not skip:
+            out += l+"\n"
+        if l==tok_end:
+            skip=False
+    return out
+
+def getJupyterJSCode():
+    return preprocessCode(render_js_code, "// HTML_CODE_BEGIN", "// HTML_CODE_END")
+
+def getHTMLJSCode():
+    return preprocessCode(render_js_code, "// JUPYTER_CODE_BEGIN", "// JUPYTER_CODE_END")
+
+
+# use b64 to avoid the need for escape characters (newlines etc.)
 def readShadersB64():
     from glob import glob 
     import os.path
@@ -50,50 +81,30 @@ def readShadersB64():
     for name, code in shader_codes.items():
         codes[name] = b64encode(code.encode("ascii")).decode("ascii")
     return codes
-#     return json.dumps(codes)
-
-def readShaders():
-    from glob import glob 
-    import os.path
-    codes = ""
-    for name, code in shader_codes.items():
-        if name.endswith(".h"):
-            typ = "x-header"
-        if name.endswith(".vert"):
-            typ = "x-vertex"
-        if name.endswith(".frag"):
-            typ = "x-fragment"
-        codes += '<script id={} type="x-shader/{}">\n{}</script>\n'.format(name, typ, code)
-    return codes
-
-def writeHTML(d):
-    global render_js_code
-    import json
-    data = json.dumps(d)
-
-#     html = html_template.replace('{shader}', readShaders() )
-    html = html_template.replace('{data}', data )
-    render_js_code = "var render_data = {}\n".format(data) + render_js_code
-    render_js_code = "var shaders = {}\n".format(readShadersB64()) + render_js_code
-    html = html.replace('{render}', render_js_code )
-
-    from IPython.display import display, IFrame, Javascript
-
-    print('execute js code')
-
-    ## write to html and use iframe<src="./output.html">
-    open('output.html','w').write( html )
-    return Javascript(render_js_code)
 
 class WebGLScene:
-    def __init__(self, cf, mesh, order, start_websocket=False):
-        from IPython.display import display, IFrame, Javascript
+    def __init__(self, cf, mesh, order):
+        from IPython.display import display, Javascript
         import threading
         self.cf = cf
         self.mesh = mesh
         self.order = order
-        self.have_websocket = start_websocket
 
+    def WriteHTML(self, filename):
+        import json
+        d = BuildRenderData(self.mesh, self.cf, self.order)
+        d['shaders'] = readShadersB64()
+
+        data = json.dumps(d)
+
+        html = html_template.replace('{data}', data )
+        jscode = "var render_data = {}\n".format(data) + getHTMLJSCode()
+        jscode = "var shaders = {}\n".format(readShadersB64()) + jscode
+        html = html.replace('{render}', jscode )
+
+        open(filename,'w').write( html )
+
+    def Draw(self):
         d = BuildRenderData(self.mesh, self.cf, self.order)
         d['shaders'] = readShadersB64()
 
@@ -105,26 +116,6 @@ class WebGLScene:
         d = BuildRenderData(self.mesh, self.cf, self.order)
         d['shaders'] = readShadersB64()
         self.widget.render_data = d
-
-    async def _handler(self, websocket, path):
-        import websockets
-        self.connected.add(websocket)
-        try:
-            while True:
-                s = await websocket.recv()
-                print("received websocket message", s)
-        except websockets.exceptions.ConnectionClosed:
-            pass
-        finally:
-            self.connected.remove(websocket)
-
-    def _eventLoopFunction(self):
-        import websockets, asyncio
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-        self.server = websockets.serve(self._handler, "localhost", websocket_port)
-        self.loop.run_until_complete(self.server)
-        self.loop.run_forever()
 
     def __repr__(self):
         return ""
@@ -351,7 +342,7 @@ def BuildRenderData(mesh, func, order=2):
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *args, **kwargs): # currently assumes 2D mesh
+def Draw(mesh_or_func, mesh_or_none=None, name='function', *args, **kwargs): # currently assumes 2D mesh
     if 'order' in kwargs:
         order=kwargs['order']
     else:
@@ -368,14 +359,14 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-#     d = BuildRenderData(mesh, func, order=order)
-#     if websocket:
-#         d['websocket_url'] = "ws://localhost:" + str(websocket_port)
+    scene = WebGLScene(func, mesh, order)
+    if haveIPython():
+        # render scene using HTML dom widget
+        scene.Draw()
+    else:
+        scene.WriteHTML('output.html')
 
-    scene = WebGLScene(func, mesh, order, websocket)
-#     writeHTML(d)
     return scene
-#     return scene
 
 import ipywidgets as widgets
 from traitlets import Unicode
@@ -388,7 +379,7 @@ class NGSWebGuiWidget(widgets.DOMWidget):
     def create(self, data):
         self.render_data = data
         from IPython.core.display import Javascript, display
-        display(Javascript(render_js_code))
+        display(Javascript(getJupyterJSCode()))
 
 
 tencode = ngs.Timer("encode")
