@@ -32,39 +32,14 @@ html_template = """
         </style>
     </head>
     <body>
-          {shader}
           <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"></script>
           <script>
-            var render_data = {data}
             {render}
           </script>
     </body>
 </html>
 """
 
-# Copied from Ipython.display.IFrame, but using srcdoc instead of src
-#   -> avoids the need to write an extra html-file
-#   -> the html is automatically saved with the notebook and available in html exports
-class MyIFrame(object):
-    iframe = """
-        <iframe
-            width="{width}"
-            height="{height}"
-            srcdoc="{srcdoc}"
-            frameborder="0"
-            allowfullscreen
-        ></iframe>
-        """
-
-    def __init__(self, srcdoc, width, height):
-        self.srcdoc = srcdoc
-        self.width = width
-        self.height = height
-
-    def _repr_html_(self):
-        return self.iframe.format(srcdoc=self.srcdoc,
-                                  width=self.width,
-                                  height=self.height)
 
 def readShadersB64():
     from glob import glob 
@@ -74,7 +49,8 @@ def readShadersB64():
     codes = {}
     for name, code in shader_codes.items():
         codes[name] = b64encode(code.encode("ascii")).decode("ascii")
-    return json.dumps(codes)
+    return codes
+#     return json.dumps(codes)
 
 def readShaders():
     from glob import glob 
@@ -95,51 +71,40 @@ def writeHTML(d):
     import json
     data = json.dumps(d)
 
-    html = html_template.replace('{shader}', readShaders() )
-    html = html.replace('{data}', data )
-    html = html.replace('{render}', render_js_code )
+#     html = html_template.replace('{shader}', readShaders() )
+    html = html_template.replace('{data}', data )
     render_js_code = "var render_data = {}\n".format(data) + render_js_code
     render_js_code = "var shaders = {}\n".format(readShadersB64()) + render_js_code
+    html = html.replace('{render}', render_js_code )
 
     from IPython.display import display, IFrame, Javascript
 
     print('execute js code')
-#     return Javascript(render_js_code)
 
     ## write to html and use iframe<src="./output.html">
     open('output.html','w').write( html )
-    # frame = IFrame(src='./output.html', width=700, height=400)
-
-    # use <iframe srcdoc=html> to display html inline
-#     html = html.replace('"', '&quot;')
-#     frame = MyIFrame(srcdoc=html, width="100%", height=400)
-# 
-#     display(frame)
-    # return frame
+    return Javascript(render_js_code)
 
 class WebGLScene:
     def __init__(self, cf, mesh, order, start_websocket=False):
+        from IPython.display import display, IFrame, Javascript
         import threading
         self.cf = cf
         self.mesh = mesh
         self.order = order
         self.have_websocket = start_websocket
-        if start_websocket:
-            self.connected = set()
-            self.thread = threading.Thread(target = self._eventLoopFunction)
-            self.thread.start()
 
-    def _send(self, data):
-        import asyncio
-        for websocket in self.connected.copy():
-            asyncio.ensure_future(websocket.send(data))
+        d = BuildRenderData(self.mesh, self.cf, self.order)
+        d['shaders'] = readShadersB64()
+
+        self.widget = NGSWebGuiWidget()
+        self.widget.create(d)
+        display(self.widget)
 
     def Redraw(self):
-        import numpy, json
-        if self.have_websocket and len(self.connected):
-            d = BuildRenderData(self.mesh, self.cf, self.order)
-            data = json.dumps(d["Bezier_trig_points"])
-            self.loop.call_soon_threadsafe(self._send, data.encode('ascii'))
+        d = BuildRenderData(self.mesh, self.cf, self.order)
+        d['shaders'] = readShadersB64()
+        self.widget.render_data = d
 
     async def _handler(self, websocket, path):
         import websockets
@@ -403,13 +368,28 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', websocket=False, *arg
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    d = BuildRenderData(mesh, func, order=order)
-    if websocket:
-        d['websocket_url'] = "ws://localhost:" + str(websocket_port)
+#     d = BuildRenderData(mesh, func, order=order)
+#     if websocket:
+#         d['websocket_url'] = "ws://localhost:" + str(websocket_port)
 
     scene = WebGLScene(func, mesh, order, websocket)
-    return writeHTML(d)
+#     writeHTML(d)
+    return scene
 #     return scene
+
+import ipywidgets as widgets
+from traitlets import Unicode
+class NGSWebGuiWidget(widgets.DOMWidget):
+    from traitlets import Dict, Unicode
+    _view_name = Unicode('NGSView').tag(sync=True)
+    _view_module = Unicode('ngsolve_webgui').tag(sync=True)
+    _view_module_version = Unicode('0.1.0').tag(sync=True)
+    render_data = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
+    def create(self, data):
+        self.render_data = data
+        from IPython.core.display import Javascript, display
+        display(Javascript(render_js_code))
+
 
 tencode = ngs.Timer("encode")
 def encodeData( array ):
