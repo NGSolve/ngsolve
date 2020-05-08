@@ -30,5 +30,4 @@ void main()
   normal_ =  normalMatrix*normal_;
 
   gl_Position = projectionMatrix * modelViewPosition;
-
 }

@@ -1,4 +1,5 @@
 uniform int n_segments;
+uniform bool render_depth;
 
 varying vec3 p_;
 varying vec3 normal_;

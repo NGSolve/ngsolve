@@ -282,18 +282,25 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
 
     function onDblClick( event ){
-
-
       event.preventDefault();
       // console.log("depth buffer", scene.depths.filter(function(x) { return (x !== 1 && x!= 0); }));
       //console.log(scene.depths);
-
       var mouse = new THREE.Vector2();
       mouse.set(event.clientX, event.clientY);
       mouse.x = event.clientX;
       mouse.y = event.clientY;
 
-      console.log("dbclick", mouse.x, mouse.y);
+      scene.camera.setViewOffset( scene.renderer.domElement.width, scene.renderer.domElement.height, mouse.x * window.devicePixelRatio | 0, mouse.y * window.devicePixelRatio | 0, 1, 1 );
+      scene.renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
+      scene.renderer.clear(true, true, true);
+      scene.renderer.setRenderTarget(scene.render_target);
+      scene.renderer.render( scene.scene, scene.camera );
+
+      var pixelBuffer = new Uint8Array( 4 );
+      scene.camera.clearViewOffset();
+
+      scene.renderer.readRenderTargetPixels(scene.render_target, 0, 0, 1, 1, pixelBuffer);
+      console.log(pixelBuffer);
 
     }
     scope.domElement.addEventListener('dblclick', onDblClick, false);
@@ -533,7 +540,13 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.renderer.autoClear = false;
       console.log("Renderer", this.renderer);
 
-
+      this.render_target = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+      // this.render_target.depthBuffer = true;
+      // this.render_target.depthTexture = new THREE.DepthTexture();
+      // this.render_target.depthTexture.format = THREE.DepthFormat;
+      // this.render_target.depthTexture.type = THREE.UnsignedShortType;
+      // this.context = context;
+      
       //this is to get the correct pixel detail on portable devices
       this.renderer.setPixelRatio( window.devicePixelRatio );
       // renderer.domElement.addEventListener("click", console.log, true)
@@ -597,6 +610,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       uniforms.light_mat = new THREE.Uniform(light_mat);
 
       uniforms.do_clipping = new THREE.Uniform( false );
+      uniforms.render_depth = new THREE.Uniform( false );
 
       let gui = new dat.GUI({ autoPlace: false });
       this.container.appendChild(gui.domElement);
@@ -1200,7 +1214,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.renderer.clear(true, true, true);
       this.renderer.setRenderTarget(null);
       this.renderer.render( this.scene, this.camera );
-
 
       this.renderer.clippingPlanes = [];
       if(this.colormap_object && gui_status.Misc.colormap)
