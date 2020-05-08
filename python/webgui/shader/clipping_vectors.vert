@@ -210,7 +210,7 @@ void main()
 {
   normal_ = normalMatrix*vec3(-1.0*clipping_plane.xyz);
   gl_Position = vec4(0,0,0,1);
-  position_ = vec4(255,255,255,255);
+  position_ = vec4(0,0,0,1);
   // value_ = 0.0;
   CutElement3d();
 }
