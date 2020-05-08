@@ -27,6 +27,8 @@ uniform vec2 complex_scale;
 uniform float complex_deform;
 uniform float deformation;
 
+uniform vec2 trafo;
+
 float GetValue( vec3 value )
 {
   if(function_mode==0.0) return value.x;
@@ -52,6 +54,7 @@ attribute vec4 p2;
 attribute vec2 v0;
 attribute vec2 v1;
 attribute vec2 v2;
+
 
 vec4 GetPositionAndScalar(float u, float v)
 {
@@ -248,6 +251,14 @@ float GetImagValue(float u, float v) {
 #endif // MESH_2D
 #endif // VERTEX_SHADER
 ///////////////////////////////////////////////////////////////////////////////
+vec4 getPositionAsColor(vec3 pos){
+  vec4 ret_val = vec4(1,1,1,1);
+  ret_val.x = pos.x*trafo.x+trafo.y;
+  ret_val.y = pos.y*trafo.x+trafo.y;
+  ret_val.z = pos.z*trafo.x+trafo.y;
+
+  return ret_val;
+}
 
 bool isBehindClippingPlane(vec3 pos)
 {

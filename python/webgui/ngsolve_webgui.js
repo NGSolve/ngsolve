@@ -296,10 +296,18 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       scene.renderer.setRenderTarget(scene.render_target);
       scene.renderer.render( scene.scene, scene.camera );
 
-      var pixelBuffer = new Uint8Array( 4 );
-      scene.camera.clearViewOffset();
+      // var pixelBuffer = new Uint32Array( 4 );
+      var pixelBuffer = new Float32Array( 4 );
+      // console.log(scene.render_target.__webglFramebuffer );
+      var props = scene.renderer.properties.get(scene.render_target);
+      var glFramebuffer = props.__webglFramebuffer;
+      _gl = scene.context
 
-      scene.renderer.readRenderTargetPixels(scene.render_target, 0, 0, 1, 1, pixelBuffer);
+      _gl.bindFramebuffer(_gl.FRAMEBUFFER, glFramebuffer);
+      console.log(_gl.checkFramebufferStatus( _gl.FRAMEBUFFER ) === _gl.FRAMEBUFFER_COMPLETE );
+      _gl.readPixels(0, 0, 1, 1, _gl.RGBA, _gl.FLOAT, pixelBuffer );
+      // scene.renderer.readRenderTargetPixels(scene.render_target, 0, 0, 1, 1, pixelBuffer);
+      scene.camera.clearViewOffset();
       console.log(pixelBuffer);
 
     }
@@ -541,11 +549,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       console.log("Renderer", this.renderer);
 
       this.render_target = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
-      // this.render_target.depthBuffer = true;
-      // this.render_target.depthTexture = new THREE.DepthTexture();
-      // this.render_target.depthTexture.format = THREE.DepthFormat;
-      // this.render_target.depthTexture.type = THREE.UnsignedShortType;
-      // this.context = context;
+      this.render_target.texture.format = THREE.RGBAFormat;
+      this.render_target.texture.type = THREE.FloatType;
+      this.context = context;
       
       //this is to get the correct pixel detail on portable devices
       this.renderer.setPixelRatio( window.devicePixelRatio );
@@ -610,7 +616,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       uniforms.light_mat = new THREE.Uniform(light_mat);
 
       uniforms.do_clipping = new THREE.Uniform( false );
-      uniforms.render_depth = new THREE.Uniform( false );
+      uniforms.render_depth = new THREE.Uniform( true );
+      this.trafo = new THREE.Vector2(1.0/2.0/(this.mesh_center.length()+this.mesh_radius), 1.0/2.0);
+      uniforms.trafo = new THREE.Uniform(this.trafo);
 
       let gui = new dat.GUI({ autoPlace: false });
       this.container.appendChild(gui.domElement);

@@ -1,11 +1,13 @@
 varying vec3 p_;
+varying vec3 position_;
+
 
 uniform bool render_depth;
 
 void main()
 {
   if (render_depth) {
-    gl_FragColor = vec4(3,0,0, 1);
+    gl_FragColor = getPositionAsColor(position_);
     return;
   }
   if( isBehindClippingPlane(p_) )

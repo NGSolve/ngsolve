@@ -1,5 +1,7 @@
 varying vec3 p_;
 // varying vec3 normal_;
+varying vec3 position_;
+
 
 uniform int n_segments;
 
@@ -39,4 +41,5 @@ void main()
   p_ = p.xyz / p.w;
   vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * modelViewPosition;
+  position_ = position.xyz;
 }
