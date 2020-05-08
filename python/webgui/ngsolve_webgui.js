@@ -281,6 +281,23 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     }
 
 
+    function onDblClick( event ){
+
+
+      event.preventDefault();
+      // console.log("depth buffer", scene.depths.filter(function(x) { return (x !== 1 && x!= 0); }));
+      //console.log(scene.depths);
+
+      var mouse = new THREE.Vector2();
+      mouse.set(event.clientX, event.clientY);
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+
+      console.log("dbclick", mouse.x, mouse.y);
+
+    }
+    scope.domElement.addEventListener('dblclick', onDblClick, false);
+
     // scope.domElement.addEventListener( 'mouseup', onMouseUp, false );
     window.addEventListener( 'mouseup', onMouseUp, false );
     scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
