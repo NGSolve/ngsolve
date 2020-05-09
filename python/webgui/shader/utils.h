@@ -22,6 +22,7 @@ uniform vec4 light_mat; // x=ambient, y=diffuse, z=shininess, w=specularity
 // 5   ... real part
 // 6   ... imag part
 // 7   ... complex norm
+
 uniform float function_mode;
 uniform vec2 complex_scale;
 uniform float complex_deform;
@@ -252,7 +253,7 @@ float GetImagValue(float u, float v) {
 #endif // VERTEX_SHADER
 ///////////////////////////////////////////////////////////////////////////////
 vec4 getPositionAsColor(vec3 pos){
-  vec4 ret_val = vec4(0,0,0,0);
+  vec4 ret_val = vec4(0.0,0.0,0.0,0.0);
   ret_val.x = pos.x*trafo.x+trafo.y;
   ret_val.y = pos.y*trafo.x+trafo.y;
   ret_val.z = pos.z*trafo.x+trafo.y;
