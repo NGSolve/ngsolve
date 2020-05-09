@@ -4,7 +4,6 @@ uniform bool render_depth;
 varying vec3 p_;
 varying vec3 normal_;
 varying vec3 value_;
-varying vec3 position_;
 
 attribute vec4 p0;
 attribute vec4 p1;
@@ -33,7 +32,6 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
   value_ =  mix(val0, val1, a);
   //vec4 modelViewPosition = viewMatrix * vec4(position.xyz, 1.0);
   // gl_Position = projectionMatrix * modelViewPosition;
-  position_ = position.xyz;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
 }
 
@@ -210,7 +208,6 @@ void main()
 {
   normal_ = normalMatrix*vec3(-1.0*clipping_plane.xyz);
   gl_Position = vec4(0,0,0,1);
-  position_ = vec4(0,0,0,1);
   // value_ = 0.0;
   CutElement3d();
 }
