@@ -73,8 +73,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
     this.scene = scene;
     this.mesh_radius = scene.mesh_radius;
-    this.center = new THREE.Vector3();
-    this.center.copy(scene.mesh_center);
+    this.center = scene.mesh_center.clone();
 
     this.cameraObject = cameraObject;
     this.pivotObject = scene.pivot;
@@ -117,9 +116,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       return function update() {
         scale_vec.setScalar(scope.scale);
         scope.pivotObject.matrix.copy(scope.transmat).multiply(scope.rotmat).scale(scale_vec).multiply(scope.centermat);
-
         const aspect = window.innerWidth/window.innerHeight;
-        this.scene.axes_object.matrixWorld.makeTranslation(-0.85*aspect, -0.85, 0).multiply(scope.rotmat);
+        scope.scene.axes_object.matrixWorld.makeTranslation(-0.85*aspect, -0.85, 0).multiply(scope.rotmat);
         scope.dispatchEvent( changeEvent );
       };  
     }()
@@ -144,6 +142,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       return function() {
         console.log("set mesh center to", scope.center);
         scope.centermat.makeTranslation(-scope.center.x, -scope.center.y, -scope.center.z);
+        scope.scene.setCenterTag();
         scope.update();
       };
     }();
@@ -614,6 +613,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       this.get_pixel = false;
       this.mouse = new THREE.Vector2(0.0, 0.0);
+      this.center_tag = null;
 
       let gui = new dat.GUI({ autoPlace: true });
       // this.container.appendChild(gui.domElement);
@@ -886,6 +886,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.animate();
     }
 
+
     createCurvedMesh(data)
     {
       var geo = new THREE.InstancedBufferGeometry();
@@ -1106,6 +1107,22 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       return mesh;
     }
 
+    setCenterTag(position = null) {
+      if (this.center_tag != null) {
+        this.pivot.remove(this.center_tag);
+        this.center_tag = null;
+        console.log("remove center tag");
+      }
+      if (position != null) {
+        let geometry = new THREE.SphereGeometry( this.mesh_radius*0.015, 32, 32 );
+        let material = new THREE.MeshBasicMaterial( {color: 0x8a9597} );
+        this.center_tag = new THREE.Mesh( geometry, material );
+        this.center_tag.position.copy(position);
+        this.pivot.add(this.center_tag);
+      }
+    }
+
+
     animate () {
       // Don't request a frame if another one is currently in the pipeline
       if(this.requestId === 0)
@@ -1137,6 +1154,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
           }
         }
         console.log("controls.center", this.controls.center);
+        this.setCenterTag(this.controls.center);
         this.mouse.set(0.0, 0.0, 0.0);
         this.get_pixel = false;
       }
@@ -1248,13 +1266,19 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.renderer.render( this.scene, this.camera );
 
       this.renderer.clippingPlanes = [];
+
+      // render after clipping 
+      if(this.center_tag != null){
+        this.renderer.render(this.center_tag, this.camera);
+      }
+
       if(this.colormap_object && gui_status.Misc.colormap)
         this.renderer.render( this.colormap_object, this.ortho_camera );
 
       if(this.axes_object && gui_status.Misc.axes)
         this.renderer.render( this.axes_object, this.ortho_camera );
 
-
+  
       if(gui_status.Complex.animate)
       {
         gui_status.Complex.phase += gui_status.Complex.speed;
