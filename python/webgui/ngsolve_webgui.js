@@ -116,7 +116,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         scale_vec.setScalar(scope.scale);
         scope.pivotObject.matrix.copy(scope.transmat).multiply(scope.rotmat).scale(scale_vec).multiply(scope.centermat);
 
-        const aspect = window.innerWidth/window.innerHeight;
+        const aspect = this.domElement.offsetWidth/this.domElement.offsetHeight;
         this.scene.axes_object.matrixWorld.makeTranslation(-0.85*aspect, -0.85, 0).multiply(scope.rotmat);
         scope.dispatchEvent( changeEvent );
       };  
@@ -387,8 +387,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     }
 
     onResize() {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const w = this.element.parentNode.clientWidth;
+      const h = this.element.parentNode.clientHeight;
+
       const aspect = w/h;
       this.ortho_camera = new THREE.OrthographicCamera( -aspect, aspect, 1.0, -1.0, -100, 100 );
       if(this.colormap_object)
@@ -399,16 +400,17 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         this.colormap_object.updateWorldMatrix();
 
         const n = this.colormap_labels.length;
-        const y = Math.round(0.5*(0.05+0.07)*window.innerHeight);
+        const y = Math.round(0.5*(0.05+0.07)*h);
         for(var i=0; i<n; i++)
         {
-          const x = Math.round(0.5*window.innerWidth*(1.0 + (x0+i/(n-1))/aspect));
+          const x = Math.round(0.5*w*(1.0 + (x0+i/(n-1))/aspect));
           this.colormap_divs[i].setAttribute("style",this.label_style+`transform: translate(-50%, 0%); left: ${x}px; top: ${y}px` );
         }
       }
       this.camera.aspect = aspect;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize( window.innerWidth, window.innerHeight );
+      this.renderer.setSize( w, h );
+      this.controls.update();
       this.animate();
     }
 
@@ -486,6 +488,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     }
 
     init (element) {
+      this.element = element;
       console.log("THREE", THREE);
       console.log("dat", dat);
       console.log("Stats", Stats);
@@ -522,11 +525,10 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       // renderer.domElement.addEventListener("click", console.log, true)
 
       //and this sets the canvas' size.
-      this.renderer.setSize( window.innerWidth, window.innerHeight );
+      this.renderer.setSize( this.element.offsetWidth, this.element.offsetHeight );
       this.renderer.setClearColor( 0xffffff, 1 );
 
       this.container = document.createElement( 'div' );
-      //     document.body.appendChild( this.container );
       element.appendChild( this.container );
 
       this.container.appendChild( this.renderer.domElement );
@@ -556,7 +558,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       this.camera = new THREE.PerspectiveCamera(
         40,                                         //FOV
-        window.innerWidth / window.innerHeight,     //aspect
+        this.element.offsetWidth/ this.element.offsetHeight, // aspect
         1,                                          //near clipping plane
         100                                         //far clipping plane
       );
@@ -757,7 +759,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.controls = new CameraControls(this.camera, this, this.renderer.domElement );
       this.controls.addEventListener('change', animate);
 
-      this.onResize();
+      setTimeout(()=> this.onResize(), 0);
     }
 
     updateColormap( )
@@ -1223,9 +1225,11 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.scene = new NGSViewC();
       let container = document.createElement( 'div' );
       container.setAttribute("style", "height: 50vw; width: 100vw;");
-      this.scene.init(container);
       this.el.appendChild(container);
-      this.data_changed();
+      setTimeout(()=> {
+        this.scene.init(container);
+        this.data_changed();
+      } , 0);
       this.model.on('change:render_data', this.data_changed, this);
     },
     data_changed: function() {
