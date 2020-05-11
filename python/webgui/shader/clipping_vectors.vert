@@ -1,4 +1,5 @@
 uniform int n_segments;
+uniform bool render_depth;
 
 varying vec3 p_;
 varying vec3 normal_;
@@ -29,7 +30,7 @@ void CalcIntersection( float d0, float d1, vec4 x0, vec4 x1, vec3 val0, vec3 val
   vec4 position =  mix(x0, x1, a);
   p_ = position.xyz;
   value_ =  mix(val0, val1, a);
-  // vec4 modelViewPosition = viewMatrix * vec4(position.xyz, 1.0);
+  //vec4 modelViewPosition = viewMatrix * vec4(position.xyz, 1.0);
   // gl_Position = projectionMatrix * modelViewPosition;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
 }

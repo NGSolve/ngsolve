@@ -73,7 +73,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
     this.scene = scene;
     this.mesh_radius = scene.mesh_radius;
-    this.mesh_center = scene.mesh_center;
+    this.center = scene.mesh_center.clone();
 
     this.cameraObject = cameraObject;
     this.pivotObject = scene.pivot;
@@ -85,7 +85,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     this.transformationmat = new THREE.Matrix4();
     this.scale = 1.0/this.mesh_radius;
 
-    this.centermat.makeTranslation(-this.mesh_center.x, -this.mesh_center.y, -this.mesh_center.z);
+    this.centermat.makeTranslation(-this.center.x, -this.center.y, -this.center.z);
 
     this.mode = null;
 
@@ -106,7 +106,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       scope.centermat.identity();
       scope.transformationmat.identity();
       scope.scale = 1.0/this.mesh_radius;
-      scope.centermat.makeTranslation(-this.mesh_center.x, -this.mesh_center.y, -this.mesh_center.z);
+      scope.center.copy(scene.mesh_center);
+      scope.centermat.makeTranslation(-this.center.x, -this.center.y, -this.center.z);
       scope.update();
     }
 
@@ -115,7 +116,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       return function update() {
         scale_vec.setScalar(scope.scale);
         scope.pivotObject.matrix.copy(scope.transmat).multiply(scope.rotmat).scale(scale_vec).multiply(scope.centermat);
-
         const aspect = this.domElement.offsetWidth/this.domElement.offsetHeight;
         this.scene.axes_object.matrixWorld.makeTranslation(-0.85*aspect, -0.85, 0).multiply(scope.rotmat);
         scope.dispatchEvent( changeEvent );
@@ -138,9 +138,18 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       };
     }();  
 
+    this.updateCenter = function () {
+      return function() {
+        console.log("set mesh center to", scope.center);
+        scope.centermat.makeTranslation(-scope.center.x, -scope.center.y, -scope.center.z);
+        scope.scene.setCenterTag();
+        scope.update();
+      };
+    }();
+
     function keydown(event) {
       var needs_update = false;
-      // TODO:  should a moving camera be allowed? 
+
       if (event.shiftKey){ // pan
         if (event.keyCode == scope.keys.DOWN) {
           needs_update = true;
@@ -280,6 +289,19 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       event.preventDefault();
     }
 
+    function getPixel(scene, mouse){
+
+    }
+
+    function onDblClick( event ){
+      event.preventDefault();
+      scene.mouse.set(event.clientX, event.clientY);
+      scene.get_pixel = true;
+      scope.dispatchEvent( changeEvent );      
+
+    }
+
+    scope.domElement.addEventListener('dblclick', onDblClick, false);
 
     // scope.domElement.addEventListener( 'mouseup', onMouseUp, false );
     window.addEventListener( 'mouseup', onMouseUp, false );
@@ -374,6 +396,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     }
 
     setGuiSettings (settings) {
+      console.log("in gui settings");
       setKeys(this.gui_status, settings);
       stats.showPanel(parseInt(this.gui_status.Misc.stats));
       for (var i in this.gui.__controllers)
@@ -519,7 +542,11 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.renderer.autoClear = false;
       console.log("Renderer", this.renderer);
 
-
+      this.render_target = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+      this.render_target.texture.format = THREE.RGBAFormat;
+      this.render_target.texture.type = THREE.FloatType;
+      this.context = context;
+      
       //this is to get the correct pixel detail on portable devices
       this.renderer.setPixelRatio( window.devicePixelRatio );
       // renderer.domElement.addEventListener("click", console.log, true)
@@ -582,7 +609,13 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       uniforms.light_mat = new THREE.Uniform(light_mat);
 
       uniforms.do_clipping = new THREE.Uniform( false );
+      uniforms.render_depth = new THREE.Uniform( false );
+      this.trafo = new THREE.Vector2(1.0/2.0/(this.mesh_center.length()+this.mesh_radius), 1.0/2.0);
+      uniforms.trafo = new THREE.Uniform(this.trafo);
 
+      this.get_pixel = false;
+      this.mouse = new THREE.Vector2(0.0, 0.0);
+      this.center_tag = null;
 
       let gui = new dat.GUI({autoplace: false});
       let gui_container = document.createElement( 'div' );
@@ -593,6 +626,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.gui = gui;
       console.log("GUI", gui);
       let gui_status = this.gui_status;
+      console.log("gui_status", gui_status);
       let animate = ()=>this.animate();
 
       if(render_data.show_wireframe)
@@ -680,11 +714,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         this.updateGridsize();
       }
 
-      //   controls2.target.set(0.0, 0.0, 0.0);
-      //   controls2.update();
-      //   controls2.addEventListener('change', animate );
-
-      if(render_data.show_clipping_function || render_data.show_surface_function)
+      // if(render_data.show_clipping_function || render_data.show_surface_function)
+      if(true)
       {
         const cmin = render_data.funcmin;
         const cmax = Math.abs(render_data.funcmax);
@@ -749,10 +780,15 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         version_object.style.visibility = value ? "visible" : "hidden";
       });
 
-      gui_functions['center'] = ()=> {
+      gui_functions['reset'] = ()=> {
         this.controls.reset();
       };
-      gui.add(gui_functions, "center").onChange(animate);
+      gui.add(gui_functions, "reset").onChange(animate);
+
+      gui_functions['update center'] = ()=> {
+        this.controls.updateCenter();
+      };
+      gui.add(gui_functions, "update center").onChange(animate);
 
       this.scene.add( this.pivot );
 
@@ -855,6 +891,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       this.animate();
     }
+
 
     createCurvedMesh(data)
     {
@@ -1076,6 +1113,22 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       return mesh;
     }
 
+    setCenterTag(position = null) {
+      if (this.center_tag != null) {
+        this.pivot.remove(this.center_tag);
+        this.center_tag = null;
+        console.log("remove center tag");
+      }
+      if (position != null) {
+        let geometry = new THREE.SphereGeometry( this.mesh_radius*0.015, 32, 32 );
+        let material = new THREE.MeshBasicMaterial( {color: 0x8a9597} );
+        this.center_tag = new THREE.Mesh( geometry, material );
+        this.center_tag.position.copy(position);
+        this.pivot.add(this.center_tag);
+      }
+    }
+
+
     animate () {
       // Don't request a frame if another one is currently in the pipeline
       if(this.requestId === 0)
@@ -1085,6 +1138,33 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     }
 
     render() {
+
+      if (this.get_pixel) {
+        this.uniforms.render_depth.value = true;
+        this.camera.setViewOffset( this.renderer.domElement.width, this.renderer.domElement.height,
+           this.mouse.x * window.devicePixelRatio | 0, this.mouse.y * window.devicePixelRatio | 0, 1, 1 );
+        this.renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
+        this.renderer.clear(true, true, true);
+        this.renderer.setRenderTarget(this.render_target);
+        this.renderer.render( this.scene, this.camera );
+        this.camera.clearViewOffset();
+        this.uniforms.render_depth.value= false;
+
+        let pixel_buffer = new Float32Array( 4 );
+        this.context.readPixels(0, 0, 1, 1, this.context.RGBA, this.context.FLOAT, pixel_buffer);
+        if (pixel_buffer[3]==1){
+          this.controls.center.copy(this.mesh_center);
+        }else{
+          for (var i=0; i<3; i++){
+            this.controls.center.setComponent(i, (pixel_buffer[i]-this.trafo.y)/this.trafo.x);
+          }
+        }
+        console.log("controls.center", this.controls.center);
+        this.setCenterTag(this.controls.center);
+        this.mouse.set(0.0, 0.0, 0.0);
+        this.get_pixel = false;
+      }
+
       this.requestId = 0;
 
       if(this.ortho_camera === undefined)
@@ -1194,15 +1274,20 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.renderer.setRenderTarget(null);
       this.renderer.render( this.scene, this.camera );
 
-
       this.renderer.clippingPlanes = [];
+
+      // render after clipping 
+      if(this.center_tag != null){
+        this.renderer.render(this.center_tag, this.camera);
+      }
+
       if(this.colormap_object && gui_status.Misc.colormap)
         this.renderer.render( this.colormap_object, this.ortho_camera );
 
       if(this.axes_object && gui_status.Misc.axes)
         this.renderer.render( this.axes_object, this.ortho_camera );
 
-
+  
       if(gui_status.Complex.animate)
       {
         gui_status.Complex.phase += gui_status.Complex.speed;
