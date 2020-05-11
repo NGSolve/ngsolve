@@ -694,8 +694,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         this.gui_status_default.colormap_max = cmax;
 
         const cstep = 1e-6 * (cmax-cmin);
-        gui.add(gui_status, "colormap_min", cmin, 2*cmax, cstep).onChange(()=>this.updateColormapLabels());
-        gui.add(gui_status, "colormap_max", cmin, 2*cmax, cstep).onChange(()=>this.updateColormapLabels());
+        gui.add(gui_status, "colormap_min").onChange(()=>this.updateColormapLabels());
+        gui.add(gui_status, "colormap_max").onChange(()=>this.updateColormapLabels());
 
         gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(()=>this.updateColormap());
       }
