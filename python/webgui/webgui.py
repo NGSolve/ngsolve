@@ -7,12 +7,17 @@ import ngsolve as ngs
 shader_codes = {}
 render_js_code = ""
 
-def haveIPython():
-    try:
-        __IPYTHON__
-        return True
-    except NameError:
-        return False
+try:
+    __IPYTHON__
+    _IN_IPYTHON = True
+except NameError:
+    _IN_IPYTHON = False
+
+try:
+    import google.colab
+    _IN_GOOGLE_COLAB = True
+except ImportError:
+    _IN_GOOGLE_COLAB = False
 
 html_template = """
 <!DOCTYPE html>
@@ -90,7 +95,7 @@ class WebGLScene:
         self.mesh = mesh
         self.order = order
 
-    def WriteHTML(self, filename):
+    def GenerateHTML(self, filename=None):
         import json
         d = BuildRenderData(self.mesh, self.cf, self.order)
         d['shaders'] = readShadersB64()
@@ -102,7 +107,9 @@ class WebGLScene:
         jscode = "var shaders = {}\n".format(readShadersB64()) + jscode
         html = html.replace('{render}', jscode )
 
-        open(filename,'w').write( html )
+        if filename is not None:
+            open(filename,'w').write( html )
+        return html
 
     def Draw(self):
         d = BuildRenderData(self.mesh, self.cf, self.order)
@@ -360,13 +367,18 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', *args, **kwargs): # c
         mesh = mesh_or_none or func.space.mesh
         
     scene = WebGLScene(func, mesh, order)
-    if haveIPython():
-        # render scene using HTML dom widget
-        scene.Draw()
+    if _IN_IPYTHON:
+        if _IN_GOOGLE_COLAB:
+            from IPython.display import display, HTML
+            html = scene.GenerateHTML()
+            display(HTML(html))
+        else:
+            # render scene using widgets.DOMWidget
+            scene.Draw()
+            return scene
     else:
-        scene.WriteHTML('output.html')
+        scene.GenerateHTML(filename='output.html')
 
-    return scene
 
 import ipywidgets as widgets
 from traitlets import Unicode

@@ -1087,12 +1087,15 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     render() {
       this.requestId = 0;
 
+      if(this.ortho_camera === undefined)
+        return; // not fully initialized yet
+
       let gui_status = this.gui_status;
       let uniforms = this.uniforms;
 
       this.axes_object.visible = gui_status.Misc.axes;
       var subdivision = gui_status.subdivision;
-      if(gui_status.Misc.reduce_subdivision && controls.mode != null)
+      if(gui_status.Misc.reduce_subdivision && this.controls.mode != null)
         subdivision = Math.ceil(subdivision/2);
 
       if( this.wireframe_object != null )
