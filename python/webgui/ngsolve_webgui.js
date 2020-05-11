@@ -581,8 +581,13 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       uniforms.do_clipping = new THREE.Uniform( false );
 
-      let gui = new dat.GUI({ autoPlace: false });
-      this.container.appendChild(gui.domElement);
+
+      let gui = new dat.GUI({autoplace: false});
+      let gui_container = document.createElement( 'div' );
+      gui_container.setAttribute("style", 'position: absolute; z-index: 200; display:block; right: 0px; top: 0px');
+      gui_container.appendChild(gui.domElement);
+      this.container.appendChild(gui_container);
+
       this.gui = gui;
       console.log("GUI", gui);
       let gui_status = this.gui_status;
