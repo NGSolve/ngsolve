@@ -16,7 +16,7 @@ void main()
   vec3 norm = normal_;
   bool inside = false;
 #ifndef SKIP_FACE_CHECK
-  if (!gl_FrontFacing) {
+  if (gl_FrontFacing == false) {
     norm = (-1.0)*normal_;
     inside = true;
   }
