@@ -1221,7 +1221,10 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       render_data = this.model.get("render_data");
       console.log("render data", render_data);
       this.scene = new NGSViewC();
-      this.scene.init(this.el);
+      let container = document.createElement( 'div' );
+      container.setAttribute("style", "height: 50vw; width: 100vw;");
+      this.scene.init(container);
+      this.el.appendChild(container);
       this.data_changed();
       this.model.on('change:render_data', this.data_changed, this);
     },
