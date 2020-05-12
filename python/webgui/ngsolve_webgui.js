@@ -714,8 +714,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         this.updateGridsize();
       }
 
-      // if(render_data.show_clipping_function || render_data.show_surface_function)
-      if(true)
+      if(render_data.show_clipping_function || render_data.show_surface_function)
       {
         const cmin = render_data.funcmin;
         const cmax = Math.abs(render_data.funcmax);
