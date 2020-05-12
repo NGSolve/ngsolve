@@ -16,11 +16,11 @@ namespace ngfem
   class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this_virtual<CoefficientFunction>
   {
   private:
-    int dimension;
+    int dimension = 1;
     Array<int> dims;
   protected:
     bool elementwise_constant = false;
-    bool is_complex;
+    bool is_complex = false;
   public:
     // default constructor for archive
     CoefficientFunction() = default;
