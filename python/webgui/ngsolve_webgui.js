@@ -388,8 +388,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       var pivot;
 
-      var have_deformation = render_data.mesh_dim == render_data.funcdim && !render_data.is_complex;
-      var have_z_deformation = render_data.mesh_dim == 2 && render_data.funcdim>0;
+      var have_deformation;
+      var have_z_deformation;
 
       this.label_style  = '-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; onselectstart="return false;';
       this.label_style += 'onmousedown="return false; user-select:none;-o-user-select:none;unselectable="on";';
@@ -512,7 +512,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.animate();
     }
 
-    init (element) {
+    init (element, render_data) {
       this.element = element;
       console.log("THREE", THREE);
       console.log("dat", dat);
@@ -520,6 +520,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       CameraControls.prototype = Object.create( THREE.EventDispatcher.prototype );
       CameraControls.prototype.constructor = CameraControls;
+
+      this.have_deformation = render_data.mesh_dim == render_data.funcdim && !render_data.is_complex;
+      this.have_z_deformation = render_data.mesh_dim == 2 && render_data.funcdim>0;
 
       this.mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
       this.mesh_radius = render_data.mesh_radius;
@@ -1364,7 +1367,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.el.appendChild(container);
       render_data = this.model.get("render_data");
       setTimeout(()=> {
-        this.scene.init(container);
+        this.scene.init(container, render_data);
       } , 0);
       this.model.on('change:render_data', this.data_changed, this);
     },
@@ -1381,5 +1384,5 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
 // HTML_CODE_BEGIN
 let scene = new NGSViewC();
-scene.init(document.body);
+scene.init(document.body, render_data);
 // HTML_CODE_END
