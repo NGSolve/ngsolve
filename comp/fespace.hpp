@@ -309,7 +309,7 @@ ANY                  1 1 1 1 | 15
 
       INLINE Element (const Element & el) = default;
       INLINE Element (Element && el) = default;
-
+      auto & GetFESpace() const { return fes; } 
       INLINE FlatArray<DofId> GetDofs() const
       {
         if (!dofs_set)

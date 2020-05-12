@@ -322,7 +322,14 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<FESpace::Element,Ngs_Element>(m, "FESpaceElement")
     .def_property_readonly("dofs",
                            [](FESpace::Element & el) 
-                           { return MakePyList (el.GetDofs()); },
+                           {
+                             // don't use the cached dofs, not cheap anyway
+                             // this allows to keep the elements without the iterator
+                             // return MakePyList (el.GetDofs()); 
+                             Array<DofId> dofs;
+                             el.GetFESpace().GetDofNrs(el, dofs);
+                             return MakePyList (dofs);
+                           },
                            "degrees of freedom of element"
                            )
 
