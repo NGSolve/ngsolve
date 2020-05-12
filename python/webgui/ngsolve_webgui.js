@@ -740,15 +740,19 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
           {
             this.gui_status.colormap_min = this.gui_status_default.colormap_min;
             this.gui_status.colormap_max = this.gui_status_default.colormap_max;
-            this.c_autoscale.updateDisplay();
+            this.c_cmin.updateDisplay();
+            this.c_cmax.updateDisplay();
+            this.updateColormapLabels();
             this.animate();
           }
         });
 
         this.c_cmin = gui.add(gui_status, "colormap_min");
         this.c_cmin.onChange(()=>this.updateColormapLabels());
+        this.c_cmin.__precision = Math.max(4, this.c_cmin.__precision);
         this.c_cmax = gui.add(gui_status, "colormap_max");
         this.c_cmax.onChange(()=>this.updateColormapLabels());
+        this.c_cmax.__precision = Math.max(4, this.c_cmax.__precision);
 
         if(cmax>cmin)
         {
@@ -1160,6 +1164,14 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
           this.c_cmin.updateDisplay();
           this.c_cmax.updateDisplay();
           this.updateColormapLabels();
+
+        }
+
+        if(cmax>cmin)
+        {
+          const step = 1e-2*(cmax-cmin);
+          this.c_cmin.step(step);
+          this.c_cmax.step(step);
         }
       }
 
