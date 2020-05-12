@@ -31,6 +31,11 @@ void main()
   }
 #endif // SKIP_FACE_CHECK
 
+#ifdef NO_FUNCTION_VALUES
+  vec4 color = vec4(.7,.7,.7,1);
+#else
   vec4 color = getColor(GetValue(value_));
+#endif
+
   gl_FragColor = calcLight( color, p_, norm, inside);
 }
