@@ -4,7 +4,6 @@ from time import time
 import ngsolve as ngs
 
 # the build script fills the contents of the variables below
-shader_codes = {}
 render_js_code = ""
 
 try:
@@ -75,18 +74,6 @@ def getJupyterJSCode():
 def getHTMLJSCode():
     return preprocessCode(render_js_code, "// JUPYTER_CODE_BEGIN", "// JUPYTER_CODE_END")
 
-
-# use b64 to avoid the need for escape characters (newlines etc.)
-def readShadersB64():
-    from glob import glob 
-    import os.path
-    from base64 import b64encode
-    import json
-    codes = {}
-    for name, code in shader_codes.items():
-        codes[name] = b64encode(code.encode("ascii")).decode("ascii")
-    return codes
-
 class WebGLScene:
     def __init__(self, cf, mesh, order):
         from IPython.display import display, Javascript
@@ -98,13 +85,11 @@ class WebGLScene:
     def GenerateHTML(self, filename=None):
         import json
         d = BuildRenderData(self.mesh, self.cf, self.order)
-        d['shaders'] = readShadersB64()
 
         data = json.dumps(d)
 
         html = html_template.replace('{data}', data )
         jscode = "var render_data = {}\n".format(data) + getHTMLJSCode()
-        jscode = "var shaders = {}\n".format(readShadersB64()) + jscode
         html = html.replace('{render}', jscode )
 
         if filename is not None:
@@ -113,7 +98,6 @@ class WebGLScene:
 
     def Draw(self):
         d = BuildRenderData(self.mesh, self.cf, self.order)
-        d['shaders'] = readShadersB64()
 
         self.widget = NGSWebGuiWidget()
         self.widget.create(d)
@@ -121,7 +105,6 @@ class WebGLScene:
 
     def Redraw(self):
         d = BuildRenderData(self.mesh, self.cf, self.order)
-        d['shaders'] = readShadersB64()
         self.widget.render_data = d
 
     def __repr__(self):
