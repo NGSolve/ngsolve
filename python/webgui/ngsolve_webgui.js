@@ -11,6 +11,8 @@ console.log("define", define);
 define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], function (THREE, Stats, dat, widgets) {
 // JUPYTER_CODE_END
 
+  const shaders = {};
+
   function readB64(base64) {
     var binary_string = window.atob(base64);
     var len = binary_string.length;
@@ -44,8 +46,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       s += "#define " + key + " " + defines[key] + "\\n"
 
 
-    var utils = window.atob(render_data.shaders['utils.h']);
-    var shader = window.atob(render_data.shaders[name]).trim();
+    var utils = window.atob(shaders['utils.h']);
+    var shader = window.atob(shaders[name]).trim();
     return s + "// START FILE: utils.h \\n" + utils +'\\n// START FILE: ' + name + "\\n" + shader;
   }
 
