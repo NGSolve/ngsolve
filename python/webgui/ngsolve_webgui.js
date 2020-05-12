@@ -441,7 +441,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     {
       const n = this.colormap_labels.length;
       const min = this.gui_status.colormap_min;
-      const inc = (this.gui_status.colormap_max-min)/n;
+      const inc = (this.gui_status.colormap_max-min)/(n-1);
       if(this.gui_status.Misc.colormap)
         for(var i=0; i<n; i++)
           this.colormap_labels[i].nodeValue = (min+inc*i).toPrecision(2);
@@ -717,15 +717,23 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       if(render_data.show_clipping_function || render_data.show_surface_function)
       {
         const cmin = render_data.funcmin;
-        const cmax = Math.abs(render_data.funcmax);
+        const cmax = render_data.funcmax;
         gui_status.colormap_min = cmin;
         gui_status.colormap_max = cmax;
         this.gui_status_default.colormap_min = cmin;
         this.gui_status_default.colormap_max = cmax;
 
-        const cstep = 1e-6 * (cmax-cmin);
-        gui.add(gui_status, "colormap_min").onChange(()=>this.updateColormapLabels());
-        gui.add(gui_status, "colormap_max").onChange(()=>this.updateColormapLabels());
+        this.c_cmin = gui.add(gui_status, "colormap_min");
+        this.c_cmin.onChange(()=>this.updateColormapLabels());
+        this.c_cmax = gui.add(gui_status, "colormap_max");
+        this.c_cmax.onChange(()=>this.updateColormapLabels());
+
+        if(cmax>cmin)
+        {
+          const step = 1e-2*(cmax-cmin);
+          this.c_cmin.step(step);
+          this.c_cmax.step(step);
+        }
 
         gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(()=>this.updateColormap());
       }
