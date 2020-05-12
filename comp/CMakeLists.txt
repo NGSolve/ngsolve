@@ -15,7 +15,8 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp fesconvert.cpp
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         periodic.cpp discontinuous.cpp reorderedfespace.cpp hypre_ams_precond.cpp facetsurffespace.cpp compressedfespace.cpp
-        ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp ../multigrid/smoother.cpp contact.cpp
+        ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
+        ../multigrid/smoother.cpp contact.cpp localsolve.cpp
         )
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd)      
