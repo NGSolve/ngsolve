@@ -653,6 +653,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       if(this.have_z_deformation || this.have_deformation)
       {
+        this.gui_status_default.deformation = render_data.deformation ? 1.0 : 0.0;
+        gui_status.deformation = this.gui_status_default.deformation;
         gui.add(gui_status, "deformation", 0.0, 1.0, 0.0001).onChange(animate);
         uniforms.deformation = new THREE.Uniform( gui_status.deformation );
       }
