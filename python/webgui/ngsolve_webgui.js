@@ -490,6 +490,15 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.uniforms.clipping_plane_t1.value = t1;
       this.uniforms.clipping_plane_t2.value = t2;
       this.uniforms.grid_size.value = n;
+    }
+
+    updateGridsize()
+    {
+      const n = this.gui_status.Vectors.grid_size;
+      this.buffer_texture = new THREE.WebGLRenderTarget( n, n, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, type: THREE.HalfFloatType, format: THREE.RGBAFormat });
+      this.uniforms.tex_values = new THREE.Uniform(this.buffer_texture.texture);
+      let r = this.mesh_radius;
+      this.buffer_camera = new THREE.OrthographicCamera( -r, r, r, -r, -10, 10 );
 
       const geo = this.clipping_vectors_object.geometry;
       var arrowid = new Float32Array(2*n * n);
@@ -500,15 +509,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         }
       geo.maxInstancedCount = n*n;
       geo.setAttribute( 'arrowid', new THREE.InstancedBufferAttribute( arrowid, 2 ) );
-    }
-
-    updateGridsize()
-    {
-      const n = this.gui_status.Vectors.grid_size;
-      this.buffer_texture = new THREE.WebGLRenderTarget( n, n, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, type: THREE.HalfFloatType, format: THREE.RGBAFormat });
-      this.uniforms.tex_values = new THREE.Uniform(this.buffer_texture.texture);
-      let r = this.mesh_radius;
-      this.buffer_camera = new THREE.OrthographicCamera( -r, r, r, -r, -10, 10 );
       this.animate();
     }
 
@@ -735,6 +735,13 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
         gui_status.autoscale = render_data.autoscale;
         this.c_autoscale = gui.add(gui_status, "autoscale");
+        this.c_cmin = gui.add(gui_status, "colormap_min");
+        this.c_cmin.onChange(()=>this.updateColormapLabels());
+        this.c_cmin.__precision = Math.max(4, this.c_cmin.__precision);
+        this.c_cmax = gui.add(gui_status, "colormap_max");
+        this.c_cmax.onChange(()=>this.updateColormapLabels());
+        this.c_cmax.__precision = Math.max(4, this.c_cmax.__precision);
+
         this.c_autoscale.onChange((checked)=> {
           if(checked)
           {
@@ -746,13 +753,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
             this.animate();
           }
         });
-
-        this.c_cmin = gui.add(gui_status, "colormap_min");
-        this.c_cmin.onChange(()=>this.updateColormapLabels());
-        this.c_cmin.__precision = Math.max(4, this.c_cmin.__precision);
-        this.c_cmax = gui.add(gui_status, "colormap_max");
-        this.c_cmax.onChange(()=>this.updateColormapLabels());
-        this.c_cmax.__precision = Math.max(4, this.c_cmax.__precision);
 
         if(cmax>cmin)
         {
@@ -1014,6 +1014,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       const geo = new THREE.InstancedBufferGeometry().fromGeometry(new THREE.ConeGeometry(0.5, 1, 10));
       var mesh = new THREE.Mesh(geo, material);
+      mesh.frustumCulled = false;
       return mesh;
     }
 
@@ -1103,7 +1104,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       if(this.mesh_object != null)
       {
-        console.log("update mesh object");
         let geo = this.mesh_object.geometry;
         const data = render_data.Bezier_trig_points;
         const order = render_data.order2d;
@@ -1386,7 +1386,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.model.on('change:render_data', this.data_changed, this);
     },
     data_changed: function() {
-      console.log("NGSView data changed");
       render_data = this.model.get("render_data");
       this.scene.updateRenderData(render_data);
     },
