@@ -75,16 +75,34 @@ def getHTMLJSCode():
     return preprocessCode(render_js_code, "// JUPYTER_CODE_BEGIN", "// JUPYTER_CODE_END")
 
 class WebGLScene:
-    def __init__(self, cf, mesh, order):
+    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
         self.mesh = mesh
         self.order = order
+        self.min = min_
+        self.max = max_
+        self.draw_vol = draw_vol
+        self.draw_surf = draw_surf
+        self.autoscale = autoscale
+
+    def GetData(self, set_minmax=True):
+        import json
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol)
+
+        if set_minmax:
+            if self.min is not None:
+                d['funcmin'] = self.min
+            if self.max is not None:
+                d['funcmax'] = self.max
+            d['autoscale'] = self.autoscale
+
+        return d
 
     def GenerateHTML(self, filename=None):
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order)
+        d = self.GetData()
 
         data = json.dumps(d)
 
@@ -97,14 +115,14 @@ class WebGLScene:
         return html
 
     def Draw(self):
-        d = BuildRenderData(self.mesh, self.cf, self.order)
+        d = self.GetData()
 
         self.widget = NGSWebGuiWidget()
         self.widget.create(d)
         display(self.widget)
 
     def Redraw(self):
-        d = BuildRenderData(self.mesh, self.cf, self.order)
+        d = self.GetData(set_minmax=False)
         self.widget.render_data = d
 
     def __repr__(self):
@@ -124,7 +142,7 @@ timer3list = ngs.Timer("timer3 - make list")
 timer4 = ngs.Timer("func")
 
     
-def BuildRenderData(mesh, func, order=2):
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
 
     
     timer.Start()
@@ -142,6 +160,9 @@ def BuildRenderData(mesh, func, order=2):
     order3d = min(order, 2)
     d['order2d'] = order2d
     d['order3d'] = order3d
+
+    d['draw_vol'] = func and mesh.dim==3 and draw_vol
+    d['draw_surf'] = func and draw_surf
 
 
     func2 = None
@@ -161,6 +182,7 @@ def BuildRenderData(mesh, func, order=2):
         func1 = ngs.CoefficientFunction(0.0)
         d['funcdim'] = 0
     func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
+    func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
 
     d['show_wireframe'] = False
     d['show_mesh'] = False
@@ -241,7 +263,7 @@ def BuildRenderData(mesh, func, order=2):
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         pts = mesh.MapToAllElements(ir, vb)
-        pmat = ngs.CoefficientFunction( func1 ) (pts)
+        pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
         timer3minmax.Start()
         funcmin = np.min(pmat[:,3])
         funcmax = np.max(pmat[:,3])
@@ -258,7 +280,7 @@ def BuildRenderData(mesh, func, order=2):
             Bezier_points.append(encodeData(BezierPnts[i]))
         timer3list.Stop()        
 
-        if func2:
+        if func2 and draw_surf:
             pmat = ngs.CoefficientFunction( func2 ) (pts)
             pmat = pmat.reshape(mesh.GetNE(vb), len(ir), 2)
             funcmin = min(funcmin, np.min(pmat))
@@ -281,7 +303,7 @@ def BuildRenderData(mesh, func, order=2):
 
     timer4.Start()
 
-    if mesh.dim==3:
+    if mesh.dim==3 and draw_vol:
         p0 = []
         p1 = []
         p2 = []
@@ -305,7 +327,7 @@ def BuildRenderData(mesh, func, order=2):
                 (0,0.5,0.5) ],
                 [0]*10 )
         pts = mesh.MapToAllElements(ir, ngs.VOL)
-        pmat = func1(pts)
+        pmat = func1(pts) if draw_vol else func0(pts)
 
         ne = mesh.GetNE(ngs.VOL)
         pmat = pmat.reshape(ne, len(ir), 4)
@@ -315,28 +337,21 @@ def BuildRenderData(mesh, func, order=2):
         for i in range(len(ir)):
             points3d.append(encodeData(pmat[:,i,:]))
 
-        if func2:
+        if func2 and draw_vol:
             pmat = func2(pts).reshape(ne, len(ir)//2, 4)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
             for i in range(len(ir)//2):
                 points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d
-        if func:
-            d['show_clipping_function'] = mesh.dim==3
     if func:
-        d['show_surface_function'] = True
         d['funcmin'] = funcmin
         d['funcmax'] = funcmax
     timer4.Stop()
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', *args, **kwargs): # currently assumes 2D mesh
-    if 'order' in kwargs:
-        order=kwargs['order']
-    else:
-        order = 2
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -349,7 +364,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', *args, **kwargs): # c
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale)
     if _IN_IPYTHON:
         if _IN_GOOGLE_COLAB:
             from IPython.display import display, HTML

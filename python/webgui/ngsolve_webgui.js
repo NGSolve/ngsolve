@@ -350,6 +350,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         subdivision: 5,
         edges: true,
         elements: true,
+        autoscale: true,
         colormap_ncolors: 8,
         colormap_min: -1.0,
         colormap_max: 1.0,
@@ -674,7 +675,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       if(render_data.mesh_dim == 3)
       {
         let gui_clipping = gui.addFolder("Clipping");
-        if(render_data.show_clipping_function)
+        if(render_data.draw_vol)
         {
           gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
 
@@ -690,7 +691,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       }
 
       uniforms.function_mode = new THREE.Uniform( 0 );
-      if(render_data.funcdim>1 && !render_data.is_complex)
+      let draw_vectors = render_data.funcdim>1 && !render_data.is_complex;
+      draw_vectors = draw_vectors && (render_data.draw_surf && render_data.mesh_dim==2 || render_data.draw_vol && render_data.mesh_dim==3);
+      if(draw_vectors)
       {
         let gui_vec = gui.addFolder("Vectors");
         gui_vec.add(gui_status.Vectors, "show").onChange(animate);
@@ -715,7 +718,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         this.updateGridsize();
       }
 
-      if(render_data.show_clipping_function || render_data.show_surface_function)
+      if(render_data.draw_vol || render_data.draw_surf)
       {
         const cmin = render_data.funcmin;
         const cmax = render_data.funcmax;
@@ -723,6 +726,19 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         gui_status.colormap_max = cmax;
         this.gui_status_default.colormap_min = cmin;
         this.gui_status_default.colormap_max = cmax;
+        this.gui_status_default.autoscale = render_data.autoscale;
+
+        gui_status.autoscale = render_data.autoscale;
+        this.c_autoscale = gui.add(gui_status, "autoscale");
+        this.c_autoscale.onChange((checked)=> {
+          if(checked)
+          {
+            this.gui_status.colormap_min = this.gui_status_default.colormap_min;
+            this.gui_status.colormap_max = this.gui_status_default.colormap_max;
+            this.c_autoscale.updateDisplay();
+            this.animate();
+          }
+        });
 
         this.c_cmin = gui.add(gui_status, "colormap_min");
         this.c_cmin.onChange(()=>this.updateColormapLabels());
@@ -936,6 +952,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         defines.DEFORMATION = 1;
       else if(this.have_z_deformation)
         defines.DEFORMATION_2D = 1;
+      if(data.draw_surf==false)
+        defines.NO_FUNCTION_VALUES = 1;
 
       var mesh_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'trigsplines.vert', defines ),
@@ -1084,17 +1102,17 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         var names;
         if(order == 1) {
           names = ['p0', 'p1', 'p2']
-          if(render_data.funcdim>1)
+          if(render_data.draw_surf && render_data.funcdim>1)
             names = names.concat(['v0', 'v1', 'v2' ]);
         }
         if(order == 2) {
           names = ['p00', 'p01', 'p02', 'p10', 'p11', 'p20'];
-          if(render_data.funcdim>1)
+          if(render_data.draw_surf && render_data.funcdim>1)
             names = names.concat([ 'vec00_01', 'vec02_10', 'vec11_20' ]);
         }
         if(order == 3) {
           names = [ 'p00', 'p01', 'p02', 'p03', 'p10', 'p11', 'p12', 'p20', 'p21', 'p30'];
-          if(render_data.funcdim>1)
+          if(render_data.draw_surf && render_data.funcdim>1)
             names = names.concat([ 'vec00_01', 'vec02_03', 'vec10_11', 'vec12_20', 'vec21_30']);
         }
 
@@ -1112,7 +1130,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         if(render_data.order3d==2)
           names = names.concat(['p03', 'p13', 'p23', 'p01', 'p02', 'p12' ]);
 
-        if(render_data.funcdim>1)
+        if(render_data.funcdim>1 && render_data.draw_vol)
         {
           names = names.concat(['v0_1', 'v2_3']);
           if(render_data.order3d==2)
@@ -1122,6 +1140,24 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         for (var i in names)
           geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(render_data.points3d[i]), 4 ) );
       }
+
+      if(render_data.draw_surf || render_data.draw_vol)
+      {
+        const cmin = render_data.funcmin;
+        const cmax = render_data.funcmax;
+        this.gui_status_default.colormap_min = cmin;
+        this.gui_status_default.colormap_max = cmax;
+
+        if(this.gui_status.autoscale)
+        {
+          this.gui_status.colormap_min = cmin;
+          this.gui_status.colormap_max = cmax;
+          this.c_cmin.updateDisplay();
+          this.c_cmax.updateDisplay();
+          this.updateColormapLabels();
+        }
+      }
+
       this.animate();
     }
 
@@ -1173,7 +1209,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         }
         console.log("controls.center", this.controls.center);
         this.setCenterTag(this.controls.center);
-        this.mouse.set(0.0, 0.0, 0.0);
+        this.mouse.set(0.0, 0.0);
         this.get_pixel = false;
       }
 
