@@ -378,7 +378,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       var buffer_scene;
       var buffer_object;
-      var buffer_texture;
       var buffer_camera;
 
       var mesh_center;
@@ -453,12 +452,12 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
     updateClippingPlaneCamera()
     {
-      const n = gui_status.Vectors.grid_size;
+      const n = this.gui_status.Vectors.grid_size;
       var plane_center = new THREE.Vector3();
-      three_clipping_plane.projectPoint(mesh_center, plane_center);
-      var plane0 = three_clipping_plane.clone();
+      this.three_clipping_plane.projectPoint(this.mesh_center, plane_center);
+      var plane0 = this.three_clipping_plane.clone();
       plane0.constant = 0.0;
-      const normal = three_clipping_plane.normal;
+      const normal = this.three_clipping_plane.normal;
 
 
       var t2 = new THREE.Vector3();
@@ -470,26 +469,26 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         plane0.projectPoint(new THREE.Vector3(1,0,0), t2);
 
       var t1 = new THREE.Vector3().crossVectors(t2, plane0.normal);
-      t1.setLength(2*mesh_radius/n);
-      t2.setLength(2*mesh_radius/n);
+      t1.setLength(2*this.mesh_radius/n);
+      t2.setLength(2*this.mesh_radius/n);
 
       var position = plane_center.clone();
       position.addScaledVector(plane0.normal, 1);
       var target = plane_center.clone();
       target.addScaledVector(plane0.normal, -1);
 
-      buffer_camera.position.copy(position);
-      buffer_camera.up = t2;
-      buffer_camera.lookAt(target);
-      buffer_camera.updateProjectionMatrix();
-      buffer_camera.updateMatrix();
+      this.buffer_camera.position.copy(position);
+      this.buffer_camera.up = t2;
+      this.buffer_camera.lookAt(target);
+      this.buffer_camera.updateProjectionMatrix();
+      this.buffer_camera.updateMatrix();
 
       this.uniforms.clipping_plane_c.value = plane_center;
       this.uniforms.clipping_plane_t1.value = t1;
       this.uniforms.clipping_plane_t2.value = t2;
       this.uniforms.grid_size.value = n;
 
-      const geo = clipping_vectors_object.geometry;
+      const geo = this.clipping_vectors_object.geometry;
       var arrowid = new Float32Array(2*n * n);
       for(var i=0; i<n; i++)
         for(var j=0; j<n; j++) {
@@ -1150,9 +1149,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         this.uniforms.render_depth.value = true;
         this.camera.setViewOffset( this.renderer.domElement.width, this.renderer.domElement.height,
            this.mouse.x * window.devicePixelRatio | 0, this.mouse.y * window.devicePixelRatio | 0, 1, 1 );
+        this.renderer.setRenderTarget(this.render_target);
         this.renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
         this.renderer.clear(true, true, true);
-        this.renderer.setRenderTarget(this.render_target);
         this.renderer.render( this.scene, this.camera );
         this.camera.clearViewOffset();
         this.uniforms.render_depth.value= false;
@@ -1263,7 +1262,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       {
         this.updateClippingPlaneCamera();
         uniforms.function_mode.value = 4;
-        this.renderer.setRenderTarget(buffer_texture);
+        this.renderer.setRenderTarget(this.buffer_texture);
         this.renderer.setClearColor( new THREE.Color(0.0,0.0,0.0) );
         this.renderer.clear(true, true, true);
         this.renderer.render(this.buffer_scene, this.buffer_camera);
@@ -1276,9 +1275,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       uniforms.light_mat.value.z = gui_status.Light.shininess;
       uniforms.light_mat.value.w = gui_status.Light.specularity;
 
+      this.renderer.setRenderTarget(null);
       this.renderer.setClearColor( new THREE.Color(1.0,1.0,1.0));
       this.renderer.clear(true, true, true);
-      this.renderer.setRenderTarget(null);
       this.renderer.render( this.scene, this.camera );
 
       this.renderer.clippingPlanes = [];
