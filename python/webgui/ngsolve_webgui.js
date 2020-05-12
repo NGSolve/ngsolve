@@ -801,6 +801,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.controls = new CameraControls(this.camera, this, this.renderer.domElement );
       this.controls.addEventListener('change', animate);
 
+      this.updateRenderData(render_data);
       setTimeout(()=> this.onResize(), 0);
     }
 
@@ -925,44 +926,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         }
       }
 
-      this.updateSolution = ( data ) => {
-        var i = 0;
-        const order = render_data.order2d;
-        var names;
-
-        if(order == 1) {
-          names = ['p0', 'p1', 'p2']
-          if(render_data.funcdim>1)
-            names = names.concat(['v0', 'v1', 'v2' ]);
-        }
-        if(order == 2) {
-          names = ['p00', 'p01', 'p02', 'p10', 'p11', 'p20'];
-          if(render_data.funcdim>1)
-            names = names.concat([ 'vec00_01', 'vec02_10', 'vec11_20' ]);
-        }
-        if(order == 3) {
-          names = [ 'p00', 'p01', 'p02', 'p03', 'p10', 'p11', 'p12', 'p20', 'p21', 'p30'];
-          if(render_data.funcdim>1)
-            names = names.concat([ 'vec00_01', 'vec02_03', 'vec10_11', 'vec12_20', 'vec21_30']);
-        }
-
-        for (var i in names)
-          geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(data[i]), 4 ) );
-        this.animate();
-      }
-      this.updateSolution(render_data.Bezier_trig_points);
-
-      if(this.websocket != null)
-      {
-        this.websocket.onmessage = async function(ev) {
-          fr = new FileReader();
-          fr.onload = function() {
-            updateSolution(JSON.parse(this.result));
-          };
-          fr.readAsText(ev.data);
-        };
-      }
-
       geo.setAttribute( 'position', new THREE.Float32BufferAttribute(position, 2 ));
       geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
 
@@ -990,7 +953,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
     createCurvedWireframe(data)
     {
-      const n_verts = render_data.Bezier_points[0].length/3/4*3/4; // 3 components, 3/4 b64 ratio, 4 bytes per float
       var geo = new THREE.InstancedBufferGeometry();
 
       var inst = new Float32Array(21); // 20 = max value of n_segments
@@ -998,15 +960,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         inst[i] = i;
 
       geo.setAttribute( 'position', new THREE.Float32BufferAttribute( inst, 1 ));
-      geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[0]), 3 ));
-      geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[1]), 3 ));
-      if(render_data.order2d >= 2)
-        geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[2]), 3 ));
-      if(render_data.order2d >= 3)
-        geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[3]), 3 ));
-
-      geo.maxInstancedCount = n_verts;
-      geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
 
       const defines = {ORDER: render_data.order2d};
       var wireframe_material = new THREE.RawShaderMaterial({
@@ -1049,7 +1002,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       const sd = 20;    // with texture: only 10
       const nverts = 6*sd*sd*sd;
       var vertid = new Float32Array(4*nverts);
-      const D = render_data.funcdim;
 
       var ii = 0;
       var kk = 0;
@@ -1100,23 +1052,75 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       geo.setAttribute( 'position', new THREE.Float32BufferAttribute( vertid, 4 ));
       geo.setAttribute( 'vertid',   new THREE.Float32BufferAttribute( vertid, 4 ));
 
-      var names = [ 'p0', 'p1', 'p2', 'p3' ];
-      if(render_data.order3d==2)
-        names = names.concat(['p03', 'p13', 'p23', 'p01', 'p02', 'p12' ]);
+      return new THREE.Mesh( geo, material );
+    }
 
-      if(render_data.funcdim>1)
+    updateRenderData(render_data)
+    {
+      if(this.wireframe_object != null)
       {
-        names = names.concat(['v0_1', 'v2_3']);
-        if(render_data.order3d==2)
-          names = names.concat(['v03_13', 'v23_01', 'v02_12']);
+        let geo = this.wireframe_object.geometry;
+        const n_verts = render_data.Bezier_points[0].length/3/4*3/4; // 3 components, 3/4 b64 ratio, 4 bytes per float
+        geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[0]), 3 ));
+        geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[1]), 3 ));
+        if(render_data.order2d >= 2)
+          geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[2]), 3 ));
+        if(render_data.order2d >= 3)
+          geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[3]), 3 ));
+
+        geo.maxInstancedCount = n_verts;
+        geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
       }
 
-      for (var i in names)
-        geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(render_data.points3d[i]), 4 ) );
+      if(this.mesh_object != null)
+      {
+        console.log("update mesh object");
+        let geo = this.mesh_object.geometry;
+        const data = render_data.Bezier_trig_points;
+        const order = render_data.order2d;
 
-      let mesh = new THREE.Mesh( geo, material );
+        var names;
+        if(order == 1) {
+          names = ['p0', 'p1', 'p2']
+          if(render_data.funcdim>1)
+            names = names.concat(['v0', 'v1', 'v2' ]);
+        }
+        if(order == 2) {
+          names = ['p00', 'p01', 'p02', 'p10', 'p11', 'p20'];
+          if(render_data.funcdim>1)
+            names = names.concat([ 'vec00_01', 'vec02_10', 'vec11_20' ]);
+        }
+        if(order == 3) {
+          names = [ 'p00', 'p01', 'p02', 'p03', 'p10', 'p11', 'p12', 'p20', 'p21', 'p30'];
+          if(render_data.funcdim>1)
+            names = names.concat([ 'vec00_01', 'vec02_03', 'vec10_11', 'vec12_20', 'vec21_30']);
+        }
 
-      return mesh;
+        for (var i in names)
+          geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(data[i]), 4 ) );
+        geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
+        geo.maxInstancedCount = readB64(data[0]).length/4;
+      }
+
+      if(this.clipping_function_object != null)
+      {
+        let geo = this.clipping_function_object.geometry;
+
+        var names = [ 'p0', 'p1', 'p2', 'p3' ];
+        if(render_data.order3d==2)
+          names = names.concat(['p03', 'p13', 'p23', 'p01', 'p02', 'p12' ]);
+
+        if(render_data.funcdim>1)
+        {
+          names = names.concat(['v0_1', 'v2_3']);
+          if(render_data.order3d==2)
+            names = names.concat(['v03_13', 'v23_01', 'v02_12']);
+        }
+
+        for (var i in names)
+          geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( readB64(render_data.points3d[i]), 4 ) );
+      }
+      this.animate();
     }
 
     setCenterTag(position = null) {
@@ -1320,17 +1324,16 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       let container = document.createElement( 'div' );
       container.setAttribute("style", "height: 50vw; width: 100vw;");
       this.el.appendChild(container);
+      render_data = this.model.get("render_data");
       setTimeout(()=> {
         this.scene.init(container);
-        this.data_changed();
       } , 0);
       this.model.on('change:render_data', this.data_changed, this);
     },
     data_changed: function() {
       console.log("NGSView data changed");
       render_data = this.model.get("render_data");
-      // TODO: Update more data (mesh wireframe, 3d mesh data etc.)
-      this.scene.updateSolution(render_data.Bezier_trig_points);
+      this.scene.updateRenderData(render_data);
     },
   });
 
