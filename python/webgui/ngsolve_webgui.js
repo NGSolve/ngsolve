@@ -513,6 +513,8 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
     }
 
     init (element, render_data) {
+      this.funcdim = render_data.funcdim;
+      this.is_complex = render_data.is_complex;
       this.element = element;
       console.log("THREE", THREE);
       console.log("dat", dat);
@@ -526,8 +528,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       this.mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
       this.mesh_radius = render_data.mesh_radius;
-      if (render_data.websocket_url)
-        this.websocket = new WebSocket(render_data.websocket_url);
+
       var canvas = document.createElement( 'canvas' );
 
       var gl2 = canvas.getContext('webgl2');
@@ -731,9 +732,9 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         gui_status.colormap_max = cmax;
         this.gui_status_default.colormap_min = cmin;
         this.gui_status_default.colormap_max = cmax;
-        this.gui_status_default.autoscale = render_data.autoscale;
+        this.gui_status_default.autoscale = render_data.autoscale || false;
 
-        gui_status.autoscale = render_data.autoscale;
+        gui_status.autoscale = this.gui_status_default.autoscale;
         this.c_autoscale = gui.add(gui_status, "autoscale");
         this.c_cmin = gui.add(gui_status, "colormap_min");
         this.c_cmin.onChange(()=>this.updateColormapLabels());
@@ -877,7 +878,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       this.colormap_texture.needsUpdate = true;
       this.uniforms.tex_colormap = { value: this.colormap_texture};
 
-      if(render_data.funcdim>0 && this.colormap_object == null)
+      if(this.funcdim>0 && this.colormap_object == null)
       {
         var geo = new THREE.Geometry();
         geo.vertices.push(new THREE.Vector3( 0,   0, 0.0));
@@ -956,7 +957,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       geo.setAttribute( 'position', new THREE.Float32BufferAttribute(position, 2 ));
       geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
 
-      var defines = {MESH_2D: 1, ORDER:render_data.order2d};
+      var defines = {MESH_2D: 1, ORDER:data.order2d};
       if(this.have_deformation)
         defines.DEFORMATION = 1;
       else if(this.have_z_deformation)
@@ -990,7 +991,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
       geo.setAttribute( 'position', new THREE.Float32BufferAttribute( inst, 1 ));
 
-      const defines = {ORDER: render_data.order2d};
+      const defines = {ORDER: data.order2d};
       var wireframe_material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'splines.vert', defines ),
         fragmentShader: getShader( 'splines.frag', defines ),
@@ -1020,7 +1021,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
 
     createClippingPlaneMesh(data)
     {
-      const defines = {ORDER: render_data.order3d, SKIP_FACE_CHECK: 1, NO_CLIPPING: 1};
+      const defines = {ORDER: data.order3d, SKIP_FACE_CHECK: 1, NO_CLIPPING: 1};
       var material = new THREE.RawShaderMaterial({
         vertexShader: getShader( 'clipping_vectors.vert', defines ),
         fragmentShader: getShader( 'function.frag', defines ),
@@ -1311,7 +1312,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         uniforms.vectors_offset.value = gui_status.Vectors.offset;
       }
 
-      if(render_data.is_complex)
+      if(this.is_complex)
       {
         uniforms.complex_scale.value.x = Math.cos(gui_status.Complex.phase);
         uniforms.complex_scale.value.y = Math.sin(gui_status.Complex.phase);
@@ -1379,7 +1380,6 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
       let container = document.createElement( 'div' );
       container.setAttribute("style", "height: 50vw; width: 100vw;");
       this.el.appendChild(container);
-      render_data = this.model.get("render_data");
       setTimeout(()=> {
         this.scene.init(container, render_data);
       } , 0);
