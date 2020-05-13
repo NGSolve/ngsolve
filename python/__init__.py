@@ -38,7 +38,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     CompressCompound, BoundaryFromVolumeCF, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
-    SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, LocalSolve
+    SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
 from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, PyId, PyTrace, \
