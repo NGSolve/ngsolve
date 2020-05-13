@@ -665,7 +665,7 @@ define('ngsolve_webgui', ["THREE","Stats", "dat", "@jupyter-widgets/base"], func
         gui_status.eval = 5;
         gui.add(gui_status, "eval", {"real": 5,"imag":6,"norm":7}).onChange(animate);
 
-        cgui = gui.addFolder("Complex");
+        let cgui = gui.addFolder("Complex");
         this.phase_controller = cgui.add(gui_status.Complex, "phase", 0, 2*Math.PI, 0.001).onChange(animate);
         cgui.add(gui_status.Complex, "animate").onChange(animate);
         cgui.add(gui_status.Complex, "speed", 0.0, 1, 0.0001).onChange(animate);
