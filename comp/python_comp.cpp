@@ -26,9 +26,9 @@ typedef GridFunction GF;
 
 namespace ngcomp
 {
-  void LocalSolve (shared_ptr<SumOfIntegrals> bf,
-                   shared_ptr<SumOfIntegrals> lf,
-                   shared_ptr<GridFunction> gf);
+  void PatchwiseSolve (shared_ptr<SumOfIntegrals> bf,
+                       shared_ptr<SumOfIntegrals> lf,
+                       shared_ptr<GridFunction> gf);
   
 
   // shall move to fespace.hpp, but keep compilation time low douring testing ...
@@ -3599,7 +3599,7 @@ deformation : ngsolve.comp.GridFunction
           py::call_guard<py::gil_scoped_release>())
      ;
 
-   m.def("LocalSolve", &LocalSolve);
+   m.def("PatchwiseSolve", &PatchwiseSolve, py::arg("bf"), py::arg("lf"), py::arg("gf"));
 
    m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
 				shared_ptr<ProxyFunction> trial_proxy, shared_ptr<CoefficientFunction> trial_cf,
