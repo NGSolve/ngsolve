@@ -340,17 +340,19 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     
     .def("GetFE",[](FESpace::Element & el)
          {
-           return shared_ptr<FiniteElement>(const_cast<FiniteElement*>(&el.GetFE()), NOOP_Deleter);
+           // return shared_ptr<FiniteElement>(const_cast<FiniteElement*>(&el.GetFE()), NOOP_Deleter);
+           return shared_ptr<FiniteElement> (&el.GetFESpace().GetFE(el, global_alloc));
          },
-         py::return_value_policy::reference,
+         // py::return_value_policy::reference,
          "the finite element containing shape functions"
          )
 
     .def("GetTrafo",[](FESpace::Element & el)
          {
-           return shared_ptr<ElementTransformation>(const_cast<ElementTransformation*>(&el.GetTrafo()), NOOP_Deleter);
+           // return shared_ptr<ElementTransformation>(const_cast<ElementTransformation*>(&el.GetTrafo()), NOOP_Deleter);
+           return shared_ptr<ElementTransformation> (&el.GetFESpace().GetMeshAccess()->GetTrafo(el, global_alloc));
          },
-         py::return_value_policy::reference,
+         // py::return_value_policy::reference,
          "the transformation from reference element to physical element"
          )
 
