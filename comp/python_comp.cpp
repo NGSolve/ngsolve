@@ -1836,6 +1836,8 @@ diffop : ngsolve.fem.DifferentialOperator
   input differential operator
 
 )raw_string"))
+
+    .def("AddMultiDimComponent", &GridFunction::AddMultiDimComponent)
     ;
 
   py::class_<S_GridFunction<double>, shared_ptr<S_GridFunction<double>>, GridFunction>
