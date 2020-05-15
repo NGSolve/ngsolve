@@ -85,4 +85,12 @@ mpi_world = MPI_Init()
 # BaseMatrix.__rmul__ = __expr.expr_rmul
 # BaseMatrix.__neg__ = __expr.expr_neg
 
-
+def _jupyter_nbextension_paths():
+    return [
+        {
+            "section": "notebook",
+            "src": "nbextension/static",
+            "dest": "ngsolve_jupyter_widgets",
+            "require": "ngsolve_jupyter_widgets/extension",
+        }
+    ]
