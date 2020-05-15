@@ -18,6 +18,10 @@ try:
 except ImportError:
     _IN_GOOGLE_COLAB = False
 
+#           <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
+#           <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.js"></script>
+#           <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+# 
 html_template = """
 <!DOCTYPE html>
 <html>
@@ -42,11 +46,15 @@ html_template = """
         </style>
     </head>
     <body>
-          <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+          <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"></script>
           <script>
             {render}
+
+            require(["ngsolve_jupyter_widgets"], ngs=>
+            {
+                let scene = new ngs.Scene();
+                scene.init(document.body, render_data);
+            });
           </script>
     </body>
 </html>
@@ -117,15 +125,14 @@ class WebGLScene:
         return html
 
     def Draw(self):
-        d = self.GetData()
-
         self.widget = NGSWebGuiWidget()
-        self.widget.create(d)
+        d = self.GetData()
+        self.widget.value = d
         display(self.widget)
 
     def Redraw(self):
         d = self.GetData(set_minmax=False)
-        self.widget.render_data = d
+        self.widget.value = d
 
     def __repr__(self):
         return ""
@@ -380,19 +387,16 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         scene.GenerateHTML(filename='output.html')
 
 
-import ipywidgets as widgets
+from ipywidgets import DOMWidget, register
 from traitlets import Unicode
-class NGSWebGuiWidget(widgets.DOMWidget):
-    from traitlets import Dict, Unicode
-    _view_name = Unicode('NGSView').tag(sync=True)
-    _view_module = Unicode('ngsolve_webgui').tag(sync=True)
-    _view_module_version = Unicode('0.1.0').tag(sync=True)
-    render_data = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
-    def create(self, data):
-        self.render_data = data
-        from IPython.core.display import Javascript, display
-        display(Javascript(getJupyterJSCode()))
 
+@register
+class NGSWebGuiWidget(DOMWidget):
+    from traitlets import Dict, Unicode
+    _view_name = Unicode('NGSolveView').tag(sync=True)
+    _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
+    _view_module_version = Unicode('^0.0.1').tag(sync=True)
+    value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
 
 tencode = ngs.Timer("encode")
 def encodeData( array ):
