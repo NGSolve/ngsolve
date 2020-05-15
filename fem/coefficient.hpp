@@ -1292,15 +1292,6 @@ public:
   }
 };
 
-  template <typename OP /* , typename OPC */> 
-shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                          OP lam, /* OPC lamc, */ string name="undefined")
-{
-  if (c1->GetDescription() == "ZeroCF")
-    return c1;
-  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
-}
-
 
 
   
@@ -1717,6 +1708,18 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> JacobianMatrixCF (int dim);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> WeingartenCF (int dim);
+
+  template <typename OP /* , typename OPC */>
+shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
+                                          OP lam, /* OPC lamc, */ string name="undefined")
+{
+  if (c1->GetDescription() == "ZeroCF" && lam(0.)==0.)
+  {
+    return ZeroCF(c1->Dimensions());
+  }
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
+}
+
   
 }
 
