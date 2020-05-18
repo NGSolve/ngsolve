@@ -34,6 +34,7 @@ namespace ngcomp
       ScalarFE<ET_SEGM,1> fel_segm;
       ScalarFE<ET_TRIG,1> fel_trig;
       ScalarFE<ET_QUAD,1> fel_quad;
+      ScalarFE<ET_TET,1> fel_tet;
       BaseScalarFiniteElement * fel;
       
       switch (trafo.GetElementType())
@@ -41,6 +42,7 @@ namespace ngcomp
         case ET_SEGM: fel =  &fel_segm; break;          
         case ET_TRIG: fel =  &fel_trig; break;
         case ET_QUAD: fel =  &fel_quad; break;
+        case ET_TET: fel =  &fel_tet; break;
         default:
           throw Exception("HatFunction - unhandled element-type "+ToString(trafo.GetElementType()));
         }
@@ -68,9 +70,14 @@ namespace ngcomp
   
   void PatchwiseSolve (shared_ptr<SumOfIntegrals> bf,
                        shared_ptr<SumOfIntegrals> lf,
-                       shared_ptr<GridFunction> gf)
+                       shared_ptr<GridFunction> gf,
+                       LocalHeap & lh)
   {
-    LocalHeap lh(10*1000*1000, "LocalSolve LocalHeap");
+    static Timer t("patchwise solve");
+    static Timer tinv("patchwise solve - inv");
+    RegionTimer reg(t);
+    
+    
     auto ma = gf->GetMeshAccess();
     auto fes = gf->GetFESpace();
     const BitArray & freedofs = *fes->GetFreeDofs();
@@ -96,7 +103,7 @@ namespace ngcomp
     
     
     
-    Array<DofId> patchdofs, dofs, el2patch;
+    Array<DofId> patchdofs, dofs, el2patch, numels;
     
     for (auto v : ma->Vertices())
       {
@@ -105,16 +112,28 @@ namespace ngcomp
         hatfunc -> SetVertexNumber(v);
         
         patchdofs.SetSize0();
+        numels.SetSize0();
         for (auto vb : { VOL, BND })
           for (auto el : ma->GetVertexElements(v, vb))
             {
               fes->GetDofNrs(ElementId(vb, el), dofs);
               for (auto d : dofs)
                 if (freedofs.Test(d))
-                  if (!patchdofs.Contains(d))
-                    patchdofs.Append(d);
+                  {
+                    if (!patchdofs.Contains(d))
+                      {
+                        patchdofs.Append(d);
+                        numels.Append(1);
+                      }
+                    else
+                      numels[patchdofs.Pos(d)]++;
+                  }
             }
-
+        size_t numsingle = 0;
+        for (auto num : numels)
+          if (num == 1) numsingle++;
+        
+        // cout << "dofs = " << patchdofs.Size() << ", singleel: " << numsingle << endl;
         FlatMatrix<> patchmat(patchdofs.Size(), lh);
         FlatVector<> patchvec(patchdofs.Size(), lh);        
         FlatVector<> patchsol(patchdofs.Size(), lh);        
@@ -124,6 +143,7 @@ namespace ngcomp
         for (auto vb : { VOL, BND })
           for (auto el : ma->GetVertexElements(v, vb))
             {
+              HeapReset hr(lh);
               ElementId ei(vb, el);
               // cout << "ei = " << ei << endl;
               fes->GetDofNrs(ei, dofs);
@@ -138,10 +158,14 @@ namespace ngcomp
               // cout << "el2patch = " << el2patch << endl;
               
               FlatMatrix<> elmat(dofs.Size(), lh);
+              FlatMatrix<> elmati(dofs.Size(), lh);
               elmat = 0.0;
               for (auto & bfi : bfis[vb])
-                bfi -> CalcElementMatrixAdd(fel, trafo, elmat, lh);
-              // cout << "el2patch = " << el2patch << endl;
+                {
+                  bfi -> CalcElementMatrix(fel, trafo, elmati, lh);
+                  elmat += elmati;
+                  // bfi -> CalcElementMatrixAdd(fel, trafo, elmat, lh);
+                }
               // cout << "elmat = " << elmat << endl;
               
               FlatVector<> elvec(dofs.Size(), lh);
@@ -166,14 +190,18 @@ namespace ngcomp
         
         
         // cout << "patchmat = " << endl << patchmat << endl;
-        Matrix<> inv_patchmat = patchmat;
-        CalcInverse (inv_patchmat);
+        // Matrix<> inv_patchmat = patchmat;
+        tinv.Start();
+        CalcInverse (patchmat);
+        tinv.Stop();
+        tinv.AddFlops (patchmat.Height()*patchmat.Height()*patchmat.Height());
         // cout << "inv patchmat = " << endl << patchmat << endl;        
-        patchsol = inv_patchmat * patchvec;
+        patchsol = patchmat * patchvec;
         // Vector<> res = patchvec - patchmat * patchsol;  // need post-iteration for high penalty
         // patchsol += inv_patchmat * res;
         // cout << "patchvec = " << endl << patchvec << endl;
         // cout << "patchsol = " << endl << patchsol << endl;
+        // cout << "|patchsol| = " << L2Norm(patchsol) << endl;
         for (auto i : Range(patchdofs))
           gfvec(patchdofs[i]) += patchsol(i);
       }
