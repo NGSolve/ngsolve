@@ -28,6 +28,7 @@ add_custom_command(
     js/standalone.js.map
   COMMAND npm install
   COMMAND webpack -p --env.outdir=${CMAKE_CURRENT_BINARY_DIR}/js
+  COMMAND npm pack
   DEPENDS
     js/package.json
     js/tsconfig.json
@@ -55,5 +56,10 @@ add_custom_command(OUTPUT webgui.py
 
 install(FILES ${bdir}/webgui.py DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 
+# jupyter notebook extension
 install(DIRECTORY ${bdir}/js/nbextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 install(FILES js/extension.js DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/nbextension/static COMPONENT ngsolve)
+
+# jupyter lab extension
+install(DIRECTORY ${sdir}/js/lib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
+install(FILES js/package.json DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
