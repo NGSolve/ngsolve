@@ -23,7 +23,7 @@ const resolve = {
 
 module.exports = function(env, argv)
 {
-  const build_dir = path.resolve(env.outdir);
+  const build_dir = path.resolve(__dirname, "package");
   return [
   /**
    * Notebook extension
