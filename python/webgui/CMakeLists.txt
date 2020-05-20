@@ -28,7 +28,6 @@ add_custom_command(
     js/standalone.js.map
   COMMAND npm install
   COMMAND webpack -p --env.outdir=${CMAKE_CURRENT_BINARY_DIR}/js
-  COMMAND npm pack
   DEPENDS
     js/package.json
     js/tsconfig.json
