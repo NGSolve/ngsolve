@@ -1,9 +1,4 @@
 node_modules
-dist
-lab-dist
-docs
-nbextension
-yarn.lock
-lib
+package
 package-lock.json
 src/shaders.ts

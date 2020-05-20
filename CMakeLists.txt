@@ -24,6 +24,7 @@ option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
 option( BUILD_STUB_FILES "Build stub files for better autocompletion" ON)
+option( BUILD_JUPYTER_WIDGETS "Build javscript widgets library for jupyter" OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")

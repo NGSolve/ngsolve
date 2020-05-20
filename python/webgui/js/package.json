@@ -1,6 +1,6 @@
 {
   "name": "ngsolve_jupyter_widgets",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "NGSolve Jupyter Widget Library",
   "keywords": [
     "netgen",
@@ -30,29 +30,15 @@
     "url": "https://github.com/NGSolve/ngsolve"
   },
   "scripts": {
-    "build": "npm run build:nbextension",
-    "build:labextension": "npm run clean:labextension && mkdirp build/lab-dist && cd build/lab-dist && npm pack ..",
-    "build:lib": "tsc",
-    "build:nbextension": "webpack -p --env.outdir=build",
-    "build:all": "npm run build:labextension && npm run build:nbextension",
-    "clean": "rimraf build",
+    "build": "npm run build:lib && npm run build:nbextension",
+    "build:lib": "tsc --outDir ./package/lib && cp package.json ./package/",
+    "build:nbextension": "webpack -p --env.outdir=package",
+    "clean": "rimraf package",
     "prepack": "npm run build:lib",
-    "prepublishOnly": "npm run clean && npm run build",
-    "test": "npm run test:chrome",
-    "test:ci": "karma start --browsers=ChromeCI tests/karma.conf.js",
-    "test:chrome": "karma start --browsers=Chrome tests/karma.conf.js",
-    "test:dev": "karma start --browsers=Chrome --singleRun=false tests/karma.conf.js",
-    "test:debug": "karma start --browsers=Chrome --debug=true tests/karma.conf.js",
-    "test:firefox": "karma start --browsers=Firefox tests/karma.conf.js",
-    "test:ie": "karma start --browsers=IE tests/karma.conf.js",
-    "watch": "npm-run-all -p watch:*",
-    "watch:lib": "tsc -w",
-    "watch:nbextension": "webpack --watch -d"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@jupyter-widgets/base": "^3",
-    "dat.gui": "^0.7.7",
-    "three": "^0.115"
+    "@jupyter-widgets/base": "^2||^3"
   },
   "devDependencies": {
     "@lumino/application": "^1.6.0",
@@ -60,13 +46,14 @@
     "@types/expect.js": "^0.3.29",
     "@types/node": "^12.6.9",
     "@types/webpack-env": "^1.13.6",
-    "expect.js": "^0.3.1",
     "npm-run-all": "^4.1.3",
     "source-map-loader": "^0.2.4",
     "ts-loader": "^6.0.4",
     "typescript": "~3.5.3",
     "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.6"
+    "webpack-cli": "^3.3.6",
+    "dat.gui": "^0.7.7",
+    "three": "^0.115"
   },
   "jupyterlab": {
     "extension": "lib/plugin"
