@@ -316,6 +316,7 @@ namespace ngfem
       CalcElementMatrixAdd (const FiniteElement & fel,
                             const ElementTransformation & eltrans, 
                             FlatMatrix<double> elmat,
+                            bool & symmetric_so_far,
                             LocalHeap & lh) const;
 
     /**
@@ -327,6 +328,7 @@ namespace ngfem
       CalcElementMatrixAdd (const FiniteElement & fel,
                             const ElementTransformation & eltrans, 
                             FlatMatrix<Complex> elmat,
+                            bool & symmetric_so_far,                            
                             LocalHeap & lh) const;
     
 

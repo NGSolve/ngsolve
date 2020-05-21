@@ -191,10 +191,11 @@ namespace ngcomp
       /** Calc mass/dual and mixed mass/dual matrices **/
       FlatMatrix<SCAL> bamat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh); bamat = 0.0;
       FlatMatrix<SCAL> bbmat(felb.GetNDof() * dimb, felb.GetNDof() * dimb, lh); bbmat = 0.0;
+      bool symmetric_so_far = true;
       for (auto bfi : ab_bfis)
-	{ bfi->CalcElementMatrixAdd(felab, eltrans, bamat, lh); }
+	{ bfi->CalcElementMatrixAdd(felab, eltrans, bamat, symmetric_so_far, lh); }
       for (auto bfi : bb_bfis)
-	{ bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, lh); }
+	{ bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, symmetric_so_far, lh); }
 
       /** Calc Elmat **/
       // cout << " bamat " << endl << bamat << endl;

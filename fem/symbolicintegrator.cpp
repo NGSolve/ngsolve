@@ -1268,6 +1268,7 @@ namespace ngfem
   T_CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<SCAL_RES> elmat,
+                          bool & symmetric_so_far,
                           LocalHeap & lh) const
     
   {
@@ -1282,6 +1283,7 @@ namespace ngfem
         // RegionTracer regtr(TaskManager::GetThreadId(), t);    
         
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
+        if (!IsSymmetric().IsTrue()) symmetric_so_far = false;
         return;
       }
 
@@ -1304,7 +1306,7 @@ namespace ngfem
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
-          bool symmetric_so_far = true;
+          // bool symmetric_so_far = true;
           int k1 = 0;
           int k1nr = 0;
           
@@ -1545,7 +1547,7 @@ namespace ngfem
     
     
     // tstart.Stop();
-    bool symmetric_so_far = true;
+    // bool symmetric_so_far = true;
     int k1 = 0;
     int k1nr = 0;
     for (auto proxy1 : trial_proxies)
@@ -1722,14 +1724,15 @@ namespace ngfem
                      LocalHeap & lh) const
   {
     elmat = 0.0;
+    bool symmetric_so_far = true;
     try
       {
-        T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);
+        T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, symmetric_so_far, lh);
       }
     catch (ExceptionNOSIMD e)
       {
         elmat = 0.0;        
-        T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);        
+        T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, symmetric_so_far, lh);        
       }
   }
   
@@ -1743,27 +1746,29 @@ namespace ngfem
     try
       {
         elmat = 0.0;
+        bool symmetric_so_far = true;
         if (fel.ComplexShapes() || trafo.IsComplex())
-          T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
+          T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
         else
           {
             if (cf->IsComplex())
-              T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+              T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
             else
-              T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+              T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
           }
       }
     catch (ExceptionNOSIMD e)  // retry with simd_evaluate is off
       {
-        elmat = 0.0;        
+        elmat = 0.0;
+        bool symmetric_so_far = true;        
         if (fel.ComplexShapes() || trafo.IsComplex())
-          T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
+          T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
         else
           {
             if (cf->IsComplex())
-              T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+              T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
             else
-              T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+              T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
           }
       }    
   }
@@ -1773,9 +1778,10 @@ namespace ngfem
   CalcElementMatrixAdd (const FiniteElement & fel,
                         const ElementTransformation & trafo, 
                         FlatMatrix<double> elmat,
+                        bool & symmetric_so_far,
                         LocalHeap & lh) const
   {
-    T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);
+    T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, symmetric_so_far, lh);
   }
   
   void 
@@ -1783,15 +1789,16 @@ namespace ngfem
   CalcElementMatrixAdd (const FiniteElement & fel,
                         const ElementTransformation & trafo, 
                         FlatMatrix<Complex> elmat,
+                        bool & symmetric_so_far,
                         LocalHeap & lh) const
   {
     if (fel.ComplexShapes() || trafo.IsComplex())
-      T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
+      T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
     else
       if (cf->IsComplex())
-        T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+        T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
       else
-        T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+        T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
   }
 
 
