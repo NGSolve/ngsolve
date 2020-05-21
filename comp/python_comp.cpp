@@ -1163,6 +1163,10 @@ rho : ngsolve.fem.CoefficientFunction
   ExportFESpace<VectorFESpace<L2SurfaceHighOrderFESpace>> (m, "VectorSurfaceL2");
   ExportFESpace<VectorFESpace<FacetFESpace>> (m, "VectorFacetFESpace");
   ExportFESpace<VectorFESpace<FacetSurfaceFESpace>> (m, "VectorFacetSurface");
+
+
+  ExportFESpace<NodalFESpace> (m, "NodalFESpace");  
+  ExportFESpace<VectorFESpace<NodalFESpace>> (m, "VectorNodalFESpace");
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")

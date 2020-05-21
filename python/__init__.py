@@ -34,6 +34,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
     NormalFacetFESpace, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
+    NodalFESpace, VectorNodalFESpace, \
     NumberSpace, Periodic, Discontinuous, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
