@@ -685,12 +685,14 @@ public:
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<double> elmat,
+                          bool & symmetric_so_far,                          
                           LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<Complex> elmat,
+                          bool & symmetric_so_far,                          
                           LocalHeap & lh) const override;    
 
     
@@ -698,6 +700,7 @@ public:
     void T_CalcElementMatrixAdd (const FiniteElement & fel,
                                  const ElementTransformation & trafo, 
                                  FlatMatrix<SCAL_RES> elmat,
+                                 bool & symmetric_so_far, 
                                  LocalHeap & lh) const;
 
     template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>

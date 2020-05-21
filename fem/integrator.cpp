@@ -190,24 +190,28 @@ namespace ngfem
   CalcElementMatrixAdd (const FiniteElement & fel,
                         const ElementTransformation & eltrans, 
                         FlatMatrix<double> elmat,
+                        bool & symmetric_so_far,
                         LocalHeap & lh) const
   {
     HeapReset hr(lh);
     FlatMatrix<double> helmat(elmat.Height(), elmat.Width(), lh);
     CalcElementMatrix(fel, eltrans, helmat, lh);
     elmat += helmat;
+    if (!IsSymmetric().IsTrue()) symmetric_so_far = false;
   }
 
   void BilinearFormIntegrator ::    
   CalcElementMatrixAdd (const FiniteElement & fel,
                         const ElementTransformation & eltrans, 
                         FlatMatrix<Complex> elmat,
+                        bool & symmetric_so_far,                        
                         LocalHeap & lh) const
   {
     HeapReset hr(lh);
     FlatMatrix<Complex> helmat(elmat.Height(), elmat.Width(), lh);
     CalcElementMatrix(fel, eltrans, helmat, lh);
     elmat += helmat;
+    if (!IsSymmetric().IsTrue()) symmetric_so_far = false;    
   }
   
 

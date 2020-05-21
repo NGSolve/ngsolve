@@ -776,10 +776,10 @@ namespace ngcomp
         
             Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
             elmat = 0.0;
-        
+            bool symmetric_so_far = true;
             for (auto bfi : geom_free_parts)
               if (bfi->VB() == vb)
-                bfi->CalcElementMatrixAdd(fel, trafo, elmat, lh);
+                bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
             
             Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
               ydofs(elclass_inds.Size(), fely.GetNDof());
@@ -1265,19 +1265,20 @@ namespace ngcomp
                                {
                                  done = true;
                                  sum_elmat = 0;
+                                 bool symmetric_so_far = true;
                                  for (auto & bfip : VB_parts[vb])
                                    {
                                      const BilinearFormIntegrator & bfi = *bfip;
                                      if (!bfi.DefinedOn (el.GetIndex())) continue;                        
                                      if (!bfi.DefinedOnElement (el.Nr())) continue;                        
-                                     
+
                                      elem_has_integrator = true;
                                      
                                      try
                                        {
                                          // should we give an optional derformation to the integrators ? 
                                          auto & mapped_trafo = eltrans.AddDeformation(bfi.GetDeformation().get(), lh);
-                                         bfi.CalcElementMatrixAdd (fel, mapped_trafo, sum_elmat, lh);
+                                         bfi.CalcElementMatrixAdd (fel, mapped_trafo, sum_elmat, symmetric_so_far, lh);
                                        }
                                      catch (ExceptionNOSIMD & e)
                                        {

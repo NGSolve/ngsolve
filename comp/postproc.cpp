@@ -529,8 +529,9 @@ namespace ngcomp
                      
 		     /** Calc Element Matrix **/
 		     FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                     bool symmetric_so_far = true;
 		     for (auto sbfi : single_bli)
-		       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, lh); }
+		       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
 
 		     /** Invert Element Matrix and Solve for RHS **/
 		     CalcInverse(elmat); // Not Symmetric !
@@ -610,8 +611,9 @@ namespace ngcomp
              
 	     /** Calc Element Matrix **/
 	     FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+             bool symmetric_so_far = true;             
 	     for (auto sbfi : single_bli)
-	       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, lh); }
+	       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
 
 
 	     /** Invert Element Matrix and Solve for RHS **/
