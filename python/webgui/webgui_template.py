@@ -2,6 +2,7 @@ import math
 import numpy as np
 from time import time
 import ngsolve as ngs
+import os
 
 # the build script fills the contents of the variables below
 render_js_code = ""
@@ -395,7 +396,7 @@ class NGSWebGuiWidget(DOMWidget):
     from traitlets import Dict, Unicode
     _view_name = Unicode('NGSolveView').tag(sync=True)
     _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
-    _view_module_version = Unicode('^0.0.2').tag(sync=True)
+    _view_module_version = Unicode('^0.0.4').tag(sync=True)
     value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
 
 tencode = ngs.Timer("encode")
@@ -407,3 +408,15 @@ def encodeData( array ):
     tencode.Stop()
     return res
 
+_jupyter_lab_extension_path = os.path.join(os.path.dirname(ngs.__file__), "labextension")
+
+def printInstallCommands():
+    import ngsolve, os
+    d = os.path.dirname(ngsolve.__file__)
+    labdir = os.path.join(d, "labextension")
+    print("""To install jupyter notebook extension:
+    jupyter nbextension install --py ngsolve
+
+To install jupyter lab extension:
+    jupyter labextension install --clean {labdir}
+""".format(labdir=_jupyter_lab_extension_path))

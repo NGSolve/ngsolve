@@ -76,6 +76,29 @@ module.exports = function(env, argv)
   },
 
 
+
+  /**
+   * JupyterLab extension bundle
+   *
+   * This bundle is used to embed widgets in jupyter lab the
+   */
+  {
+    target: 'web',
+    entry: './src/plugin.ts',
+    output: {
+      filename: 'plugin.js',
+      path: path.resolve(build_dir, 'labextension'),
+      library: "ngsolve_jupyter_widgets",
+      libraryTarget: 'amd'
+    },
+    module: {
+      rules: rules
+    },
+    devtool: 'source-map',
+    externals,
+    resolve,
+  },
+
   /**
    * Documentation widget bundle
    *
@@ -116,7 +139,7 @@ module.exports = function(env, argv)
       rules: rules
     },
     devtool: 'source-map',
-    externals: externals,
+    externals,
     resolve,
   }
 
