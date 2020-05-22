@@ -84,4 +84,4 @@ def test_detect_symmetric():
   #### value should be zero but it is not
   L2err = sqrt(Integrate ( (gfu1-gfu2)*(gfu1-gfu2), mesh))
   print(L2err)
-  assert L2err < 1e-14
+  assert L2err < 1e-13
