@@ -1,6 +1,6 @@
 {
   "name": "ngsolve_jupyter_widgets",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "NGSolve Jupyter Widget Library",
   "keywords": [
     "netgen",
@@ -11,8 +11,12 @@
     "widgets"
   ],
   "files": [
+    "tsconfig.json",
+    "webpack.config.js",
+    "src/*.ts",
     "standalone.js*",
     "nbextension/",
+    "labextension/",
     "dist/",
     "docs/",
     "lib/**/*.js",
@@ -34,7 +38,7 @@
     "url": "https://github.com/NGSolve/ngsolve"
   },
   "scripts": {
-    "build": "npm run build:lib && npm run build:nbextension",
+    "build": "npm install && npm run build:lib && npm run build:nbextension",
     "build:lib": "tsc",
     "build:nbextension": "webpack -p",
     "clean": "rimraf package",
@@ -60,6 +64,6 @@
     "three": "^0.115"
   },
   "jupyterlab": {
-    "extension": "lib/plugin"
+    "extension": "labextension/plugin"
   }
 }

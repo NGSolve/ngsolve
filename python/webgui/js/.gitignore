@@ -5,6 +5,7 @@ src/shaders.ts
 docs/
 lib/
 nbextension/
+labextension/
 *.tgz
 standalone.js
 standalone.js.map

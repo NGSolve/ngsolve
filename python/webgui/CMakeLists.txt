@@ -17,15 +17,7 @@ if(BUILD_JUPYTER_WIDGETS)
 
   add_custom_command(
     OUTPUT 
-      ${bdir}/dist/index.js
-      ${bdir}/dist/index.js.map
-      ${bdir}/docs/source/_static/embed-bundle.js
-      ${bdir}/docs/source/_static/embed-bundle.js.map
-      ${bdir}/nbextension/static
-      ${bdir}/nbextension/static/index.js
-      ${bdir}/nbextension/static/index.js.map
       ${bdir}/standalone.js
-      ${bdir}/standalone.js.map
     DEPENDS
       js/package.json
       js/tsconfig.json
@@ -37,11 +29,11 @@ if(BUILD_JUPYTER_WIDGETS)
       js/src/shaders.ts
       js/src/version.ts
       js/src/widget.ts
-      COMMAND npm install
       COMMAND npm run build
       COMMAND rm -f "*.tgz"
       COMMAND npm pack
       COMMAND cmake -E tar xvf "*.tgz"
+      COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
       )
 
@@ -54,9 +46,9 @@ if(BUILD_JUPYTER_WIDGETS)
       SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
       DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/
       BUILD_IN_SOURCE 1
-      CONFIGURE_COMMAND cmake -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/js/package"
-      INSTALL_COMMAND cmake -E copy_directory . "${CMAKE_CURRENT_SOURCE_DIR}/js/package"
-      BUILD_COMMAND ""
+      CONFIGURE_COMMAND cmake -E make_directory "${bdir}"
+      BUILD_COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
+      INSTALL_COMMAND cmake -E copy_directory . "${bdir}"
       UPDATE_COMMAND ""
       TEST_COMMAND ""
       )
@@ -73,7 +65,7 @@ add_custom_command(OUTPUT webgui.py
     ${bdir}/standalone.js
  )
 
-add_custom_target(js_widgets ALL DEPENDS webgui.py)
+add_custom_target(js_widgets ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/webgui.py)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/webgui.py DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 
@@ -82,5 +74,5 @@ install(DIRECTORY ${bdir}/nbextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/
 install(FILES js/extension.js DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/nbextension/static COMPONENT ngsolve)
 
 # jupyter lab extension
-install(DIRECTORY ${sdir}/js/package/lib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
-install(FILES js/package.json DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
+install(DIRECTORY ${sdir}/js/package/labextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
+install(FILES js/package/package.json DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
