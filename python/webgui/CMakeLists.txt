@@ -1,6 +1,5 @@
 set(sdir ${CMAKE_CURRENT_SOURCE_DIR})
 set(bdir ${CMAKE_CURRENT_SOURCE_DIR}/js/package)
-message("dirs ${sdir} ${bdir}")
 
 if(BUILD_JUPYTER_WIDGETS)
   add_custom_command(OUTPUT ${sdir}/js/src/shaders.ts
@@ -27,8 +26,6 @@ if(BUILD_JUPYTER_WIDGETS)
       ${bdir}/nbextension/static/index.js.map
       ${bdir}/standalone.js
       ${bdir}/standalone.js.map
-    COMMAND npm install
-    COMMAND npm run build
     DEPENDS
       js/package.json
       js/tsconfig.json
@@ -40,11 +37,32 @@ if(BUILD_JUPYTER_WIDGETS)
       js/src/shaders.ts
       js/src/version.ts
       js/src/widget.ts
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
-    )
+      COMMAND npm install
+      COMMAND npm run build
+      COMMAND rm -f "*.tgz"
+      COMMAND npm pack
+      COMMAND cmake -E tar xvf "*.tgz"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
+      )
 
-else(BUILD_JUPYTER_WIDGETS)
-  # download prebuild widgets library
+  else(BUILD_JUPYTER_WIDGETS)
+    # download prebuild widgets library
+
+    ExternalProject_Add(
+      download_widgets
+      URL "https://registry.npmjs.org/ngsolve_jupyter_widgets/-/ngsolve_jupyter_widgets-0.0.3.tgz"
+      SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
+      DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/
+      BUILD_IN_SOURCE 1
+      CONFIGURE_COMMAND cmake -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/js/package"
+      INSTALL_COMMAND cmake -E copy_directory . "${CMAKE_CURRENT_SOURCE_DIR}/js/package"
+      BUILD_COMMAND ""
+      UPDATE_COMMAND ""
+      TEST_COMMAND ""
+      )
+
+    # adds dependency to behave like the content was compiled
+    add_custom_command(OUTPUT ${bdir}/standalone.js COMMAND "" DEPENDS download_widgets)
 endif(BUILD_JUPYTER_WIDGETS)
 
 add_custom_command(OUTPUT webgui.py
@@ -64,5 +82,5 @@ install(DIRECTORY ${bdir}/nbextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/
 install(FILES js/extension.js DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/nbextension/static COMPONENT ngsolve)
 
 # jupyter lab extension
-install(DIRECTORY ${sdir}/js/build/lib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
+install(DIRECTORY ${sdir}/js/package/lib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
 install(FILES js/package.json DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
