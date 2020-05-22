@@ -2,3 +2,10 @@ node_modules
 package
 package-lock.json
 src/shaders.ts
+docs/
+lib/
+nbextension/
+*.tgz
+standalone.js
+standalone.js.map
+
