@@ -6,6 +6,7 @@ import os
 
 # the build script fills the contents of the variables below
 render_js_code = ""
+widgets_version = ""
 
 try:
     __IPYTHON__
@@ -396,7 +397,7 @@ class NGSWebGuiWidget(DOMWidget):
     from traitlets import Dict, Unicode
     _view_name = Unicode('NGSolveView').tag(sync=True)
     _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
-    _view_module_version = Unicode('^0.0.4').tag(sync=True)
+    _view_module_version = Unicode(widgets_version).tag(sync=True)
     value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
 
 tencode = ngs.Timer("encode")

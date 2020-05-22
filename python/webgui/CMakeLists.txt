@@ -40,9 +40,17 @@ if(BUILD_JUPYTER_WIDGETS)
   else(BUILD_JUPYTER_WIDGETS)
     # download prebuild widgets library
 
+    # read lib version from package.json
+    execute_process(COMMAND ${NETGEN_PYTHON_EXECUTABLE} -c
+      "import json;print(json.load(open('package.json'))['version'])"
+      OUTPUT_VARIABLE WIDGETS_VERSION
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
     ExternalProject_Add(
       download_widgets
-      URL "https://registry.npmjs.org/ngsolve_jupyter_widgets/-/ngsolve_jupyter_widgets-0.0.3.tgz"
+      URL "https://registry.npmjs.org/ngsolve_jupyter_widgets/-/ngsolve_jupyter_widgets-${WIDGETS_VERSION}.tgz"
       SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
       DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/
       BUILD_IN_SOURCE 1
