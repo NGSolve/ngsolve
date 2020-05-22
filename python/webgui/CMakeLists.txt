@@ -1,3 +1,5 @@
+include (ExternalProject)
+
 set(sdir ${CMAKE_CURRENT_SOURCE_DIR})
 set(bdir ${CMAKE_CURRENT_SOURCE_DIR}/js/package)
 
@@ -51,6 +53,7 @@ if(BUILD_JUPYTER_WIDGETS)
     ExternalProject_Add(
       download_widgets
       URL "https://registry.npmjs.org/ngsolve_jupyter_widgets/-/ngsolve_jupyter_widgets-${WIDGETS_VERSION}.tgz"
+      DOWNLOAD_NO_PROGRESS ON
       SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
       DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/
       BUILD_IN_SOURCE 1
