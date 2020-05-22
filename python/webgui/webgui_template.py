@@ -410,13 +410,10 @@ def encodeData( array ):
 
 _jupyter_lab_extension_path = os.path.join(os.path.dirname(ngs.__file__), "labextension")
 
-def printInstallCommands():
+def howtoInstallJupyterLabextension():
     import ngsolve, os
     d = os.path.dirname(ngsolve.__file__)
     labdir = os.path.join(d, "labextension")
-    print("""To install jupyter notebook extension:
-    jupyter nbextension install --py ngsolve
-
-To install jupyter lab extension:
-    jupyter labextension install --clean {labdir}
+    print("""# To install jupyter lab extension:
+jupyter labextension install --clean {labdir}
 """.format(labdir=_jupyter_lab_extension_path))
