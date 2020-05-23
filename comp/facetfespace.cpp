@@ -18,7 +18,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
