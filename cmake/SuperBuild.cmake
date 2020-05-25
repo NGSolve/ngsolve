@@ -162,6 +162,7 @@ endif (USE_LAPACK)
 if(USE_UMFPACK)
   if(BUILD_UMFPACK)
     set(UMFPACK_DIR ${CMAKE_CURRENT_BINARY_DIR}/umfpack/install CACHE PATH "Temporary directory to build UMFPACK")
+    set(UMFPACK_STATIC ON)
     ExternalProject_Add(
       suitesparse
       DEPENDS ${LAPACK_PROJECTS}
@@ -189,7 +190,7 @@ if(USE_UMFPACK)
       )
     list(APPEND DEPENDENCIES suitesparse)
   endif()
-  set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR )
+  set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR UMFPACK_STATIC )
 endif(USE_UMFPACK)
 
 #######################################################################
