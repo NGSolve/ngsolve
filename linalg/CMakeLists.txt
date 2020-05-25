@@ -10,7 +10,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
         )
 
-target_include_directories(ngla PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
 if(UMFPACK_STATIC)
