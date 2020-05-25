@@ -544,7 +544,7 @@ namespace ngcomp
           for (size_t j = 0; j < D*D; j++)
             for (size_t k = 0; k < nd_u; k++)
               {
-                Vec<D*D,SIMD<double>> dshape_u_ref, dshape_u;
+                Vec<D,SIMD<double>> dshape_u_ref, dshape_u;
                 for (size_t l = 0; l < D; l++)
                   dshape_u_ref(l) = mat(k*D*D*D+l*D*D+j, i);
                 
