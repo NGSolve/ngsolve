@@ -620,7 +620,6 @@ namespace ngbla
         }
     }
 
-    
     /// assign values
     template<typename TB>
     INLINE Mat & operator= (const Expr<TB> & m)
@@ -2245,6 +2244,7 @@ namespace ngbla
   INLINE auto operator* (const Mat<H,W,T1> & mat, const Vec<W2,T2> & vec) 
     -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
+    static_assert(W == W2, "Mat * Vec dimension mismatch!");
     typedef decltype(RemoveConst(mat(0,0)*vec(0))) TRES;
     Vec<H, TRES> res = TRES(0);
     for (int i = 0; i < H; i++)
@@ -2253,10 +2253,11 @@ namespace ngbla
     return res;
   }
 
-  template <int H, int W, typename T1, typename T2>
-  INLINE auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W,T2> & vec) 
+  template <int H, int W, int W2, typename T1, typename T2>
+  INLINE auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W2,T2> & vec)
     -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
+    static_assert(W == W2, "Mat * FlatVec dimension mismatch!");
     typedef decltype(RemoveConst(mat(0,0)*vec(0))) TRES;
     Vec<H, TRES> res = TRES(0);
     for (int i = 0; i < H; i++)
@@ -2269,6 +2270,7 @@ namespace ngbla
   INLINE auto operator* (const Mat<H,W,T1> & mat, FlatVector<T2> vec) 
     -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
+    NETGEN_CHECK_RANGE(vec.Size(), W, W+1);
     typedef decltype(RemoveConst(mat(0,0)*vec(0))) TRES;
     Vec<H, TRES> res = TRES(0);
     for (int i = 0; i < H; i++)
