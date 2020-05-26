@@ -25,7 +25,7 @@ namespace ngcomp
     template<int DIMR>
     T2( MappedIntegrationPoint<DIM, DIMR> & mip, Vec<DIMR> pmaster ) : x0(mip.IP().Point())
     {
-      IntegrationPoint ip {x0};
+      // IntegrationPoint ip {x0};
       auto jac = mip.GetJacobian();
       auto hesse = mip.CalcHesse();
       Vec<DIMR> dist = mip.GetPoint() - pmaster;
@@ -74,7 +74,7 @@ namespace ngcomp
     min_lam = 1./(DIMS+1);
 
     // Todo: line search, stop criterion
-    for( auto i : Range(4) )
+    for([[maybe_unused]] auto i : Range(4) )
     {
       ip = min_lam;
       MappedIntegrationPoint<DIMS, DIMR> mip{ip, trafo};
@@ -160,7 +160,7 @@ namespace ngcomp
   optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh) const
   {
     HeapReset hr(lh);
-    int intorder2 = 10*displacement->GetFESpace()->GetOrder();
+    // int intorder2 = 10*displacement->GetFESpace()->GetOrder();
     auto & ip1 = mip1.IP();
     auto & trafo1 = mip1.GetTransformation();
     const auto & el1 = ma->GetElement(trafo1.GetElementId());
@@ -302,7 +302,7 @@ namespace ngcomp
     result = 0;
     if (!master.Mask().Test(el1.GetIndex())) return;
 
-    int intorder2 = 2*displacement->GetFESpace()->GetOrder();
+    // int intorder2 = 2*displacement->GetFESpace()->GetOrder();
 
     auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
 
