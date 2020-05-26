@@ -4,6 +4,7 @@ set(sdir ${CMAKE_CURRENT_SOURCE_DIR})
 set(bdir ${CMAKE_CURRENT_SOURCE_DIR}/js/package)
 
 if(BUILD_JUPYTER_WIDGETS)
+  find_program(NPM NAMES npm)
   add_custom_command(OUTPUT ${sdir}/js/src/shaders.ts
     COMMAND ${NETGEN_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS
@@ -31,9 +32,9 @@ if(BUILD_JUPYTER_WIDGETS)
       js/src/shaders.ts
       js/src/version.ts
       js/src/widget.ts
-      COMMAND npm run build
-      COMMAND rm -f "*.tgz"
-      COMMAND npm pack
+      COMMAND ${NPM} run build
+      COMMAND cmake -E rm -f "*.tgz"
+      COMMAND ${NPM} pack
       COMMAND cmake -E tar xvf "*.tgz"
       COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
