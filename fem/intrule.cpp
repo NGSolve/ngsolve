@@ -493,7 +493,8 @@ namespace ngfem
           hmips[i].SetMeasure(1);
         return;
       }
-    if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
+    if constexpr(DIM_ELEMENT == 3)
+      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
       {
         // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
 	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
@@ -3346,7 +3347,8 @@ namespace ngfem
           hmips[i].SetMeasure(1);
         return;
       }
-    if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
+    if constexpr(DIM_ELEMENT == 3)
+      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
       {
         // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
 	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
@@ -3426,10 +3428,10 @@ namespace ngfem
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
   TransformGradient (BareSliceMatrix<SIMD<double>> grad) const 
   {
-    if (DIM_ELEMENT != DIM_SPACE)
+    if constexpr(DIM_ELEMENT != DIM_SPACE)
       throw Exception("transformgrad only available for volume mapping");
-    
-    for (size_t i = 0; i < mips.Size(); i++)
+    else
+      for (size_t i = 0; i < mips.Size(); i++)
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
         // Vec<DIM_SPACE,SIMD<double>> vphys =
@@ -3441,10 +3443,10 @@ namespace ngfem
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
   TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const 
   {
-    if (DIM_ELEMENT != DIM_SPACE)
+    if constexpr (DIM_ELEMENT != DIM_SPACE)
       throw Exception("transformgrad only available for volume mapping");
-    
-    for (size_t i = 0; i < mips.Size(); i++)
+    else
+      for (size_t i = 0; i < mips.Size(); i++)
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
         // Vec<DIM_SPACE,SIMD<double>> vphys =
