@@ -294,6 +294,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
     static bool SupportsVB (VorB checkvb) { return true; }
     
     static string Name() { return "Id"; }
@@ -501,7 +503,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
 

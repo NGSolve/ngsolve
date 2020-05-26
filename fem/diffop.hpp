@@ -561,7 +561,10 @@ namespace ngfem
                              adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), dim(adim)
     {
-      dimensions = Array<int> ( { adim, adiffop->Dim() });
+      if (adiffop->Dimensions().Size() == 0)
+        dimensions = Array<int> ( { adim });
+      else
+        dimensions = Array<int> ( { adim, adiffop->Dim() });
     }
 
     NGS_DLL_HEADER virtual ~VectorDifferentialOperator ();
