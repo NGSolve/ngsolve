@@ -2699,7 +2699,7 @@ integrator : ngsolve.fem.LFI
   
   m.def("Integrate", 
         [](spCF cf,
-           shared_ptr<MeshAccess> ma, 
+           variant<shared_ptr<MeshAccess>,Region> mesh_or_reg, 
            VorB vb, int order,
            // std::optional<Region> definedon,
            Region * definedon,
@@ -2707,6 +2707,22 @@ integrator : ngsolve.fem.LFI
         {
           static Timer t("Integrate CF"); RegionTimer reg(t);
           // static mutex addcomplex_mutex;
+
+          shared_ptr<MeshAccess> ma;
+          if(auto is_region = get_if<Region>(&mesh_or_reg)) // ; is_region)
+            {
+              // cout << "is region" << endl;
+              definedon = is_region;
+              ma = is_region->Mesh();
+              vb = is_region->VB();
+            }
+          if(auto is_mesh = get_if<shared_ptr<MeshAccess>>(&mesh_or_reg)) // ; is_mesh)
+            {
+              // cout << "is mesh" << endl;
+              ma = *is_mesh;
+            }
+          
+          
           BitArray mask;
           if (definedon)
             {

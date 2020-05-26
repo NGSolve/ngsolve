@@ -1197,7 +1197,7 @@ namespace ngcomp
     bool IsCoDim2() const { return vb == BBND; }
     const BitArray & Mask() const { return mask; }
     operator const BitArray & () const { return mask; }
-    
+    shared_ptr<MeshAccess> Mesh() const { return mesh; }
     Region operator+ (const Region & r2) const
     {
       return Region (mesh, vb, BitArray(mask).Or (r2.Mask()));
