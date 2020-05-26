@@ -115,7 +115,7 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> cf;
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies, test_proxies;
-    CoefficientFunction * gap_function;
+    // CoefficientFunction * gap_function;
 
   public:
     ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
