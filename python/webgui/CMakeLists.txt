@@ -65,7 +65,7 @@ if(BUILD_JUPYTER_WIDGETS)
       )
 
     # adds dependency to behave like the content was compiled
-    add_custom_command(OUTPUT ${bdir}/standalone.js COMMAND "" DEPENDS download_widgets)
+    add_custom_command(OUTPUT ${bdir}/standalone.js COMMAND ; DEPENDS download_widgets)
 endif(BUILD_JUPYTER_WIDGETS)
 
 add_custom_command(OUTPUT webgui.py
