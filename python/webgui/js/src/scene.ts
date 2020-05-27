@@ -665,7 +665,7 @@ export class Scene {
       this.mouse = new THREE.Vector2(0.0, 0.0);
       this.center_tag = null;
 
-      let gui = new dat.GUI({autoplace: false});
+      let gui = new dat.GUI({autoplace: false, closeOnTop: true});
       let gui_container = document.createElement( 'div' );
       gui_container.setAttribute("style", 'position: absolute; z-index: 200; display:block; right: 0px; top: 0px');
       gui_container.appendChild(gui.domElement);
