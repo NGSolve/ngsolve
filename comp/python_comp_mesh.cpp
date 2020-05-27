@@ -690,7 +690,15 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                                    points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
                                return MoveToNumpyArray(points);
                              })
-
+    .def("MapToAllElements", [](MeshAccess* self, std::map<ELEMENT_TYPE, IntegrationRule> rules, VorB vb)
+         -> py::array_t<MeshPoint>
+                             {
+                               Array<MeshPoint> points;
+                               for(auto el : self->Elements(vb))
+                                 for(const auto& p : rules[el.GetType()])
+                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
+                               return MoveToNumpyArray(points);
+                             })
     ;
     PyDefVectorized(mesh_access, "__call__",
          [](MeshAccess* ma, double x, double y, double z, VorB vb)

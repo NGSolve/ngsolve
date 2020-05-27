@@ -225,7 +225,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
         ir = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
-        pts = mesh.MapToAllElements(ir, vb)
+        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir}, vb)
         pmat = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z) ) (pts)
 
         timermult.Start()
