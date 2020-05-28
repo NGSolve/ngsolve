@@ -100,8 +100,7 @@ class WebGLScene:
 
     def GetData(self, set_minmax=True):
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol)
-        d['deformation'] = self.deformation
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation)
 
         if set_minmax:
             if self.min is not None:
@@ -153,9 +152,7 @@ timer3list = ngs.Timer("timer3 - make list")
 timer4 = ngs.Timer("func")
 
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
-
-    
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None):
     timer.Start()
 
     #TODO: handle quads and non-smooth functions
@@ -175,6 +172,9 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
     d['draw_vol'] = func and mesh.dim==3 and draw_vol
     d['draw_surf'] = func and draw_surf
 
+    if isinstance(deformation, bool):
+        d['deformation'] = deformation
+        deformation = None
 
     func2 = None
     if func and func.is_complex:
@@ -194,6 +194,9 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
         d['funcdim'] = 0
     func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
     func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
+    if deformation is not None:
+        func1 += ngs.CoefficientFunction((deformation, 0.0))
+        func0 += ngs.CoefficientFunction((deformation, 0.0))
 
     d['show_wireframe'] = False
     d['show_mesh'] = False
@@ -226,10 +229,11 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         pts = mesh.MapToAllElements(ir, vb)
-        pmat = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z) ) (pts)
+        cf = func1 if draw_surf else func0
+        pmat = cf(pts)
 
         timermult.Start()
-        pmat = pmat.reshape(-1, og+1, 3)
+        pmat = pmat.reshape(-1, og+1, 4)
         BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
         timermult.Stop()
         
@@ -238,8 +242,17 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True):
             Bezier_points.append(encodeData(BezierPnts[i]))
         timer2list.Stop()        
 
+        if func2 and draw_surf:
+            pmat = cf(pts)
+            pmat = pmat.reshape(-1, og+1, 2)
+            timermult.Start()
+            BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+            timermult.Stop()
+            timer2list.Start()        
+            for i in range(og+1):
+                Bezier_points.append(encodeData(BezierPnts[i]))
+            timer2list.Stop()        
 
-            
         d['Bezier_points'] = Bezier_points
 
         timer2.Stop()

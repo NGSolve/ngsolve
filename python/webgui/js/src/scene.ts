@@ -1043,7 +1043,11 @@ export class Scene {
 
     geo.setAttribute( 'position', new THREE.Float32BufferAttribute( inst, 1 ));
 
-    const defines = {ORDER: data.order2d};
+    let defines = Object({ORDER: data.order2d});
+    if(this.have_deformation)
+      defines.DEFORMATION = 1;
+    else if(this.have_z_deformation)
+      defines.DEFORMATION_2D = 1;
     var wireframe_material = new THREE.RawShaderMaterial({
       vertexShader: getShader( 'splines.vert', defines ),
       fragmentShader: getShader( 'splines.frag', defines ),
@@ -1143,15 +1147,25 @@ export class Scene {
     if(this.wireframe_object != null)
       {
         let geo = <THREE.InstancedBufferGeometry>this.wireframe_object.geometry;
-        const n_verts = render_data.Bezier_points[0].length/3/4*3/4; // 3 components, 3/4 b64 ratio, 4 bytes per float
-        geo.setAttribute( 'p0', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[0]), 3 ));
-        geo.setAttribute( 'p1', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[1]), 3 ));
-        if(render_data.order2d >= 2)
-          geo.setAttribute( 'p2', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[2]), 3 ));
-        if(render_data.order2d >= 3)
-          geo.setAttribute( 'p3', new THREE.InstancedBufferAttribute( readB64( render_data.Bezier_points[3]), 3 ));
 
-        geo.maxInstancedCount = n_verts;
+        let pnames = [];
+        let vnames = [];
+        const o = render_data.order2d;
+        for(let i=0; i<o+1; i++)
+        {
+          pnames.push('p'+i);
+          vnames.push('v'+i);
+        }
+
+        const data = render_data.Bezier_points;
+        for (let i=0; i<o+1; i++)
+          geo.setAttribute( pnames[i], new THREE.InstancedBufferAttribute( readB64(data[i]), 4 ) );
+
+        if(render_data.draw_surf && render_data.funcdim>1)
+          for (let i=0;i<vnames.length; i++)
+            geo.setAttribute( vnames[i], new THREE.InstancedBufferAttribute( readB64(data[o+1+i]), 2 ) );
+
+        geo.maxInstancedCount = readB64(data[0]).length/4;
         geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
       }
 
