@@ -33,7 +33,7 @@ if(BUILD_JUPYTER_WIDGETS)
       js/src/version.ts
       js/src/widget.ts
       COMMAND ${NPM} run build
-      COMMAND cmake -E rm -f "*.tgz"
+      COMMAND cmake -E remove -f "*.tgz"
       COMMAND ${NPM} pack
       COMMAND cmake -E tar xvf "*.tgz"
       COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
