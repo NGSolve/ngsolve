@@ -1582,7 +1582,7 @@ weights : list
 
 
   py::class_<MeshPoint>(m, "MeshPoint")
-    .def_property_readonly("pnt", [](MeshPoint& p) { return py::make_tuple(p.x,p.y,p.z); })
+    .def_property_readonly("pnt", [](MeshPoint& p) { return py::make_tuple(p.x,p.y,p.z); }, "Gives coordinates of point on reference triangle. One can create a MappedIntegrationPoint using the ngsolve.fem.BaseMappedIntegrationPoint constructor. For physical coordinates the coordinate CoefficientFunctions x,y,z can be evaluated in the MeshPoint")
     .def_property_readonly("mesh", [](MeshPoint& p) { return p.mesh; })
     .def_property_readonly("vb", [](MeshPoint& p) { return p.vb; })
     .def_property_readonly("nr", [](MeshPoint& p) { return p.nr; })
