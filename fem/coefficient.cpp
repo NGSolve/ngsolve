@@ -5535,7 +5535,13 @@ public:
     {
       if (var == shape.get())
         return MakeComponentCoefficientFunction (dirdiff, dir);
-      return BASE::Diff (var, dirdiff);
+      // return BASE::Diff (var, dirdiff);
+      
+      if (auto coordcf = dynamic_cast<const CoordCoefficientFunction*>(var))
+        if (coordcf->dir == this->dir)
+          return dirdiff;
+      
+      return ZeroCF(Dimensions());
     }
     
     
