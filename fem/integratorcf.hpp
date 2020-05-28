@@ -13,11 +13,12 @@ namespace ngfem
     int bonus_intorder = 0;
     shared_ptr<ngcomp::GridFunction> deformation;
     std::map<ELEMENT_TYPE,shared_ptr<IntegrationRule>> userdefined_intrules;
+    shared_ptr<BitArray> definedonelements;
     
     DifferentialSymbol (VorB _vb) : vb(_vb) { ; }
     DifferentialSymbol (VorB _vb, VorB _element_vb, bool _skeleton, // const BitArray & _definedon,
                         int _bonus_intorder)
-      : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), /* definedon(_definedon), */ bonus_intorder(_bonus_intorder) { ; } 
+      : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), /* definedon(_definedon), */ bonus_intorder(_bonus_intorder) { ; }
   };
   
 
