@@ -37,6 +37,12 @@ if(BUILD_JUPYTER_WIDGETS)
       COMMAND ${NPM} pack
       COMMAND cmake -E tar xvf "*.tgz"
       COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
+      COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
+      COMMAND cmake -E touch_nocreate "${bdir}/nbextension/static/index.js.map"
+      COMMAND cmake -E touch_nocreate "${bdir}/nbextension/static/index.js"
+      COMMAND cmake -E touch_nocreate "${bdir}/labextension/plugin.js.map"
+      COMMAND cmake -E touch_nocreate "${bdir}/labextension/plugin.js"
+
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
       )
 
@@ -87,7 +93,7 @@ install(DIRECTORY ${bdir}/nbextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/
 install(FILES js/extension.js DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/nbextension/static COMPONENT ngsolve)
 
 # jupyter lab extension
-install(DIRECTORY ${sdir}/js/package/labextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
+install(DIRECTORY ${bdir}/labextension DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
 install(FILES js/package/package.json DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/labextension COMPONENT ngsolve)
 
 find_program(JUPYTER_NBEXTENSION NAMES jupyter-nbextension)
