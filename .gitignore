@@ -8,3 +8,5 @@ py_tutorials/code*.cpp
 out
 CMakeSettings.json
 /external_dependencies/parmetis-4.0.3.tar.gz
+/external_dependencies/ngsolve_jupyter_widgets-0.0.4.tgz
+/external_dependencies/hypre-2.11.1.tar.gz
