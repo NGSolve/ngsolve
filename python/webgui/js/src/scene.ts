@@ -110,6 +110,7 @@ let CameraControls = function(cameraObject, scene, domElement) {
     scope.center.copy(scene.mesh_center);
     scope.centermat.makeTranslation(-this.center.x, -this.center.y, -this.center.z);
     scope.update();
+    scope.scene.setCenterTag();
   }
 
   this.update = function () {
@@ -143,6 +144,7 @@ let CameraControls = function(cameraObject, scene, domElement) {
     return function() {
       console.log("set mesh center to", scope.center);
       scope.centermat.makeTranslation(-scope.center.x, -scope.center.y, -scope.center.z);
+      scope.transmat.identity();
       scope.scene.setCenterTag();
       scope.update();
     };
@@ -267,6 +269,8 @@ let CameraControls = function(cameraObject, scene, domElement) {
       if (!touchfirst) {            
         var s = Math.exp(0.01*(delta-olddelta));
         scope.scale *=  s;
+        if( scope.scene.center_tag )
+          scope.scene.center_tag.scale.multiplyScalar(1.0/s);
       }
       touchfirst = false;
       scope.update();            
@@ -283,6 +287,8 @@ let CameraControls = function(cameraObject, scene, domElement) {
 
     var s = Math.exp(-0.001*event.deltaY);
     scope.scale *=  s ;
+    if( scope.scene.center_tag )
+        scope.scene.center_tag.scale.multiplyScalar(1.0/s);
     scope.update();
   }
 
@@ -296,7 +302,8 @@ let CameraControls = function(cameraObject, scene, domElement) {
 
   function onDblClick( event ){
     event.preventDefault();
-    scene.mouse.set(event.clientX, event.clientY);
+    var rect = scope.domElement.getBoundingClientRect();
+    scope.scene.mouse.set(event.clientX-rect.left, event.clientY-rect.top);
     scene.get_pixel = true;
     scope.dispatchEvent( changeEvent );      
 
@@ -1231,10 +1238,42 @@ export class Scene {
       console.log("remove center tag");
     }
     if (position != null) {
-      let geometry = new THREE.SphereGeometry( this.mesh_radius*0.015, 32, 32 );
-      let material = new THREE.MeshBasicMaterial( {color: 0x8a9597} );
-      this.center_tag = new THREE.Mesh( geometry, material );
+      const n = 101;
+      const size = n * n;
+      const data = new Uint8Array(4*n*n);
+
+      for(var i=0; i<n; i++)
+        for(var j=0; j<n; j++)
+        {
+          const dist = n*n/4-((i-n/2)*(i-n/2)+(j-n/2)*(j-n/2));
+          if(dist>0.0)
+          {
+            for(var k=0; k<3; k++)
+              data[4*(i*n+j)+k] = 128;
+            data[4*(i*n+j)+3] = 255;
+          }
+          else
+          {
+            for(var k=0; k<3; k++)
+              data[4*(i*n+j)+k] = 0;
+          }
+        }
+
+      let texture = new THREE.DataTexture( data, n, n, THREE.RGBAFormat);
+
+      texture.magFilter = THREE.LinearFilter;
+      texture.minFilter = THREE.LinearFilter;
+      texture.needsUpdate = true;
+
+      // disable depthTest and set renderOrder to make the tag always visible
+      let material = new THREE.SpriteMaterial( { map: texture, sizeAttenuation: false, color: 0xffffff, depthTest: false } );
+
+      this.center_tag = new THREE.Sprite( material );
+      const s = 0.01/this.controls.scale;
+
+      this.center_tag.scale.set(s,s,s);
       this.center_tag.position.copy(position);
+      this.center_tag.renderOrder = 1;
       this.pivot.add(this.center_tag);
     }
   }
