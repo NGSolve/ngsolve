@@ -64,7 +64,7 @@ html_template = """
 
 
 class WebGLScene:
-    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation):
+    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
@@ -76,10 +76,24 @@ class WebGLScene:
         self.draw_surf = draw_surf
         self.autoscale = autoscale
         self.deformation = deformation
+        self.interpolate_multidim = interpolate_multidim
 
     def GetData(self, set_minmax=True):
         import json
         d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation)
+
+        if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
+            # multidim gridfunction - generate data for each component
+            gf = ngs.GridFunction(self.cf.space)
+            dim = len(self.cf.vecs)
+
+            data = []
+            for i in range(1,dim):
+                gf.vec.data = self.cf.vecs[i]
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation))
+            d['multidim_data'] = data
+            d['multidim_interpolate'] = self.interpolate_multidim
+
 
         if set_minmax:
             if self.min is not None:
@@ -354,7 +368,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False):
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -367,7 +381,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim)
     if _IN_IPYTHON:
         if _IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
