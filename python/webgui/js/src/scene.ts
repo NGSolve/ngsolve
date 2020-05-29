@@ -829,6 +829,12 @@ export class Scene {
 
       if(render_data.multidim_interpolate)
       {
+        if(render_data.multidim_animate)
+        {
+          this.gui_status_default.Multidim.animate = true;
+          gui_status.Multidim.animate = true;
+        }
+
         let gui_md = gui.addFolder("Multidim");
         this.multidim_controller = gui_md.add(gui_status.Multidim, "t", 0, md, 0.01).onChange( () => 
           {
