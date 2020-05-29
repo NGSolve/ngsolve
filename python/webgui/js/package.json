@@ -1,6 +1,6 @@
 {
   "name": "ngsolve_jupyter_widgets",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "NGSolve Jupyter Widget Library",
   "keywords": [
     "netgen",
