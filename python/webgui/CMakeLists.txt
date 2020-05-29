@@ -99,6 +99,7 @@ install(FILES js/package/package.json DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/
 find_program(JUPYTER_NBEXTENSION NAMES jupyter-nbextension)
 if(JUPYTER_NBEXTENSION)
   install(CODE "execute_process(COMMAND ${JUPYTER_NBEXTENSION} install --user --py ngsolve)")
+  install(CODE "execute_process(COMMAND ${JUPYTER_NBEXTENSION} enable --user --py ngsolve)")
   message(STATUS "Found jupyter nbextension: ${JUPYTER_NBEXTENSION} -- ngsolve extension will be installed")
 endif(JUPYTER_NBEXTENSION)
 
