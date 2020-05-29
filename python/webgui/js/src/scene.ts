@@ -338,6 +338,7 @@ let CameraControls = function(cameraObject, scene, domElement) {
 
 
 export class Scene {
+  render_data: any;
   scene: THREE.Scene;
   renderer: THREE.WebGLRenderer;
   camera: THREE.PerspectiveCamera;
@@ -371,6 +372,8 @@ export class Scene {
   render_target: any;
   mouse: THREE.Vector2;
   get_pixel: boolean;
+
+  multidim_controller: any;
 
   phase_controller: any;
   c_cmin: any;
@@ -415,6 +418,7 @@ export class Scene {
       colormap_min: -1.0,
       colormap_max: 1.0,
       deformation: 0.0,
+      Multidim: { t: 0.0, multidim: 0, animate: false, speed: 0.01 },
       Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 0.01 },
       Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
       Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
@@ -564,6 +568,7 @@ export class Scene {
 
   init (element, render_data)
   {
+    this.render_data = render_data;
     this.funcdim = render_data.funcdim;
     this.is_complex = render_data.is_complex;
     this.element = element;
@@ -817,6 +822,42 @@ export class Scene {
     uniforms.colormap_min = new THREE.Uniform( gui_status.colormap_min );
     uniforms.colormap_max = new THREE.Uniform( gui_status.colormap_max );
     this.updateColormap();
+
+    if(render_data.multidim_data)
+    {
+      const md = render_data.multidim_data.length;
+
+      if(render_data.multidim_interpolate)
+      {
+        let gui_md = gui.addFolder("Multidim");
+        this.multidim_controller = gui_md.add(gui_status.Multidim, "t", 0, md, 0.01).onChange( () => 
+          {
+            let s = gui_status.Multidim.t;
+            const n = Math.floor(s);
+            const t = s - n;
+            if(n==0)
+              this.interpolateRenderData(this.render_data,this.render_data.multidim_data[0], t);
+            else if(s==md)
+              this.setRenderData(this.render_data.multidim_data[md-1]);
+            else
+              this.interpolateRenderData(this.render_data.multidim_data[n-1],this.render_data.multidim_data[n], t);
+
+          });
+        gui_md.add(gui_status.Multidim, "animate").onChange(animate);
+        gui_md.add(gui_status.Multidim, "speed", 0.0, 1, 0.001).onChange(animate);
+      }
+      else
+      {
+        gui.add(gui_status.Multidim, "multidim", 0, md, 1).onChange( () => 
+          {
+            const n = gui_status.Multidim.multidim;
+            if(n==0)
+              this.setRenderData(this.render_data);
+            else
+              this.setRenderData(this.render_data.multidim_data[n-1]);
+          });
+      }
+    }
 
     let gui_light = gui.addFolder("Light");
     gui_light.add(gui_status.Light, "ambient", 0.0, 1.0).onChange(animate);
@@ -1143,7 +1184,14 @@ export class Scene {
     return new THREE.Mesh( geo, material );
   }
 
+  // called on scene.Redraw() from Python
   updateRenderData(render_data)
+  {
+    this.render_data = render_data;
+    this.setRenderData(render_data);
+  }
+
+  setRenderData(render_data)
   {
     if(this.wireframe_object != null)
     {
@@ -1222,6 +1270,127 @@ export class Scene {
     {
       const cmin = render_data.funcmin;
       const cmax = render_data.funcmax;
+      this.gui_status_default.colormap_min = cmin;
+      this.gui_status_default.colormap_max = cmax;
+
+      if(this.gui_status.autoscale)
+      {
+        this.gui_status.colormap_min = cmin;
+        this.gui_status.colormap_max = cmax;
+        this.c_cmin.updateDisplay();
+        this.c_cmax.updateDisplay();
+        this.updateColormapLabels();
+
+      }
+
+      if(cmax>cmin)
+      {
+        const step = 1e-2*(cmax-cmin);
+        this.c_cmin.step(step);
+        this.c_cmax.step(step);
+      }
+    }
+
+    this.animate();
+  }
+
+  interpolateRenderData(rd, rd2, t)
+  {
+    const t1 = 1.0-t;
+    const mix = (a,b)=> t1*a + t*b;
+    const mixB64 = (a,b)=> {
+      let d1 = readB64(a);
+      let d2 = readB64(b);
+
+      for (let i=0; i<d1.length; i++)
+        d1[i] = mix(d1[i],d2[i]);
+
+      return d1;
+    };
+
+    if(this.wireframe_object != null)
+    {
+      let geo = <THREE.InstancedBufferGeometry>this.wireframe_object.geometry;
+
+      let pnames = [];
+      let vnames = [];
+      const o = rd.order2d;
+      for(let i=0; i<o+1; i++)
+      {
+        pnames.push('p'+i);
+        vnames.push('v'+i);
+      }
+
+      const data = rd.Bezier_points;
+      const data2 = rd2.Bezier_points;
+      for (let i=0; i<o+1; i++)
+      {
+        geo.setAttribute( pnames[i], new THREE.InstancedBufferAttribute( mixB64(data[i], data2[i]), 4 ) );
+      }
+
+      if(rd.draw_surf && rd.funcdim>1)
+        for (let i=0;i<vnames.length; i++)
+        {
+          geo.setAttribute( vnames[i], new THREE.InstancedBufferAttribute( mixB64(data[o+1+i], data2[o+1+i]), 2 ) );
+        }
+
+      geo.maxInstancedCount = readB64(data[0]).length/4;
+      geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
+    }
+
+    if(this.mesh_object != null)
+    {
+      let geo = <THREE.InstancedBufferGeometry>this.mesh_object.geometry;
+      const data = rd.Bezier_trig_points;
+      const data2 = rd2.Bezier_trig_points;
+      const order = rd.order2d;
+
+      var names;
+      if(order == 1) {
+        names = ['p0', 'p1', 'p2']
+        if(rd.draw_surf && rd.funcdim>1)
+          names = names.concat(['v0', 'v1', 'v2' ]);
+      }
+      if(order == 2) {
+        names = ['p00', 'p01', 'p02', 'p10', 'p11', 'p20'];
+        if(rd.draw_surf && rd.funcdim>1)
+          names = names.concat([ 'vec00_01', 'vec02_10', 'vec11_20' ]);
+      }
+      if(order == 3) {
+        names = [ 'p00', 'p01', 'p02', 'p03', 'p10', 'p11', 'p12', 'p20', 'p21', 'p30'];
+        if(rd.draw_surf && rd.funcdim>1)
+          names = names.concat([ 'vec00_01', 'vec02_03', 'vec10_11', 'vec12_20', 'vec21_30']);
+      }
+
+      for (var i in names)
+        geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( mixB64(data[i], data2[i]), 4 ) );
+      geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
+      geo.maxInstancedCount = readB64(data[0]).length/4;
+    }
+
+    if(this.clipping_function_object != null)
+    {
+      let geo = <THREE.InstancedBufferGeometry>this.clipping_function_object.geometry;
+
+      let names = [ 'p0', 'p1', 'p2', 'p3' ];
+      if(rd.order3d==2)
+        names = names.concat(['p03', 'p13', 'p23', 'p01', 'p02', 'p12' ]);
+
+      if(rd.funcdim>1 && rd.draw_vol)
+      {
+        names = names.concat(['v0_1', 'v2_3']);
+        if(rd.order3d==2)
+          names = names.concat(['v03_13', 'v23_01', 'v02_12']);
+      }
+
+      for (var i in names)
+        geo.setAttribute( names[i], new THREE.InstancedBufferAttribute( mixB64(rd.points3d[i], rd2.points3d[i]), 4 ) );
+    }
+
+    if(rd.draw_surf || rd.draw_vol)
+    {
+      const cmin = mix(rd.funcmin, rd2.funcmin);
+      const cmax = mix(rd.funcmax, rd2.funcmax);
       this.gui_status_default.colormap_min = cmin;
       this.gui_status_default.colormap_max = cmax;
 
@@ -1463,6 +1632,16 @@ export class Scene {
         gui_status.Complex.phase -= 2*Math.PI;
 
       this.phase_controller.updateDisplay();
+      this.animate();
+    }
+    if(gui_status.Multidim.animate)
+    {
+      gui_status.Multidim.t += gui_status.Multidim.speed;
+      if(gui_status.Multidim.t > this.render_data.multidim_data.length)
+        gui_status.Multidim.t = 0.0;
+
+      this.multidim_controller.updateDisplay();
+      this.multidim_controller.__onChange();
       this.animate();
     }
   }
