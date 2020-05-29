@@ -62,27 +62,6 @@ html_template = """
 </html>
 """
 
-# cut lines in code between tok_start and tok_end
-def preprocessCode(code, tok_start, tok_end):
-    lines = render_js_code.split('\n')
-    out = ""
-    
-    skip = False
-    for l in lines:
-        if l==tok_start:
-            skip=True
-
-        if not skip:
-            out += l+"\n"
-        if l==tok_end:
-            skip=False
-    return out
-
-def getJupyterJSCode():
-    return preprocessCode(render_js_code, "// HTML_CODE_BEGIN", "// HTML_CODE_END")
-
-def getHTMLJSCode():
-    return preprocessCode(render_js_code, "// JUPYTER_CODE_BEGIN", "// JUPYTER_CODE_END")
 
 class WebGLScene:
     def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation):
@@ -118,7 +97,7 @@ class WebGLScene:
         data = json.dumps(d)
 
         html = html_template.replace('{data}', data )
-        jscode = "var render_data = {}\n".format(data) + getHTMLJSCode()
+        jscode = "var render_data = {}\n".format(data) + render_js_code
         html = html.replace('{render}', jscode )
 
         if filename is not None:
