@@ -243,7 +243,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         timer2list.Stop()        
 
         if func2 and draw_surf:
-            pmat = cf(pts)
+            pmat = func2(pts)
             pmat = pmat.reshape(-1, og+1, 2)
             timermult.Start()
             BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
