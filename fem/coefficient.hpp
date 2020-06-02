@@ -672,40 +672,31 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
+  template<typename SCAL>
   class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunctionNoDerivative
   {
     ///
-    double val;
+    SCAL val;
   public:
     ///
     ParameterCoefficientFunction() = default;
-    ParameterCoefficientFunction (double aval);
+    ParameterCoefficientFunction (SCAL aval);
     ///
     virtual ~ParameterCoefficientFunction ();
     ///
-    void DoArchive(Archive& ar) override
-    {
-      CoefficientFunctionNoDerivative::DoArchive(ar);
-      ar & val;
-    }
+    void DoArchive (Archive& ar) override;
+
     using CoefficientFunction::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
-    {
-      return val;
-    }
-    
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
-    { values.AddSize(Dimension(), ir.Size()) = val; }
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
-    { values = val; }
-    */
-    virtual void SetValue (double in) { val = in; }
-    virtual double GetValue () { return val; }
-    virtual void PrintReport (ostream & ost) const override;
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
+
+    virtual void SetValue (SCAL in) { val = in; }
+    virtual SCAL GetValue () { return val; }
+    void PrintReport (ostream & ost) const override;
+    void GenerateCode (Code &code, FlatArray<int> inputs, int index) const override;
   };
 
   
