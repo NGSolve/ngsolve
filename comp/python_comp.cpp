@@ -1911,7 +1911,8 @@ diffop : ngsolve.fem.DifferentialOperator
                         VorB element_vb, bool skeleton,
                         int bonus_intorder,
                         std::map<ELEMENT_TYPE,IntegrationRule> intrules,
-                        shared_ptr<GridFunction> deformation)
+                        shared_ptr<GridFunction> deformation,
+                        shared_ptr<BitArray> definedonelements)
          {
            if (element_boundary) element_vb = BND;
            auto dx = DifferentialSymbol(self.vb, element_vb, skeleton, /* defon, */ bonus_intorder);
@@ -1923,6 +1924,7 @@ diffop : ngsolve.fem.DifferentialOperator
                  dx.definedon = *definedon_string;
              }
            dx.deformation = deformation;
+           dx.definedonelements = definedonelements;
            for (auto both : intrules)
              dx.userdefined_intrules[both.first] =
                make_shared<IntegrationRule> (both.second.Copy());
@@ -1934,7 +1936,8 @@ diffop : ngsolve.fem.DifferentialOperator
          py::arg("skeleton")=false,
          py::arg("bonus_intorder")=0,
          py::arg("intrules")=std::map<ELEMENT_TYPE,IntegrationRule>{},
-         py::arg("deformation")=nullptr)
+         py::arg("deformation")=nullptr,
+         py::arg("definedonelements")=nullptr)
     ;
 
 
@@ -2096,6 +2099,8 @@ integrator : ngsolve.fem.BFI
                  }
                bfi->SetDeformation(dx.deformation);               
                bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               if(dx.definedonelements)
+                 bfi->SetDefinedOnElements(dx.definedonelements);
                for (auto both : dx.userdefined_intrules)
                  bfi->SetIntegrationRule(both.first, *both.second);
                self += bfi;
@@ -2375,6 +2380,8 @@ integrator : ngsolve.fem.LFI
                  }
                lfi->SetDeformation(dx.deformation);
                lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               if(dx.definedonelements)
+                 lfi->SetDefinedOnElements(dx.definedonelements);
                for (auto both : dx.userdefined_intrules)
                  lfi->SetIntegrationRule(both.first, *both.second);
                *self += lfi;
