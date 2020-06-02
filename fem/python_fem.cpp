@@ -1101,8 +1101,8 @@ wait : bool
          });
     }
 
-  typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
-  py::class_<ParameterCoefficientFunction, spParameterCF, CF>
+  typedef shared_ptr<ParameterCoefficientFunction<double>> spParameterCF;
+  py::class_<ParameterCoefficientFunction<double>, spParameterCF, CF>
     (m, "Parameter", docu_string(R"raw_string(
 CoefficientFunction with a modifiable value
 
@@ -1112,9 +1112,9 @@ value : float
   Parameter value
 
 )raw_string"))
-    .def (py::init ([] (double val)
-                    { return make_shared<ParameterCoefficientFunction>(val); }), py::arg("value"), "Construct a ParameterCF from a scalar")
-    .def(NGSPickle<ParameterCoefficientFunction>())
+    .def (py::init<double>(),
+          py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def(NGSPickle<ParameterCoefficientFunction<double>>())
     .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
           docu_string(R"raw_string(
 Modify parameter value.
@@ -1128,6 +1128,37 @@ value : double
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
     ;
+
+  using spParCFC = shared_ptr<ParameterCoefficientFunction<Complex>>;
+  py::class_<ParameterCoefficientFunction<Complex>, spParCFC, CF>
+    (m, "ParameterC", docu_string(R"raw_string(
+CoefficientFunction with a modifiable complex value
+
+Parameters:
+
+value : complex
+  Parameter value
+
+)raw_string"))
+    .def (py::init<Complex>(),
+          py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def(NGSPickle<ParameterCoefficientFunction<Complex>>())
+    .def("Set", [] (spParCFC cf, Complex val)
+      { cf->SetValue (val); },
+      py::arg("value"),
+      docu_string(R"raw_string(
+Modify parameter value.
+
+Parameters:
+
+value : complex
+  input scalar
+
+)raw_string"))
+    .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
+          "return parameter value")
+    ;
+
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
 BSpline of arbitrary order

@@ -339,38 +339,93 @@ namespace ngfem
     code.body += Var(index).Assign(Var(val));
   }
 
-
   ///
-  ParameterCoefficientFunction ::   
-  ParameterCoefficientFunction (double aval) 
-    : CoefficientFunctionNoDerivative(1, false), val(aval)
+  template<typename SCAL>
+  ParameterCoefficientFunction<SCAL> ::
+  ParameterCoefficientFunction(SCAL aval)
+    : CoefficientFunctionNoDerivative(1, std::is_same_v<SCAL, Complex>), val(aval)
   { ; }
 
-  ParameterCoefficientFunction ::
+  template<typename SCAL>
+  ParameterCoefficientFunction<SCAL> ::
   ~ParameterCoefficientFunction ()
   { ; }
 
-  void ParameterCoefficientFunction :: PrintReport (ostream & ost) const
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL> :: PrintReport (ostream & ost) const
   {
     ost << "ParameterCF, val = " << val << endl;
   }
 
-  void ParameterCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
-                                                 BareSliceMatrix<double> values) const
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL>::
+  DoArchive(Archive& ar)
+  {
+    CoefficientFunctionNoDerivative::DoArchive(ar);
+    ar & val;
+  }
+
+  template<typename SCAL>
+  double ParameterCoefficientFunction<SCAL>::
+  Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    if constexpr(is_same_v<SCAL, Complex>)
+      throw Exception("Using double Evaluate for complex ParameterCoefficientFunction!");
+    else
+      return val;
+  }
+
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL>::
+  Evaluate(const BaseMappedIntegrationRule & ir,
+           BareSliceMatrix<double> values) const
+  {
+    if constexpr(is_same_v<SCAL, Complex>)
+      throw Exception("Called double evaluate for complex ParameterCoefficientFunction!");
+    else
+      values.AddSize(ir.Size(), 1) = val;
+  }
+
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL>::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+            BareSliceMatrix<SIMD<double>> values) const
+  {
+    if constexpr(is_same_v<SCAL, Complex>)
+      throw Exception("Called double evaluate for complex ParameterCoefficientFunction!");
+    else
+      values.AddSize(Dimension(), ir.Size()) = val;
+  }
+
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL>::
+  Evaluate(const BaseMappedIntegrationRule & ir,
+           BareSliceMatrix<Complex> values) const
   {
     values.AddSize(ir.Size(), 1) = val;
   }
 
-  void ParameterCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL>::
+  Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+           BareSliceMatrix<SIMD<Complex>> values) const
+  {
+    values.AddSize(Dimension(), ir.Size()) = val;
+  }
+
+  template<typename SCAL>
+  void ParameterCoefficientFunction<SCAL> :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     stringstream s;
-    s << "*reinterpret_cast<double*>(" << code.AddPointer(&val) << ")";
+    constexpr auto type = is_same_v<SCAL, Complex> ? "Complex" : "double";
+    s << "*reinterpret_cast<" << type << "*>(" << code.AddPointer(&val) << ")";
     code.body += Var(index).Declare(code.res_type);
     code.body += Var(index).Assign(s.str(), false);
   }
 
-  
-  
+  template class ParameterCoefficientFunction<double>;
+  template class ParameterCoefficientFunction<Complex>;
+
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
     : BASE(1, false), val(aval) { ; }
@@ -6844,7 +6899,8 @@ shared_ptr<CoefficientFunction> LoggingCF(shared_ptr<CoefficientFunction> func, 
 static RegisterClassForArchive<CoefficientFunction> regcf;
 static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction> regccf;
 static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;
-static RegisterClassForArchive<ParameterCoefficientFunction, CoefficientFunction> regpar;
+static RegisterClassForArchive<ParameterCoefficientFunction<double>, CoefficientFunction> regpard;
+static RegisterClassForArchive<ParameterCoefficientFunction<Complex>, CoefficientFunction> regparc;
 static RegisterClassForArchive<DomainConstantCoefficientFunction, CoefficientFunction> regdccf;
 static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
 static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;
