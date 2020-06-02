@@ -768,7 +768,7 @@ namespace ngla
   
   // not yet implemented properly for complex components!!
   bool BlockVector :: IsComplex() const
-  { return false; }
+  { return vecs[0]->IsComplex(); }
   
   AutoVector BlockVector :: CreateVector () const
   {
@@ -793,6 +793,22 @@ namespace ngla
     return pp + comm.AllReduce(ps, MPI_SUM);
   }
 
+  Complex BlockVector :: InnerProductC (const BaseVector & v2,
+                                        bool conjugate) const
+  {
+    Complex pp = 0;
+    Complex ps = 0;
+    const auto & v2b = dynamic_cast_BlockVector(v2);
+    for (size_t k = 0; k<vecs.Size(); k++) {
+      auto p = vecs[k]->InnerProductC(*v2b[k], conjugate);
+      if (ispar.Test(k)) pp += p;
+      else ps += p;
+    }
+    // if all vectors are sequential, do not reduce reduce
+    // if (MPI_Comm(comm) == MPI_COMM_NULL) return ps;
+    return pp + comm.AllReduce(ps, MPI_SUM);
+  }
+
 
   double BlockVector :: L2Norm () const
   {
@@ -809,6 +825,13 @@ namespace ngla
       *vecs[i] *= scal;
     return *this;
   }
+
+  BaseVector & BlockVector :: Scale (Complex scal)
+  {
+    for(auto i : ngstd::Range(vecs))
+      vecs[i]->Scale(scal);
+    return *this;
+  }
   
   BaseVector & BlockVector :: SetScalar (double scal)
   {
@@ -816,7 +839,14 @@ namespace ngla
       vecs[i]->SetScalar(scal);
     return *this;
   }
-  
+
+  BaseVector & BlockVector :: SetScalar (Complex scal)
+  {
+    for (auto i : ngstd::Range(vecs))
+      vecs[i]->SetScalar(scal);
+    return *this;
+  }
+
   ostream & BlockVector :: Print (ostream & ost) const
   {
     for (auto i : ngstd::Range(vecs))
@@ -831,7 +861,15 @@ namespace ngla
       vecs[i] -> Set(scal, *bv[i]);
     return *this;
   }
-  
+
+  BaseVector & BlockVector :: Set(Complex scal, const BaseVector & v)
+  {
+    auto & bv = dynamic_cast_BlockVector(v);
+    for (size_t i : ngstd::Range(vecs))
+      vecs[i] -> Set(scal, *bv[i]);
+    return *this;
+  }
+
   BaseVector & BlockVector :: Add (double scal, const BaseVector & v)
   {
     auto & bv = dynamic_cast_BlockVector(v);
@@ -839,7 +877,14 @@ namespace ngla
       vecs[i] -> Add(scal, *bv[i]);
     return *this;
   }
-  
+
+  BaseVector & BlockVector :: Add (Complex scal, const BaseVector & v)
+  {
+    auto & bv = dynamic_cast_BlockVector(v);
+    for (size_t i : ngstd::Range(vecs))
+      vecs[i] -> Add(scal, *bv[i]);
+    return *this;
+  }
   
   template <typename TSCAL>
   S_BaseVectorPtr<TSCAL> :: ~S_BaseVectorPtr ()

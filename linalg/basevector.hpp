@@ -683,28 +683,34 @@ namespace ngla
     
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
-    virtual void * Memory () const;
-    virtual FlatVector<double> FVDouble () const;
-    virtual FlatVector<Complex> FVComplex () const;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<double> v) const;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<Complex> v) const;
+    void * Memory () const override;
+    FlatVector<double> FVDouble () const override;
+    FlatVector<Complex> FVComplex () const override;
+    void GetIndirect (FlatArray<int> ind,
+                      FlatVector<double> v) const override;
+    void GetIndirect (FlatArray<int> ind,
+                      FlatVector<Complex> v) const override;
 
-    virtual bool IsComplex() const;
+    bool IsComplex() const override;
 
-    virtual AutoVector CreateVector () const;
+    AutoVector CreateVector () const override;
 
-    virtual double InnerProductD (const BaseVector & v2) const;
-    virtual double L2Norm () const;
+    double InnerProductD (const BaseVector & v2) const override;
+    Complex InnerProductC (const BaseVector & v2,
+                           bool conjugate = false) const override;
+    double L2Norm () const override;
     
-    virtual BaseVector & Scale (double scal);
-    virtual BaseVector & SetScalar (double scal);
+    BaseVector & Scale (double scal) override;
+    BaseVector & Scale (Complex scal) override;
+    BaseVector & SetScalar (double scal) override;
+    BaseVector & SetScalar (Complex scal) override;
 
-    virtual ostream & Print (ostream & ost) const;
+    ostream & Print (ostream & ost) const override;
 
-    virtual BaseVector & Set (double scal, const BaseVector & v);
-    virtual BaseVector & Add (double scal, const BaseVector & v);
+    BaseVector & Set (double scal, const BaseVector & v) override;
+    BaseVector & Add (double scal, const BaseVector & v) override;
+    BaseVector & Set (Complex scal, const BaseVector & v) override;
+    BaseVector & Add (Complex scal, const BaseVector & v) override;
   };
 
   
