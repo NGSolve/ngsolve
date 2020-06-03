@@ -75,9 +75,12 @@ class WebGLScene:
         self.draw_vol = draw_vol
         self.draw_surf = draw_surf
         self.autoscale = autoscale
-        self.deformation = deformation
         self.interpolate_multidim = interpolate_multidim
         self.animate = animate
+
+        if deformation.dim==2:
+            deformation = ngs.CoefficientFunction((deformation, 0.0))
+        self.deformation = deformation
 
     def GetData(self, set_minmax=True):
         import json
