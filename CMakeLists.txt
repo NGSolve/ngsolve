@@ -29,8 +29,6 @@ option( BUILD_JUPYTER_WIDGETS "Build javscript widgets library for jupyter" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 include (${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake)
 
 if(APPLE)
@@ -68,6 +66,8 @@ else()
 endif()
 
 find_package(Netgen REQUIRED CONFIG HINTS ${CMAKE_INSTALL_PREFIX}/Contents/Resources)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(NGSOLVE_INSTALL_DIR_PYTHON  ${NETGEN_INSTALL_DIR_PYTHON})
 set(NGSOLVE_INSTALL_DIR_BIN     ${NETGEN_INSTALL_DIR_BIN})
