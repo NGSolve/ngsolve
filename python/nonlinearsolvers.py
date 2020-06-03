@@ -46,8 +46,8 @@ class NewtonSolver:
                 w.data = self.inv * r
 
             err2 = InnerProduct(w,r)
-            if err2 < 0:
-                if print_wrong_direction:
+            if print_wrong_direction:
+                if err2 < 0:
                     print("wrong direction")
             err = sqrt(abs(err2))
             if printing:
