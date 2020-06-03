@@ -141,6 +141,27 @@ struct GenericBSpline {
   void DoArchive(Archive& ar) { ar & sp; }
 };
 
+template <> void
+cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+{
+  // bspline.hpp is not automatically included. however, now it is being included four times
+  code.top += "#include <bspline.hpp>\n";
+  
+  stringstream s;
+  s << "reinterpret_cast<BSpline*>(" << code.AddPointer(&lam) << ")";
+  code.body += Var(index).Assign(s.str());
+  
+  TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
+      int i1, j1, i2, j2;
+      GetIndex( c1->Dimensions(), ind, i1, j1 );
+      //i need a free variable to store the result of var1->operator(var0). how to get this index?
+      GetIndex( c1->Dimensions(), ind, i2, j2 );
+      code.body += Var(inputs[0],i2,j2).Assign(
+                                               Var(inputs[0],i1,j1).Func(Var(index).S()+"->operator()"));
+    });
+
+}
+
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
