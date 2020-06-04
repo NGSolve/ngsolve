@@ -502,10 +502,43 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                             "number of blocks in BlockVector")
     ;
 
-
-
-
+  py::class_<MultiVectorExpr, shared_ptr<MultiVectorExpr>> (m, "MultiVectorExpr");
+  py::class_<MultiVector, shared_ptr<MultiVector>> (m, "MultiVector")
+    .def(py::init<shared_ptr<BaseVector>,size_t>())
+    .def("__len__", &MultiVector::Size)
+    .def("__getitem__", &MultiVector::operator[])
+    .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
+         {
+           expr.AssignTo (1, *x[nr]);
+         })
+    .def("__setitem__", [](MultiVector & x, int nr, double val)
+         {
+           *x[nr] = val;
+         })
+    .def_property("data",
+                  [](shared_ptr<MultiVector> self)
+                  { return self; },
+                  [](shared_ptr<MultiVector> self, const MultiVectorExpr & v2)
+                  { v2.AssignTo(1, *self); })
+    
+    .def("Expand", &MultiVector::Expand)
+    .def("Append", &MultiVector::Append)
+    .def("InnerProduct", [](MultiVector & x, MultiVector & y)
+         { return InnerProduct(x,y); })
+    .def("__mul__", [](shared_ptr<MultiVector> x, Vector<> a) 
+         { return DynamicVectorExpression(make_shared<MultiVecAxpyExpr>(a, x)); })
+    
+    /*
+      // not taken, thus moved to BaseMatrix
+    .def("__rmul__", [](shared_ptr<MultiVector> x, shared_ptr<BaseMatrix> mat)
+         -> shared_ptr<MultiVectorExpr>
+         {
+           return make_shared<MatMultiVecExpr> (mat, x); 
+         })
+    */
+    ;
   
+
   typedef BaseMatrix BM;
   // typedef BaseVector BV;
 
@@ -763,6 +796,12 @@ inverse : string
          { return make_shared<VScaleMatrix<double>> (ma, -1); })
     .def("__mul__", [](shared_ptr<BaseMatrix> m, shared_ptr<BaseVector> v)
          { return DynamicVectorExpression(make_shared<DynamicMatVecExpression>(m,v)); })
+    .def("__mul__", [](shared_ptr<BaseMatrix> mat, shared_ptr<MultiVector> x)
+         -> shared_ptr<MultiVectorExpr>
+         {
+           return make_shared<MatMultiVecExpr> (mat, x); 
+         })
+    
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
 
