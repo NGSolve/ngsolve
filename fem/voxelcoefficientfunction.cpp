@@ -6,6 +6,77 @@ namespace ngfem
   template<typename T>
   T VoxelCoefficientFunction<T> :: T_Evaluate(const BaseMappedIntegrationPoint& ip) const
   {
+    // static Timer t("VoxelCF::Eval");
+    // RegionTracer reg(TaskManager::GetThreadId(), t);
+
+    T result = 0.;
+    Switch<3> (start.Size()-1, [&] (auto ICDIM) {
+        constexpr int DIM = ICDIM.value+1;
+        auto pnt = ip.GetPoint();
+        if (trafocf)
+          trafocf->Evaluate(ip,pnt);
+
+        size_t ind[DIM];
+        size_t weight[DIM];
+        
+        for(auto i : Range(DIM))
+          {
+            auto nvals = linear ? dim_vals[i] - 1 : dim_vals[i];
+            double len = (end[i] - start[i])/nvals;
+            double coord = min2(end[i], max2(start[i], pnt[i]));
+            if(!linear && coord == end[i])
+              coord *= (1-1e-12);
+            double pos = (coord - start[i])/len;
+            ind[i] = pos;
+            if(linear)
+              weight[i] = 1.-(pos-ind[i]);
+          }
+
+        if(!linear)
+          {
+            size_t offset = dim_vals[0];
+            size_t index = ind[0];
+            for(auto i : IntRange(1,DIM))
+              {
+                index += offset * ind[i];
+                offset *= dim_vals[i];
+              }
+            result = values[index];
+            return;
+          }
+
+        constexpr int numind = 1 << DIM;
+        size_t indices[numind];
+        double tot_weight[numind];
+
+        indices[0] = ind[0];
+        indices[1] = min2(ind[0]+1, dim_vals[0]-1);
+        tot_weight[0] = weight[0];
+        tot_weight[1] = 1.-weight[0];
+        size_t offset = dim_vals[0];
+        size_t indsize = 2;
+        
+        for(auto i : IntRange(1, DIM))
+          {
+            for(auto j : Range(indsize))
+              {
+                auto indplus1 = min2(ind[i]+1, dim_vals[i]-1);
+                indices[indsize + j] = offset * indplus1 + indices[j];
+                indices[j] += offset * ind[i];
+                tot_weight[indsize + j] = (1.-weight[i]) * tot_weight[j];
+                tot_weight[j] *= weight[i];
+              }
+            indsize *= 2;
+            offset *= dim_vals[i];
+          }
+        
+        for(auto i : Range(numind))
+          result += tot_weight[i] * values[indices[i]];
+      });
+    return result;
+
+
+    /*
     auto pnt = ip.GetPoint();
     if (trafocf)
       trafocf->Evaluate(ip,pnt);
@@ -66,6 +137,7 @@ namespace ngfem
       result += tot_weight[i] * values[indices[i]];
 
     return result;
+    */
   }
 
   template<typename T>
