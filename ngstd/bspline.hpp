@@ -37,6 +37,7 @@ namespace ngstd
     double operator() (double x) const { return Evaluate(x); }
     AutoDiff<1> operator() (AutoDiff<1> x) const;
     AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const;
+    SIMD<double> operator() (SIMD<double> x) const;
     
     friend ostream & operator<< (ostream & ost, const BSpline & sp);
   };

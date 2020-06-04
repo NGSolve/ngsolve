@@ -139,7 +139,16 @@ namespace ngstd
     return res;
 
   }
- 
+
+  SIMD<double> BSpline :: operator() (SIMD<double> x) const
+  {
+    constexpr int size = SIMD<double>::Size();
+    SIMD<double> res;
+    for(auto i = 0; i < size; i++) res[i] = Evaluate(x[i]);
+    return res;
+  }
+
+  
   ostream & operator<< (ostream & ost, const BSpline & sp)
   {
     ost << "bspline, order = " << sp.order << endl
