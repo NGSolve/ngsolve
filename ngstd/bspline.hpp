@@ -35,6 +35,7 @@ namespace ngstd
 
     double Evaluate (double x) const;
     double operator() (double x) const { return Evaluate(x); }
+    Complex operator() (Complex x) const { return Evaluate(x.real()); }
     /*I had to explicitly write double and SIMD<double>
      here as these functions will be used in GenerateCode and I was
      getting the error "templates must have C++ linkage"*/
@@ -44,6 +45,7 @@ namespace ngstd
     AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const;
     
     SIMD<double> operator() (SIMD<double> x) const;
+    SIMD<Complex> operator() (SIMD<Complex> x) const;
     
     friend ostream & operator<< (ostream & ost, const BSpline & sp);
   };
