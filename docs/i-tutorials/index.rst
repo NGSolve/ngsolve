@@ -50,6 +50,19 @@ main folder containing the i-tutorials, and start
 
    jupyter-notebook index.ipynb
 
+Whetting the Appetite
+=====================
+
+.. toctree::
+   :maxdepth: 1
+
+   wta/poisson.ipynb
+   wta/adaptivity.ipynb
+   wta/maxwell.ipynb
+   wta/navierstokes.ipynb
+   wta/elasticity.ipynb
+
+   
 1. Getting started
 ===================
 
