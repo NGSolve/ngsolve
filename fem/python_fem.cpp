@@ -145,10 +145,7 @@ template <> void
 cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
 {
   // bspline.hpp is not automatically included. so we should include it:
-  [[maybe_unused]] static bool init_header = [&code] (){
-                                               code.top+= "#include <bspline.hpp>\n";
-                                               return true;
-                                             } ();
+  code.top+= "#include <bspline.hpp>\n";
   
   stringstream s;
   s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
