@@ -101,7 +101,7 @@ namespace ngstd
     return 0;
   }
 
-  AutoDiff<1> BSpline :: operator() (AutoDiff<1> x) const
+  AutoDiff<1,double> BSpline :: operator() (AutoDiff<1,double> x) const
   {
     // double eps = 1e-5;
     double val = (*this)(x.Value());
@@ -112,11 +112,12 @@ namespace ngstd
     double dval2 = Differentiate()(x.Value());
     // cout << "dval = " << dval << " =?= " << dval2 << endl;
 
-    AutoDiff<1> res(val);
+    AutoDiff<1,double> res(val);
     res.DValue(0) = dval2 * x.DValue(0);
     return res;
   }
-  AutoDiffDiff<1> BSpline :: operator() (AutoDiffDiff<1> x) const
+
+  AutoDiffDiff<1,double> BSpline :: operator() (AutoDiffDiff<1,double> x) const
   {
     /*
     double eps = 1e-5;
@@ -133,7 +134,47 @@ namespace ngstd
     double dval = diff(x.Value());
     double ddval = ddiff(x.Value());
 
-    AutoDiffDiff<1> res(val);
+    AutoDiffDiff<1,double> res(val);
+    res.DValue(0) = dval * x.DValue(0);
+    res.DDValue(0) = ddval * x.DValue(0)*x.DValue(0) + dval*x.DDValue(0);
+    return res;
+
+  }
+  
+  AutoDiff<1,SIMD<double>> BSpline :: operator() (AutoDiff<1,SIMD<double>> x) const
+  {
+    // double eps = 1e-5;
+    SIMD<double> val = (*this)(x.Value());
+    // double valr = (*this)(x.Value()+eps);
+    // double vall = (*this)(x.Value()-eps);
+    // double dval = (valr-vall) / (2*eps);
+
+    SIMD<double> dval2 = Differentiate()(x.Value());
+    // cout << "dval = " << dval << " =?= " << dval2 << endl;
+
+    AutoDiff<1,SIMD<double>> res(val);
+    res.DValue(0) = dval2 * x.DValue(0);
+    return res;
+  }
+
+  AutoDiffDiff<1,SIMD<double>> BSpline :: operator() (AutoDiffDiff<1,SIMD<double>> x) const
+  {
+    /*
+    double eps = 1e-5;
+    double val = (*this)(x.Value());
+    double valr = (*this)(x.Value()+eps);
+    double vall = (*this)(x.Value()-eps);
+
+    double dval = (valr-vall) / (2*eps);
+    double ddval = (valr+vall-2*val) / (eps*eps);
+    */
+    auto diff = Differentiate();
+    auto ddiff = diff.Differentiate();
+    SIMD<double> val = (*this)(x.Value());
+    SIMD<double> dval = diff(x.Value());
+    SIMD<double> ddval = ddiff(x.Value());
+
+    AutoDiffDiff<1,SIMD<double>> res(val);
     res.DValue(0) = dval * x.DValue(0);
     res.DDValue(0) = ddval * x.DValue(0)*x.DValue(0) + dval*x.DDValue(0);
     return res;
