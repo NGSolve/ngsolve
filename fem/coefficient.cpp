@@ -6662,6 +6662,15 @@ class RealCF : public CoefficientFunctionNoDerivative
       cf->TraverseTree (func);
       func(*this);
     }
+
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
+        int i1, j1;
+        GetIndex( cf->Dimensions(), ind, i1, j1 );
+        code.body += Var(index,i,j).Assign( string(Var(inputs[0],i1,j1)) + ".real()");
+        });
+    }
     
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
