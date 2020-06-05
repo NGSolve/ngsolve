@@ -66,11 +66,11 @@ then
 
   export NGS_NUM_THREADS=4
   echo "build docu"
-  pip3 install --user jupyter widgetsnbextension
-  jupyter nbextension install --user --py widgetsnbextension
-  jupyter nbextension enable --user --py widgetsnbextension
-  jupyter nbextension install --user --py ngsolve
-  jupyter nbextension enable --user --py ngsolve
+  pip3 install jupyter widgetsnbextension
+  jupyter nbextension install --py widgetsnbextension
+  jupyter nbextension enable --py widgetsnbextension
+  jupyter nbextension install --py ngsolve
+  jupyter nbextension enable --py ngsolve
   make docs > out
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files
