@@ -6644,6 +6644,7 @@ class RealCF : public CoefficientFunctionNoDerivative
       : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
     {
       cf_is_complex = cf->IsComplex();
+      SetDimensions(cf->Dimensions());
     }
 
     void DoArchive(Archive& ar) override
@@ -6726,7 +6727,9 @@ class RealCF : public CoefficientFunctionNoDerivative
   public:
     ImagCF() = default;
     ImagCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
-    { ; }
+    {
+      SetDimensions(cf->Dimensions());
+    }
 
     void DoArchive(Archive& ar) override
     {
