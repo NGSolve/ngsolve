@@ -17,7 +17,7 @@ from netgen import Redraw
 from pyngcore import BitArray, TaskManager, SetNumThreads
 from .ngstd import Timers, Timer, IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
-from .la import BaseMatrix, BaseVector, BlockVector, BlockMatrix, \
+from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
     CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
     Projector, IdentityMatrix, Embedding, PermutationMatrix, \
     ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
