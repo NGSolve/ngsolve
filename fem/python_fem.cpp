@@ -1196,6 +1196,7 @@ vals : list
     ;
 
   m.def ("LoggingCF", LoggingCF, py::arg("cf"), py::arg("logfile")="stdout");
+  m.def ("CacheCF", CacheCF, py::arg("cf"));
 }
 
 

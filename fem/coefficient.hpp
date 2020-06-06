@@ -424,10 +424,9 @@ namespace ngfem
   template <typename TCF, typename BASE = CoefficientFunction>
   class T_CoefficientFunction : public BASE
   {
-  protected:
+  public:
     using BASE::IsComplex;
     using BASE::Dimension;
-  public:
     using BASE::BASE;
       
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
@@ -1690,7 +1689,22 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> LoggingCF (shared_ptr<CoefficientFunction> func, string logfile="stdout");
 
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CacheCF (shared_ptr<CoefficientFunction> func);
 
+  NGS_DLL_HEADER
+  void PrecomputeCacheCF (CoefficientFunction & func, SIMD_BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh);
+
+  NGS_DLL_HEADER Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func);
+  NGS_DLL_HEADER
+  void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh);
+  NGS_DLL_HEADER
+  void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh);
+
+  
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormalVectorCF (int dim);
   NGS_DLL_HEADER
