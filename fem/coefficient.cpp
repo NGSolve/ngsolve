@@ -6899,6 +6899,262 @@ shared_ptr<CoefficientFunction> LoggingCF(shared_ptr<CoefficientFunction> func, 
   return make_shared<LoggingCoefficientFunction>(func, logfile);
 }
 
+
+
+
+
+
+
+
+
+class CacheCoefficientFunction : public T_CoefficientFunction<CacheCoefficientFunction>
+{
+protected:
+  shared_ptr<CoefficientFunction> func;
+public:
+  CacheCoefficientFunction (shared_ptr<CoefficientFunction> f) 
+    : T_CoefficientFunction<CacheCoefficientFunction>(f->Dimension(), f->IsComplex()),
+    func(f)
+  {
+    cout << "Create CachCF" << endl;
+    this->SetDimensions (func->Dimensions());
+    this->elementwise_constant = func->ElementwiseConstant();
+  }
+  shared_ptr<CoefficientFunction> & Func() { return func; }
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    // should have caches ...
+    auto & trafo = ir.GetTransformation();
+
+    if (ProxyUserData * ud = static_cast<ProxyUserData*> (trafo.userdata))
+      for (auto [cf,data] : ud->caches)
+        {
+          if (cf == this)
+            {
+              if constexpr (std::is_same<T,double>::value)
+                {
+                  // cout << "d" << endl;
+                  auto * mat = static_cast<FlatMatrix<double>*> (data);
+                  values.AddSize(mat->Width(), mat->Height()) = 1.0*Trans(*mat);
+                  return;
+                }
+              if constexpr (std::is_same<T,Complex>::value)
+                {
+                  static Timer t("CacheCF::Eval c");
+                  RegionTracer reg(TaskManager::GetThreadId(), t);
+                  
+                  // cout << "c" << endl;
+                  if (!IsComplex())
+                    cout << "complex eval for double" << endl;
+                  auto * mat = static_cast<FlatMatrix<Complex>*> (data);
+                  values.AddSize(mat->Width(), mat->Height()) = 1.0*Trans(*mat);
+                  // func->Evaluate(ir, values);
+                  // cout << "diff = " << L2Norm(*mat-values) << endl;
+                  return;
+                }
+              if constexpr (std::is_same<T,SIMD<double>>::value)
+                {
+                  // cout << "simd<d>" << endl;
+                  auto * mat = static_cast<FlatMatrix<SIMD<double>>*> (data);
+                  values.AddSize(mat->Height(), mat->Width()) = *mat;
+                  return;
+                }
+              if constexpr (std::is_same<T,SIMD<Complex>>::value)
+                {
+                  // cout << "simd<c>" << endl;
+                  auto * mat = static_cast<FlatMatrix<SIMD<Complex>>*> (data);
+                  values.AddSize(mat->Height(), mat->Width()) = *mat;
+                  return;
+                }
+            }
+        }
+    func->Evaluate(ir, values);
+  }
+  
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    func->Evaluate(ir, input, values);
+  }
+
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ func }); }
+  
+  void PrintReport (ostream & ost) const override
+  {
+    ost << "CacheCF(";
+    func->PrintReport(ost);
+    ost << ")";
+  }
+
+  string GetDescription() const override
+  {
+    return "CacheCF";
+  }
+  
+  void NonZeroPattern (const class ProxyUserData & ud,
+                       FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+  {
+    func->NonZeroPattern(ud, nonzero);
+  }
+  
+  void NonZeroPattern (const class ProxyUserData & ud,
+                       FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                       FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    func->NonZeroPattern(ud, input, values);
+  }
+  
+  void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
+  {
+    func->TraverseTree(func_);
+    func_(*this);
+  }
+};
+
+shared_ptr<CoefficientFunction> CacheCF(shared_ptr<CoefficientFunction> func)
+{
+  return make_shared<CacheCoefficientFunction>(func);
+}
+
+
+Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
+{
+  Array<CoefficientFunction*> cachecf;
+  func.TraverseTree
+    ( [&] (CoefficientFunction & nodecf)
+      {
+        if (auto ccf = dynamic_cast<CacheCoefficientFunction*> (&nodecf))
+          {
+            if (cachecf.Contains(&nodecf)) return;
+            cachecf.Append (&nodecf);
+          }
+      });
+  if (cachecf.Size())
+    cout << "found " << cachecf.Size() << " cachecfs" << endl;
+  return cachecf;
+}
+
+
+void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+                        LocalHeap & lh)
+{
+  static Timer t("Precompute CacheCF");
+  RegionTracer reg(TaskManager::GetThreadId(), t);
+  
+  auto & trafo = mir.GetTransformation();
+  ProxyUserData * ud = static_cast<ProxyUserData*> (trafo.userdata);
+  if (!ud) throw Exception ("don't have a userdata");
+  
+  new (&ud->caches) FlatArray<pair<const CoefficientFunction*, void*>> (cachecfs.Size(), lh);
+
+  for (int i = 0; i < cachecfs.Size(); i++)
+    {
+      ud->caches[i].first = cachecfs[i];
+      // or complex ...
+      if (cachecfs[i]->IsComplex())
+        {
+          auto * mat = new (lh) FlatMatrix<Complex>(mir.Size(), cachecfs[i]->Dimension(), lh);
+          static_cast<CacheCoefficientFunction*>(cachecfs[i])->Func() -> Evaluate (mir, *mat);
+          ud->caches[i].second = mat;
+        }
+      else
+        {
+          auto * mat = new (lh) FlatMatrix<double>(mir.Size(), cachecfs[i]->Dimension(), lh);
+          static_cast<CacheCoefficientFunction*>(cachecfs[i])->Func() -> Evaluate (mir, *mat);
+          ud->caches[i].second = mat;
+        }
+        
+    }
+
+}
+
+
+
+void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+                        LocalHeap & lh)
+{
+  auto & trafo = mir.GetTransformation();
+  ProxyUserData * ud = static_cast<ProxyUserData*> (trafo.userdata);
+  if (!ud) throw Exception ("don't have a userdata");
+  
+  new (&ud->caches) FlatArray<pair<const CoefficientFunction*, void*>> (cachecfs.Size(), lh);
+
+  for (int i = 0; i < cachecfs.Size(); i++)
+    {
+      ud->caches[i].first = cachecfs[i];
+      // or complex ...
+      if (cachecfs[i]->IsComplex())
+        {
+          auto * mat = new (lh) FlatMatrix<SIMD<Complex>>(cachecfs[i]->Dimension(), mir.Size(), lh);
+          static_cast<CacheCoefficientFunction*>(cachecfs[i])->Func() -> Evaluate (mir, *mat);
+          ud->caches[i].second = mat;
+        }
+      else
+        {
+          auto * mat = new (lh) FlatMatrix<SIMD<double>>(cachecfs[i]->Dimension(), mir.Size(), lh);
+          static_cast<CacheCoefficientFunction*>(cachecfs[i])->Func() -> Evaluate (mir, *mat);
+          ud->caches[i].second = mat;
+        }
+        
+    }
+
+}
+
+
+
+void PrecomputeCacheCF (CoefficientFunction & func, SIMD_BaseMappedIntegrationRule & mir,
+                        LocalHeap & lh)
+{
+  // cout << "precompute cachecf" << endl;
+  // first we cnt number of Caches:
+  ArrayMem<CacheCoefficientFunction*,10> cachecf;
+  func.TraverseTree
+    ( [&] (CoefficientFunction & nodecf)
+      {
+        if (auto ccf = dynamic_cast<CacheCoefficientFunction*> (&nodecf))
+          {
+            if (cachecf.Contains(ccf)) return;
+            cachecf.Append (ccf);
+          }
+      });
+
+  if (cachecf.Size())
+    cout << "found " << cachecf.Size() << " cachecfs" << endl;
+  auto & trafo = mir.GetTransformation();
+  ProxyUserData & ud = *static_cast<ProxyUserData*> (trafo.userdata);
+
+  new (&ud.caches) FlatArray<pair<const CoefficientFunction*, void*>> (cachecf.Size(), lh);
+  // new FlatArray<pair<const CoefficientFunction*, void*>> (cachecf.Size(), lh);
+  for (int i = 0; i < cachecf.Size(); i++)
+    {
+      ud.caches[i].first = cachecf[i];
+      // or complex ...
+      if (cachecf[i]->IsComplex())
+        {
+          auto * mat = new (lh) FlatMatrix<SIMD<Complex>>(cachecf[i]->Dimension(), mir.Size(), lh);
+          cachecf[i]->Func() -> Evaluate (mir, *mat);
+          ud.caches[i].second = mat;
+        }
+      else
+        {
+          auto * mat = new (lh) FlatMatrix<SIMD<double>>(cachecf[i]->Dimension(), mir.Size(), lh);
+          cachecf[i]->Func() -> Evaluate (mir, *mat);
+          ud.caches[i].second = mat;
+        }
+        
+    }
+}
+
+
+
+
+
+
+
 static RegisterClassForArchive<CoefficientFunction> regcf;
 static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction> regccf;
 static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;
@@ -6949,5 +7205,7 @@ static RegisterClassForArchive<RealCF, CoefficientFunction> regrealcf;
 static RegisterClassForArchive<ImagCF, CoefficientFunction> regimagcf;
 static RegisterClassForArchive<CompiledCoefficientFunction, CoefficientFunction> regcompiledcf;
 static RegisterClassForArchive<OtherCoefficientFunction, CoefficientFunction> regothercf;
+static RegisterClassForArchive<LoggingCoefficientFunction, CoefficientFunction> regloggingcf;
+static RegisterClassForArchive<CacheCoefficientFunction, CoefficientFunction> regcachingcf;
 }
 

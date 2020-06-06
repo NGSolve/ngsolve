@@ -26,7 +26,7 @@ from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
     exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Id, Trace, Inv, Det, Cof, Cross, \
     specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
-    IntegrationRule, IfPos, VoxelCoefficient
+    IntegrationRule, IfPos, VoxelCoefficient, CacheCF
 from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     BilinearForm, LinearForm, GridFunction, Preconditioner, \
     MultiGridPreconditioner, ElementId, FESpace, H1, HCurl, \

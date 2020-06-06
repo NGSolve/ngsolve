@@ -269,6 +269,7 @@ public:
   int trial_comp;
   int eval_deriv = 0; // 0 .. evaluate bfi, 1 .. deriv, 2 .. second order deriv
   const FiniteElement * fel = nullptr;
+  FlatArray<pair<const CoefficientFunction*, void*>> caches;
   // const FlatVector<double> * elx;
   // LocalHeap * lh;
 

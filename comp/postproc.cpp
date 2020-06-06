@@ -683,7 +683,7 @@ namespace ngcomp
         ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
         bool use_simd = true;
         
-        
+        auto cachecfs = FindCacheCF (*coef);
         IterateElements 
           (*fes, vb, clh, 
            [&] (FESpace::Element ei, LocalHeap & lh)
@@ -718,6 +718,10 @@ namespace ngcomp
                      FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
                      
                      auto & mir = eltrans(ir, lh);
+
+                     ProxyUserData ud;
+                     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+                     PrecomputeCacheCF (cachecfs, mir, lh);
                      
                      coef->Evaluate (mir, mfluxi);
                      
@@ -786,6 +790,9 @@ namespace ngcomp
              FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
              
              BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+             ProxyUserData ud;
+             const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+             PrecomputeCacheCF (cachecfs, mir, lh);
              
              coef->Evaluate (mir, mfluxi);
              
