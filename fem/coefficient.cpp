@@ -6941,16 +6941,20 @@ public:
                 }
               if constexpr (std::is_same<T,Complex>::value)
                 {
-                  static Timer t("CacheCF::Eval c");
-                  RegionTracer reg(TaskManager::GetThreadId(), t);
+                  // static Timer t("CacheCF::Eval c");
+                  // RegionTracer reg(TaskManager::GetThreadId(), t);
                   
                   // cout << "c" << endl;
-                  if (!IsComplex())
-                    cout << "complex eval for double" << endl;
-                  auto * mat = static_cast<FlatMatrix<Complex>*> (data);
-                  values.AddSize(mat->Width(), mat->Height()) = 1.0*Trans(*mat);
-                  // func->Evaluate(ir, values);
-                  // cout << "diff = " << L2Norm(*mat-values) << endl;
+                  if (IsComplex())
+                    {
+                      auto * mat = static_cast<FlatMatrix<Complex>*> (data);
+                      values.AddSize(mat->Width(), mat->Height()) = Trans(*mat);
+                    }
+                  else
+                    {
+                      auto * mat = static_cast<FlatMatrix<double>*> (data);
+                      values.AddSize(mat->Width(), mat->Height()) = Trans(*mat);
+                    }
                   return;
                 }
               if constexpr (std::is_same<T,SIMD<double>>::value)
@@ -6962,6 +6966,8 @@ public:
                 }
               if constexpr (std::is_same<T,SIMD<Complex>>::value)
                 {
+                  if (!IsComplex())
+                    cout << "simd complex eval of real" << endl;
                   // cout << "simd<c>" << endl;
                   auto * mat = static_cast<FlatMatrix<SIMD<Complex>>*> (data);
                   values.AddSize(mat->Height(), mat->Width()) = *mat;
@@ -7042,8 +7048,8 @@ Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
 void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
                         LocalHeap & lh)
 {
-  static Timer t("Precompute CacheCF");
-  RegionTracer reg(TaskManager::GetThreadId(), t);
+  // static Timer t("Precompute CacheCF");
+  // RegionTracer reg(TaskManager::GetThreadId(), t);
   
   auto & trafo = mir.GetTransformation();
   ProxyUserData * ud = static_cast<ProxyUserData*> (trafo.userdata);
