@@ -123,6 +123,11 @@ namespace ngfem
     {
       Cast(fel).EvaluateGrad (mir, x, y);
     }
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      Cast(fel).EvaluateGrad (mir, x, y);
+    }
 
 
     ///
@@ -430,6 +435,12 @@ namespace ngfem
     using DiffOp<DiffOpId<D, FEL> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
       Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
     }
