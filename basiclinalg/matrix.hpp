@@ -1560,6 +1560,11 @@ namespace ngbla
       return CMCPMatExpr<SliceMatrix>::operator= (m);
     }
 
+    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
+    {
+      return CMCPMatExpr<SliceMatrix>::operator= (m);
+    }
+
     /// assign constant
     const SliceMatrix & operator= (TSCAL s) const throw()
     {
