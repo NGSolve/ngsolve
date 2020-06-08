@@ -215,7 +215,7 @@ namespace ngfem
       }
 
     AddTrans (ir, hvals, 
-              SliceMatrix(GetNDof(), 2, 2*coefs.Dist(), (double*)&coefs(0)));
+              SliceMatrix(GetNDof(), 2, 2*coefs.Dist(), (double*)coefs.Data()));
   }
   
   void BaseScalarFiniteElement ::     
