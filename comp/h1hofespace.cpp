@@ -251,14 +251,8 @@ namespace ngcomp
     if (highest_order_dc && order < 2)
       throw Exception ("highest_order_dc needs order >= 2");
     
-    Flags loflags;
+    Flags loflags = flags;
     loflags.SetFlag ("order", 1);
-    loflags.SetFlag ("dim", dimension);
-    if (iscomplex) loflags.SetFlag ("complex");
-    // if (timing) loflags.SetFlag ("timing");
-    if (flags.NumListFlagDefined ("dirichlet")) 
-      loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
-    if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 
     if (!no_low_order_space)
       low_order_space = make_shared<NodalFESpace> (ma, loflags);
