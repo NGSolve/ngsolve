@@ -224,11 +224,11 @@ namespace ngfem
     size_t dimgrad = ir.DimSpace();
     STACK_ARRAY(SIMD<double>, memr, dimgrad*ir.Size());
     FlatMatrix<SIMD<double>> hvalsr(dimgrad,ir.Size(), memr);
-    EvaluateGrad (ir, SliceVector<>(GetNDof(), 2*coefs.Dist(),  (double*)&coefs(0)), hvalsr);
+    EvaluateGrad (ir, SliceVector<>(GetNDof(), 2*coefs.Dist(),  (double*)coefs.Data()), hvalsr);
 
     STACK_ARRAY(SIMD<double>, memi, dimgrad*ir.Size());
     FlatMatrix<SIMD<double>> hvalsi(dimgrad,ir.Size(), memi);
-    EvaluateGrad (ir, SliceVector<>(GetNDof(), 2*coefs.Dist(),  ((double*)&coefs(0)))+1, hvalsi);
+    EvaluateGrad (ir, SliceVector<>(GetNDof(), 2*coefs.Dist(),  ((double*)coefs.Data())+1), hvalsi);
 
     for (size_t j = 0; j < dimgrad; j++)
       for (size_t i = 0; i < ir.Size(); i++)

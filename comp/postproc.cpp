@@ -681,7 +681,6 @@ namespace ngcomp
         u.GetVector() = 0.0;
         
         ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
-        bool use_simd = true;
         
         auto cachecfs = FindCacheCF (*coef);
         IterateElements 
