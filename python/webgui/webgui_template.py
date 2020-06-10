@@ -224,11 +224,13 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
         # TODO: Quads
         ipts = [(i/og,0) for i in range(og+1)] + [(0, i/og) for i in range(og+1)] + [(i/og,1.0-i/og) for i in range(og+1)]
-        ir = ngs.IntegrationRule(ipts, [0,]*len(ipts))
+        ir_trig = ngs.IntegrationRule(ipts, [0,]*len(ipts))
+        ipts = [(i/og,0) for i in range(og+1)] + [(0, i/og) for i in range(og+1)] + [(i/og,1.0) for i in range(og+1)] + [(1.0, i/og) for i in range(og+1)]
+        ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         cf = func1 if draw_surf else func0
-        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir}, vb)
+        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
         pmat = cf(pts)
 
         timermult.Start()
@@ -428,6 +430,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
             return scene
     else:
         scene.GenerateHTML(filename='output.html')
+        return scene
 
 
 from ipywidgets import DOMWidget, register
