@@ -36,7 +36,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
     NodalFESpace, VectorNodalFESpace, \
     NumberSpace, Periodic, Discontinuous, Compress, \
-    CompressCompound, BoundaryFromVolumeCF, Variation, \
+    CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
