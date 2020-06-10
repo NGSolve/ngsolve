@@ -23,10 +23,13 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> func;
     shared_ptr<FESpace> fes;
 
-
     Array<shared_ptr<BilinearFormIntegrator>> bli;
     Array<shared_ptr<BilinearFormIntegrator>> single_bli;
-    shared_ptr<CoefficientFunction> dual_diffop;
+    // shared_ptr<CoefficientFunction> dual_diffop;
+    shared_ptr<DifferentialOperator> dual_diffop;
+
+    VorB vb;
+
   public:
     InterpolationCoefficientFunction (shared_ptr<CoefficientFunction> f, shared_ptr<FESpace> afes ) :
       T_CoefficientFunction<InterpolationCoefficientFunction>(f->Dimension(), f->IsComplex()),
@@ -35,15 +38,11 @@ namespace ngcomp
       this->SetDimensions (func->Dimensions());
       this->elementwise_constant = func->ElementwiseConstant();
 
-
       // copied from Set (dualshapes)
+      
+      vb = VOL;    // for the moment only 
 
-      
-      VorB vb = VOL;    // for the moment only 
       /** Trial-Proxy **/
-      // if (!fes->GetEvaluator(vb))
-      // throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
-      
       auto single_evaluator =  fes->GetEvaluator(vb);
       if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
         single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
@@ -63,10 +62,8 @@ namespace ngcomp
       auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
                                              nullptr, nullptr, nullptr, nullptr, nullptr);
 
-      dual_diffop = dual;
+      dual_diffop = dual_evaluator;
 
-      
-      
       for (auto element_vb : fes->GetDualShapeNodes(vb))
         {
           shared_ptr<CoefficientFunction> dual_trial;
@@ -88,94 +85,146 @@ namespace ngcomp
     }
 
 
-    
-  template <typename MIR, typename T, ORDERING ORD>
-  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate_impl (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
-      func->Evaluate(ir, values);
-
-
-#ifdef FIRSTDRAFT
+      // #ifdef FIRSTDRAFT
       LocalHeapMem<100000> lh("interpolate");
-    
-    
-    const ElementTransformation & trafo = ir.GetTransformation();
-    const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
-    ElementId ei = trafo.GetElementId();
-    auto & fel = fes->GetFE(ei, lh);
+        
+      const ElementTransformation & trafo = ir.GetTransformation();
+      const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
+      ElementId ei = trafo.GetElementId();
+      auto & fel = fes->GetFE(ei, lh);
+      int dim   = fes->GetDimension();
 
-    for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
-      {
-        Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
-        for (int locfnr : Range(f2el.GetNFacets()))
-          {
-            SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
-            auto & irvol = f2el(locfnr, irfacet, lh);
-            auto & mir = trafo(irvol, lh);
-            mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
-            // do_ir(mir);
+      
+      cout << " eval for ei " << ei << endl;
+      cout << " ndof = " << fel.GetNDof() << endl;
+      cout << " vals dims " << values.Height() << " x " << values.Width() << endl;
 
-            FlatMatrix<T,ORD> mflux(dim, irfacet.Size(), lh);
-            func->Evaluate (mir, mflux);
-            for (size_t j : Range(mir))
-              mflux.Col(j) *= mir[j].GetWeight();
-            diffop->AddTrans (fel, mir, mflux, rhs);
-          }
+      if (dim != 1)
+	{ throw Exception("Dim != 1 porbably does not work (yet)"); }
+
+      /** func * dual_shape **/
+      FlatVector<T> elflux(fel.GetNDof(), lh);
+
+      FlatVector<T> elfluxadd(fel.GetNDof(), lh);  elflux = 0; // non-SIMD version
+      for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
+	{
+	  Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
+	  for (int locfnr : Range(f2el.GetNFacets()))
+	    {
+	      // SIMD does not work yet
+	      // SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+	      IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+	      auto & irvol = f2el(locfnr, irfacet, lh);
+	      auto & mir = trafo(irvol, lh);
+	      mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
+
+	      // FlatMatrix<T,ORD> mflux(dim, irfacet.Size(), lh);
+	      // func->Evaluate (mir, mflux);
+	      // for (size_t j : Range(mir))
+	      // 	mflux.Col(j) *= mir[j].GetWeight();
+	      // SIMD only
+	      // dual_diffop->AddTrans (fel, mir, mflux, elflux);
+	      // NON-simd version
+
+	      FlatMatrix<T> mflux(irfacet.Size(), dim, lh);
+	      func->Evaluate (mir, mflux);
+	      for (size_t j : Range(mir))
+	      	mflux.Row(j) *= mir[j].GetWeight();
+	      dual_diffop -> ApplyTrans (fel, mir, mflux, elfluxadd, lh);
+	      cout << " elfluxadd = " << endl << elfluxadd << endl;
+	      elflux += elfluxadd;
+	    }
+	}
+
+      cout << " elflux = " << endl << elflux << endl;
+    
+      /** Calc Element Matrix - shape * dual_shape **/
+      FlatMatrix<double> elmat(fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = true;
+      for (auto sbfi : single_bli)
+	sbfi->CalcElementMatrixAdd (fel, trafo, elmat, symmetric_so_far, lh);
+    
+      /** Invert Element Matrix and Solve for RHS **/
+      CalcInverse(elmat); // Not Symmetric !
+
+      /** Calc coefficients of Interpolation **/
+      FlatVector<double> coeffs(fel.GetNDof(), lh);
+      coeffs = elmat * elflux;
+
+      cout << " coeffs: " << endl << coeffs << endl;
+
+      func->Evaluate(ir, values);
+      cout << " un-interp values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
+
+      if constexpr(ORD==ColMajor) {
+	  fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, Trans(values), lh);
+	}
+      else {
+	fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, values, lh);
       }
-    
-    /** Calc Element Matrix **/
-    FlatMatrix<double> elmat(fel.GetNDof(), lh);
-    elmat = 0.0;
-    bool symmetric_so_far = true;
-    for (auto sbfi : single_bli)
-      sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh);
-    
-    /** Invert Element Matrix and Solve for RHS **/
-    CalcInverse(elmat); // Not Symmetric !
-    
-#endif
-    
+
+      cout << " values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
+      // #endif
     }
 
-  template <typename MIR, typename T, ORDERING ORD>
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      if constexpr(std::is_same<T, double>::value) {
+	  // if constexpr(ORD == RowMajor) {
+	      T_Evaluate_impl (ir, values);
+	    // }
+	  // else
+	    // { throw Exception("Col-major does not compile (yet)"); }
+	}
+      else
+	{ throw Exception("InterpolateCF::T_Evaluate only for double!"); }
+      // func->Evaluate(ir, values);
+    }
+
+
+    template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & ir,
-                     FlatArray<BareSliceMatrix<T,ORD>> input,
-                     BareSliceMatrix<T,ORD> values) const
-  {
-    T_Evaluate (ir, values);
+		     FlatArray<BareSliceMatrix<T,ORD>> input,
+		     BareSliceMatrix<T,ORD> values) const
+    {
+      T_Evaluate (ir, values);
+    }
 
-    
-  }
-
-  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ func }); }
 
-  void PrintReport (ostream & ost) const override
+    void PrintReport (ostream & ost) const override
     {
       ost << "InterpolationCF(";
       func->PrintReport(ost);
       ost << ")";
     }
 
-  string GetDescription() const override
+    string GetDescription() const override
     {
       return "InterpolationCF";
     }
 
-  void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+    void NonZeroPattern (const class ProxyUserData & ud,
+			 FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
     {
       func->NonZeroPattern(ud, nonzero);
     }
 
-  void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+    void NonZeroPattern (const class ProxyUserData & ud,
+			 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+			 FlatVector<AutoDiffDiff<1,bool>> values) const override
     {
       func->NonZeroPattern(ud, input, values);
     }
 
-  void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
+    void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
     {
       func->TraverseTree(func_);
       func_(*this);
