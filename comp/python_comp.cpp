@@ -3638,6 +3638,18 @@ deformation : ngsolve.comp.GridFunction
          { PatchwiseSolve(bf, lf, gf, glh); },
          py::arg("bf"), py::arg("lf"), py::arg("gf"));
 
+    m.def("Interpolate", 
+          [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes)
+          { return InterpolateCF(cf, fes); }, py::arg("cf"), py::arg("space"),
+          docu_string(R"raw_string(Interpolate a CoefficientFunction into the finite element space.
+The interpolation is canonical interpolation using dual shapes.
+The result is a CoefficientFunction.
+Interpolation is done on the fly for each element, now global GridFunction is allocated
+Allows the evaluation of volumetric functions on the boundary.
+)raw_string")
+          );
+    
+   
    m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
 				shared_ptr<ProxyFunction> trial_proxy, shared_ptr<CoefficientFunction> trial_cf,
 				optional<Region> definedon, VorB vb, shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
