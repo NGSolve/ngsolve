@@ -232,7 +232,7 @@ def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = Non
     """
     return MakeStructured2DMesh(quads=True, nx=nx, ny=ny, periodic_x=periodic_x, periodic_y=periodic_y, mapping=mapping)    
 
-def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
+def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False, prism=False):
     """
     Generate a structured quadrilateral 2D mesh
 
@@ -267,6 +267,9 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
     
     cuboid_mapping: bool
       If True, a straight geometry is assumed.
+
+    prism : bool
+      If True, a mesh consisting of prism is generated. If hexes and prism is set to True, also a mesh consisting of prism is generated.
 
 
     Returns
@@ -347,7 +350,11 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
                 baseup = base+(ny+1)*(nz+1)
                 pnum = [base, base+1, base+(nz+1)+1, base+(nz+1),
                         baseup, baseup+1, baseup+(nz+1)+1, baseup+(nz+1)]
-                if hexes:
+                if prism:
+                    for qarr in [[0,3,4,1,2,5],[3,7,4,2,6,5]]:
+                        elpids = [pids[p] for p in [pnum[q] for q in qarr]]
+                        netmesh.Add(Element3D(1, elpids))
+                elif hexes:
                     elpids = [pids[p] for p in pnum]
                     el = Element3D(1, elpids)
                     if not mapping:
@@ -380,7 +387,17 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
             for j in range(neta):
                 base = p1 + i*dxi+j*deta
                 pnum = [base, base+dxi, base+dxi+deta, base+deta]
-                if hexes:
+                if prism:
+                    if facenr <= 4:
+                        qarr = [1,2,3,0]
+                        elpids = [pids[pnum[p]] for p in qarr]
+                        netmesh.Add(Element2D(facenr, elpids))
+                    else:
+                        qarrs = [[3, 1, 2], [3, 0, 1]]
+                        for qarr in qarrs:
+                            elpids = [pids[p] for p in [pnum[q] for q in qarr]]
+                            netmesh.Add(Element2D(facenr, elpids))
+                elif hexes:
                     elpids = [pids[p] for p in pnum]
                     netmesh.Add(Element2D(facenr, elpids))
                 else:
@@ -437,7 +454,7 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
 
 def MakeHexMesh(nx=10, ny=10, nz=10, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
     """
-    Generate a structured quadrilateral 2D mesh
+    Generate a structured hexahedra 3D mesh
 
     Parameters
     ----------
@@ -473,6 +490,45 @@ def MakeHexMesh(nx=10, ny=10, nz=10, secondorder=False, periodic_x=False, period
 
     """
     return MakeStructured3DMesh(hexes=True, nx=nx, ny=ny, nz=nz, secondorder=secondorder, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping, cuboid_mapping=cuboid_mapping)
+
+def MakePrismMesh(nx=10, ny=None, nz=None, secondorder=False, periodic_x=False, periodic_y=False, periodic_z=False, mapping = None, cuboid_mapping=False):
+    """
+    Generate a structured prism 3D mesh
+
+    Parameters
+    ----------
+    nx : int
+      Number of cells in x-direction.
+
+    ny : int
+      Number of cells in y-direction.
+
+    nz : int
+      Number of cells in z-direction.
+
+    periodic_x: bool
+      If True, the left and right boundaries are identified to generate a periodic mesh in x-direction.
+
+    periodic_y: bool
+      If True, the top and bottom boundaries are identified to generate a periodic mesh in y-direction.
+
+    periodic_z: bool
+      If True, the top and bottom boundaries are identified to generate a periodic mesh in z-direction.
+
+    mapping: lambda
+      Mapping to transform the generated points. If None, the identity mapping is used.
+    
+    cuboid_mapping: bool
+      If True, a straight geometry is assumed.
+
+
+    Returns
+    -------
+    (ngsolve.mesh)
+      Returns generated 3D NGSolve mesh consisting of only prism
+
+    """
+    return MakeStructured3DMesh(hexes=False, nx=nx, ny=ny, nz=nz, secondorder=secondorder, periodic_x=periodic_x, periodic_y=periodic_y, periodic_z=periodic_z, mapping=mapping, cuboid_mapping=cuboid_mapping, prism=True)
 
 from math import pi
 from ngsolve import Draw, sin, cos
