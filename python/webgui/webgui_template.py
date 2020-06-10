@@ -164,7 +164,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     if (not func) and (mesh.GetCurveOrder()==1):
         order=1
     order2d = min(order, 3)
-    order3d = min(order, 2)
+    order3d = 1 #min(order, 2) # just for testing
     d['order2d'] = order2d
     d['order3d'] = order3d
 
@@ -227,8 +227,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ir = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
-        pts = mesh.MapToAllElements(ir, vb)
         cf = func1 if draw_surf else func0
+        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir}, vb)
         pmat = cf(pts)
 
         timermult.Start()
@@ -282,10 +282,15 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         # Bezier_points = [ [] for i in range(ndtrig) ]
         Bezier_points = []
         
-        ir = ngs.IntegrationRule( [(i/og,j/og) for j in range(og+1) for i in range(og+1-j)], [0,]*(ndtrig) )
-
+        ipts = [(i/og,j/og) for j in range(og+1) for i in range(og+1-j)]
+        ir_trig = ngs.IntegrationRule(ipts, [0,]*len(ipts))
+        ipts = ([(i/og,j/og) for j in range(og+1) for i in range(og+1-j)] + 
+                [(1-i/og,1-j/og) for j in range(og+1) for i in range(og+1-j)])
+        ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
+        
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
-        pts = mesh.MapToAllElements(ir, vb)
+        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
+
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
         timer3minmax.Start()
         funcmin = np.min(pmat[:,3])
@@ -295,7 +300,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         mesh_center = (pmin+pmax)/2
         mesh_radius = np.linalg.norm(pmax-pmin)/2
         timer3minmax.Stop()
-        pmat = pmat.reshape(mesh.GetNE(vb), len(ir), 4)
+
+        pmat = pmat.reshape(-1, len(ir_trig), 4)
         BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
 
         timer3list.Start()        
@@ -304,8 +310,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         timer3list.Stop()        
 
         if func2 and draw_surf:
-            pmat = ngs.CoefficientFunction( func2 ) (pts)
-            pmat = pmat.reshape(mesh.GetNE(vb), len(ir), 2)
+            pmat = ngs.CoefficientFunction( func2 ) (pts)   
+
+            pmat = pmat.reshape(-1, len(ir_trig), 2)
+
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
@@ -313,7 +321,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
                 for i in range(ndtrig):
                     Bezier_points.append(encodeData(BezierPnts[i]))
             else:
-                BezierPnts = BezierPnts.transpose((1,0,2)).reshape(mesh.GetNE(vb), len(ir)//2, 4).transpose((1,0,2))
+                BezierPnts = BezierPnts.transpose((1,0,2)).reshape(-1, len(ir_trig)//2, 4).transpose((1,0,2))
+
                 for i in range(ndtrig//2):
                     Bezier_points.append(encodeData(BezierPnts[i]))
 
@@ -335,9 +344,27 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         tets = []
 
         if order3d==1:
-            ir = ngs.IntegrationRule( [(1,0,0), (0,1,0), (0,0,1), (0,0,0)], [0]*4 )
+            ipts = [(1,0,0), (0,1,0), (0,0,1), (0,0,0)]
+            ir_tet = ngs.IntegrationRule( ipts, [0]*len(ipts) )
+
+
+            ipts = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
+                         [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
+                         [(1,0,1), (0,1,1), (1,0,0), (0,0,1)])
+            ir_prism = ngs.IntegrationRule( ipts, [0]*len(ipts) )
+
+
+            # ipts_cube = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
+            #              [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
+            #              [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
+            #              [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
+            #              [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
+            #              [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
+            
+            
         else:
-            ir = ngs.IntegrationRule( [
+            # TODO: make prism
+            ir_tet = ngs.IntegrationRule( [
                 (1,0,0),
                 (0,1,0),
                 (0,0,1),
@@ -349,22 +376,24 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
                 (0.5,0,0.5),
                 (0,0.5,0.5) ],
                 [0]*10 )
-        pts = mesh.MapToAllElements(ir, ngs.VOL)
+
+        pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
         pmat = func1(pts) if draw_vol else func0(pts)
 
         ne = mesh.GetNE(ngs.VOL)
-        pmat = pmat.reshape(ne, len(ir), 4)
+        pmat = pmat.reshape(-1, len(ir_tet), 4)
+        
         funcmin = min(funcmin, np.min(pmat[:,:,3]))
         funcmax = max(funcmax, np.max(pmat[:,:,3]))
         points3d = []
-        for i in range(len(ir)):
+        for i in range(len(ir_tet)):
             points3d.append(encodeData(pmat[:,i,:]))
 
         if func2 and draw_vol:
-            pmat = func2(pts).reshape(ne, len(ir)//2, 4)
+            pmat = func2(pts).reshape(-1, len(ir_tet)//2, 4)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
-            for i in range(len(ir)//2):
+            for i in range(len(ir_tet)//2):
                 points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d
     if func:
