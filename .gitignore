@@ -7,6 +7,9 @@ py_tutorials/code*.cpp
 .vs
 out
 CMakeSettings.json
-/external_dependencies/parmetis-4.0.3.tar.gz
-/external_dependencies/ngsolve_jupyter_widgets-0.0.4.tgz
-/external_dependencies/hypre-2.11.1.tar.gz
+/external_dependencies/parmetis-[0-9]*.[0-9]*.[0-9]*.tar.gz
+/external_dependencies/ngsolve_jupyter_widgets-[0-9]*.[0-9]*.[0-9]*.tgz
+/external_dependencies/hypre-[0-9]*.[0-9]*[0-9]*.[0-9]*.tar.gz
+#for using lsp-mode on emacs the compile_commands.json must be in the source folder
+compile_commands.json
+.cquery_cached_index
