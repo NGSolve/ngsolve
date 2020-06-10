@@ -52,6 +52,8 @@ namespace ngcomp
                   bool dualdiffop = false, bool use_simd = true);
   
 
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space);
 
   template <class SCAL>
   extern NGS_DLL_HEADER
@@ -63,7 +65,7 @@ namespace ngcomp
 		     LocalHeap & lh,
 		     int component = 0);
 
-
+  
   template <class SCAL>
   extern NGS_DLL_HEADER 
   int CalcPointFlux (const GridFunction & u,
