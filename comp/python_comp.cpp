@@ -3639,8 +3639,8 @@ deformation : ngsolve.comp.GridFunction
          py::arg("bf"), py::arg("lf"), py::arg("gf"));
 
     m.def("Interpolate", 
-          [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes)
-          { return InterpolateCF(cf, fes); }, py::arg("cf"), py::arg("space"),
+          [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes, int bonus_intorder)
+          { return InterpolateCF(cf, fes, bonus_intorder); }, py::arg("cf"), py::arg("space"), py::arg("bonus_intorder")=0,
           docu_string(R"raw_string(Interpolate a CoefficientFunction into the finite element space.
 The interpolation is canonical interpolation using dual shapes.
 The result is a CoefficientFunction.

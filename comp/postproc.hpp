@@ -53,7 +53,8 @@ namespace ngcomp
   
 
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space);
+  shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
+                                                 int bonus_intorder = 0);
 
   template <class SCAL>
   extern NGS_DLL_HEADER

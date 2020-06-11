@@ -22,6 +22,7 @@ namespace ngcomp
   protected:
     shared_ptr<CoefficientFunction> func;
     shared_ptr<FESpace> fes;
+    int bonus_intorder;
 
     Array<shared_ptr<BilinearFormIntegrator>> bli;
     Array<shared_ptr<BilinearFormIntegrator>> single_bli;
@@ -31,9 +32,10 @@ namespace ngcomp
     VorB vb;
 
   public:
-    InterpolationCoefficientFunction (shared_ptr<CoefficientFunction> f, shared_ptr<FESpace> afes ) :
-      T_CoefficientFunction<InterpolationCoefficientFunction>(f->Dimension(), f->IsComplex()),
-      func(f), fes(afes)
+    InterpolationCoefficientFunction (shared_ptr<CoefficientFunction> f, shared_ptr<FESpace> afes,
+                                      int abonus_intorder)
+      : T_CoefficientFunction<InterpolationCoefficientFunction>(f->Dimension(), f->IsComplex()),
+      func(f), fes(afes), bonus_intorder(abonus_intorder)
     {
       this->SetDimensions (func->Dimensions());
       this->elementwise_constant = func->ElementwiseConstant();
@@ -95,14 +97,15 @@ namespace ngcomp
       const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
       ElementId ei = trafo.GetElementId();
       auto & fel = fes->GetFE(ei, lh);
-      int dim   = fes->GetDimension();
+      // int dim   = fes->GetDimension();
+      int dim = Dimension();
 
       
       // cout << " eval for ei " << ei << endl;
       // cout << " ndof = " << fel.GetNDof() << endl;
 
-      if (dim != 1)
-	{ throw Exception("Dim != 1 porbably does not work (yet)"); }
+      // if (dim != 1)
+      // { throw Exception("Dim != 1 porbably does not work (yet)"); }
 
       /** func * dual_shape **/
       FlatVector<T> elflux(fel.GetNDof(), lh);
@@ -110,42 +113,54 @@ namespace ngcomp
       FlatVector<T> elfluxadd(fel.GetNDof(), lh);  elflux = 0; // non-SIMD version
       for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
 	{
-          // cout << "el_vb = " << el_vb << endl;
-	  Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
-	  for (int locfnr : Range(f2el.GetNFacets()))
-	    {
-	      // SIMD does not work yet
-	      // SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
-	      IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
-	      auto & irvol = f2el(locfnr, irfacet, lh);
-	      auto & mir = trafo(irvol, lh);
-	      mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
-
-	      // FlatMatrix<T,ORD> mflux(dim, irfacet.Size(), lh);
-	      // func->Evaluate (mir, mflux);
-	      // for (size_t j : Range(mir))
-	      // 	mflux.Col(j) *= mir[j].GetWeight();
-	      // SIMD only
-	      // dual_diffop->AddTrans (fel, mir, mflux, elflux);
-	      // NON-simd version
-
-	      FlatMatrix<T> mflux(irfacet.Size(), dim, lh);
-	      func->Evaluate (mir, mflux);
-	      for (size_t j : Range(mir))
-	      	mflux.Row(j) *= mir[j].GetWeight();
-              // cout << "mflux = " << mflux << endl;
-	      dual_diffop -> ApplyTrans (fel, mir, mflux, elfluxadd, lh);
-	      // cout << " elfluxadd = " << endl << elfluxadd << endl;
-	      elflux += elfluxadd;
-	    }
-	}
-
+          if (el_vb == VOL)
+            {
+              IntegrationRule ir(fel.ElementType(), 2*fel.Order()+bonus_intorder);
+              auto & mir = trafo(ir, lh);
+              FlatMatrix<T> mflux(ir.Size(), dim, lh);
+              func->Evaluate (mir, mflux);
+              for (size_t j : Range(mir))
+                mflux.Row(j) *= mir[j].GetWeight();
+              dual_diffop -> ApplyTrans (fel, mir, mflux, elfluxadd, lh);
+              elflux += elfluxadd;
+            }
+          else
+            {
+              Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
+              for (int locfnr : Range(f2el.GetNFacets()))
+                {
+                  // SIMD does not work yet
+                  // SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+                  IntegrationRule irfacet(f2el.FacetType(locfnr), 2*fel.Order()+bonus_intorder);
+                  auto & irvol = f2el(locfnr, irfacet, lh);
+                  auto & mir = trafo(irvol, lh);
+                  mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
+                  
+                  // FlatMatrix<T,ORD> mflux(dim, irfacet.Size(), lh);
+                  // func->Evaluate (mir, mflux);
+                  // for (size_t j : Range(mir))
+                  // 	mflux.Col(j) *= mir[j].GetWeight();
+                  // SIMD only
+                  // dual_diffop->AddTrans (fel, mir, mflux, elflux);
+                  // NON-simd version
+                  
+                  FlatMatrix<T> mflux(irfacet.Size(), dim, lh);
+                  func->Evaluate (mir, mflux);
+                  for (size_t j : Range(mir))
+                    mflux.Row(j) *= mir[j].GetWeight();
+                  // cout << "mflux = " << mflux << endl;
+                  dual_diffop -> ApplyTrans (fel, mir, mflux, elfluxadd, lh);
+                  // cout << " elfluxadd = " << endl << elfluxadd << endl;
+                  elflux += elfluxadd;
+                }
+            }
+        }
       // cout << " elflux = " << endl << elflux << endl;
-
+      
       /** Calc Element Matrix - shape * dual_shape **/
       FlatMatrix<double> elmat(fel.GetNDof(), lh);
       elmat = 0.0;
-      bool symmetric_so_far = true;
+      bool symmetric_so_far = false;
 
       auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
       auto saveud = nonconst_trafo.userdata;
@@ -248,15 +263,15 @@ namespace ngcomp
   };
   
   
-  shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space)
+  shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
+                                                 int bonus_intorder)
   {
-    cout << "called interpolate" << endl;
-    cout << "func = " << endl;
     func->PrintReport(cout);
 
     if (func->GetDescription() == "ZeroCF")
       return func;
-    return make_shared<InterpolationCoefficientFunction> (func, space);
+
+    return make_shared<InterpolationCoefficientFunction> (func, space, bonus_intorder);
   }
 
 }
