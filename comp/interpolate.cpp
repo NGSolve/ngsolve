@@ -239,6 +239,12 @@ namespace ngcomp
       func->TraverseTree(func_);
       func_(*this);
     }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (this == var) return dir;
+      return InterpolateCF(func->Diff(var, dir),fes);
+    }
   };
   
   
@@ -247,6 +253,9 @@ namespace ngcomp
     cout << "called interpolate" << endl;
     cout << "func = " << endl;
     func->PrintReport(cout);
+
+    if (func->GetDescription() == "ZeroCF")
+      return func;
     return make_shared<InterpolationCoefficientFunction> (func, space);
   }
 
