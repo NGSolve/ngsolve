@@ -98,9 +98,8 @@ namespace ngcomp
       int dim   = fes->GetDimension();
 
       
-      cout << " eval for ei " << ei << endl;
-      cout << " ndof = " << fel.GetNDof() << endl;
-      cout << " vals dims " << values.Height() << " x " << values.Width() << endl;
+      // cout << " eval for ei " << ei << endl;
+      // cout << " ndof = " << fel.GetNDof() << endl;
 
       if (dim != 1)
 	{ throw Exception("Dim != 1 porbably does not work (yet)"); }
@@ -111,6 +110,7 @@ namespace ngcomp
       FlatVector<T> elfluxadd(fel.GetNDof(), lh);  elflux = 0; // non-SIMD version
       for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
 	{
+          // cout << "el_vb = " << el_vb << endl;
 	  Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
 	  for (int locfnr : Range(f2el.GetNFacets()))
 	    {
@@ -133,32 +133,40 @@ namespace ngcomp
 	      func->Evaluate (mir, mflux);
 	      for (size_t j : Range(mir))
 	      	mflux.Row(j) *= mir[j].GetWeight();
+              // cout << "mflux = " << mflux << endl;
 	      dual_diffop -> ApplyTrans (fel, mir, mflux, elfluxadd, lh);
-	      cout << " elfluxadd = " << endl << elfluxadd << endl;
+	      // cout << " elfluxadd = " << endl << elfluxadd << endl;
 	      elflux += elfluxadd;
 	    }
 	}
 
-      cout << " elflux = " << endl << elflux << endl;
-    
+      // cout << " elflux = " << endl << elflux << endl;
+
       /** Calc Element Matrix - shape * dual_shape **/
       FlatMatrix<double> elmat(fel.GetNDof(), lh);
       elmat = 0.0;
       bool symmetric_so_far = true;
+
+      auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
+      auto saveud = nonconst_trafo.userdata;
       for (auto sbfi : single_bli)
 	sbfi->CalcElementMatrixAdd (fel, trafo, elmat, symmetric_so_far, lh);
-    
+      nonconst_trafo.userdata = saveud;
+      
+      
       /** Invert Element Matrix and Solve for RHS **/
       CalcInverse(elmat); // Not Symmetric !
 
+      // cout << "interpolation elmat = " << endl << elmat << endl;
+      
       /** Calc coefficients of Interpolation **/
       FlatVector<double> coeffs(fel.GetNDof(), lh);
       coeffs = elmat * elflux;
 
-      cout << " coeffs: " << endl << coeffs << endl;
+      // cout << " coeffs: " << endl << coeffs << endl;
 
       func->Evaluate(ir, values);
-      cout << " un-interp values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
+      // cout << " un-interp values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
 
       if constexpr(ORD==ColMajor) {
 	  fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, Trans(values), lh);
@@ -167,14 +175,16 @@ namespace ngcomp
 	fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, values, lh);
       }
 
-      cout << " values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
-      // #endif
+      // cout << " values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
     }
 
 
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
+      if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value)
+                     throw ExceptionNOSIMD ("no simd in InterpolateCF");
+                    
       if constexpr(std::is_same<T, double>::value) {
 	  // if constexpr(ORD == RowMajor) {
 	      T_Evaluate_impl (ir, values);
