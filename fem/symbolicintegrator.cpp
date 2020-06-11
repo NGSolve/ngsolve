@@ -241,7 +241,8 @@ namespace ngfem
     ProxyUserData * ud = (ProxyUserData*)mip.GetTransformation().userdata;
     if (!ud) 
       throw Exception ("cannot evaluate ProxyFunction without userdata");
-
+   
+    
     if (!testfunction && ud->fel)
       {
         static bool first = true;
@@ -270,6 +271,20 @@ namespace ngfem
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
       throw Exception ("cannot evaluate ProxyFunction without userdata");
+
+    // for shape-wise evaluate
+    if (ud->trial_elvec && !testfunction)
+      {
+        evaluator->Apply (*ud->fel, mir, *ud->trial_elvec, result, *ud->lh);
+        return;
+      }
+    if (ud->test_elvec && testfunction)
+      {
+        evaluator->Apply (*ud->fel, mir, *ud->test_elvec, result, *ud->lh);
+        return;
+      }
+
+    
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
@@ -1004,7 +1019,8 @@ namespace ngfem
     if (cf->Dimension() != 1)
         throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
     trial_cum.Append(0);
-    test_cum.Append(0);    
+    test_cum.Append(0);
+    has_interpolate = false;
     cf->TraverseTree
       ( [&] (CoefficientFunction & nodecf)
         {
@@ -1031,6 +1047,12 @@ namespace ngfem
           else
             if (nodecf.StoreUserData() && !gridfunction_cfs.Contains(&nodecf))
               gridfunction_cfs.Append (&nodecf);
+
+          if (nodecf.GetDescription() == "InterpolationCF")
+            {
+              has_interpolate = true;
+              cout << IM(3) << "integrand has an Interpolation Operator" << endl;
+            }
         });
 
     for (auto proxy : trial_proxies)
@@ -1286,6 +1308,14 @@ namespace ngfem
         if (!IsSymmetric().IsTrue()) symmetric_so_far = false;
         return;
       }
+
+    if (has_interpolate)
+      {
+        T_CalcElementMatrixAddShapeWise<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
+        if (!IsSymmetric().IsTrue()) symmetric_so_far = false;
+        return;
+      }
+    
 
     bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
     const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
@@ -2084,6 +2114,55 @@ namespace ngfem
               }
         }
     }
+
+
+  
+  template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
+  void SymbolicBilinearFormIntegrator ::  
+  T_CalcElementMatrixAddShapeWise (const FiniteElement & fel,
+                                   const ElementTransformation & trafo, 
+                                   FlatMatrix<SCAL_RES> elmat,
+                                   LocalHeap & lh) const
+  {
+    // cout << "Shapewise CalcElmat" << endl;
+    const IntegrationRule& ir = GetIntegrationRule (fel, lh);
+    BaseMappedIntegrationRule & mir = trafo(ir, lh);
+    
+    ProxyUserData ud(trial_proxies.Size()+test_proxies.Size(), 0, lh);
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+
+    ud.fel = &fel;
+
+    FlatVector<> vtrial(fel.GetNDof(), lh);
+    FlatVector<> vtest(fel.GetNDof(), lh);
+    ud.trial_elvec = &vtrial;
+    ud.test_elvec = &vtest;
+    ud.lh = &lh;
+    
+    for (auto proxy1 : trial_proxies)
+      for (auto proxy2 : test_proxies)
+        {
+          HeapReset hr(lh);
+
+          FlatMatrix<SCAL> val(mir.Size(), 1, lh);
+          
+          for (int k = 0; k < fel.GetNDof(); k++)
+            for (int l = 0; l < fel.GetNDof(); l++)
+              {
+                vtrial = 0.0;
+                vtest = 0.0;
+                vtrial(k) = 1;
+                vtest(l) = 1;
+                  
+                cf -> Evaluate (mir, val);
+
+                SCAL sum = 0.0;
+                for (int i = 0; i < mir.Size(); i++)
+                  sum += val(i) *mir[i].GetWeight();
+                elmat(l,k) += sum;                
+              }
+        }
+  }
 
   
   void 

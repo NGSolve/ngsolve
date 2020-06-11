@@ -270,9 +270,11 @@ public:
   int eval_deriv = 0; // 0 .. evaluate bfi, 1 .. deriv, 2 .. second order deriv
   const FiniteElement * fel = nullptr;
   FlatArray<pair<const CoefficientFunction*, void*>> caches;
-  // const FlatVector<double> * elx;
-  // LocalHeap * lh;
 
+  FlatVector<double> *trial_elvec = nullptr, *test_elvec = nullptr; // for shape-wise evaluate
+  LocalHeap * lh = nullptr;
+
+  
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
       remember_cf_first(0, nullptr), remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
@@ -653,6 +655,7 @@ public:
 
     int trial_difforder, test_difforder;
     bool is_symmetric;
+    bool has_interpolate; // is there an interpolate in the expression tree ? 
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                                    VorB aelement_boundary);
@@ -709,6 +712,13 @@ public:
                                    const ElementTransformation & trafo, 
                                    FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const;
+
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
+    void T_CalcElementMatrixAddShapeWise (const FiniteElement & fel,
+                                          const ElementTransformation & trafo, 
+                                          FlatMatrix<SCAL_RES> elmat,
+                                          LocalHeap & lh) const;
+
     
     NGS_DLL_HEADER virtual void 
     CalcLinearizedElementMatrix (const FiniteElement & fel,
