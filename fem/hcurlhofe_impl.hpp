@@ -1473,14 +1473,17 @@ namespace ngfem
                            SBLambda([&] (size_t nr, auto val)
                                     {
                                       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
-                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
+                                      if (type1)
+                                        shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (0, val);
+                                      else
+                                        shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
                                     }));
-	LegendrePolynomial::Eval(order-2,x,
-				 SBLambda([&] (size_t nr, auto val)
-					  {
-					    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,val);
-					  }));
-	
+        if (!type1)
+          LegendrePolynomial::Eval(order-2,x,
+                                   SBLambda([&] (size_t nr, auto val)
+                                            {
+                                              shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,val);
+                                            }));
       }
   }
 
