@@ -914,6 +914,14 @@ export class Scene {
       this.version_object.style.visibility = value ? "visible" : "hidden";
     });
 
+    gui_functions['fullscreen'] = () =>{
+      let elem = this.element.parentNode;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      }
+    };
+    gui.add(gui_functions, "fullscreen");
+
     gui_functions['reset'] = ()=> {
       this.controls.reset();
     };
