@@ -285,7 +285,11 @@ let CameraControls = function(cameraObject, scene, domElement) {
     event.preventDefault();
     event.stopPropagation();
 
-    var s = Math.exp(-0.001*event.deltaY);
+    let dy = event.deltaY;
+    if(event.deltaMode==1) // 1==DOM_DELTA_LINE -> scroll in lines, not pixels
+      dy *= 30;
+
+    var s = Math.exp(-0.001*dy);
     scope.scale *=  s ;
     if( scope.scene.center_tag )
         scope.scene.center_tag.scale.multiplyScalar(1.0/s);
