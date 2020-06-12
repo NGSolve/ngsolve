@@ -275,12 +275,16 @@ namespace ngfem
     // for shape-wise evaluate
     if (ud->trial_elvec && !testfunction)
       {
-        evaluator->Apply (*ud->fel, mir, *ud->trial_elvec, result, *ud->lh);
+        const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (ud->fel);
+        const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : *ud->fel;
+        evaluator->Apply (fel_trial, mir, *ud->trial_elvec, result, *ud->lh);
         return;
       }
     if (ud->test_elvec && testfunction)
       {
-        evaluator->Apply (*ud->fel, mir, *ud->test_elvec, result, *ud->lh);
+        const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (ud->fel);
+        const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : *ud->fel;        
+        evaluator->Apply (fel_test, mir, *ud->test_elvec, result, *ud->lh);
         return;
       }
 
@@ -2124,7 +2128,12 @@ namespace ngfem
                                    FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const
   {
-    // cout << "Shapewise CalcElmat" << endl;
+    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+
+    HeapReset hr(lh);
+    
     const IntegrationRule& ir = GetIntegrationRule (fel, lh);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
@@ -2133,34 +2142,28 @@ namespace ngfem
 
     ud.fel = &fel;
 
-    FlatVector<> vtrial(fel.GetNDof(), lh);
-    FlatVector<> vtest(fel.GetNDof(), lh);
+    FlatVector<> vtrial(fel_trial.GetNDof(), lh);
+    FlatVector<> vtest(fel_test.GetNDof(), lh);
     ud.trial_elvec = &vtrial;
     ud.test_elvec = &vtest;
     ud.lh = &lh;
     
-    for (auto proxy1 : trial_proxies)
-      for (auto proxy2 : test_proxies)
+    FlatMatrix<SCAL> val(mir.Size(), 1, lh);
+    
+    for (int k = 0; k < fel_trial.GetNDof(); k++)
+      for (int l = 0; l < fel_test.GetNDof(); l++)
         {
-          HeapReset hr(lh);
-
-          FlatMatrix<SCAL> val(mir.Size(), 1, lh);
+          vtrial = 0.0;
+          vtest = 0.0;
+          vtrial(k) = 1;
+          vtest(l) = 1;
           
-          for (int k = 0; k < fel.GetNDof(); k++)
-            for (int l = 0; l < fel.GetNDof(); l++)
-              {
-                vtrial = 0.0;
-                vtest = 0.0;
-                vtrial(k) = 1;
-                vtest(l) = 1;
-                  
-                cf -> Evaluate (mir, val);
-
-                SCAL sum = 0.0;
-                for (int i = 0; i < mir.Size(); i++)
-                  sum += val(i) *mir[i].GetWeight();
-                elmat(l,k) += sum;                
-              }
+          cf -> Evaluate (mir, val);
+          
+          SCAL sum = 0.0;
+          for (int i = 0; i < mir.Size(); i++)
+            sum += val(i) *mir[i].GetWeight();
+          elmat(l,k) += sum;                
         }
   }
 
