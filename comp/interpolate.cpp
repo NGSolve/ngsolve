@@ -30,7 +30,7 @@ namespace ngcomp
     shared_ptr<DifferentialOperator> dual_diffop;
 
     VorB vb;
-
+    
   public:
     InterpolationCoefficientFunction (shared_ptr<CoefficientFunction> f, shared_ptr<FESpace> afes,
                                       int abonus_intorder)
@@ -92,9 +92,12 @@ namespace ngcomp
     {
       // #ifdef FIRSTDRAFT
       LocalHeapMem<100000> lh("interpolate");
-        
+
+      // static Timer t("interpolate");
+      // RegionTracer reg(TaskManager::GetThreadId(), t);    
+
       const ElementTransformation & trafo = ir.GetTransformation();
-      const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
+      // const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
       ElementId ei = trafo.GetElementId();
       auto & fel = fes->GetFE(ei, lh);
       // int dim   = fes->GetDimension();
@@ -155,7 +158,6 @@ namespace ngcomp
                 }
             }
         }
-      // cout << " elflux = " << endl << elflux << endl;
       
       /** Calc Element Matrix - shape * dual_shape **/
       FlatMatrix<double> elmat(fel.GetNDof(), lh);
@@ -165,12 +167,12 @@ namespace ngcomp
       auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
       auto saveud = nonconst_trafo.userdata;
       for (auto sbfi : single_bli)
-	sbfi->CalcElementMatrixAdd (fel, trafo, elmat, symmetric_so_far, lh);
+        sbfi->CalcElementMatrixAdd (fel, trafo, elmat, symmetric_so_far, lh);
       nonconst_trafo.userdata = saveud;
-      
-      
+
       /** Invert Element Matrix and Solve for RHS **/
       CalcInverse(elmat); // Not Symmetric !
+      
 
       // cout << "interpolation elmat = " << endl << elmat << endl;
       
@@ -180,15 +182,13 @@ namespace ngcomp
 
       // cout << " coeffs: " << endl << coeffs << endl;
 
-      func->Evaluate(ir, values);
+      // func->Evaluate(ir, values);
       // cout << " un-interp values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
-
-      if constexpr(ORD==ColMajor) {
-	  fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, Trans(values), lh);
-	}
-      else {
+        
+      if constexpr (ORD==ColMajor) 
+        fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, Trans(values), lh);
+      else 
 	fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, values, lh);
-      }
 
       // cout << " values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
     }
