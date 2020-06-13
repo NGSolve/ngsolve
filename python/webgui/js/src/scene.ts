@@ -920,8 +920,15 @@ export class Scene {
 
     gui_functions['fullscreen'] = () =>{
       let elem = this.element.parentNode;
+
       if (elem.requestFullscreen) {
         elem.requestFullscreen();
+      } else if(elem.webkitRequestFullScreen) {
+        // Webkit (works in Safari and Chrome Canary)
+        elem.webkitRequestFullScreen();
+      }else if(elem.mozRequestFullScreen) {
+        // Firefox
+        elem.mozRequestFullScreen();
       }
     };
     gui.add(gui_functions, "fullscreen");
