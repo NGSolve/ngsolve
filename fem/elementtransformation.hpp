@@ -178,6 +178,27 @@ namespace ngfem
     }
     
     void * userdata = nullptr;
+    class UserDataStack {
+      ElementTransformation & trafo;
+      void * save;
+    public:
+      UserDataStack (ElementTransformation & atrafo)
+        : trafo(atrafo)
+      {
+        save = trafo.userdata;
+        trafo.userdata = nullptr;
+      }
+      ~UserDataStack ()
+      {
+        trafo.userdata = save;
+      }
+    };
+    [[nodiscard]]
+      auto PushUserData() const
+      {
+        return UserDataStack(const_cast<ElementTransformation&>(*this));
+      }
+    
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }
     ElementTransformation & operator= (const ElementTransformation & eltrans2) 

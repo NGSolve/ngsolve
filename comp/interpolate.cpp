@@ -336,7 +336,9 @@ namespace ngcomp
 		SliceMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const override
     {
-      cout << "interpolateDiffOp, CalcMatrix" << endl;
+      // static Timer t("interpolateDiffOp, CalcMat");
+      // RegionTracer reg(TaskManager::GetThreadId(), t);    
+
       HeapReset hr(lh);
       
       const ElementTransformation & trafo = mir.GetTransformation();
@@ -349,47 +351,36 @@ namespace ngcomp
       elmat = 0.0;
       bool symmetric_so_far = false;
 
-      auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
-      auto saveud = nonconst_trafo.userdata;
+      // auto saveud = nonconst_trafo.userdata;
       for (auto sbfi : single_bli)
         sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
-      nonconst_trafo.userdata = saveud;
 
-      // cout << "transformation matrix:"  << elmat << endl;
-      
-      /** Invert Element Matrix and Solve for RHS **/
-      CalcInverse(elmat); // Not Symmetric !
-      
+      CalcInverse(elmat); 
       
       /** func * dual_shape **/
-      FlatVector<> elflux(interpol_fel.GetNDof(), lh);
       FlatVector<> elfluxadd(interpol_fel.GetNDof(), lh);
-
-      // shape-wise apply
-      // loop over all shape functions of the contained trial or test
-      
-      auto ud = static_cast<ProxyUserData*>(nonconst_trafo.userdata);
-      // if (!ud->fel) throw Exception("need fel");
       size_t nshape = inner_fel.GetNDof();
       
       FlatVector<> vtrialtest(nshape, lh);
-      auto save_trial_elvec = ud->trial_elvec;
-      auto save_test_elvec = ud->test_elvec;
-      auto save_fel = ud->fel;
-      auto save_lh = ud->lh;
+      auto save_ud = trafo.PushUserData();
+      ProxyUserData myud;
+      myud.trial_elvec = &vtrialtest;
+      myud.test_elvec = &vtrialtest;
+      myud.fel = &inner_fel;
+      myud.lh = &lh;
+
+      auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
+      nonconst_trafo.userdata = &myud;
+
       
-      ud->trial_elvec = &vtrialtest;
-      ud->test_elvec = &vtrialtest;
-      ud->fel = &inner_fel;
-      ud->lh = &lh;
       FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
-        
+      m3 = 0.0;
+      
       for (int k = 0; k < vtrialtest.Size(); k++)
         {
           vtrialtest = 0.0;
           vtrialtest(k) = 1;
       
-          elflux = 0;
           for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
             {
               if (el_vb == VOL)
@@ -398,18 +389,17 @@ namespace ngcomp
                   auto & mir = trafo(ir, lh);
                   FlatMatrix<> mflux(ir.Size(), dim, lh);
                   func->Evaluate (mir, mflux);
+                  
                   for (size_t j : Range(mir))
                     mflux.Row(j) *= mir[j].GetWeight();
                   dual_diffop -> ApplyTrans (interpol_fel, mir, mflux, elfluxadd, lh);
-                  elflux += elfluxadd;
+                  m3.Col(k) += elfluxadd;
                 }
               else
                 {
                   Facet2ElementTrafo f2el (interpol_fel.ElementType(), el_vb);
                   for (int locfnr : Range(f2el.GetNFacets()))
                     {
-                      // SIMD does not work yet
-                      // SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
                       IntegrationRule irfacet(f2el.FacetType(locfnr), 2*interpol_fel.Order()+bonus_intorder);
                       auto & irvol = f2el(locfnr, irfacet, lh);
                       auto & mir = trafo(irvol, lh);
@@ -417,32 +407,22 @@ namespace ngcomp
                       
                       FlatMatrix<> mflux(irfacet.Size(), dim, lh);
                       func->Evaluate (mir, mflux);
+
                       for (size_t j : Range(mir))
                         mflux.Row(j) *= mir[j].GetWeight();
-                      // cout << "mflux = " << mflux << endl;
                       dual_diffop -> ApplyTrans (interpol_fel, mir, mflux, elfluxadd, lh);
-                      // cout << " elfluxadd = " << endl << elfluxadd << endl;
-                      elflux += elfluxadd;
+                      m3.Col(k) += elfluxadd;                      
                     }
                 }
             }
-          m3.Col(k) = elflux;
         }
-      // cout << "m3 = " << m3 << endl;
-      
-      ud->trial_elvec = save_trial_elvec;
-      ud->test_elvec = save_test_elvec;
-      ud->fel = save_fel;
-      ud->lh = save_lh;
 
+      // nonconst_trafo.userdata = saveud;
       
-      Matrix<> m2m3 = elmat * m3;
-
-      Matrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof());
+      FlatMatrix<> m2m3 = elmat * m3 | lh;
+      FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
       fes->GetEvaluator(vb)->CalcMatrix(interpol_fel, mir, m1, lh);
-      // cout << "m1 = " << m1 << endl;
       mat = m1*m2m3;
-      // *testout << "interpol-bmat = " << mat << endl;
     }
   };
     
