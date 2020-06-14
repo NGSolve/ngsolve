@@ -262,6 +262,209 @@ namespace ngcomp
     }
   };
   
+
+
+  class InterpolateDiffOp : public DifferentialOperator
+  {
+    shared_ptr<CoefficientFunction> func;
+    shared_ptr<FESpace> fes;
+    int bonus_intorder;
+
+
+    Array<shared_ptr<BilinearFormIntegrator>> bli;
+    Array<shared_ptr<BilinearFormIntegrator>> single_bli;
+    // shared_ptr<CoefficientFunction> dual_diffop;
+    shared_ptr<DifferentialOperator> dual_diffop;
+    VorB vb;
+
+  public:
+    InterpolateDiffOp (shared_ptr<CoefficientFunction> afunc,
+                       shared_ptr<FESpace> afes,
+                       int abonus_intorder)
+      : DifferentialOperator (afunc->Dimension(), 1, VOL, 0), 
+        func(afunc), fes(afes), bonus_intorder(abonus_intorder)
+    { 
+      // copied from Set (dualshapes)
+      
+      vb = VOL;    // for the moment only 
+
+      /** Trial-Proxy **/
+      auto single_evaluator =  fes->GetEvaluator(vb);
+      if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+        single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+      auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
+                                              nullptr, nullptr, nullptr, nullptr, nullptr);
+
+      /** Test-Proxy (dual) **/
+      auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
+      for (VorB avb = VOL; avb < vb; avb++) {
+        dual_evaluator = dual_evaluator->GetTrace();
+        if ( dual_evaluator == nullptr )
+          { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + \
+                            to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
+      }
+      if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
+        dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
+      auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
+                                             nullptr, nullptr, nullptr, nullptr, nullptr);
+
+      dual_diffop = dual_evaluator;
+
+      for (auto element_vb : fes->GetDualShapeNodes(vb))
+        {
+          shared_ptr<CoefficientFunction> dual_trial;
+          if (dual -> Dimension() == 1)
+            { dual_trial = dual * trial; }
+          else
+            { dual_trial = InnerProduct(dual, trial); }
+          auto bfi = make_shared<SymbolicBilinearFormIntegrator> (dual_trial, vb, element_vb);
+	  bfi->SetSimdEvaluate(false);  // dual are not simded, yet
+	  bli.Append(bfi);
+	  if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi)) {
+	    auto sbfi = block_bfi->BlockPtr();
+	    sbfi->SetSimdEvaluate(false);
+	    single_bli.Append(sbfi);
+	  }
+	  else
+	    { single_bli.Append(bfi); }
+	}
+    }
+
+    void
+    CalcMatrix (const FiniteElement & inner_fel,
+		const BaseMappedIntegrationRule & mir,
+		SliceMatrix<double,ColMajor> mat,   
+		LocalHeap & lh) const override
+    {
+      cout << "interpolateDiffOp, CalcMatrix" << endl;
+      HeapReset hr(lh);
+      
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+      int dim = func->Dimension();
+
+      /** Calc Element Matrix - shape * dual_shape **/
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+
+      auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
+      auto saveud = nonconst_trafo.userdata;
+      for (auto sbfi : single_bli)
+        sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+      nonconst_trafo.userdata = saveud;
+
+      // cout << "transformation matrix:"  << elmat << endl;
+      
+      /** Invert Element Matrix and Solve for RHS **/
+      CalcInverse(elmat); // Not Symmetric !
+      
+      
+      /** func * dual_shape **/
+      FlatVector<> elflux(interpol_fel.GetNDof(), lh);
+      FlatVector<> elfluxadd(interpol_fel.GetNDof(), lh);
+
+      // shape-wise apply
+      // loop over all shape functions of the contained trial or test
+      
+      auto ud = static_cast<ProxyUserData*>(nonconst_trafo.userdata);
+      // if (!ud->fel) throw Exception("need fel");
+      size_t nshape = inner_fel.GetNDof();
+      
+      FlatVector<> vtrialtest(nshape, lh);
+      auto save_trial_elvec = ud->trial_elvec;
+      auto save_test_elvec = ud->test_elvec;
+      auto save_fel = ud->fel;
+      auto save_lh = ud->lh;
+      
+      ud->trial_elvec = &vtrialtest;
+      ud->test_elvec = &vtrialtest;
+      ud->fel = &inner_fel;
+      ud->lh = &lh;
+      FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
+        
+      for (int k = 0; k < vtrialtest.Size(); k++)
+        {
+          vtrialtest = 0.0;
+          vtrialtest(k) = 1;
+      
+          elflux = 0;
+          for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
+            {
+              if (el_vb == VOL)
+                {
+                  IntegrationRule ir(interpol_fel.ElementType(), 2*interpol_fel.Order()+bonus_intorder);
+                  auto & mir = trafo(ir, lh);
+                  FlatMatrix<> mflux(ir.Size(), dim, lh);
+                  func->Evaluate (mir, mflux);
+                  for (size_t j : Range(mir))
+                    mflux.Row(j) *= mir[j].GetWeight();
+                  dual_diffop -> ApplyTrans (interpol_fel, mir, mflux, elfluxadd, lh);
+                  elflux += elfluxadd;
+                }
+              else
+                {
+                  Facet2ElementTrafo f2el (interpol_fel.ElementType(), el_vb);
+                  for (int locfnr : Range(f2el.GetNFacets()))
+                    {
+                      // SIMD does not work yet
+                      // SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+                      IntegrationRule irfacet(f2el.FacetType(locfnr), 2*interpol_fel.Order()+bonus_intorder);
+                      auto & irvol = f2el(locfnr, irfacet, lh);
+                      auto & mir = trafo(irvol, lh);
+                      mir.ComputeNormalsAndMeasure(interpol_fel.ElementType(), locfnr);
+                      
+                      FlatMatrix<> mflux(irfacet.Size(), dim, lh);
+                      func->Evaluate (mir, mflux);
+                      for (size_t j : Range(mir))
+                        mflux.Row(j) *= mir[j].GetWeight();
+                      // cout << "mflux = " << mflux << endl;
+                      dual_diffop -> ApplyTrans (interpol_fel, mir, mflux, elfluxadd, lh);
+                      // cout << " elfluxadd = " << endl << elfluxadd << endl;
+                      elflux += elfluxadd;
+                    }
+                }
+            }
+          m3.Col(k) = elflux;
+        }
+      // cout << "m3 = " << m3 << endl;
+      
+      ud->trial_elvec = save_trial_elvec;
+      ud->test_elvec = save_test_elvec;
+      ud->fel = save_fel;
+      ud->lh = save_lh;
+
+      
+      Matrix<> m2m3 = elmat * m3;
+
+      Matrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof());
+      fes->GetEvaluator(vb)->CalcMatrix(interpol_fel, mir, m1, lh);
+      // cout << "m1 = " << m1 << endl;
+      mat = m1*m2m3;
+      // *testout << "interpol-bmat = " << mat << endl;
+    }
+  };
+    
+
+  class InterpolateProxy : public ProxyFunction
+  {
+  protected:
+    shared_ptr<CoefficientFunction> func;
+    shared_ptr<FESpace> space;
+    int bonus_intorder;
+  public:
+    InterpolateProxy (shared_ptr<CoefficientFunction> func,
+                      shared_ptr<FESpace> aspace,
+                      bool testfunction,
+                      int bonus_intorder = 0)
+      : ProxyFunction(aspace, testfunction, false,
+                      make_shared<InterpolateDiffOp> (func, aspace, bonus_intorder), nullptr, nullptr,
+                      nullptr, nullptr, nullptr)
+    { ; } 
+  };
+    
+
   
   shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
                                                  int bonus_intorder)
@@ -270,6 +473,32 @@ namespace ngcomp
 
     if (func->GetDescription() == "ZeroCF")
       return func;
+
+    bool has_trial = false, has_test = false;
+
+    func->TraverseTree
+      ( [&] (CoefficientFunction & nodecf)
+        {
+          
+          if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+            {
+              if (proxy->IsTestFunction())
+                has_test = true;
+              else
+                has_trial = true;
+            }
+        });
+
+    if (has_trial && !has_test)
+      {
+        cout << "interpolate, have only trialfunctions" << endl;
+        return make_shared<InterpolateProxy> (func, space, false, bonus_intorder);
+      }
+    if (has_test && !has_trial)
+      {
+        cout << "interpolate, have only testfunctions" << endl;
+        return make_shared<InterpolateProxy> (func, space, true, bonus_intorder);
+      }
 
     return make_shared<InterpolationCoefficientFunction> (func, space, bonus_intorder);
   }
