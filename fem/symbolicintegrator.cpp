@@ -1302,6 +1302,8 @@ namespace ngfem
     ThreadRegionTimer reg(t, TaskManager::GetThreadId());
     // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
+    auto save_userdata = trafo.PushUserData(); 
+    
     if (element_vb != VOL)
       {
         // static Timer t(string("SymbolicBFI::EB ")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), 2);
