@@ -363,6 +363,7 @@ export class Scene {
   uniforms: any;
 
   colormap_object: any;
+  edges_object: THREE.Line;
   wireframe_object: THREE.Line;
   mesh_object: THREE.Mesh;
   clipping_function_object: THREE.Mesh;
@@ -418,6 +419,7 @@ export class Scene {
       eval: 0,
       subdivision: 5,
       edges: true,
+      wireframe: true,
       elements: true,
       autoscale: true,
       colormap_ncolors: 8,
@@ -699,11 +701,14 @@ export class Scene {
 
     if(render_data.show_wireframe)
     {
+      this.edges_object = this.createCurvedWireframe(render_data);
+      this.pivot.add(this.edges_object);
       this.wireframe_object = this.createCurvedWireframe(render_data);
       this.pivot.add(this.wireframe_object);
       uniforms.n_segments = new THREE.Uniform(5);
       gui.add(gui_status, "subdivision", 1,20,1).onChange(animate);
       gui.add(gui_status, "edges").onChange(animate);
+      gui.add(gui_status, "wireframe").onChange(animate);
     }
 
     if(render_data.show_mesh)
@@ -1221,6 +1226,31 @@ export class Scene {
 
   setRenderData(render_data)
   {
+    if(this.edges_object != null)
+    {
+      let geo = <THREE.InstancedBufferGeometry>this.edges_object.geometry;
+
+      let pnames = [];
+      let vnames = [];
+      const o = render_data.order2d;
+      for(let i=0; i<o+1; i++)
+      {
+        pnames.push('p'+i);
+        vnames.push('v'+i);
+      }
+
+      const data = render_data.edges;
+      for (let i=0; i<o+1; i++)
+        geo.setAttribute( pnames[i], new THREE.InstancedBufferAttribute( readB64(data[i]), 4 ) );
+
+      if(render_data.draw_surf && render_data.funcdim>1)
+        for (let i=0;i<vnames.length; i++)
+          geo.setAttribute( vnames[i], new THREE.InstancedBufferAttribute( readB64(data[o+1+i]), 2 ) );
+
+      geo.maxInstancedCount = readB64(data[0]).length/4;
+      geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
+    }
+
     if(this.wireframe_object != null)
     {
       let geo = <THREE.InstancedBufferGeometry>this.wireframe_object.geometry;
@@ -1335,6 +1365,36 @@ export class Scene {
 
       return d1;
     };
+
+    if(this.edges_object != null)
+    {
+      let geo = <THREE.InstancedBufferGeometry>this.edges_object.geometry;
+
+      let pnames = [];
+      let vnames = [];
+      const o = rd.order2d;
+      for(let i=0; i<o+1; i++)
+      {
+        pnames.push('p'+i);
+        vnames.push('v'+i);
+      }
+
+      const data = rd.edges;
+      const data2 = rd2.edges;
+      for (let i=0; i<o+1; i++)
+      {
+        geo.setAttribute( pnames[i], new THREE.InstancedBufferAttribute( mixB64(data[i], data2[i]), 4 ) );
+      }
+
+      if(rd.draw_surf && rd.funcdim>1)
+        for (let i=0;i<vnames.length; i++)
+        {
+          geo.setAttribute( vnames[i], new THREE.InstancedBufferAttribute( mixB64(data[o+1+i], data2[o+1+i]), 2 ) );
+        }
+
+      geo.maxInstancedCount = readB64(data[0]).length/4;
+      geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
+    }
 
     if(this.wireframe_object != null)
     {
@@ -1542,9 +1602,20 @@ export class Scene {
     if(gui_status.Misc.reduce_subdivision && this.controls.mode != null)
       subdivision = Math.ceil(subdivision/2);
 
+    if( this.edges_object != null )
+    {
+      this.edges_object.visible = gui_status.edges;
+      if(gui_status.subdivision !== undefined)
+      {
+        uniforms.n_segments.value = subdivision;
+        let geo = <THREE.BufferGeometry>this.edges_object.geometry;
+        geo.setDrawRange(0, subdivision+1);
+      }
+    }
+
     if( this.wireframe_object != null )
     {
-      this.wireframe_object.visible = gui_status.edges;
+      this.wireframe_object.visible = gui_status.wireframe;
       if(gui_status.subdivision !== undefined)
       {
         uniforms.n_segments.value = subdivision;

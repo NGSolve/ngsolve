@@ -256,6 +256,18 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
         d['Bezier_points'] = Bezier_points
 
+        ipts = [(i/og,0) for i in range(og+1)]
+        ir_seg = ngs.IntegrationRule(ipts, [0,]*len(ipts))
+        vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
+        pts = mesh.MapToAllElements(ir_seg, vb)
+        pmat = func0(pts)
+        pmat = pmat.reshape(-1, og+1, 4)
+        edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+        edges = []
+        for i in range(og+1):
+            edges.append(encodeData(edge_data[i]))
+        d['edges'] = edges
+
         timer2.Stop()
         timer3.Start()
         
