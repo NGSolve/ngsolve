@@ -17,13 +17,6 @@ namespace ngbla
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
 
-  ///
-  extern void CheckMatRange(size_t h, size_t w, size_t i);
-  ///
-  extern void CheckMatRange(size_t h, size_t w, size_t i, size_t j);
-
-
-
   /**
      A simple matrix.
      Has height, width and data-pointer. 
@@ -151,18 +144,15 @@ namespace ngbla
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const 
     { 
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*w+j];
     }
 
@@ -333,18 +323,15 @@ namespace ngbla
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const 
     { 
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[j*size_t(h)+i]; 
     }
 
@@ -925,18 +912,15 @@ namespace ngbla
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,W,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,W,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*DIST+j]; 
     }
 
@@ -1179,18 +1163,15 @@ namespace ngbla
     /// access operator, linear access
     TELEM & operator() (int i)
     { 
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     TELEM & operator() (int i, int j) 
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i+j*SLICE]; 
     }
     */
@@ -1198,18 +1179,15 @@ namespace ngbla
     /// access operator, linear access
     TELEM & operator() (int i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     TELEM & operator() (int i, int j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i+j*SLICE]; 
     }
 
@@ -1451,18 +1429,15 @@ namespace ngbla
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*dist+j]; 
     }
 
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,dist,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Dist());
       return data[i]; 
     }
 
@@ -1955,18 +1930,15 @@ namespace ngbla
     /// access operator
     TELEM & operator() (int i, int j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*distr+j*distc]; 
     }
 
     /// access operator, linear access
     TELEM & operator() (int i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
