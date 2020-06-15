@@ -419,7 +419,7 @@ export class Scene {
       eval: 0,
       subdivision: 5,
       edges: true,
-      wireframe: true,
+      mesh: true,
       elements: true,
       autoscale: true,
       colormap_ncolors: 8,
@@ -708,7 +708,7 @@ export class Scene {
       uniforms.n_segments = new THREE.Uniform(5);
       gui.add(gui_status, "subdivision", 1,20,1).onChange(animate);
       gui.add(gui_status, "edges").onChange(animate);
-      gui.add(gui_status, "wireframe").onChange(animate);
+      gui.add(gui_status, "mesh").onChange(animate);
     }
 
     if(render_data.show_mesh)
@@ -1615,7 +1615,7 @@ export class Scene {
 
     if( this.wireframe_object != null )
     {
-      this.wireframe_object.visible = gui_status.wireframe;
+      this.wireframe_object.visible = gui_status.mesh;
       if(gui_status.subdivision !== undefined)
       {
         uniforms.n_segments.value = subdivision;
