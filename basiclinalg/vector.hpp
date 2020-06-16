@@ -19,11 +19,6 @@ namespace ngbla
   template <int DIST, typename T> class FixSliceVector;
 
 
-  extern void CheckVecRange(size_t s, size_t i);
-  extern void CheckVecRange(size_t s, size_t i, size_t j);
-
-
-
   /**
      A simple vector.
      Has size and generic data-pointer. 
@@ -115,7 +110,7 @@ namespace ngbla
     /// copy vector. sizes must match
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
-      NETGEN_CHECK_RANGE(v.Size(),0,size+1);
+      NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
       for (auto i : ngstd::Range(size))
 	data[i] = v(i);
       return *this;
@@ -124,7 +119,7 @@ namespace ngbla
     template <int D, typename TSCAL2>
     INLINE const FlatVector & operator= (const Vec<D,TSCAL2> & v) const
     {
-      NETGEN_CHECK_RANGE(D,0,size+1);
+      NETGEN_CHECK_RANGE(D,0,Size()+1);
       for (int i = 0; i < D; i++)
 	data[i] = v(i);
       return *this;
@@ -147,7 +142,7 @@ namespace ngbla
 
     INLINE const FlatVector & operator= (initializer_list<T> list) const
     {
-      NETGEN_CHECK_RANGE(list.size(),0,size+1);
+      NETGEN_CHECK_RANGE(list.size(),0,Size()+1);
       size_t cnt = 0;
       for (auto val : list)
         data[cnt++] = val;
@@ -171,9 +166,7 @@ namespace ngbla
     /// constant element access
     INLINE TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(size,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
  
@@ -185,18 +178,14 @@ namespace ngbla
     /// element access. index j is ignored
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE 
-      CheckVecRange(size,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// constant element access
     INLINE TELEM & operator[] (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(size,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
@@ -894,18 +883,14 @@ namespace ngbla
     /// access vector
     INLINE TELEM & operator() (size_t i) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// access vector
     INLINE const TELEM & operator() (size_t i) const 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
@@ -913,36 +898,28 @@ namespace ngbla
     /// access vector
     INLINE TELEM & operator[] (size_t i) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// access vector
     INLINE const TELEM & operator[] (size_t i) const 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// access vector
     INLINE TELEM & operator() (size_t i, size_t j) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// access vector
     INLINE const TELEM & operator() (size_t i, size_t j) const 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
@@ -1153,27 +1130,21 @@ namespace ngbla
     /// access vector
     INLINE TELEM & operator() (int i) const 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// access vector
     INLINE TELEM & operator[] (int i) const 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
     /// access vector
     INLINE TELEM & operator() (int i, int j) const 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(S,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i]; 
     }
 
@@ -1296,54 +1267,42 @@ namespace ngbla
     /// access element
     INLINE TELEM & operator() (size_t i) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*size_t(dist)]; 
     }
 
     /// access element
     INLINE TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*size_t(dist)]; 
     }
 
     /// access element, index j is unused
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*size_t(dist)]; 
     }
 
     /// access element, index j is unused
     INLINE TELEM & operator() (size_t i, size_t j) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*size_t(dist)]; 
     }
 
     /// access element
     INLINE TELEM & operator[] (size_t i) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*size_t(dist)]; 
     }
 
     /// access element
     INLINE TELEM & operator[] (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*dist]; 
     }
 
@@ -1632,54 +1591,42 @@ namespace ngbla
     /// access element
     TELEM & operator() (size_t i) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*DIST]; 
     }
 
     /// access element
     TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,s);
       return data[i*DIST]; 
     }
 
     /// access element, index j is unused
     TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*DIST]; 
     }
 
     /// access element, index j is unused
     TELEM & operator() (size_t i, size_t j) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*DIST]; 
     }
 
     /// access element
     TELEM & operator[] (size_t i) 
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*DIST]; 
     }
 
     /// access element
     TELEM & operator[] (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
+      NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*DIST]; 
     }
 

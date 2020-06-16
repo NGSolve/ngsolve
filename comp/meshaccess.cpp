@@ -264,7 +264,7 @@ namespace ngcomp
             for (int j = 0; j < nds; j++)
               elvec(j*DIMR+i) = helvec(i*nds+j);
           
-          elvecs.AssignMemory(DIMR, dnums.Size(), lh);
+          elvecs.AssignMemory(DIMR, nds, lh);
           for (int j = 0; j < DIMR; j++)
             elvecs.Row(j) = elvec.Slice(j,DIMR);
         }
