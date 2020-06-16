@@ -17,13 +17,6 @@ namespace ngbla
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
 
-  ///
-  extern void CheckMatRange(size_t h, size_t w, size_t i);
-  ///
-  extern void CheckMatRange(size_t h, size_t w, size_t i, size_t j);
-
-
-
   /**
      A simple matrix.
      Has height, width and data-pointer. 
@@ -151,18 +144,15 @@ namespace ngbla
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const 
     { 
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*w+j];
     }
 
@@ -333,18 +323,15 @@ namespace ngbla
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const 
     { 
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[j*size_t(h)+i]; 
     }
 
@@ -647,6 +634,8 @@ namespace ngbla
       return *this;
     }
 
+    INLINE T* Data() noexcept { return &data[0]; }
+
     /// linear access
     INLINE TELEM & operator() (size_t i) { return data[i]; }
     /// access element
@@ -922,21 +911,20 @@ namespace ngbla
       return *this;
     }
 
+    INLINE T* Data() const noexcept { return data; }
+
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,W,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,W,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*DIST+j]; 
     }
 
@@ -1179,18 +1167,15 @@ namespace ngbla
     /// access operator, linear access
     TELEM & operator() (int i)
     { 
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     TELEM & operator() (int i, int j) 
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i+j*SLICE]; 
     }
     */
@@ -1198,18 +1183,15 @@ namespace ngbla
     /// access operator, linear access
     TELEM & operator() (int i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
     TELEM & operator() (int i, int j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(H,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i+j*SLICE]; 
     }
 
@@ -1220,6 +1202,7 @@ namespace ngbla
     /// the width
     int Width () const { return w; }
 
+    INLINE T* Data() const noexcept { return data; }
 
     const FlatVec<H,T> Col (int i) const
     {
@@ -1364,13 +1347,13 @@ namespace ngbla
     /*
     template<int W>
     SliceMatrix (const FlatMatrixFixWidth<W,T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
+      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
     { ; }
     */
 
     template<int H, int W>
     INLINE SliceMatrix (Mat<H,W,T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
+      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
     { ; }
 
 
@@ -1451,18 +1434,15 @@ namespace ngbla
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*dist+j]; 
     }
 
     /// access operator, linear access
     INLINE TELEM & operator() (size_t i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,dist,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Dist());
       return data[i]; 
     }
 
@@ -1595,6 +1575,7 @@ namespace ngbla
     /// 
     size_t Dist () const throw() { return dist; }
 
+    INLINE T* Data() const noexcept { return data; }
 
     const FlatVector<T> Col (size_t i) const
     {
@@ -1672,16 +1653,16 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T,ORD> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T,ORD> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     template<int H, int W>
     BareSliceMatrix (Mat<H,W,T> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(mat.Data())
     { ; }
 
     
@@ -1817,11 +1798,11 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T,ColMajor> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T,ColMajor> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     
@@ -1848,6 +1829,8 @@ namespace ngbla
     
     /// 
     INLINE size_t Dist () const throw() { return dist; }
+
+    INLINE TELEM* Data() const { return data; }
 
     SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
     {
@@ -1955,18 +1938,15 @@ namespace ngbla
     /// access operator
     TELEM & operator() (int i, int j) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i,j);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
       return data[i*distr+j*distc]; 
     }
 
     /// access operator, linear access
     TELEM & operator() (int i) const
     {
-#ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
-#endif
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
@@ -2006,25 +1986,25 @@ namespace ngbla
   INLINE
   FlatMatrix<double,ColMajor> Trans (FlatMatrix<double,RowMajor> mat)
   {
-    return FlatMatrix<double,ColMajor> (mat.Width(), mat.Height(), &mat(0,0));
+    return FlatMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Data());
   }
 
   INLINE
   FlatMatrix<Complex,ColMajor> Trans (FlatMatrix<Complex,RowMajor> mat)
   {
-    return FlatMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), &mat(0,0));
+    return FlatMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Data());
   }
 
   INLINE
   FlatMatrix<double,RowMajor> Trans (FlatMatrix<double,ColMajor> mat)
   {
-    return FlatMatrix<double,RowMajor> (mat.Width(), mat.Height(), &mat(0,0));
+    return FlatMatrix<double,RowMajor> (mat.Width(), mat.Height(), mat.Data());
   }
 
   INLINE
   FlatMatrix<Complex,RowMajor> Trans (FlatMatrix<Complex,ColMajor> mat)
   {
-    return FlatMatrix<Complex,RowMajor> (mat.Width(), mat.Height(), &mat(0,0));
+    return FlatMatrix<Complex,RowMajor> (mat.Width(), mat.Height(), mat.Data());
   }
 
 
@@ -2033,25 +2013,25 @@ namespace ngbla
   INLINE 
   const SliceMatrix<double> Trans (SliceMatrix<double,ColMajor> mat)
   {
-    return SliceMatrix<double> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<double> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
 
   INLINE 
   const SliceMatrix<Complex> Trans (SliceMatrix<Complex,ColMajor> mat)
   {
-    return SliceMatrix<Complex> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<Complex> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
 
   INLINE 
   const SliceMatrix<double,ColMajor> Trans (SliceMatrix<double,RowMajor> mat)
   {
-    return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
 
   INLINE 
   const SliceMatrix<Complex,ColMajor> Trans (SliceMatrix<Complex,RowMajor> mat)
   {
-    return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
 
   
@@ -2060,13 +2040,13 @@ namespace ngbla
   template <typename T>
   INLINE const BareSliceMatrix<T,ColMajor> Trans (BareSliceMatrix<T,RowMajor> mat)
   {
-    return SliceMatrix<T,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<T,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
 
   template <typename T>
   INLINE const BareSliceMatrix<T,RowMajor> Trans (BareSliceMatrix<T,ColMajor> mat)
   {
-    return SliceMatrix<T,RowMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<T,RowMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
 
 
@@ -2074,13 +2054,13 @@ namespace ngbla
   template <int H, int DIST>
   INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
   {
-    return FlatMatrixFixWidth<H,double,DIST> (mat.Width(), &mat(0,0));
+    return FlatMatrixFixWidth<H,double,DIST> (mat.Width(), mat.Data());
   }
 
   template <int H, int DIST>
   INLINE const FlatMatrixFixWidth<H,Complex,DIST> Trans (FlatMatrixFixHeight<H,Complex,DIST> mat)
   {
-    return FlatMatrixFixWidth<H,Complex,DIST> (mat.Width(), &mat(0,0));
+    return FlatMatrixFixWidth<H,Complex,DIST> (mat.Width(), mat.Data());
   }
 
 

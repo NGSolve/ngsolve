@@ -5553,18 +5553,25 @@ public:
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
+      size_t nv = ir.Size();
+      __assume (nv > 0);
+
+      if(dir>=ir.DimSpace())
+      {
+        for (size_t i = 0; i < nv; i++)
+          values(0,i) = 0.0;
+        return;
+      }
+
       if(!ir.IsComplex())
         {
           auto points = ir.GetPoints();
-          size_t nv = ir.Size();
-          __assume (nv > 0);
           for (size_t i = 0; i < nv; i++)
             values(0,i) = points(i, dir);
         }
       else
         {
           auto cpoints = ir.GetPointsComplex();
-          size_t nv = ir.Size();
           __assume (nv > 0);
           for(auto i : Range(nv))
             values(0,i) = cpoints(i,dir).real();

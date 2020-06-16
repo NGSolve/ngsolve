@@ -297,22 +297,6 @@ namespace ngbla
 
 
 
-#ifdef CHECK_RANGE
-  /// matrices do not fit for matrix-matrix operation
-  class MatrixNotFittingException : public Exception
-  {
-  public:
-    MatrixNotFittingException (const string & where, size_t h1, size_t w1,
-			       size_t h2, size_t w2)
-      : Exception ("") 
-    {
-      stringstream str;
-      str << where << " mat1 = " << h1 << " x " << w1 << ", mat2 = " << h2 << " x " << w2 << endl;
-      Append (str.str());
-    }
-  };
-#endif
-
 
   /**
      Expr is the base class for all matrix template expressions.
@@ -518,14 +502,8 @@ namespace ngbla
       // static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
       // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
       
-#ifdef CHECK_RANGE
-      if (Height() != v.Height() || Width() != v.Width())
-	{
-	  throw MatrixNotFittingException ("operator=", 
-					   Height(), Width(),
-					   v.Height(), v.Width());
-	}
-#endif
+      NETGEN_CHECK_RANGE(Height(), v.Height(), v.Height()+1);
+      NETGEN_CHECK_RANGE(Width(), v.Width(), v.Width()+1);
 
       if (T::COL_MAJOR)
         {
@@ -739,12 +717,8 @@ namespace ngbla
     template<typename TB>
     INLINE T & operator+= (const Expr<SymExpr<TB> > & v)
     {
-#ifdef CHECK_RANGE
-      if (Height() != v.Height() || Width() != v.Width())
-	throw MatrixNotFittingException ("operator+=", 
-					 Height(), Width(),
-					 v.Height(), v.Width());
-#endif
+      NETGEN_CHECK_RANGE(Height(), v.Height(), v.Height()+1);
+      NETGEN_CHECK_RANGE(Width(), v.Width(), v.Width()+1);
       size_t h = Height();
       for (size_t i = 0; i < h; i++)
 	{
