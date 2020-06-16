@@ -1491,11 +1491,9 @@ namespace ngfem
   inline void HCurlHighOrderFE_Shape<ET_QUAD> ::
   CalcDualShape2 (const MIP & mip, TFA & shape) const
   {
-    // shape = 0;
     auto & ip = mip.IP();
     typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
     T x = ip(0), y = ip(1);
-    // T lam[3] = { x, y, 1-x-y };
     Vec<2,T> pnts[4] = { { 0, 0 },
 	{ 1, 0 },
 	{ 1, 1 },
@@ -1533,50 +1531,26 @@ namespace ngfem
       }
     if (ip.VB() == VOL)
       { // inner shapes
-        throw Exception ("quad dual, inner not supported");
-        int ii = 3;
-        for (int i = 0; i < 3; i++)
+        int ii = 4;
+        for (int i = 0; i < 4; i++)
           ii += order_edge[i];
 
-        /*// now come the inner ...
-        Vec<2,AutoDiff<2,T>> adp(mip);
+        INT<4> f = GetFaceSort (0, vnums);  
         
-        //AutoDiff<2> adx(x,0);
-        //AutoDiff<2> ady(y,1);
-        
-        AutoDiff<2,T> adx = adp(0);
-        AutoDiff<2,T> ady = adp(1);
-        
-        AutoDiff<2,T> l2 = 1-adx-ady;
+        T xi = sigma[f[0]]-sigma[f[1]]; 
+        T eta = sigma[f[0]]-sigma[f[3]]; 
+        ArrayMem<T, 20> polx(order+2), poly(order+2);
+        LegendrePolynomial (order, xi, polx);
+        LegendrePolynomial (order, eta, poly);
 
-        ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
-        LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
-        LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
         int p = order_face[0][0];
-        for (int i = 0; i < p; i++)
-          for (int j = 0; j < p-i; j++)
-            if (i > 0 || j > 0)
-              shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
-        for (int i = 1; i <= p; i++)
-          for (int j = 1; j <= p-i; j++)
-            shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
-	
-	*/
-	
-	// auto xphys = mip.GetPoint()(0);
-        // auto yphys = mip.GetPoint()(1);
-        DubinerBasis::Eval(order-2, x, y,
-                           SBLambda([&] (size_t nr, auto val)
-                                    {
-                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
-                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
-                                    }));
-	LegendrePolynomial::Eval(order-2,x,
-				 SBLambda([&] (size_t nr, auto val)
-					  {
-					    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,val);
-					  }));
-	
+        
+        for (int i = 0; i < p+1; i++)
+          for (int j = 0; j < p; j++)
+            {
+              shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(polx[i] * poly[j],0);
+              shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,polx[j] * poly[i]);
+            }	
       }
   }
 
