@@ -1535,10 +1535,12 @@ namespace ngfem
         for (int i = 0; i < 4; i++)
           ii += order_edge[i];
 
-        INT<4> f = GetFaceSort (0, vnums);  
-        
-        T xi = sigma[f[0]]-sigma[f[1]]; 
-        T eta = sigma[f[0]]-sigma[f[3]]; 
+        //do not sort face!
+        //INT<4> f = GetFaceSort (0, vnums);  
+        //T xi = sigma[f[0]]-sigma[f[1]]; 
+        //T eta = sigma[f[0]]-sigma[f[3]]; 
+        T xi = sigma[0]-sigma[1]; 
+        T eta = sigma[0]-sigma[3]; 
         ArrayMem<T, 20> polx(order+2), poly(order+2);
         LegendrePolynomial (order, xi, polx);
         LegendrePolynomial (order, eta, poly);
