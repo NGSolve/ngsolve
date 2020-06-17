@@ -18,12 +18,17 @@ namespace ngcomp
   protected:
     shared_ptr<CoefficientFunction> func;
     shared_ptr<FESpace> space;
+    bool testfunction;
+    shared_ptr<DifferentialOperator> final_diffop;
     int bonus_intorder;
   public:
     InterpolateProxy (shared_ptr<CoefficientFunction> func,
                       shared_ptr<FESpace> aspace,
                       bool testfunction,
+                      shared_ptr<DifferentialOperator> diffop,                      
                       int bonus_intorder = 0);
+
+    shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const override;
   };
     
     

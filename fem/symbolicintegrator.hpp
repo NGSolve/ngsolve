@@ -74,7 +74,7 @@ public:
     additional_diffops.Set (name, diffop);
   }
   
-  shared_ptr<DifferentialOperator> GetAdditionalEvaluator (string name) const
+  virtual shared_ptr<DifferentialOperator> GetAdditionalEvaluator (string name) const
   {
     if (additional_diffops.Used(name))
       return additional_diffops[name];
@@ -86,7 +86,7 @@ public:
     return additional_diffops;
   }
 
-  shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
+  virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
   {
     if (additional_diffops.Used(name))
     {
