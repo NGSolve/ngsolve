@@ -1763,12 +1763,12 @@ namespace ngcomp
 
 
 // 		      bool indep(false);
-// 		      if (partflags.NumFlagDefined ("master") && partflags.NumFlagDefined ("slave"))
+// 		      if (partflags.NumFlagDefined ("master") && partflags.NumFlagDefined ("other"))
 // 			{
 // 			  indep = true;
 // 			  pde->AddIndependentBilinearFormIntegrator(name, integrator, 
 // 								    static_cast<int>(partflags.GetNumFlag("master",0))-1,
-// 								    static_cast<int>(partflags.GetNumFlag("slave",0))-1);
+// 								    static_cast<int>(partflags.GetNumFlag("other",0))-1);
 // 			}
 
 // 		      if(!indep)

@@ -258,16 +258,16 @@ namespace ngcomp
   /*
     void BilinearForm :: AddIndependentIntegrator (BilinearFormIntegrator * bfi,
     const int master_surface,
-    const int slave,
+    const int other,
     const bool deletable)
     {
     independent_parts.Append (bfi);
     independent_parts_deletable.Append(deletable);
-    Vec<2,int> indices(master_surface,slave); 
+    Vec<2,int> indices(master_surface,other); 
     independent_meshindex.Append(indices);
     if (low_order_bilinear_form)
     low_order_bilinear_form -> AddIndependentIntegrator (independent_parts.Last(),
-    master_surface,slave,
+    master_surface,other,
     deletable);
     }
   */

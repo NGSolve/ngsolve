@@ -1350,13 +1350,13 @@ namespace ngcomp
   
   /*
   void PDE :: AddIndependentBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
-						    const int master, const int slave,
+						    const int master, const int other,
 						    const bool deletable)
   {
     BilinearForm * form = GetBilinearForm (name);
     if (form && part)
       {
-	form->AddIndependentIntegrator (part,master,slave,deletable);
+	form->AddIndependentIntegrator (part,master,other,deletable);
 	cout << IM(1) << "integrator " << part->Name() << endl;
       }
     else

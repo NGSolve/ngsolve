@@ -1385,13 +1385,13 @@ namespace ngfem
   void ComplexBilinearFormIntegrator :: 
   CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				    const FiniteElement & bfel_master_element,				    
-				    const FiniteElement & bfel_slave,
+				    const FiniteElement & bfel_other,
 				    const ElementTransformation & eltrans_master, 
 				    const ElementTransformation & eltrans_master_element, 
-				    const ElementTransformation & eltrans_slave,
+				    const ElementTransformation & eltrans_other,
 				    const IntegrationPoint & ip_master,
 				    const IntegrationPoint & ip_master_element,
-				    const IntegrationPoint & ip_slave,
+				    const IntegrationPoint & ip_other,
 				    FlatMatrix<double> & elmat,
 				    LocalHeap & lh) const
   {
@@ -1403,20 +1403,20 @@ namespace ngfem
   void ComplexBilinearFormIntegrator :: 
   CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				    const FiniteElement & bfel_master_element,				    
-				    const FiniteElement & bfel_slave,
+				    const FiniteElement & bfel_other,
 				    const ElementTransformation & eltrans_master, 
 				    const ElementTransformation & eltrans_master_element, 
-				    const ElementTransformation & eltrans_slave,
+				    const ElementTransformation & eltrans_other,
 				    const IntegrationPoint & ip_master,
 				    const IntegrationPoint & ip_master_element,
-				    const IntegrationPoint & ip_slave,
+				    const IntegrationPoint & ip_other,
 				    FlatMatrix<Complex> & elmat,
 				    LocalHeap & lh) const
   {
     FlatMatrix<double> rmat;
-    bfi->CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
-                                     eltrans_master, eltrans_master_element, eltrans_slave,
-                                     ip_master, ip_master_element, ip_slave,
+    bfi->CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_other,
+                                     eltrans_master, eltrans_master_element, eltrans_other,
+                                     ip_master, ip_master_element, ip_other,
                                      rmat, lh);
     elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
     elmat = factor * rmat;
@@ -1426,11 +1426,11 @@ namespace ngfem
 
   void ComplexBilinearFormIntegrator :: 
   CalcElementMatrixIndependent (const FiniteElement & bfel_master,
-                                const FiniteElement & bfel_slave,
+                                const FiniteElement & bfel_other,
                                 const ElementTransformation & eltrans_master, 
-                                const ElementTransformation & eltrans_slave,
+                                const ElementTransformation & eltrans_other,
                                 const IntegrationPoint & ip_master,
-                                const IntegrationPoint & ip_slave,
+                                const IntegrationPoint & ip_other,
                                 FlatMatrix<double> & elmat,
                                 LocalHeap & lh) const
   {
@@ -1441,18 +1441,18 @@ namespace ngfem
 
   void ComplexBilinearFormIntegrator :: 
   CalcElementMatrixIndependent (const FiniteElement & bfel_master,
-				    const FiniteElement & bfel_slave,
+				    const FiniteElement & bfel_other,
                                 const ElementTransformation & eltrans_master, 
-                                const ElementTransformation & eltrans_slave,
+                                const ElementTransformation & eltrans_other,
                                 const IntegrationPoint & ip_master,
-                                const IntegrationPoint & ip_slave,
+                                const IntegrationPoint & ip_other,
                                 FlatMatrix<Complex> & elmat,
                                 LocalHeap & lh) const
   {
     FlatMatrix<double> rmat;
-    bfi->CalcElementMatrixIndependent(bfel_master,bfel_slave,
-					 eltrans_master, eltrans_slave,
-					 ip_master, ip_slave,
+    bfi->CalcElementMatrixIndependent(bfel_master,bfel_other,
+					 eltrans_master, eltrans_other,
+					 ip_master, ip_other,
 					 rmat, lh);
     elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
     elmat = factor * rmat;

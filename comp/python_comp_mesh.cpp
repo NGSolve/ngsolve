@@ -445,7 +445,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                  pairs.append(py::make_tuple(py::make_tuple(pair[0], pair[1]),idnr));
              }
            return pairs;
-         }, "returns list of periodic nodes with their identification number as [((master_nr, slave_nr),idnr),...]")
+         }, "returns list of periodic nodes with their identification number as [((master_nr, minion_nr),idnr),...]")
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
