@@ -38,8 +38,8 @@ namespace ngla
   {
   protected:
     int master;         /// master of node
-    int nextslave;      /// linked list of slaves
-    int numslaves;      /// number of slaves
+    int nextminion;      /// linked list of minions
+    int numminions;      /// number of minions
     int numcliques;     /// number of cliques
     bool eliminated;    /// node is eliminated
     bool used;          /// temporary field (used in calcorder)
@@ -62,8 +62,8 @@ namespace ngla
     void Init (int ma)
     {
       master = ma;
-      nextslave = -1;
-      numslaves = 0;
+      nextminion = -1;
+      numminions = 0;
       numcliques = 0;
       flag = 0;
       eliminated = 0;
@@ -75,9 +75,9 @@ namespace ngla
     ///
     void SetMaster(int ma) { master = ma; };
     ///
-    int NextSlave () const {return nextslave; };
+    int NextMinion () const {return nextminion; };
     ///
-    void SetNextSlave( int ns ) { nextslave = ns; };
+    void SetNextMinion( int ns ) { nextminion = ns; };
     ///
     bool Eliminated() const {return eliminated; };
     ///
@@ -149,7 +149,7 @@ namespace ngla
     int CalcDegree (int v1);
     ///
     void EliminateMasterVertex (int v);
-    void EliminateSlaveVertex (int v);
+    void EliminateMinionVertex (int v);
     ///
     void Order();
     /// 
@@ -179,14 +179,14 @@ namespace ngla
     //  int GetNZE() const;
     //  friend class SparseCholesky;
 
-    int NextSlave (int vnr) const
+    int NextMinion (int vnr) const
     {
-      return vertices[vnr].NextSlave();
+      return vertices[vnr].NextMinion();
     }
     ///
-    int NumSlaves (int vnr) const 
+    int NumMinions (int vnr) const 
     {
-      return vertices[vnr].numslaves;
+      return vertices[vnr].numminions;
     }
 
     ///
@@ -195,7 +195,7 @@ namespace ngla
       return vertices[vnr].Master() == vnr;
     }
 
-    void SetMaster (int master, int slave);
+    void SetMaster (int master, int minion);
   };
 
 

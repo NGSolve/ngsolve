@@ -147,9 +147,9 @@ namespace ngla
 	    if (!vertices[v2].Used())
 	      {
 		if (IsMaster(v2)) 
-                  deg += 1+NumSlaves(v2);
+                  deg += 1+NumMinions(v2);
                 else
-                  cerr << "we still have slaves" << endl;
+                  cerr << "we still have minions" << endl;
 		vertices[p2->GetVertexNr()].SetUsed(1);
 	      }
 	    p2 = p2->next;
@@ -179,7 +179,7 @@ namespace ngla
     // t1.Start();
     // (*testout) << "Eliminate Master Vertex " << v  << endl;
 
-    // int numslaves = NumSlaves (v);
+    // int numminions = NumMinions (v);
 
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
@@ -439,12 +439,12 @@ namespace ngla
     {
       // setup elimination data structures for vertex v
 
-      int cnt = NumSlaves(v);
+      int cnt = NumMinions(v);
       CliqueEl * p3 = newp;
       do 
         {
           if (IsMaster(*p3))
-            cnt += 1+NumSlaves(*p3);
+            cnt += 1+NumMinions(*p3);
           p3 = p3->next;
         }
       while (p3 != newp);
@@ -454,11 +454,11 @@ namespace ngla
       vertices[v].connected = new int[cnt];
       cnt = 0;
       
-      int hv = NextSlave(v);
+      int hv = NextMinion(v);
       while (hv != -1)
         {
           vertices[v].connected[cnt++] = hv;
-          hv = NextSlave (hv);
+          hv = NextMinion (hv);
         }
       
       do 
@@ -469,7 +469,7 @@ namespace ngla
               do
                 {
                   vertices[v].connected[cnt++] = hv;
-                  hv = NextSlave (hv);
+                  hv = NextMinion (hv);
                 }
               while (hv != -1);
             }
@@ -483,7 +483,7 @@ namespace ngla
     CliqueEl * anymaster = nullptr;
     
     {
-      // disconnect slaves 
+      // disconnect minions 
       int cnt = 0;
       CliqueEl * p3 = newp;
       do 
@@ -539,7 +539,7 @@ namespace ngla
         CliqueEl * p3 = anymaster;
         do
           {
-            priqueue.SetDegree (*p3, CalcDegree (*p3) - NumSlaves (*p3));
+            priqueue.SetDegree (*p3, CalcDegree (*p3) - NumMinions (*p3));
             p3 = p3->next;
           }
         while (p3 != anymaster);      
@@ -553,10 +553,10 @@ namespace ngla
 
 
 
-  void MinimumDegreeOrdering :: EliminateSlaveVertex (int v)
+  void MinimumDegreeOrdering :: EliminateMinionVertex (int v)
   {
     if (cliques[v]) // NumCliques(v) != 0)
-      throw Exception ("Eliminate Slave should have exactly no clique");
+      throw Exception ("Eliminate Minion should have exactly no clique");
 
     vertices[v].nconnected = 0;
     delete [] vertices[v].connected;    
@@ -609,16 +609,16 @@ namespace ngla
 	      cout << IM(4) << "." << flush;
 	  }
       
-	if (lastel != -1 && vertices[lastel].NextSlave() != -1)
+	if (lastel != -1 && vertices[lastel].NextMinion() != -1)
 	  {
-	    minj = vertices[lastel].NextSlave();
+	    minj = vertices[lastel].NextMinion();
 
 	    if (vertices[minj].Eliminated())
 	      cerr << "alread eliminated !!!" << endl;
 	    priqueue.Invalidate(minj);
 
 	    blocknr[i] = blocknr[i-1];
-	    EliminateSlaveVertex (minj);
+	    EliminateMinionVertex (minj);
 	  }
 
 	else
@@ -698,21 +698,21 @@ namespace ngla
   }
 
 
-  void MinimumDegreeOrdering :: SetMaster (int master, int slave)
+  void MinimumDegreeOrdering :: SetMaster (int master, int minion)
   {
     int hv = master;
-    while (vertices[hv].NextSlave() != -1)
-      hv = vertices[hv].NextSlave();
+    while (vertices[hv].NextMinion() != -1)
+      hv = vertices[hv].NextMinion();
 			    
-    vertices[hv].SetNextSlave (slave);
+    vertices[hv].SetNextMinion (minion);
     while (hv != -1)
       {
 	vertices[hv].SetMaster (master);
-	hv = vertices[hv].NextSlave();
+	hv = vertices[hv].NextMinion();
       }    
 
-    vertices[master].numslaves += 1+vertices[slave].numslaves;
-    priqueue.SetDegree(slave, n);
+    vertices[master].numminions += 1+vertices[minion].numminions;
+    priqueue.SetDegree(minion, n);
   }
 
 
