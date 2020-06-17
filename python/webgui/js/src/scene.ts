@@ -1243,10 +1243,6 @@ export class Scene {
       for (let i=0; i<o+1; i++)
         geo.setAttribute( pnames[i], new THREE.InstancedBufferAttribute( readB64(data[i]), 4 ) );
 
-      if(render_data.draw_surf && render_data.funcdim>1)
-        for (let i=0;i<vnames.length; i++)
-          geo.setAttribute( vnames[i], new THREE.InstancedBufferAttribute( readB64(data[o+1+i]), 2 ) );
-
       geo.maxInstancedCount = readB64(data[0]).length/4;
       geo.boundingSphere = new THREE.Sphere(this.mesh_center, this.mesh_radius);
     }
