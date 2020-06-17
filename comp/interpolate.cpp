@@ -427,23 +427,15 @@ namespace ngcomp
   };
     
 
-  class InterpolateProxy : public ProxyFunction
-  {
-  protected:
-    shared_ptr<CoefficientFunction> func;
-    shared_ptr<FESpace> space;
-    int bonus_intorder;
-  public:
-    InterpolateProxy (shared_ptr<CoefficientFunction> func,
-                      shared_ptr<FESpace> aspace,
-                      bool testfunction,
-                      int bonus_intorder = 0)
-      : ProxyFunction(aspace, testfunction, false,
-                      make_shared<InterpolateDiffOp> (func, aspace, bonus_intorder), nullptr, nullptr,
-                      nullptr, nullptr, nullptr)
-    { ; } 
-  };
-    
+
+  InterpolateProxy :: InterpolateProxy (shared_ptr<CoefficientFunction> func,
+                                        shared_ptr<FESpace> aspace,
+                                        bool testfunction,
+                                        int bonus_intorder)
+    : ProxyFunction(aspace, testfunction, false,
+                    make_shared<InterpolateDiffOp> (func, aspace, bonus_intorder), nullptr, nullptr,
+                    nullptr, nullptr, nullptr)
+  { ; } 
 
   
   shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,

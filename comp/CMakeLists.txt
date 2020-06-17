@@ -34,7 +34,7 @@ install( FILES
         normalfacetfespace.hpp hypre_precond.hpp h1amg.hpp
         pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp reorderedfespace.hpp hypre_ams_precond.hpp facetsurffespace.hpp compressedfespace.hpp
-        python_comp.hpp fesconvert.hpp contact.hpp
+        python_comp.hpp fesconvert.hpp contact.hpp interpolate.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

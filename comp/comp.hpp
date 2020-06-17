@@ -61,6 +61,7 @@ namespace ngcomp
 #include "pde.hpp"
 
 #include "postproc.hpp"
+#include "interpolate.hpp"
 
 #include "tpfes.hpp"
 #include "hcurlhdivfes.hpp"
