@@ -239,7 +239,7 @@ namespace ngcomp
     for (Ngs_Element el2 : ma->Elements(BND))
       {
         HeapReset hr(lh);
-        auto & mask = slave.Mask();
+        auto & mask = other.Mask();
         if (!mask.Test(el2.GetIndex())) continue;
 
         auto & trafo2 = ma->GetTrafo (el2, lh);
@@ -270,7 +270,7 @@ namespace ngcomp
     for (Ngs_Element el2 : ma->Elements(BND))
       {
         HeapReset hr(lh);
-        auto & mask = slave.Mask();
+        auto & mask = other.Mask();
         if (!mask.Test(el2.GetIndex())) continue;
 
         auto & trafo2 = ma->GetTrafo (el2, lh);
@@ -754,20 +754,20 @@ namespace ngcomp
   }
 
   ContactBoundary::ContactBoundary(shared_ptr<FESpace> _fes,
-                                   Region _master, Region _slave, bool draw_pairs_)
-    : master(_master), slave(_slave), fes(_fes), draw_pairs(draw_pairs_)
+                                   Region _master, Region _other, bool draw_pairs_)
+    : master(_master), other(_other), fes(_fes), draw_pairs(draw_pairs_)
   {
 //     if(draw_pairs)
 //       AddUserVisualizationObject (this);
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       {
-        gap = make_shared<T_GapFunction<2>>(mesh, master, slave);
+        gap = make_shared<T_GapFunction<2>>(mesh, master, other);
         normal = make_shared<DisplacedNormal<2>>();
       }
     else
       {
-        gap = make_shared<T_GapFunction<3>>(mesh, master, slave);
+        gap = make_shared<T_GapFunction<3>>(mesh, master, other);
         normal = make_shared<DisplacedNormal<3>>();
       }
   }
@@ -787,7 +787,7 @@ namespace ngcomp
     for (auto i : Range(master_points.Size()))
       {
         auto & mp = master_points[i];
-        auto & sp = slave_points[i];
+        auto & sp = other_points[i];
         glVertex3d (mp(0), mp(1), mp(2));
         glVertex3d (sp(0), sp(1), sp(2));
       }
@@ -811,7 +811,7 @@ namespace ngcomp
   {
     if(draw_pairs)
     {
-      slave_points.SetSize(0);
+      other_points.SetSize(0);
       master_points.SetSize(0);
     }
 
@@ -874,11 +874,11 @@ namespace ngcomp
                                 t1_def.CalcPoint(pair->master_ip, p1);
                                 master_points.Append(p1);
 
-                                auto & t2 = mesh->GetTrafo(pair->slave_el, lh);
+                                auto & t2 = mesh->GetTrafo(pair->other_el, lh);
                                 auto & t2_def = t2.AddDeformation(displacement.get(), lh);
                                 Vec<3> p2 = 0;
-                                t2_def.CalcPoint(pair->slave_ip, p2);
-                                slave_points.Append(p2);
+                                t2_def.CalcPoint(pair->other_ip, p2);
+                                other_points.Append(p2);
                               }
                             }
                         }
@@ -900,7 +900,7 @@ namespace ngcomp
   {
     fes->GetDofNrs(pair.master_el, dnums);
     Array<DofId> s_dofs;
-    fes->GetDofNrs(pair.slave_el, s_dofs);
+    fes->GetDofNrs(pair.other_el, s_dofs);
     dnums += s_dofs;
   }
 
@@ -915,12 +915,12 @@ namespace ngcomp
     m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
       ([&](const BaseMappedIntegrationRule& m_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.slave_el, lh);
-         s_trafo(pair.slave_ip, lh).IntegrationRuleFromPoint
+         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
+         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
               auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.slave_el, lh);
+              auto& s_fel = fes->GetFE(pair.other_el, lh);
               const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 energy += ce->CalcEnergy(fel, s_fel, m_mir, elx, lh);
@@ -939,12 +939,12 @@ namespace ngcomp
     m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
       ([&](const BaseMappedIntegrationRule& m_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.slave_el, lh);
-         s_trafo(pair.slave_ip, lh).IntegrationRuleFromPoint
+         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
+         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
               auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.slave_el, lh);
+              auto& s_fel = fes->GetFE(pair.other_el, lh);
               const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 ce->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
@@ -964,12 +964,12 @@ namespace ngcomp
     m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
       ([&](const BaseMappedIntegrationRule& m_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.slave_el, lh);
-         s_trafo(pair.slave_ip, lh).IntegrationRuleFromPoint
+         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
+         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
               auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.slave_el, lh);
+              auto& s_fel = fes->GetFE(pair.other_el, lh);
               const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 ce->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);

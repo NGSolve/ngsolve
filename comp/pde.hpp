@@ -332,7 +332,7 @@ namespace ngcomp
 
     /*
     void AddIndependentBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
-					       const int master, const int slave,
+					       const int master, const int other,
 					       const bool deletable = true);
     */
 

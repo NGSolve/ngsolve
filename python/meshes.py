@@ -101,10 +101,10 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
 
     pids = []
     if periodic_y:
-        slavei = []
+        minioni = []
         masteri = []
     if periodic_x:        
-        slavej = []
+        minionj = []
         masterj = []
     for i in range(ny+1):
         for j in range(nx+1):
@@ -114,20 +114,20 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
             pids.append(mesh.Add (MeshPoint(Pnt(x,y,0))))
             if periodic_y:
                 if i == 0:
-                    slavei.append(pids[-1])
+                    minioni.append(pids[-1])
                 if i == ny:
                     masteri.append(pids[-1])  
             if periodic_x:                       
                 if j == 0:
-                    slavej.append(pids[-1])
+                    minionj.append(pids[-1])
                 if j == nx:
                     masterj.append(pids[-1])        
     if periodic_y:
-        for i in range(len(slavei)):   
-            mesh.AddPointIdentification(masteri[i],slavei[i],identnr=1,type=2)
+        for i in range(len(minioni)):   
+            mesh.AddPointIdentification(masteri[i],minioni[i],identnr=1,type=2)
     if periodic_x:            
-        for j in range(len(slavej)):        
-            mesh.AddPointIdentification(masterj[j],slavej[j],identnr=2,type=2)                                       
+        for j in range(len(minionj)):        
+            mesh.AddPointIdentification(masterj[j],minionj[j],identnr=2,type=2)                                       
 
     # mesh.Add(FaceDescriptor(surfnr=1,domin=1,bc=1))
     idx_dom = mesh.AddRegion("dom", dim=2)
@@ -302,13 +302,13 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
 
     pids = []
     if periodic_x:
-        slavei = []
+        minioni = []
         masteri = []
     if periodic_y:        
-        slavej = []
+        minionj = []
         masterj = []
     if periodic_z:        
-        slavek = []
+        minionk = []
         masterk = []        
     for i in range(nx+1):
         for j in range(ny+1):
@@ -320,28 +320,28 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
                 pids.append(netmesh.Add(MeshPoint(Pnt( x,y,z ))))
                 if periodic_x:
                     if i == 0:
-                        slavei.append(pids[-1])
+                        minioni.append(pids[-1])
                     if i == nx:
                         masteri.append(pids[-1])  
                 if periodic_y:           
                     if j == 0:
-                        slavej.append(pids[-1])
+                        minionj.append(pids[-1])
                     if j == ny:
                         masterj.append(pids[-1]) 
                 if periodic_z:                    
                     if k == 0:
-                        slavek.append(pids[-1])
+                        minionk.append(pids[-1])
                     if k == nz:
                         masterk.append(pids[-1])
     if periodic_x:
-        for i in range(len(slavei)):   
-            netmesh.AddPointIdentification(masteri[i],slavei[i],identnr=1,type=2)     
+        for i in range(len(minioni)):   
+            netmesh.AddPointIdentification(masteri[i],minioni[i],identnr=1,type=2)     
     if periodic_y:        
-        for j in range(len(slavej)):            
-            netmesh.AddPointIdentification(masterj[j],slavej[j],identnr=2,type=2) 
+        for j in range(len(minionj)):            
+            netmesh.AddPointIdentification(masterj[j],minionj[j],identnr=2,type=2) 
     if periodic_z:        
-        for k in range(len(slavek)):            
-            netmesh.AddPointIdentification(masterk[k],slavek[k],identnr=3,type=2)                                                      
+        for k in range(len(minionk)):            
+            netmesh.AddPointIdentification(masterk[k],minionk[k],identnr=3,type=2)                                                      
 
     for i in range(nx):
         for j in range(ny):

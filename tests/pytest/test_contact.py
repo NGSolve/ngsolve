@@ -6,7 +6,7 @@ import pytest
 @pytest.fixture
 def mesh():
     geo = SplineGeometry()
-    geo.AddRectangle( (-10, 0.0), (10, 1), leftdomain=1, bcs=["bottom","right","slave","left"])
+    geo.AddRectangle( (-10, 0.0), (10, 1), leftdomain=1, bcs=["bottom","right","minion","left"])
 
     geo.AddCircle ( (-1, 5), r=1, leftdomain=2, bc="master")
     geo.SetMaterial(1, "brick")
@@ -19,7 +19,7 @@ def mesh():
 def GetForms(fes):
     mesh = fes.mesh
     cb = ContactBoundary(fes, mesh.Boundaries("master"),
-                         mesh.Boundaries("slave"))
+                         mesh.Boundaries("minion"))
     u = fes.TrialFunction()
     X = CoefficientFunction((x,y))
     cf = (u - u.Other() + X - X.Other()) * cb.normal
@@ -105,13 +105,13 @@ def test_gapfunction():
     Draw (mesh)
 
     master = Region(mesh, BND, "brick")
-    slave = Region(mesh, BND, "ball")
+    minion = Region(mesh, BND, "ball")
 
     fes = H1(mesh, dim=mesh.dim)
     gfu = GridFunction(fes)
     gfu.vec[:] = 0.0
 
-    cb = ContactBoundary(fes, master, slave)
+    cb = ContactBoundary(fes, master, minion)
     cb.Update(gfu, maxdist=1.)
     Draw(cb.gap, mesh, "gap")
     Draw(Norm(cb.gap), mesh, "dist")

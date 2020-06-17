@@ -44,7 +44,7 @@ namespace ngcomp {
       for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
         {
 	  if (used_idnrs->Size() && !used_idnrs->Contains(idnr)) continue;
-          Array<int> slave_dofnrs;
+          Array<int> minion_dofnrs;
           Array<int> master_dofnrs;
           for (auto node_type : {NT_VERTEX, NT_EDGE, NT_FACE})
             {
@@ -57,11 +57,11 @@ namespace ngcomp {
               for(const auto& node_pair : periodic_nodes)
                 {
                   space->GetDofNrs(NodeId(node_type,node_pair[0]),master_dofnrs);
-                  space->GetDofNrs(NodeId(node_type,node_pair[1]),slave_dofnrs);
+                  space->GetDofNrs(NodeId(node_type,node_pair[1]),minion_dofnrs);
                   for(auto i : Range(master_dofnrs.Size()))
                     {
-                    dofmap[slave_dofnrs[i]] = dofmap[master_dofnrs[i]];
-		    DofMapped(slave_dofnrs[i],master_dofnrs[i],idnr);
+                    dofmap[minion_dofnrs[i]] = dofmap[master_dofnrs[i]];
+		    DofMapped(minion_dofnrs[i],master_dofnrs[i],idnr);
                     }
                 }
             }

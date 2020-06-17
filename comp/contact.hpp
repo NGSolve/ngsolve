@@ -8,8 +8,8 @@ namespace ngcomp
   template<int DIM>
   struct ContactPair
   {
-    ElementId master_el, slave_el;
-    IntegrationPoint master_ip, slave_ip;
+    ElementId master_el, other_el;
+    IntegrationPoint master_ip, other_ip;
   };
 
   class GapFunction : public CoefficientFunction
@@ -18,13 +18,13 @@ namespace ngcomp
     shared_ptr<GridFunction> displacement;
     shared_ptr<MeshAccess> ma;
     Region master;
-    Region slave;
+    Region other;
     double h;
 
   public:
-    GapFunction( shared_ptr<MeshAccess> ma_, Region master_, Region slave_)
+    GapFunction( shared_ptr<MeshAccess> ma_, Region master_, Region other_)
       : CoefficientFunction(ma_->GetDimension()),
-        ma(ma_), master(master_), slave(slave_)
+        ma(ma_), master(master_), other(other_)
     { }
 
     virtual void Update(shared_ptr<GridFunction> gf, int intorder_, double h_) = 0;
@@ -36,8 +36,8 @@ namespace ngcomp
   {
     unique_ptr<netgen::BoxTree<DIM, int>> searchtree;
   public:
-    T_GapFunction( shared_ptr<MeshAccess> mesh_, Region master_, Region slave_)
-      : GapFunction(mesh_, master_, slave_)
+    T_GapFunction( shared_ptr<MeshAccess> mesh_, Region master_, Region other_)
+      : GapFunction(mesh_, master_, other_)
     { }
 
     void Update(shared_ptr<GridFunction> gf, int intorder_, double h) override;
@@ -141,7 +141,7 @@ namespace ngcomp
   {
     shared_ptr<GapFunction> gap;
     shared_ptr<CoefficientFunction> normal;
-    Region master, slave;
+    Region master, other;
     Array<shared_ptr<ContactEnergy>> energies;
     Array<shared_ptr<ContactIntegrator>> integrators;
     shared_ptr<FESpace> fes;
@@ -149,11 +149,11 @@ namespace ngcomp
     // For visualization only
     bool draw_pairs = false;
     Array<Vec<3>> master_points;
-    Array<Vec<3>> slave_points;
+    Array<Vec<3>> other_points;
   public:
     void Draw();
     ContactBoundary(shared_ptr<FESpace> _fes, Region _master,
-                    Region _slave, bool draw_pairs);
+                    Region _other, bool draw_pairs);
 
     ~ContactBoundary();
 

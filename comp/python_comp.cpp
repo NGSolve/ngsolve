@@ -246,7 +246,7 @@ Enum specifying the coupling type of a degree of freedom, each dof is
 either UNUSED_DOF, LOCAL_DOF, INTERFACE_DOF or WIREBASKET_DOF, other values
 are provided as combinations of these:
 
-UNUSED_DOF: Dof is not used, i.e the slave dofs in a :any:`Periodic` finite
+UNUSED_DOF: Dof is not used, i.e the minion dofs in a :any:`Periodic` finite
     element space.
 
 LOCAL_DOF: Inner degree of freedom, will be eliminated by static
@@ -1177,7 +1177,7 @@ rho : ngsolve.fem.CoefficientFunction
 	docu_string(R"delimiter(Periodic or quasi-periodic Finite Element Spaces.
 The periodic fespace is a wrapper around a standard fespace with an 
 additional dof mapping for the periodic degrees of freedom. All dofs 
-on slave boundaries are mapped to their master dofs. Because of this, 
+on minion boundaries are mapped to their master dofs. Because of this, 
 the mesh needs to be periodic. Low order fespaces are currently not
 supported, so methods using them will not work.
 
@@ -1188,7 +1188,7 @@ fespace : ngsolve.comp.FESpace
 
 phase : list of Complex = None
     phase shift for quasi-periodic finite element space. The basis
-    functions on the slave boundary are multiplied by the factor
+    functions on the minion boundary are multiplied by the factor
     given in this list. If None (default) is given, a periodic
     fespace is created. The order of the list must match the order
     of the definition of the periodic boundaries in the mesh.
@@ -3758,7 +3758,7 @@ spacea/spaceb integrals.
 Class for managing contact interfaces.
 The created object must be kept alive in python as long as
 operations of it are used!
-)delimiter", py::arg("fes"), py::arg("master"), py::arg("slave"), py::arg("draw_pairs")=false)
+)delimiter", py::arg("fes"), py::arg("master"), py::arg("minion"), py::arg("draw_pairs")=false)
      .def("AddEnergy", &ContactBoundary::AddEnergy)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator)
      .def("Update", &ContactBoundary::Update,
