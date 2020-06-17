@@ -277,12 +277,15 @@ namespace ngcomp
     shared_ptr<DifferentialOperator> dual_diffop;
     VorB vb;
 
+    shared_ptr<DifferentialOperator> diffop; // the final evaluation
+    
   public:
     InterpolateDiffOp (shared_ptr<CoefficientFunction> afunc,
                        shared_ptr<FESpace> afes,
+                       shared_ptr<DifferentialOperator> adiffop,
                        int abonus_intorder)
-      : DifferentialOperator (afunc->Dimension(), 1, VOL, 0), 
-        func(afunc), fes(afes), bonus_intorder(abonus_intorder)
+      : DifferentialOperator (adiffop->Dim(), 1, VOL, 0), 
+        func(afunc), fes(afes), bonus_intorder(abonus_intorder), diffop(adiffop)
     { 
       // copied from Set (dualshapes)
       
@@ -421,22 +424,46 @@ namespace ngcomp
       
       FlatMatrix<> m2m3 = elmat * m3 | lh;
       FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
-      fes->GetEvaluator(vb)->CalcMatrix(interpol_fel, mir, m1, lh);
+      // fes->GetEvaluator(vb)->CalcMatrix(interpol_fel, mir, m1, lh);
+      diffop->CalcMatrix(interpol_fel, mir, m1, lh);
       mat = m1*m2m3;
     }
   };
     
 
 
-  InterpolateProxy :: InterpolateProxy (shared_ptr<CoefficientFunction> func,
+  InterpolateProxy :: InterpolateProxy (shared_ptr<CoefficientFunction> afunc,
                                         shared_ptr<FESpace> aspace,
-                                        bool testfunction,
-                                        int bonus_intorder)
-    : ProxyFunction(aspace, testfunction, false,
-                    make_shared<InterpolateDiffOp> (func, aspace, bonus_intorder), nullptr, nullptr,
-                    nullptr, nullptr, nullptr)
-  { ; } 
+                                        bool atestfunction,
+                                        shared_ptr<DifferentialOperator> diffop,
+                                        int abonus_intorder)
+    : ProxyFunction(aspace, atestfunction, false,
+                    make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder), nullptr, nullptr,
+                    nullptr, nullptr, nullptr),
+      func(afunc), space(aspace), testfunction(atestfunction),
+      final_diffop(diffop),
+      bonus_intorder(abonus_intorder)
+  { 
+    this->SetDimensions (diffop->Dimensions());
+  } 
 
+
+  shared_ptr<ProxyFunction>
+  InterpolateProxy :: GetAdditionalProxy (string name) const
+  {
+    shared_ptr<DifferentialOperator> new_diffop;
+    new_diffop = space->GetFluxEvaluator();
+    if (!new_diffop || new_diffop->Name()!=name)
+      {
+        auto evaluators = fes->GetAdditionalEvaluators();
+        if (evaluators.Used(name))
+          new_diffop = evaluators[name];
+      }
+    
+    return make_shared<InterpolateProxy> (func, space, testfunction, new_diffop, bonus_intorder);
+  }
+
+  
   
   shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
                                                  int bonus_intorder)
@@ -461,16 +488,8 @@ namespace ngcomp
             }
         });
 
-    if (has_trial && !has_test)
-      {
-        cout << "interpolate, have only trialfunctions" << endl;
-        return make_shared<InterpolateProxy> (func, space, false, bonus_intorder);
-      }
-    if (has_test && !has_trial)
-      {
-        cout << "interpolate, have only testfunctions" << endl;
-        return make_shared<InterpolateProxy> (func, space, true, bonus_intorder);
-      }
+    if (has_trial != has_test)
+      return make_shared<InterpolateProxy> (func, space, has_test, space->GetEvaluator(VOL), bonus_intorder);
 
     return make_shared<InterpolationCoefficientFunction> (func, space, bonus_intorder);
   }
