@@ -1422,9 +1422,9 @@ namespace ngfem
                         bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*dim_proxy2, ir.Size(), lh);
                       
                       FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*ir.Size(),
-                                                      &bdbmat1(0,0));
+                                                      bdbmat1.Data());
                       FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*ir.Size(),
-                                                            &bbmat2(0,0));
+                                                            bbmat2.Data());
 
                       // NgProfiler::StopThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       // bbmat1 = 0.0;
