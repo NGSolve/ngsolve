@@ -1251,6 +1251,7 @@ int main ()
 {
   ofstream out("matkernel.hpp");
 
+  out << "static_assert(SIMD<double>::Size() == " << SIMD<double>::Size() << ", \"inconsistent compile flags for generate_mat_kernels.cpp and matkernel.hpp\");" << endl;
   out << "enum OPERATION { ADD, SUB, SET, SETNEG };" << endl;
 
   out << "template <size_t H, size_t W, OPERATION OP>" << endl
