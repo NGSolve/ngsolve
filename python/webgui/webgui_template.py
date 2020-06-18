@@ -168,7 +168,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     d['order2d'] = order2d
     d['order3d'] = order3d
 
-    d['draw_vol'] = func and mesh.dim==3 and draw_vol
+    d['draw_vol'] = func and mesh.dim==3 and draw_vol and mesh.ne>0
     d['draw_surf'] = func and draw_surf
 
     if isinstance(deformation, bool):
@@ -349,7 +349,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
     timer4.Start()
 
-    if mesh.dim==3 and draw_vol:
+    if d['draw_vol']:
         p0 = []
         p1 = []
         p2 = []
@@ -392,7 +392,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
                 [0]*10 )
 
         pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
-        pmat = func1(pts) if draw_vol else func0(pts)
+        pmat = func1(pts)
 
         ne = mesh.GetNE(ngs.VOL)
         pmat = pmat.reshape(-1, len(ir_tet), 4)
@@ -403,7 +403,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         for i in range(len(ir_tet)):
             points3d.append(encodeData(pmat[:,i,:]))
 
-        if func2 and draw_vol:
+        if func2:
             pmat = func2(pts).reshape(-1, len(ir_tet)//2, 4)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
