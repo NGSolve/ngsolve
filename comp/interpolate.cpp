@@ -412,7 +412,9 @@ namespace ngcomp
 
       
       FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
+      FlatMatrix<> m32( nshape, interpol_fel.GetNDof(), lh);
       m3 = 0.0;
+      m32 = 0.0;
 
       shared_ptr<MixedFiniteElement> mfe;
       auto & func_fel = fes_func->GetFE(ei, lh);
@@ -423,9 +425,15 @@ namespace ngcomp
 
       
       for (auto sbfi : m3_bli)
-        sbfi->CalcElementMatrixAdd (*mfe, trafo, m3, symmetric_so_far, lh);
-      cout << "m3 test = " << m3 << endl;
-      m3 = 0.0;
+        {
+          if (testfunction)
+            sbfi->CalcElementMatrixAdd (*mfe, trafo, m32, symmetric_so_far, lh);
+          else
+            sbfi->CalcElementMatrixAdd (*mfe, trafo, m3, symmetric_so_far, lh);
+        }
+      if (testfunction)
+        m3 = Trans(m32);
+      /*m3 = 0.0;
       for (int k = 0; k < vtrialtest.Size(); k++)
         {
           vtrialtest = 0.0;
@@ -467,9 +475,7 @@ namespace ngcomp
                     }
                 }
             }
-        }
-
-      cout << "m3 = " << m3 << endl;
+        }*/
       
 
       // nonconst_trafo.userdata = saveud;
