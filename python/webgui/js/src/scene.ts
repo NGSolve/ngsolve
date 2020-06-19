@@ -473,6 +473,18 @@ export class Scene {
     this.animate();
   }
 
+  setStepSize( cmin, cmax ) {
+    if(cmin>=cmax)
+      return 1e-8;
+    const step = Math.pow(10, -4+Math.floor(Math.log10(cmax-cmin)));
+    const prec = 10;
+    this.c_cmin.step(step);
+    this.c_cmax.step(step);
+    this.c_cmin.__precision = prec;
+    this.c_cmax.__precision = prec;
+  }
+
+
   onResize() {
     const w = this.element.parentNode.clientWidth;
     const h = this.element.parentNode.clientHeight;
@@ -805,10 +817,8 @@ export class Scene {
       this.c_autoscale = gui.add(gui_status, "autoscale");
       this.c_cmin = gui.add(gui_status, "colormap_min");
       this.c_cmin.onChange(()=>this.updateColormapLabels());
-      this.c_cmin.__precision = Math.max(4, this.c_cmin.__precision);
       this.c_cmax = gui.add(gui_status, "colormap_max");
       this.c_cmax.onChange(()=>this.updateColormapLabels());
-      this.c_cmax.__precision = Math.max(4, this.c_cmax.__precision);
 
       this.c_autoscale.onChange((checked)=> {
         if(checked)
@@ -823,11 +833,7 @@ export class Scene {
       });
 
       if(cmax>cmin)
-      {
-        const step = 1e-2*(cmax-cmin);
-        this.c_cmin.step(step);
-        this.c_cmax.step(step);
-      }
+        this.setStepSize(cmin, cmax);
 
       gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(()=>this.updateColormap());
     }
@@ -1338,11 +1344,7 @@ export class Scene {
       }
 
       if(cmax>cmin)
-      {
-        const step = 1e-2*(cmax-cmin);
-        this.c_cmin.step(step);
-        this.c_cmax.step(step);
-      }
+        this.setStepSize(cmin, cmax);
     }
 
     this.animate();
@@ -1483,11 +1485,7 @@ export class Scene {
       }
 
       if(cmax>cmin)
-      {
-        const step = 1e-2*(cmax-cmin);
-        this.c_cmin.step(step);
-        this.c_cmax.step(step);
-      }
+        this.setStepSize(cmin, cmax);
     }
 
     this.animate();
