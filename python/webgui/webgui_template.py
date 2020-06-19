@@ -164,7 +164,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     if (not func) and (mesh.GetCurveOrder()==1):
         order=1
     order2d = min(order, 3)
-    order3d = 1 #min(order, 2) # just for testing
+    order3d = min(order, 2)
     d['order2d'] = order2d
     d['order3d'] = order3d
 
@@ -374,6 +374,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             #              [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
             #              [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
             #              [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
             
             
         else:
@@ -390,8 +391,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
                 (0.5,0,0.5),
                 (0,0.5,0.5) ],
                 [0]*10 )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet}, ngs.VOL)
 
-        pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
         pmat = func1(pts)
 
         ne = mesh.GetNE(ngs.VOL)
