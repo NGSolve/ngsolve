@@ -268,14 +268,17 @@ namespace ngcomp
   {
     shared_ptr<CoefficientFunction> func;
     shared_ptr<FESpace> fes;
+    shared_ptr<FESpace> fes_func;
     int bonus_intorder;
 
 
-    Array<shared_ptr<BilinearFormIntegrator>> bli;
     Array<shared_ptr<BilinearFormIntegrator>> single_bli;
+    Array<shared_ptr<BilinearFormIntegrator>> m3_bli;
     // shared_ptr<CoefficientFunction> dual_diffop;
     shared_ptr<DifferentialOperator> dual_diffop;
     VorB vb;
+
+    bool testfunction;
 
     shared_ptr<DifferentialOperator> diffop; // the final evaluation
     
@@ -283,12 +286,12 @@ namespace ngcomp
     InterpolateDiffOp (shared_ptr<CoefficientFunction> afunc,
                        shared_ptr<FESpace> afes,
                        shared_ptr<DifferentialOperator> adiffop,
-                       int abonus_intorder)
+                       int abonus_intorder,
+                       bool atestfunction)
       : DifferentialOperator (adiffop->Dim(), 1, VOL, 0), 
-        func(afunc), fes(afes), bonus_intorder(abonus_intorder), diffop(adiffop)
+        func(afunc), fes(afes), bonus_intorder(abonus_intorder), diffop(adiffop), testfunction(atestfunction)
     { 
       // copied from Set (dualshapes)
-      
       vb = VOL;    // for the moment only 
 
       /** Trial-Proxy **/
@@ -310,26 +313,58 @@ namespace ngcomp
         dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
       auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
                                              nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto dual_tr = make_shared<ProxyFunction>(fes, false, false, dual_evaluator,
+                                             nullptr, nullptr, nullptr, nullptr, nullptr);
 
       dual_diffop = dual_evaluator;
+
+
+      //Get FESpace of proxy to interpolate
+      func->TraverseTree
+      ( [&] (CoefficientFunction & nodecf)
+        {
+          if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+              fes_func = proxy->GetFESpace();
+        });
+
+     
 
       for (auto element_vb : fes->GetDualShapeNodes(vb))
         {
           shared_ptr<CoefficientFunction> dual_trial;
+          shared_ptr<CoefficientFunction> proxy_cf;
           if (dual -> Dimension() == 1)
-            { dual_trial = dual * trial; }
+            {
+              dual_trial = dual * trial;
+              proxy_cf = atestfunction ? (dual_tr * afunc) : (dual * afunc) ;
+              //proxy_cf = atestfunction ? (dual * afunc) : (dual_tr * afunc);
+            }
           else
-            { dual_trial = InnerProduct(dual, trial); }
+            {
+              dual_trial = InnerProduct(dual, trial);
+              proxy_cf = atestfunction ? InnerProduct(dual_tr, afunc) : InnerProduct(dual, afunc);
+              //proxy_cf = atestfunction ? InnerProduct(dual, afunc) : InnerProduct(dual_tr, afunc);
+            }
           auto bfi = make_shared<SymbolicBilinearFormIntegrator> (dual_trial, vb, element_vb);
+          auto bfi2 = make_shared<SymbolicBilinearFormIntegrator> (proxy_cf, vb, element_vb);
 	  bfi->SetSimdEvaluate(false);  // dual are not simded, yet
-	  bli.Append(bfi);
-	  if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi)) {
-	    auto sbfi = block_bfi->BlockPtr();
-	    sbfi->SetSimdEvaluate(false);
-	    single_bli.Append(sbfi);
-	  }
+	  bfi2->SetSimdEvaluate(false);  // dual are not simded, yet
+	  if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi))
+            {
+              auto sbfi = block_bfi->BlockPtr();
+              sbfi->SetSimdEvaluate(false);
+              single_bli.Append(sbfi);
+            }
 	  else
-	    { single_bli.Append(bfi); }
+	    single_bli.Append(bfi);
+          if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi2))
+            {
+              auto sbfi = block_bfi->BlockPtr();
+              sbfi->SetSimdEvaluate(false);
+              m3_bli.Append(sbfi);
+            }
+	  else
+	    m3_bli.Append(bfi2);
 	}
     }
 
@@ -339,8 +374,8 @@ namespace ngcomp
 		SliceMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const override
     {
-      // static Timer t("interpolateDiffOp, CalcMat");
-      // RegionTracer reg(TaskManager::GetThreadId(), t);    
+      //static Timer t1("interpolateDiffOp, CalcMat");
+      //RegionTracer reg(TaskManager::GetThreadId(), t1);    
 
       HeapReset hr(lh);
       
@@ -378,7 +413,19 @@ namespace ngcomp
       
       FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
       m3 = 0.0;
+
+      shared_ptr<MixedFiniteElement> mfe;
+      auto & func_fel = fes_func->GetFE(ei, lh);
+      if (testfunction)
+        mfe = make_shared<MixedFiniteElement>(interpol_fel, func_fel);
+      else
+        mfe = make_shared<MixedFiniteElement>(func_fel, interpol_fel); 
+
       
+      for (auto sbfi : m3_bli)
+        sbfi->CalcElementMatrixAdd (*mfe, trafo, m3, symmetric_so_far, lh);
+      cout << "m3 test = " << m3 << endl;
+      m3 = 0.0;
       for (int k = 0; k < vtrialtest.Size(); k++)
         {
           vtrialtest = 0.0;
@@ -386,8 +433,10 @@ namespace ngcomp
       
           for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
             {
+               
+
               if (el_vb == VOL)
-                {
+                { 
                   IntegrationRule ir(interpol_fel.ElementType(), 2*interpol_fel.Order()+bonus_intorder);
                   auto & mir = trafo(ir, lh);
                   FlatMatrix<> mflux(ir.Size(), dim, lh);
@@ -420,6 +469,9 @@ namespace ngcomp
             }
         }
 
+      cout << "m3 = " << m3 << endl;
+      
+
       // nonconst_trafo.userdata = saveud;
       
       FlatMatrix<> m2m3 = elmat * m3 | lh;
@@ -438,7 +490,7 @@ namespace ngcomp
                                         shared_ptr<DifferentialOperator> diffop,
                                         int abonus_intorder)
     : ProxyFunction(aspace, atestfunction, false,
-                    make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder), nullptr, nullptr,
+                    make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder,atestfunction), nullptr, nullptr,
                     nullptr, nullptr, nullptr),
       func(afunc), space(aspace), testfunction(atestfunction),
       final_diffop(diffop),
