@@ -354,7 +354,7 @@ namespace ngfem
 
            Cast() -> CalcDualShape2 (mip, SBLambda([shape] (size_t nr, auto val)
                                                    {
-                                                     shape.Row(nr) = val;
+                                                     shape.Row(nr) = val.AsVector();
                                                    }));
          });
     }
@@ -372,7 +372,7 @@ namespace ngfem
              {
                Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
                                                           {
-                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val;
+                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
                                                           }));
              }
          });
