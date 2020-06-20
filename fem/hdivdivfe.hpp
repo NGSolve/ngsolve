@@ -717,7 +717,8 @@ namespace ngfem
                    auto d2 = sqr(mir[i].GetJacobiDet());
 
                    Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
-                   physmat = values.Col(i);
+                   // physmat = values.Col(i);
+                   physmat.AsVector() = values.Col(i);                   
                    mat = 1/d2 * Trans(jac) * physmat * jac;
                  }
              });

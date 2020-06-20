@@ -674,6 +674,16 @@ namespace ngbla
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
     }
 
+    auto AsVector() 
+    {
+      return FlatVec<H*W,T> (data.Ptr());
+    }
+
+    auto AsVector() const
+    {
+      return FlatVec<H*W,const T> (data.Ptr());
+    }
+
     void DoArchive(Archive& ar)
     {
       ar.Do(&data[0], H*W);
