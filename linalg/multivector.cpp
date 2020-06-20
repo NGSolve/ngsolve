@@ -17,7 +17,7 @@ namespace ngla {
   
 void MultiVector :: Expand (size_t nr)
 {
-  for (auto i : Range(nr))
+  for ([[maybe_unused]] auto i : Range(nr))
     vecs.Append (refvec->CreateVector());
 }
 
