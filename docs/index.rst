@@ -9,6 +9,7 @@ lecture notes are here: `Scientific Computing <https://www.asc.tuwien.ac.at/~sch
 and the `Python programming language <https://www.python.org>`_. The
 interface to Python is inspired by the `FEniCS project <https://fenicsproject.org>`_.
 
+We acknowledge support from the `TU Wien <https://www.tuwien.at>`_ and by the Austrian Science Foundation `FWF <https://www.fwf.ac.at/>`_ within project grant `SFB65 Taming Complexity in Partial Differential Systems <https://www.univie.ac.at/sfb65/>`_.
              
 .. toctree::
   :caption: Whetting the appetite
