@@ -354,7 +354,7 @@ namespace ngfem
 
            Cast() -> CalcDualShape2 (mip, SBLambda([shape] (size_t nr, auto val)
                                                    {
-                                                     shape.Row(nr) = val;
+                                                     shape.Row(nr) = val.AsVector();
                                                    }));
          });
     }
@@ -372,7 +372,7 @@ namespace ngfem
              {
                Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
                                                           {
-                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val;
+                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
                                                           }));
              }
          });
@@ -458,7 +458,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
               hv(k) = SIMD<double>(1.0);
               VecToSymMat<DIM> (hv, mat);
               Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * mat * jacI;
-              trans.Col(k) = physmat;
+              trans.Col(k) = physmat.AsVector();
             }
           
           
@@ -539,7 +539,8 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                
                auto jacI = mir[i].GetJacobianInverse();
                
-               Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = values.Col(i);
+               Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
+               physmat.AsVector() = values.Col(i);
                mat = jacI * physmat * Trans(jacI);
              });
           

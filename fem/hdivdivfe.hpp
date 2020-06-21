@@ -533,7 +533,7 @@ namespace ngfem
                   hv(k) = SIMD<double>(1.0);
                   VecToSymMat<DIM> (hv, mat);
                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2*(jac * mat * Trans(jac));
-                  trans.Col(k) = physmat;
+                  trans.Col(k) = physmat.AsVector();
                 }
               
               
@@ -623,7 +623,7 @@ namespace ngfem
                                                         shapes(j*sqr(DIMSPACE)+k,i) = physmat(k);
                                                       */
                                                       Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
-                                                      transvec = trans * val.Shape();
+                                                      transvec = (trans * val.Shape()).AsVector();
                                                       for (size_t k = 0; k < sqr(DIMSPACE); k++)
                                                         shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
                                                     }));

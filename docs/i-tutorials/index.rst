@@ -20,6 +20,9 @@ Copyright: The i-tutorials are a part of NGSolve and are covered by the
 LGPL open source license. You may extend and modify them for your use,
 but you have to refer to the original source.
 
+We acknowledge support from the `TU Wien <https://www.tuwien.at>`_ and by the Austrian Science Foundation `FWF <https://www.fwf.ac.at/>`_ within project grant `SFB65 Taming Complexity in Partial Differential Systems <https://www.univie.ac.at/sfb65/>`_.
+
+
 Installation
 ~~~~~~~~~~~~
 
