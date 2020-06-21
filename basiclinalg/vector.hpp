@@ -1638,6 +1638,8 @@ namespace ngbla
     }
     */
 
+    INLINE T * Data () const { return data; }
+
     /// vector size
     size_t Size () const { return s; }
 
