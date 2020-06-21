@@ -289,7 +289,7 @@ namespace ngcomp
                        int abonus_intorder,
                        bool atestfunction)
       : DifferentialOperator (adiffop->Dim(), 1, VOL, 0), 
-        func(afunc), fes(afes), bonus_intorder(abonus_intorder), diffop(adiffop), testfunction(atestfunction)
+        func(afunc), fes(afes), bonus_intorder(abonus_intorder), testfunction(atestfunction), diffop(adiffop)
     { 
       // copied from Set (dualshapes)
       vb = VOL;    // for the moment only 
@@ -372,15 +372,18 @@ namespace ngcomp
 		SliceMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const override
     {
-      //static Timer t1("interpolateDiffOp, CalcMat");
-      //RegionTracer reg(TaskManager::GetThreadId(), t1);    
+      static Timer t1("interpolateDiffOp, CalcMat");
+      static Timer tm2("interpolateDiffOp, CalcMat m2");
+      static Timer t23("interpolateDiffOp, mult 23");
+      static Timer t23t("interpolateDiffOp, mult 23t");
+      RegionTracer reg(TaskManager::GetThreadId(), t1);    
 
       HeapReset hr(lh);
       
       const ElementTransformation & trafo = mir.GetTransformation();
       ElementId ei = trafo.GetElementId();
       auto & interpol_fel = fes->GetFE(ei, lh);
-      int dim = func->Dimension();
+      // int dim = func->Dimension();
 
       /** Calc Element Matrix - shape * dual_shape **/
       FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
@@ -388,17 +391,20 @@ namespace ngcomp
       bool symmetric_so_far = false;
 
       // auto saveud = nonconst_trafo.userdata;
-      for (auto sbfi : single_bli)
+      {
+      RegionTracer reg(TaskManager::GetThreadId(), tm2);          
+      for (auto & sbfi : single_bli)
         sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
 
       CalcInverse(elmat); 
-      
+      }
       /** func * dual_shape **/
-      FlatVector<> elfluxadd(interpol_fel.GetNDof(), lh);
+      // FlatVector<> elfluxadd(interpol_fel.GetNDof(), lh);
       size_t nshape = inner_fel.GetNDof();
       
-      FlatVector<> vtrialtest(nshape, lh);
+      // FlatVector<> vtrialtest(nshape, lh);
       auto save_ud = trafo.PushUserData();
+      /*
       ProxyUserData myud;
       myud.trial_elvec = &vtrialtest;
       myud.test_elvec = &vtrialtest;
@@ -407,34 +413,37 @@ namespace ngcomp
 
       auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
       nonconst_trafo.userdata = &myud;
+      */
 
+      // auto & func_fel = fes_func->GetFE(ei, lh);
+      auto & func_fel = inner_fel;
       
-      FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
-      FlatMatrix<> m3T( nshape, interpol_fel.GetNDof(), lh);
-      m3 = 0.0;
-      m3T = 0.0;
+      MixedFiniteElement mfe = (testfunction)
+        ? MixedFiniteElement (interpol_fel, func_fel) 
+        : MixedFiniteElement (func_fel, interpol_fel); 
 
-      shared_ptr<MixedFiniteElement> mfe;
-      auto & func_fel = fes_func->GetFE(ei, lh);
+      FlatMatrix<> m2m3 (elmat.Height(), nshape, lh);
+
       if (testfunction)
-        mfe = make_shared<MixedFiniteElement>(interpol_fel, func_fel);
-      else
-        mfe = make_shared<MixedFiniteElement>(func_fel, interpol_fel); 
-
-      
-      for (auto sbfi : m3_bli)
         {
-          if (testfunction)
-            sbfi->CalcElementMatrixAdd (*mfe, trafo, m3T, symmetric_so_far, lh);
-          else
-            sbfi->CalcElementMatrixAdd (*mfe, trafo, m3, symmetric_so_far, lh);
+          FlatMatrix<> m3T(nshape, interpol_fel.GetNDof(), lh);
+          m3T = 0.0;
+          for (auto & sbfi : m3_bli)
+            sbfi->CalcElementMatrixAdd (mfe, trafo, m3T, symmetric_so_far, lh);
+          RegionTracer reg(TaskManager::GetThreadId(), t23t);              
+          m2m3 = elmat * Trans(m3T);
         }
-      if (testfunction)
-        m3 = Trans(m3T);
+      else
+        {
+          FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
+          m3 = 0.0;
+          for (auto & sbfi : m3_bli)
+            sbfi->CalcElementMatrixAdd (mfe, trafo, m3, symmetric_so_far, lh);
+          RegionTracer reg(TaskManager::GetThreadId(), t23);                        
+          m2m3 = elmat * m3;
+        }
       
-      FlatMatrix<> m2m3 = elmat * m3 | lh;
       FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
-      // fes->GetEvaluator(vb)->CalcMatrix(interpol_fel, mir, m1, lh);
       diffop->CalcMatrix(interpol_fel, mir, m1, lh);
       mat = m1*m2m3;
     }
