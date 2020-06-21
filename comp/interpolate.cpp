@@ -337,22 +337,20 @@ namespace ngcomp
             {
               dual_trial = dual * trial;
               proxy_cf = atestfunction ? (dual_tr * afunc) : (dual * afunc) ;
-              //proxy_cf = atestfunction ? (dual * afunc) : (dual_tr * afunc);
             }
           else
             {
               dual_trial = InnerProduct(dual, trial);
               proxy_cf = atestfunction ? InnerProduct(dual_tr, afunc) : InnerProduct(dual, afunc);
-              //proxy_cf = atestfunction ? InnerProduct(dual, afunc) : InnerProduct(dual_tr, afunc);
             }
           auto bfi = make_shared<SymbolicBilinearFormIntegrator> (dual_trial, vb, element_vb);
           auto bfi2 = make_shared<SymbolicBilinearFormIntegrator> (proxy_cf, vb, element_vb);
-	  bfi->SetSimdEvaluate(false);  // dual are not simded, yet
-	  bfi2->SetSimdEvaluate(false);  // dual are not simded, yet
+	  bfi->SetSimdEvaluate(true);  // try simd
+	  bfi2->SetSimdEvaluate(true);
 	  if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi))
             {
               auto sbfi = block_bfi->BlockPtr();
-              sbfi->SetSimdEvaluate(false);
+              sbfi->SetSimdEvaluate(true);
               single_bli.Append(sbfi);
             }
 	  else
@@ -360,7 +358,7 @@ namespace ngcomp
           if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi2))
             {
               auto sbfi = block_bfi->BlockPtr();
-              sbfi->SetSimdEvaluate(false);
+              sbfi->SetSimdEvaluate(true);
               m3_bli.Append(sbfi);
             }
 	  else
@@ -412,9 +410,9 @@ namespace ngcomp
 
       
       FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
-      FlatMatrix<> m32( nshape, interpol_fel.GetNDof(), lh);
+      FlatMatrix<> m3T( nshape, interpol_fel.GetNDof(), lh);
       m3 = 0.0;
-      m32 = 0.0;
+      m3T = 0.0;
 
       shared_ptr<MixedFiniteElement> mfe;
       auto & func_fel = fes_func->GetFE(ei, lh);
@@ -427,58 +425,12 @@ namespace ngcomp
       for (auto sbfi : m3_bli)
         {
           if (testfunction)
-            sbfi->CalcElementMatrixAdd (*mfe, trafo, m32, symmetric_so_far, lh);
+            sbfi->CalcElementMatrixAdd (*mfe, trafo, m3T, symmetric_so_far, lh);
           else
             sbfi->CalcElementMatrixAdd (*mfe, trafo, m3, symmetric_so_far, lh);
         }
       if (testfunction)
-        m3 = Trans(m32);
-      /*m3 = 0.0;
-      for (int k = 0; k < vtrialtest.Size(); k++)
-        {
-          vtrialtest = 0.0;
-          vtrialtest(k) = 1;
-      
-          for (auto el_vb : fes->GetDualShapeNodes(trafo.VB()))
-            {
-               
-
-              if (el_vb == VOL)
-                { 
-                  IntegrationRule ir(interpol_fel.ElementType(), 2*interpol_fel.Order()+bonus_intorder);
-                  auto & mir = trafo(ir, lh);
-                  FlatMatrix<> mflux(ir.Size(), dim, lh);
-                  func->Evaluate (mir, mflux);
-                  
-                  for (size_t j : Range(mir))
-                    mflux.Row(j) *= mir[j].GetWeight();
-                  dual_diffop -> ApplyTrans (interpol_fel, mir, mflux, elfluxadd, lh);
-                  m3.Col(k) += elfluxadd;
-                }
-              else
-                {
-                  Facet2ElementTrafo f2el (interpol_fel.ElementType(), el_vb);
-                  for (int locfnr : Range(f2el.GetNFacets()))
-                    {
-                      IntegrationRule irfacet(f2el.FacetType(locfnr), 2*interpol_fel.Order()+bonus_intorder);
-                      auto & irvol = f2el(locfnr, irfacet, lh);
-                      auto & mir = trafo(irvol, lh);
-                      mir.ComputeNormalsAndMeasure(interpol_fel.ElementType(), locfnr);
-                      
-                      FlatMatrix<> mflux(irfacet.Size(), dim, lh);
-                      func->Evaluate (mir, mflux);
-
-                      for (size_t j : Range(mir))
-                        mflux.Row(j) *= mir[j].GetWeight();
-                      dual_diffop -> ApplyTrans (interpol_fel, mir, mflux, elfluxadd, lh);
-                      m3.Col(k) += elfluxadd;                      
-                    }
-                }
-            }
-        }*/
-      
-
-      // nonconst_trafo.userdata = saveud;
+        m3 = Trans(m3T);
       
       FlatMatrix<> m2m3 = elmat * m3 | lh;
       FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
