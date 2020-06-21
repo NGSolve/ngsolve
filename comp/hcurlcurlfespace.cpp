@@ -366,8 +366,8 @@ namespace ngcomp
       Mat<D-1,D-1,double> physmat;
       for (size_t i = 0; i < Cast(bfel).ndof; i++)
         {
-          physmat = refmat.Row(i);
-          mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
+          physmat.AsVector() = refmat.Row(i);
+          mat.Col(i) = (Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse()).AsVector();
         }
     }
 
@@ -419,8 +419,8 @@ namespace ngcomp
       Mat<D-2,D-2,double> physmat;
       for (size_t i = 0; i < Cast(bfel).ndof; i++)
         {
-          physmat = refmat.Row(i);
-          mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
+          physmat.AsVector() = refmat.Row(i);
+          mat.Col(i) = (Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse()).AsVector();
         }
     }
 
