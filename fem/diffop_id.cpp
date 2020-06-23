@@ -9,7 +9,25 @@ namespace ngfem
   DiffShape (shared_ptr<CoefficientFunction> proxy,
              shared_ptr<CoefficientFunction> dir)
   {
-    return make_shared<ConstantCoefficientFunction>(0);
+    return ZeroCF(Array<int>());
+  }
+
+  template <int DIM_SPC, VorB VB>
+  shared_ptr<CoefficientFunction> DiffOpIdVectorH1<DIM_SPC,VB> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return ZeroCF(Array<int>( {DIM_SPC} ));
+  }
+
+  //Why do I need to specify this explicitly? See end of this file...
+  //If I neglect it I get /usr/bin/ld: ../comp/libngcomp.so: undefined reference to `ngfem::DiffOpIdVectorH1<3, (ngfem::VorB)2>::DiffShape(std::shared_ptr<ngfem::CoefficientFunction>, std::shared_ptr<ngfem::CoefficientFunction>)'
+  template <>
+  shared_ptr<CoefficientFunction> DiffOpIdVectorH1<3,BBND> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return ZeroCF(Array<int>( {3} ));
   }
 
 
@@ -31,4 +49,6 @@ namespace ngfem
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<1,BND>>;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<2,BND>>;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>;
+  //Here the explicit case should be already handled!!
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>;
 }

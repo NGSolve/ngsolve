@@ -178,6 +178,27 @@ namespace ngfem
     }
     
     void * userdata = nullptr;
+    class UserDataStack {
+      ElementTransformation & trafo;
+      void * save;
+    public:
+      UserDataStack (ElementTransformation & atrafo)
+        : trafo(atrafo)
+      {
+        save = trafo.userdata;
+        trafo.userdata = nullptr;
+      }
+      ~UserDataStack ()
+      {
+        trafo.userdata = save;
+      }
+    };
+    [[nodiscard]]
+      auto PushUserData() const
+      {
+        return UserDataStack(const_cast<ElementTransformation&>(*this));
+      }
+    
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }
     ElementTransformation & operator= (const ElementTransformation & eltrans2) 
@@ -204,9 +225,6 @@ namespace ngfem
 
     /// matrix with points, dim * np
     Matrix<> pointmat;
-    ///
-    // bool pointmat_ownmem;
-
     /// normal vectors (only surfelements)
     FlatMatrix<> nvmat;
   public:
@@ -256,18 +274,7 @@ namespace ngfem
 					 SIMD_BaseMappedIntegrationRule & mir) const override;
 
     ///
-    // const FlatMatrix<> & PointMatrix () const { return pointmat; }
-    ///
     FlatMatrix<> PointMatrix () const { return pointmat; }
-    ///
-    /*
-    void AllocPointMatrix (int spacedim, int vertices)
-    {
-      if (pointmat_ownmem) delete [] &pointmat(0,0);
-      pointmat.AssignMemory (spacedim, vertices, new double[spacedim*vertices]);
-      pointmat_ownmem = 1;
-    }
-    */
     ///
     const FlatMatrix<> & NVMatrix () const { return nvmat; }
 

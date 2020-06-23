@@ -141,6 +141,25 @@ struct GenericBSpline {
   void DoArchive(Archive& ar) { ar & sp; }
 };
 
+template <> void
+cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+{
+  // bspline.hpp is not automatically included. so we should include it:
+  code.top+= "#include <bspline.hpp>\n";
+  
+  stringstream s;
+  s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
+  code.body += Var(index,0,1).Assign(s.str());
+  
+  TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
+      int i1, j1;
+      GetIndex( c1->Dimensions(), ind, i1, j1 );
+      code.body += Var(index).Assign(
+                                               Var(inputs[0],i1,j1).Func(Var(index,0,1).S()+"->operator()"));
+    });
+
+}
+
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
@@ -359,148 +378,24 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
 
 
   template <int D>
-  class NormalVectorCF : public CoefficientFunctionNoDerivative
+  class ReferenceCoordinateCF : public CoefficientFunctionNoDerivative
   {
   public:
-    NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
-    // virtual int Dimension() const { return D; }
-
-      using CoefficientFunctionNoDerivative::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
-    {
-      return 0;
-    }
-    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
-    {
-      if (ip.DimSpace() != D)
-        throw Exception("illegal dim of normal vector");
-      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
-    }
-
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const // override 
-    {
-      const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
-       if(!tpir)
-       {
-         if (ir[0].DimSpace() != D)
-           throw Exception("illegal dim of normal vector");
-         FlatMatrixFixWidth<D> resD(res);
-         for (int i = 0; i < ir.Size(); i++)
-           resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
-       }
-       else
-       {
-         int facet = tpir->GetFacet();
-         auto & mir = *tpir->GetIRs()[facet];
-         int dim = mir[0].DimSpace();
-         int ii = 0;
-         res = 0.0;
-         if(facet == 0)
-         {
-           if(dim == 1)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 2)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 3)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
-         }
-         else
-         {
-           if(dim == 1)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 2)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 3)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
-         }
-      }
-    }
-
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
-    {
-      if (ir[0].DimSpace() != D)
-	throw Exception("illegal dim of normal vector");
-      for (int i = 0; i < ir.Size(); i++)
-	res.Row(i).AddSize(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
-    }
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
-        string miptype;
-        if(code.is_simd)
-          miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
-        else
-          miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
-        auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
-        auto nv = Var("tmp", index);
-        code.body += nv.Assign(nv_expr);
-        for( int i : Range(D))
-          code.body += Var(index,i).Assign(nv(i));
-    }
-
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
-    {
-      /*
-      for (size_t i = 0; i < ir.Size(); i++)
-        for (size_t j = 0; j < D; j++)
-          values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
-      */
-      values.AddSize(D, ir.Size()) = Trans(ir.GetNormals());
-    }
-
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const override 
-    {
-      Evaluate (ir, values);
-    }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-    {
-      Evaluate (ir, values);
-      deriv = 0.0;
-    }
-    
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      Evaluate (ir, result);
-      deriv = 0.0;
-    }
-    */
-  };
-
-  template <int D>
-  class TangentialVectorCF : public CoefficientFunctionNoDerivative
-  {
-  public:
-    TangentialVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
-    // virtual int Dimension() const { return D; }
+    ReferenceCoordinateCF () : CoefficientFunctionNoDerivative(D,false) { ; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       return 0;
     }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
     {
-      if (ip.DimSpace() != D)
+      if (ip.DimElement() != D)
         throw Exception("illegal dim of tangential vector");
-      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
+      res.Range(0,D) = ip.IP().Point().Range(0,D);
     }
+    /*
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         string miptype;
         if(code.is_simd)
@@ -514,149 +409,17 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
           code.body += Var(index,i).Assign(tv(i));
     }
 
-      using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
     }
+    */
   };
 
 
-template <int D>
-  class JacobianMatrixCF : public CoefficientFunctionNoDerivative
-  {
-  public:
-    JacobianMatrixCF () : CoefficientFunctionNoDerivative(D*D,false)
-    {
-      SetDimensions(Array<int>({D,D}));
-    }
 
-    using CoefficientFunctionNoDerivative::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
-    {
-      return 0;
-    }
-    
-    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
-    {
-      if (ip.DimSpace() != D)
-        throw Exception("illegal dim!");
-      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
-    }
-
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
-    {
-      if (ir[0].DimSpace() != D)
-      	throw Exception("illegal dim!");
-      for (int i = 0; i < ir.Size(); i++)
-      	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
-    }
-    
-    /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
-    {
-      values.AddSize(D*D, ir.Size()) = Trans(ir.GetJacobian());
-      }*/
-  };
-
-
-  template <int D>
-  class WeingartenCF : public CoefficientFunctionNoDerivative
-  {
-  public:
-    WeingartenCF () : CoefficientFunctionNoDerivative(D*D,false) { ; }
-
-    void DoArchive(Archive& ar) override
-    {
-      CoefficientFunctionNoDerivative::DoArchive(ar);
-    }
-  
-    using CoefficientFunctionNoDerivative::Evaluate;
-    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
-    {
-      return 0;
-    }
-
-    void Evaluate (const BaseMappedIntegrationPoint & bmip, FlatVector<> res) const override
-    {
-      if ( (bmip.DimSpace() != D) || D == 1)
-        throw Exception("illegal dim of Weingarten tensor");
-
-      const IntegrationPoint& ip = bmip.IP();
-      const ElementTransformation & eltrans = bmip.GetTransformation();
-
-      double eps = 1e-4;
-
-      Mat<D,D-1> dshape;
-      
-      for (int j = 0; j < D-1; j++)   // d / dxj
-        {
-          IntegrationPoint ipl(ip);
-          ipl(j) -= eps;
-          IntegrationPoint ipr(ip);
-          ipr(j) += eps;
-          IntegrationPoint ipll(ip);
-          ipll(j) -= 2*eps;
-          IntegrationPoint iprr(ip);
-          iprr(j) += 2*eps;
-        
-          MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
-          MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
-          MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
-          MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
-
-          dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*sipr.GetNV()-8.0*sipl.GetNV()-siprr.GetNV()+sipll.GetNV());
-        }
-      
-      res = dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse();
-    }
-
-    
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values) const override 
-    {
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
-      LocalHeapMem<10000> lh("Weingarten-lh");
-
-      auto & ir = mir.IR();
-      double eps = 1e-4;
-
-      Mat<D,D-1,SIMD<double>> dshape;
-      Mat<D,D,SIMD<double>> phys_dshape;
-      
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          const SIMD<IntegrationPoint> & ip = ir[i];
-          const ElementTransformation & eltrans = mir[i].GetTransformation();
-
-          for (int j = 0; j < D-1; j++)   // d / dxj
-            {
-              HeapReset hr(lh);
-              SIMD<IntegrationPoint> ipts[4];
-              ipts[0] = ip;
-              ipts[0](j) -= eps;
-              ipts[1] = ip;
-              ipts[1](j) += eps;              
-              ipts[2] = ip;
-              ipts[2](j) -= 2*eps;
-              ipts[3] = ip;
-              ipts[3](j) += 2*eps;
-
-              SIMD_IntegrationRule ir(4, ipts);
-              SIMD_MappedIntegrationRule<D-1,D> mirl(ir, eltrans, lh);
-
-              dshape.Col(j) = (1.0/(12.0*eps)) * ( mirl.GetNormals().Row(2) - mirl.GetNormals().Row(3) - 8.0*mirl.GetNormals().Row(0) + 8.0*mirl.GetNormals().Row(1) );
-            }
-
-          phys_dshape = dshape*mir[i].GetJacobianInverse();
-              
-          for (size_t l = 0; l < D*D; l++)
-            values(l, i) = phys_dshape(l);
-        }
-      
-    }
-    
-  };
 
 
 void ExportCoefficientFunction(py::module &m)
@@ -798,30 +561,29 @@ direction : int
     shared_ptr<CF> GetMeshSizeCF ()
     { return make_shared<MeshSizeCF>(); }
 
-    shared_ptr<CF> GetNormalVectorCF (int dim)
-    { 
+    
+    shared_ptr<CF> GetReferenceCoordinateCF (int dim)
+    {
       switch(dim)
-	{ 
+	{
 	case 1:
-	  return make_shared<NormalVectorCF<1>>();
+	  return make_shared<ReferenceCoordinateCF<1>>();
 	case 2:
-	  return make_shared<NormalVectorCF<2>>();
-	case 3:
-	  return make_shared<NormalVectorCF<3>>();
-	case 4:
-	  return make_shared<NormalVectorCF<4>>();
-	case 5:
-	  return make_shared<NormalVectorCF<5>>();
-	case 6:
-	  return make_shared<NormalVectorCF<6>>();
-        default:
-          throw Exception (string("Normal-vector not implemented for dimension")
-                           +ToString(dim));
+	  return make_shared<ReferenceCoordinateCF<2>>();          
+	default:
+	  return make_shared<ReferenceCoordinateCF<3>>();          
 	}
+    }
+    
+    shared_ptr<CF> GetNormalVectorCF (int dim)
+    {
+      return NormalVectorCF(dim);
     }
 
     shared_ptr<CF> GetTangentialVectorCF (int dim)
-    { 
+    {
+      return TangentialVectorCF(dim);
+      /*
       switch(dim)
 	{
 	case 1:
@@ -831,10 +593,13 @@ direction : int
 	default:
 	  return make_shared<TangentialVectorCF<3>>();
 	}
+      */
     }
 
     shared_ptr<CF> GetJacobianMatrixCF (int dim)
     {
+      return JacobianMatrixCF(dim);
+      /*
       switch(dim)
 	{
 	case 1:
@@ -844,10 +609,13 @@ direction : int
 	default:
 	  return make_shared<JacobianMatrixCF<3>>();
 	}
+      */
     }
 
     shared_ptr<CF> GetWeingartenCF (int dim)
     {
+      return WeingartenCF(dim);
+      /*
       switch(dim)
 	{
         case 1:
@@ -858,6 +626,7 @@ direction : int
 	default:
 	  return make_shared<WeingartenCF<3>>();
 	}
+      */
     }
   };
 
@@ -884,6 +653,8 @@ direction : int
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
+    .def("xref", &SpecialCoefficientFunctions::GetReferenceCoordinateCF, py::arg("dim"),
+         "element reference-coordinates")
     .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
          "depending on contents: normal-vector to geometry or element\n"
          "space-dimension must be provided")
@@ -1115,7 +886,7 @@ cf : ngsolve.CoefficientFunction
                   throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
                 int dim = var->Dimension();
                 Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
-                auto zero = make_shared<ConstantCoefficientFunction>(0);
+                auto zero = ZeroCF(Array<int>());//make_shared<ConstantCoefficientFunction>(0);
                 auto one =  make_shared<ConstantCoefficientFunction>(1);
                 for (int i = 0; i < dim; i++)
                   {
@@ -1244,6 +1015,7 @@ wait : bool
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
+  m.def("Id", [] (int dim) { return IdentityCF(dim); }, "Identity matrix of given dimension");
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
@@ -1269,14 +1041,64 @@ wait : bool
            if (!self->IsComplex())
              {
                Array<double> vals(npoints * self->Dimension());
-               ParallelFor(Range(npoints), [&](size_t i)
+               constexpr size_t maxp = 16;
+               ParallelForRange(Range(npoints), [&](IntRange r)
                            {
-                             LocalHeapMem<1000> lh("CF evaluate");
-                             auto& mp = pts(i);
-                             auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
-                             auto& mip = trafo(IntegrationPoint(mp.x,mp.y,mp.z),lh);
-                             FlatVector<double> fv(self->Dimension(), &vals[i*self->Dimension()]);
-                             self->Evaluate(mip, fv);
+                             LocalHeapMem<50000> lh("CF evaluate");
+                             Matrix<SIMD<double>> simdvals(self->Dimension(), maxp / SIMD<double>::Size());
+                             IntegrationRule ir;
+
+                             try
+                               {
+                                 for (auto i = r.begin(); i < r.end(); )
+                                   {
+                                     HeapReset hr(lh);
+                                     auto& mp = pts(i);
+                                     auto ei = ElementId(mp.vb, mp.nr);
+                                     auto& trafo = mp.mesh->GetTrafo(ei, lh);
+                                     ir.SetSize(0);
+                                     
+                                     auto first = i;
+                                     ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+                                     i++;
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                       {
+                                         ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                         i++;
+                                       }
+                                     SIMD_IntegrationRule simd_ir(ir, lh);
+                                     auto& mir = trafo(simd_ir, lh);                                 
+                                     self->Evaluate(mir, simdvals.Cols(0, simd_ir.Size()));
+                                     
+                                     FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                     SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
+                                                          &simdvals(0,0)[0]);
+                                     fm = Trans(simdfm);
+                                   }
+                               }
+                             catch (ExceptionNOSIMD e)
+                               {
+                                 for (auto i = r.begin(); i < r.end(); )
+                                   {
+                                     HeapReset hr(lh);
+                                     auto& mp = pts(i);
+                                     auto ei = ElementId(mp.vb, mp.nr);
+                                     auto& trafo = mp.mesh->GetTrafo(ei, lh);
+                                     ir.SetSize(0);
+                                     
+                                     auto first = i;
+                                     ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+                                     i++;
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                       {
+                                         ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                         i++;
+                                       }
+                                     auto& mir = trafo(ir, lh);
+                                     FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                     self->Evaluate(mir, fm);
+                                   }
+                               }
                            });
                np_array = MoveToNumpyArray(vals);
              }
@@ -1298,8 +1120,8 @@ wait : bool
          });
     }
 
-  typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
-  py::class_<ParameterCoefficientFunction, spParameterCF, CF>
+  typedef shared_ptr<ParameterCoefficientFunction<double>> spParameterCF;
+  py::class_<ParameterCoefficientFunction<double>, spParameterCF, CF>
     (m, "Parameter", docu_string(R"raw_string(
 CoefficientFunction with a modifiable value
 
@@ -1309,9 +1131,9 @@ value : float
   Parameter value
 
 )raw_string"))
-    .def (py::init ([] (double val)
-                    { return make_shared<ParameterCoefficientFunction>(val); }), py::arg("value"), "Construct a ParameterCF from a scalar")
-    .def(NGSPickle<ParameterCoefficientFunction>())
+    .def (py::init<double>(),
+          py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def(NGSPickle<ParameterCoefficientFunction<double>>())
     .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
           docu_string(R"raw_string(
 Modify parameter value.
@@ -1325,6 +1147,37 @@ value : double
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
     ;
+
+  using spParCFC = shared_ptr<ParameterCoefficientFunction<Complex>>;
+  py::class_<ParameterCoefficientFunction<Complex>, spParCFC, CF>
+    (m, "ParameterC", docu_string(R"raw_string(
+CoefficientFunction with a modifiable complex value
+
+Parameters:
+
+value : complex
+  Parameter value
+
+)raw_string"))
+    .def (py::init<Complex>(),
+          py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def(NGSPickle<ParameterCoefficientFunction<Complex>>())
+    .def("Set", [] (spParCFC cf, Complex val)
+      { cf->SetValue (val); },
+      py::arg("value"),
+      docu_string(R"raw_string(
+Modify parameter value.
+
+Parameters:
+
+value : complex
+  input scalar
+
+)raw_string"))
+    .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
+          "return parameter value")
+    ;
+
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
 BSpline of arbitrary order
@@ -1362,6 +1215,7 @@ vals : list
     ;
 
   m.def ("LoggingCF", LoggingCF, py::arg("cf"), py::arg("logfile")="stdout");
+  m.def ("CacheCF", CacheCF, py::arg("cf"));
 }
 
 
@@ -1719,6 +1573,7 @@ weights : list
                                             throw py::index_error();
                                           return ir[nr];
                                         }, py::arg("nr"), "Return integration point at given position")
+    .def("__len__", &IntegrationRule::Size)
     .def("Integrate", [](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
@@ -1778,7 +1633,7 @@ weights : list
 
 
   py::class_<MeshPoint>(m, "MeshPoint")
-    .def_property_readonly("pnt", [](MeshPoint& p) { return py::make_tuple(p.x,p.y,p.z); })
+    .def_property_readonly("pnt", [](MeshPoint& p) { return py::make_tuple(p.x,p.y,p.z); }, "Gives coordinates of point on reference triangle. One can create a MappedIntegrationPoint using the ngsolve.fem.BaseMappedIntegrationPoint constructor. For physical coordinates the coordinate CoefficientFunctions x,y,z can be evaluated in the MeshPoint")
     .def_property_readonly("mesh", [](MeshPoint& p) { return p.mesh; })
     .def_property_readonly("vb", [](MeshPoint& p) { return p.vb; })
     .def_property_readonly("nr", [](MeshPoint& p) { return p.nr; })
@@ -1895,6 +1750,7 @@ weights : list
     .def_property_readonly("VB", &ElementTransformation::VB, "VorB (VOL, BND, BBND, BBBND)")
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim, "Space dimension of the element transformation")
     .def_property_readonly("elementid", &ElementTransformation::GetElementId, "Element ID of the element transformation")
+    .def_property_readonly("curved", &ElementTransformation::IsCurvedElement, "Is mapping non-affine ?")    
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, double x, double y, double z)
            {
              
@@ -1927,6 +1783,14 @@ weights : list
 
   py::class_<DifferentialOperator, shared_ptr<DifferentialOperator>>
     (m, "DifferentialOperator")
+    .def("__timing__", [&] (const DifferentialOperator & diffop,
+                            const FiniteElement & fel, const ElementTransformation & trafo,
+                            const IntegrationRule & ir)
+         {
+           LocalHeap lh(1000000);
+           auto & mir = trafo(ir, lh);
+           return diffop.Timing (fel, mir);
+         })
     ;
 
   typedef BilinearFormIntegrator BFI;
@@ -2369,9 +2233,12 @@ alpha : double
 
   m.def("VoxelCoefficient",
         [](py::tuple pystart, py::tuple pyend, py::array values,
-           bool linear)
+           bool linear, py::object trafocf)
         -> shared_ptr<CoefficientFunction>
         {
+          shared_ptr<CoefficientFunction> trafo;
+          try { trafo = MakeCoefficient(trafocf); }
+          catch(...) { trafo=nullptr; }
           Array<string> allowed_types = { "float64", "complex128" };
           if(!allowed_types.Contains(py::cast<string>(values.dtype().attr("name"))))
             throw Exception("Only float64 and complex128 dtype arrays allowed!");
@@ -2391,16 +2258,16 @@ alpha : double
               for(auto i : Range(vals))
                 vals[i] = c_array.at(i);
               return make_shared<VoxelCoefficientFunction<Complex>>
-                (start, end, dim_vals, move(vals), linear);
+                (start, end, dim_vals, move(vals), linear, trafo);
             }
           auto d_array = py::cast<py::array_t<double>>(values.attr("ravel")());
           Array<double> vals(values.size());
           for(auto i : Range(vals))
             vals[i] = d_array.at(i);
           return make_shared<VoxelCoefficientFunction<double>>
-            (start, end, dim_vals, move(vals), linear);
+              (start, end, dim_vals, move(vals), linear, trafo);
         }, py::arg("start"), py::arg("end"), py::arg("values"),
-        py::arg("linear")=true, R"delimiter(CoefficientFunction defined on a grid.
+        py::arg("linear")=true, py::arg("trafocf")=DummyArgument(), R"delimiter(CoefficientFunction defined on a grid.
 
 Start and end mark the cartesian boundary of domain. The function will be continued by a constant function outside of this box. Inside a cartesian grid will be created by the dimensions of the numpy input array 'values'. This array must have the dimensions of the mesh and the values stored as:
 x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...

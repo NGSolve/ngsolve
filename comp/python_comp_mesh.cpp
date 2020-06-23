@@ -445,7 +445,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                  pairs.append(py::make_tuple(py::make_tuple(pair[0], pair[1]),idnr));
              }
            return pairs;
-         }, "returns list of periodic nodes with their identification number as [((master_nr, slave_nr),idnr),...]")
+         }, "returns list of periodic nodes with their identification number as [((master_nr, minion_nr),idnr),...]")
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
@@ -668,6 +668,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("order"),
          "Curve the mesh elements for geometry approximation of given order")
 
+    .def("GetCurveOrder", &MeshAccess::GetCurveOrder,
+	 "")
+
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
           {
@@ -677,7 +680,25 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
 	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
-
+    .def("MapToAllElements", [](MeshAccess* self, IntegrationRule& rule, VorB vb)
+         -> py::array_t<MeshPoint>
+                             {
+                               Array<MeshPoint> points;
+                               points.SetAllocSize(self->GetNE() * rule.Size());
+                               for(auto el : self->Elements(vb))
+                                 for(const auto& p : rule)
+                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
+                               return MoveToNumpyArray(points);
+                             })
+    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, VorB vb)
+         -> py::array_t<MeshPoint>
+                             {
+                               Array<MeshPoint> points;
+                               for(auto el : self->Elements(vb))
+                                 for(const auto& p : rules[el.GetType()])
+                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
+                               return MoveToNumpyArray(points);
+                             })
     ;
     PyDefVectorized(mesh_access, "__call__",
          [](MeshAccess* ma, double x, double y, double z, VorB vb)

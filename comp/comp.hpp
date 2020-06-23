@@ -61,6 +61,7 @@ namespace ngcomp
 #include "pde.hpp"
 
 #include "postproc.hpp"
+#include "interpolate.hpp"
 
 #include "tpfes.hpp"
 #include "hcurlhdivfes.hpp"
@@ -77,6 +78,7 @@ namespace ngcomp
 #include "reorderedfespace.hpp"
 
 #include "facetsurffespace.hpp"
+#include "fesconvert.hpp"
 
 // #include "bddc.hpp"
 #include "vtkoutput.hpp"

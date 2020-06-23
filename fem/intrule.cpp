@@ -385,6 +385,8 @@ namespace ngfem
 
   template class MappedIntegrationPoint<0,0>;
   template class MappedIntegrationPoint<0,1>;
+  template class MappedIntegrationPoint<0,2>;
+  template class MappedIntegrationPoint<0,3>;
   template class MappedIntegrationPoint<1,1>;
   template class MappedIntegrationPoint<1,2>;
   template class MappedIntegrationPoint<2,2>;
@@ -392,8 +394,6 @@ namespace ngfem
   template class MappedIntegrationPoint<2,3>;
   template class MappedIntegrationPoint<3,3>;
   
-  template class MappedIntegrationPoint<0,2>;
-  template class MappedIntegrationPoint<0,3>;
 
 
 
@@ -455,41 +455,6 @@ namespace ngfem
   int BaseMappedIntegrationRule :: DimElement() const
   {
     return eltrans.ElementDim();
-    /*
-    switch(eltrans.VB())
-      {
-      case VOL:
-        switch (eltrans.SpaceDim())
-	  {
-          case 1: return 1;
-          case 2: return 2;
-          case 3: return 3;
-          }
-        break;
-      case BND:
-        switch (eltrans.SpaceDim())
-	  {
-          case 1: return 0;
-          case 2: return 1;
-          case 3: return 2;
-          }
-        break;
-      case BBND:
-        switch (eltrans.SpaceDim())
-	  {
-          case 2: return 0;
-          case 3: return 1;
-          }
-        break;
-      case BBBND:
-        switch (eltrans.SpaceDim())
-	  {
-          case 3: return 0;
-          }
-        break;
-      }
-    throw Exception("BaseMappedIntegrationRule::DimElement, illegal dimension");
-    */
   }
 
   int BaseMappedIntegrationRule :: DimSpace() const
@@ -528,7 +493,8 @@ namespace ngfem
           hmips[i].SetMeasure(1);
         return;
       }
-    if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
+    if constexpr(DIM_ELEMENT == 3)
+      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
       {
         // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
 	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
@@ -1341,7 +1307,7 @@ namespace ngfem
 	}
       };
 
-    ip.SetPrecomputedGeometry(true);
+    // ip.SetPrecomputedGeometry(true);
     return ip;
   }
 
@@ -3381,7 +3347,8 @@ namespace ngfem
           hmips[i].SetMeasure(1);
         return;
       }
-    if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
+    if constexpr(DIM_ELEMENT == 3)
+      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
       {
         // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
 	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
@@ -3461,10 +3428,10 @@ namespace ngfem
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
   TransformGradient (BareSliceMatrix<SIMD<double>> grad) const 
   {
-    if (DIM_ELEMENT != DIM_SPACE)
+    if constexpr(DIM_ELEMENT != DIM_SPACE)
       throw Exception("transformgrad only available for volume mapping");
-    
-    for (size_t i = 0; i < mips.Size(); i++)
+    else
+      for (size_t i = 0; i < mips.Size(); i++)
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
         // Vec<DIM_SPACE,SIMD<double>> vphys =
@@ -3476,10 +3443,10 @@ namespace ngfem
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
   TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const 
   {
-    if (DIM_ELEMENT != DIM_SPACE)
+    if constexpr (DIM_ELEMENT != DIM_SPACE)
       throw Exception("transformgrad only available for volume mapping");
-    
-    for (size_t i = 0; i < mips.Size(); i++)
+    else
+      for (size_t i = 0; i < mips.Size(); i++)
       {
         Vec<DIM_ELEMENT,SIMD<double>> vref = grad.Col(i);
         // Vec<DIM_SPACE,SIMD<double>> vphys =

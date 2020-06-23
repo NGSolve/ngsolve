@@ -1,6 +1,7 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
 from ngsolve import Projector, Norm
+from .utils import TimeFunction
 
 class NewtonSolver:
     def __init__(self, a, u, rhs=None, freedofs=None,
@@ -16,9 +17,10 @@ class NewtonSolver:
         else:
             self.freedofs = freedofs or u.space.FreeDofs(a.condense)
 
+    @TimeFunction
     def Solve(self, maxit=100, maxerr=1e-11, dampfactor=1,
               printing=False, callback=None, linesearch=False,
-              printenergy=False, print_wrong_direction=True):
+              printenergy=False, print_wrong_direction=False):
         numit = 0
         err = 1.
         a, u, w, r,uh = self.a, self.u, self.w, self.r, self.uh
@@ -32,12 +34,7 @@ class NewtonSolver:
             a.AssembleLinearization(u.vec)
             a.Apply(u.vec, r)
 
-            if self.inverse in ("sparsecholesky", "given") and self.inv:
-                self.inv.Update()
-            else:
-                self.inv = a.mat.Inverse(self.freedofs,
-                                         inverse=self.inverse)
-
+            self._UpdateInverse()
             if self.rhs is not None:
                 r.data -= self.rhs.vec
             if a.condense:
@@ -49,8 +46,8 @@ class NewtonSolver:
                 w.data = self.inv * r
 
             err2 = InnerProduct(w,r)
-            if err2 < 0:
-                if print_wrong_direction:
+            if print_wrong_direction:
+                if err2 < 0:
                     print("wrong direction")
             err = sqrt(abs(err2))
             if printing:
@@ -82,12 +79,19 @@ class NewtonSolver:
     def SetDirichlet(self, dirichletvalues):
         a, u, w, r = self.a, self.u, self.w, self.r
         a.AssembleLinearization(u.vec)
-        self.inv = a.mat.Inverse(self.freedofs, inverse=self.inverse)
-
+        self._UpdateInverse()
         w.data = dirichletvalues-u.vec
         r.data = a.mat * w
         w.data -= self.inv*r
         u.vec.data += w
+
+    def _UpdateInverse(self):
+        if self.inverse in ("sparsecholesky", "given") and self.inv:
+            self.inv.Update()
+        else:
+            self.inv = self.a.mat.Inverse(self.freedofs,
+                                          inverse=self.inverse)
+
 
 def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", \
                dirichletvalues=None, dampfactor=1, printing=True, callback=None):
@@ -183,5 +187,6 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
                         printing=printing,
                         callback=callback,
                         linesearch=linesearch,
-                        printenergy=printing)
+                        printenergy=printing,
+                        print_wrong_direction=True)
 

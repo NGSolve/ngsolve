@@ -4,7 +4,7 @@ add_executable(kernel_generator generate_mat_kernels.cpp)
 
 target_compile_definitions(kernel_generator PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(kernel_generator PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options})
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
   COMMAND kernel_generator
@@ -15,7 +15,7 @@ add_custom_target(kernel_generated DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/matkernel
 
 add_library(ngbla ${NGS_LIB_TYPE}
         bandmatrix.cpp calcinverse.cpp cholesky.cpp 
-        eigensystem.cpp vecmat.cpp LapackGEP.cpp
+        eigensystem.cpp LapackGEP.cpp
         python_bla.cpp avector.cpp ngblas.cpp
         )
 

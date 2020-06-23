@@ -74,7 +74,7 @@ public:
     additional_diffops.Set (name, diffop);
   }
   
-  shared_ptr<DifferentialOperator> GetAdditionalEvaluator (string name) const
+  virtual shared_ptr<DifferentialOperator> GetAdditionalEvaluator (string name) const
   {
     if (additional_diffops.Used(name))
       return additional_diffops[name];
@@ -86,7 +86,7 @@ public:
     return additional_diffops;
   }
 
-  shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
+  virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
   {
     if (additional_diffops.Used(name))
     {
@@ -269,9 +269,12 @@ public:
   int trial_comp;
   int eval_deriv = 0; // 0 .. evaluate bfi, 1 .. deriv, 2 .. second order deriv
   const FiniteElement * fel = nullptr;
-  // const FlatVector<double> * elx;
-  // LocalHeap * lh;
+  FlatArray<pair<const CoefficientFunction*, void*>> caches;
 
+  FlatVector<double> *trial_elvec = nullptr, *test_elvec = nullptr; // for shape-wise evaluate
+  LocalHeap * lh = nullptr;
+
+  
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
       remember_cf_first(0, nullptr), remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
@@ -582,6 +585,13 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
+
+   virtual shared_ptr<CoefficientFunction>
+   DiffShape (shared_ptr<CoefficientFunction> proxy,
+              shared_ptr<CoefficientFunction> dir) const override
+  {
+    return diffop->DiffShape(proxy,dir);
+  }
 };
 
 
@@ -645,6 +655,7 @@ public:
 
     int trial_difforder, test_difforder;
     bool is_symmetric;
+    bool has_interpolate; // is there an interpolate in the expression tree ? 
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                                    VorB aelement_boundary);
@@ -678,12 +689,14 @@ public:
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<double> elmat,
+                          bool & symmetric_so_far,                          
                           LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<Complex> elmat,
+                          bool & symmetric_so_far,                          
                           LocalHeap & lh) const override;    
 
     
@@ -691,6 +704,7 @@ public:
     void T_CalcElementMatrixAdd (const FiniteElement & fel,
                                  const ElementTransformation & trafo, 
                                  FlatMatrix<SCAL_RES> elmat,
+                                 bool & symmetric_so_far, 
                                  LocalHeap & lh) const;
 
     template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
@@ -698,6 +712,13 @@ public:
                                    const ElementTransformation & trafo, 
                                    FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const;
+
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
+    void T_CalcElementMatrixAddShapeWise (const FiniteElement & fel,
+                                          const ElementTransformation & trafo, 
+                                          FlatMatrix<SCAL_RES> elmat,
+                                          LocalHeap & lh) const;
+
     
     NGS_DLL_HEADER virtual void 
     CalcLinearizedElementMatrix (const FiniteElement & fel,
@@ -750,15 +771,30 @@ public:
   public:
     SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 
-    virtual VorB VB() const { return vb; }
-    virtual bool BoundaryForm() const { return vb == BND; }
+    virtual VorB VB() const override { return vb; }
+    virtual bool BoundaryForm() const override { return vb == BND; }
 
-    NGS_DLL_HEADER virtual void
-    CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
-                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                     const ElementTransformation & seltrans,
-                     FlatVector<double> elvec,
-                     LocalHeap & lh) const;
+    NGS_DLL_HEADER void
+    CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
+                    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                    const ElementTransformation & seltrans,
+                    FlatVector<double> elvec,
+                    LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER void
+    CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
+                    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                    const ElementTransformation & seltrans,
+                    FlatVector<Complex> elvec,
+                    LocalHeap & lh) const override;
+
+  private:
+    template<typename TSCAL>
+    void T_CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+                            const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                            const ElementTransformation & seltrans,
+                            FlatVector<TSCAL> elvec,
+                            LocalHeap & lh) const;
   };
 
 
@@ -800,6 +836,21 @@ public:
                      LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
+    CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                     const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                     const FiniteElement & volumefel2, int LocalFacetNr2,
+                     const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                     FlatMatrix<Complex> elmat,
+                     LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
+    CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                     const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                     FlatMatrix<Complex> elmat,
+                     LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
     CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                                const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                                const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
@@ -833,6 +884,21 @@ public:
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
 
+  private:
+    template<typename TSCAL>
+    void T_CalcFacetMatrix(const FiniteElement & volumefel1, int LocalFacetNr1,
+                           const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                           const FiniteElement & volumefel2, int LocalFacetNr2,
+                           const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                           FlatMatrix<TSCAL> elmat,
+                           LocalHeap & lh) const;
+
+    template<typename TSCAL>
+    void T_CalcFacetMatrix(const FiniteElement & volumefel, int LocalFacetNr,
+                           const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                           const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                           FlatMatrix<TSCAL> elmat,
+                           LocalHeap & lh) const;
   };
 
   class SymbolicEnergy : public BilinearFormIntegrator

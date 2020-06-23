@@ -1611,9 +1611,17 @@ namespace ngcomp
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
     if (var == shape.get())
-      return diffop[VOL]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
-
+      {
+        for (int i = 0; i < 4; i++)
+          if (diffop[i])
+            return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
+        throw Exception("don't have any diffop for shape-derivative");
+      }
     
+    if ( (CoefficientFunction*)gf == var)
+      return dir->Operator(diffop[0]);
+
+        /*
     if (auto gfvar = dynamic_cast<const GridFunction*> (var))
       if (this == const_cast<GridFunction*>(gfvar)->GetDeriv().get())
         // if (gf == gfvar)
@@ -1622,11 +1630,23 @@ namespace ngcomp
             return proxydir -> Deriv();
           throw Exception("direction must be a test-function");
         }
+        */
 
     return CoefficientFunctionNoDerivative::Diff (var, dir);
   }
 
-
+  shared_ptr<GridFunctionCoefficientFunction>
+  GridFunctionCoefficientFunction :: GetTrace() const
+  {
+    auto tracecf = make_shared<GridFunctionCoefficientFunction> (*this);
+    for (int i = 0; i < 4; i++)
+      if (tracecf->diffop[i])
+        {
+          tracecf->diffop[i] = nullptr;  // clear first diffop
+          break;
+        }
+    return tracecf;
+  }
 
 
   

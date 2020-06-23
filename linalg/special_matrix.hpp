@@ -311,6 +311,8 @@ namespace ngla
 
   public:
     BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats);
+
+    bool IsComplex() const override { return row_reps[0]->IsComplex(); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 

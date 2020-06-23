@@ -25,6 +25,9 @@ namespace ngcomp
 
     Array<bool> fine_facet;
 
+    bool quadfullpol;  // use quad elements with full polynomial space, but divdiv larger than L^{k+1}*
+    bool algebraic_mapping;  // shapes are mapped algebraically from the reference element,
+    // if false, then shapes are derivatives of mapped potentials
   public:
     HDivDivFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
     static DocInfo GetDocu ();

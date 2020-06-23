@@ -21,4 +21,6 @@ for better autocompletion support install it with pip.")
 endif(PYBIND11_STUBS)
 endif(BUILD_STUB_FILES)
 
+add_subdirectory(webgui)
+
 endif(NETGEN_USE_PYTHON)

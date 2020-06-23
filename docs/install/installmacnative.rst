@@ -1,4 +1,4 @@
-.. |Python| replace:: Python |python_version|
+.. |Python| replace:: Python 3.8
 .. _Python: https://www.python.org/downloads/mac-osx/
 		    
 Build on Mac OS X.

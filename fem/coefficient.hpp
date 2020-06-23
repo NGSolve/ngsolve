@@ -16,11 +16,11 @@ namespace ngfem
   class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this_virtual<CoefficientFunction>
   {
   private:
-    int dimension;
+    int dimension = 1;
     Array<int> dims;
   protected:
     bool elementwise_constant = false;
-    bool is_complex;
+    bool is_complex = false;
   public:
     // default constructor for archive
     CoefficientFunction() = default;
@@ -424,10 +424,9 @@ namespace ngfem
   template <typename TCF, typename BASE = CoefficientFunction>
   class T_CoefficientFunction : public BASE
   {
-  protected:
+  public:
     using BASE::IsComplex;
     using BASE::Dimension;
-  public:
     using BASE::BASE;
       
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
@@ -672,40 +671,31 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
+  template<typename SCAL>
   class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunctionNoDerivative
   {
     ///
-    double val;
+    SCAL val;
   public:
     ///
     ParameterCoefficientFunction() = default;
-    ParameterCoefficientFunction (double aval);
+    ParameterCoefficientFunction (SCAL aval);
     ///
     virtual ~ParameterCoefficientFunction ();
     ///
-    void DoArchive(Archive& ar) override
-    {
-      CoefficientFunctionNoDerivative::DoArchive(ar);
-      ar & val;
-    }
+    void DoArchive (Archive& ar) override;
+
     using CoefficientFunction::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
-    {
-      return val;
-    }
-    
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
-    { values.AddSize(Dimension(), ir.Size()) = val; }
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
-    { values = val; }
-    */
-    virtual void SetValue (double in) { val = in; }
-    virtual double GetValue () { return val; }
-    virtual void PrintReport (ostream & ost) const override;
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
+
+    virtual void SetValue (SCAL in) { val = in; }
+    virtual SCAL GetValue () { return val; }
+    void PrintReport (ostream & ost) const override;
+    void GenerateCode (Code &code, FlatArray<int> inputs, int index) const override;
   };
 
   
@@ -1292,13 +1282,6 @@ public:
   }
 };
 
-  template <typename OP /* , typename OPC */> 
-shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                          OP lam, /* OPC lamc, */ string name="undefined")
-{
-  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
-}
-
 
 
   
@@ -1655,6 +1638,12 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> IdentityCF (int dim);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
@@ -1700,6 +1689,43 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> LoggingCF (shared_ptr<CoefficientFunction> func, string logfile="stdout");
 
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CacheCF (shared_ptr<CoefficientFunction> func);
+
+  NGS_DLL_HEADER
+  void PrecomputeCacheCF (CoefficientFunction & func, SIMD_BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh);
+
+  NGS_DLL_HEADER Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func);
+  NGS_DLL_HEADER
+  void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh);
+  NGS_DLL_HEADER
+  void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh);
+
+  
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> NormalVectorCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> JacobianMatrixCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> WeingartenCF (int dim);
+
+  template <typename OP /* , typename OPC */>
+shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
+                                          OP lam, /* OPC lamc, */ string name="undefined")
+{
+  if (c1->GetDescription() == "ZeroCF" && lam(0.)==0.)
+  {
+    return ZeroCF(c1->Dimensions());
+  }
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
+}
+
+  
 }
 
 

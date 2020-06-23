@@ -191,6 +191,7 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
+      HeapReset hr(lh);
       mat = 1.0/mip.GetJacobiDet() * 
 	Trans (static_cast<const FEL&> (fel).GetCurlShape(mip.IP(), lh));
     }
@@ -207,6 +208,7 @@ namespace ngfem
 		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
+      HeapReset hr(lh);      
       y = (1.0/mip.GetJacobiDet()) * 
 	(Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)) * x);
     }
@@ -560,7 +562,13 @@ namespace ngfem
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir)
     {
-      return -TransposeCF(dir->Operator("Gradboundary")) * proxy;      
+      int dim = dir->Dimension();
+      auto n = NormalVectorCF(dim);
+      n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+      auto Pn = n * TransposeCF(n);
+      
+      return (2*SymmetricCF(Pn * dir->Operator("Gradboundary"))
+            -TransposeCF(dir->Operator("Gradboundary"))) * proxy;      
     }
     
   };
@@ -655,9 +663,132 @@ public:
     y.Range(0,fel.GetNDof()) =
       ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
   }
+
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    auto grad = dir->Operator("Gradboundary");
+    return -TraceCF(grad)*proxy + grad * proxy;
+  }
 };
 
 
+  template <int D>
+  class DiffOpHCurlDualBoundary;
+  
+  /// Dual operator for HCurl
+  template <int D>
+  class DiffOpHCurlDual : public DiffOp<DiffOpHCurlDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    typedef DiffOpHCurlDualBoundary<D> DIFFOP_TRACE;
+
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlFiniteElement<D>&> (fel); }
+
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      // fel.CalcDualShape (mip, mat);
+      throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcDualShape (mir, mat);      
+    }
+
+    using BASE::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDual (mir, x, y);
+    }
+
+    using BASE::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddDualTrans (mir, y, x);
+    }    
+        
+  };
+
+  /// Dual boundary operator for HCurl
+  template <int D>
+  class DiffOpHCurlDualBoundary : public DiffOp<DiffOpHCurlDualBoundary<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlDualBoundary<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    typedef void DIFFOP_TRACE;
+
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlFiniteElement<D-1>&> (fel); }
+
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcDualShape (mir, mat);      
+    }
+
+    using BASE::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDual (mir, x, y);
+    }
+
+    using BASE::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddDualTrans (mir, y, x);
+    }   
+        
+  };
 
 
 

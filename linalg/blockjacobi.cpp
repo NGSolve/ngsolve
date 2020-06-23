@@ -637,6 +637,9 @@ namespace ngla
     static Timer timer("BlockJacobi::MultTransAdd");
     RegionTimer reg (timer);
 
+    x.Cumulate();
+    y.Cumulate();
+
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 

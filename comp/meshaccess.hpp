@@ -657,6 +657,7 @@ namespace ngcomp
 
     void Refine ();
     void Curve (int order);
+    int GetCurveOrder ();
 
     void HPRefinement (int levels, double factor = 0.125)
     {
@@ -845,6 +846,17 @@ namespace ngcomp
     void GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const;
     auto GetVertexSurfaceElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
+
+    auto GetVertexElements (size_t vnr, VorB vb) const 
+    {
+      switch (vb)
+        {
+        case VOL: return ArrayObject(mesh.GetNode<0> (vnr).elements);
+        case BND: return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements);
+        default: throw Exception ("GetVertexElements, unhandled vb");
+        }
+    }
+
     
     /// number of facets of an element. 
     /// facets are edges (2D) or faces (3D)
@@ -1185,7 +1197,7 @@ namespace ngcomp
     bool IsCoDim2() const { return vb == BBND; }
     const BitArray & Mask() const { return mask; }
     operator const BitArray & () const { return mask; }
-    
+    shared_ptr<MeshAccess> Mesh() const { return mesh; }
     Region operator+ (const Region & r2) const
     {
       return Region (mesh, vb, BitArray(mask).Or (r2.Mask()));

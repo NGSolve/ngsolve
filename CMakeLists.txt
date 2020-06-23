@@ -20,16 +20,14 @@ option( USE_PARDISO      "enable pardiso sparse direct solver")
 option( USE_UMFPACK      "enable umfpack sparse direct solver" ON)
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
-option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
 option( BUILD_STUB_FILES "Build stub files for better autocompletion" ON)
+option( BUILD_JUPYTER_WIDGETS "Build javscript widgets library for jupyter" OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include (${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake)
 
@@ -68,6 +66,8 @@ else()
 endif()
 
 find_package(Netgen REQUIRED CONFIG HINTS ${CMAKE_INSTALL_PREFIX}/Contents/Resources)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(NGSOLVE_INSTALL_DIR_PYTHON  ${NETGEN_INSTALL_DIR_PYTHON})
 set(NGSOLVE_INSTALL_DIR_BIN     ${NETGEN_INSTALL_DIR_BIN})
@@ -252,6 +252,9 @@ endif()
 
 #######################################################################
 if (USE_HYPRE)
+  if (NOT NETGEN_USE_MPI)
+      message(FATAL_ERROR "Hypre needs MPI to be enabled, but Netgen was configured without MPI!")
+  endif (NOT NETGEN_USE_MPI)
   find_package(HYPRE REQUIRED)
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS HYPRE)
   include_directories(${HYPRE_INCLUDES})
@@ -292,7 +295,7 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
   find_package(OpenMP)
-  list(APPEND NGSOLVE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
+  set(PARDISO_LIBS ${PARDISO_LIB} ${OpenMP_gomp_LIBRARY} ${OpenMP_pthread_LIBRARY})
 endif(USE_PARDISO)
 
 #######################################################################
@@ -314,12 +317,6 @@ if(USE_UMFPACK)
   endif()
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_UMFPACK)
 endif(USE_UMFPACK)
-
-#######################################################################
-if(USE_NUMA)
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_NUMA)
-    find_library(NUMA_LIB libnuma.so)
-endif(USE_NUMA)
 
 
 #######################################################################
