@@ -1054,262 +1054,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
         }
     }
   };
-  /*
 
-  // ***************** S_zz(uvw) ****************************** *
-  // write uvw into zz component
-  template <int D> class T_S_zz;
-  template <> class T_S_zz<3>
-  {
-    AutoDiff<2> u, v;
-    AutoDiff<1> w;
-  public:
-    T_S_zz ( AutoDiff<2> au, AutoDiff<2> av, AutoDiff<1> aw) : u(au), v(av), w(aw) { ; }
-    Vec<6> Shape() 
-    { 
-      Vec<6> sigma(0.);
-      sigma[2] = u.Value()*v.Value()*w.Value();
-      return sigma;
-    }
-
-    Vec<3> DivShape()
-    {
-      return Vec<3> (0., 0., u.Value()*v.Value()*w.DValue(0));
-    }
-
-  };
-  
-  template <int D>
-  auto S_zz (AutoDiff<D> au, AutoDiff<D> av, AutoDiff<1> aw)
-  { return T_S_zz<D+1>(au, av, aw); }
-    
-  // ***************** S_xz ****************************** *
-  template <int D, typename T> class T_S_xz;
-  template <typename T> class T_S_xz<3,T>
-  {
-    AutoDiff<2,T> uv;
-    AutoDiff<1,T> w;
-
-    int comp;
-  public:
-    T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : uv(auv), w(aw), comp(acomp) { ; }
-    Vec<6,T> Shape() 
-    { 
-      Vec<6,T> sigma;
-      sigma = 0.;
-      if (comp==0)
-        sigma[4] = uv.Value()*w.Value();
-      else
-        sigma[3] = uv.Value()*w.Value();
-      return sigma;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      if (comp == 0)
-        return Vec<3,T> (uv.Value()*w.DValue(0), 0, uv.DValue(0)*w.Value() );
-      else
-        return Vec<3,T> (0, uv.Value()*w.DValue(0), uv.DValue(1)*w.Value() );
-    }
-
-  };
-  
-  template <int D, typename T>
-  auto S_xz (int comp, AutoDiff<D,T> auv, AutoDiff<1,T> aw)
-  { return T_S_xz<D+1,T>(comp,auv, aw); }
-
-
-
-  template <typename T>
-  class T_Prism_wSigmaGradu
-  {
-    AutoDiffDiff<2,T> u;
-    AutoDiff<1,T> w;
-  public:
-    T_Prism_wSigmaGradu ( AutoDiffDiff<2,T> au, AutoDiff<1,T> aw) : u(au), w(aw) { ; }
-    Vec<6,T> Shape() 
-    { 
-      Vec<3,T> sigma2d = T_SigmaGrad<2,T>(u).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = w.Value()*sigma2d[0];
-      sigma[1] = w.Value()*sigma2d[1];
-      sigma[5] = w.Value()*sigma2d[2];
-      return sigma;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      return Vec<3,T> (0., 0., 0);
-    }
-
-  };
-
-  template <typename T>
-  auto Prism_wSigmaGradu ( AutoDiffDiff<2,T> au, AutoDiff<1,T> aw)
-  { return T_Prism_wSigmaGradu<T>(au, aw); }
-
-
-  template <typename T>
-  class T_Prism_wType2
-  {
-    AutoDiffDiff<2,T> u, v;
-    AutoDiff<1,T> w;
-  public:
-    T_Prism_wType2 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw) : u(au), v(av),  w(aw) { ; }
-    Vec<6,T> Shape() 
-    { 
-      Vec<3,T> sigma2d = T_Type2<2,T>(u,v).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = w.Value()*sigma2d[0];
-      sigma[1] = w.Value()*sigma2d[1];
-      sigma[5] = w.Value()*sigma2d[2];
-      return sigma;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      Vec<2> divsigma2d = w.Value()*T_Type2<2,T>(u,v).DivShape();
-      return Vec<3,T> (divsigma2d[0], divsigma2d[1], 0);
-    }
-
-  };
-
-  template <typename T>
-  auto Prism_wType2 (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw)
-  { return T_Prism_wType2<T>(au, av, aw); }
-
-
-  template <typename T>
-  class T_Prism_wType3
-  {
-    AutoDiffDiff<2,T> u, v;
-    AutoDiff<1,T> w;
-  public:
-    T_Prism_wType3 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw) : u(au), v(av),  w(aw) { ; }
-    Vec<6> Shape() 
-    { 
-      Vec<3,T> sigma2d = T_Type3<2,T>(u,v).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = w.Value()*sigma2d[0];
-      sigma[1] = w.Value()*sigma2d[1];
-      sigma[5] = w.Value()*sigma2d[2];
-      return sigma;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      Vec<2,T> divsigma2d = w.Value()*T_Type3<2,T>(u,v).DivShape();
-      return Vec<3,T> (divsigma2d[0], divsigma2d[1], 0);
-    }
-  };
-
-  template <typename T>
-  auto Prism_wType3 (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw)
-  { return T_Prism_wType3<T>(au, av, aw); }
-
-
-  template <typename T>
-  class T_Prism_wType4
-  {
-    AutoDiffDiff<2,T> u, v, w;
-    AutoDiff<1,T> wz;
-  public:
-    T_Prism_wType4 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw, AutoDiff<1,T> awz) : u(au), v(av),  w(aw), wz(awz) { ; }
-    Vec<6,T> Shape() 
-    { 
-      Vec<3,T> sigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2,T>(u,v,w).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = sigma2d[0];
-      sigma[1] = sigma2d[1];
-      sigma[5] = sigma2d[2];
-      return sigma;
-    }
-
-    Vec<3,T> DivShape()
-    {
-      Vec<2,T> divsigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2,T>(u,v,w).DivShape();
-      return Vec<3,T> (divsigma2d[0], divsigma2d[1], 0);
-    }
-
-  };
-
-  template <typename T>
-  auto Prism_wType4 (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw, AutoDiff<1,T> awz)
-  { return T_Prism_wType4<T>(au, av, aw, awz); }
-
-  
-
-  class Prism_SymRotRot_Dl2xDl1_vw
-  {
-    AutoDiff<2> l1,l2,v;
-    AutoDiff<1> wz;
-  public:
-    Prism_SymRotRot_Dl2xDl1_vw ( AutoDiff<2> lam1, AutoDiff<2> lam2, AutoDiff<2> av, AutoDiff<1> awz) : l1(lam1), l2(lam2), v(av), wz(awz) { ; }
-    Vec<6> Shape() 
-    { 
-      Vec<3> sigma2d = wz.Value()*T_SymRotRot_Dl2xDl1_v(l1,l2,v).Shape();
-      Vec<6> sigma(0.);
-      sigma[0] = sigma2d[0];
-      sigma[1] = sigma2d[1];
-      sigma[5] = sigma2d[2];
-      return sigma;
-    }
-
-    Vec<3> DivShape()
-    {
-      Vec<2> divsigma2d = wz.Value()*T_SymRotRot_Dl2xDl1_v(l1,l2,v).DivShape();
-      return Vec<3> (divsigma2d[0], divsigma2d[1], 0);
-    }
-
-  };
-
-  template <typename T>
-  class Prism_Dl1xDl3_symtensor_Dl2xDl4_u
-  {
-    AutoDiff<3,T> l1,l2,l3, l4;
-    AutoDiff<3,T> u;
-  public:
-    Prism_Dl1xDl3_symtensor_Dl2xDl4_u ( AutoDiff<3,T> lam1, AutoDiff<3,T> lam2, AutoDiff<3,T> alz1, AutoDiff<3,T> alz2, AutoDiff<3,T> av) 
-      : l1(lam1), l2(lam2), l3(alz1), l4(alz2), u(av) { ; }
-    Vec<6,T> Shape() 
-    { 
-      auto rotlam1 = Cross(l1, l3);
-      auto rotlam2 = Cross(l2, l4);
-
-      Vec<6,T> sigma(0.);
-      sigma[0] = u.Value()*rotlam1.DValue(0)*rotlam2.DValue(0);
-      sigma[1] = u.Value()*rotlam1.DValue(1)*rotlam2.DValue(1);
-      sigma[2] = u.Value()*rotlam1.DValue(2)*rotlam2.DValue(2);
-      sigma[3] = 0.5*u.Value()*(rotlam1.DValue(2)*rotlam2.DValue(1) + rotlam2.DValue(2)*rotlam1.DValue(1));
-      sigma[4] = 0.5*u.Value()*(rotlam1.DValue(2)*rotlam2.DValue(0) + rotlam2.DValue(2)*rotlam1.DValue(0));
-      sigma[5] = 0.5*u.Value()*(rotlam1.DValue(0)*rotlam2.DValue(1) + rotlam2.DValue(0)*rotlam1.DValue(1));
-      return sigma;
-    }
-
-    INLINE AutoDiff<3,T> Cross (const AutoDiff<3,T> & x,
-                                const AutoDiff<3,T> & y)
-    {
-      T hv[3];
-      hv[0] = x.DValue(1)*y.DValue(2)-x.DValue(2)*y.DValue(1);
-      hv[1] = x.DValue(2)*y.DValue(0)-x.DValue(0)*y.DValue(2);
-      hv[2] = x.DValue(0)*y.DValue(1)-x.DValue(1)*y.DValue(0);
-      return AutoDiff<3,T> (0,hv);
-    }
-    Vec<3,T> DivShape()
-    {
-      auto lam1 = Cross(l1, l3);
-      auto lam2 = Cross(l2, l4);
-      return Vec<3,T> (u.DValue(0)*lam1.DValue(0)*lam2.DValue(0) + 
-        0.5*(u.DValue(1)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2))),
-        u.DValue(1)*lam1.DValue(1)*lam2.DValue(1) + 
-        0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2))),
-        u.DValue(2)*lam1.DValue(2)*lam2.DValue(2) + 
-        0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2)) + u.DValue(1)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2)))
-        );
-    }
-
-  };
-  */
 
   template <> class HCurlCurlFE<ET_PRISM> : public T_HCurlCurlFE<ET_PRISM> 
   {
@@ -1771,8 +1516,6 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
   };
   
 
-  /*
-
 
   template <> class HCurlCurlFE<ET_HEX> : public T_HCurlCurlFE<ET_HEX> 
   {
@@ -1783,17 +1526,20 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     {
       order = 0;
       ndof = 0;
+      for (int i=0; i < 12; i++)
+        {
+          ndof += order_edge[i]+1;
+          order = max2(order,order_edge[i]);
+        }
       for (int i=0; i<6; i++)
       {
-        ndof += (order_facet[i][0]+1)*(order_facet[i][0]+1);
+        ndof += order_facet[i][0]*order_facet[i][0] + 2*(order_facet[i][0]+2)*order_facet[i][0]+1;
         order = max2(order, order_facet[i][0]);
       }
       int p = order_inner[0];
-      int ninner = 3*p*(p+2)*(p+2) + 3*(p+2)*(p+1)*(p+1);
-      ndof += ninner; 
+      ndof += 3*(p*(p+1)*(p+1) + p*p*(p+1) );
 
-      order = max2(order, p);
-
+      order = 1 + max2(order, p);
     }
 
 
@@ -1808,108 +1554,112 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       AutoDiff<3,T> lx[2] ={ 1-xx, xx};
       AutoDiff<3,T> ly[2] ={ 1-yy, yy};
       AutoDiff<3,T> lz[2] ={ 1-zz, zz};
-      AutoDiff<3,T> sigma[8] = {1-xx + 1-yy + 1-zz,
-        xx + 1-yy + 1-zz,
-        xx + yy + 1-zz,
-        1-xx + yy + 1-zz,
-        1-xx + 1-yy + zz,
-        xx + 1-yy + zz,
-        xx + yy + zz,
-        1-xx + yy + zz};
+      AutoDiff<3,T> lami[8]={(1-xx)*(1-yy)*(1-zz),xx*(1-yy)*(1-zz),xx*yy*(1-zz),(1-xx)*yy*(1-zz),
+                  (1-xx)*(1-yy)*zz,xx*(1-yy)*zz,xx*yy*zz,(1-xx)*yy*zz}; 
+      AutoDiff<3,T> sigma[8]={(1-xx)+(1-yy)+(1-zz),xx+(1-yy)+(1-zz),xx+yy+(1-zz),(1-xx)+yy+(1-zz),
+                   (1-xx)+(1-yy)+zz,xx+(1-yy)+zz,xx+yy+zz,(1-xx)+yy+zz};
       int ii = 0;
       
-      // int maxorder_facet =
-      //     max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
-
       const FACE * faces = ElementTopology::GetFaces(ET_HEX);
 
-      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
-      AutoDiff<3,T> lam_face;
+      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+2), leg_w(order+2);
       
-      for(int fa = 0; fa < 6; fa++)
-      {
-        int fmax = 0;
-        lam_face = -1 + 0.25*sigma[faces[fa][0]];
-        for(int j = 1; j < 4; j++)
+      // edges
+      for (int i = 0; i < 12; i++)
         {
-          if(vnums[faces[fa][j]] > vnums[faces[fa][fmax]]) fmax = j;
-          lam_face += sigma[faces[fa][j]]*0.25;
+          int p = order_edge[i]; 
+          INT<2> e = ET_trait<ET_HEX>::GetEdgeSort (i, vnums);
+          AutoDiff<3,T> xi  = sigma[e[1]]-sigma[e[0]];
+          AutoDiff<3,T> lam_e = lami[e[0]]+lami[e[1]];  
+          Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(xi,xi);
+          
+          IntLegNoBubble::
+            EvalMult (p, xi, lam_e, SBLambda ([&](int i, auto val)
+                                              {
+                                                shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
+                                              }));
+        }
+      
+      
+      for (int i = 0; i<6; i++)
+        {
+          int p = order_facet[i][0];
+          
+          AutoDiff<3,T> lam_f(0);
+          for (int j = 0; j < 4; j++)
+            lam_f += lami[faces[i][j]];
+          
+          INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+          AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
+          AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
+          auto nv = GetGradient(lam_f);
+          
+          LegendrePolynomial (p, eta, leg_u);
+          LegendrePolynomial (p, xi, leg_v);
+          
+          Vec<6, AutoDiff<3,T>> symdyadic = lam_f*SymDyadProd(GetGradient(eta),GetGradient(xi));
+          for (int j = 0; j <= p; j++)
+            for (int k = 0; k <= p; k++)
+              shape[ii++] = T_REGGE_Shape<3,T>(leg_u[j]*leg_v[k]*symdyadic);
+
+          symdyadic = lam_f*(1-eta*eta)*SymDyadProd(GetGradient(xi),GetGradient(xi));
+          for (int j = 0; j < p; j++)
+            for (int k = 0; k <= p; k++)
+              shape[ii++] = T_REGGE_Shape<3,T>(leg_u[j]*leg_v[k]*symdyadic);
+
+          symdyadic = lam_f*(1-xi*xi)*SymDyadProd(GetGradient(eta),GetGradient(eta));
+          for (int k = 0; k < p; k++)
+            for (int j = 0; j <= p; j++)
+              shape[ii++] = T_REGGE_Shape<3,T>(leg_u[j]*leg_v[k]*symdyadic);
+          
         }
 
-        int fz,ftrig;
-
-        fz = 3 - fmax;
-        ftrig = fmax^1;
-
-        fmax = faces[fa][fmax];
-        fz = faces[fa][fz];
-        ftrig = faces[fa][ftrig];
-
-
-        // int orderz = order_facet[fa][1];
-
-        if(vnums[fz] < vnums[ftrig]) swap(fz, ftrig);
-        int p = order_facet[fa][0];
-        LegendrePolynomial::Eval(p, sigma[fmax] - sigma[ftrig],leg_u);
-        LegendrePolynomial::Eval(p, sigma[fmax] - sigma[fz],leg_v);
-
-        for(int k = 0; k <= p; k++)
-          for(int l = 0; l <= p; l++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(0.5*(sigma[fmax] - sigma[fz]),-0.5*(sigma[fmax] - sigma[fz]),
-              0.5*(sigma[fmax] - sigma[ftrig]),-0.5*(sigma[fmax] - sigma[ftrig]),leg_u[l]* leg_v[k]*lam_face);
-          }
-
-
-
-      }
-
-
-
-      int oi = order_inner[0];
-      leg_u.SetSize(oi+1);
-      leg_v.SetSize(oi+1);
-      leg_w.SetSize(oi+1);
-
-      LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[1],leg_u);
-      LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[3],leg_v);
-      LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[4],leg_w);
-
-      for(int k=0; k<=oi-1; k++)
-      {
-        for(int i = 0; i <= oi+1; i++)
+      int p = order_inner[0];
+      if (p > 0)
         {
-          for(int j = 0; j <= oi+1; j++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[1], lz[0], lz[1], ly[0]*ly[1]*leg_u[i]*leg_v[k]* leg_w[j]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[1], ly[0], ly[1], lz[0]*lz[1]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(ly[0], ly[1], lz[0], lz[1], lx[0]*lx[1]*leg_u[k]*leg_v[j]* leg_w[i]);
-          }
+          AutoDiff<3,T> xi  = sigma[0] - sigma[1];
+          AutoDiff<3,T> eta = sigma[0] - sigma[3];
+          AutoDiff<3,T> nv = sigma[0] - sigma[4];
+          
+          LegendrePolynomial (p, xi,  leg_u);
+          LegendrePolynomial (p, eta, leg_v);
+          LegendrePolynomial (p, nv,  leg_w);
+
+          Vec<6, AutoDiff<3,T>> symdyadic1 = lz[0]*lz[1]*SymDyadProd(GetGradient(eta),GetGradient(xi));
+          Vec<6, AutoDiff<3,T>> symdyadic2 = lx[0]*lx[1]*SymDyadProd(GetGradient(nv),GetGradient(eta));
+          Vec<6, AutoDiff<3,T>> symdyadic3 = ly[0]*ly[1]*SymDyadProd(GetGradient(xi),GetGradient(nv));
+          for (int i = 0; i <= p; i++)
+            for (int j = 0; j <= p; j++)
+              for (int k = 0; k < p; k++)
+                {
+                  shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*leg_w[k]*symdyadic1);
+                  shape[ii++] = T_REGGE_Shape<3,T>(leg_v[i]*leg_w[j]*leg_u[k]*symdyadic2);
+                  shape[ii++] = T_REGGE_Shape<3,T>(leg_w[i]*leg_u[j]*leg_v[k]*symdyadic3);
+                }
+
+          symdyadic1 = ly[0]*ly[1]*lz[0]*lz[1]*SymDyadProd(GetGradient(xi),GetGradient(xi));
+          symdyadic2 = lz[0]*lz[1]*lx[0]*lx[1]*SymDyadProd(GetGradient(eta),GetGradient(eta));
+          symdyadic3 = lx[0]*lx[1]*ly[0]*ly[1]*SymDyadProd(GetGradient(nv),GetGradient(nv));
+
+          for (int i = 0; i <= p; i++)
+            for (int j = 0; j < p; j++)
+              for (int k = 0; k < p; k++)
+                {
+                  shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*leg_w[k]*symdyadic1);
+                  shape[ii++] = T_REGGE_Shape<3,T>(leg_v[i]*leg_w[j]*leg_u[k]*symdyadic2);
+                  shape[ii++] = T_REGGE_Shape<3,T>(leg_w[i]*leg_u[j]*leg_v[k]*symdyadic3);
+                }
         }
-      }
-
-
-      // S_xz
-      for (int i=0; i<=oi; i++)
-      {
-        for (int j=0; j<=oi; j++)
-        {
-          for (int k=0; k<=oi+1; k++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[0], ly[0], lz[0], leg_u[k]*leg_v[j]*leg_w[i]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(ly[0], ly[0], lx[0], lz[0], leg_u[i]*leg_v[k]*leg_w[j]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[0], lz[0], lx[0], ly[0], leg_u[i]*leg_v[j]*leg_w[k]);
-          }
-        }
-      }
-
-
-    };
+    }
+    
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type ET_HEX");
+    }
 
   };
 
-  */
 
 
 
@@ -1918,7 +1668,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_QUAD>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TET>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_PRISM>;
-  //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_HEX>;
+  HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_HEX>;
 }
 
 #endif
