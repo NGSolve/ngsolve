@@ -62,6 +62,10 @@ else(NETGEN_DIR)
     set (SUPERBUILD_METIS 1)
   endif (USE_MPI AND NOT METIS_DIR)
 
+  if (USE_HYPRE AND NOT USE_MPI)
+      message(FATAL_ERROR "Hypre needs MPI to be enabled (-DUSE_MPI=ON)!")
+  endif (USE_HYPRE AND NOT USE_MPI)
+
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
     CMAKE_CXX_COMPILER
@@ -144,7 +148,11 @@ if (USE_LAPACK)
         set(LAPACK_LIBRARIES ${CMAKE_INSTALL_PREFIX}/lib/BLAS.lib)
         list(APPEND LAPACK_PROJECTS win_download_lapack)
       else(WIN32)
-        find_package(LAPACK)
+        if(APPLE)
+          set(LAPACK_LIBRARIES /System/Library/Frameworks/Accelerate.framework )
+        else(APPLE)
+          find_package(LAPACK)
+        endif(APPLE)
       endif(WIN32)
     endif()
     set_vars(NGSOLVE_CMAKE_ARGS LAPACK_LIBRARIES)
@@ -154,6 +162,7 @@ endif (USE_LAPACK)
 if(USE_UMFPACK)
   if(BUILD_UMFPACK)
     set(UMFPACK_DIR ${CMAKE_CURRENT_BINARY_DIR}/umfpack/install CACHE PATH "Temporary directory to build UMFPACK")
+    set(UMFPACK_STATIC ON)
     ExternalProject_Add(
       suitesparse
       DEPENDS ${LAPACK_PROJECTS}
@@ -181,7 +190,7 @@ if(USE_UMFPACK)
       )
     list(APPEND DEPENDENCIES suitesparse)
   endif()
-  set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR )
+  set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR UMFPACK_STATIC )
 endif(USE_UMFPACK)
 
 #######################################################################
@@ -222,7 +231,6 @@ set_vars( NGSOLVE_CMAKE_ARGS
   USE_PARDISO
   USE_UMFPACK
   USE_VTUNE
-  USE_NUMA
   USE_CCACHE
   USE_NATIVE_ARCH
   NETGEN_DIR
@@ -231,6 +239,7 @@ set_vars( NGSOLVE_CMAKE_ARGS
   INTEL_MIC
   ENABLE_UNIT_TESTS
   BUILD_STUB_FILES
+  BUILD_JUPYTER_WIDGETS
   )
 
 set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)

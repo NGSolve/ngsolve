@@ -414,8 +414,9 @@ namespace ngcomp
 		    
 		    if (eltrans.SpaceDim() == 3)
 		      {
-			MappedIntegrationPoint<1,3> s_sip(ip,eltrans);
+			MappedIntegrationPoint<1,3> s_sip(ip,eltrans, -42 /* Don't call CalcPointJacobian (eltrans expects DIMR==DIMS ) */);
 			MappedIntegrationPoint<3,3> g_sip(ip,eltrans);
+			s_sip.Point() = g_sip.Point();
 			Vec<3> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1); tv(2) = tangent(2);
 			s_sip.SetTV(tv);
@@ -426,8 +427,9 @@ namespace ngcomp
 		      }
 		    else if (eltrans.SpaceDim() == 2)
 		      {
-			MappedIntegrationPoint<1,2> s_sip(ip,eltrans);
+			MappedIntegrationPoint<1,2> s_sip(ip,eltrans, -42 /* Don't call CalcPointJacobian (eltrans expects DIMR==DIMS ) */);
 			MappedIntegrationPoint<2,2> g_sip(ip,eltrans);
+			s_sip.Point() = g_sip.Point();
 			Vec<2> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1);
 			s_sip.SetTV(tv);

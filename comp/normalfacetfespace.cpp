@@ -8,12 +8,81 @@
 #include <fem.hpp>
 #include "../fem/normalfacetfe.hpp"
 #include "normalfacetfespace.hpp"
+#include <../fem/hcurlhdiv_dshape.hpp> 
 
 #include <cassert>
 
 namespace ngcomp
 {
 
+
+  /// Gradient operator for HCurl
+  template <int D, typename FEL = HDivFiniteElement<D> >
+  class DiffOpCurlNormalFacet : public DiffOp<DiffOpCurlNormalFacet<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { D } ); }
+    
+    static constexpr double eps() { return 1e-4; }
+
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      FlatMatrix<> tmp(fel.GetNDof(), D*D, lh);
+      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, tmp, lh, eps());
+
+      Vec<D> n = mip.GetNV();
+      Mat<D,D> Pn = n * Trans(n);
+      Mat<D,D> coPn = Identity(3) - Pn;
+
+      for (int i = 0; i < tmp.Height(); i++)
+        {
+          Mat<D,D> mtmp;
+          for (int j = 0; j < D*D; j++)
+            mtmp(j) = tmp(i,j);
+          mtmp = coPn * mtmp * Pn;   // looks like we only need co-projection from the left
+          for (int j = 0; j < D*D; j++)
+            tmp(i,j) = mtmp(j);
+        }
+      
+      mat.Row(0) = tmp.Col(5)-tmp.Col(7);  // 1*3+2,   2*3+1
+      mat.Row(1) = tmp.Col(6)-tmp.Col(2);  // 2*3+0,   0*3+2
+      mat.Row(2) = tmp.Col(1)-tmp.Col(3);  // 0*3+1,   1*3+0
+      for (int i = 0; i < mat.Width(); i++)
+        mat.Col(i) -= InnerProduct(n, mat.Col(i)) * n;
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+
+  
   NormalFacetFESpace :: NormalFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
 					    bool parseflags )
     : FESpace(ama, flags )
@@ -629,6 +698,27 @@ namespace ngcomp
     dnums.Append(felnr);
     for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
       dnums.Append(j);
+  }
+
+  SymbolTable<shared_ptr<DifferentialOperator>>
+  NormalFacetFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch (ma->GetDimension())
+      {
+      case 1:
+        break;
+      case 2:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
+	break;
+      case 3:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
+        additional.Set ("curl", make_shared<T_DifferentialOperator<DiffOpCurlNormalFacet<3>>> ());
+	break;
+      default:
+        break;
+      }
+    return additional;
   }
 
 

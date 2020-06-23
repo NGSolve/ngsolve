@@ -251,14 +251,8 @@ namespace ngcomp
     if (highest_order_dc && order < 2)
       throw Exception ("highest_order_dc needs order >= 2");
     
-    Flags loflags;
+    Flags loflags = flags;
     loflags.SetFlag ("order", 1);
-    loflags.SetFlag ("dim", dimension);
-    if (iscomplex) loflags.SetFlag ("complex");
-    // if (timing) loflags.SetFlag ("timing");
-    if (flags.NumListFlagDefined ("dirichlet")) 
-      loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
-    if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 
     if (!no_low_order_space)
       low_order_space = make_shared<NodalFESpace> (ma, loflags);
@@ -339,12 +333,18 @@ namespace ngcomp
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());
-        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ());
+	if (dimension > 1)
+	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>>(), dimension)); }
+	else
+	  { additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<2,2>>> ()); }
         break;
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
 	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
-	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ());
+	if (dimension > 1)
+	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> (), dimension)); }
+	else
+	  { additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> ()); }
 	break;
       default:
         ;
@@ -1001,8 +1001,13 @@ into the wirebasket.
                  hofe -> SetVertexNumbers (ngel.vertices);
 
                  if (et.DIM >= 1)
-                   hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-
+                   {
+                     // hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+                     auto edges = ngel.Edges();
+                     for (auto i : Range(edges))
+                       hofe->SetOrderEdge (i, order_edge[edges[i]] - (highest_order_dc ? 1 : 0));
+                   }
+                 
                  if (et.DIM >= 2)
                    hofe -> SetOrderFace (0, order_face[ma->GetSElFace(ei.Nr())]);
                  
@@ -2310,6 +2315,7 @@ into the wirebasket.
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
+          additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2,2>>> ());
           additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<2>>>(), 2));
           additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>>(), 2));
@@ -2319,12 +2325,13 @@ into the wirebasket.
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
-          // flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();
-          flux_evaluator[BND] = make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>(), 3);
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();
+          //flux_evaluator[BND] = make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>(), 3);
           evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>>();
           
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
+          additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
           additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<3>>>(), 3));
           additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>>(), 3));          

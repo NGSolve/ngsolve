@@ -123,6 +123,11 @@ namespace ngfem
     {
       Cast(fel).EvaluateGrad (mir, x, y);
     }
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      Cast(fel).EvaluateGrad (mir, x, y);
+    }
 
 
     ///
@@ -294,6 +299,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
     static bool SupportsVB (VorB checkvb) { return true; }
     
     static string Name() { return "Id"; }
@@ -388,6 +395,12 @@ namespace ngfem
       Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
     }
 
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+    }
+
 
 
     template <typename MIP, class TVX, class TVY>
@@ -422,6 +435,12 @@ namespace ngfem
     using DiffOp<DiffOpId<D, FEL> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
       Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
     }
@@ -495,7 +514,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
 
@@ -1761,7 +1781,11 @@ namespace ngfem
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
           feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
         }
-    }    
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
     
   };
 
@@ -1853,7 +1877,11 @@ namespace ngfem
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
           feli.AddGradTrans (mir, y.Rows(i*DIM_SPC, (i+1)*DIM_SPC), x.Range(fel.GetRange(i)));
         }
-    }    
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
 
@@ -1887,6 +1915,10 @@ namespace ngfem
       for (int i = 0; i < DIM_SPC; i++)
         mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(mapped_hmat);
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
   };
 
   

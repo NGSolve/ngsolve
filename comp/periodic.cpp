@@ -44,7 +44,7 @@ namespace ngcomp {
       for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
         {
 	  if (used_idnrs->Size() && !used_idnrs->Contains(idnr)) continue;
-          Array<int> slave_dofnrs;
+          Array<int> minion_dofnrs;
           Array<int> master_dofnrs;
           for (auto node_type : {NT_VERTEX, NT_EDGE, NT_FACE})
             {
@@ -57,11 +57,11 @@ namespace ngcomp {
               for(const auto& node_pair : periodic_nodes)
                 {
                   space->GetDofNrs(NodeId(node_type,node_pair[0]),master_dofnrs);
-                  space->GetDofNrs(NodeId(node_type,node_pair[1]),slave_dofnrs);
+                  space->GetDofNrs(NodeId(node_type,node_pair[1]),minion_dofnrs);
                   for(auto i : Range(master_dofnrs.Size()))
                     {
-                    dofmap[slave_dofnrs[i]] = dofmap[master_dofnrs[i]];
-		    DofMapped(slave_dofnrs[i],master_dofnrs[i],idnr);
+                    dofmap[minion_dofnrs[i]] = dofmap[master_dofnrs[i]];
+		    DofMapped(minion_dofnrs[i],master_dofnrs[i],idnr);
                     }
                 }
             }
@@ -166,30 +166,49 @@ namespace ngcomp {
     }
 
 
-  QuasiPeriodicFESpace :: QuasiPeriodicFESpace(shared_ptr<FESpace> fespace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors) :
+  template<typename TSCAL>
+  QuasiPeriodicFESpace<TSCAL> :: QuasiPeriodicFESpace(shared_ptr<FESpace> fespace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<TSCAL>> afactors) :
     PeriodicFESpace(fespace, flags, aused_idnrs), factors(afactors)
-  {
-    // only complex quasiperiodic space implemented
-    iscomplex = true;
-  }
+  {  }
 
-  void QuasiPeriodicFESpace :: Update()
+  template<typename TSCAL>
+  void QuasiPeriodicFESpace<TSCAL> :: Update()
   {
     space->Update();
     dof_factors.SetSize(space->GetNDof());
 
-    dof_factors = Complex(1.0,0.0);
+    dof_factors = 1.;
     master_dofs.SetSize(space->GetNDof());
     for(auto& md : master_dofs)
       md = {};
     PeriodicFESpace::Update();
   }
-  void QuasiPeriodicFESpace :: VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const
+
+  template<typename TSCAL>
+  void QuasiPeriodicFESpace<TSCAL> :: VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const
   {
-    throw Exception("Shouldn't get here: QuasiPeriodicFESpace::TransformMR, space should always be complex");
+    if constexpr(!is_same_v<TSCAL, double>)
+        throw Exception("Shouldn't get here: QuasiPeriodicFESpace::TransformMR, space with complex factors should be complex");
+    else
+      {
+        PeriodicFESpace::VTransformMR(ei, mat, tt);
+        Array<int> dofnrs;
+        space->GetDofNrs(ei, dofnrs);
+        for (int i : Range(dofnrs.Size()))
+          {
+            if (dofnrs[i] != dofmap[dofnrs[i]])
+              {
+                if (tt & TRANSFORM_MAT_LEFT)
+                  mat.Row(i) *= dof_factors[dofnrs[i]];
+                if (tt & TRANSFORM_MAT_RIGHT)
+                  mat.Col(i) *= dof_factors[dofnrs[i]];
+              }
+          }
+      }
   }
 
-  void QuasiPeriodicFESpace :: VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
+  template<typename TSCAL>
+  void QuasiPeriodicFESpace<TSCAL> :: VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
   {
     PeriodicFESpace::VTransformMC(ei, mat, tt);
     Array<int> dofnrs;
@@ -206,12 +225,33 @@ namespace ngcomp {
       }
   }
 
-    void QuasiPeriodicFESpace :: VTransformVR (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const
+  template<typename TSCAL>
+  void QuasiPeriodicFESpace<TSCAL> :: VTransformVR (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const
   {
-    throw Exception("Shouldn't get here: QuasiPeroidicFESpace::TransformVR, space should always be complex");
+    if constexpr(!is_same_v<TSCAL, double>)
+        throw Exception("Shouldn't get here: QuasiPeriodicFESpace::TransformMR, space with complex factors should be complex");
+    else
+      {
+        PeriodicFESpace::VTransformVR(ei, vec, tt);
+        Array<int> dofnrs;
+        space->GetDofNrs(ei, dofnrs);
+        for (auto i : Range(dofnrs))
+          {
+            if (dofnrs[i] != dofmap[dofnrs[i]])
+              {
+                if (tt == TRANSFORM_RHS)
+                  vec[i] *= dof_factors[dofnrs[i]];
+                else if (tt == TRANSFORM_SOL)
+                  vec[i] *= dof_factors[dofnrs[i]];
+                else // TRANSFORM_SOL_INVERSE
+                  vec[i] /= dof_factors[dofnrs[i]];
+              }
+          }
+      }
   }
 
-  void QuasiPeriodicFESpace :: VTransformVC (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
+  template<typename TSCAL>
+  void QuasiPeriodicFESpace<TSCAL> :: VTransformVC (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
     PeriodicFESpace::VTransformVC(ei, vec, tt);
     Array<int> dofnrs;
@@ -228,10 +268,10 @@ namespace ngcomp {
               vec[i] /= dof_factors[dofnrs[i]];
 	  }
       }
-    
   }
 
-  void QuasiPeriodicFESpace :: DofMapped(size_t from, size_t to, size_t idnr)
+  template<typename TSCAL>
+  void QuasiPeriodicFESpace<TSCAL> :: DofMapped(size_t from, size_t to, size_t idnr)
   {
     // if the same dofs are mapped twice by different identification numbers only multiply once with
     // the factor!
@@ -243,4 +283,6 @@ namespace ngcomp {
       }
   }
 
+  template class QuasiPeriodicFESpace<double>;
+  template class QuasiPeriodicFESpace<Complex>;
 }

@@ -55,8 +55,25 @@ nbsphinx_allow_errors = True
 nbsphinx_prolog = r"""
 {% set docname = env.doc2path(env.docname, base='').replace('i-tutorials/', '') %}
 
-.. only:: html
+.. raw:: html
 
+    <style>
+        .p-Widget {
+            height: 400px;
+        }
+        .dg.main {
+            margin-left: 0px;
+        }
+        .wy-plain-list-disc li, .rst-content .section ul li, .rst-content .toctree-wrapper ul li, article ul li {
+            list-style: none;
+            margin-left: 0px;
+        }
+        .wy-plain-list-disc li li, .rst-content .section ul li li, .rst-content .toctree-wrapper ul li li, article ul li li {
+            list-style: none;
+        }
+    </style>
+
+.. only:: html
     .. role:: raw-html(raw)
         :format: html
 

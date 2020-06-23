@@ -3,24 +3,45 @@ from ngsolve import Projector, Norm, TimeFunction, BaseMatrix, Preconditioner, I
     Norm, sqrt, Vector, Matrix, BaseVector, BitArray
 from typing import Optional, Callable
 import logging
+from netgen.libngpy._meshing import _PushStatus, _GetStatus, _SetThreadPercentage
+from math import log
 
 class CGSolver(BaseMatrix):
     def __init__(self, mat : BaseMatrix, pre : Optional[Preconditioner] = None,
                  freedofs : Optional[BitArray] = None,
                  conjugate : bool = False, tol : float = 1e-12, maxsteps : int = 100,
-                 callback : Optional[Callable[[int, float], None]] = None):
+                 callback : Optional[Callable[[int, float], None]] = None,
+                 printing=False, abstol=None):
         super().__init__()
         self.mat = mat
         assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
         self.pre = pre if pre else Projector(freedofs, True)
         self.conjugate = conjugate
         self.tol = tol
+        self.abstol = abstol
         self.maxsteps = maxsteps
         self.callback = callback
         self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
         self.logger = logging.getLogger("CGSolver")
+
+        self.printing = printing
+        if printing:
+            self.handler = handler = logging.StreamHandler()
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
+
         self.errors = []
         self.iterations = 0
+
+    def __del__(self):
+        if self.printing:
+            self.logger.removeHandler(self.handler)
+
+    def Height(self) -> int:
+        return self.mat.width
+
+    def Width(self) -> int:
+        return self.mat.height
 
     def IsComplex(self) -> bool:
         return self.mat.IsComplex()
@@ -28,9 +49,16 @@ class CGSolver(BaseMatrix):
     def Mult(self, x : BaseVector, y : BaseVector) -> None:
         self.Solve(rhs=x, sol=y, initialize=True)
 
+    def Update(self):
+        if hasattr(self.pre, "Update"):
+            self.pre.Update()
+
     @TimeFunction
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
               initialize : bool = True) -> None:
+        old_status = _GetStatus()
+        _PushStatus("CG Solve")
+        _SetThreadPercentage(0)
         self.sol = sol if sol is not None else self.mat.CreateRowVector()
         d, w, s = self._tmp_vecs
         u, mat, pre, conjugate, tol, maxsteps, callback = self.sol, self.mat, self.pre, self.conjugate, \
@@ -42,9 +70,15 @@ class CGSolver(BaseMatrix):
         s.data = w
         wdn = w.InnerProduct(d, conjugate=conjugate)
         err0 = sqrt(abs(wdn))
-        self.errors.append(err0)
-        if wdn==0:
+
+        self.errors = [err0]
+        if wdn==err0:
             return u
+        lwstart = log(err0)
+        errstop = err0 * tol
+        if self.abstol is not None:
+            errstop = max(errstop, self.abstol)
+        logerrstop = log(errstop)
 
         for it in range(maxsteps):
             self.iterations = it+1
@@ -68,9 +102,14 @@ class CGSolver(BaseMatrix):
             self.logger.info("iteration " + str(it) + " error = " + str(err))
             if callback is not None:
                 callback(it,err)
-            if err < tol*err0: break
+            _SetThreadPercentage(100.*max(it/maxsteps, (log(err)-lwstart)/(logerrstop - lwstart)))
+            if err < errstop: break
         else:
             self.logger.warning("CG did not converge to tol")
+        if old_status[0] != "idle":
+            _PushStatus(old_status[0])
+            _SetThreadPercentage(old_status[1])
+            
         
 
 

@@ -18,7 +18,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
@@ -92,6 +93,14 @@ namespace ngcomp
                                           y.Row(0),
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return ZeroCF(Array<int>());
+    }
+
   }; 
 
 
@@ -188,11 +197,24 @@ namespace ngcomp
         integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
+
+    additional_evaluators.Set ("dual", evaluator[VOL]);
   }
   
 
   FacetFESpace :: ~FacetFESpace ()
   { ; }
+
+
+  FlatArray<VorB> FacetFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL, BND };
+    if ( (vb == VOL) || (vb == BND) )
+      { return FlatArray<VorB> (1, &nodes[1 - int(vb)]); }
+    else
+      { return FlatArray<VorB> (0, nullptr); }
+  }
+
 
   DocInfo FacetFESpace :: GetDocu()
   {

@@ -616,6 +616,17 @@ namespace ngcomp
     return 0;
   }
 
+
+  FlatArray<VorB> VectorFacetFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { BND, VOL };
+    if (int(vb) > 1)
+      { return FlatArray<VorB> (0, nullptr); }
+    else
+      { return FlatArray<VorB> (1, &nodes[int(vb)]); }
+  }
+
+
   shared_ptr<Table<int>> VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   { 
     return nullptr;
@@ -695,6 +706,25 @@ namespace ngcomp
       dnums.Append(j);
   }
 
+  SymbolTable<shared_ptr<DifferentialOperator>>
+  VectorFacetFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch (ma->GetDimension())
+      {
+      case 1:
+        break;
+      case 2:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
+        break;
+      case 3:
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        break;
+      default:
+        break;
+      }
+    return additional;
+  }
 
   static RegisterFESpace<VectorFacetFESpace> init_vfacet ("vectorfacet");
 

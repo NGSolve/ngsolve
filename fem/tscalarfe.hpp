@@ -132,6 +132,8 @@ namespace ngfem
     NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
                                              BareSliceMatrix<> ddshape) const override;
 
+    NGS_DLL_HEADER virtual void CalcMappedDDShape (const BaseMappedIntegrationPoint & mip, 
+                                                   BareSliceMatrix<> ddshape) const override;
     
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
 
@@ -247,7 +249,7 @@ namespace ngbla
 
   /*
   template <int DIM, typename SCAL>
-  auto GetGradient (const AutoDiffRec<DIM,SCAL> & ad)
+  auto GetGradient (const AutoDiff<DIM,SCAL> & ad)
   {
     Vec<DIM,SCAL> grad;
     for (int i = 0; i < DIM; i++)

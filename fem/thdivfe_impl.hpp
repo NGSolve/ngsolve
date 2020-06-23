@@ -18,7 +18,7 @@ namespace ngfem
   template <int DIMR>
   INLINE auto GetTIPHDiv (const MappedIntegrationPoint<2,DIMR> & mip)
   {
-    TIP<2,AutoDiffRec<DIMR>> adp(mip.IP().FacetNr(), mip.IP().VB());    
+    TIP<2,AutoDiff<DIMR>> adp(mip.IP().FacetNr(), mip.IP().VB());    
     Mat<DIMR,2> jac = mip.GetJacobian();
     jac *= 1/mip.GetJacobiDet();
     const auto &ip = mip.IP();
@@ -37,7 +37,7 @@ namespace ngfem
   template <int DIMR>
   INLINE auto GetTIPHDiv (const SIMD<MappedIntegrationPoint<2,DIMR>> & mip)
   {
-    TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp(mip.IP().FacetNr(), mip.IP().VB());
+    TIP<2,AutoDiff<DIMR,SIMD<double>>> adp(mip.IP().FacetNr(), mip.IP().VB());
     Mat<DIMR,2,SIMD<double>> jac = mip.GetJacobian();
     jac *= 1/mip.GetJacobiDet();
     const auto &ip = mip.IP();
@@ -190,11 +190,11 @@ namespace ngfem
   {    
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i]; 
+        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
 
         Vec<DIM> sum = 0;
         static_cast<const FEL*> (this) -> 
-          T_CalcShape (TIP<DIM,AutoDiffRec<DIM>>(adp, ir[i].FacetNr(), ir[i].VB()),
+          T_CalcShape (TIP<DIM,AutoDiff<DIM>>(adp, ir[i].FacetNr(), ir[i].VB()),
                        SBLambda([coefs,&sum] (size_t j, THDiv2Shape<DIM> vshape)
                                 {
                                   sum += coefs(j) * Vec<DIM> (vshape);
@@ -213,7 +213,7 @@ namespace ngfem
     coefs = 0;
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiffRec<DIM>> adp = ir[i]; 
+        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
 
         Vec<DIM> val = vals.Row(i);
         static_cast<const FEL*> (this) -> 

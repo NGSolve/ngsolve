@@ -548,8 +548,8 @@ namespace ngfem
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        // Vec<DIM, AutoDiffRec<DIM>> adp = ir[i];  
-        T_CalcShape (// TIP<DIM, AutoDiffRec<DIM>> (adp),
+        // Vec<DIM, AutoDiff<DIM>> adp = ir[i];  
+        T_CalcShape (// TIP<DIM, AutoDiff<DIM>> (adp),
                      GetTIPGrad<DIM>(ir[i]),
                      SBLambda ([&] (int j, auto shape)
                                { 
@@ -580,13 +580,13 @@ namespace ngfem
                    Vec<DIM, SIMD<double>> jac_dir = mir[i].GetJacobianInverse() * values.Col(i);
                  
                  const auto &ip = mir[i].IP();
-                 TIP<DIM,AutoDiffRec<1,SIMD<double>>>adp(ip.FacetNr(), ip.VB());
+                 TIP<DIM,AutoDiff<1,SIMD<double>>>adp(ip.FacetNr(), ip.VB());
                  if constexpr(DIM>0)
-                     adp.x = AutoDiffRec<1, SIMD<double>>( ip(0), jac_dir(0) );
+                     adp.x = AutoDiff<1, SIMD<double>>( ip(0), jac_dir(0) );
                  if constexpr(DIM>1)
-                     adp.y = AutoDiffRec<1, SIMD<double>>( ip(1), jac_dir(1) );
+                     adp.y = AutoDiff<1, SIMD<double>>( ip(1), jac_dir(1) );
                  if constexpr(DIM>2)
-                     adp.z = AutoDiffRec<1, SIMD<double>>( ip(2), jac_dir(2) );
+                     adp.z = AutoDiff<1, SIMD<double>>( ip(2), jac_dir(2) );
 
                  double * pcoef = &coefs(0);
                  size_t dist = coefs.Dist();
@@ -621,7 +621,7 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
+                     TIP<DIM,AutoDiff<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      // Vec<4*DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+4)*DIMSPACE);
@@ -652,7 +652,7 @@ namespace ngfem
                {
                  for (size_t i = 0; i < mir.Size(); i++)
                    {
-                     // TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
+                     // TIP<DIM,AutoDiff<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                      double * pcoef = &coefs(0,j);
                      size_t dist = coefs.Dist();
                      Vec<DIMSPACE,SIMD<double>> vals = values.Col(i).Range(j*DIMSPACE, (j+1)*DIMSPACE);
@@ -721,10 +721,10 @@ namespace ngfem
 		    BareSliceMatrix<> dshape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
-    // Vec<DIM, AutoDiffRec<DIM>> adp = mip;
+    // Vec<DIM, AutoDiff<DIM>> adp = mip;
     auto dshapes = dshape.AddSize(ndof, DIM);
 
-    T_CalcShape (GetTIP(mip), // TIP<DIM, AutoDiffRec<DIM>> (adp),
+    T_CalcShape (GetTIP(mip), // TIP<DIM, AutoDiff<DIM>> (adp),
                  SBLambda ([dshapes] (int i, auto shape)
                            { dshapes.Row(i) = ngbla::GetGradient(shape); }));
   }
@@ -754,9 +754,9 @@ namespace ngfem
             SIMD<double> * pdshapes = dshapes.Col(i).Data();
             size_t dist = dshapes.Dist();
             
-            // TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
+            // TIP<DIM,AutoDiff<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
             T_CalcShape (GetTIP(mir[i]), // adp,
-                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
+                         SBLambda ([&] (size_t j, AutoDiff<DIM,SIMD<double>> shape)
                                    { 
                                      Iterate<DIM> ( [&] (size_t ii) {
                                          *pdshapes = shape.DValue(ii);
@@ -774,9 +774,9 @@ namespace ngfem
            SIMD<double> * pdshapes = &dshapes(0,i);
            size_t dist = dshapes.Dist();
             
-           // TIP<DIM,AutoDiffRec<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
+           // TIP<DIM,AutoDiff<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
            T_CalcShape (GetTIP(mir[i]), // adp,
-                        SBLambda ([&] (size_t j, AutoDiffRec<DIM1,SIMD<double>> shape)
+                        SBLambda ([&] (size_t j, AutoDiff<DIM1,SIMD<double>> shape)
                                   {
                                     /*
                                     Iterate<DIM1> ( [&] (size_t ii) {
@@ -815,51 +815,25 @@ namespace ngfem
                                for (int d2 = 0; d2 < DIM; d2++)
                                  row(d1*DIM+d2) = shape.DDValue(d1,d2);
                            }));
-    
-    /*
-    size_t ndof = this->GetNDof();
-    for (int dir1 = 0; dir1 < DIM; dir1++)
-      for (int dir2 = 0; dir2 <= dir1; dir2++)
-        {
-          int dir = dir1*DIM+dir2;
-          TIP<DIM, AutoDiffDiff<1>> tip;
-          if constexpr (DIM >= 1)
-                         {
-                           if (dir1 == 0 || dir2 == 0)
-                             tip.x = AutoDiff<1> (ip(0),0);
-                           else
-                             tip.x = ip(0);
-                         }
-          if constexpr (DIM >= 2)
-                         {
-                           if (dir1 == 1 || dir2 == 1)
-                             tip.y = AutoDiff<1> (ip(1),0);
-                           else
-                             tip.y = ip(1);
-                         }
-          if constexpr (DIM >= 3)
-                         {
-                           if (dir1 == 2 || dir2 == 2)
-                             tip.z = AutoDiff<1> (ip(2),0);
-                           else
-                             tip.z = ip(2);
-                         }
-          
-          T_CalcShape (tip, 
-                       SBLambda ([dir, ddshape] (int i, auto shape)
-                                 { ddshape(i, dir) = shape.DDValue(0); }));
-        }
-    for (int dir1 = 0; dir1 < DIM; dir1++)
-      for (int dir2 = 0; dir2 < dir1; dir2++)
-        {
-          int dir = dir1*DIM+dir2;
-          ddshape.Col(dir).Range(ndof) -= ddshape.Col(dir1*(DIM+1)) + ddshape.Col(dir2*(DIM+1));
-          ddshape.Col(dir).Range(ndof) *= 0.5;
-          ddshape.Col(dir2*DIM+dir1).Range(ndof) = ddshape.Col(dir);
-        }
-   */
   }
 
+
+  
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> ::   
+  CalcMappedDDShape (const BaseMappedIntegrationPoint & bmip, 
+                     BareSliceMatrix<> ddshape) const
+  {
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+    T_CalcShape (GetTIPHesse (mip),
+                 SBLambda ([ddshape] (size_t i, auto shape)
+                           {
+                             auto row = ddshape.Row(i);
+                             for (int d1 = 0; d1 < DIM; d1++)
+                               for (int d2 = 0; d2 < DIM; d2++)
+                                 row(d1*DIM+d2) = shape.DDValue(d1,d2);
+                           }));
+  }
 
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>

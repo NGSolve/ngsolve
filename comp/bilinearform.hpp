@@ -143,7 +143,7 @@ namespace ngcomp
     /*
     void AddIndependentIntegrator (BilinearFormIntegrator * bfi,
 				   const int master_surface,
-				   const int slave)
+				   const int other)
     */
   
     const Array<shared_ptr<BilinearFormIntegrator>> & Integrators() const
@@ -178,7 +178,7 @@ namespace ngcomp
     {
       return independent_meshindex[i](0);
     }
-    int GetIndependentSlaveIndex(const int i) const
+    int GetIndependentOtherIndex(const int i) const
     {
       return independent_meshindex[i](1);
     }
@@ -186,6 +186,7 @@ namespace ngcomp
 
     void AddSpecialElement (unique_ptr<SpecialElement> spel);
     auto & GetSpecialElements() const { return specialelements; }
+    void DeleteSpecialElement(size_t index);
     void DeleteSpecialElements();
 
     /// for static condensation of internal bubbles

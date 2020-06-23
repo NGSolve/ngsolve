@@ -20,6 +20,9 @@ Copyright: The i-tutorials are a part of NGSolve and are covered by the
 LGPL open source license. You may extend and modify them for your use,
 but you have to refer to the original source.
 
+We acknowledge support from the `TU Wien <https://www.tuwien.at>`_ and by the Austrian Science Foundation `FWF <https://www.fwf.ac.at/>`_ within project grant `SFB65 Taming Complexity in Partial Differential Systems <https://www.univie.ac.at/sfb65/>`_.
+
+
 Installation
 ~~~~~~~~~~~~
 
@@ -29,6 +32,15 @@ To work through the i-tutorials, you first have to install
 - Jupyter from http://www.jupyter.org. You can use the pip package manager: "pip3 install jupyter" 
 - download and unpack the i-tutorials from `here <../i-tutorials.zip>`__.
 
+To use the webgui visualization within jupyter you need
+
+- pip3 install ipywidgets
+- jupyter nbextension install --py widgetsnbextension
+- jupyter nbextension enable --py widgetsnbextension
+- jupyter nbextension install --user --py ngsolve
+- jupyter nbextension enable --user --py ngsolve
+
+  
 Some of the tutorials require packages from scipy and matplotlib, so it
 is a good idea to install them as well:
 
@@ -50,6 +62,19 @@ main folder containing the i-tutorials, and start
 
    jupyter-notebook index.ipynb
 
+Whetting the Appetite
+=====================
+
+.. toctree::
+   :maxdepth: 1
+
+   wta/poisson.ipynb
+   wta/adaptivity.ipynb
+   wta/maxwell.ipynb
+   wta/navierstokes.ipynb
+   wta/elasticity.ipynb
+
+   
 1. Getting started
 ===================
 

@@ -68,6 +68,8 @@ namespace ngcomp
     // virtual size_t GetNDof () const throw() override;
     // virtual size_t GetNDofLevel (int level) const override;
 
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;

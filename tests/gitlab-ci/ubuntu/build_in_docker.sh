@@ -42,6 +42,7 @@ cmake ../../src/ngsolve \
   -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
   -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
   -DUSE_NATIVE_ARCH=$USE_NATIVE_ARCH \
+  -DUSE_CGNS=ON \
   -DUSE_OCC=ON \
   -DUSE_CCACHE=ON \
   -DUSE_MKL=ON \
@@ -65,6 +66,11 @@ then
 
   export NGS_NUM_THREADS=4
   echo "build docu"
+  pip3 install jupyter widgetsnbextension
+  jupyter nbextension install --py widgetsnbextension
+  jupyter nbextension enable --py widgetsnbextension
+  jupyter nbextension install --py ngsolve
+  jupyter nbextension enable --py ngsolve
   make docs > out
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files

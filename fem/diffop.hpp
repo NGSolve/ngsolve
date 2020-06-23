@@ -227,7 +227,7 @@ namespace ngfem
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const DifferentialOperator & diffop2) const { return false; }
-    
+
     /// calculates the matrix
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
@@ -349,7 +349,8 @@ namespace ngfem
     {
       throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
     }
-    
+
+    NGS_DLL_HEADER virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
   };
 
 
@@ -421,6 +422,20 @@ namespace ngfem
                 FlatVector<Complex> flux,
                 BareSliceVector<Complex> x, 
                 LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<double> flux,
+		BareSliceVector<double> x, 
+		LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<Complex> flux,
+		BareSliceVector<Complex> x, 
+		LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
@@ -546,7 +561,10 @@ namespace ngfem
                              adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), dim(adim)
     {
-      dimensions = Array<int> ( { adim, adiffop->Dim() });
+      if (adiffop->Dimensions().Size() == 0)
+        dimensions = Array<int> ( { adim });
+      else
+        dimensions = Array<int> ( { adim, adiffop->Dim() });
     }
 
     NGS_DLL_HEADER virtual ~VectorDifferentialOperator ();

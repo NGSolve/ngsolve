@@ -8,7 +8,7 @@ periodic.Append ( ["line", pnums[0], pnums[1]],bc="outer")
 # This should be our master edge so we need to save its number.
 lright = periodic.Append ( ["line", pnums[1], pnums[2]], bc="periodic")
 periodic.Append ( ["line", pnums[2], pnums[3]], bc="outer")
-# Slave boundaries must be defined in the same direction as master ones,
+# Minion boundaries must be defined in the same direction as master ones,
 # this is why the the point numbers of this spline are defined in the reverse direction,
 # leftdomain and rightdomain must therefore be switched as well!
 # We use the master number as the copy argument to create a slave edge.

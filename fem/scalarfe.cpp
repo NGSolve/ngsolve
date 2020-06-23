@@ -192,7 +192,51 @@ namespace ngfem
       }
   }
 
+  void BaseScalarFiniteElement ::   
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<Complex> coefs, BareVector<SIMD<Complex>> values) const
+  {
+    STACK_ARRAY(SIMD<double>, mem, 2*ir.Size());
+    FlatMatrix<SIMD<double>> hvals(2, ir.Size(), mem);
+    Evaluate (ir,
+              SliceMatrix(GetNDof(), 2, 2*coefs.Dist(), (double*)&coefs(0)), hvals);
+    for (size_t i = 0; i < ir.Size(); i++)
+      values(i) = SIMD<Complex>(hvals(0,i), hvals(1,i));
+  }
 
+  void BaseScalarFiniteElement ::     
+  AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<Complex>> values, BareSliceVector<Complex> coefs) const
+  {
+    STACK_ARRAY(SIMD<double>, mem, 2*ir.Size());
+    FlatMatrix<SIMD<double>> hvals(2, ir.Size(), mem);
+    for (size_t i = 0; i < ir.Size(); i++)
+      {
+        hvals(0,i) = values(i).real();
+        hvals(1,i) = values(i).imag();
+      }
+
+    AddTrans (ir, hvals, 
+              SliceMatrix(GetNDof(), 2, 2*coefs.Dist(), (double*)coefs.Data()));
+  }
+  
+  void BaseScalarFiniteElement ::     
+  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
+  {
+    size_t dimgrad = ir.DimSpace();
+    STACK_ARRAY(SIMD<double>, memr, dimgrad*ir.Size());
+    FlatMatrix<SIMD<double>> hvalsr(dimgrad,ir.Size(), memr);
+    EvaluateGrad (ir, SliceVector<>(GetNDof(), 2*coefs.Dist(),  (double*)coefs.Data()), hvalsr);
+
+    STACK_ARRAY(SIMD<double>, memi, dimgrad*ir.Size());
+    FlatMatrix<SIMD<double>> hvalsi(dimgrad,ir.Size(), memi);
+    EvaluateGrad (ir, SliceVector<>(GetNDof(), 2*coefs.Dist(),  ((double*)coefs.Data())+1), hvalsi);
+
+    for (size_t j = 0; j < dimgrad; j++)
+      for (size_t i = 0; i < ir.Size(); i++)
+        values(j, i) = SIMD<Complex> (hvalsr(j,i), hvalsi(j,i));
+  }
+
+  
+  
   template<int D>
   void ScalarFiniteElement<D> :: 
   EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, BareSliceMatrix<> vals) const

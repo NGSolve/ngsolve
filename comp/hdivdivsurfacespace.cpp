@@ -130,7 +130,13 @@ namespace ngcomp
     {
       Cast(fel).AddTrans_Matrix (mir, y, x);
     }    
-    
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return -2*TraceCF(dir->Operator("Gradboundary"))*proxy + 2*SymmetricCF(dir->Operator("Gradboundary") * proxy);
+    }
     
   };
 

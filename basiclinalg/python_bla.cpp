@@ -452,6 +452,17 @@ vals : tuple
 )raw_string")
            );
 
+    py::class_<Vec<1>> v1(m, "Vec1D");
+    PyVecAccess<Vec<1>>(m, v1);
+    PyDefROBracketOperator<Vec<1>, double>(m, v1);
+
+    py::class_<Vec<2>> v2(m, "Vec2D");
+    PyVecAccess<Vec<2>>(m, v2);
+    PyDefROBracketOperator<Vec<2>, double>(m, v2);
+
+    py::class_<Vec<3>> v3(m, "Vec3D");
+    PyVecAccess<Vec<3>>(m, v3);
+    PyDefROBracketOperator<Vec<3>, double>(m, v3);
 
     ///////////////////////////////////////////////////////////////////////////////////////
     // Matrix types

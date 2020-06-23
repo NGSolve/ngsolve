@@ -751,7 +751,7 @@ namespace ngfem
       //Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
       Tx edgebubbles[4] = {(1-x)*x, x*(1-x), y*(1-y), (1-y)*y};
 
-      typedef decltype(x.Value()+x.Value()) T;
+      // typedef decltype(x.Value()+x.Value()) T;
      		  
       int ii = 0;
       

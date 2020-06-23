@@ -2,6 +2,7 @@
 
 namespace ngfem
 {
+  
   class DifferentialSymbol
   {
   public:
@@ -12,11 +13,12 @@ namespace ngfem
     int bonus_intorder = 0;
     shared_ptr<ngcomp::GridFunction> deformation;
     std::map<ELEMENT_TYPE,shared_ptr<IntegrationRule>> userdefined_intrules;
+    shared_ptr<BitArray> definedonelements;
     
     DifferentialSymbol (VorB _vb) : vb(_vb) { ; }
     DifferentialSymbol (VorB _vb, VorB _element_vb, bool _skeleton, // const BitArray & _definedon,
                         int _bonus_intorder)
-      : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), /* definedon(_definedon), */ bonus_intorder(_bonus_intorder) { ; } 
+      : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), /* definedon(_definedon), */ bonus_intorder(_bonus_intorder) { ; }
   };
   
 
@@ -69,16 +71,39 @@ namespace ngfem
     {
       auto deriv = make_shared<SumOfIntegrals>();
       auto grad = dir->Operator("grad");
+      if (!grad)
+        throw Exception("In SumOfIntegrals::DiffShape: dir does not have a grad operator");
       auto divdir = TraceCF(grad);
       auto sgrad = dynamic_pointer_cast<ProxyFunction>(grad)->Trace();
       auto sdivdir = TraceCF(sgrad);
+
+      auto tang = TangentialVectorCF(dir->Dimension());
+      tang -> SetDimensions( Array<int> ( { dir->Dimension(), 1 } ) );
+      auto bsdivdir = InnerProduct(sgrad*tang,tang);
       
       for (auto & icf : icfs)
         {
-          if (icf->dx.vb == VOL)
-            deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
-          else
-            deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + sdivdir*icf->cf, icf->dx);            
+          switch (icf->dx.vb)
+            {
+            case VOL:
+              if (icf->dx.element_vb == VOL)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
+              else
+                throw Exception("In DiffShape: for vb=VOL only element_vb=VOL implemented!");
+              break;
+            case BND:
+              if (icf->dx.element_vb == VOL)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + sdivdir*icf->cf, icf->dx);
+              else if (icf->dx.element_vb == BND && dir->Dimension() == 3)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + bsdivdir*icf->cf, icf->dx);
+              else if (icf->dx.element_vb == BND && dir->Dimension() == 2)
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir), icf->dx);
+              else
+                throw Exception("In DiffShape: for vb=BND something went wrong!");
+              break;
+            default:
+              throw Exception("In DiffShape: for vb="+ToString(icf->dx.vb)+" and element_vb="+ToString(icf->dx.element_vb) + " not implemented!");
+            }
         }
       return deriv;
     }

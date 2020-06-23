@@ -156,6 +156,8 @@ namespace ngcomp
     lowest_order_ct =
       flags.GetDefineFlagX ("lowest_order_wb").IsTrue() ? WIREBASKET_DOF : LOCAL_DOF;
 
+    additional_evaluators.Set ("dual", evaluator[VOL]);
+
     switch (ma->GetDimension())
       {
       case 1:
@@ -660,6 +662,16 @@ global system.
     return 0;
   }
   
+
+  FlatArray<VorB> L2HighOrderFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL };
+    if (vb == VOL)
+      { return FlatArray<VorB> (1, &nodes[0]); }
+    else
+      { return FlatArray<VorB> (0, nullptr); }
+  }
+
   shared_ptr<Table<int>> L2HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
@@ -1275,11 +1287,22 @@ global system.
           flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
       }
     }
+
+    additional_evaluators.Set ("dual", evaluator[BND]);
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
   {
     ;
+  }
+
+  FlatArray<VorB> L2SurfaceHighOrderFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL };
+    if (vb == BND)
+      { return FlatArray<VorB> (1, &nodes[0]); }
+    else
+      { return FlatArray<VorB> (0, nullptr); }
   }
 
   DocInfo L2SurfaceHighOrderFESpace :: GetDocu ()
@@ -2557,6 +2580,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
             additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
             break;
           }
+
+      additional_evaluators.Set("dual", evaluator[VOL]);
     }
 
 
@@ -2697,9 +2722,18 @@ One can evaluate the vector-valued function, and one can take the gradient.
         spaces[i] -> ApplyM (rho, veci, defon, lh);
       }
   }
-    
-    
-  
+
+
+  FlatArray<VorB> VectorL2FESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL };
+    if (vb == VOL)
+      { return FlatArray<VorB> (1, &nodes[0]); }
+    else
+      { return FlatArray<VorB> (0, nullptr); }
+  }
+
+
   template <int DIM>
   void VectorL2FESpace ::
   SolveM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * def,

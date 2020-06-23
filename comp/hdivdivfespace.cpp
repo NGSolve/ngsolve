@@ -145,9 +145,60 @@ namespace ngcomp
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
-    }    
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      return -2*TraceCF(dir->Operator("Grad"))*proxy + 2*SymmetricCF(dir->Operator("Grad") * proxy);
+    }
   };
 
+
+#ifdef NONE
+  template<int D>
+  class DiffOpIdDDMappedHDivDiv: public DiffOp<DiffOpIdDDMappedHDivDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      fel.CalcDDMappedShape_Matrix (mip,Trans(mat));
+    }
+
+    /*
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,DIM_DMAT,lh);
+      fel.CalcMappedShape_Matrix(sip,shape);
+      for(int i=0; i<nd; i++)
+        for(int j = 0; j <DIM_DMAT; j++)
+          mat(j,i) = shape(i,j);
+
+    }
+    */
+  };
+#endif
+
+  
 
   template<int D>
   class DiffOpNormalComponentHDivDiv: public DiffOp<DiffOpNormalComponentHDivDiv<D> >
@@ -596,6 +647,9 @@ namespace ngcomp
     type = "hdivdiv";
     order = int (flags.GetNumFlag ("order",1));
     plus = flags.GetDefineFlag ("plus");
+    quadfullpol = flags.GetDefineFlag ("quadfullpol");
+    algebraic_mapping = !flags.GetDefineFlagX ("algebraicmapping").IsFalse();
+    cout << "algebraicmapping = " << algebraic_mapping << endl;
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
@@ -708,11 +762,17 @@ namespace ngcomp
                   }
                 break;
               case ET_QUAD:
-                // original:
-                ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
-                  + (oi[0]+2)*(oi[0])*2
-                  + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
-        
+                if (quadfullpol)
+                  {
+                    ndof += 1+2*(oi[0]+1)*(oi[0]+2) + sqr(oi[0]+1);
+                    if (plus) ndof += 4*oi[0]+4;
+                  }
+                else
+                  // original:
+                  ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
+                    + (oi[0]+2)*(oi[0])*2
+                    + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
+                
                 //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
                 /*
                   ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
@@ -913,6 +973,7 @@ namespace ngcomp
     case ET_TRIG:
     {
       auto fe = new (alloc) HDivDivFE<ET_TRIG> (order,plus);
+      fe->SetAlgebraicMapping (algebraic_mapping);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -923,7 +984,21 @@ namespace ngcomp
     }
     case ET_QUAD:
     {
+      if (quadfullpol)
+        {
+          auto fe = new (alloc) HDivDivFE_QuadFullPol(order,plus);
+          fe->SetAlgebraicMapping (algebraic_mapping);          
+          fe->SetVertexNumbers (ngel.Vertices());
+          int ii = 0;
+          for(auto f : ngel.Facets())
+            fe->SetOrderFacet(ii++,order_facet[f]);
+          fe->SetOrderInner(order_inner[ei.Nr()]);
+          fe->ComputeNDof();
+          return *fe;
+        }
+      
       auto fe = new (alloc) HDivDivFE<ET_QUAD> (order,plus);
+      fe->SetAlgebraicMapping (algebraic_mapping);      
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -935,6 +1010,7 @@ namespace ngcomp
     case ET_PRISM:
     {
       auto fe = new (alloc) HDivDivFE<ET_PRISM> (order,plus);
+      fe->SetAlgebraicMapping (algebraic_mapping);      
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -946,6 +1022,7 @@ namespace ngcomp
     case ET_HEX:
     {
       auto fe = new (alloc) HDivDivFE<ET_HEX> (order,plus);
+      fe->SetAlgebraicMapping (algebraic_mapping);      
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -957,6 +1034,7 @@ namespace ngcomp
     case ET_TET:
     {
       auto fe = new (alloc) HDivDivFE<ET_TET> (order,plus);
+      fe->SetAlgebraicMapping (algebraic_mapping);      
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -1018,6 +1096,7 @@ namespace ngcomp
     {
     case 2:
       additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ());
+      // additional.Set ("ddmapped",make_shared<T_DifferentialOperator<DiffOpIdDDMappedHDivDiv<2>>> ());
       additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<2>>> ());
       additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<2>>> ());
       additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<2>>> ());

@@ -501,8 +501,8 @@ namespace ngcomp
     virtual string ParameterString() const
     {
       stringstream str;
-      str << "pml1: " << typeid(*pml1).name() << endl;
-      str << "pml2: " << typeid(*pml2).name();
+      str << "pml1: " << GetName(*pml1) << endl;
+      str << "pml2: " << GetName(*pml2);
       return str.str();
     }
 
@@ -577,8 +577,8 @@ namespace ngcomp
     virtual string ParameterString() const
     {
       stringstream str;
-      str << "pml1: " << typeid(*pml1).name() << endl;
-      str << "pml2: " << typeid(*pml2).name() << endl;
+      str << "pml1: " << GetName(*pml1) << endl;
+      str << "pml2: " << GetName(*pml2) << endl;
       str << "dims1: " << dims1 << endl;
       str << "dims2: " << dims2;
       return str.str();

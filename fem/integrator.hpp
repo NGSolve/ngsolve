@@ -316,6 +316,7 @@ namespace ngfem
       CalcElementMatrixAdd (const FiniteElement & fel,
                             const ElementTransformation & eltrans, 
                             FlatMatrix<double> elmat,
+                            bool & symmetric_so_far,
                             LocalHeap & lh) const;
 
     /**
@@ -327,6 +328,7 @@ namespace ngfem
       CalcElementMatrixAdd (const FiniteElement & fel,
                             const ElementTransformation & eltrans, 
                             FlatMatrix<Complex> elmat,
+                            bool & symmetric_so_far,                            
                             LocalHeap & lh) const;
     
 
@@ -334,26 +336,26 @@ namespace ngfem
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
                                   const FiniteElement & bfel_master_element,				    
-                                  const FiniteElement & bfel_slave,
+                                  const FiniteElement & bfel_other,
                                   const ElementTransformation & eltrans_master, 
                                   const ElementTransformation & eltrans_master_element, 
-                                  const ElementTransformation & eltrans_slave,
+                                  const ElementTransformation & eltrans_other,
                                   const IntegrationPoint & ip_master,
                                   const IntegrationPoint & ip_master_element,
-                                  const IntegrationPoint & ip_slave,
+                                  const IntegrationPoint & ip_other,
                                   FlatMatrix<double> & elmat,
                                   LocalHeap & lh) const
     {;}
     virtual void
     ApplyElementMatrixIndependent (const FiniteElement & bfel_master,
 				   const FiniteElement & bfel_master_element,				    
-				   const FiniteElement & bfel_slave,
+				   const FiniteElement & bfel_other,
 				   const ElementTransformation & eltrans_master, 
 				   const ElementTransformation & eltrans_master_element, 
-				   const ElementTransformation & eltrans_slave,
+				   const ElementTransformation & eltrans_other,
 				   const IntegrationPoint & ip_master,
 				   const IntegrationPoint & ip_master_element,
-				   const IntegrationPoint & ip_slave,
+				   const IntegrationPoint & ip_other,
 				   const FlatVector<double> & elx,
 				   Vector<double> & result,
 				   LocalHeap & lh) const
@@ -361,20 +363,20 @@ namespace ngfem
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
                                   const FiniteElement & bfel_master_element,				    
-                                  const FiniteElement & bfel_slave,
+                                  const FiniteElement & bfel_other,
                                   const ElementTransformation & eltrans_master, 
                                   const ElementTransformation & eltrans_master_element, 
-                                  const ElementTransformation & eltrans_slave,
+                                  const ElementTransformation & eltrans_other,
                                   const IntegrationPoint & ip_master,
                                   const IntegrationPoint & ip_master_element,
-                                  const IntegrationPoint & ip_slave,
+                                  const IntegrationPoint & ip_other,
                                   FlatMatrix<Complex> & elmat,
                                   LocalHeap & lh) const
     {
       FlatMatrix<double> rmat;
-      CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
-                                   eltrans_master, eltrans_master_element, eltrans_slave,
-                                   ip_master, ip_master_element, ip_slave,
+      CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_other,
+                                   eltrans_master, eltrans_master_element, eltrans_other,
+                                   ip_master, ip_master_element, ip_other,
                                    rmat, lh);
       elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
       elmat = rmat;
@@ -382,28 +384,28 @@ namespace ngfem
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
-				      const FiniteElement & bfel_slave,
+				      const FiniteElement & bfel_other,
 				      const ElementTransformation & eltrans_master, 
-				      const ElementTransformation & eltrans_slave,
+				      const ElementTransformation & eltrans_other,
 				      const IntegrationPoint & ip_master,
-				      const IntegrationPoint & ip_slave,
+				      const IntegrationPoint & ip_other,
 				      FlatMatrix<double> & elmat,
 				      LocalHeap & lh) const
     {;}
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
-				      const FiniteElement & bfel_slave,
+				      const FiniteElement & bfel_other,
 				      const ElementTransformation & eltrans_master, 
-				      const ElementTransformation & eltrans_slave,
+				      const ElementTransformation & eltrans_other,
 				      const IntegrationPoint & ip_master,
-				      const IntegrationPoint & ip_slave,
+				      const IntegrationPoint & ip_other,
 				      FlatMatrix<Complex> & elmat,
 				      LocalHeap & lh) const
     {
       FlatMatrix<double> rmat;
-      CalcElementMatrixIndependent(bfel_master,bfel_slave,
-				       eltrans_master, eltrans_slave,
-				       ip_master, ip_slave,
+      CalcElementMatrixIndependent(bfel_master,bfel_other,
+				       eltrans_master, eltrans_other,
+				       ip_master, ip_other,
 				       rmat, lh);
       elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
       elmat = rmat;
@@ -1046,46 +1048,46 @@ namespace ngfem
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				      const FiniteElement & bfel_master_element,				    
-				      const FiniteElement & bfel_slave,
+				      const FiniteElement & bfel_other,
 				      const ElementTransformation & eltrans_master, 
 				      const ElementTransformation & eltrans_master_element, 
-				      const ElementTransformation & eltrans_slave,
+				      const ElementTransformation & eltrans_other,
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_master_element,
-				      const IntegrationPoint & ip_slave,
+				      const IntegrationPoint & ip_other,
 				      FlatMatrix<double> & elmat,
 				      LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				      const FiniteElement & bfel_master_element,				    
-				      const FiniteElement & bfel_slave,
+				      const FiniteElement & bfel_other,
 				      const ElementTransformation & eltrans_master, 
 				      const ElementTransformation & eltrans_master_element, 
-				      const ElementTransformation & eltrans_slave,
+				      const ElementTransformation & eltrans_other,
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_master_element,
-				      const IntegrationPoint & ip_slave,
+				      const IntegrationPoint & ip_other,
 				      FlatMatrix<Complex> & elmat,
 				      LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
-				      const FiniteElement & bfel_slave,
+				      const FiniteElement & bfel_other,
 				      const ElementTransformation & eltrans_master, 
-				      const ElementTransformation & eltrans_slave,
+				      const ElementTransformation & eltrans_other,
 				      const IntegrationPoint & ip_master,
-				      const IntegrationPoint & ip_slave,
+				      const IntegrationPoint & ip_other,
 				      FlatMatrix<double> & elmat,
 				      LocalHeap & lh) const override;
 
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
-				      const FiniteElement & bfel_slave,
+				      const FiniteElement & bfel_other,
 				      const ElementTransformation & eltrans_master, 
-				      const ElementTransformation & eltrans_slave,
+				      const ElementTransformation & eltrans_other,
 				      const IntegrationPoint & ip_master,
-				      const IntegrationPoint & ip_slave,
+				      const IntegrationPoint & ip_other,
 				      FlatMatrix<Complex> & elmat,
 				      LocalHeap & lh) const override;
 

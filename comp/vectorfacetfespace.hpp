@@ -65,6 +65,8 @@ namespace ngcomp
 
     virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }
 
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }
 
@@ -97,6 +99,9 @@ namespace ngcomp
     virtual void GetEdgeDofNrs (int elnum, Array<DofId> & dnums) const override;
     virtual void GetFaceDofNrs (int felnr, Array<DofId> & dnums) const override;
     virtual void GetInnerDofNrs (int felnr, Array<DofId> & dnums) const override;
+
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
+
   };
 
 }

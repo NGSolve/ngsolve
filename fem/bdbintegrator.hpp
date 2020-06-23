@@ -1463,7 +1463,7 @@ public:
   virtual ~T_BIntegrator ()
   { ; }
   ///
-  virtual void CheckElement (const FiniteElement & el) const
+  void CheckElement (const FiniteElement & el) const override
   {
     if (!dynamic_cast<const FEL*> (&el) )
       {
@@ -1487,30 +1487,30 @@ public:
   ///
   //virtual bool BoundaryForm () const
   //{ return int(DIM_SPACE) > int(DIM_ELEMENT); }
-  virtual VorB VB() const
+  VorB VB() const override
   { return VorB(int(DIM_SPACE)-int(DIM_ELEMENT)); }
-  virtual int DimElement () const
+  int DimElement () const override
   { return DIM_ELEMENT; }
 
-  virtual int DimSpace () const
+  int DimSpace () const override
   { return DIM_SPACE; }
 
 
 
-  virtual void
+  void
   CalcElementVector (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
 		     FlatVector<double> elvec,
-		     LocalHeap & lh) const
+		     LocalHeap & lh) const override
   {
     T_CalcElementVector<double> (bfel, eltrans, elvec, lh);
   }
 
-  virtual void
+  void
   CalcElementVector (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
 		     FlatVector<Complex> elvec,
-		     LocalHeap & lh) const
+		     LocalHeap & lh) const override
   {
     T_CalcElementVector<Complex> (bfel, eltrans, elvec, lh);
   }
@@ -1562,7 +1562,7 @@ public:
 				    const BaseMappedIntegrationPoint & g_mip,
 				    FlatVector<double> & elvec,
 				    LocalHeap & lh,
-				    const bool curveint = false) const
+				    const bool curveint = false) const override
   {
     T_CalcElementVectorIndependent (gfel, s_mip, g_mip, elvec, lh, curveint);
   }
@@ -1573,7 +1573,7 @@ public:
 				    const BaseMappedIntegrationPoint & g_mip,
 				    FlatVector<Complex> & elvec,
 				    LocalHeap & lh,
-				    const bool curveint = false) const
+				    const bool curveint = false) const override
   {
     T_CalcElementVectorIndependent (gfel, s_mip, g_mip, elvec, lh, curveint);
   }
@@ -1646,10 +1646,10 @@ public:
 
   
   ///
-  virtual int GetDimension () const { return DIM; }
+  int GetDimension () const override { return DIM; }
 
   ///
-  virtual string Name () const { return "BDB integrator"; }
+  string Name () const override { return "B integrator"; }
 };
 
 

@@ -17,16 +17,16 @@ from netgen import Redraw
 from pyngcore import BitArray, TaskManager, SetNumThreads
 from .ngstd import Timers, Timer, IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
-from .la import BaseMatrix, BaseVector, BlockVector, BlockMatrix, \
+from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
     CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
     Projector, IdentityMatrix, Embedding, PermutationMatrix, \
     ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
-from .fem import BFI, LFI, CoefficientFunction, Parameter, ET, \
+from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
-    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Trace, Inv, Det, Cof, Cross, \
+    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Id, Trace, Inv, Det, Cof, Cross, \
     specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
-    IntegrationRule, IfPos, VoxelCoefficient
+    IntegrationRule, IfPos, VoxelCoefficient, CacheCF
 from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     BilinearForm, LinearForm, GridFunction, Preconditioner, \
     MultiGridPreconditioner, ElementId, FESpace, H1, HCurl, \
@@ -34,14 +34,15 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
     NormalFacetFESpace, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
+    NodalFESpace, VectorNodalFESpace, \
     NumberSpace, Periodic, Discontinuous, Compress, \
-    CompressCompound, BoundaryFromVolumeCF, Variation, \
+    CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
-    SetTestoutFile, ngsglobals, pml, MPI_Init
+    SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
 from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
-from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Id, PyTrace, \
+from .utils import x, y, z, dx, ds, grad, Grad, curl, div, PyId, PyTrace, \
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize
 from . import solvers
 
@@ -84,4 +85,12 @@ mpi_world = MPI_Init()
 # BaseMatrix.__rmul__ = __expr.expr_rmul
 # BaseMatrix.__neg__ = __expr.expr_neg
 
-
+def _jupyter_nbextension_paths():
+    return [
+        {
+            "section": "notebook",
+            "src": "nbextension/static",
+            "dest": "ngsolve_jupyter_widgets",
+            "require": "ngsolve_jupyter_widgets/extension",
+        }
+    ]

@@ -27,6 +27,7 @@ namespace ngla
 #include "paralleldofs.hpp"
 #include "basevector.hpp"
 #include "vvector.hpp"
+#include "multivector.hpp"
 #include "basematrix.hpp"
 #include "sparsematrix.hpp"
 #include "sparsematrix_dyn.hpp"

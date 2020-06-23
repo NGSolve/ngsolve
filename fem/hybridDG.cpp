@@ -1514,7 +1514,7 @@ namespace ngfem
   class HDG_LaplaceIntegrator4 : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction * coef_lam;
+    shared_ptr<CoefficientFunction> coef_lam;
   public:
     HDG_LaplaceIntegrator4 (Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()

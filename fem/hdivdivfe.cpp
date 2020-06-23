@@ -19,6 +19,7 @@ namespace ngfem
     SIMD_IntegrationRule simdir(ElementType(), 2*Order());
     Vector<> coefs(GetNDof());
     Matrix<> shape(GetNDof(),(D+1)*D/2);
+    Matrix<> divshape(GetNDof(),D);
     Vector<> values(ir.Size());
     Matrix<> dvalues(ir.Size(), D);
     Matrix<SIMD<double>> simd_shapes(D*D*GetNDof(), simdir.Size());
@@ -26,6 +27,7 @@ namespace ngfem
     static LocalHeap lh (10000000, "FE - Timing");
     HeapReset hr(lh);
     // auto & mir = trafo(ir, lh);
+    auto & mir = trafo(ir, lh);    
     auto & simdmir = trafo(simdir, lh);
 
     coefs = 1;
@@ -41,6 +43,21 @@ namespace ngfem
       });
     timings.push_back(make_tuple("CalcShape", time/steps*1e9/(D*(D+1)/2*GetNDof()*ir.Size())));
 
+    time = RunTiming([&]() {
+        for (size_t i = 0; i < steps; i++)
+          for (size_t j = 0; j < ir.Size(); j++)
+            this -> CalcDivShape(ir[j], divshape);
+      });
+    timings.push_back(make_tuple("CalcDivShape", time/steps*1e9/(D*GetNDof()*ir.Size())));
+
+    time = RunTiming([&]() {
+        for (size_t i = 0; i < steps; i++)
+          for (size_t j = 0; j < ir.Size(); j++)
+            this -> CalcMappedDivShape(mir[j], divshape);
+      });
+    timings.push_back(make_tuple("CalcMappedDivShape", time/steps*1e9/(D*GetNDof()*ir.Size())));
+
+    
     time = RunTiming([&]() {
         for (size_t i = 0; i < steps; i++)
           this -> CalcMappedShape_Matrix(simdmir, simd_shapes);
