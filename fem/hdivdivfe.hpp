@@ -2533,9 +2533,9 @@ namespace ngfem
 
 
       int oi = order_inner[0];
-      leg_u.SetSize(oi+1);
-      leg_v.SetSize(oi+1);
-      leg_w.SetSize(oi+1);
+      leg_u.SetSize(oi+2);
+      leg_v.SetSize(oi+2);
+      leg_w.SetSize(oi+2);
 
       LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[1],leg_u);
       LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[3],leg_v);
