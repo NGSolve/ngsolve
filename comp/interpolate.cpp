@@ -471,7 +471,6 @@ namespace ngcomp
         sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
 
       CalcInverse(elmat); 
-
       size_t nshape = inner_fel.GetNDof();
       
       auto save_ud = trafo.PushUserData();
@@ -566,6 +565,48 @@ namespace ngcomp
       rhsi = elmat * rhs;
       diffop->Apply(interpol_fel, mir, rhsi, flux, lh);
     }
+    
+
+    bool IsNonlinear() const override
+    {
+      return true;
+    }
+
+    // second derivative of \sum_ipt wprime * B(u) 
+    void CalcHessianAdd (const FiniteElement & fel,
+                         const BaseMappedIntegrationRule & mir,
+                         SliceMatrix<> wprime,
+                         BareSliceVector<> elvecu,
+                         SliceMatrix<> hessian,   
+                         LocalHeap & lh) const override
+    {
+      // a first simple implementation by numerical differentiation ....
+      
+      HeapReset hr(lh);
+      size_t ndof = fel.GetNDof();
+      double eps = 1e-6;
+      FlatVector<> wprimevec(wprime.Height()*wprime.Width(), lh);
+      for (int i = 0, ii = 0; i < wprime.Height(); i++)
+        for (int j = 0; j < wprime.Width(); j++, ii++)
+          wprimevec(ii) = wprime(i,j) * mir[i].GetWeight();
+      
+      FlatMatrix<double,ColMajor> bmatl(mir.Size()*diffop->Dim(), ndof, lh);
+      FlatMatrix<double,ColMajor> bmatr(mir.Size()*diffop->Dim(), ndof, lh);
+      FlatMatrix<double,ColMajor> dbmat(mir.Size()*diffop->Dim(), ndof, lh);
+                         
+      for (size_t i = 0; i < ndof; i++)
+        {
+          FlatVector<> elvecur(ndof, lh), elvecul(ndof, lh);
+          elvecur = elvecu;
+          elvecul = elvecu;
+          elvecur(i) += eps;
+          elvecul(i) -= eps;
+          CalcLinearizedMatrix(fel, mir, elvecul, bmatl, lh);
+          CalcLinearizedMatrix(fel, mir, elvecur, bmatr, lh);
+          dbmat = 1/(2*eps) * (bmatr-bmatl);
+          hessian.Row(i) += Trans(dbmat) * wprimevec;
+        }
+    } 
     
     
   };
