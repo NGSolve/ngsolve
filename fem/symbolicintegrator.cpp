@@ -4215,6 +4215,8 @@ namespace ngfem
                                                  FlatMatrix<double> elmat,
                                                  LocalHeap & lh) const
   {
+    auto save_userdata = trafo.PushUserData();
+    
     size_t tid = TaskManager::GetThreadId();
     ThreadRegionTimer reg(const_cast<Timer&> (timer), tid);
 
@@ -4459,7 +4461,7 @@ namespace ngfem
                   bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bmat1.Cols(r1);
                   bbmat2.Rows(r3).Cols(r2) = bmat2.Cols(r2);
                   */
-                  bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bmat1.Rows(rb1).Cols(r1);                  
+                  bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bbmat1.Rows(rb1).Cols(r1);                  
                 }
               
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
