@@ -26,7 +26,7 @@ namespace ngcomp
                       shared_ptr<FESpace> aspace,
                       bool testfunction,
                       shared_ptr<DifferentialOperator> diffop,                      
-                      int bonus_intorder = 0);
+                      int bonus_intorder=0, VorB vb=VOL);
 
     shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const override;
 
@@ -36,7 +36,7 @@ namespace ngcomp
     
   NGS_DLL_HEADER
     shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
-                                                   int bonus_intorder = 0);
+                                                   int bonus_intorder=0);
   
   
 }
