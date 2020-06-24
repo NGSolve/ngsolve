@@ -4871,7 +4871,7 @@ namespace ngfem
             for (int i = 0; i < mir.Size(); i++)
               proxyvalues.Row(i) *= mir[i].GetWeight();
             
-            proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
+            proxy->Evaluator()->ApplyLinearizedTrans(fel, mir, elx, proxyvalues, ely1, lh);
             ely += ely1;
           }
       }
