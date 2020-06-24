@@ -126,7 +126,7 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    y += s * a.AddSize(x.Size(),y.Size()) * x;
+    y += s * a.AddSize(y.Size(),x.Size()) * x;
   }
 
   pmult_matvec dispatch_matvec[];
