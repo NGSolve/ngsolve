@@ -391,13 +391,26 @@ namespace ngcomp
       bool symmetric_so_far = false;
 
       // auto saveud = nonconst_trafo.userdata;
-      {
-      RegionTracer reg(TaskManager::GetThreadId(), tm2);          
-      for (auto & sbfi : single_bli)
-        sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+      try
+        {
+          RegionTracer reg(TaskManager::GetThreadId(), tm2);          
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
 
-      CalcInverse(elmat); 
-      }
+          CalcInverse(elmat);
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          CalcMatrix (inner_fel, mir, mat, lh);
+        }
+       
+       
       /** func * dual_shape **/
       // FlatVector<> elfluxadd(interpol_fel.GetNDof(), lh);
       size_t nshape = inner_fel.GetNDof();
@@ -467,8 +480,21 @@ namespace ngcomp
       elmat = 0.0;
       bool symmetric_so_far = false;
 
-      for (auto & sbfi : single_bli)
-        sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+      try
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          CalcLinearizedMatrix (inner_fel, mir, x, mat, lh);
+        }
 
       CalcInverse(elmat); 
       size_t nshape = inner_fel.GetNDof();
@@ -534,10 +560,24 @@ namespace ngcomp
       elmat = 0.0;
       bool symmetric_so_far = false;
 
-      for (auto & sbfi : single_bli)
-        sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
-      CalcInverse(elmat); 
-
+      try
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          Apply (inner_fel, mir, x, flux, lh);
+        }
+      
+      CalcInverse(elmat);
+      
       size_t nshape = inner_fel.GetNDof();
       
       auto save_ud = trafo.PushUserData();
