@@ -83,7 +83,6 @@ namespace ngfem
     int order_trace;
     //bool curlbubbles;
     bool GGbubbles;
-
     //L2orthTet l2orth;
     
   public:          
@@ -93,7 +92,6 @@ namespace ngfem
       for (auto & of : order_facet) of = aorder;
       order_inner = aorder;
       order_trace = -1;
-      //curlbubbles = acurlbubbles;
       GGbubbles = aGGbubbles;
     }   
     
@@ -728,7 +726,8 @@ namespace ngfem
 	  order = max2(order, order_facet[i]); 
 	}
       order += 1; //lo facet functions are linear
-      int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;
+      //int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;
+      int ninner = (order_inner+1)*(order_inner+1) + 2 * (order_inner+1)*(order_inner-1);
       //int ninner = 1 + order_inner*(2 + 3*order_inner);    
       
       order = max2(order, order_inner);
@@ -755,7 +754,7 @@ namespace ngfem
      		  
       int ii = 0;
       
-      int oi=order_inner;
+      int oi = order_inner;
       int ot = order_trace;
       
       int maxorder_facet  =
@@ -777,8 +776,10 @@ namespace ngfem
 	  // (0, u(x) y,0,0) u(x) \in P^k_x -> basis on upper edge
 	  // (0, v(y) (1-x),0,0) u(x) \in P^k_x -> basis on left edge
 	  // (0, v(y) x,0,0) u(x) \in P^k_x -> basis on right edge
-          for (int l = 0; l <= order_facet[i]; l++)	    
-	    shape[ii++] = Sigma_gradv(eta*ha[l]); //div-free	 
+	  
+          for (int l = 0; l <= order_facet[i]; l++)
+	    shape[ii++] = u_Sigma_gradv(eta,ha[l]); //on QUADS edge basisfunctions are NOT div-free
+	    //shape[ii++] = Sigma_gradv(eta*ha[l]); //div-free	old version but produces high order terms on the diagonal
         }
 
       // polynomials in x direction. First one is  quadratic
@@ -786,6 +787,10 @@ namespace ngfem
       // polynomials in y direction. First one is  quadratic
       IntLegNoBubble::EvalMult (oi+2, ly[0]-ly[2], 0.25*ly[0]*ly[2], v);
 
+      //!!!!!!!!!!!!!!
+      // produces a sigma space that is nt-continuous and trace free and includes polynomials up to order k
+      //!!!!!!!!!!!!!!
+      
       //////////////////////////////////////////////////////////////////////////////////////
       // functions on the diagonal split into dev-free part and orthogonal part (if ot > -1)
       //
@@ -807,9 +812,9 @@ namespace ngfem
 	     shape[ii++] = Sigma_gradu_v(lx[0],v[i]); //div-free
 	   }
 	 // gives (-d_x u(x)/2,0,0, d_x u(x)/2) -> produces a divergence
-	 shape[ii++] = Gradu_Curlv(u[i],ly[0]);
+	 shape[ii++] = Gradu_Curlv(u[i],ly[0], 1.0); // trace free!
 	 // gives (d_y v(x)/2,0,0, -d_y v(x)/2) -> produces a divergence
-	 shape[ii++] = Gradu_Curlv(v[i],lx[0]);	 
+	 shape[ii++] = Gradu_Curlv(v[i],lx[0], 1.0);	 
        }
       //      
       // block 1 and 2 produce already (P^k_x,0,0,-P^k_x), (P^k_y,0,0,-P^k_y)
@@ -820,13 +825,14 @@ namespace ngfem
       {
         for(int j = 0; j <= oi-1; j++)
         {
-	  // gives (-d_x u(x) d_y v(y), d_xx u(x) v(y),
-	  //        d_yy v(y) u(x)    , d_y v(y) d_x u(x))
-          shape[ii++] = Sigma_gradv(u[i]*v[j]);  //div-free
+	  // gives (-d_x u(x) d_y v(y), 0,
+	  //        0    , d_y v(y) d_x u(x))
+	  shape[ii++] = Gradu_Curlv(u[i],v[j], 1.0);  
 
-	  // gives (-d_x u(x) d_y v(y), d_xx u(x) v(y), 0,0)	  
+
+	  // gives (-d_x u(x) d_y v(y), 0, 0, 0)	  
 	  if (ot>-1)
-	    shape[ii++] = Sigma_gradu_v(u[i],v[j]); //div-free
+	    shape[ii++] = Gradu_Curlv(u[i],v[j], 0.0);
 	}
       }
       //////////////////////////////////////////////////////////////////////////////////////
@@ -834,25 +840,20 @@ namespace ngfem
       // edges and shapes one the diagonal give:
       // edges: (0,P^k_x o-times P^1_y,0,0)
       //        (0,0,P^1_x o-times P^k_y,0)
-      // diag: (XX, P^{k-1}_x  o-times P^{k+1}_y\P^{1}_y,
-      //       ( P^{k-1}_y o-times P^{k+1}_x\P^{1}_x, XX)
-      // hence we need
-      //       (0,P^{k-1}_x o-times P^{k+1}_y\P^{1}_y, 0,0)
-      //       (0,0,P^{k-1}_y o-times P^{k+1}_x\P^{1}_y,0)
-      // to compensate the part of the diagonal basis functions
-      for(int i = 0; i <= oi+1; i++)  // it was oi + 1
+      // hence we still need
+      //       (0,P^{k}_x o-times P^{k+1}_y\P^{1}_y, 0,0)
+      //       (0,0,P^{k}_y o-times P^{k+1}_x\P^{1}_y,0)
+            
+      for(int i = 0; i <= oi; i++)
       {
-        for(int j = 0; j <= oi-1; j++)
+        for(int j = 0; j <= oi-2; j++)
         {	  
 	  // gives (0 ,-d_xx u(x) v(y),0,0) with v(y) bubble or higher (hence inner bubble)
           shape[ii++] = u_Sigma_gradv(v[j],u[i]);
 	  // gives  (0 ,0 , d_yy v(y) u(x), 0) with u(x) bubble or higher (hence inner bubble)	  
           shape[ii++] = u_Sigma_gradv(u[j],v[i]);
-
         }
-      }
-       
-      
+      }      
     };
   };
   

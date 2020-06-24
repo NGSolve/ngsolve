@@ -362,12 +362,11 @@ namespace ngcomp
       throw Exception ("curlbubbles depricated, use GGbubbles instead");
     
     GGbubbles = flags.GetDefineFlag("GGbubbles");
-    
+
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
-    uniform_order_trace = int(flags.GetNumFlag("ordertrace",-1));
-    
+    uniform_order_trace = int(flags.GetNumFlag("ordertrace",-1));     
 
     auto one = make_shared<ConstantCoefficientFunction>(1);
     if(ma->GetDimension() == 2)
@@ -400,6 +399,11 @@ namespace ngcomp
       "  Create discontinuous HCurlDiv space";
     docu.Arg("ordertrace") = "int = -1\n"
       "  Set order of trace bubbles";
+    docu.Arg("orderinner") = "int = -1\n"
+      "  Set order of inner nt-bubbles";
+    docu.Arg("GGbubbles") = "bool = false\n"
+      "  Add GG-bubbles for weak-symmetric formulation";
+     
     return docu;
   }
 
@@ -467,8 +471,9 @@ namespace ngcomp
         }
         break;
       case ET_QUAD:
-	ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
-	//ndof += 1+ oi*(2 + 3*oi);
+	ndof += (oi+1)*(oi+1) + 2 * (oi+1)*(oi-1); // + (oi + 2) * oi * 2;
+	//ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
+	
 	if (ot>-1)
 	  ndof += (ot + 1) * (ot + 1);
 	

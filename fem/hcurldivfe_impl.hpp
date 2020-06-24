@@ -85,12 +85,13 @@ namespace ngfem
   {
     AutoDiffDiff<2,T> u;
     AutoDiffDiff<2,T> v;
+    double tr;
   public:
-    T_Gradu_Curlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
+    T_Gradu_Curlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, double atr) : u(au), v(av), tr(atr){ ; }
 
     Vec<4,T> Shape() {
 
-      auto trace = (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1)) / 2.0;
+      auto trace = tr * (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1)) / 2.0;
       
       return Vec<4,T> (-  v.DValue(1)*u.DValue(0) - trace,
 		      v.DValue(0)*u.DValue(0),
@@ -106,7 +107,7 @@ namespace ngfem
       T ux = u.DValue(0), uy = u.DValue(1);
       T vx = v.DValue(0), vy = v.DValue(1);
       
-      return Vec<2,T> (-vy*uxx + vx*uxy - 0.5*(-vxy*ux - vy*uxx + vxx*uy + vx*uxy),-vy*uxy + vx * uyy - 0.5*(-vyy*ux - vy*uxy + vxy*uy + vx*uyy));
+      return Vec<2,T> (-vy*uxx + vx*uxy - tr * 0.5*(-vxy*ux - vy*uxx + vxx*uy + vx*uxy),-vy*uxy + vx * uyy - tr*0.5*(-vyy*ux - vy*uxy + vxy*uy + vx*uyy));
     }
 
     Vec<2,T> CurlShape()
@@ -121,7 +122,7 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto Gradu_Curlv (AutoDiffDiff<D,T> au,AutoDiffDiff<D,T> av) { return T_Gradu_Curlv<D, T>(au,av); }
+  auto Gradu_Curlv (AutoDiffDiff<D,T> au,AutoDiffDiff<D,T> av, double atr) { return T_Gradu_Curlv<D, T>(au,av,atr); }
 
   
   /* ############### Type 2 (QUAD) - inner basis functions ############### */
