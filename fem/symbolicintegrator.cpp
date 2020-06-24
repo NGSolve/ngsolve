@@ -122,7 +122,19 @@ namespace ngfem
   }
 
 
-  
+  shared_ptr<ProxyFunction> ProxyFunction :: GetAdditionalProxy (string name) const
+  {
+    if (additional_diffops.Used(name))
+      {
+        auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
+        if (is_other)
+          adddiffop->is_other = true;
+        adddiffop -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
+        return adddiffop;
+      }
+    return shared_ptr<ProxyFunction>();
+  }
+
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -2178,6 +2190,9 @@ namespace ngfem
                                FlatMatrix<double> elmat,
                                LocalHeap & lh) const
   {
+    auto save_userdata = trafo.PushUserData();
+    
+    
     /*
       CalcElementMatrix(fel, trafo, elmat, lh);
       return;
@@ -2380,14 +2395,19 @@ namespace ngfem
             {
               int rest = min2(size_t(BS), mir.Size()-i);
               HeapReset hr(lh);
+              FlatMatrix<double,ColMajor> bbmat1(rest*proxy1->Dimension(), elmat.Width(), lh);
               FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
               FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+
+              proxy1->Evaluator()->CalcLinearizedMatrix(fel_trial, mir.Range(i,i+rest,lh), elveclin, bbmat1, lh);
 
               for (int j = 0; j < rest; j++)
                 {
                   int ii = i+j;
+                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);                  
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                  proxy1->Evaluator()->CalcMatrix(fel_trial, mir[ii], bmat1, lh);
+                  // proxy1->Evaluator()->CalcMatrix(fel_trial, mir[ii], bmat1, lh);
+                  bmat1 = bbmat1.Rows(r1);
                   proxy2->Evaluator()->CalcMatrix(fel_test, mir[ii], bmat2, lh);
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
@@ -2634,6 +2654,8 @@ namespace ngfem
                                                         void * precomputed,
                                                         LocalHeap & lh) const
   {
+    auto save_userdata = trafo.PushUserData();
+    
     if (element_vb != VOL)
       {
         T_ApplyElementMatrixEB<double,double> (fel, trafo, elx, ely, precomputed, lh);

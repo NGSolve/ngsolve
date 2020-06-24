@@ -86,17 +86,7 @@ public:
     return additional_diffops;
   }
 
-  virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
-  {
-    if (additional_diffops.Used(name))
-    {
-      auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
-      if (is_other)
-        adddiffop->is_other = true;
-      return adddiffop;
-    }
-    return shared_ptr<ProxyFunction>();
-  }
+  virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const;
   
   shared_ptr<CoefficientFunction> Operator (const string & name) const override;
   shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;

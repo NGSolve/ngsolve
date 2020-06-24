@@ -29,6 +29,8 @@ namespace ngcomp
                       int bonus_intorder = 0);
 
     shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const override;
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;    
   };
     
     

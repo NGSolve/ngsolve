@@ -447,6 +447,127 @@ namespace ngcomp
       diffop->CalcMatrix(interpol_fel, mir, m1, lh);
       mat = m1*m2m3;
     }
+
+
+    
+    
+    void CalcLinearizedMatrix (const FiniteElement & inner_fel,
+                               const BaseMappedIntegrationRule & mir,
+                               BareSliceVector<double> x,
+                               SliceMatrix<double,ColMajor> mat,   
+                               LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+      
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+
+      for (auto & sbfi : single_bli)
+        sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+
+      CalcInverse(elmat); 
+
+      size_t nshape = inner_fel.GetNDof();
+      
+      auto save_ud = trafo.PushUserData();
+
+      auto & func_fel = inner_fel;
+      
+      MixedFiniteElement mfe = (testfunction)
+        ? MixedFiniteElement (interpol_fel, func_fel) 
+        : MixedFiniteElement (func_fel, interpol_fel); 
+
+      FlatMatrix<> m2m3 (elmat.Height(), nshape, lh);
+
+      if (testfunction)
+        {
+          FlatMatrix<> m3T(nshape, interpol_fel.GetNDof(), lh);
+          FlatMatrix<> m3Ti(nshape, interpol_fel.GetNDof(), lh);
+          FlatVector<> elvec(nshape, lh);
+          elvec = x;
+          m3T = 0.0;
+          for (auto & sbfi : m3_bli)
+            {
+              sbfi->CalcLinearizedElementMatrix (mfe, trafo, elvec, m3Ti, lh);
+              m3T += m3Ti;
+            }
+          m2m3 = elmat * Trans(m3T);
+        }
+      else
+        {
+          FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
+          FlatMatrix<> m3i(interpol_fel.GetNDof(), nshape, lh);
+          FlatVector<> elvec(nshape, lh);
+          elvec = x;
+          m3 = 0.0;
+          for (auto & sbfi : m3_bli)
+            {
+              sbfi->CalcLinearizedElementMatrix (mfe, trafo, elvec, m3i, lh);
+              m3 += m3i;
+            }
+          m2m3 = elmat * m3;
+        }
+      
+      FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
+      diffop->CalcMatrix(interpol_fel, mir, m1, lh);
+      mat = m1*m2m3;
+    }
+
+
+    void Apply (const FiniteElement & inner_fel,
+                const BaseMappedIntegrationRule & mir,
+                BareSliceVector<double> x, 
+                BareSliceMatrix<double> flux,
+                LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+
+      for (auto & sbfi : single_bli)
+        sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+      CalcInverse(elmat); 
+
+      size_t nshape = inner_fel.GetNDof();
+      
+      auto save_ud = trafo.PushUserData();
+
+      auto & func_fel = inner_fel;
+
+      MixedFiniteElement mfe = (testfunction)
+        ? MixedFiniteElement (interpol_fel, func_fel) 
+        : MixedFiniteElement (func_fel, interpol_fel); 
+
+      if (testfunction)
+        throw Exception("ApplyInterpolation only makes sense for trialfunctions");
+
+      FlatVector<> rhs(interpol_fel.GetNDof(), lh);
+      FlatVector<> rhsi(interpol_fel.GetNDof(), lh);
+      rhs = 0;
+      FlatVector<> fvx(nshape, lh);
+      fvx = x;
+      for (auto & sbfi : m3_bli)
+        {
+          sbfi->ApplyElementMatrix (mfe, trafo, fvx, rhsi, nullptr, lh);
+          rhs += rhsi;
+        }
+
+      rhsi = elmat * rhs;
+      diffop->Apply(interpol_fel, mir, rhsi, flux, lh);
+    }
+    
+    
   };
     
 
@@ -483,6 +604,12 @@ namespace ngcomp
   }
 
   
+  shared_ptr<CoefficientFunction> InterpolateProxy ::
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const 
+  {
+    if (this == var) return dir;
+    return make_shared<InterpolateProxy> (func->Diff(var,dir), space, testfunction, final_diffop, bonus_intorder);
+  }
   
   shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
                                                  int bonus_intorder)
