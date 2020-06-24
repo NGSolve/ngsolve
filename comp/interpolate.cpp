@@ -386,6 +386,9 @@ namespace ngcomp
       elmat = 0.0;
       bool symmetric_so_far = false;
 
+      size_t nshape = inner_fel.GetNDof();
+      FlatMatrix<> m2m3 (elmat.Height(), nshape, lh);
+
       // auto saveud = nonconst_trafo.userdata;
       try
         {
@@ -394,6 +397,29 @@ namespace ngcomp
             sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
 
           CalcInverse(elmat);
+          
+          MixedFiniteElement mfe = (testfunction)
+            ? MixedFiniteElement (interpol_fel, inner_fel) 
+            : MixedFiniteElement (inner_fel, interpol_fel); 
+          
+          if (testfunction)
+            {
+              FlatMatrix<> m3T(nshape, interpol_fel.GetNDof(), lh);
+              m3T = 0.0;
+              for (auto & sbfi : m3_bli)
+                sbfi->CalcElementMatrixAdd (mfe, trafo, m3T, symmetric_so_far, lh);
+              RegionTracer reg(TaskManager::GetThreadId(), t23t);              
+              m2m3 = elmat * Trans(m3T);
+            }
+          else
+            {
+              FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
+              m3 = 0.0;
+              for (auto & sbfi : m3_bli)
+                sbfi->CalcElementMatrixAdd (mfe, trafo, m3, symmetric_so_far, lh);
+              RegionTracer reg(TaskManager::GetThreadId(), t23);                        
+              m2m3 = elmat * m3;
+            }
         }
       catch (ExceptionNOSIMD e)
         {
@@ -404,53 +430,9 @@ namespace ngcomp
           for (auto & sbfi : m3_bli)
             sbfi->SetSimdEvaluate(false);
           CalcMatrix (inner_fel, mir, mat, lh);
+          return;
         }
        
-       
-      /** func * dual_shape **/
-      // FlatVector<> elfluxadd(interpol_fel.GetNDof(), lh);
-      size_t nshape = inner_fel.GetNDof();
-      
-      // FlatVector<> vtrialtest(nshape, lh);
-      auto save_ud = trafo.PushUserData();
-      /*
-      ProxyUserData myud;
-      myud.trial_elvec = &vtrialtest;
-      myud.test_elvec = &vtrialtest;
-      myud.fel = &inner_fel;
-      myud.lh = &lh;
-
-      auto & nonconst_trafo = const_cast<ElementTransformation&>(trafo);
-      nonconst_trafo.userdata = &myud;
-      */
-
-      // auto & func_fel = fes_func->GetFE(ei, lh);
-      auto & func_fel = inner_fel;
-      
-      MixedFiniteElement mfe = (testfunction)
-        ? MixedFiniteElement (interpol_fel, func_fel) 
-        : MixedFiniteElement (func_fel, interpol_fel); 
-
-      FlatMatrix<> m2m3 (elmat.Height(), nshape, lh);
-
-      if (testfunction)
-        {
-          FlatMatrix<> m3T(nshape, interpol_fel.GetNDof(), lh);
-          m3T = 0.0;
-          for (auto & sbfi : m3_bli)
-            sbfi->CalcElementMatrixAdd (mfe, trafo, m3T, symmetric_so_far, lh);
-          RegionTracer reg(TaskManager::GetThreadId(), t23t);              
-          m2m3 = elmat * Trans(m3T);
-        }
-      else
-        {
-          FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
-          m3 = 0.0;
-          for (auto & sbfi : m3_bli)
-            sbfi->CalcElementMatrixAdd (mfe, trafo, m3, symmetric_so_far, lh);
-          RegionTracer reg(TaskManager::GetThreadId(), t23);                        
-          m2m3 = elmat * m3;
-        }
       
       FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
       diffop->CalcMatrix(interpol_fel, mir, m1, lh);
@@ -490,6 +472,7 @@ namespace ngcomp
           for (auto & sbfi : m3_bli)
             sbfi->SetSimdEvaluate(false);
           CalcLinearizedMatrix (inner_fel, mir, x, mat, lh);
+          return;
         }
 
       CalcInverse(elmat); 
@@ -570,6 +553,7 @@ namespace ngcomp
           for (auto & sbfi : m3_bli)
             sbfi->SetSimdEvaluate(false);
           Apply (inner_fel, mir, x, flux, lh);
+          return;          
         }
       
       CalcInverse(elmat);
@@ -630,6 +614,8 @@ namespace ngcomp
                          LocalHeap & lh) const override
     {
       // a first simple implementation by numerical differentiation ....
+      // static Timer t("interpolateDiffOp, Hessian");
+      // RegionTracer reg(TaskManager::GetThreadId(), t);
       
       HeapReset hr(lh);
       size_t ndof = fel.GetNDof();
