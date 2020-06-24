@@ -362,6 +362,19 @@ namespace ngfem
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
 
+
+    NGS_DLL_HEADER virtual void
+    ApplyLinearizedTrans (const FiniteElement & fel,
+                          const BaseMappedIntegrationRule & mir,
+                          SliceVector<double> elveclin,
+                          FlatMatrix<double> flux,
+                          BareSliceVector<double> x, 
+                          LocalHeap & lh) const
+    {
+      ApplyTrans (fel, mir, flux, x, lh);
+    }
+
+    
     virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                        shared_ptr<CoefficientFunction> dir) const
     {
