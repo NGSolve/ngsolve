@@ -274,9 +274,7 @@ namespace ngcomp
 
     Array<shared_ptr<BilinearFormIntegrator>> single_bli;
     Array<shared_ptr<BilinearFormIntegrator>> m3_bli;
-    // shared_ptr<CoefficientFunction> dual_diffop;
     shared_ptr<DifferentialOperator> dual_diffop;
-    VorB vb;
 
     bool testfunction;
 
@@ -287,12 +285,12 @@ namespace ngcomp
                        shared_ptr<FESpace> afes,
                        shared_ptr<DifferentialOperator> adiffop,
                        int abonus_intorder,
-                       bool atestfunction)
-      : DifferentialOperator (adiffop->Dim(), 1, VOL, 0), 
+                       bool atestfunction,
+                       VorB avb=VOL)
+      : DifferentialOperator (adiffop->Dim(), 1, avb, 0), 
         func(afunc), fes(afes), bonus_intorder(abonus_intorder), testfunction(atestfunction), diffop(adiffop)
     { 
       // copied from Set (dualshapes)
-      vb = VOL;    // for the moment only 
 
       /** Trial-Proxy **/
       auto single_evaluator =  fes->GetEvaluator(vb);
@@ -326,8 +324,6 @@ namespace ngcomp
           if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
               fes_func = proxy->GetFESpace();
         });
-
-     
 
       for (auto element_vb : fes->GetDualShapeNodes(vb))
         {
@@ -670,9 +666,10 @@ namespace ngcomp
                                         shared_ptr<FESpace> aspace,
                                         bool atestfunction,
                                         shared_ptr<DifferentialOperator> diffop,
-                                        int abonus_intorder)
+                                        int abonus_intorder,
+                                        VorB avb)
     : ProxyFunction(aspace, atestfunction, false,
-                    make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder,atestfunction), nullptr, nullptr,
+                    make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder,atestfunction, avb), nullptr, nullptr,
                     nullptr, nullptr, nullptr),
       func(afunc), space(aspace), testfunction(atestfunction),
       final_diffop(diffop),
@@ -708,12 +705,13 @@ namespace ngcomp
   shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
                                                  int bonus_intorder)
   {
-    func->PrintReport(cout);
+    // func->PrintReport(cout);
 
     if (func->GetDescription() == "ZeroCF")
       return func;
 
     bool has_trial = false, has_test = false;
+    VorB vb = VOL;
 
     func->TraverseTree
       ( [&] (CoefficientFunction & nodecf)
@@ -722,14 +720,21 @@ namespace ngcomp
           if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
             {
               if (proxy->IsTestFunction())
-                has_test = true;
+                {
+                  // if e.g. H1 without Trace is combined with space where Trace is mandatory
+                  vb = max(proxy->Evaluator()->VB(),vb);
+                  has_test = true;
+                }
               else
-                has_trial = true;
+                {
+                  vb = max(proxy->Evaluator()->VB(),vb);
+                  has_trial = true;
+                }
             }
         });
 
     if (has_trial != has_test)
-      return make_shared<InterpolateProxy> (func, space, has_test, space->GetEvaluator(VOL), bonus_intorder);
+      return make_shared<InterpolateProxy> (func, space, has_test, space->GetEvaluator(vb), bonus_intorder,vb);
 
     return make_shared<InterpolationCoefficientFunction> (func, space, bonus_intorder);
   }
