@@ -1508,6 +1508,20 @@ namespace ngfem
     bool use_simd = true;
     TSCAL sum = 0.0;
 
+    BitArray defon;
+
+    if (dx.definedon)
+      {
+        if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon))
+          defon = *definedon_bitarray;
+        if (auto definedon_string = get_if<string> (&*dx.definedon))
+          {
+            shared_ptr<MeshAccess> spma(const_cast<MeshAccess*>(&ma), NOOP_Deleter);
+            Region reg(spma, dx.vb, *definedon_string);
+            defon = reg.Mask();
+          }
+      }
+    
     if (dx.element_vb == VOL)
       {
         ma.IterateElements
@@ -1516,6 +1530,9 @@ namespace ngfem
              // if(!mask.Test(el.GetIndex())) return;
              auto & trafo1 = ma.GetTrafo (el, lh);
              auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
+
+             if (defon.Size() && !defon.Test(el.GetIndex()))
+               return;
              
              TSCAL hsum = 0.0;
              
