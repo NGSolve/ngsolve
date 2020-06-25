@@ -727,11 +727,15 @@ namespace ngfem
 	}
       order += 1; //lo facet functions are linear
       //int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;
-      int ninner = (order_inner+1)*(order_inner+1) + 2 * (order_inner+1)*(order_inner-1);
-      //int ninner = 1 + order_inner*(2 + 3*order_inner);    
+
+      int ninner = (order_inner+1)*(order_inner+1);
+
+      if (order_inner > 0)
+	ninner += 2 * (order_inner+2)*(order_inner);        
+	//ninner += 2 * (order_inner+1)*(order_inner-1);        
       
       order = max2(order, order_inner);
-      //order += 4; // I think this is wrong! PL
+      order += 1; // we include higher inner bubbles
       ndof += ninner;
 
       if (order_trace > -1)
@@ -841,14 +845,17 @@ namespace ngfem
       // edges: (0,P^k_x o-times P^1_y,0,0)
       //        (0,0,P^1_x o-times P^k_y,0)
       // hence we still need
-      //       (0,P^{k}_x o-times P^{k+1}_y\P^{1}_y, 0,0)
-      //       (0,0,P^{k}_y o-times P^{k+1}_x\P^{1}_y,0)
-            
-      for(int i = 0; i <= oi; i++)
+      //       (0,P^{k}_x o-times P^{k}_y\P^{1}_y, 0,0)
+      //       (0,0,P^{k}_y o-times P^{k}_x\P^{1}_y,0)
+      // further we include bubbles such that
+      //       (0,P^{k+1}_x o-times P^{k-1}_y * (1-y)*y, 0,0)
+      //       (0,0,P^{k+1}_y o-times P^{k-1}_x * (1-x)*x,0)
+      // is included
+      for(int i = 0; i <= oi+1; i++)
       {
-        for(int j = 0; j <= oi-2; j++)
+        for(int j = 0; j <= oi-1; j++)
         {	  
-	  // gives (0 ,-d_xx u(x) v(y),0,0) with v(y) bubble or higher (hence inner bubble)
+	  // gives (0 ,-d_xx u(x) v(y),0,0) with v(y) bubble (j=0) or higher (hence inner bubble)
           shape[ii++] = u_Sigma_gradv(v[j],u[i]);
 	  // gives  (0 ,0 , d_yy v(y) u(x), 0) with u(x) bubble or higher (hence inner bubble)	  
           shape[ii++] = u_Sigma_gradv(u[j],v[i]);
@@ -858,7 +865,7 @@ namespace ngfem
   };
   
  
-     template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
+  template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
   {
     
   public:
