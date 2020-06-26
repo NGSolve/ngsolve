@@ -1,0 +1,42 @@
+build:
+  number: 0
+package:
+  name: netgen{{suffix}}
+  version: '{{version}}'
+
+requirements:
+  build:
+    - python 3.7.*
+    - jpeg
+    - cmake
+    - tk 8.6.9.*
+    - zlib
+    - occt 7.4.*
+    - ffmpeg 3.4.*
+    - pybind11 2.4.3
+  run:
+    - vs2015_runtime # [win]
+    - python 3.7.*
+    - jpeg
+    - tk 8.6.9.*
+    - zlib
+    - occt 7.4.*
+    - ffmpeg 3.4.*
+    - pybind11 2.4.3
+
+source:
+  - path: ../../../../external_dependencies/netgen
+  - url: ftp://ftp.tcl.tk/pub/tcl/tcl8_6/tcl8.6.9-src.tar.gz
+    folder: tcl
+  - url: ftp://ftp.tcl.tk/pub/tcl/tcl8_6/tk8.6.9-src.tar.gz
+    folder: tk
+
+test:
+  imports:
+    - netgen
+
+about:
+  home: https://ngsolve.org
+  license: LGPL
+  summary: "Netgen Mesh Generator"
+

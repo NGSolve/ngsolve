@@ -353,3 +353,59 @@ deploy_nightly:
   except:
     - tags
   environment: deploy_nigthly
+
+############################################
+# Conda package builds
+
+conda_win:
+  <<: *win
+  stage: deploy
+  script:
+    - call C:\Users\mhochsteger\Miniconda3\Scripts\activate.bat C:\Users\mhochsteger\Miniconda3
+    - call conda build purge
+    - cd %CI_PROJECT_DIR%\tests\gitlab-ci\conda
+    - python generate_meta_files.py
+    - cd netgen
+    - call conda build -c conda-forge -c NGSolve --user NGSolve --token %ANACONDA_TOKEN% .
+    - cd ..\ngsolve
+    - call conda build -c conda-forge -c NGSolve --user NGSolve --token %ANACONDA_TOKEN% .
+  only:
+    - schedules
+    - tags
+
+conda_linux:
+  stage: deploy
+  tags:
+    - linux
+    - docker
+    - avx
+  script:
+    - export PATH="/home/gitlab-runner/miniconda3/bin:$PATH"
+    - conda build purge
+    - cd tests/gitlab-ci/conda
+    - python3 generate_meta_files.py
+    - cd netgen
+    - conda build -c conda-forge -c NGSolve --user NGSolve --token ${ANACONDA_TOKEN} .
+    - cd ../ngsolve
+    - conda build -c conda-forge -c NGSolve --user NGSolve --token ${ANACONDA_TOKEN} .
+  only:
+    - schedules
+    - tags
+
+conda_mac:
+  stage: deploy
+  tags:
+    - mac
+  script:
+    - conda activate
+    - conda build purge
+    - cd tests/gitlab-ci/conda
+    - python3 generate_meta_files.py
+    - cd netgen
+    - conda build -c conda-forge -c NGSolve --user NGSolve --token ${ANACONDA_TOKEN} .
+    - cd ../ngsolve
+    - conda build -c conda-forge -c NGSolve --user NGSolve --token ${ANACONDA_TOKEN} .
+  only:
+    - schedules
+    - tags
+
