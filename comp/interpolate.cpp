@@ -343,6 +343,8 @@ namespace ngcomp
           auto bfi2 = make_shared<SymbolicBilinearFormIntegrator> (proxy_cf, vb, element_vb);
 	  bfi->SetSimdEvaluate(true);
 	  bfi2->SetSimdEvaluate(true);
+          bfi->SetBonusIntegrationOrder(bonus_intorder);
+          bfi2->SetBonusIntegrationOrder(bonus_intorder);
 	  if (auto block_bfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi))
             {
               auto sbfi = block_bfi->BlockPtr();

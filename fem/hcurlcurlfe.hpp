@@ -1592,7 +1592,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
           AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
           AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
-          auto nv = GetGradient(lam_f);
+          // auto nv = GetGradient(lam_f);
           
           LegendrePolynomial (p, eta, leg_u);
           LegendrePolynomial (p, xi, leg_v);
