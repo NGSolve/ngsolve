@@ -4445,29 +4445,28 @@ namespace ngfem
               FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), elmat.Height(), lh);
 
               proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat1, lh);
-              proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat2, lh);
               
               for (size_t j = 0; j < bs; j++)
                 {
-                  size_t ii = i+j;
                   IntRange r3 = proxy2->Dimension() * IntRange(j,j+1);
                   IntRange rb1 = proxy1->Dimension() * IntRange(j,j+1);                  
-                  /*
-                  {
-                    ThreadRegionTimer reg(tbmat, tid);
-                    proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
-                    proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
-                  }
-                  bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bmat1.Cols(r1);
-                  bbmat2.Rows(r3).Cols(r2) = bmat2.Cols(r2);
-                  */
-                  bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bbmat1.Rows(rb1).Cols(r1);                  
+                  bdbmat1.Rows(r3).Cols(r1) = proxyvalues(i+j,STAR,STAR) * bbmat1.Rows(rb1).Cols(r1);                  
                 }
               
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
               // AddABt (Trans(bbmat2), Trans(bdbmat1), elmat);
               ThreadRegionTimer reg(tmult, tid);                                
-              AddABt (Trans(bbmat2).Rows(r2), Trans(bdbmat1).Rows(r1), part_elmat);
+              // AddABt (Trans(bbmat2).Rows(r2), Trans(bdbmat1).Rows(r1), part_elmat);
+              // part_elmat += Trans(bbmat2).Rows(r2) * bdbmat1.Cols(r1);
+
+              if (k1 == l1)
+                part_elmat += Trans(bbmat1).Rows(r1) * bdbmat1.Cols(r1);
+              else
+                {
+                  proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat2, lh);
+                  part_elmat += Trans(bbmat2).Rows(r2) * bdbmat1.Cols(r1);                  
+                }
+
             }
         }
 
