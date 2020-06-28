@@ -41,6 +41,9 @@ namespace ngcomp
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
     {
+      static Timer t(string("FECF - T_Evaluate")+typeid(T).name());
+      RegionTracer reg(TaskManager::GetThreadId(), t);
+      
       LocalHeapMem<10000> lh("fecoef::eval");
       auto tid = TaskManager::GetThreadId();
       auto fe = fes[tid];
@@ -66,9 +69,19 @@ namespace ngcomp
       else if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value &&
                          is_same<T,AutoDiffDiff<1,SIMD<double>>>::value)
                      {
+                       BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(),
+                                                             DummySize(Dimension(), mir.Size()));
+                       // Evaluate (ir, hvalues);
+                       diffop->Apply(*fe, mir, *elvec, hvalues);                       
+                       for (size_t i = 0; i < Dimension(); i++)
+                         for (size_t j = mir.Size(); j-- > 0; )
+                           values(i,j) = hvalues(i,j);
+
+                       /*
                        Matrix<SIMD<double>> tmp(Dimension(), mir.Size());
                        diffop->Apply(*fe, mir, *elvec, tmp);
                        values.AddSize(Dimension(), mir.Size()) = tmp;
+                       */
                      }
       else
         {
@@ -528,6 +541,10 @@ namespace ngcomp
                                SliceMatrix<double,ColMajor> mat,   
                                LocalHeap & lh) const override
     {
+      static Timer t("CAlcLinearizedBMatrix");
+      RegionTracer reg(TaskManager::GetThreadId(), t);
+
+      
       HeapReset hr(lh);
       
       const ElementTransformation & trafo = mir.GetTransformation();
