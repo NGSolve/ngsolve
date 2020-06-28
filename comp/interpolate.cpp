@@ -16,6 +16,76 @@
 
 namespace ngcomp
 {
+
+  class FECoefficientFunction : public T_CoefficientFunction<FECoefficientFunction>
+  {
+    shared_ptr<DifferentialOperator> diffop;
+    // FiniteElement * fe;
+    // FlatVector<> * elvec;
+    Array<FiniteElement*> fes;
+    Array<FlatVector<>*> elvecs;
+  public:
+
+    FECoefficientFunction (shared_ptr<DifferentialOperator> adiffop)
+      : T_CoefficientFunction<FECoefficientFunction>(adiffop->Dim(), false),
+      diffop(adiffop), fes(TaskManager::GetMaxThreads()), elvecs(TaskManager::GetMaxThreads())
+    { }
+
+    void Set (FiniteElement * afe, FlatVector<> * aelvec)
+    {
+      auto tid = TaskManager::GetThreadId();
+      fes[tid] = afe;
+      elvecs[tid] = aelvec;
+    }
+    
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
+    {
+      LocalHeapMem<10000> lh("fecoef::eval");
+      auto tid = TaskManager::GetThreadId();
+      auto fe = fes[tid];
+      auto elvec = elvecs[tid];
+
+      if constexpr (is_same<MIR, BaseMappedIntegrationRule>::value &&
+                    is_same<T,double>::value)
+                     {
+                       diffop->Apply(*fe, mir, *elvec, Trans(values), lh);
+                     }
+      if constexpr (is_same<MIR, BaseMappedIntegrationRule>::value &&
+                    is_same<T,AutoDiffDiff<1,double>>::value)
+                     {
+                       Matrix<> tmp(mir.Size(), Dimension());
+                       diffop->Apply(*fe, mir, *elvec, tmp, lh);
+                       values.AddSize(mir.Size(), Dimension()) = Trans(tmp);
+                     }
+      else if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value &&
+                         is_same<T,SIMD<double>>::value)
+                     {
+                       diffop->Apply(*fe, mir, *elvec, values);
+                     }
+      else if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value &&
+                         is_same<T,AutoDiffDiff<1,SIMD<double>>>::value)
+                     {
+                       Matrix<SIMD<double>> tmp(Dimension(), mir.Size());
+                       diffop->Apply(*fe, mir, *elvec, tmp);
+                       values.AddSize(Dimension(), mir.Size()) = tmp;
+                     }
+      else
+        {
+          cout << "FECF, unhandled type: " << typeid(T).name() << endl;
+        }
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+		     FlatArray<BareSliceMatrix<T,ORD>> input,
+		     BareSliceMatrix<T,ORD> values) const
+    {
+      T_Evaluate (ir, values);
+    }
+  };
+
+
   
   class InterpolationCoefficientFunction : public T_CoefficientFunction<InterpolationCoefficientFunction>
   {
@@ -28,7 +98,6 @@ namespace ngcomp
     Array<shared_ptr<BilinearFormIntegrator>> single_bli;
     // shared_ptr<CoefficientFunction> dual_diffop;
     shared_ptr<DifferentialOperator> dual_diffop;
-
     VorB vb;
     
   public:
@@ -276,6 +345,9 @@ namespace ngcomp
     Array<shared_ptr<BilinearFormIntegrator>> m3_bli;
     shared_ptr<DifferentialOperator> dual_diffop;
 
+    shared_ptr<FECoefficientFunction> dual_fecf;
+    Array<shared_ptr<SymbolicEnergy>> hessian_bfi;
+
     bool testfunction;
 
     shared_ptr<DifferentialOperator> diffop; // the final evaluation
@@ -325,6 +397,9 @@ namespace ngcomp
               fes_func = proxy->GetFESpace();
         });
 
+
+      dual_fecf = make_shared<FECoefficientFunction> (dual_evaluator);
+      
       for (auto element_vb : fes->GetDualShapeNodes(vb))
         {
           shared_ptr<CoefficientFunction> dual_trial;
@@ -361,6 +436,9 @@ namespace ngcomp
             }
 	  else
 	    m3_bli.Append(bfi2);
+
+          hessian_bfi += make_shared<SymbolicEnergy> (InnerProduct(dual_fecf, func),
+                                                      vb, element_vb);
 	}
     }
 
@@ -560,15 +638,11 @@ namespace ngcomp
       
       CalcInverse(elmat);
       
-      size_t nshape = inner_fel.GetNDof();
-      
       auto save_ud = trafo.PushUserData();
 
-      auto & func_fel = inner_fel;
-
       MixedFiniteElement mfe = (testfunction)
-        ? MixedFiniteElement (interpol_fel, func_fel) 
-        : MixedFiniteElement (func_fel, interpol_fel); 
+        ? MixedFiniteElement (interpol_fel, inner_fel) 
+        : MixedFiniteElement (inner_fel, interpol_fel); 
 
       if (testfunction)
         throw Exception("ApplyInterpolation only makes sense for trialfunctions");
@@ -576,7 +650,7 @@ namespace ngcomp
       FlatVector<> rhs(interpol_fel.GetNDof(), lh);
       FlatVector<> rhsi(interpol_fel.GetNDof(), lh);
       rhs = 0;
-      FlatVector<> fvx(nshape, lh);
+      FlatVector<> fvx(inner_fel.GetNDof(), lh);
       fvx = x;
       for (auto & sbfi : m3_bli)
         {
@@ -608,7 +682,7 @@ namespace ngcomp
     }
 
     // second derivative of \sum_ipt wprime * B(u) 
-    void CalcHessianAdd (const FiniteElement & fel,
+    void CalcHessianAdd (const FiniteElement & inner_fel,
                          const BaseMappedIntegrationRule & mir,
                          SliceMatrix<> wprime,
                          BareSliceVector<> elvecu,
@@ -616,11 +690,12 @@ namespace ngcomp
                          LocalHeap & lh) const override
     {
       // a first simple implementation by numerical differentiation ....
-      // static Timer t("interpolateDiffOp, Hessian");
-      // RegionTracer reg(TaskManager::GetThreadId(), t);
-      
+      static Timer t("interpolateDiffOp, Hessian");
+      RegionTracer reg(TaskManager::GetThreadId(), t);
       HeapReset hr(lh);
-      size_t ndof = fel.GetNDof();
+
+      /*
+      size_t ndof = inner_fel.GetNDof();
       double eps = 1e-6;
       FlatVector<> wprimevec(wprime.Height()*wprime.Width(), lh);
       for (int i = 0, ii = 0; i < wprime.Height(); i++)
@@ -638,14 +713,61 @@ namespace ngcomp
           elvecul = elvecu;
           elvecur(i) += eps;
           elvecul(i) -= eps;
-          CalcLinearizedMatrix(fel, mir, elvecul, bmatl, lh);
-          CalcLinearizedMatrix(fel, mir, elvecur, bmatr, lh);
+          CalcLinearizedMatrix(inner_fel, mir, elvecul, bmatl, lh);
+          CalcLinearizedMatrix(inner_fel, mir, elvecur, bmatr, lh);
           dbmat = 1/(2*eps) * (bmatr-bmatl);
           hessian.Row(i) += Trans(dbmat) * wprimevec;
         }
+        // cout << "hessian 1 = " << endl << hessian << endl;
+      */
+      
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+      try
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          CalcHessianAdd (inner_fel, mir, wprime, elvecu, hessian, lh);
+          return;          
+        }
+      
+      CalcInverse(elmat);
+
+      FlatMatrix<> hessian2(inner_fel.GetNDof(), lh);
+      FlatVector<> rhs(interpol_fel.GetNDof(), lh);
+      FlatVector<> v2(interpol_fel.GetNDof(), lh);
+      
+      FlatMatrix wprimeflat = wprime | lh;
+      for (int i = 0; i < wprime.Height(); i++)
+        wprimeflat.Row(i) *= mir[i].GetWeight();
+      
+      diffop->ApplyTrans(interpol_fel, mir, wprimeflat, rhs, lh);
+      v2 = Trans(elmat) * rhs;
+
+      dual_fecf->Set (&interpol_fel, &v2);
+      FlatVector fvelvecu(inner_fel.GetNDof(), lh);
+      fvelvecu = elvecu;
+      for (auto & hbfi : hessian_bfi)
+        {
+          hbfi->CalcLinearizedElementMatrix(inner_fel, mir.GetTransformation(), fvelvecu, hessian2, lh);
+          hessian += hessian2;
+        }
+      // cout << "hessian2 = " << endl << hessian2 << endl;
     } 
-    
-    
   };
     
 
