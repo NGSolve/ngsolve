@@ -1703,6 +1703,9 @@ public:
   
 };
 
+
+
+
 template <int DIM>
 class T_MultVecVecCoefficientFunction : public T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>
 {
@@ -1894,6 +1897,163 @@ public:
     values(0) = sum;
   }
 };
+
+
+
+
+
+
+
+template <int DIM>
+class T_MultVecVecSameCoefficientFunction : public T_CoefficientFunction<T_MultVecVecSameCoefficientFunction<DIM>>
+{
+  shared_ptr<CoefficientFunction> c1;
+  using BASE = T_CoefficientFunction<T_MultVecVecSameCoefficientFunction<DIM>>;
+public:
+  T_MultVecVecSameCoefficientFunction() = default;
+  T_MultVecVecSameCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : T_CoefficientFunction<T_MultVecVecSameCoefficientFunction<DIM>>(1, ac1->IsComplex()), c1(ac1)
+  {
+    this->elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1);
+  }
+
+  virtual string GetDescription () const override
+  { return "innerproduct, same vectors, fix size = "+ToString(DIM); }
+
+  
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    CodeExpr result;
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        result += Var(inputs[0],i,j) * Var(inputs[0],i,j);
+    });
+    code.body += Var(index).Assign(result.S());
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }  
+
+  using T_CoefficientFunction<T_MultVecVecSameCoefficientFunction<DIM>>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    Vec<1> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const override
+  {
+    Vec<DIM> v1, v2;
+    c1->Evaluate (ip, v1);
+    result(0) = InnerProduct (v1, v1);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const override
+  {
+    Vec<DIM,Complex> v1;
+    c1->Evaluate (ip, v1);
+    result(0) = InnerProduct (v1, v1);
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    size_t w = ir.Size();
+    __assume (w > 0);
+    
+    STACK_ARRAY(T, hmem, DIM*w);
+    FlatMatrix<T,ORD> temp1(DIM, w, &hmem[0]);
+    
+    c1->Evaluate (ir, temp1);
+
+    for (size_t i = 0; i < w; i++)
+      {
+        T sum{0.0};
+        for (size_t j = 0; j < DIM; j++)
+          sum += temp1(j,i) * temp1(j,i);
+        values(0,i) = sum; 
+      }
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    auto in0 = input[0];
+    size_t np = ir.Size();
+
+    for (size_t i = 0; i < np; i++)
+      {
+        T sum{0.0};
+        for (size_t j = 0; j < DIM; j++)
+          sum += in0(j,i) * in0(j,i);
+        values(0,i) = sum; 
+      }    
+  }  
+  
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        BareSliceMatrix<Complex> result) const override
+  {
+    STACK_ARRAY(double, hmem1, 2*ir.Size()*DIM);
+    FlatMatrix<Complex> temp1(ir.Size(), DIM, (Complex*)hmem1);
+
+    c1->Evaluate(ir, temp1);
+    for (int i = 0; i < ir.Size(); i++)
+      result(i,0) = InnerProduct(temp1.Row(i), temp1.Row(i));
+  }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return 2*InnerProduct(c1->Diff(var,dir),c1);
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(DIM);
+    c1->NonZeroPattern (ud, v1);
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < DIM; i++)
+      sum += v1(i)*v1(i);
+    values(0) = sum;
+  }
+
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < DIM; i++)
+      sum += v1(i)*v1(i);
+    values(0) = sum;
+  }
+};
+
+
+
+
+
+
+
 
 
 
@@ -4154,6 +4314,32 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
         else
           c2 = conj;
       }
+
+    if (c1 == c2)
+      {
+        switch (c1->Dimension())
+          {
+          case 1:
+            return make_shared<T_MultVecVecSameCoefficientFunction<1>> (c1);
+          case 2:
+            return make_shared<T_MultVecVecSameCoefficientFunction<2>> (c1);
+          case 3:
+            return make_shared<T_MultVecVecSameCoefficientFunction<3>> (c1);
+          case 4:
+            return make_shared<T_MultVecVecSameCoefficientFunction<4>> (c1);
+          case 5:
+            return make_shared<T_MultVecVecSameCoefficientFunction<5>> (c1);
+          case 6:
+            return make_shared<T_MultVecVecSameCoefficientFunction<6>> (c1);
+          case 8:
+            return make_shared<T_MultVecVecSameCoefficientFunction<8>> (c1);
+          case 9:
+            return make_shared<T_MultVecVecSameCoefficientFunction<9>> (c1);
+          default:
+            ;
+          }
+      }
+    
     switch (c1->Dimension())
       {
       case 1:
