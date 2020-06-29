@@ -355,7 +355,7 @@ namespace ngcomp
   {
     order = int (flags.GetNumFlag ("order",1));
     type="hcurldiv";
-    hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
+    //hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
     alllocaldofs = flags.GetDefineFlag("all_local_dofs");
 
     if(flags.GetDefineFlag("curlbubbles"))
@@ -427,7 +427,7 @@ namespace ngcomp
     for(auto el : ma->Elements(VOL))
       fine_facet[el.Facets()] = true;
 
-    ndof = 0;
+    ndof = 0;    
     for(auto i : Range(ma->GetNFacets()))
     {
       first_facet_dof[i] = ndof;
@@ -440,13 +440,16 @@ namespace ngcomp
         ndof += of + 1; break;
       case ET_TRIG:
 	ndof += (of + 1)*(of + 2); break;
+      case ET_QUAD:
+	ndof += 2*(of + 1)*(of + 1); break;
+      
       default:
         throw Exception("illegal facet type");
       }
     }
     first_facet_dof.Last() = ndof;
     if(discontinuous) ndof = 0;
-
+    
     for(auto i : Range(ma->GetNE()))
     {
       ElementId ei(VOL, i);
@@ -474,6 +477,8 @@ namespace ngcomp
 	ndof += (oi+1)*(oi+1);
 	if (oi > 0)
 	  ndof += 2 * (oi+2)*(oi);
+	else
+	  ndof += 2;
 	
 	//ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
 	
@@ -487,7 +492,7 @@ namespace ngcomp
         }
         break;
 		
-      case ET_TET:	
+      case ET_TET:
 	ndof += 8 * oi * (oi+1)*(oi+2)/6;
 	if(ot>-1)
 	  ndof += (ot + 1)*(ot+2)*(ot+3)/6;
@@ -503,14 +508,32 @@ namespace ngcomp
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
 	break;
-       default:
+
+      case ET_HEX:	
+	ndof += 2 * (oi+1) * (oi+1) * (oi+1); // + 6 * (oi+1) * (oi+1) * (oi-1);
+
+	if (oi > 0)
+	  ndof += 6 * (oi+2) * (oi+1) * (oi);
+	else
+	  ndof += 6;
+	
+	if(ot>-1)
+	  ndof += (ot+1) * (ot+1) * (ot+1);
+		
+	if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+	break;
+
+      default:
         throw Exception(string("illegal element type = ") + ToString(ma->GetElType(ei)));
       }
     }
     first_element_dof.Last() = ndof;    
     if(discontinuous)
       first_facet_dof = 0;
-
     UpdateCouplingDofArray();
     if (print)
     {
@@ -554,6 +577,10 @@ namespace ngcomp
     {            
       GetInnerDofNrs(e.Nr(), innerdofs);
       int offset = 0;
+      int oi = order_inner[e.Nr()];
+      int ot = order_trace[e.Nr()];
+      int diag_offset = 0;
+      
       
       switch(ma->GetElType(e))
 	{
@@ -564,35 +591,110 @@ namespace ngcomp
 	      ctofdof[innerdofs[0]] = INTERFACE_DOF;	      
 	      offset = 1;
 	    }
+	  
+	  for (int dof = offset; dof < innerdofs.Size(); dof++)
+	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
+	    
 	  break;
 	case ET_QUAD:
 	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
 	  offset = 1;
+	  diag_offset = 2 * (oi) + oi*oi + 1;
+
+	  for (int dof = offset; dof < diag_offset; dof++)
+		ctofdof[innerdofs[dof]] = LOCAL_DOF;
+
+	  offset = diag_offset;
+	  
 	  if(order_trace[e.Nr()]>-1)
-	    {
+	    {	      
 	      ctofdof[innerdofs[1]] = INTERFACE_DOF;
 	      offset += 1;
+	      diag_offset += 2 * ot + ot*ot + 1;
+	      for (int dof = offset; dof < diag_offset; dof++)
+		ctofdof[innerdofs[dof]] = LOCAL_DOF;
 	    }
+	  offset = diag_offset;
+
+	  ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[offset+1]] = INTERFACE_DOF;
+	  offset + 2;
+	  
+	  for (int dof = offset; dof < innerdofs.Size(); dof++)
+	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
+	    
 	  break;
-	case ET_TET: 
-	  if(order_trace[e.Nr()]>-1)
+	case ET_TET:
+	  diag_offset =  (ot+1)*(ot+2)*(ot+3)/6.0;
+	  if(ot>-1)
 	    {
 	      ctofdof[innerdofs[0]] = INTERFACE_DOF; 
 	      offset = 1;
+	      //for (int dof = offset; dof < diag_offset; dof++)
+	      //ctofdof[innerdofs[dof]] = LOCAL_DOF;
 	    }
+	  for (int dof = offset; dof < innerdofs.Size(); dof++)
+	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
 	  break;
-        default:
-          throw Exception("ElementType "+ToString(ma->GetElType(e))+" not implemented for H(CurlDiv)");
+	  /*
+	  offset = diag_offset;
+	  // in contrast to Hexes and QUADS we do not
+	  // automatically include the highorder inner bubbles
+	  if(oi > 0)
+	    {
+	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[offset + 1]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[offset + 2]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[offset + 3]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[offset + 4]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[offset + 5]] = INTERFACE_DOF;
+	      offset += 6;
+	    }
+	    
+	  for (int dof = offset; dof < innerdofs.Size(); dof++)
+	    ctofdof[innerdofs[dof]] = LOCAL_DOF;    
+	   
+	    break;*/
+
+	case ET_HEX:
+	  diag_offset = 2 * (oi+1)*(oi+1)*(oi+1);
+	  //dev-diagonal dofs
+	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[1]] = INTERFACE_DOF;	    
+	  offset = 2;
+	  for (int dof = offset; dof <  diag_offset; dof++)
+	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
+	    
+	  offset = diag_offset;
+	  //diagonal dofs 
+	  if(ot>-1)
+	    {
+	      
+	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+	      offset += 1;
+	      diag_offset = offset + (ot+1)*(ot+1)*(ot+1);
+	      for (int dof = offset; dof <  diag_offset; dof++)
+		ctofdof[innerdofs[dof]] = LOCAL_DOF;
+							
+	    }
+	  offset = diag_offset;
+	  ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[offset + 1]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[offset + 2]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[offset + 3]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[offset + 4]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[offset + 5]] = INTERFACE_DOF;
+	  
+	  offset +=6;
+	  for (int dof = offset; dof < innerdofs.Size(); dof++)
+	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
+	    
+	  break;
+
+	default:
+	  throw Exception("ElementType "+ToString(ma->GetElType(e))+" not implemented for H(CurlDiv)");
 	}
       
-      
-      for (int dof = offset; dof < innerdofs.Size(); dof++)
-      {
-	if (hiddeneldofs)	  
-	  ctofdof[innerdofs[dof]] = HIDDEN_DOF;
-	else
-	  ctofdof[innerdofs[dof]] = LOCAL_DOF;
-      }
     }
 
 
@@ -608,6 +710,8 @@ namespace ngcomp
       {
         auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);
 	auto fetr = new (alloc) HCurlDivSurfaceFE<ET_TRIG> (order);
+	auto fequ = new (alloc) HCurlDivSurfaceFE<ET_QUAD> (order);
+	
       switch(ma->GetElType(ei))
       {
       case ET_SEGM:  
@@ -620,6 +724,11 @@ namespace ngcomp
         fetr->SetOrderInner(order_facet[ei.Nr()]);
         fetr->ComputeNDof();
         return *fetr;
+      case ET_QUAD:          
+        fetr->SetVertexNumbers (ngel.Vertices());
+        fetr->SetOrderInner(order_facet[ei.Nr()]);
+        fetr->ComputeNDof();
+        return *fequ;
       
       default:
         stringstream str;
@@ -629,11 +738,13 @@ namespace ngcomp
         throw Exception (str.str());
       }
       }
+      
       switch(ma->GetElType(ei))
       {
       case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
       case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
       case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
+      case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
 
       default:
         stringstream str;
@@ -682,12 +793,25 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
+    case ET_HEX:
+    {
+      auto fe = new (alloc) HCurlDivFE<ET_HEX> (order, GGbubbles);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->SetOrderTrace(order_trace[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
       default:
       throw Exception(string("HCurlDivFESpace::GetFE: element-type ") +
         ToString(ngel.GetType()) + " not supported");
     }
   }
 
+    
   void HCurlDivFESpace ::  GetEdgeDofNrs (int ednr,Array<int> & dnums) const
   {
     dnums.SetSize0();
@@ -727,8 +851,7 @@ namespace ngcomp
   {
     Ngs_Element ngel = ma->GetElement(ei);
     
-    dnums.SetSize0();
-
+    dnums.SetSize0();    
     for(auto f : ngel.Facets())
       dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);
