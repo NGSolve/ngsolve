@@ -1453,22 +1453,24 @@ namespace ngfem
 
       INT<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);
 
-      AutoDiff<3,T> lam_f(0);
-      for (int j = 0; j < 4; j++)
-	lam_f += lami[j];
+      //AutoDiff<3,T> lam_f(0);
+      //for (int j = 0; j < 4; j++)
+      //lam_f += lami[j];
 
       AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
       AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
 	       	    
-      LegendrePolynomial::Eval(order_inner,xi,leg_u);
-      LegendrePolynomial::Eval(order_inner,eta,leg_v);
-                  
+      LegendrePolynomial::Eval(order_inner+1,eta,leg_u);
+      LegendrePolynomial::Eval(order_inner+1,xi,leg_v);
+
       for(int j = 0; j <= order_inner; j++)
         for(int k = 0; k <= order_inner; k++)
-	  {
-	    shape[ii++] =  T_dev_Dl1_o_Dl2_v_surf(xi,lam_f,leg_u[k] * leg_v[k]).Shape();
-	    shape[ii++] =  T_dev_Dl1_o_Dl2_v_surf(eta,lam_f,leg_u[k] * leg_v[k]).Shape();	    
-	  }       
+	  {	     
+	    shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(xi,xi,eta,leg_u[j] * leg_v[k]).Shape();
+	    shape[ii++] =  T_Dl1_o_Dl2xDl3_v_surf(eta,xi,eta,leg_u[j] * leg_v[k]).Shape();	    
+	    //shape[ii++] =  T_dev_Dl1_o_Dl2_v_surf(xi,lam_f,leg_u[k] * leg_v[k]).Shape();
+	    //shape[ii++] =  T_dev_Dl1_o_Dl2_v_surf(eta,lam_f,leg_u[k] * leg_v[k]).Shape();	    
+	  }
     };
       
   };

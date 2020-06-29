@@ -725,9 +725,9 @@ namespace ngcomp
         fetr->ComputeNDof();
         return *fetr;
       case ET_QUAD:          
-        fetr->SetVertexNumbers (ngel.Vertices());
-        fetr->SetOrderInner(order_facet[ei.Nr()]);
-        fetr->ComputeNDof();
+        fequ->SetVertexNumbers (ngel.Vertices());
+        fequ->SetOrderInner(order_facet[ei.Nr()]);
+        fequ->ComputeNDof();
         return *fequ;
       
       default:
