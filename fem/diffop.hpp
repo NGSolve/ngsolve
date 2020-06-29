@@ -264,6 +264,24 @@ namespace ngfem
 		BareSliceMatrix<SIMD<Complex>> mat) const;
 
     NGS_DLL_HEADER virtual void
+    CalcLinearizedMatrix (const FiniteElement & fel,
+                          const BaseMappedIntegrationRule & mir,
+                          BareSliceVector<double> x,
+                          SliceMatrix<double,ColMajor> mat,   
+                          LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual bool IsNonlinear() const { return false; }
+
+    // second derivative of \sum_ipt wprime * B(u) 
+    NGS_DLL_HEADER virtual void
+    CalcHessianAdd (const FiniteElement & fel,
+                    const BaseMappedIntegrationRule & mir,
+                    SliceMatrix<> wprime,
+                    BareSliceVector<> elvecu,
+                    SliceMatrix<> hessian,   
+                    LocalHeap & lh) const { ; } 
+    
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   BareSliceVector<double> x, 
@@ -344,6 +362,19 @@ namespace ngfem
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
 
+
+    NGS_DLL_HEADER virtual void
+    ApplyLinearizedTrans (const FiniteElement & fel,
+                          const BaseMappedIntegrationRule & mir,
+                          SliceVector<double> elveclin,
+                          FlatMatrix<double> flux,
+                          BareSliceVector<double> x, 
+                          LocalHeap & lh) const
+    {
+      ApplyTrans (fel, mir, flux, x, lh);
+    }
+
+    
     virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                        shared_ptr<CoefficientFunction> dir) const
     {
