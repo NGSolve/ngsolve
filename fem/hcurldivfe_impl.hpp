@@ -520,6 +520,54 @@ namespace ngfem
   template <int D, typename T>
   auto Id_v (AutoDiff<D,T> av) { return T_Id_v<D,T>(av); }
 
+  /* ############### (HEX) - edge basis functions ############### */
+  /* calculate legendre * dev((grad l1) o-times (grad l2)) */
+  template <typename T>
+  class T_dev_Dl1_o_Dl2_v
+  {
+    AutoDiff<3,T> l1,l2,v;
+  public:
+    T_dev_Dl1_o_Dl2_v  (AutoDiff<3,T> lam1, AutoDiff<3,T> lam2, AutoDiff<3,T> av) : l1(lam1), l2(lam2), v(av) { ; }
+    
+    Vec<9,T> Shape() {
+
+      Vec<9,T> sigmaref;
+
+      for (int i=0; i<3; i++)
+	{
+	  sigmaref(i*3)= v.Value() * l1.DValue(i) * l2.DValue(0);
+	  sigmaref(i*3+1)= v.Value() * l1.DValue(i) * l2.DValue(1);
+	  sigmaref(i*3+2)= v.Value() * l1.DValue(i) * l2.DValue(2);
+	}
+
+      T trace_sigma = v.Value()/3 * (l1.DValue(0) * l2.DValue(0) + l1.DValue(1) * l2.DValue(1) + l1.DValue(2) * l2.DValue(2));
+      
+      sigmaref(0) = sigmaref(0) - trace_sigma;
+      sigmaref(4) = sigmaref(4) - trace_sigma;
+      sigmaref(8) = sigmaref(8) - trace_sigma;
+      
+      return sigmaref;  
+
+    }
+
+    Vec<3,T> DivShape()
+    {
+      T vx = v.DValue(0), vy = v.DValue(1), vz = v.DValue(2);
+
+      T trace_sigma = 1.0/3 * (l1.DValue(0) * l2.DValue(0) + l1.DValue(1) * l2.DValue(1) + l1.DValue(2) * l2.DValue(2));
+
+      return Vec<3,T> (vx * l1.DValue(0) * l2.DValue(0) + vy * l1.DValue(0) * l2.DValue(1) + vz * l1.DValue(0) * l2.DValue(2) - vx * trace_sigma  ,
+		       vx * l1.DValue(1) * l2.DValue(0) + vy * l1.DValue(1) * l2.DValue(1) + vz * l1.DValue(1) * l2.DValue(2) - vy * trace_sigma,
+		       vx * l1.DValue(2) * l2.DValue(0) + vy * l1.DValue(2) * l2.DValue(1) + vz * l1.DValue(2) * l2.DValue(2) - vz * trace_sigma
+		     );
+    }
+
+    Vec<3,T> CurlShape()
+    {     
+      throw Exception("not implemented for T_dev_Dl1_o_Dl2_v");
+    }
+
+  };
 }
 
 

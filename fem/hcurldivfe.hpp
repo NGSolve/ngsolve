@@ -731,11 +731,12 @@ namespace ngfem
       int ninner = (order_inner+1)*(order_inner+1);
 
       if (order_inner > 0)
-	ninner += 2 * (order_inner+2)*(order_inner);        
-	//ninner += 2 * (order_inner+1)*(order_inner-1);        
+	ninner += 2 * (order_inner+2)*(order_inner);
+      else
+	ninner += 2; 
       
       order = max2(order, order_inner);
-      order += 1; // we include higher inner bubbles
+      order += 2; // we include higher inner bubbles and  tensor space 
       ndof += ninner;
 
       if (order_trace > -1)
@@ -793,6 +794,7 @@ namespace ngfem
 
       //!!!!!!!!!!!!!!
       // produces a sigma space that is nt-continuous and trace free and includes polynomials up to order k
+      // plus certain bubbles
       //!!!!!!!!!!!!!!
       
       //////////////////////////////////////////////////////////////////////////////////////
@@ -801,44 +803,45 @@ namespace ngfem
       // 1.) constants      
       // gives the constant function (-1,0,0,1) -> div-free      
       shape[ii++] = Sigma_gradv(lx[0]*ly[0]); 
-      // gives the constant function (0,0,0,1) -> div-free
-      if (ot>-1)	
-	shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
+      
       //
       // 2.) linear and high order 
       for(int i = 0; i <= oi-1; i++)
-       {
-	 if (ot>-1)
-	   {
-	     // gives (0,0,0,- d_x u(x))
-	     shape[ii++] = Sigma_gradu_v(ly[0],u[i]); //div-free
-	     // gives (-d_y v(y), 0, 0,0)
-	     shape[ii++] = Sigma_gradu_v(lx[0],v[i]); //div-free
-	   }
+       {	 
 	 // gives (-d_x u(x)/2,0,0, d_x u(x)/2) -> produces a divergence
 	 shape[ii++] = Gradu_Curlv(u[i],ly[0], 1.0); // trace free!
 	 // gives (d_y v(x)/2,0,0, -d_y v(x)/2) -> produces a divergence
-	 shape[ii++] = Gradu_Curlv(v[i],lx[0], 1.0);	 
+	 shape[ii++] = Gradu_Curlv(v[i],lx[0], 1.0);
+
+	 // block 1 and 2 produce already (P^k_x,0,0,-P^k_x), (P^k_y,0,0,-P^k_y)
+	 // and (ot > -1):  (0,0,0,P^k_x), (0,0,0,P^k_y)
+	 // 3.) high order mixed functions
+	 // both parts (x or y) of the mixed polynomials on the diagonal are at least linear
+	 for(int j = 0; j <= oi-1; j++)
+	   {
+	     shape[ii++] = Gradu_Curlv(u[i],v[j], 1.0);  
+	   }
        }
-      //      
-      // block 1 and 2 produce already (P^k_x,0,0,-P^k_x), (P^k_y,0,0,-P^k_y)
-      // and (ot > -1):  (0,0,0,P^k_x), (0,0,0,P^k_y)
-      // 3.) high order mixed functions
-      // both parts (x or y) of the mixed polynomials on the diagonal are at least linear
-      for(int i = 0; i <= oi-1; i++)
-      {
-        for(int j = 0; j <= oi-1; j++)
-        {
-	  // gives (-d_x u(x) d_y v(y), 0,
-	  //        0    , d_y v(y) d_x u(x))
-	  shape[ii++] = Gradu_Curlv(u[i],v[j], 1.0);  
 
+      // gives the constant function (0,0,0,1) -> div-free
+      if (ot>-1)
+	{
+	  //at least constant
+	  shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
+	  // linear and higher
+	  for(int i = 0; i <= ot-1; i++)
+	    {
+	      // gives (0,0,0,- d_x u(x))
+	      shape[ii++] = Sigma_gradu_v(ly[0],u[i]); //div-free
+	      // gives (-d_y v(y), 0, 0,0)
+	      shape[ii++] = Sigma_gradu_v(lx[0],v[i]); //div-free
 
-	  // gives (-d_x u(x) d_y v(y), 0, 0, 0)	  
-	  if (ot>-1)
-	    shape[ii++] = Gradu_Curlv(u[i],v[j], 0.0);
+	      // gives (-d_x u(x) d_y v(y), 0, 0, 0)
+	      for(int j = 0; j <= ot-1; j++)
+		shape[ii++] = Gradu_Curlv(u[i],v[j], 0.0);
+	    }	 
 	}
-      }
+	
       //////////////////////////////////////////////////////////////////////////////////////
 
       // edges and shapes one the diagonal give:
@@ -850,22 +853,30 @@ namespace ngfem
       // further we include bubbles such that
       //       (0,P^{k+1}_x o-times P^{k-1}_y * (1-y)*y, 0,0)
       //       (0,0,P^{k+1}_y o-times P^{k-1}_x * (1-x)*x,0)
-      // is included
-      for(int i = 0; i <= oi+1; i++)
-      {
-        for(int j = 0; j <= oi-1; j++)
-        {	  
-	  // gives (0 ,-d_xx u(x) v(y),0,0) with v(y) bubble (j=0) or higher (hence inner bubble)
-          shape[ii++] = u_Sigma_gradv(v[j],u[i]);
-	  // gives  (0 ,0 , d_yy v(y) u(x), 0) with u(x) bubble or higher (hence inner bubble)	  
-          shape[ii++] = u_Sigma_gradv(u[j],v[i]);
-        }
-      }      
+      // is included. Needed for LBB-proof of MCS
+
+      if (oi == 0)
+	{
+	  shape[ii++] = u_Sigma_gradv(v[0],u[0]);
+	  shape[ii++] = u_Sigma_gradv(u[0],v[0]);
+	}
+      else
+	{
+	  for(int i = 0; i <= oi+1; i++)
+	    {
+	      for(int j = 0; j <= oi-1; j++)
+		{	  
+		  // gives (0 ,-d_xx u(x) v(y),0,0) with v(y) bubble (j=0) or higher (hence inner bubble)
+		  shape[ii++] = u_Sigma_gradv(v[j],u[i]);
+		  // gives  (0 ,0 , d_yy v(y) u(x), 0) with u(x) bubble or higher (hence inner bubble)	  
+		  shape[ii++] = u_Sigma_gradv(u[j],v[i]);
+		}
+	    }
+	}
     };
   };
   
- 
-  template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
+ template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
   {
     
   public:
@@ -1026,6 +1037,165 @@ namespace ngfem
 	}
      };
   };
+
+  template <> class HCurlDivFE<ET_HEX> : public T_HCurlDivFE<ET_HEX> 
+  {
+    
+  public:
+    using T_HCurlDivFE<ET_HEX> :: T_HCurlDivFE;
+
+    virtual void ComputeNDof()
+    {      
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<6; i++)
+      {
+        ndof += 2*(order_facet[i]+1)*(order_facet[i]+1);
+        order = max2(order, order_facet[i]+1);
+      }
+      int p = order_inner;
+      int ninner = 2 * (p+1) * (p+1) * (p+1);
+
+      if (p > 0)
+	ninner += 6 * (p+2) * (p+1) * (p);
+      else
+	ninner += 6;
+      
+      
+      order = max2(order, order_inner);
+      ndof += ninner;
+      
+      if (order_trace > -1)
+	{
+	  ndof += (order_trace +1) * (order_trace+1)* (order_trace+1);
+	  order = max2(order, order_trace);
+	}
+      order+=2;
+      if (GGbubbles)
+	{
+	  throw Exception ("GGBubbles not implemented for Hcurldiv on HEXES");
+	}
+    }
+    
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<3,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    {
+      auto x = ip.x, y = ip.y, z = ip.z ;     
+      
+      typedef decltype(x.Value()+x.Value()) T;      
+      AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3,T> zz(z.Value(), &z.DValue(0));      
+      AutoDiff<3,T> lx[2] ={ 1-xx, xx};
+      AutoDiff<3,T> ly[2] ={ 1-yy, yy};
+      AutoDiff<3,T> lz[2] ={ 1-zz, zz};
+      AutoDiff<3,T> lami[8]={(1-xx)*(1-yy)*(1-zz),xx*(1-yy)*(1-zz),xx*yy*(1-zz),(1-xx)*yy*(1-zz),
+                  (1-xx)*(1-yy)*zz,xx*(1-yy)*zz,xx*yy*zz,(1-xx)*yy*zz};
+      
+      AutoDiff<3,T> sigma[8] = {1-xx + 1-yy + 1-zz, xx + 1-yy + 1-zz, xx + yy + 1-zz, 1-xx + yy + 1-zz,
+				1-xx + 1-yy + zz, xx + 1-yy + zz, xx + yy + zz, 1-xx + yy + zz};
+      
+      int ii = 0;
+      
+      int maxorder_facet =
+        max2(order_facet[0],max2(order_facet[1],order_facet[2]));
+
+      const FACE * faces = ElementTopology::GetFaces(ET_HEX);
+             
+      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+2), leg_w(order+2);
+
+      for (int i = 0; i<6; i++)
+        {
+          int p = order_facet[i];
+          
+          AutoDiff<3,T> lam_f(0);
+          for (int j = 0; j < 4; j++)
+            lam_f += lami[faces[i][j]];
+          
+          INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+          AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
+          AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
+          //auto nv = GetGradient(lam_f);
+	  
+	  LegendrePolynomial (p+1, eta, leg_u);
+          LegendrePolynomial (p+1, xi, leg_v);
+          
+          for (int j = 0; j <= p; j++)
+            for (int k = 0; k <= p; k++)
+	      {
+		shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi,xi,eta,lam_f*leg_u[j]*leg_v[k]);
+		shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta,xi,eta,lam_f*leg_u[j]*leg_v[k]);
+		//shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,lam_f,lam_f*leg_u[j]*leg_v[k]);  // not div-free
+		//shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,lam_f,lam_f*leg_u[j]*leg_v[k]); // not div-free
+	      }	            
+        }
+
+      int oi=order_inner;
+      int ot=order_trace;
+      
+      int p = max(oi,ot);
+      
+      AutoDiff<3,T> xi  = sigma[0] - sigma[1];
+      AutoDiff<3,T> eta = sigma[0] - sigma[3];
+      AutoDiff<3,T> nv = sigma[0] - sigma[4];
+          
+      LegendrePolynomial (p+2, xi,  leg_u);
+      LegendrePolynomial (p+2, eta, leg_v);
+      LegendrePolynomial (p+2, nv,  leg_w);
+
+      
+      //polynomials on the diagonal
+      // 2 * (oi+1)**3
+      // with trace + (ot+1)**3
+      for (int i = 0; i <= oi; i++)
+	for (int j = 0; j <= oi; j++)
+	  for (int k = 0; k <= oi; k++)
+                {
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,xi,leg_u[i]*leg_v[j]*leg_w[k]);
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,eta,leg_u[i]*leg_v[j]*leg_w[k]);
+		  //if (ot>-1)
+		  //  shape[ii++] = Id_v(leg_u[i]*leg_v[j]*leg_w[k]);
+		}
+
+      
+      if (ot>-1)
+	{
+	  for (int i = 0; i <= ot; i++)
+	    for (int j = 0; j <= ot; j++)
+	      for (int k = 0; k <= ot; k++)
+		shape[ii++] = Id_v(leg_u[i]*leg_v[j]*leg_w[k]);
+	}
+      
+      if (oi == 0)
+	{
+	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,nv, leg_u[0]*leg_v[0]*leg_w[0] * lz[0] * lz[1]);
+	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,nv,leg_u[0]*leg_v[0]*leg_w[0] * lz[0] * lz[1]);
+	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,eta,leg_u[0]*leg_v[0]*leg_w[0] * ly[0] * ly[1]);
+	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,eta,leg_u[0]*leg_v[0]*leg_w[0] * ly[0] * ly[1]);
+	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,xi,leg_u[0]*leg_v[0]*leg_w[0] * lx[0] * lx[1]);
+	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,xi, leg_u[0]*leg_v[0]*leg_w[0] * lx[0] * lx[1]);
+	}
+      else
+	{       
+	  //polynomials on the off diagonal that are nt-bubbles
+	  for (int i = 0; i <= oi+1; i++)
+	    for (int j = 0; j <= oi; j++)
+	      for (int k = 0; k <= oi-1; k++)
+                {
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,nv, leg_u[i]*leg_v[j]*leg_w[k] * lz[0] * lz[1]);
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,nv,leg_u[j]*leg_v[i]*leg_w[k] * lz[0] * lz[1]);
+
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,eta,leg_u[i]*leg_v[k]*leg_w[j]  * ly[0] * ly[1]);
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,eta,leg_u[j]*leg_v[k]*leg_w[i]  * ly[0] * ly[1]);
+
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,xi,leg_u[k]*leg_v[i]*leg_w[j]  * lx[0] * lx[1]);
+		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,xi, leg_u[k]*leg_v[j]*leg_w[i]  * lx[0] * lx[1]);
+		  
+		}
+      
+	}	  
+    };
+  };
   
   ////////////////////// SURFACE ////////////////////////////
     template <int DIM>
@@ -1169,13 +1339,32 @@ namespace ngfem
   
   class T_Dl1_o_Dl2xDl3_v_surf
   {
-    AutoDiffDiff<3> l1,l2,l3,v;
+    AutoDiff<3> l1,l2,l3,v;
   public:
-    T_Dl1_o_Dl2xDl3_v_surf  (AutoDiffDiff<3> lam1, AutoDiffDiff<3> lam2, AutoDiffDiff<3> lam3, AutoDiffDiff<3> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
+    T_Dl1_o_Dl2xDl3_v_surf  (AutoDiff<3> lam1, AutoDiff<3> lam2, AutoDiff<3> lam3, AutoDiff<3> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
     
     Vec<2> Shape() {
       double cross = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);      
       return Vec<2> (v.Value()*l1.DValue(0) * cross,  v.Value()*l1.DValue(1) * cross);
+    }
+
+    Vec<2> DivShape()
+    {
+      throw Exception("not available on surface");
+    }
+
+  };
+
+  
+  class T_dev_Dl1_o_Dl2_v_surf 
+  {
+    AutoDiff<3> l1,l2,v;
+  public:
+    T_dev_Dl1_o_Dl2_v_surf   (AutoDiff<3> lam1,AutoDiff<3> lam2,  AutoDiff<3> av) : l1(lam1), l2(lam2), v(av) { ; }
+    
+    Vec<2> Shape() {
+      //double cross = l2.DValue(2);      
+      return Vec<2> (v.Value()*l1.DValue(0) * l2.DValue(2),  v.Value()*l1.DValue(1) * l2.DValue(2));
     }
 
     Vec<2> DivShape()
@@ -1202,19 +1391,22 @@ namespace ngfem
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {            
-      auto x = ip.x, y= ip.y;      
-      AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };      
+      auto x = ip.x, y= ip.y;
+      AutoDiff<3> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3> yy(y.Value(), &y.DValue(0));
+      
+      AutoDiff<3> ddlami[3] ={ xx, yy, 1-xx-yy };      
       
       int ii = 0;
 
-      ArrayMem<AutoDiffDiff<3>,20> ha((order_inner+1)*(order_inner+2)/2.0);
+      ArrayMem<AutoDiff<3>,20> ha((order_inner+1)*(order_inner+2)/2.0);
       
       int es = 0, ee = 1, et = 2;
       if(vnums[es] > vnums[ee]) swap(es, ee);
       if(vnums[ee] > vnums[et]) swap(ee, et);
       if(vnums[es] > vnums[et]) swap(es,et);
             
-      AutoDiffDiff<3> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
+      AutoDiff<3> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
       
       DubinerBasis::Eval (order_inner, ls, le, ha);
 
@@ -1223,6 +1415,60 @@ namespace ngfem
 	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(le,ls,lt,ha[l]).Shape();
 	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(ls,lt,le,ha[l]).Shape();
 	    }     
+    };
+      
+  };
+  
+  template <> class HCurlDivSurfaceFE<ET_QUAD> : public T_HCurlDivSurfaceFE<ET_QUAD> 
+  {
+    
+  public:
+    using T_HCurlDivSurfaceFE<ET_QUAD> :: T_HCurlDivSurfaceFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      ndof += 2* (order_inner+1) * (order_inner+1);
+      order = max2(order,order_inner);
+    }
+    
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    {            
+      auto x = ip.x, z= ip.y;      
+      //AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };      
+      typedef decltype(x.Value()+x.Value()) T;   
+      AutoDiff<3> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3> zz(z.Value(), &z.DValue(0));
+      
+      AutoDiff<3,T> lami[4]={(1-xx)*(1-zz),xx*(1-zz),xx*zz,(1-xx)*zz};
+      
+      AutoDiff<3> sigma[4] = {1-xx+1-zz, xx+1-zz, xx+zz, 1-xx+zz};
+
+      ArrayMem<AutoDiff<3>,20> leg_u(order_inner+2);
+      ArrayMem<AutoDiff<3>,20> leg_v(order_inner+2);
+      
+      int ii = 0;
+
+      INT<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);
+
+      AutoDiff<3,T> lam_f(0);
+      for (int j = 0; j < 4; j++)
+	lam_f += lami[j];
+
+      AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
+      AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
+	       	    
+      LegendrePolynomial::Eval(order_inner,xi,leg_u);
+      LegendrePolynomial::Eval(order_inner,eta,leg_v);
+                  
+      for(int j = 0; j <= order_inner; j++)
+        for(int k = 0; k <= order_inner; k++)
+	  {
+	    shape[ii++] =  T_dev_Dl1_o_Dl2_v_surf(xi,lam_f,leg_u[k] * leg_v[k]).Shape();
+	    shape[ii++] =  T_dev_Dl1_o_Dl2_v_surf(eta,lam_f,leg_u[k] * leg_v[k]).Shape();	    
+	  }       
     };
       
   };
