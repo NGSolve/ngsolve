@@ -76,6 +76,17 @@ namespace ngfem
                           + typeid(*this).name());
     
   }
+
+  void DifferentialOperator ::
+  CalcLinearizedMatrix (const FiniteElement & fel,
+                        const BaseMappedIntegrationRule & mir,
+                        BareSliceVector<double> x,
+                        SliceMatrix<double,ColMajor> mat,   
+                        LocalHeap & lh) const
+  {
+    CalcMatrix (fel, mir, mat, lh);
+  }
+
   
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,

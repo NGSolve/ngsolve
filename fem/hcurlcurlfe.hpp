@@ -759,9 +759,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
               DubinerBasis::Eval (p, lam[f[0]], lam[f[1]],
                                    SBLambda([&] (size_t nr, T val)
                                             {
-                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>(Matrix<>({{1,0},{0,0}}))*Trans(mip.GetJacobian());
-                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,0},{0,1}}))*Trans(mip.GetJacobian());
-                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,1},{1,0}}))*Trans(mip.GetJacobian());
+                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>({{1,0},{0,0}})*Trans(mip.GetJacobian());
+                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>({{0,0},{0,1}})*Trans(mip.GetJacobian());
+                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>({{0,1},{1,0}})*Trans(mip.GetJacobian());
                                             }));
             }
         }
@@ -1592,7 +1592,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
           AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
           AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
-          auto nv = GetGradient(lam_f);
+          // auto nv = GetGradient(lam_f);
           
           LegendrePolynomial (p, eta, leg_u);
           LegendrePolynomial (p, xi, leg_v);
