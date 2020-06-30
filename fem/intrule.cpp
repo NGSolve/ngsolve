@@ -564,6 +564,10 @@ namespace ngfem
     for (int i = 0; i < ir.GetNIP(); i++)
       new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, Complex> (ir[i], eltrans, -1);
     eltrans.CalcMultiPointJacobian (ir, *this);
+
+    if (ir.Size())
+      if (ir[0].VB() != VOL)
+        ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
   }
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -3332,6 +3336,10 @@ namespace ngfem
                                                   DummySize(mips.Size(), DIM_SPACE));
     
     eltrans.CalcMultiPointJacobian (ir, *this);
+
+    if (ir.Size())
+      if (ir[0].VB() != VOL)
+        ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
   }
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -3341,16 +3349,17 @@ namespace ngfem
     auto hmips = mips;
     if (hmips.Size() == 0) return;
 
+    // codimension == 0:
     if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
       {
         for (size_t i = 0; i < hmips.Size(); i++)
           hmips[i].SetMeasure(1);
         return;
       }
+    
     if constexpr(DIM_ELEMENT == 3)
       if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
       {
-        // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
 	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
         auto edges = ElementTopology::GetEdges (et);
         Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);

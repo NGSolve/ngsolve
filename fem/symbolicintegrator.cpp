@@ -891,7 +891,7 @@ namespace ngfem
             ProxyUserData ud;
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
-            mir.ComputeNormalsAndMeasure (eltype, k);
+            // mir.ComputeNormalsAndMeasure (eltype, k);
             
             FlatVector<SCAL> elvec1(elvec.Size(), lh);
             FlatMatrix<SCAL> val(mir.Size(), 1,lh);
@@ -1901,7 +1901,7 @@ namespace ngfem
                   ProxyUserData ud;
                   const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
-                  mir.ComputeNormalsAndMeasure(eltype, k);
+                  // mir.ComputeNormalsAndMeasure(eltype, k);
                   
                   for (int k1 : Range(trial_proxies))
                     for (int l1 : Range(test_proxies))
@@ -2037,7 +2037,7 @@ namespace ngfem
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
-          mir.ComputeNormalsAndMeasure(eltype, k);
+          // mir.ComputeNormalsAndMeasure(eltype, k);
           
           for (int k1 : Range(trial_proxies))
             for (int l1 : Range(test_proxies))
@@ -2459,7 +2459,7 @@ namespace ngfem
               const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
               const SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
               SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-              mir.ComputeNormalsAndMeasure(eltype, k);
+              // mir.ComputeNormalsAndMeasure(eltype, k);
               // NgProfiler::StopThreadTimer(tir, tid);
               ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -2557,7 +2557,7 @@ namespace ngfem
           const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-          mir.ComputeNormalsAndMeasure(eltype, k);
+          //  mir.ComputeNormalsAndMeasure(eltype, k);
           
           ProxyUserData ud(trial_proxies.Size(), lh);          
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -2816,7 +2816,7 @@ namespace ngfem
                 GetSIMDIntegrationRule(etfacet,fel_trial.Order()+fel_test.Order()+bonus_intorder);
               auto & ir_facet_vol = transform(k, ir_facet, lh);
               auto & mir = trafo(ir_facet_vol, lh);
-              mir.ComputeNormalsAndMeasure (eltype, k);
+              // mir.ComputeNormalsAndMeasure (eltype, k);
               // NgProfiler::StopThreadTimer(tir, tid);
 
               // NgProfiler::StartThreadTimer(teval, tid);                                            
@@ -2878,7 +2878,7 @@ namespace ngfem
         const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-        mir.ComputeNormalsAndMeasure (eltype, k);
+        // mir.ComputeNormalsAndMeasure (eltype, k);
         
 
         ProxyUserData ud(trial_proxies.Size(), lh);    
@@ -3784,7 +3784,7 @@ namespace ngfem
 
             auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
             auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
-            simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
+            // simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
 
             ProxyUserData ud(trial_proxies.Size(), lh);
             const_cast<ElementTransformation&>(eltrans).userdata = &ud;
@@ -4228,19 +4228,8 @@ namespace ngfem
               {
                 const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);
                 auto & mir = trafo(ir, lh);
-                
-                ProxyUserData ud(trial_proxies.Size(), lh);
-                const_cast<ElementTransformation&>(trafo).userdata = &ud;
-                ud.fel = &fel;
-                for (ProxyFunction * proxy : trial_proxies)
-                  {
-                    ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
-                    proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
-                  }
-                
                 elmat = 0;
-                
-                AddLinearizedElementMatrix (fel, ud, mir, elveclin, elmat, lh);
+                AddLinearizedElementMatrix (fel, trafo, mir, elveclin, elmat, lh);
               }
             else
               {
@@ -4258,18 +4247,8 @@ namespace ngfem
                     auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
                     auto & mir = trafo(ir_facet_vol, lh);
-                    mir.ComputeNormalsAndMeasure (eltype, k);
-            
-                    ProxyUserData ud(trial_proxies.Size(), lh);    
-                    const_cast<ElementTransformation&>(trafo).userdata = &ud;
-                    ud.fel = &fel;
-                    for (ProxyFunction * proxy : trial_proxies)
-                      {
-                        ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
-                        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
-                      }
-                    
-                    AddLinearizedElementMatrix (fel, ud, mir, elveclin, elmat, lh);            
+                    // mir.ComputeNormalsAndMeasure (eltype, k);
+                    AddLinearizedElementMatrix (fel, trafo, mir, elveclin, elmat, lh);            
                   }
               }
           }
@@ -4323,7 +4302,7 @@ namespace ngfem
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-            mir.ComputeNormalsAndMeasure (eltype, k);
+            // mir.ComputeNormalsAndMeasure (eltype, k);
             
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -4359,6 +4338,9 @@ namespace ngfem
     ThreadRegionTimer reg(t, tid);
     
     HeapReset hr(lh);
+
+
+
     
     FlatMatrix<> dderiv(mir.Size(), 1,lh);
     FlatMatrix<AutoDiffDiff<1,double>> ddval(mir.Size(), 1, lh);
@@ -4489,7 +4471,8 @@ namespace ngfem
   }
   
   void SymbolicEnergy :: AddLinearizedElementMatrix (const FiniteElement & fel,
-                                                     ProxyUserData & ud, 
+                                                     const ElementTransformation & trafo, 
+                                                     // ProxyUserData & ud, 
                                                      const SIMD_BaseMappedIntegrationRule & mir, 
                                                      FlatVector<double> elveclin,
                                                      FlatMatrix<double> elmat,
@@ -4503,6 +4486,18 @@ namespace ngfem
     static Timer tmult("SymbolicEnergy::mult - simd", 2);
     
     ThreadRegionTimer reg(t, tid);
+
+    ProxyUserData ud(trial_proxies.Size(), lh);    
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    ud.fel = &fel;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.AssignMemory (proxy, mir.IR().GetNIP(), proxy->Dimension(), lh);
+        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
+      }
+
+
+
     
             FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, mir.Size(), lh);
             FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
@@ -4700,7 +4695,7 @@ namespace ngfem
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-            mir.ComputeNormalsAndMeasure (eltype, k);
+            // mir.ComputeNormalsAndMeasure (eltype, k);
             
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -4790,7 +4785,7 @@ namespace ngfem
                     auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
                     auto & mir = trafo(ir_facet_vol, lh);
-                    mir.ComputeNormalsAndMeasure (eltype, k);
+                    // mir.ComputeNormalsAndMeasure (eltype, k);
 
                     ProxyUserData ud(trial_proxies.Size(), lh);    
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -4891,7 +4886,7 @@ namespace ngfem
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-            mir.ComputeNormalsAndMeasure (eltype, k);
+            // mir.ComputeNormalsAndMeasure (eltype, k);
             
             
             ProxyUserData ud(trial_proxies.Size(), lh);    
