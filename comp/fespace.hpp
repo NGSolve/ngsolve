@@ -467,6 +467,8 @@ ANY                  1 1 1 1 | 15
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     /// get dofs on element (=cell) elnr
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
+    /// get dofs that are globally defined
+    virtual void GetGlobalDofNrs (int gnr, Array<DofId> & dnums) const;
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 

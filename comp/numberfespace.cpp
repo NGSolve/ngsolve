@@ -67,7 +67,7 @@ namespace ngcomp
         sum += x(0,i);
       y(0) += HSum(sum);
     }
-    
+
   };
 
 
@@ -96,7 +96,7 @@ namespace ngcomp
 
   void NumberFESpace::Update()
     {
-      SetNDof(1);
+      SetNDof( ((ma->GetCommunicator().Size() > 1) && (ma->GetCommunicator().Rank() == 0)) ? 0 : 1 );
     }
 
   
@@ -119,6 +119,16 @@ namespace ngcomp
         dnums.SetSize(0);
     }
 
+
+  void NumberFESpace :: GetGlobalDofNrs (int gnr, Array<int> & dnums) const
+  {
+    /** If parallel, there is one global DOF shared by all ranks except rank 0.
+	If not parallel, there is also one DOF. **/
+    if ( IsParallel() && (GetParallelDofs()->GetCommunicator().Size() > 1) && (GetParallelDofs()->GetCommunicator().Rank() == 0) )
+      { dnums.SetSize0(); }
+    else
+      { dnums.SetSize(1); dnums[0] = 0; }
+  }
 
 
   static RegisterFESpace<NumberFESpace> init ("number");

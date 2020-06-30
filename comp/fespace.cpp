@@ -1153,6 +1153,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case NT_ELEMENT: case NT_FACET:
         GetDofNrs (NodeId(StdNodeType(ni.GetType(), ma->GetDimension()), ni.GetNr()), dnums);
         break;
+      case NT_GLOBAL:
+	GetGlobalDofNrs(ni.GetNr(), dnums);
+	break;
       }
   }
   
@@ -1176,6 +1179,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dnums.SetSize0 ();
   }
 
+  void FESpace :: GetGlobalDofNrs (int gnr, Array<int> & dnums) const
+  {
+    dnums.SetSize0 ();
+  }
 
 
   shared_ptr<BilinearFormIntegrator> FESpace :: GetIntegrator (VorB vb) const
@@ -1918,7 +1925,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dofnodes = NodeId (NT_VERTEX, -1);
     
     Array<int> dnums;
-    for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
+    for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL, NT_GLOBAL })
       for (NodeId ni : ma->Nodes(nt))
 	{
 	  GetDofNrs (ni, dnums);
