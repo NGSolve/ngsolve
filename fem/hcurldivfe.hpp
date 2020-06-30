@@ -1096,10 +1096,7 @@ namespace ngfem
 				1-xx + 1-yy + zz, xx + 1-yy + zz, xx + yy + zz, 1-xx + yy + zz};
       
       int ii = 0;
-      
-      int maxorder_facet =
-        max2(order_facet[0],max2(order_facet[1],order_facet[2]));
-
+            
       const FACE * faces = ElementTopology::GetFaces(ET_HEX);
              
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+2), leg_w(order+2);
@@ -1441,9 +1438,7 @@ namespace ngfem
       typedef decltype(x.Value()+x.Value()) T;   
       AutoDiff<3> xx(x.Value(), &x.DValue(0));
       AutoDiff<3> zz(z.Value(), &z.DValue(0));
-      
-      AutoDiff<3,T> lami[4]={(1-xx)*(1-zz),xx*(1-zz),xx*zz,(1-xx)*zz};
-      
+                 
       AutoDiff<3> sigma[4] = {1-xx+1-zz, xx+1-zz, xx+zz, 1-xx+zz};
 
       ArrayMem<AutoDiff<3>,20> leg_u(order_inner+2);
