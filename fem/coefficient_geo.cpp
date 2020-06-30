@@ -352,7 +352,7 @@ namespace ngfem
           dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*sipr.GetNV()-8.0*sipl.GetNV()-siprr.GetNV()+sipll.GetNV());
         }
       
-      res = dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse();
+      res = (dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse()).AsVector();
     }
 
     

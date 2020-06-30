@@ -929,6 +929,7 @@ namespace ngbla
     INLINE constexpr size_t Height () const { return S; }
     /// corresponding matrix with
     INLINE constexpr size_t Width () const { return 1; }
+    INLINE T* Data() { return data.Ptr(); }
 
     INLINE /* const */ FlatVector<const T> Range(size_t first, size_t next) const
     { return FlatVector<const T> (next-first, data+first); }
@@ -1453,12 +1454,12 @@ namespace ngbla
     using DummySize::Width;
     using DummySize::Height;
 #endif
-    BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(vec.Dist()) { ; }
+    BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(vec.Dist()) { ; }
     template <int D>
-    BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(D)  { ; }
-    BareSliceVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(1)  { ; }
+    BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(D)  { ; }
+    BareSliceVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(1)  { ; }
     template <int D>
-    BareSliceVector(Vec<D,T> & vec) :  DummySize( vec.Size() ), data(&vec(0)), dist(1) { ; } 
+    BareSliceVector(Vec<D,T> & vec) :  DummySize( vec.Size() ), data(vec.Data()), dist(1) { ; }
     BareSliceVector(const BareSliceVector &) = default;
     BareSliceVector & operator= (const BareSliceVector&) = delete;
     size_t Dist () const { return dist; }
@@ -1636,6 +1637,8 @@ namespace ngbla
       return data+i*DIST;
     }
     */
+
+    INLINE T * Data () const { return data; }
 
     /// vector size
     size_t Size () const { return s; }

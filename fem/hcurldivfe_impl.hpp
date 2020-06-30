@@ -85,12 +85,13 @@ namespace ngfem
   {
     AutoDiffDiff<2,T> u;
     AutoDiffDiff<2,T> v;
+    double tr;
   public:
-    T_Gradu_Curlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
+    T_Gradu_Curlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, double atr) : u(au), v(av), tr(atr){ ; }
 
     Vec<4,T> Shape() {
 
-      auto trace = (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1)) / 2.0;
+      auto trace = tr * (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1)) / 2.0;
       
       return Vec<4,T> (-  v.DValue(1)*u.DValue(0) - trace,
 		      v.DValue(0)*u.DValue(0),
@@ -106,7 +107,7 @@ namespace ngfem
       T ux = u.DValue(0), uy = u.DValue(1);
       T vx = v.DValue(0), vy = v.DValue(1);
       
-      return Vec<2,T> (-vy*uxx + vx*uxy - 0.5*(-vxy*ux - vy*uxx + vxx*uy + vx*uxy),-vy*uxy + vx * uyy - 0.5*(-vyy*ux - vy*uxy + vxy*uy + vx*uyy));
+      return Vec<2,T> (-vy*uxx + vx*uxy - tr * 0.5*(-vxy*ux - vy*uxx + vxx*uy + vx*uxy),-vy*uxy + vx * uyy - tr*0.5*(-vyy*ux - vy*uxy + vxy*uy + vx*uyy));
     }
 
     Vec<2,T> CurlShape()
@@ -121,11 +122,11 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto Gradu_Curlv (AutoDiffDiff<D,T> au,AutoDiffDiff<D,T> av) { return T_Gradu_Curlv<D, T>(au,av); }
+  auto Gradu_Curlv (AutoDiffDiff<D,T> au,AutoDiffDiff<D,T> av, double atr) { return T_Gradu_Curlv<D, T>(au,av,atr); }
 
   
-  /* ############### Type 2 (QUAD) - inner basis functions - div-free ############### */
-  /* u * sigma(grad v) = Curl(grad v), where Curl is the 1D to 2D curl operator */
+  /* ############### Type 2 (QUAD) - inner basis functions ############### */
+  /* u * sigma(grad v) = u * Curl(grad v), where Curl is the 1D to 2D curl operator */
   template <int D, typename T> class T_u_Sigma_gradv;
   template <typename T> class T_u_Sigma_gradv<2,T>
   {
@@ -519,6 +520,54 @@ namespace ngfem
   template <int D, typename T>
   auto Id_v (AutoDiff<D,T> av) { return T_Id_v<D,T>(av); }
 
+  /* ############### (HEX) - edge basis functions ############### */
+  /* calculate legendre * dev((grad l1) o-times (grad l2)) */
+  template <typename T>
+  class T_dev_Dl1_o_Dl2_v
+  {
+    AutoDiff<3,T> l1,l2,v;
+  public:
+    T_dev_Dl1_o_Dl2_v  (AutoDiff<3,T> lam1, AutoDiff<3,T> lam2, AutoDiff<3,T> av) : l1(lam1), l2(lam2), v(av) { ; }
+    
+    Vec<9,T> Shape() {
+
+      Vec<9,T> sigmaref;
+
+      for (int i=0; i<3; i++)
+	{
+	  sigmaref(i*3)= v.Value() * l1.DValue(i) * l2.DValue(0);
+	  sigmaref(i*3+1)= v.Value() * l1.DValue(i) * l2.DValue(1);
+	  sigmaref(i*3+2)= v.Value() * l1.DValue(i) * l2.DValue(2);
+	}
+
+      T trace_sigma = v.Value()/3 * (l1.DValue(0) * l2.DValue(0) + l1.DValue(1) * l2.DValue(1) + l1.DValue(2) * l2.DValue(2));
+      
+      sigmaref(0) = sigmaref(0) - trace_sigma;
+      sigmaref(4) = sigmaref(4) - trace_sigma;
+      sigmaref(8) = sigmaref(8) - trace_sigma;
+      
+      return sigmaref;  
+
+    }
+
+    Vec<3,T> DivShape()
+    {
+      T vx = v.DValue(0), vy = v.DValue(1), vz = v.DValue(2);
+
+      T trace_sigma = 1.0/3 * (l1.DValue(0) * l2.DValue(0) + l1.DValue(1) * l2.DValue(1) + l1.DValue(2) * l2.DValue(2));
+
+      return Vec<3,T> (vx * l1.DValue(0) * l2.DValue(0) + vy * l1.DValue(0) * l2.DValue(1) + vz * l1.DValue(0) * l2.DValue(2) - vx * trace_sigma  ,
+		       vx * l1.DValue(1) * l2.DValue(0) + vy * l1.DValue(1) * l2.DValue(1) + vz * l1.DValue(1) * l2.DValue(2) - vy * trace_sigma,
+		       vx * l1.DValue(2) * l2.DValue(0) + vy * l1.DValue(2) * l2.DValue(1) + vz * l1.DValue(2) * l2.DValue(2) - vz * trace_sigma
+		     );
+    }
+
+    Vec<3,T> CurlShape()
+    {     
+      throw Exception("not implemented for T_dev_Dl1_o_Dl2_v");
+    }
+
+  };
 }
 
 

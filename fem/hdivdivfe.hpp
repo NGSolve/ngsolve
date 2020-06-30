@@ -533,7 +533,7 @@ namespace ngfem
                   hv(k) = SIMD<double>(1.0);
                   VecToSymMat<DIM> (hv, mat);
                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2*(jac * mat * Trans(jac));
-                  trans.Col(k) = physmat;
+                  trans.Col(k) = physmat.AsVector();
                 }
               
               
@@ -623,7 +623,7 @@ namespace ngfem
                                                         shapes(j*sqr(DIMSPACE)+k,i) = physmat(k);
                                                       */
                                                       Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
-                                                      transvec = trans * val.Shape();
+                                                      transvec = (trans * val.Shape()).AsVector();
                                                       for (size_t k = 0; k < sqr(DIMSPACE); k++)
                                                         shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
                                                     }));
@@ -717,7 +717,8 @@ namespace ngfem
                    auto d2 = sqr(mir[i].GetJacobiDet());
 
                    Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat{};
-                   physmat = values.Col(i);
+                   // physmat = values.Col(i);
+                   physmat.AsVector() = values.Col(i);                   
                    mat = 1/d2 * Trans(jac) * physmat * jac;
                  }
              });
@@ -2532,9 +2533,9 @@ namespace ngfem
 
 
       int oi = order_inner[0];
-      leg_u.SetSize(oi+1);
-      leg_v.SetSize(oi+1);
-      leg_w.SetSize(oi+1);
+      leg_u.SetSize(oi+2);
+      leg_v.SetSize(oi+2);
+      leg_w.SetSize(oi+2);
 
       LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[1],leg_u);
       LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[3],leg_v);
