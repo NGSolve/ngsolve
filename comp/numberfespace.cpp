@@ -67,7 +67,7 @@ namespace ngcomp
         sum += x(0,i);
       y(0) += HSum(sum);
     }
-
+    
   };
 
 
