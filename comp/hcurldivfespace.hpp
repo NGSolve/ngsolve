@@ -22,7 +22,7 @@ namespace ngcomp
 
     Array<bool> fine_facet;
 
-    bool hiddeneldofs;
+    //bool hiddeneldofs;
     bool alllocaldofs;
     bool discontinuous;
 
