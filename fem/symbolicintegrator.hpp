@@ -940,7 +940,7 @@ public:
                                      LocalHeap & lh) const;
 
     void AddLinearizedElementMatrix (const FiniteElement & fel,
-                                     ProxyUserData & ud, 
+                                     const ElementTransformation & trafo, 
                                      const SIMD_BaseMappedIntegrationRule & mir, 
                                      FlatVector<double> elveclin,
                                      FlatMatrix<double> elmat,

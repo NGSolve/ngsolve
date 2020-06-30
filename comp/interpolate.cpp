@@ -41,8 +41,8 @@ namespace ngcomp
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
     {
-      static Timer t(string("FECF - T_Evaluate")+typeid(T).name());
-      RegionTracer reg(TaskManager::GetThreadId(), t);
+      // static Timer t(string("FECF - T_Evaluate")+typeid(T).name());
+      // RegionTracer reg(TaskManager::GetThreadId(), t);
       
       LocalHeapMem<10000> lh("fecoef::eval");
       auto tid = TaskManager::GetThreadId();
