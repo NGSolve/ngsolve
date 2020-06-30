@@ -164,11 +164,11 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     if (not func) and (mesh.GetCurveOrder()==1):
         order=1
     order2d = min(order, 3)
-    order3d = 1 #min(order, 2) # just for testing
+    order3d = min(order, 2)
     d['order2d'] = order2d
     d['order3d'] = order3d
 
-    d['draw_vol'] = func and mesh.dim==3 and draw_vol
+    d['draw_vol'] = func and mesh.dim==3 and draw_vol and mesh.ne>0
     d['draw_surf'] = func and draw_surf
 
     if isinstance(deformation, bool):
@@ -328,8 +328,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
             pmat = pmat.reshape(-1, len(ir_trig), 2)
 
-            funcmin = np.min(pmat, initial=funcmin)
-            funcmax = np.max(pmat, initial=funcmax)
+            funcmin = min(funcmin, np.min(pmat))
+            funcmax = max(funcmax, np.max(pmat))
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
@@ -349,7 +349,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
     timer4.Start()
 
-    if mesh.dim==3 and draw_vol:
+    if d['draw_vol']:
         p0 = []
         p1 = []
         p2 = []
@@ -374,6 +374,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             #              [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
             #              [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
             #              [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
             
             
         else:
@@ -390,23 +391,23 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
                 (0.5,0,0.5),
                 (0,0.5,0.5) ],
                 [0]*10 )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet}, ngs.VOL)
 
-        pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
-        pmat = func1(pts) if draw_vol else func0(pts)
+        pmat = func1(pts)
 
         ne = mesh.GetNE(ngs.VOL)
         pmat = pmat.reshape(-1, len(ir_tet), 4)
         
-        funcmin = np.min(pmat[:,:,3], initial=funcmin)
-        funcmax = np.max(pmat[:,:,3], initial=funcmax)
+        funcmin = min(funcmin, np.min(pmat[:,:,3]))
+        funcmax = max(funcmax, np.max(pmat[:,:,3]))
         points3d = []
         for i in range(len(ir_tet)):
             points3d.append(encodeData(pmat[:,i,:]))
 
-        if func2 and draw_vol:
+        if func2:
             pmat = func2(pts).reshape(-1, len(ir_tet)//2, 4)
-            funcmin = np.min(pmat, initial=funcmin)
-            funcmax = np.max(pmat, initial=funcmax)
+            funcmin = min(funcmin, np.min(pmat))
+            funcmax = max(funcmax, np.max(pmat))
             for i in range(len(ir_tet)//2):
                 points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d

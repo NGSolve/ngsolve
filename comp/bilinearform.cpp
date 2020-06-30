@@ -1119,14 +1119,14 @@ namespace ngcomp
                               }
                             catch (Exception & e)
                               {
-                                e.Append (string("in Assemble Element Matrix, bfi = ") + 
+                                e.Append (string(" in Assemble Element Matrix, bfi = ") + 
                                           bfi.Name() + string("\n"));
                                 throw;
                               }
                             catch (exception & e)
                               {
                                 throw (Exception (string(e.what()) +
-                                                  string("in Assemble Element Matrix, bfi = ") + 
+                                                  string(" in Assemble Element Matrix, bfi = ") + 
                                                   bfi.Name() + string("\n")));
                               }
                             

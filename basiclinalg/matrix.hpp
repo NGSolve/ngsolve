@@ -218,6 +218,11 @@ namespace ngbla
     {
       return FlatVector<T> (h*w, data);
     }
+
+    auto Reshape(size_t h2, size_t w2)
+    {
+      return FlatMatrix{h2,w2,data};
+    }
   };
 
 
@@ -672,6 +677,16 @@ namespace ngbla
     INLINE const FixSliceVector<W,const T> Col (size_t i) const
     {
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
+    }
+
+    auto AsVector() 
+    {
+      return FlatVec<H*W,T> (data.Ptr());
+    }
+
+    auto AsVector() const
+    {
+      return FlatVec<H*W,const T> (data.Ptr());
     }
 
     void DoArchive(Archive& ar)

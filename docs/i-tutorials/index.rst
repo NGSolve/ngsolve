@@ -20,6 +20,9 @@ Copyright: The i-tutorials are a part of NGSolve and are covered by the
 LGPL open source license. You may extend and modify them for your use,
 but you have to refer to the original source.
 
+We acknowledge support from the `TU Wien <https://www.tuwien.at>`_ and by the Austrian Science Foundation `FWF <https://www.fwf.ac.at/>`_ within project grant `SFB65 Taming Complexity in Partial Differential Systems <https://www.univie.ac.at/sfb65/>`_.
+
+
 Installation
 ~~~~~~~~~~~~
 
@@ -148,3 +151,15 @@ Whetting the Appetite
    unit-5.3-fetidp_point3d/feti-dp-ii.ipynb
    unit-5.4-fetidp_edge/feti-dp-iii.ipynb
    unit-5.5-fetidp_inexact/feti-dp-iv.ipynb
+
+   
+6. Various Topics
+=========================
+
+.. toctree::
+    :maxdepth: 1
+ 
+    unit-6.1.1-surfacemeshes/surface_meshes.ipynb
+    unit-6.1.2-surfacepde/surface_pdes.ipynb
+    unit-6.1.3-rmplate/Reissner_Mindlin_plate.ipynb
+    unit-6.1.4-shells/shell.ipynb
