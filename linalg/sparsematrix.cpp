@@ -1320,7 +1320,7 @@ namespace ngla
                  {
                    auto rowvals = trans->GetRowValues(r);
                    BubbleSort (trans->GetRowIndices(r),
-                               FlatArray<double> (rowvals.Size(), &rowvals(0)));
+                               FlatArray<double> (rowvals.Size(), rowvals.Data()));
                  });
 
     t2.Stop();
