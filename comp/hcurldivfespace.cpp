@@ -608,7 +608,7 @@ namespace ngcomp
 	  
 	  if(order_trace[e.Nr()]>-1)
 	    {	      
-	      ctofdof[innerdofs[1]] = INTERFACE_DOF;
+	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
 	      offset += 1;
 	      diag_offset += 2 * ot + ot*ot + 1;
 	      for (int dof = offset; dof < diag_offset; dof++)
@@ -618,7 +618,7 @@ namespace ngcomp
 
 	  ctofdof[innerdofs[offset]] = INTERFACE_DOF;
 	  ctofdof[innerdofs[offset+1]] = INTERFACE_DOF;
-	  offset + 2;
+	  offset += 2;
 	  
 	  for (int dof = offset; dof < innerdofs.Size(); dof++)
 	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
@@ -668,8 +668,7 @@ namespace ngcomp
 	  offset = diag_offset;
 	  //diagonal dofs 
 	  if(ot>-1)
-	    {
-	      
+	    {	      
 	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
 	      offset += 1;
 	      diag_offset = offset + (ot+1)*(ot+1)*(ot+1);
