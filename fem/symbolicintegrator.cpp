@@ -4224,16 +4224,15 @@ namespace ngfem
       {
         try
           {
+            elmat = 0;
             if (element_vb == VOL)
               {
                 const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);
                 auto & mir = trafo(ir, lh);
-                elmat = 0;
                 AddLinearizedElementMatrix (fel, trafo, mir, elveclin, elmat, lh);
               }
             else
               {
-                elmat = 0;
                 auto eltype = trafo.GetElementType();
         
                 Facet2ElementTrafo transform(eltype, element_vb); 
@@ -4581,19 +4580,22 @@ namespace ngfem
 
                   IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
                   IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
-                  SliceMatrix<> part_elmat = elmat.Rows(r2).Cols(r1);
 
                   FlatMatrix<SIMD<double>> bmat1(elmat.Width()*dim_proxy1, mir.Size(), lh);
                   FlatMatrix<SIMD<double>> dbmat1(elmat.Width()*dim_proxy2, mir.Size(), lh);
                   FlatMatrix<SIMD<double>> bmat2(elmat.Height()*dim_proxy2, mir.Size(), lh);
 
+                  auto hbmat1 =  bmat1. Reshape(elmat.Width(), dim_proxy1*mir.Size());
+                  auto hdbmat1 = bdmat1.Reshape(elmat.Width(), dim_proxy2*mir.Size());
+                  auto hbmat2 =  bmat2. Reshape(elmat.Height(), dim_proxy2*mir.Size());
+                  /*
+                  FlatMatrix<SIMD<double>> hbmat1(elmat.Width(), dim_proxy1*mir.Size(), &bmat1(0,0));                  
                   FlatMatrix<SIMD<double>> hdbmat1(elmat.Width(), dim_proxy2*mir.Size(), &dbmat1(0,0));
                   FlatMatrix<SIMD<double>> hbmat2(elmat.Height(), dim_proxy2*mir.Size(), &bmat2(0,0));
-
+                  */
                   {
                     ThreadRegionTimer reg(tbmat, tid);
                     proxy1->Evaluator()->CalcMatrix(fel, mir, bmat1);
-                    proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
                   }
 
                   hdbmat1.Rows(r1) = 0.0; 
@@ -4608,10 +4610,17 @@ namespace ngfem
                         }
 
                   {
-                  ThreadRegionTimer reg(tmult, tid);                  
-                  AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part_elmat);
-                  if (k1 > l1)
-                    AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
+                    ThreadRegionTimer reg(tmult, tid);
+                    if (k1 == l1)
+                      {
+                        elmat.Rows(r1).Cols(r1) += hbmat1.Rows(r1) * Trans(hdbmat1.Rows(r1));
+                      }
+                    else
+                      {
+                        proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
+                        AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1)));
+                        AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
+                      }
                     // elmat.Rows(r1).Cols(r2) = Trans(part_elmat); // buggy if both evaluators act on same element
                   }
                 }

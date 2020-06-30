@@ -218,6 +218,11 @@ namespace ngbla
     {
       return FlatVector<T> (h*w, data);
     }
+
+    auto Reshape(size_t h2, size_t w2)
+    {
+      return FlatMatrix{h2,w2,data};
+    }
   };
 
 
