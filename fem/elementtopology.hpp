@@ -41,13 +41,14 @@ namespace ngfem
      edge nodes are 1 dimensional
      face nodes are 2 dimensional
      cell nodes are 3 dimensional
+     global nodes are shared by all procs and have no attached dimension
 
      2D elements have vertex, edge, and face nodes
 
      3D elements have vertex, edge, face and cell nodes
   */
 
-  enum NODE_TYPE { NT_VERTEX = 0, NT_EDGE = 1, NT_FACE = 2, NT_CELL = 3, NT_ELEMENT = 4, NT_FACET = 5 };
+  enum NODE_TYPE { NT_VERTEX = 0, NT_EDGE = 1, NT_FACE = 2, NT_CELL = 3, NT_ELEMENT = 4, NT_FACET = 5, NT_GLOBAL =  6 };
 
   INLINE NODE_TYPE StdNodeType (NODE_TYPE nt, int meshdim)
   {
