@@ -4586,7 +4586,7 @@ namespace ngfem
                   FlatMatrix<SIMD<double>> bmat2(elmat.Height()*dim_proxy2, mir.Size(), lh);
 
                   auto hbmat1 =  bmat1. Reshape(elmat.Width(), dim_proxy1*mir.Size());
-                  auto hdbmat1 = bdmat1.Reshape(elmat.Width(), dim_proxy2*mir.Size());
+                  auto hdbmat1 = dbmat1.Reshape(elmat.Width(), dim_proxy2*mir.Size());
                   auto hbmat2 =  bmat2. Reshape(elmat.Height(), dim_proxy2*mir.Size());
                   /*
                   FlatMatrix<SIMD<double>> hbmat1(elmat.Width(), dim_proxy1*mir.Size(), &bmat1(0,0));                  
@@ -4613,12 +4613,12 @@ namespace ngfem
                     ThreadRegionTimer reg(tmult, tid);
                     if (k1 == l1)
                       {
-                        elmat.Rows(r1).Cols(r1) += hbmat1.Rows(r1) * Trans(hdbmat1.Rows(r1));
+                        AddABt (hbmat1.Rows(r1), hdbmat1.Rows(r1), elmat.Rows(r1).Cols(r1));
                       }
                     else
                       {
                         proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
-                        AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1)));
+                        AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
                         AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
                       }
                     // elmat.Rows(r1).Cols(r2) = Trans(part_elmat); // buggy if both evaluators act on same element
