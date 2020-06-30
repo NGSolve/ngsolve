@@ -23,6 +23,8 @@ namespace ngcomp
     
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     
+    virtual void GetGlobalDofNrs (int gnr, Array<int> & dnums) const override;
+    
   };
 
 }
