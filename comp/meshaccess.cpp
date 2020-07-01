@@ -909,6 +909,7 @@ namespace ngcomp
           }
         nnodes[NT_ELEMENT] = 0;
         nnodes[NT_FACET] = 0;
+        nnodes[NT_GLOBAL] = ( (GetCommunicator().Size() > 1) && (GetCommunicator().Rank() == 0) ? 0 : 1 );
         dim = -1;
         return;
       }
@@ -933,6 +934,7 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
+        nnodes[NT_GLOBAL] = 0;
       }
     else
       {
@@ -951,6 +953,7 @@ namespace ngcomp
 	    nnodes_cd[i] = nnodes[dim-i];
 	    nelements_cd[i] = nelements[dim-i];
 	  }
+        nnodes[NT_GLOBAL] = 1;
       }
     nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
     nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
@@ -2213,16 +2216,40 @@ namespace ngcomp
  
   size_t MeshAccess ::GetGlobalNodeNum (NodeId node) const
   {
+    /** There is only one global node **/
+    if (node.GetType() == NT_GLOBAL)
+      { return 0; }
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
   }
   
   void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
-    auto tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
-    procs.SetSize(get<0>(tup));
-    auto* ptr = get<1>(tup);
-    for(auto k:Range(procs.Size())) procs[k] = ptr[k];
+    if (GetCommunicator().Size() > 1) {
+      if (node.GetType() == NT_GLOBAL) {
+	/** The global node is shared by everyone except rank 0 **/
+	if (GetCommunicator().Rank() == 0) {
+	  procs.SetSize0();
+	  return;
+	}
+	else {
+	  procs.SetSize(GetCommunicator().Size()-2);
+	  for (int k = 1; k < GetCommunicator().Rank(); k++)
+	    { procs[k-1] = k; }
+	  for (int k = GetCommunicator().Rank() + 1; k < GetCommunicator().Size(); k++)
+	    { procs[k-2] = k; }
+	}
+      }
+      else { // node.GetType() == NT_GLOBAL
+	auto tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
+	procs.SetSize(get<0>(tup));
+	auto* ptr = get<1>(tup);
+	for(auto k : Range(procs.Size()))
+	  { procs[k] = ptr[k]; }
+      }
+    }
+    else // GetCommunicator().Size() > 1
+      { procs.SetSize0(); }
   }
 
 
