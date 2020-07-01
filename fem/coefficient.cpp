@@ -7118,7 +7118,6 @@ public:
     : T_CoefficientFunction<CacheCoefficientFunction>(f->Dimension(), f->IsComplex()),
     func(f)
   {
-    cout << "Create CachCF" << endl;
     this->SetDimensions (func->Dimensions());
     this->elementwise_constant = func->ElementwiseConstant();
   }
@@ -7241,8 +7240,6 @@ Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
             cachecf.Append (&nodecf);
           }
       });
-  if (cachecf.Size())
-    cout << "found " << cachecf.Size() << " cachecfs" << endl;
   return cachecf;
 }
 
@@ -7330,8 +7327,6 @@ void PrecomputeCacheCF (CoefficientFunction & func, SIMD_BaseMappedIntegrationRu
           }
       });
 
-  if (cachecf.Size())
-    cout << "found " << cachecf.Size() << " cachecfs" << endl;
   auto & trafo = mir.GetTransformation();
   ProxyUserData & ud = *static_cast<ProxyUserData*> (trafo.userdata);
 
