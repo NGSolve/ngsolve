@@ -183,8 +183,8 @@ namespace ngfem
                                                  shape[ii++] = wuDv_minus_wvDu (l1, l2, val);
                                                }));
 
-            LegendrePolynomial::EvalMult 
-              (pd-2, lam[2]-lam[1], lam[2], 
+            LegendrePolynomial::EvalScaledMult 
+              (pd-2, l2-l1, l1+l2, l2, 
                SBLambda([shape,l0,l1,&ii] (int j, Tx val)
                         {
                           shape[ii++] = wuDv_minus_wvDu (l1, l0, val);
