@@ -199,8 +199,8 @@ namespace ngcomp
     /// dimension of the domain. Set to -1 if no mesh is present
     int dim;
   
-    /// number of vertex, edge, face, and cell nodes
-    size_t nnodes[6];
+    /// number of vertex, edge, face, cell and global nodes
+    size_t nnodes[7];
 
     // number of nodes of co-dimension i 
     // these are NC, NF, NE, NV  in 3D,
