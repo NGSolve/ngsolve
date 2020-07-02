@@ -462,7 +462,7 @@ namespace ngcomp
 
   shared_ptr<Table<int>> NedelecFESpace :: CreateSmoothingBlocks (int type) const
   {
-    cout << "NedelecFESpace::CreateSmoothingBlocks" << endl;
+    cout << IM(3) << "NedelecFESpace::CreateSmoothingBlocks" << endl;
 
     int nd = GetNDof();
     int nv = ma->GetNV();
@@ -474,7 +474,7 @@ namespace ngcomp
       {
       case SB_AFW:
 	{
-	  cout << " ******** Low-order H(Curl) Smoother: AFW" << endl; 
+	  cout << IM(3) << " ******** Low-order H(Curl) Smoother: AFW" << endl;
 	  Array<int> cnts(nv);
 	  for (int k = 1; k <= 2; k++)
 	    {
