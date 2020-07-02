@@ -138,7 +138,8 @@ namespace ngfem
 		double lam = mat_lam(l,0);
               
 		Mat<D> inv_jac = mip.GetJacobianInverse();
-		double det = mip.GetMeasure();
+		//double det = mip.GetMeasure();
+                double det = fabs(mip.GetJacobiDet());
 
 
 		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
@@ -652,8 +653,8 @@ namespace ngfem
 		double lam = mat_lam(l,0);
               
 		Mat<D> inv_jac = mip.GetJacobianInverse();
-		double det = mip.GetMeasure();
-
+		// double det = mip.GetMeasure();
+                double det = fabs(mip.GetJacobiDet());
 
 		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
 		double len = L2Norm (normal);
@@ -818,8 +819,9 @@ namespace ngfem
 		double lam = coef_lam->Evaluate(mip);
               
 		Mat<D> inv_jac = mip.GetJacobianInverse();
-		double det = mip.GetMeasure();
-
+		// double det = mip.GetMeasure();
+                double det = fabs(mip.GetJacobiDet());
+                
 		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
 		double len = L2Norm (normal);
 		normal /= len;
@@ -1026,8 +1028,9 @@ namespace ngfem
 		double lam = mat_lam(l,0); // coef_lam->Evaluate(mip);
               
 		Mat<D> inv_jac = mip.GetJacobianInverse();
-		double det = mip.GetMeasure();
-
+		// double det = mip.GetMeasure();
+                double det = fabs(mip.GetJacobiDet());
+                
 		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
 		double len = L2Norm (normal);
 		normal /= len;
@@ -1224,8 +1227,9 @@ namespace ngfem
 		  double lam = coef_lam->Evaluate(mip);
               
 		  Mat<D> inv_jac = mip.GetJacobianInverse();
-		  double det = mip.GetMeasure();
-
+		  // double det = mip.GetMeasure();
+                  double det = fabs(mip.GetJacobiDet());
+                  
 		  Vec<D> normal = det * Trans (inv_jac) * normals(k);
 		  double len = L2Norm (normal);
 		  normal /= len;
@@ -1443,8 +1447,9 @@ namespace ngfem
 		  double lam = coef_lam->Evaluate(mip);
               
 		  Mat<D> inv_jac = mip.GetJacobianInverse();
-		  double det = mip.GetMeasure();
-
+		  // double det = mip.GetMeasure();
+                  double det = fabs(mip.GetJacobiDet());
+                  
 		  Vec<D> normal = det * Trans (inv_jac) * normals(k);
 		  double len = L2Norm (normal);
 		  normal /= len;
@@ -1663,8 +1668,9 @@ namespace ngfem
 		      double lam = coef_lam->Evaluate(mip);
 		      
 		      Mat<D> inv_jac = mip.GetJacobianInverse();
-		      double det = mip.GetMeasure();
-		      
+		      // double det = mip.GetMeasure();
+                      double det = fabs(mip.GetJacobiDet());
+                      
 		      normal = det * Trans (inv_jac) * normals(k);
 		      double len = L2Norm (normal);
 		      normal /= len;
