@@ -478,6 +478,10 @@ namespace ngfem
       new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL> (ir[i], eltrans, -1);
 
     eltrans.CalcMultiPointJacobian (ir, *this);
+
+    if (ir.Size())
+      if (ir[0].VB() != VOL)
+        ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
   }
 
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
