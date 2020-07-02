@@ -22,20 +22,10 @@ class CGSolver(BaseMatrix):
         self.maxsteps = maxsteps
         self.callback = callback
         self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
-        self.logger = logging.getLogger("CGSolver")
 
         self.printing = printing
-        if printing:
-            self.handler = handler = logging.StreamHandler()
-            self.logger.addHandler(handler)
-            self.logger.setLevel(logging.INFO)
-
         self.errors = []
         self.iterations = 0
-
-    def __del__(self):
-        if self.printing:
-            self.logger.removeHandler(self.handler)
 
     def Height(self) -> int:
         return self.mat.width
@@ -99,13 +89,15 @@ class CGSolver(BaseMatrix):
 
             err = sqrt(abs(wd))
             self.errors.append(err)
-            self.logger.info("iteration " + str(it) + " error = " + str(err))
+            if self.printing:
+                print("iteration " + str(it) + " error = " + str(err))
             if callback is not None:
                 callback(it,err)
             _SetThreadPercentage(100.*max(it/maxsteps, (log(err)-lwstart)/(logerrstop - lwstart)))
             if err < errstop: break
         else:
-            self.logger.warning("CG did not converge to tol")
+            if self.printing:
+                print("CG did not converge to tol")
         if old_status[0] != "idle":
             _PushStatus(old_status[0])
             _SetThreadPercentage(old_status[1])
@@ -155,14 +147,8 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
 
     """
     solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxsteps=maxsteps,
-                      callback=callback)
-    if printrates:
-        handler = logging.StreamHandler()
-        solver.logger.addHandler(handler)
-        solver.logger.setLevel(logging.INFO)
+                      callback=callback, printing=printrates)
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
-    if printrates:
-        solver.logger.removeHandler(handler)
     return solver.sol
 
 
@@ -560,8 +546,8 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
     return u   
 
 
-def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = 1e-7, innerproduct=None,
-          callback=None, restart=None, startiteration=0, printrates=True):
+def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
+          callback=None, restart=None, startiteration=0, printrates=True, reltol=None):
     """ Restarting preconditioned gmres solver for A*x=b. Minimizes the preconditioned
 residuum pre*(b-A*x)
 
@@ -644,6 +630,11 @@ printrates : bool = True
     H = []
     Q.append(b.CreateVector())
     r_norm = norm(r)
+    if reltol is not None:
+        rtol = reltol * abs(r_norm)
+        tol = rtol if tol is None else max(rtol, tol)
+    if tol is None:
+        tol = 1e-7
     if abs(r_norm) < tol:
         return x
     Q[0].data = 1./r_norm * r
