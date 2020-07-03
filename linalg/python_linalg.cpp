@@ -502,64 +502,51 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                             "number of blocks in BlockVector")
     ;
 
-  py::class_<MultiVectorExpr<double>, shared_ptr<MultiVectorExpr<double>>> (m, "MultiVectorExpr");
-  py::class_<MultiVectorExpr<Complex>, shared_ptr<MultiVectorExpr<Complex>>> (m, "ComplexMultiVectorExpr");
+  py::class_<MultiVectorExpr, shared_ptr<MultiVectorExpr> >(m, "MultiVectorExpr");
 
   // TODO: default value for complex
-  // TODO: HOW TO MAKE THAT BETTER??
-  py::class_<MultiVector<double>, shared_ptr<MultiVector<double>>> (m, "MultiVector")
+  py::class_<MultiVector, shared_ptr<MultiVector>> (m, "MultiVector")
     .def(py::init<shared_ptr<BaseVector>,size_t>())
     .def(py::init<size_t,size_t,bool>())
-    .def("__len__", &MultiVector<double>::Size)
-    .def("__getitem__", &MultiVector<double>::operator[])
-    .def("__setitem__", [](MultiVector<double> & x, int nr, DynamicVectorExpression & expr)
-         {
-           expr.AssignTo (1, *x[nr]);
-         })
-    .def("__setitem__", [](MultiVector<double> & x, int nr, double val)
-         {
-           *x[nr] = val;
-         })
-    // .def("__setitem__", [](MultiVector & x, int nr, Complex val)
-    //      {
-    //        *x[nr] = val;
-    //      })
+    .def("__len__", &MultiVector::Size)
+    .def("__getitem__", &MultiVector::operator[])
+    .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
+        {
+          if( !x.IsComplex() )
+              expr.AssignTo (1, *x[nr]);
+          else
+              expr.AssignTo (Complex(1), *x[nr]);
+        })
+    .def("__setitem__", [](MultiVector & x, int nr, double val)
+        {
+          *x[nr] = val;
+        })
+    .def("__setitem__", [](MultiVector & x, int nr, Complex val)
+        {
+          *x[nr] = val;
+        })
     .def_property("data",
-                  [](shared_ptr<MultiVector<double>> self)
+                  [](shared_ptr<MultiVector> self)
                   { return self; },
-                  [](shared_ptr<MultiVector<double>> self, const MultiVectorExpr<double> & v2)
-                  { v2.AssignTo(1, *self); })
-    .def("Expand", &MultiVector<double>::Expand)
-    .def("Append", &MultiVector<double>::Append)
-    .def("InnerProduct", [](MultiVector<double> & x, MultiVector<double> & y)
-         { return InnerProduct(x,y);})
-    .def("__mul__", [](shared_ptr<MultiVector<double>> x, Vector<double> a) 
+                  [](shared_ptr<MultiVector> self, const MultiVectorExpr & v2)
+                  { 
+                    if( !self->IsComplex() )
+                        v2.AssignTo(1, *self);
+                    else
+                        v2.AssignTo(Complex(1), *self); 
+                  })
+    .def("Expand", &MultiVector::Expand)
+    .def("Append", &MultiVector::Append)
+    .def("InnerProduct", [](MultiVector & x, MultiVector & y)
+        { 
+          if( !x.IsComplex() )
+              return py::cast(InnerProduct<double>(x,y));
+          else
+              return py::cast(InnerProduct<Complex>(x,y));
+        })
+    .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { return DynamicVectorExpression(make_shared<MultiVecAxpyExpr>(a, x)); })
-  ;
-
-  py::class_<MultiVector<Complex>, shared_ptr<MultiVector<Complex>>> (m, "CMultiVector")
-    .def(py::init<shared_ptr<BaseVector>,size_t>())
-    .def(py::init<size_t,size_t,bool>())
-    .def("__len__", &MultiVector<Complex>::Size)
-    .def("__getitem__", &MultiVector<Complex>::operator[])
-    .def("__setitem__", [](MultiVector<Complex> & x, int nr, DynamicVectorExpression & expr)
-         {
-           expr.AssignTo (1, *x[nr]);
-         })
-    .def("__setitem__", [](MultiVector<Complex> & x, int nr, Complex val)
-         {
-           *x[nr] = val;
-         })
-    .def_property("data",
-                  [](shared_ptr<MultiVector<Complex>> self)
-                  { return self; },
-                  [](shared_ptr<MultiVector<Complex>> self, const MultiVectorExpr<Complex> & v2)
-                  { v2.AssignTo(1, *self); })
-    .def("Expand", &MultiVector<Complex>::Expand)
-    .def("Append", &MultiVector<Complex>::Append)
-    .def("InnerProduct", [](MultiVector<Complex> & x, MultiVector<Complex> & y)
-         { return InnerProduct(x,y);})
-    .def("__mul__", [](shared_ptr<MultiVector<Complex>> x, Vector<Complex> a) 
+    .def("__mul__", [](shared_ptr<MultiVector> x, Vector<Complex> a) 
          { return DynamicVectorExpression(make_shared<MultiVecAxpyExpr>(a, x)); })
   ;
     /*
@@ -831,15 +818,10 @@ inverse : string
     .def("__mul__", [](shared_ptr<BaseMatrix> m, shared_ptr<BaseVector> v)
          { return DynamicVectorExpression(make_shared<DynamicMatVecExpression>(m,v)); })
     // TODO: solve complex problem
-    .def("__mul__", [](shared_ptr<BaseMatrix> mat, shared_ptr<MultiVector<double>> x)
-         -> shared_ptr<MultiVectorExpr<double>>
+    .def("__mul__", [](shared_ptr<BaseMatrix> mat, shared_ptr<MultiVector> x)
+         -> shared_ptr<MultiVectorExpr>
          {
-           return make_shared<MatMultiVecExpr<double>> (mat, x); 
-         })
-    .def("__mul__", [](shared_ptr<BaseMatrix> mat, shared_ptr<MultiVector<Complex>> x)
-         -> shared_ptr<MultiVectorExpr<Complex>>
-         {
-           return make_shared<MatMultiVecExpr<Complex>> (mat, x); 
+           return make_shared<MatMultiVecExpr> (mat, x); 
          })
              
     
