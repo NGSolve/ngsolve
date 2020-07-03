@@ -58,27 +58,39 @@ namespace ngla {
   // }
 
 
-// template <class T>
-// void Axpy (const Vector<T> & a, const MultiVector<T>  & x, BaseVector & y)
-// {
-//   for (auto i : Range(a))
-//     y += a(i) * *x[i];
-// }
+  template <class T>
+  void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y)
+  {
+    for (auto i : Range(a))
+      y += a(i) * *x[i];
+  }
 
-// Matrix<Complex> InnerProduct (const MultiVector<Complex>  & x, const MultiVector<Complex>  & y)
-// {
-//   Matrix<T> res(x.Size(), y.Size());
-//   for (auto i : Range(x.Size()))
-//     for (auto j : Range(y.Size()))
-//       res(i,j) = InnerProduct(*x[i], *y[j]);
-//   return res;
-// }
+  template void Axpy (const Vector<double> & a, const MultiVector  & x, BaseVector & y);
+  template void Axpy (const Vector<Complex> & a, const MultiVector  & x, BaseVector & y);
 
-// template <class T>
-// void MultAdd (const BaseMatrix & mat, T s, const MultiVector<T>  & x, MultiVector<T>  & y)
-// {
-//   for (auto i : Range(x.Size()))
-//     mat.MultAdd (s, *x[i], *y[i]);
-// }
+
+  template <class T>
+  void MultAdd (const class BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y)
+  {
+    // TODO:  exception
+    for (auto i : Range(x.Size()))
+      mat.MultAdd (s, *x[i], *y[i]);
+  }
+
+  template void MultAdd (const class BaseMatrix & mat, double s, const MultiVector & x, MultiVector & y);
+  template void MultAdd (const class BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
+
+  template <class T>
+  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y) {
+    Matrix<T> res(x.Size(), y.Size());
+    for (auto i : Range(x.Size()))
+      for (auto j : Range(y.Size()))
+        res(i,j) = S_InnerProduct<T>(*x[i], *y[j]);
+    return res;
+  }
+
+  template Matrix<Complex> InnerProduct<Complex> (const MultiVector & x, const MultiVector & y);
+  template Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y);
+
 
 }

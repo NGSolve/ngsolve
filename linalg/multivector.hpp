@@ -9,24 +9,30 @@
 
 namespace ngla {
 
-  // TODO: find out how to spread templates over more files
+  /* TODO: 
+   * (+) Gram-Schmidt
+   * (+) default arguments 
+   *
+  */
 
-  template <class T>
   class MultiVector;  
 
-  template <class T>
+  // overwritten because virtual template functions are not allowed
+  // alternative: template class, but this is problematic in python_linalg.cpp
   class MultiVectorExpr
   {
   public:
     virtual ~MultiVectorExpr() { ; }
-    virtual void AssignTo (T s, class MultiVector<T> & v) const = 0;
-    virtual void AddTo (T s, class MultiVector<T> & v) const = 0;
+    virtual void AssignTo (double s, class MultiVector & v) const = 0;
+    virtual void AddTo (double s, class MultiVector & v) const = 0;
+    virtual void AssignTo (Complex s, class MultiVector & v) const = 0;
+    virtual void AddTo (Complex s, class MultiVector & v) const = 0;
   };
   
-  template <class T>
   class MultiVector
   {
     shared_ptr<BaseVector> refvec;
+    // TODO: maybe as matrix instead of array of ptr?
     Array<shared_ptr<BaseVector>> vecs;
     bool complex;
   public:
@@ -45,6 +51,7 @@ namespace ngla {
 
     size_t Size() const { return vecs.Size(); }
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
+
     void Expand (size_t nr = 1) {
       for ([[maybe_unused]] auto i : Range(nr))
         vecs.Append (refvec->CreateVector());
@@ -55,73 +62,87 @@ namespace ngla {
       *vecs.Last() = *v;
     }
 
+
+    template <class T>
     void operator= (const T v)
     {
       Complex tmp;
+
       for (auto vec : vecs) {
         if (complex) *vec = Complex(v);
         else if (typeid(v).name()!= typeid(tmp).name()) *vec = v;
       }
-        // TODO: what if attempt of ill usage?
+        // TODO: what if attempt of ill usage? -> exception
     }
-    void operator= (const MultiVectorExpr<T> & expr) { 
-      expr.AssignTo(T(1), *this); 
+    void operator= (const MultiVectorExpr & expr) { 
+      if (complex) 
+        expr.AssignTo(Complex(1), *this); 
+      else
+        expr.AssignTo(1, *this); 
+      
     }
-    void operator+= (const MultiVectorExpr<T> & expr){ 
-      expr.AddTo(T(1), *this); 
-      }
-    void operator-= (const MultiVectorExpr<T> & expr){ 
-      expr.AddTo(T(-1), *this); 
+    void operator+= (const MultiVectorExpr & expr){ 
+      if (complex) 
+        expr.AddTo(Complex(1), *this); 
+      else
+        expr.AddTo(1, *this); 
+    }
+
+    void operator-= (const MultiVectorExpr & expr){ 
+      if (complex) 
+        expr.AddTo(Complex(-1), *this); 
+      else
+        expr.AddTo(-1, *this); 
     }
   };
   
+
   template <class T>
-  void MultAdd (const class BaseMatrix & mat, T s, const MultiVector<T> & x, MultiVector<T> & y)
-  {
-    for (auto i : Range(x.Size()))
-      mat.MultAdd (s, *x[i], *y[i]);
-  }
+  void MultAdd (const class BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y);
   
-  template <class T>
-  class MatMultiVecExpr : public MultiVectorExpr<T>
+  class MatMultiVecExpr : public MultiVectorExpr
   {
     shared_ptr<BaseMatrix> mat;
-    shared_ptr<MultiVector<T>> vec;
+    shared_ptr<MultiVector> vec;
   public:
-    MatMultiVecExpr (shared_ptr<BaseMatrix> amat, shared_ptr<MultiVector<T>> avec)
+    MatMultiVecExpr (shared_ptr<BaseMatrix> amat, shared_ptr<MultiVector> avec)
       : mat(amat), vec(avec) { ; }
-    void AssignTo (T s, MultiVector<T> & res) const override
+
+    void AssignTo (double s, MultiVector & res) const override
     {
       res = 0.0;
       MultAdd (*mat, s, *vec, res);
     }
-    void AddTo (T s, MultiVector<T> & res) const override
+
+    void AddTo (double s, MultiVector & res) const override
+    { MultAdd (*mat, s, *vec, res); }
+
+    void AssignTo (Complex s, MultiVector & res) const override
+    {
+      res = 0.0;
+      MultAdd (*mat, s, *vec, res);
+    }
+
+    void AddTo (Complex s, MultiVector & res) const override
     { MultAdd (*mat, s, *vec, res); }
   };
 
   
   // y += sum a(i) * x[i]
   template <class T>
-  void Axpy (const Vector<T> & a, const MultiVector<T>  & x, BaseVector & y)
-  {
-    for (auto i : Range(a))
-      y += a(i) * *x[i];
-  }
+  void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y);
 
-  // no template because of overwritten functions of DynamicBaseExpression,
-  // TODO: do that better
+
+  // template <class T>
   class MultiVecAxpyExpr : public DynamicBaseExpression
   {
     Vector<double> a;
     Vector<Complex> ac;
-
-    shared_ptr<MultiVector<double>> x;
-    shared_ptr<MultiVector<Complex>> xc;
-
+    shared_ptr<MultiVector> x;
 
   public:
-    MultiVecAxpyExpr (Vector<double> aa, shared_ptr<MultiVector<double>> ax) : a(aa), x(ax) { ; }
-    MultiVecAxpyExpr (Vector<Complex> aa, shared_ptr<MultiVector<Complex>> ax) : ac(aa), xc(ax) { ; }
+    MultiVecAxpyExpr (Vector<double> aa, shared_ptr<MultiVector> ax) : a(aa), x(ax) { ; }
+    MultiVecAxpyExpr (Vector<Complex> aa, shared_ptr<MultiVector> ax) : ac(aa), x(ax) { ; }
 
 
     void AssignTo (double s, BaseVector & v) const override
@@ -143,21 +164,12 @@ namespace ngla {
     void AddTo (Complex s, BaseVector & v) const override
     {
       Vector<Complex> sa = s*ac;
-      Axpy(sa, *xc , v);
-      
+      Axpy(sa, *x , v);
     }
-    // void AssignTo (Complex s, BaseVector & v2) const override { } // missing
-    // void AddTo (Complex s, BaseVector & v2) const  override { } // missing
+
   };
 
   template <class T>
-  Matrix<T> InnerProduct (const MultiVector<T> & x, const MultiVector<T> & y) {
-    Matrix<T> res(x.Size(), y.Size());
-    for (auto i : Range(x.Size()))
-      for (auto j : Range(y.Size()))
-        res(i,j) = S_InnerProduct<T>(*x[i], *y[j]);
-    return res;
-  }
-
+  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y);
 }
 #endif

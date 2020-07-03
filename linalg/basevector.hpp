@@ -1171,6 +1171,10 @@ namespace ngla
     { ve->AssignTo(s,v2); }
     void AddTo (double s, BaseVector & v2) const
     { ve->AddTo(s,v2); }
+    void AssignTo (Complex s, BaseVector & v2) const
+    { ve->AssignTo(s,v2); }
+    void AddTo (Complex s, BaseVector & v2) const
+    { ve->AddTo(s,v2); }
     auto Ptr() const { return ve; }
   };
 
