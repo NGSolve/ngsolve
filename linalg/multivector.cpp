@@ -61,6 +61,7 @@ namespace ngla {
   template <class T>
   void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y)
   {
+    cout << "type in axpy " << typeid(a(0)).name() << endl;
     for (auto i : Range(a))
       y += a(i) * *x[i];
   }
