@@ -328,6 +328,30 @@ cl_UnaryOpCF<GenericCos>::Diff(const CoefficientFunction * var,
 }
 
 template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericTan>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return make_shared<ConstantCoefficientFunction>(1) / (UnaryOpCF(c1, GenericCos(), "cos")*UnaryOpCF(c1, GenericCos(), "cos")) * c1->Diff(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericSinh>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return UnaryOpCF(c1, GenericCosh(), "cosh") * c1->Diff(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericExp>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
@@ -373,6 +397,14 @@ cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
 {
   if (this == var) return dir;
   return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
+}
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericATan>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+{
+  if (this == var) return dir;
+  return make_shared<ConstantCoefficientFunction>(1) / (c1*c1 + make_shared<ConstantCoefficientFunction>(1)) * c1->Diff(var, dir);
 }
 
 
