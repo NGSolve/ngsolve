@@ -627,8 +627,8 @@ complex : bool
            );
 
     m.def("InnerProduct",
-             [] (py::object x, py::object y) -> py::object
-          { return py::object(x.attr("InnerProduct")) (y); }, py::arg("x"), py::arg("y"), "Compute InnerProduct");
+             [] (py::object x, py::object y, py::kwargs kw) -> py::object
+          { return py::object(x.attr("InnerProduct")) (y, **kw); }, py::arg("x"), py::arg("y"), "Compute InnerProduct");
 
     m.def("Norm",
              [] (py::object x) -> py::object
