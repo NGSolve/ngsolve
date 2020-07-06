@@ -17,8 +17,6 @@ namespace ngla {
 
   class MultiVector;  
 
-  // overwritten because virtual template functions are not allowed
-  // alternative: template class, but this is problematic in python_linalg.cpp
   class MultiVectorExpr
   {
   public:
@@ -32,22 +30,19 @@ namespace ngla {
   class MultiVector
   {
     shared_ptr<BaseVector> refvec;
-    // TODO: maybe as matrix instead of array of ptr?
     Array<shared_ptr<BaseVector>> vecs;
-    bool complex;
   public:
     MultiVector (shared_ptr<BaseVector> v, size_t cnt): refvec (v)
     {
-      complex = v->IsComplex();
       Expand (cnt);
     }
-    MultiVector (size_t size, size_t cnt, bool is_complex) : complex(is_complex)
+    MultiVector (size_t size, size_t cnt, bool is_complex)
     {
       refvec = CreateBaseVector(size, is_complex, 1);
       Expand (cnt);
     }
   
-    bool IsComplex() const {return complex; }
+    bool IsComplex() const { return refvec->IsComplex(); }
 
     size_t Size() const { return vecs.Size(); }
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
@@ -63,36 +58,34 @@ namespace ngla {
     }
 
 
-    template <class T>
-    void operator= (const T v)
+    MultiVector & operator= (double val)
     {
-      Complex tmp;
-
-      for (auto vec : vecs) {
-        if (complex) *vec = Complex(v);
-        else if (typeid(v).name()!= typeid(tmp).name()) *vec = v;
-      }
-        // TODO: what if attempt of ill usage? -> exception
+      for (auto & vec : vecs)
+        *vec = val;
+      return *this;
     }
-    void operator= (const MultiVectorExpr & expr) { 
-      if (complex) 
-        expr.AssignTo(Complex(1), *this); 
-      else
-        expr.AssignTo(1, *this); 
+
+    MultiVector & operator= (Complex val)
+    {
+      for (auto & vec : vecs) 
+        *vec = val;
+      return *this;      
+    }
       
+      MultiVector & operator= (const MultiVectorExpr & expr)
+    { 
+      expr.AssignTo(1, *this);
+      return *this;
     }
-    void operator+= (const MultiVectorExpr & expr){ 
-      if (complex) 
-        expr.AddTo(Complex(1), *this); 
-      else
-        expr.AddTo(1, *this); 
+    
+    void operator+= (const MultiVectorExpr & expr)
+    { 
+      expr.AddTo(1, *this); 
     }
-
-    void operator-= (const MultiVectorExpr & expr){ 
-      if (complex) 
-        expr.AddTo(Complex(-1), *this); 
-      else
-        expr.AddTo(-1, *this); 
+    
+    void operator-= (const MultiVectorExpr & expr)
+    { 
+      expr.AddTo(-1, *this); 
     }
   };
   
@@ -141,8 +134,8 @@ namespace ngla {
     shared_ptr<MultiVector> x;
 
   public:
-    MultiVecAxpyExpr (Vector<TSCAL> aa, shared_ptr<MultiVector> ax) : a(aa), x(ax) { 
-    }
+    MultiVecAxpyExpr (Vector<TSCAL> aa, shared_ptr<MultiVector> ax)
+      : a(aa), x(ax) { }
 
     void AssignTo (double s, BaseVector & v) const override
     {
@@ -171,7 +164,7 @@ namespace ngla {
 
   };
 
-  template <class T>
-  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y, bool conjugate);
+  // template <class T>
+  // Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y, bool conjugate);
 }
 #endif
