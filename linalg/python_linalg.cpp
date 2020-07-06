@@ -543,7 +543,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             return py::cast(x.RefVec()->InnerProductD(x, y));
           else
             return py::cast(x.RefVec()->InnerProductC(x, y, conjugate));
-        })
+        }, py::arg("other"), py::arg("conjugate")=py::cast(true))
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { cout << "in double __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })
