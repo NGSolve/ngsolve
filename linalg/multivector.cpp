@@ -95,6 +95,7 @@ namespace ngla {
   // template Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y);
   */
 
+  /*
   template <>
   Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y, bool conjugate)
   {
@@ -105,7 +106,7 @@ namespace ngla {
   {
     return x.RefVec()->InnerProductC (x, y, conjugate);
   }
-  
+  */
 
 
 }
