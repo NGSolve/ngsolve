@@ -537,12 +537,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   })
     .def("Expand", &MultiVector::Expand)
     .def("Append", &MultiVector::Append)
-    .def("InnerProduct", [](MultiVector & x, MultiVector & y)
+    .def("InnerProduct", [](MultiVector & x, MultiVector & y, bool conjugate)
         { 
           if( !x.IsComplex() )
-              return py::cast(InnerProduct<double>(x,y));
+            return py::cast(InnerProduct<double>(x,y, conjugate));
           else
-              return py::cast(InnerProduct<Complex>(x,y));
+            return py::cast(InnerProduct<Complex>(x,y, conjugate));
         })
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { cout << "in double __mul__" << endl;

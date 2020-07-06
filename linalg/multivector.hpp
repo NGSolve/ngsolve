@@ -172,6 +172,6 @@ namespace ngla {
   };
 
   template <class T>
-  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y);
+  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y, bool conjugate);
 }
 #endif
