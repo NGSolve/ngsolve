@@ -421,6 +421,22 @@ complex : bool
 //        input list of values
 // )raw_string")
 //            );
+
+    m.def("Vector", [] (const std::vector<double> & values)
+      {
+        Vector<double> v(values.size());
+        for (auto i : Range(values.size()))
+          v[i] = values[i];
+      });
+
+    m.def("Vector", [] (const std::vector<Complex> & values)
+      {
+        Vector<Complex> v(values.size());
+        for (auto i : Range(values.size()))
+          v[i] = values[i];
+      });
+
+/*
     m.def("Vector",
             [] (py::list values) -> py::object {
                               py::object tmp = values[0];
@@ -479,6 +495,7 @@ vals : tuple
 
 )raw_string")
            );
+*/
 
     py::class_<Vec<1>> v1(m, "Vec1D");
     PyVecAccess<Vec<1>>(m, v1);
