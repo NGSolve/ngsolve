@@ -15,7 +15,8 @@ namespace ngla
 
   class BaseVector;
   class AutoVector;
-
+  class MultiVector;
+  
   template <class SCAL> class S_BaseVector;
 
   class NGS_DLL_HEADER ComplexConjugate;
@@ -217,7 +218,11 @@ namespace ngla
 
     virtual double InnerProductD (const BaseVector & v2) const;
     virtual Complex InnerProductC (const BaseVector & v2, bool conjuagte = false) const;
+    
+    virtual Matrix<> InnerProductD (const MultiVector & v1, const MultiVector & v2) const;
+    virtual Matrix<Complex> InnerProductC (const MultiVector & v1, const MultiVector & v2, bool conjugate = false) const;    
 
+    
     virtual double L2Norm () const;
     virtual bool IsComplex() const { return false; }
 
