@@ -540,16 +540,16 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("InnerProduct", [](MultiVector & x, MultiVector & y, bool conjugate)
         { 
           if( !x.IsComplex() )
-            return py::cast(InnerProduct<double>(x,y, conjugate));
+            return py::cast(x.RefVec()->InnerProductD(x, y));
           else
-            return py::cast(InnerProduct<Complex>(x,y, conjugate));
+            return py::cast(x.RefVec()->InnerProductC(x, y, conjugate));
         })
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { cout << "in double __mul__" << endl;
-           return DynamicVectorExpression(make_shared<MultiVecAxpyExpr>(a, x)); })
+           return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<Complex> a) 
          { cout << "in complex __mul__" << endl;
-           return DynamicVectorExpression(make_shared<MultiVecAxpyExpr>(a, x)); })
+           return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<Complex>>(a, x)); })
   ;
     /*
     /*
