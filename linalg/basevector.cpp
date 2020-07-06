@@ -182,6 +182,25 @@ namespace ngla
       InnerProduct (v2, conjugate);
   }
 
+  Matrix<> BaseVector ::
+  InnerProductD (const MultiVector & x, const MultiVector & y) const
+  {
+    Matrix<double> res(x.Size(), y.Size());
+    for (int i = 0; i < x.Size(); i++)
+      for (int j = 0; j < y.Size(); j++)
+        res(i,j) = x[i]->InnerProductD(*y[j]);
+    return res;
+  }
+  
+  Matrix<Complex> BaseVector ::
+  InnerProductC (const MultiVector & x, const MultiVector & y, bool conjugate) const
+  {
+    Matrix<Complex> res(x.Size(), y.Size());
+    for (int i = 0; i < x.Size(); i++)
+      for (int j = 0; j < y.Size(); j++)
+        res(i,j) = x[i]->InnerProductC(*y[j], conjugate);
+    return res;
+  }
 
   AutoVector BaseVector ::Range (size_t begin, size_t end) const
   {
