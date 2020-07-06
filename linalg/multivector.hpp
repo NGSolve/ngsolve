@@ -90,8 +90,9 @@ namespace ngla {
   };
   
 
+  class BaseMatrix;
   template <class T>
-  void MultAdd (const class BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y);
+  void MultAdd (const BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y);
   
   class MatMultiVecExpr : public MultiVectorExpr
   {
