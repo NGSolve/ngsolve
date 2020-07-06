@@ -3,8 +3,8 @@
 
 /*********************************************************************/
 /* File:   multivector.hpp                                           */
-/* Author: Joachim Schoeberl                                         */
-/* Date:   June 2010                                                 */
+/* Author: Joachim Schoeberl, Amanda Schoefl                         */
+/* Date:   June 2020                                                 */
 /*********************************************************************/
 
 namespace ngla {
@@ -126,7 +126,6 @@ namespace ngla {
   void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y);
 
 
-  // TODO: do that better!!
   template <typename TSCAL>
   class MultiVecAxpyExpr : public DynamicBaseExpression
   {

@@ -427,6 +427,7 @@ complex : bool
         Vector<double> v(values.size());
         for (auto i : Range(values.size()))
           v[i] = values[i];
+        return v;
       });
 
     m.def("Vector", [] (const std::vector<Complex> & values)
@@ -434,6 +435,7 @@ complex : bool
         Vector<Complex> v(values.size());
         for (auto i : Range(values.size()))
           v[i] = values[i];
+        return v;
       });
 
 /*
