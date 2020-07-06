@@ -31,6 +31,7 @@ namespace ngfem
       case NT_CELL: ost << "Cell"; break;
       case NT_ELEMENT: ost << "Element"; break;
       case NT_FACET: ost << "Facet"; break;
+      case NT_GLOBAL: ost << "Global"; break;
       }
     return ost;
   }
