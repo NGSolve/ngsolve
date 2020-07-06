@@ -133,57 +133,39 @@ namespace ngla {
   void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y);
 
 
-  // TODO: do that better!! 
+  // TODO: do that better!!
+  template <typename TSCAL>
   class MultiVecAxpyExpr : public DynamicBaseExpression
   {
-    Vector<double> a;
-    Vector<Complex> ac;
+    Vector<TSCAL> a;
     shared_ptr<MultiVector> x;
-    bool is_complex;
 
   public:
-    MultiVecAxpyExpr (Vector<double> aa, shared_ptr<MultiVector> ax) : a(aa), x(ax) { 
-      is_complex = false;
-      cout << "double multi vec expr" << endl;
-    }
-    MultiVecAxpyExpr (Vector<Complex> aa, shared_ptr<MultiVector> ax) : ac(aa), x(ax) { 
-      is_complex = true;
-      cout << "complex multi vec expr" << endl;
+    MultiVecAxpyExpr (Vector<TSCAL> aa, shared_ptr<MultiVector> ax) : a(aa), x(ax) { 
     }
 
-    // TODO: fix that!
     void AssignTo (double s, BaseVector & v) const override
     {
-      if (is_complex) {
-        v = 0.0;
-        AddTo (Complex(s), v);
-      }else {
-        v = 0.0;
-        AddTo (s, v);
-      }
+      v = 0.0;
+      AddTo (s, v);
     }
+    
     void AddTo (double s, BaseVector & v) const override
     {
-      if (is_complex) {
-        Vector<Complex> sa = Complex(s)*a;
-        Axpy(sa, *x, v);
-      }{
-        Vector<double> sa = s*a;
-        Axpy(sa, *x, v);
-      }
+      Vector<TSCAL> sa = s*a;
+      Axpy (sa, *x, v);
     }
 
     // these are not called for some reason
     void AssignTo (Complex s, BaseVector & v) const override
     {
-      v = Complex(0.0);
+      v = 0.0;
       AddTo (s, v);
     }
 
     void AddTo (Complex s, BaseVector & v) const override
     {
-      cout << "complex add to" << endl;
-      Vector<Complex> sa = s*ac;
+      Vector<Complex> sa = s*a;
       Axpy(sa, *x , v);
     }
 

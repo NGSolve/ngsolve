@@ -65,7 +65,7 @@ namespace ngla {
     for (auto i : Range(a))
       y += a(i) * *x[i];
   }
-
+  
   template void Axpy (const Vector<double> & a, const MultiVector  & x, BaseVector & y);
   template void Axpy (const Vector<Complex> & a, const MultiVector  & x, BaseVector & y);
 
