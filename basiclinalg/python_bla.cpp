@@ -389,7 +389,9 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     m.def("Vector",
             [] (int n, bool is_complex) {
-                if(is_complex) return py::cast(Vector<Complex>(n));
+                if(is_complex) {
+                  return py::cast(Vector<Complex>(n));
+                }
                 else return py::cast(Vector<double>(n));
                 },
             py::arg("length"),
@@ -404,12 +406,56 @@ complex : bool
   input complex values
 )raw_string")
            );
+//     m.def("Vector",
+//             [] (py::list values) {
+//                                Vector<> v(len(values));
+//                                for (int i = 0; i < v.Size(); i++)
+//                                  v(i) = values[i].cast<double>();
+//                                return v;
+//                              },
+//             py::arg("vals"), docu_string(R"raw_string(
+
+// Parameters:
+
+// vals : list
+//        input list of values
+// )raw_string")
+//            );
+
+    m.def("Vector", [] (const std::vector<double> & values)
+      {
+        Vector<double> v(values.size());
+        for (auto i : Range(values.size()))
+          v[i] = values[i];
+        return v;
+      });
+
+    m.def("Vector", [] (const std::vector<Complex> & values)
+      {
+        Vector<Complex> v(values.size());
+        for (auto i : Range(values.size()))
+          v[i] = values[i];
+        return v;
+      });
+
+/*
     m.def("Vector",
-            [] (py::list values) {
-                               Vector<> v(len(values));
-                               for (int i = 0; i < v.Size(); i++)
-                                 v(i) = values[i].cast<double>();
-                               return v;
+            [] (py::list values) -> py::object {
+                              py::object tmp = values[0];
+                              // TODO: How to do that better? What is the complex equivalent to py::_int?
+                              // to be able to use something like py::isinstance<py::int_>(tmp)
+                              py::object type = py::eval("complex"); 
+                              if (py::isinstance(tmp, type)){
+                                Vector<Complex> v(len(values));
+                                for (int i = 0; i < v.Size(); i++)
+                                v(i) = values[i].cast<Complex>();
+                                return py::cast(v);
+                              } 
+                              Vector<> v(len(values));
+                              for (int i = 0; i < v.Size(); i++)
+                              v(i) = values[i].cast<double>();
+                              return py::cast(v);
+
                              },
             py::arg("vals"), docu_string(R"raw_string(
 
@@ -451,6 +497,7 @@ vals : tuple
 
 )raw_string")
            );
+*/
 
     py::class_<Vec<1>> v1(m, "Vec1D");
     PyVecAccess<Vec<1>>(m, v1);
