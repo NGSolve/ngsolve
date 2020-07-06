@@ -51,7 +51,7 @@ namespace ngla {
 
     size_t Size() const { return vecs.Size(); }
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
-
+    shared_ptr<BaseVector> RefVec() const { return refvec; }
     void Expand (size_t nr = 1) {
       for ([[maybe_unused]] auto i : Range(nr))
         vecs.Append (refvec->CreateVector());

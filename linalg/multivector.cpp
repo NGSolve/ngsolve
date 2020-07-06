@@ -81,30 +81,31 @@ namespace ngla {
   template void MultAdd (const class BaseMatrix & mat, double s, const MultiVector & x, MultiVector & y);
   template void MultAdd (const class BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
 
+  /*
   template <class T>
-  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y, bool conjugate) {
+  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y);
+  {
     Matrix<T> res(x.Size(), y.Size());
     for (auto i : Range(x.Size()))
       for (auto j : Range(y.Size()))
         res(i,j) = S_InnerProduct<T>(*x[i], *y[j]);
     return res;
   }
-  
+  // template Matrix<Complex> InnerProduct<Complex> (const MultiVector & x, const MultiVector & y);
+  // template Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y);
+  */
 
   template <>
   Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y, bool conjugate)
   {
-    return refvec->InnerProductD (x, y);
+    return x.RefVec()->InnerProductD (x, y);
   }
   template <>
   Matrix<Complex> InnerProduct<Complex> (const MultiVector & x, const MultiVector & y, bool conjugate)
   {
-    return refvec->InnerProductC (x, y, conjugate);
+    return x.RefVec()->InnerProductC (x, y, conjugate);
   }
   
-
-  template Matrix<Complex> InnerProduct<Complex> (const MultiVector & x, const MultiVector & y);
-  template Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y);
 
 
 }
