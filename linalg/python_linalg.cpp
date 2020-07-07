@@ -506,7 +506,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   // TODO: default value for complex
   py::class_<MultiVector, shared_ptr<MultiVector>> (m, "MultiVector")
-    .def(py::init<shared_ptr<BaseVector>,size_t>())
+    // .def(py::init<shared_ptr<BaseVector>,size_t>([] ))
+    .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) { return bv->CreateMultiVector(cnt); } ))
     .def(py::init<size_t,size_t,bool>())
     .def("__len__", &MultiVector::Size)
     .def("__getitem__", &MultiVector::operator[])
@@ -535,14 +536,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                     else
                         v2.AssignTo(Complex(1), *self); 
                   })
-    .def("Expand", &MultiVector::Expand)
+    .def("Expand", &MultiVector::Extend, "deprecated, use Extend instead")
+    .def("Extend", &MultiVector::Extend)
     .def("Append", &MultiVector::Append)
     .def("InnerProduct", [](MultiVector & x, MultiVector & y, bool conjugate)
         { 
           if( !x.IsComplex() )
-            return py::cast(x.RefVec()->InnerProductD(x, y));
+            return py::cast(x.InnerProductD(y));
           else
-            return py::cast(x.RefVec()->InnerProductC(x, y, conjugate));
+            return py::cast(x.InnerProductC(y, conjugate));
         }, py::arg("other"), py::arg("conjugate")=py::cast(true))
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { cout << "in double __mul__" << endl;
@@ -550,7 +552,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<Complex> a) 
          { cout << "in complex __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<Complex>>(a, x)); })
-  ;
+    ;
     /*
     /*
       // not taken, thus moved to BaseMatrix

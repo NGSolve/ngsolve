@@ -61,7 +61,6 @@ namespace ngla {
   template <class T>
   void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y)
   {
-    cout << "type in axpy " << typeid(a(0)).name() << endl;
     for (auto i : Range(a))
       y += a(i) * *x[i];
   }
@@ -78,8 +77,28 @@ namespace ngla {
       mat.MultAdd (s, *x[i], *y[i]);
   }
 
-  template void MultAdd (const class BaseMatrix & mat, double s, const MultiVector & x, MultiVector & y);
-  template void MultAdd (const class BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
+  template void MultAdd (const BaseMatrix & mat, double s, const MultiVector & x, MultiVector & y);
+  template void MultAdd (const BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
+  
+  Matrix<> MultiVector ::
+  InnerProductD (const MultiVector & y) const
+  {
+    Matrix<double> res(Size(), y.Size());
+    for (int i = 0; i < Size(); i++)
+      for (int j = 0; j < y.Size(); j++)
+        res(i,j) = vecs[i]->InnerProductD(*y[j]);
+    return res;
+  }
+  
+  Matrix<Complex> MultiVector ::
+  InnerProductC (const MultiVector & y, bool conjugate) const
+  {
+    Matrix<Complex> res(Size(), y.Size());
+    for (int i = 0; i < Size(); i++)
+      for (int j = 0; j < y.Size(); j++)
+        res(i,j) = vecs[i]->InnerProductC(*y[j], conjugate);
+    return res;
+  }
 
   /*
   template <class T>
