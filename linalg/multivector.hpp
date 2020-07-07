@@ -34,20 +34,20 @@ namespace ngla {
   public:
     MultiVector (shared_ptr<BaseVector> v, size_t cnt): refvec (v)
     {
-      Expand (cnt);
+      Extend (cnt);
     }
     MultiVector (size_t size, size_t cnt, bool is_complex)
     {
       refvec = CreateBaseVector(size, is_complex, 1);
-      Expand (cnt);
+      Extend (cnt);
     }
-  
+    virtual ~MultiVector() { } 
     bool IsComplex() const { return refvec->IsComplex(); }
 
     size_t Size() const { return vecs.Size(); }
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
     shared_ptr<BaseVector> RefVec() const { return refvec; }
-    void Expand (size_t nr = 1) {
+    void Extend (size_t nr = 1) {
       for ([[maybe_unused]] auto i : Range(nr))
         vecs.Append (refvec->CreateVector());
     }
@@ -87,6 +87,9 @@ namespace ngla {
     { 
       expr.AddTo(-1, *this); 
     }
+
+    virtual Matrix<> InnerProductD (const MultiVector & v2) const;
+    virtual Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate = false) const;    
   };
   
 
