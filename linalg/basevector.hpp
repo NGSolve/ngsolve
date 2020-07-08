@@ -988,10 +988,14 @@ namespace ngla
   }
 
   ///
-  inline double InnerProduct (const BaseVector & v1, const BaseVector & v2)
+  template <typename T = double>
+  inline T InnerProduct (const BaseVector & v1, const BaseVector & v2, bool conjugate = false)
   {
-    // return dynamic_cast<const S_BaseVector<double>&>(v1).InnerProduct(v2); 
-    return v1.InnerProductD(v2); 
+    // return dynamic_cast<const S_BaseVector<double>&>(v1).InnerProduct(v2);
+    if constexpr (is_same<T,double>::value)
+                   return v1.InnerProductD(v2);
+    else
+      return v1.InnerProductC(v2, conjugate);
   }
 
   ///
