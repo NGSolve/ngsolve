@@ -41,14 +41,20 @@ namespace ngla {
       refvec = CreateBaseVector(size, is_complex, 1);
       Extend (cnt);
     }
+    MultiVector (const MultiVector & v) = default;
+    MultiVector (MultiVector && v) = default;
+    
     virtual ~MultiVector() { } 
     bool IsComplex() const { return refvec->IsComplex(); }
 
     size_t Size() const { return vecs.Size(); }
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
     shared_ptr<BaseVector> RefVec() const { return refvec; }
+
+    MultiVector Range(IntRange r) const;
+    
     void Extend (size_t nr = 1) {
-      for ([[maybe_unused]] auto i : Range(nr))
+      for ([[maybe_unused]] auto i : ngstd::Range(nr))
         vecs.Append (refvec->CreateVector());
     }
     void Append (shared_ptr<BaseVector> v)
@@ -71,8 +77,15 @@ namespace ngla {
         *vec = val;
       return *this;      
     }
-      
-      MultiVector & operator= (const MultiVectorExpr & expr)
+
+    MultiVector & operator= (const MultiVector & v2)
+    { 
+      for ([[maybe_unused]] auto i : ngstd::Range(vecs))
+        *vecs[i] = *v2.vecs[i];
+      return *this;
+    }
+    
+    MultiVector & operator= (const MultiVectorExpr & expr)
     { 
       expr.AssignTo(1, *this);
       return *this;

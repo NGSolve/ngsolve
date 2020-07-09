@@ -58,6 +58,16 @@ namespace ngla {
   // }
 
 
+  MultiVector MultiVector :: Range(IntRange r) const
+  {
+    MultiVector mv2(refvec, 0);
+    for (auto i : r)
+      mv2.vecs.Append (vecs[i]);
+    return mv2;
+  }
+
+  
+
   template <class T>
   void Axpy (const Vector<T> & a, const MultiVector  & x, BaseVector & y)
   {
