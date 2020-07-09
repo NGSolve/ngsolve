@@ -1,6 +1,6 @@
-from ngsolve.la import InnerProduct
+from ngsolve.la import InnerProduct, MultiVector
 from math import sqrt
-from ngsolve import Projector, Norm, Matrix
+from ngsolve import Projector, Norm, Matrix, Vector, IdentityMatrix
 
 try:
     import scipy.linalg
@@ -23,7 +23,7 @@ def Orthogonalize (vecs, mat):
         mv.append (hv)
 
 
-def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
+def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
     """preconditioned inverse iteration"""
 
     r = mata.CreateRowVector()
@@ -74,3 +74,49 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
                 uvecs[j].data += float(evec[k,j]) * vecs[k]
 
     return lams, uvecs
+
+
+
+
+def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
+    """preconditioned inverse iteration"""
+
+    r = mata.CreateRowVector()
+
+    uvecs = MultiVector(r, num)
+    vecs = MultiVector(r, 2*num)
+    Avecs = MultiVector(r, 2*num)
+    # I = IdentityMatrix(len(r))
+
+    for i in range(num):
+        # r.FV().NumPy()[:] = random.rand(len(r.FV()))
+        vecs[i].FV().NumPy()[:] = random.rand(len(r.FV()))
+    uvecs[:] = pre * vecs[0:num]
+
+    lams = num * [1]
+
+    for i in range(maxit):
+        vecs[0:num] = uvecs
+
+        for j in range(num):
+            uvecs[j] = mata * vecs[j] - lams[j] * matm * vecs[j]
+        vecs[num:2*num] = pre * uvecs
+        
+        if GramSchmidt:
+            Orthogonalize (vecs, matm)
+
+        Avecs[:] = mata * vecs
+        asmall = InnerProduct (vecs, Avecs)
+        Avecs[:] = matm * vecs
+        msmall = InnerProduct (vecs, Avecs)
+                
+        ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
+        lams[:] = ev[0:num]
+        if printrates:
+            print (i, ":", lams)
+
+        for j in range(num):
+            uvecs[j] = vecs * Vector(evec[:,j])
+    return lams, uvecs
+
+

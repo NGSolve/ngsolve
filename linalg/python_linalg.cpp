@@ -511,6 +511,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init<size_t,size_t,bool>())
     .def("__len__", &MultiVector::Size)
     .def("__getitem__", &MultiVector::operator[])
+    .def("__getitem__", [](MultiVector & self, py::slice inds) {
+        size_t start, step, n;
+        InitSlice( inds, self.Size(), start, step, n );
+        if (step != 1)
+          throw Exception ("slices with non-unit distance not allowed");
+        return self.Range(IntRange(start, start+n));
+      })
+
     .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
         {
           if( !x.IsComplex() )
@@ -526,6 +534,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         {
           *x[nr] = val;
         })
+    
+    .def("__setitem__", [](MultiVector & self, py::slice inds, MultiVector & y) {
+          size_t start, step, n;
+          InitSlice( inds, self.Size(), start, step, n );
+          if (step != 1)
+            throw Exception ("slices with non-unit distance not allowed");
+          self.Range(IntRange(start, start+n)) = y;
+      })
+    .def("__setitem__", [](MultiVector & self, py::slice inds, const MultiVectorExpr & v2) {
+          size_t start, step, n;
+          InitSlice( inds, self.Size(), start, step, n );
+          if (step != 1)
+            throw Exception ("slices with non-unit distance not allowed");
+          auto selfr = self.Range(IntRange(start, start+n));
+          v2.AssignTo (1, selfr);
+      })
+
+    
     .def_property("data",
                   [](shared_ptr<MultiVector> self)
                   { return self; },
@@ -547,10 +573,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             return py::cast(x.InnerProductC(y, conjugate));
         }, py::arg("other"), py::arg("conjugate")=py::cast(true))
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
-         { cout << "in double __mul__" << endl;
+         { // cout << "in double __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<Complex> a) 
-         { cout << "in complex __mul__" << endl;
+         { // cout << "in complex __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<Complex>>(a, x)); })
     ;
     /*
