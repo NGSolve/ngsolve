@@ -97,14 +97,13 @@ namespace ngla {
     if (ipmat)
       {
         auto tmp = mv.RefVec()->CreateVector();
-        
         for (int i = 0; i < mv.Size(); i++)
           {
             *tmp = *ipmat * *mv[i];
             T norm = sqrt(InnerProduct(*tmp, *mv[i]));
             *mv[i] *= 1.0 / norm;
             for (int j = i+1; j < mv.Size(); j++)
-              *mv[j] -= InnerProduct(*tmp, *mv[j], true)/norm * *mv[i];
+              *mv[j] -= InnerProduct<T>(*tmp, *mv[j], true)/norm * *mv[i];
           }
       }
     else
@@ -113,7 +112,7 @@ namespace ngla {
           {
             *mv[i] *= 1.0 / (*mv[i]).L2Norm();
             for (int j = i+1; j < mv.Size(); j++)
-              *mv[j] -= InnerProduct(*mv[i], *mv[j], true) * *mv[i];
+              *mv[j] -= InnerProduct<T>(*mv[i], *mv[j], true) * *mv[i];
           }
       }
   }
