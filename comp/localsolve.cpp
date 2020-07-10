@@ -29,7 +29,7 @@ namespace ngcomp
       auto ma = (MeshAccess*)trafo.GetMesh();
       auto ei = trafo.GetElementId();
       auto vnums = ma->GetElVertices(ei);
-      auto locvi = vnums.Pos(vnum);
+      [[maybe_unused]] auto locvi = vnums.Pos(vnum);
 
       ScalarFE<ET_SEGM,1> fel_segm;
       ScalarFE<ET_TRIG,1> fel_trig;
