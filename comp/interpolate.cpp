@@ -46,8 +46,8 @@ namespace ngcomp
       
       LocalHeapMem<10000> lh("fecoef::eval");
       auto tid = TaskManager::GetThreadId();
-      auto fe = fes[tid];
-      auto elvec = elvecs[tid];
+      [[maybe_unused]] auto fe = fes[tid];
+      [[maybe_unused]] auto elvec = elvecs[tid];
 
       if constexpr (is_same<MIR, BaseMappedIntegrationRule>::value &&
                     is_same<T,double>::value)
