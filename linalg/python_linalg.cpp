@@ -572,6 +572,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           else
             return py::cast(x.InnerProductC(y, conjugate));
         }, py::arg("other"), py::arg("conjugate")=py::cast(true))
+    .def("Orthogonalize", [](MultiVector & x, BaseMatrix * ipmat)
+         {
+           x.Orthogonalize(ipmat);
+         },py::arg("ipmat")=nullptr)
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { // cout << "in double __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })
@@ -580,8 +584,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<Complex>>(a, x)); })
     ;
     /*
-    /*
-      // not taken, thus moved to BaseMatrix
+    // not taken, thus moved to BaseMatrix
     .def("__rmul__", [](shared_ptr<MultiVector> x, shared_ptr<BaseMatrix> mat)
          -> shared_ptr<MultiVectorExpr>
          {

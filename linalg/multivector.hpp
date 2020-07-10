@@ -16,7 +16,9 @@ namespace ngla {
   */
 
   class MultiVector;  
+  class BaseMatrix;
 
+  
   class MultiVectorExpr
   {
   public:
@@ -91,22 +93,27 @@ namespace ngla {
       return *this;
     }
     
-    void operator+= (const MultiVectorExpr & expr)
+    MultiVector operator+= (const MultiVectorExpr & expr)
     { 
-      expr.AddTo(1, *this); 
+      expr.AddTo(1, *this);
+      return *this;
     }
     
-    void operator-= (const MultiVectorExpr & expr)
+    MultiVector & operator-= (const MultiVectorExpr & expr)
     { 
-      expr.AddTo(-1, *this); 
+      expr.AddTo(-1, *this);
+      return *this;
     }
 
+    void Orthogonalize (BaseMatrix * ipmat);
+    
     virtual Matrix<> InnerProductD (const MultiVector & v2) const;
     virtual Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate = false) const;    
+    virtual Vector<> InnerProductD (const BaseVector & v2) const;
+    virtual Vector<Complex> InnerProductC (const BaseVector & v2, bool conjugate = false) const;    
   };
   
 
-  class BaseMatrix;
   template <class T>
   void MultAdd (const BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y);
   
@@ -165,7 +172,6 @@ namespace ngla {
       Axpy (sa, *x, v);
     }
 
-    // these are not called for some reason
     void AssignTo (Complex s, BaseVector & v) const override
     {
       v = 0.0;
@@ -177,10 +183,6 @@ namespace ngla {
       Vector<Complex> sa = s*a;
       Axpy(sa, *x , v);
     }
-
   };
-
-  // template <class T>
-  // Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y, bool conjugate);
 }
 #endif

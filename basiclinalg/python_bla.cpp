@@ -626,6 +626,24 @@ complex : bool
 )raw_string")
            );
 
+    m.def("Matrix", [] (const std::vector<std::vector<double>> & values)
+      {
+        Matrix<double> m(values.size(), values[0].size());
+        for (auto i : Range(m.Height()))
+          for (auto j : Range(m.Width()))
+            m(i,j) = values[i][j];
+        return m;
+      });
+    m.def("Matrix", [] (const std::vector<std::vector<Complex>> & values)
+      {
+        Matrix<Complex> m(values.size(), values[0].size());
+        for (auto i : Range(m.Height()))
+          for (auto j : Range(m.Width()))
+            m(i,j) = values[i][j];
+        return m;
+      });
+
+    
     m.def("InnerProduct",
              [] (py::object x, py::object y, py::kwargs kw) -> py::object
           { return py::object(x.attr("InnerProduct")) (y, **kw); }, py::arg("x"), py::arg("y"), "Compute InnerProduct");

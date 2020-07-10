@@ -96,20 +96,25 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
     lams = num * [1]
 
     for i in range(maxit):
-        vecs[0:num] = uvecs
-
+        vecs[0:num] = mata * uvecs
+        vecs[num:2*num] = matm * uvecs
         for j in range(num):
-            uvecs[j] = mata * vecs[j] - lams[j] * matm * vecs[j]
-        vecs[num:2*num] = pre * uvecs
+            vecs[j] -= float(lams[j]) * vecs[num+j]
+            
+        vecs[num:2*num] = pre*vecs[0:num]
+        vecs[0:num] = uvecs
+        # vecs[0:num] = uvecs
+        # for j in range(num):
+        # uvecs[j] = mata * vecs[j] - lams[j] * matm * vecs[j]
+        # vecs[num:2*num] = pre * uvecs
         
-        if GramSchmidt:
-            Orthogonalize (vecs, matm)
+        vecs.Orthogonalize(matm)
 
         Avecs[:] = mata * vecs
         asmall = InnerProduct (vecs, Avecs)
         Avecs[:] = matm * vecs
         msmall = InnerProduct (vecs, Avecs)
-                
+
         ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
         lams[:] = ev[0:num]
         if printrates:
