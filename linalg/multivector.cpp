@@ -89,6 +89,43 @@ namespace ngla {
 
   template void MultAdd (const BaseMatrix & mat, double s, const MultiVector & x, MultiVector & y);
   template void MultAdd (const BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
+
+
+  template <class T>
+  void T_Orthogonalize (MultiVector & mv, BaseMatrix * ipmat)
+  {
+    if (ipmat)
+      {
+        auto tmp = mv.RefVec()->CreateVector();
+        
+        for (int i = 0; i < mv.Size(); i++)
+          {
+            *tmp = *ipmat * *mv[i];
+            T norm = sqrt(InnerProduct(*tmp, *mv[i]));
+            *mv[i] *= 1.0 / norm;
+            for (int j = i+1; j < mv.Size(); j++)
+              *mv[j] -= InnerProduct(*tmp, *mv[j], true)/norm * *mv[i];
+          }
+      }
+    else
+      {
+        for (int i = 0; i < mv.Size(); i++)
+          {
+            *mv[i] *= 1.0 / (*mv[i]).L2Norm();
+            for (int j = i+1; j < mv.Size(); j++)
+              *mv[j] -= InnerProduct(*mv[i], *mv[j], true) * *mv[i];
+          }
+      }
+  }
+  
+  void MultiVector :: Orthogonalize (BaseMatrix * ipmat)
+  {
+    if (IsComplex())
+      T_Orthogonalize<Complex> (*this, ipmat);
+    else
+      T_Orthogonalize<double> (*this, ipmat);
+  }
+
   
   Matrix<> MultiVector ::
   InnerProductD (const MultiVector & y) const
@@ -110,32 +147,27 @@ namespace ngla {
     return res;
   }
 
-  /*
-  template <class T>
-  Matrix<T> InnerProduct (const MultiVector & x, const MultiVector & y);
+
+
+
+  Vector<> MultiVector ::
+  InnerProductD (const BaseVector & y) const
   {
-    Matrix<T> res(x.Size(), y.Size());
-    for (auto i : Range(x.Size()))
-      for (auto j : Range(y.Size()))
-        res(i,j) = S_InnerProduct<T>(*x[i], *y[j]);
+    Vector<double> res(Size());
+    for (int i = 0; i < Size(); i++)
+      res(i) = vecs[i]->InnerProductD(y);
     return res;
   }
-  // template Matrix<Complex> InnerProduct<Complex> (const MultiVector & x, const MultiVector & y);
-  // template Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y);
-  */
+  
+  Vector<Complex> MultiVector ::
+  InnerProductC (const BaseVector & y, bool conjugate) const
+  {
+    Vector<Complex> res(Size());
+    for (int i = 0; i < Size(); i++)
+      res(i) = vecs[i]->InnerProductC(y, conjugate);
+    return res;
+  }
 
-  /*
-  template <>
-  Matrix<double> InnerProduct<double> (const MultiVector & x, const MultiVector & y, bool conjugate)
-  {
-    return x.RefVec()->InnerProductD (x, y);
-  }
-  template <>
-  Matrix<Complex> InnerProduct<Complex> (const MultiVector & x, const MultiVector & y, bool conjugate)
-  {
-    return x.RefVec()->InnerProductC (x, y, conjugate);
-  }
-  */
 
 
 }

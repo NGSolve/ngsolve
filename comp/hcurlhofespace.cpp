@@ -1057,7 +1057,7 @@ namespace ngcomp
     
     switch (ni.GetType())
       {
-      case NT_VERTEX:
+      case NT_VERTEX: case NT_GLOBAL:
         break;
       case NT_EDGE:
         if (ni.GetNr() < order_edge.Size())
@@ -1081,7 +1081,7 @@ namespace ngcomp
   {
     switch (ni.GetType())
       {
-      case NT_VERTEX:
+      case NT_VERTEX: case NT_GLOBAL:
         return 0;
       case NT_EDGE:
         if (ni.GetNr() < order_edge.Size())

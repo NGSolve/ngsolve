@@ -1080,6 +1080,8 @@ into the wirebasket.
         break;
       case NT_FACET:
         break;
+      case NT_GLOBAL:
+        break;
       }
   }
   
@@ -1102,6 +1104,8 @@ into the wirebasket.
           return order_inner[ni.GetNr()][0];
         break;
       case NT_FACET:
+        break;
+      case NT_GLOBAL:
         break;
       }
     return 0;
