@@ -476,6 +476,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            size_t h = self.Size()/w;
            return FlatMatrix<> (h, w, &self.FVDouble()(0));
          }, py::arg("width"))
+    .def("SetRandom", &BaseVector::SetRandom)
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
@@ -510,7 +511,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) { return bv->CreateMultiVector(cnt); } ))
     .def(py::init<size_t,size_t,bool>())
     .def("__len__", &MultiVector::Size)
-    .def("__getitem__", &MultiVector::operator[])
+    // .def("__getitem__", &MultiVector::operator[])
+    .def("__getitem__",
+         [](MultiVector & self, int ind )
+         {
+           if (ind < 0) ind+=self.Size();
+           if (ind < 0 || ind >= self.Size()) 
+             throw py::index_error();
+           return self[ind];
+         })
     .def("__getitem__", [](MultiVector & self, py::slice inds) {
         size_t start, step, n;
         InitSlice( inds, self.Size(), start, step, n );
@@ -565,6 +574,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Expand", &MultiVector::Extend, "deprecated, use Extend instead")
     .def("Extend", &MultiVector::Extend)
     .def("Append", &MultiVector::Append)
+    .def("AppendOrthogonalize", &MultiVector::AppendOrthogonalize,
+         py::arg("vec"), py::arg("ipmat")=nullptr,
+         "assumes that existing vectors are orthogonal, and orthogonalize new vector against existing vectors")
     .def("InnerProduct", [](MultiVector & x, MultiVector & y, bool conjugate)
         { 
           if( !x.IsComplex() )
@@ -572,10 +584,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           else
             return py::cast(x.InnerProductC(y, conjugate));
         }, py::arg("other"), py::arg("conjugate")=py::cast(true))
+    .def("InnerProduct", [](MultiVector & x, MultiVectorExpr & y, bool conjugate)
+        { 
+          if( !x.IsComplex() )
+            return py::cast(x.InnerProductD(y));
+          else
+            return py::cast(x.InnerProductC(y, conjugate));
+        }, py::arg("other"), py::arg("conjugate")=py::cast(true))
+    /*
     .def("Orthogonalize", [](MultiVector & x, BaseMatrix * ipmat)
          {
            x.Orthogonalize(ipmat);
          },py::arg("ipmat")=nullptr)
+    */
+    .def("Orthogonalize", &MultiVector::Orthogonalize,
+         py::arg("ipmat")=nullptr)
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { // cout << "in double __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })

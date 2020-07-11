@@ -91,6 +91,19 @@ namespace ngla {
   template void MultAdd (const BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
 
 
+  shared_ptr<BaseVector> MatMultiVecExpr :: CreateVector() const 
+  { return mat->CreateColVector(); }
+    
+  void MatMultiVecExpr :: CalcComponent(size_t nr, BaseVector & bv) const 
+  {
+    bv = *mat * *(*vec)[nr];
+  }
+  
+
+
+
+
+  
   template <class T>
   void T_Orthogonalize (MultiVector & mv, BaseMatrix * ipmat)
   {
@@ -100,7 +113,7 @@ namespace ngla {
         for (int i = 0; i < mv.Size(); i++)
           {
             *tmp = *ipmat * *mv[i];
-            T norm = sqrt(InnerProduct(*tmp, *mv[i]));
+            double norm = sqrt(fabs(InnerProduct(*tmp, *mv[i])));
             *mv[i] *= 1.0 / norm;
             for (int j = i+1; j < mv.Size(); j++)
               *mv[j] -= InnerProduct<T>(*tmp, *mv[j], true)/norm * *mv[i];
@@ -119,16 +132,35 @@ namespace ngla {
   
   void MultiVector :: Orthogonalize (BaseMatrix * ipmat)
   {
+    static Timer t("MultiVector::Orthogonalize");
+    RegionTimer reg(t);
     if (IsComplex())
       T_Orthogonalize<Complex> (*this, ipmat);
     else
       T_Orthogonalize<double> (*this, ipmat);
   }
 
+
+
+  void MultiVector :: AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ipmat)
+  {
+    vecs.Append (v->CreateVector());
+    *vecs.Last() = *v;
+
+    if (IsComplex())    
+      T_Orthogonalize<Complex> (*this, ipmat);
+    else
+      T_Orthogonalize<double> (*this, ipmat);
+  }
+
+
   
   Matrix<> MultiVector ::
   InnerProductD (const MultiVector & y) const
   {
+    static Timer t("MultiVector::InnerProductD");
+    RegionTimer reg(t);
+
     Matrix<double> res(Size(), y.Size());
     for (int i = 0; i < Size(); i++)
       for (int j = 0; j < y.Size(); j++)
@@ -139,6 +171,9 @@ namespace ngla {
   Matrix<Complex> MultiVector ::
   InnerProductC (const MultiVector & y, bool conjugate) const
   {
+    static Timer t("MultiVector::InnerProductC");
+    RegionTimer reg(t);
+
     Matrix<Complex> res(Size(), y.Size());
     for (int i = 0; i < Size(); i++)
       for (int j = 0; j < y.Size(); j++)
@@ -146,6 +181,41 @@ namespace ngla {
     return res;
   }
 
+
+  Matrix<> MultiVector ::
+  InnerProductD (const MultiVectorExpr & y) const
+  {
+    static Timer t("MultiVector::InnerProductD");
+    RegionTimer reg(t);
+
+    Matrix<double> res(Size(), y.Size());
+    shared_ptr<BaseVector> hy = y.CreateVector();
+    for (int j = 0; j < y.Size(); j++)
+      {
+        y.CalcComponent(j, *hy);
+        res.Col(j) = InnerProductD(*hy);
+      }
+    return res;
+  }
+  
+  Matrix<Complex> MultiVector ::
+  InnerProductC (const MultiVectorExpr & y, bool conjugate) const
+  {
+    static Timer t("MultiVector::InnerProductC");
+    RegionTimer reg(t);
+
+    Matrix<Complex> res(Size(), y.Size());
+    shared_ptr<BaseVector> hy = y.CreateVector();    
+    for (int j = 0; j < y.Size(); j++)
+      {
+        y.CalcComponent(j, *hy);
+        res.Col(j) = InnerProductC(*hy, conjugate);
+      }
+    return res;
+  }
+
+
+  
 
 
 
