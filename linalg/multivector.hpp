@@ -27,6 +27,10 @@ namespace ngla {
     virtual void AddTo (double s, class MultiVector & v) const = 0;
     virtual void AssignTo (Complex s, class MultiVector & v) const = 0;
     virtual void AddTo (Complex s, class MultiVector & v) const = 0;
+
+    virtual size_t Size() const = 0;
+    virtual shared_ptr<BaseVector> CreateVector() const = 0;
+    virtual void CalcComponent(size_t nr, BaseVector & bv) const = 0;
   };
   
   class MultiVector
@@ -65,6 +69,7 @@ namespace ngla {
       *vecs.Last() = *v;
     }
 
+    void AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ip);
 
     MultiVector & operator= (double val)
     {
@@ -109,6 +114,8 @@ namespace ngla {
     
     virtual Matrix<> InnerProductD (const MultiVector & v2) const;
     virtual Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate = false) const;    
+    virtual Matrix<> InnerProductD (const MultiVectorExpr & v2) const;
+    virtual Matrix<Complex> InnerProductC (const MultiVectorExpr & v2, bool conjugate = false) const;    
     virtual Vector<> InnerProductD (const BaseVector & v2) const;
     virtual Vector<Complex> InnerProductC (const BaseVector & v2, bool conjugate = false) const;    
   };
@@ -142,6 +149,10 @@ namespace ngla {
 
     void AddTo (Complex s, MultiVector & res) const override
     { MultAdd (*mat, s, *vec, res); }
+
+    size_t Size() const override { return vec->Size(); }
+    shared_ptr<BaseVector> CreateVector() const override;
+    void CalcComponent(size_t nr, BaseVector & bv) const override;
   };
 
   

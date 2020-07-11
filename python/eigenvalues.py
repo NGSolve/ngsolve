@@ -82,15 +82,12 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
     """preconditioned inverse iteration"""
 
     r = mata.CreateRowVector()
-
+    
     uvecs = MultiVector(r, num)
     vecs = MultiVector(r, 2*num)
-    Avecs = MultiVector(r, 2*num)
-    # I = IdentityMatrix(len(r))
 
-    for i in range(num):
-        # r.FV().NumPy()[:] = random.rand(len(r.FV()))
-        vecs[i].FV().NumPy()[:] = random.rand(len(r.FV()))
+    for v in vecs[0:num]:
+        v.SetRandom()
     uvecs[:] = pre * vecs[0:num]
 
     lams = num * [1]
@@ -99,26 +96,28 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
         vecs[0:num] = mata * uvecs
         vecs[num:2*num] = matm * uvecs
         for j in range(num):
-            vecs[j] -= float(lams[j]) * vecs[num+j]
+            vecs[j] -= lams[j] * vecs[num+j]
             
-        vecs[num:2*num] = pre*vecs[0:num]
+        vecs[num:2*num] = pre * vecs[0:num]
         vecs[0:num] = uvecs
+        
         # vecs[0:num] = uvecs
         # for j in range(num):
         # uvecs[j] = mata * vecs[j] - lams[j] * matm * vecs[j]
         # vecs[num:2*num] = pre * uvecs
+
+        # wish:
+        # uvecs[:] = mata * vecs[0:num]  - matm * vecs[0:num] * DiagonalMatrix(lam)
         
         vecs.Orthogonalize(matm)
 
-        Avecs[:] = mata * vecs
-        asmall = InnerProduct (vecs, Avecs)
-        Avecs[:] = matm * vecs
-        msmall = InnerProduct (vecs, Avecs)
+        asmall = InnerProduct (vecs, mata * vecs)
+        msmall = InnerProduct (vecs, matm * vecs)
 
         ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
-        lams[:] = ev[0:num]
+        lams = Vector(ev[0:num])
         if printrates:
-            print (i, ":", lams)
+            print (i, ":", list(lams))
 
         for j in range(num):
             uvecs[j] = vecs * Vector(evec[:,j])
