@@ -171,6 +171,14 @@ namespace ngla
     y.FV<Complex>() = Conj(tmpy.FV<Complex>());
     // throw Exception(string("MultHermitianAdd not overloaded for type ")+typeid(*this).name());
   }
+
+  void BaseMatrix :: MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const
+  {
+    for (int i = 0; i < alpha.Size(); i++)
+      MultAdd (alpha[i], *x[i], *y[i]);
+  }
+
+
   
    // to split mat x vec for symmetric matrices
   void BaseMatrix :: MultAdd1 (double s, const BaseVector & x, BaseVector & y,

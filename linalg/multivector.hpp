@@ -35,6 +35,7 @@ namespace ngla {
   
   class MultiVector
   {
+  protected:
     shared_ptr<BaseVector> refvec;
     Array<shared_ptr<BaseVector>> vecs;
   public:
@@ -57,7 +58,7 @@ namespace ngla {
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
     shared_ptr<BaseVector> RefVec() const { return refvec; }
 
-    MultiVector Range(IntRange r) const;
+    virtual unique_ptr<MultiVector> Range(IntRange r) const;
     
     void Extend (size_t nr = 1) {
       for ([[maybe_unused]] auto i : ngstd::Range(nr))
@@ -111,6 +112,14 @@ namespace ngla {
     }
 
     void Orthogonalize (BaseMatrix * ipmat);
+
+    // v2 += vec(i) * v[i]
+    virtual void AddTo (FlatVector<double> vec, BaseVector & v2);
+    virtual void AddTo (FlatVector<Complex> vec, BaseVector & v2);
+    // me[i] += v2[j] mat(j,i)
+    virtual void Add (const MultiVector & v2, FlatMatrix<double> mat);
+    virtual void Add (const MultiVector & v2, FlatMatrix<Complex> mat);
+    
     
     virtual Matrix<> InnerProductD (const MultiVector & v2) const;
     virtual Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate = false) const;    
@@ -155,6 +164,58 @@ namespace ngla {
     void CalcComponent(size_t nr, BaseVector & bv) const override;
   };
 
+
+
+
+
+  template <typename T>
+  class MultiVecMatrixExpr : public MultiVectorExpr
+  {
+    Matrix<T> mat;
+    shared_ptr<MultiVector> vec;
+  public:
+    MultiVecMatrixExpr (Matrix<T> amat, shared_ptr<MultiVector> avec)
+      : mat(amat), vec(avec) { ; }
+
+    void AssignTo (double s, MultiVector & res) const override
+    {
+      res = 0.0;
+      AddTo (s, res);
+    }
+
+    void AddTo (double s, MultiVector & res) const override
+    {
+      res.Add (*vec, Matrix<T>(s*mat));
+    }
+
+    void AssignTo (Complex s, MultiVector & res) const override
+    {
+      res = 0.0;
+      AddTo (s, res);      
+    }
+
+    void AddTo (Complex s, MultiVector & res) const override
+    {
+      res.Add (*vec, Matrix<Complex>(s*mat));
+    }
+
+    size_t Size() const override { return vec->Size(); }
+    shared_ptr<BaseVector> CreateVector() const override
+    {
+      return vec->RefVec()->CreateVector();
+    }
+      
+    void CalcComponent(size_t nr, BaseVector & bv) const override
+    {
+      bv = 0;
+      vec->AddTo (Vector<T>(mat.Col(nr)), bv);
+    }
+  };
+
+
+
+
+  
   
   // y += sum a(i) * x[i]
   template <class T>
@@ -180,7 +241,8 @@ namespace ngla {
     void AddTo (double s, BaseVector & v) const override
     {
       Vector<TSCAL> sa = s*a;
-      Axpy (sa, *x, v);
+      // Axpy (sa, *x, v);
+      x->AddTo(sa, v);
     }
 
     void AssignTo (Complex s, BaseVector & v) const override
@@ -192,7 +254,8 @@ namespace ngla {
     void AddTo (Complex s, BaseVector & v) const override
     {
       Vector<Complex> sa = s*a;
-      Axpy(sa, *x , v);
+      // Axpy(sa, *x , v);
+      x->AddTo(sa, v);      
     }
   };
 }

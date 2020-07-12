@@ -109,9 +109,9 @@ namespace ngla
    /// y += s Trans(matrix) * x
     virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
 
-
-
-
+    /// y += alpha M x
+    virtual void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const;
+    
     /**
        to split mat x vec for symmetric matrices
        only rows with inner or cluster true need by added (but more can be ...)
