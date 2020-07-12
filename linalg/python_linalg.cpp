@@ -525,7 +525,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         InitSlice( inds, self.Size(), start, step, n );
         if (step != 1)
           throw Exception ("slices with non-unit distance not allowed");
-        return self.Range(IntRange(start, start+n));
+        return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
       })
 
     .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
@@ -549,7 +549,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           InitSlice( inds, self.Size(), start, step, n );
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
-          self.Range(IntRange(start, start+n)) = y;
+          *self.Range(IntRange(start, start+n)) = y;
       })
     .def("__setitem__", [](MultiVector & self, py::slice inds, const MultiVectorExpr & v2) {
           size_t start, step, n;
@@ -557,7 +557,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
           auto selfr = self.Range(IntRange(start, start+n));
-          v2.AssignTo (1, selfr);
+          v2.AssignTo (1, *selfr);
       })
 
     
@@ -605,6 +605,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<Complex> a) 
          { // cout << "in complex __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<Complex>>(a, x)); })
+
+    .def("__mul__", [](shared_ptr<MultiVector> x, Matrix<double> a)
+         -> shared_ptr<MultiVectorExpr>
+         {
+           return make_shared<MultiVecMatrixExpr<double>>(a, x);
+         })
+    .def("__mul__", [](shared_ptr<MultiVector> x, Matrix<Complex> a)
+         -> shared_ptr<MultiVectorExpr>
+         { return make_shared<MultiVecMatrixExpr<Complex>>(a, x); })
     ;
     /*
     // not taken, thus moved to BaseMatrix

@@ -511,6 +511,9 @@ namespace ngla
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
+    virtual void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const override;
+
+    
     virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,
 			   const Array<int> * acluster = NULL) const override;

@@ -885,6 +885,7 @@ namespace ngla
     return *this;
   }
 
+
   BaseVector & BlockVector :: Add (Complex scal, const BaseVector & v)
   {
     auto & bv = dynamic_cast_BlockVector(v);
@@ -945,6 +946,71 @@ namespace ngla
     return make_shared<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
   }
 
+
+
+
+  class BaseVectorPtrMV : public MultiVector
+  {
+  public:
+    using MultiVector::MultiVector;
+
+    unique_ptr<MultiVector> Range(IntRange r) const override
+    {
+      auto mv2 = make_unique<BaseVectorPtrMV>(refvec, 0);
+      for (auto i : r)
+        mv2->vecs.Append (vecs[i]);
+      return mv2;
+    }
+
+    void Add (const MultiVector & v2, FlatMatrix<double> mat) override
+    {
+      ParallelForRange
+        (refvec->Size(), [&] (IntRange myrange)
+         {
+           for (int i = 0; i < mat.Width(); i++)
+             for (int j = 0; j < mat.Height(); j++)
+               vecs[i]->FVDouble().Range(myrange) += mat(j,i) * v2[j]->FVDouble().Range(myrange);
+         });
+    }
+
+    
+    Vector<> InnerProductD (const BaseVector & v2) const override
+    {
+      Vector<> ip(Size());
+      ParallelFor (Size(), [&] (int nr)
+                   {
+                     ip(nr) = ngbla::InnerProduct ((*this)[nr]->FVDouble(), v2.FVDouble());
+                   });
+      return ip;
+    }
+
+    Matrix<> InnerProductD (const MultiVector & v2) const override
+    {
+      static Timer t("BaseVector-MultiVector::InnerProductD");
+      RegionTimer reg(t);
+      
+      Matrix<double> res(Size(), v2.Size());
+
+      ParallelFor (Size(), [&] (int i)
+                   {
+                     for (int j = 0; j < v2.Size(); j++)
+                       res(i,j) = ngbla::InnerProduct ((*this)[i]->FVDouble(), v2[j]->FVDouble());
+                   });
+      return res;
+    }
+
+  };
+
+  template <typename TSCAL>  
+  unique_ptr<MultiVector> S_BaseVectorPtr<TSCAL> ::
+    CreateMultiVector (size_t cnt) const 
+  {
+    return make_unique<BaseVectorPtrMV> (CreateVector(), cnt);
+  }
+  
+
+
+  
   template class S_BaseVector<double>;
   template class S_BaseVector<Complex>;
   

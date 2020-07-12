@@ -69,7 +69,8 @@ namespace ngla
     }
 
     virtual AutoVector CreateVector () const override;
-
+    virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const override;
+    
     virtual ostream & Print (ostream & ost) const override;
   };
 

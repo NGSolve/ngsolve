@@ -85,13 +85,13 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
     
     uvecs = MultiVector(r, num)
     vecs = MultiVector(r, 2*num)
+    hv = MultiVector(r, 2*num)
 
     for v in vecs[0:num]:
         v.SetRandom()
     uvecs[:] = pre * vecs[0:num]
-
     lams = num * [1]
-
+    
     for i in range(maxit):
         vecs[0:num] = mata * uvecs
         vecs[num:2*num] = matm * uvecs
@@ -108,19 +108,24 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
 
         # wish:
         # uvecs[:] = mata * vecs[0:num]  - matm * vecs[0:num] * DiagonalMatrix(lam)
-        
-        vecs.Orthogonalize(matm)
 
+        vecs.Orthogonalize() # matm)
+
+        # hv[:] = mata * vecs
+        # asmall = InnerProduct (vecs, hv)
+        # hv[:] = matm * vecs
+        # msmall = InnerProduct (vecs, hv)
         asmall = InnerProduct (vecs, mata * vecs)
         msmall = InnerProduct (vecs, matm * vecs)
-
+    
         ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
         lams = Vector(ev[0:num])
         if printrates:
             print (i, ":", list(lams))
 
-        for j in range(num):
-            uvecs[j] = vecs * Vector(evec[:,j])
+            # for j in range(num):
+            # uvecs[j] = vecs * Vector(evec[:,j])
+        uvecs[:] = vecs * Matrix(evec[:,0:num])
     return lams, uvecs
 
 

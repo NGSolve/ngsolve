@@ -36,10 +36,10 @@ namespace ngcomp {
 
     SetNDof(space->GetNDof());
     size_t ndof = space->GetNDof();
+    Array<DofId> dofs;
+    /*
     dofmap.SetSize(ndof);
     dofmap = UNUSED_DOF;
-
-    Array<DofId> dofs;
     size_t cnt = 0;
     for (auto nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
       for (auto nr : Range(ma->GetNNodes(nt)))
@@ -48,7 +48,55 @@ namespace ngcomp {
           for (auto d : dofs)
             dofmap[d] = cnt++;
         }
-    
+    */
+
+    Array<int> dofgroup(ndof);
+    Array<int> elgroup(ma->GetNE());
+    dofgroup = -1;
+    elgroup = -1;
+    int ngroups = 100;
+    int step = ma->GetNE() / ngroups;
+    if (step == 0) step = 1;
+    // select seed elements
+    ngroups = 0;
+    for (int elnr = 0; elnr < ma->GetNE(); elnr += step, ngroups++)
+      {
+        elgroup[elnr] = ngroups;
+        space->GetDofNrs(ElementId(elnr), dofs);
+        for (auto d : dofs)
+          dofgroup[d] = ngroups;
+      }
+
+    bool done = false;
+    while (!done)
+      {
+        cout << "another loop" << endl;
+        done = true;
+        for (int elnr = 0; elnr < ma->GetNE(); elnr++)
+          {
+            if (elgroup[elnr] != -1) continue;
+            space->GetDofNrs(ElementId(elnr), dofs);
+            int groupnr = -1;
+            for (auto d : dofs)
+              if (dofgroup[d] != -1)
+                groupnr = dofgroup[d];
+            if (groupnr != -1)
+              {
+                elgroup[elnr] = groupnr;
+                for (auto d : dofs)
+                  dofgroup[d] = groupnr;
+              }
+            done = false;
+          }
+      }
+
+    dofmap.SetSize(ndof);
+    size_t cnt = 0;
+    for (int i = 0; i < ngroups; i++)
+      for (DofId d = 0; d < ndof; d++)
+        if (dofgroup[d] == i)
+          dofmap[d] = cnt++;
+
     ctofdof.SetSize(ndof);
     for (auto i : Range(ndof))
       ctofdof[dofmap[i]] = space->GetDofCouplingType(i);
