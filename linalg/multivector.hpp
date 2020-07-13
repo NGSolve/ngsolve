@@ -23,17 +23,18 @@ namespace ngla {
   {
   public:
     virtual ~MultiVectorExpr() { ; }
-    virtual void AssignTo (double s, class MultiVector & v) const = 0;
-    virtual void AddTo (double s, class MultiVector & v) const = 0;
-    virtual void AssignTo (Complex s, class MultiVector & v) const = 0;
-    virtual void AddTo (Complex s, class MultiVector & v) const = 0;
+    virtual void AssignTo (FlatVector<double> s, class MultiVector & v) const = 0;
+    virtual void AddTo (FlatVector<double> s, class MultiVector & v) const = 0;
+    virtual void AssignTo (FlatVector<Complex> s, class MultiVector & v) const = 0;
+    virtual void AddTo (FlatVector<Complex> s, class MultiVector & v) const = 0;
 
     virtual size_t Size() const = 0;
     virtual shared_ptr<BaseVector> CreateVector() const = 0;
     virtual void CalcComponent(size_t nr, BaseVector & bv) const = 0;
   };
+
   
-  class MultiVector
+  class MultiVector : public MultiVectorExpr
   {
   protected:
     shared_ptr<BaseVector> refvec;
@@ -54,7 +55,7 @@ namespace ngla {
     virtual ~MultiVector() { } 
     bool IsComplex() const { return refvec->IsComplex(); }
 
-    size_t Size() const { return vecs.Size(); }
+    size_t Size() const override { return vecs.Size(); }
     shared_ptr<BaseVector> operator[] (size_t i) const { return vecs[i]; }
     shared_ptr<BaseVector> RefVec() const { return refvec; }
 
@@ -74,15 +75,17 @@ namespace ngla {
 
     MultiVector & operator= (double val)
     {
-      for (auto & vec : vecs)
-        *vec = val;
+      SetScalar (val);
+      // for (auto & vec : vecs)
+      // *vec = val;
       return *this;
     }
 
     MultiVector & operator= (Complex val)
     {
-      for (auto & vec : vecs) 
-        *vec = val;
+      SetScalar (val);
+      // for (auto & vec : vecs) 
+      // *vec = val;
       return *this;      
     }
 
@@ -94,25 +97,34 @@ namespace ngla {
     }
     
     MultiVector & operator= (const MultiVectorExpr & expr)
-    { 
-      expr.AssignTo(1, *this);
+    {
+      Vector<double> ones(Size());
+      ones = 1;
+      expr.AssignTo(ones, *this);
       return *this;
     }
     
     MultiVector operator+= (const MultiVectorExpr & expr)
-    { 
-      expr.AddTo(1, *this);
+    {
+      Vector<double> ones(Size());
+      ones = 1;      
+      expr.AddTo(ones, *this);
       return *this;
     }
     
     MultiVector & operator-= (const MultiVectorExpr & expr)
-    { 
-      expr.AddTo(-1, *this);
+    {
+      Vector<double> mones(Size());
+      mones = -1;
+      expr.AddTo(mones, *this);
       return *this;
     }
 
     void Orthogonalize (BaseMatrix * ipmat);
 
+    virtual void SetScalar (double s);
+    virtual void SetScalar (Complex s);
+    
     // v2 += vec(i) * v[i]
     virtual void AddTo (FlatVector<double> vec, BaseVector & v2);
     virtual void AddTo (FlatVector<Complex> vec, BaseVector & v2);
@@ -126,12 +138,22 @@ namespace ngla {
     virtual Matrix<> InnerProductD (const MultiVectorExpr & v2) const;
     virtual Matrix<Complex> InnerProductC (const MultiVectorExpr & v2, bool conjugate = false) const;    
     virtual Vector<> InnerProductD (const BaseVector & v2) const;
-    virtual Vector<Complex> InnerProductC (const BaseVector & v2, bool conjugate = false) const;    
+    virtual Vector<Complex> InnerProductC (const BaseVector & v2, bool conjugate = false) const;
+
+
+
+    virtual void AssignTo (FlatVector<double> s, class MultiVector & v) const override;
+    virtual void AddTo (FlatVector<double> s, class MultiVector & v) const override;
+    virtual void AssignTo (FlatVector<Complex> s, class MultiVector & v) const override;
+    virtual void AddTo (FlatVector<Complex> s, class MultiVector & v) const override;
+
+    virtual shared_ptr<BaseVector> CreateVector() const override;
+    virtual void CalcComponent(size_t nr, BaseVector & bv) const override;
   };
   
 
   template <class T>
-  void MultAdd (const BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y);
+  void MultAdd (const BaseMatrix & mat, FlatVector<T> s, const MultiVector & x, MultiVector & y);
   
   class MatMultiVecExpr : public MultiVectorExpr
   {
@@ -141,22 +163,22 @@ namespace ngla {
     MatMultiVecExpr (shared_ptr<BaseMatrix> amat, shared_ptr<MultiVector> avec)
       : mat(amat), vec(avec) { ; }
 
-    void AssignTo (double s, MultiVector & res) const override
+    void AssignTo (FlatVector<double> s, MultiVector & res) const override
     {
       res = 0.0;
       MultAdd (*mat, s, *vec, res);
     }
 
-    void AddTo (double s, MultiVector & res) const override
+    void AddTo (FlatVector<double> s, MultiVector & res) const override
     { MultAdd (*mat, s, *vec, res); }
 
-    void AssignTo (Complex s, MultiVector & res) const override
+    void AssignTo (FlatVector<Complex> s, MultiVector & res) const override
     {
       res = 0.0;
       MultAdd (*mat, s, *vec, res);
     }
 
-    void AddTo (Complex s, MultiVector & res) const override
+    void AddTo (FlatVector<Complex> s, MultiVector & res) const override
     { MultAdd (*mat, s, *vec, res); }
 
     size_t Size() const override { return vec->Size(); }
@@ -177,26 +199,32 @@ namespace ngla {
     MultiVecMatrixExpr (Matrix<T> amat, shared_ptr<MultiVector> avec)
       : mat(amat), vec(avec) { ; }
 
-    void AssignTo (double s, MultiVector & res) const override
+    void AssignTo (FlatVector<double> s, MultiVector & res) const override
     {
       res = 0.0;
       AddTo (s, res);
     }
 
-    void AddTo (double s, MultiVector & res) const override
+    void AddTo (FlatVector<double> s, MultiVector & res) const override
     {
-      res.Add (*vec, Matrix<T>(s*mat));
+      Matrix<T> hmat = mat;
+      for (auto i : Range(mat.Width()))
+        hmat.Col(i) *= s(i);
+      res.Add (*vec, hmat);
     }
 
-    void AssignTo (Complex s, MultiVector & res) const override
+    void AssignTo (FlatVector<Complex> s, MultiVector & res) const override
     {
       res = 0.0;
       AddTo (s, res);      
     }
 
-    void AddTo (Complex s, MultiVector & res) const override
+    void AddTo (FlatVector<Complex> s, MultiVector & res) const override
     {
-      res.Add (*vec, Matrix<Complex>(s*mat));
+      Matrix<Complex> hmat = mat;
+      for (auto i : Range(mat.Width()))
+        hmat.Col(i) *= s(i);
+      res.Add (*vec, hmat);
     }
 
     size_t Size() const override { return vec->Size(); }
@@ -213,6 +241,115 @@ namespace ngla {
   };
 
 
+
+
+
+  class SumMultiVectorExpr : public MultiVectorExpr
+  {
+    shared_ptr<MultiVectorExpr> e1;
+    shared_ptr<MultiVectorExpr> e2;
+  public:
+    SumMultiVectorExpr (shared_ptr<MultiVectorExpr> ae1,
+                        shared_ptr<MultiVectorExpr> ae2)
+      : e1(ae1), e2(ae2) { } 
+
+    void AssignTo (FlatVector<double> s, MultiVector & res) const override
+    {
+      e1->AssignTo (s, res);
+      e2->AddTo (s, res);
+    }
+
+    void AddTo (FlatVector<double> s, MultiVector & res) const override
+    {
+      e1->AddTo (s, res);
+      e2->AddTo (s, res);
+    }
+
+    void AssignTo (FlatVector<Complex> s, MultiVector & res) const override
+    {
+      e1->AssignTo (s, res);
+      e2->AddTo (s, res);
+    }
+
+    void AddTo (FlatVector<Complex> s, MultiVector & res) const override
+    {
+      e1->AddTo (s, res);
+      e2->AddTo (s, res);
+    }
+
+    size_t Size() const override { return e1->Size(); }
+    shared_ptr<BaseVector> CreateVector() const override
+    {
+      return e1->CreateVector();
+    }
+      
+    void CalcComponent(size_t nr, BaseVector & bv) const override
+    {
+      shared_ptr<BaseVector> tmp = bv.CreateVector();
+      e1->CalcComponent(nr, *tmp);
+      e2->CalcComponent(nr, bv);
+      bv += *tmp;
+    }
+  };
+
+
+
+
+  template <typename T>
+  class ScaledMultiVectorExpr : public MultiVectorExpr
+  {
+    shared_ptr<MultiVectorExpr> mv;
+    Vector<T> scale;
+  public:
+    ScaledMultiVectorExpr (shared_ptr<MultiVectorExpr> amv,
+                           Vector<T> ascale)
+      : mv(amv), scale(ascale) { } 
+
+    void AssignTo (FlatVector<double> s, MultiVector & res) const override
+    {
+      Vector<T> hv = pw_mult(scale, s);
+      mv->AssignTo (hv, res);
+    }
+
+    void AddTo (FlatVector<double> s, MultiVector & res) const override
+    {
+      Vector<T> hv = pw_mult(scale, s);
+      mv->AddTo (hv, res);
+    }
+
+    void AssignTo (FlatVector<Complex> s, MultiVector & res) const override
+    {
+      Vector<Complex> hv = pw_mult(scale, s);
+      mv->AssignTo (hv, res);
+    }
+
+    void AddTo (FlatVector<Complex> s, MultiVector & res) const override
+    {
+      Vector<Complex> hv = pw_mult(scale, s);
+      mv->AddTo (hv, res);
+    }
+
+    size_t Size() const override { return mv->Size(); }
+    shared_ptr<BaseVector> CreateVector() const override
+    {
+      return mv->CreateVector();
+    }
+      
+    void CalcComponent(size_t nr, BaseVector & bv) const override
+    {
+      mv->CalcComponent(nr, bv);
+      bv *= scale(nr);
+    }
+  };
+
+
+
+
+
+
+
+
+  
 
 
   
@@ -258,5 +395,31 @@ namespace ngla {
       x->AddTo(sa, v);      
     }
   };
+
+
+
+
+
+  inline shared_ptr<MultiVectorExpr> operator+ (shared_ptr<MultiVectorExpr> e1,
+                                         shared_ptr<MultiVectorExpr> e2)
+  {
+    return make_shared<SumMultiVectorExpr> (e1,e2);
+  }
+                                         
+  inline shared_ptr<MultiVectorExpr> operator- (shared_ptr<MultiVectorExpr> e1)
+  {
+    Vector<> mones(e1->Size()); mones = -1;
+    return make_shared<ScaledMultiVectorExpr<double>> (e1, mones);
+  }
+
+  inline shared_ptr<MultiVectorExpr> operator- (shared_ptr<MultiVectorExpr> e1,
+                                         shared_ptr<MultiVectorExpr> e2)
+  {
+    return e1 + (-e2);
+  }
+                                         
+  
+
+  
 }
 #endif

@@ -90,13 +90,18 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
     for v in vecs[0:num]:
         v.SetRandom()
     uvecs[:] = pre * vecs[0:num]
-    lams = num * [1]
+    lams = Vector(num * [1])
     
     for i in range(maxit):
-        vecs[0:num] = mata * uvecs
-        vecs[num:2*num] = matm * uvecs
-        for j in range(num):
-            vecs[j] -= lams[j] * vecs[num+j]
+        # vecs[0:num] = mata * uvecs
+        # vecs[0:num] += (matm * uvecs).Scale (-lams[0:num])
+
+        vecs[0:num] = mata * uvecs - (matm * uvecs).Scale (lams)
+        
+        # vecs[num:2*num] += (matm * uvecs).Scale (-lams[0:num])
+        # for j in range(num):
+        # vecs[j] += vecs[num+j]
+            # vecs[j] -= lams[j] * vecs[num+j]
             
         vecs[num:2*num] = pre * vecs[0:num]
         vecs[0:num] = uvecs

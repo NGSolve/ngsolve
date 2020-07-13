@@ -962,8 +962,24 @@ namespace ngla
       return mv2;
     }
 
+    void SetScalar (double s) override
+    {
+      static Timer t("BaseVector-MV :: SetScalar");
+      RegionTimer reg(t);
+      
+      ParallelForRange
+        (refvec->FVDouble().Size(), [&] (IntRange myrange)
+         {
+           for (int i = 0; i < Size(); i++)
+             vecs[i]->FVDouble().Range(myrange) = s;
+         });
+    }
+
     void Add (const MultiVector & v2, FlatMatrix<double> mat) override
     {
+      static Timer t("BaseVector-MV :: mult mat");
+      RegionTimer reg(t);
+
       ParallelForRange
         (refvec->Size(), [&] (IntRange myrange)
          {
@@ -976,6 +992,9 @@ namespace ngla
     
     Vector<> InnerProductD (const BaseVector & v2) const override
     {
+      static Timer t("BaseVector-MV :: InnerProduct - vec");
+      RegionTimer reg(t);
+
       Vector<> ip(Size());
       ParallelFor (Size(), [&] (int nr)
                    {
