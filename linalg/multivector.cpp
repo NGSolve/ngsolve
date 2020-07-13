@@ -66,6 +66,43 @@ namespace ngla {
     return mv2;
   }
 
+
+  void MultiVector :: AssignTo (FlatVector<double> s, class MultiVector & v) const
+  {
+    for (int i = 0; i < s.Size(); i++)
+      *v[i] = s[i] * *vecs[i];
+  }
+  
+  void MultiVector :: AddTo (FlatVector<double> s, class MultiVector & v) const 
+  {
+    for (int i = 0; i < s.Size(); i++)
+      *v[i] += s[i] * *vecs[i];
+  }
+  
+  void MultiVector ::AssignTo (FlatVector<Complex> s, class MultiVector & v) const
+  {
+    for (int i = 0; i < s.Size(); i++)
+      *v[i] = s[i] * *vecs[i];
+  }
+        
+  void MultiVector ::AddTo (FlatVector<Complex> s, class MultiVector & v) const
+  {
+    for (int i = 0; i < s.Size(); i++)
+      *v[i] += s[i] * *vecs[i];
+  }
+
+  shared_ptr<BaseVector> MultiVector ::CreateVector() const
+  {
+    return refvec->CreateVector();
+  }
+    
+  void MultiVector ::CalcComponent(size_t nr, BaseVector & bv) const
+  {
+    bv = *vecs[nr];
+  }
+
+
+
   
 
   template <class T>
@@ -79,21 +116,19 @@ namespace ngla {
   template void Axpy (const Vector<Complex> & a, const MultiVector  & x, BaseVector & y);
 
   template <class T>
-  void MultAdd (const class BaseMatrix & mat, T s, const MultiVector & x, MultiVector & y)
+  void MultAdd (const class BaseMatrix & mat, FlatVector<T> s, const MultiVector & x, MultiVector & y)
   {
     if constexpr (std::is_same<T,double>::value)
       {
-        Vector<double> vs(x.Size());
-        vs = s;
-        mat.MultAdd (vs, x, y);
+        mat.MultAdd (s, x, y);
       }
     else
       for (auto i : Range(x.Size()))
-        mat.MultAdd (s, *x[i], *y[i]);
+        mat.MultAdd (s(i), *x[i], *y[i]);
   }
   
-  template void MultAdd (const BaseMatrix & mat, double s, const MultiVector & x, MultiVector & y);
-  template void MultAdd (const BaseMatrix & mat, Complex s, const MultiVector & x, MultiVector & y);
+  template void MultAdd (const BaseMatrix & mat, FlatVector<double> s, const MultiVector & x, MultiVector & y);
+  template void MultAdd (const BaseMatrix & mat, FlatVector<Complex> s, const MultiVector & x, MultiVector & y);
 
 
   shared_ptr<BaseVector> MatMultiVecExpr :: CreateVector() const 
@@ -181,7 +216,20 @@ namespace ngla {
       T_Orthogonalize<double> (*this, ipmat);
   }
 
+  void MultiVector :: SetScalar (double s)
+  {
+    for (auto & vec : vecs) 
+      *vec = s;
+  }
+  
+  void MultiVector :: SetScalar (Complex s)
+  {
+    for (auto & vec : vecs) 
+      *vec = s;
+  }
 
+
+  
   void MultiVector :: AddTo (FlatVector<double> vec, BaseVector & v2)
   {
     for (int i = 0; i < vec.Size(); i++)
@@ -256,7 +304,9 @@ namespace ngla {
     return res;
     */
     auto mv = y.CreateVector()->CreateMultiVector(y.Size());
-    y.AssignTo (1, *mv);
+    Vector<double> ones(y.Size());
+    ones = 1;
+    y.AssignTo (ones, *mv);
     return InnerProductD (*mv);
   }
   

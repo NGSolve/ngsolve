@@ -503,10 +503,19 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                             "number of blocks in BlockVector")
     ;
 
-  py::class_<MultiVectorExpr, shared_ptr<MultiVectorExpr> >(m, "MultiVectorExpr");
+  py::class_<MultiVectorExpr, shared_ptr<MultiVectorExpr> >(m, "MultiVectorExpr")
+    .def("Scale", [](shared_ptr<MultiVectorExpr> e, Vector<double> v)
+         -> shared_ptr<MultiVectorExpr>
+         { return make_shared<ScaledMultiVectorExpr<double>> (e, v); })
+    .def("__add__", [](shared_ptr<MultiVectorExpr> e1, shared_ptr<MultiVectorExpr> e2)
+         { return e1+e2; })
+    .def("__neg__", [](shared_ptr<MultiVectorExpr> e1)
+         { return -e1; })
+    .def("__sub__", [](shared_ptr<MultiVectorExpr> e1, shared_ptr<MultiVectorExpr> e2)
+         { return e1-e2; })
+    ;
 
-  // TODO: default value for complex
-  py::class_<MultiVector, shared_ptr<MultiVector>> (m, "MultiVector")
+  py::class_<MultiVector, MultiVectorExpr, shared_ptr<MultiVector>> (m, "MultiVector")
     // .def(py::init<shared_ptr<BaseVector>,size_t>([] ))
     .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) { return bv->CreateMultiVector(cnt); } ))
     .def(py::init<size_t,size_t,bool>())
@@ -557,7 +566,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
           auto selfr = self.Range(IntRange(start, start+n));
-          v2.AssignTo (1, *selfr);
+          Vector<> ones(n); ones = 1;
+          v2.AssignTo (ones, *selfr);
       })
 
     
@@ -565,11 +575,16 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   [](shared_ptr<MultiVector> self)
                   { return self; },
                   [](shared_ptr<MultiVector> self, const MultiVectorExpr & v2)
-                  { 
+                  {
+                    Vector<> ones(self->Size());
+                    ones = 1;
+                    v2.AssignTo(ones, *self);
+                    /*
                     if( !self->IsComplex() )
                         v2.AssignTo(1, *self);
                     else
                         v2.AssignTo(Complex(1), *self); 
+                    */
                   })
     .def("Expand", &MultiVector::Extend, "deprecated, use Extend instead")
     .def("Extend", &MultiVector::Extend)
