@@ -316,7 +316,7 @@ namespace ngfem
                   {
                     SIMD<double> sum = 0;
                     for (int m = 0; m < DIMSPACE; m++)
-                      sum += jacinv(j,m) * x(m*DIM_STRESS+l, k);
+                      sum += jacinv(j,m) * x(m*DIM_STRESS+l, base+k);
                     
                     hx1(l,k) = (-(8/(12*eps)) * sum).Data();
                     hx2(l,k) = ( (1/(12*eps)) * sum).Data();
