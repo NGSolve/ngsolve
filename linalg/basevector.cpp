@@ -979,7 +979,7 @@ namespace ngla
     {
       static Timer t("BaseVector-MV :: mult mat");
       RegionTimer reg(t);
-
+      t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FVDouble().Size());
       ParallelForRange
         (refvec->Size(), [&] (IntRange myrange)
          {
@@ -993,6 +993,7 @@ namespace ngla
     Vector<> InnerProductD (const BaseVector & v2) const override
     {
       static Timer t("BaseVector-MV :: InnerProduct - vec");
+      t.AddFlops (Size()*this->RefVec()->FVDouble().Size());
       RegionTimer reg(t);
 
       Vector<> ip(Size());
@@ -1007,6 +1008,7 @@ namespace ngla
     {
       static Timer t("BaseVector-MultiVector::InnerProductD");
       RegionTimer reg(t);
+      t.AddFlops (Size()*v2.Size()*this->RefVec()->FVDouble().Size());
       
       Matrix<double> res(Size(), v2.Size());
 
