@@ -64,12 +64,12 @@ nbsphinx_prolog = r"""
         .dg.main {
             margin-left: 0px;
         }
-        .wy-plain-list-disc li, .rst-content .section ul li, .rst-content .toctree-wrapper ul li, article ul li {
+        div.p-Widget div div div div.dg ul li {
             list-style: none;
             margin-left: 0px;
         }
-        .wy-plain-list-disc li li, .rst-content .section ul li li, .rst-content .toctree-wrapper ul li li, article ul li li {
-            list-style: none;
+        div.p-Widget div div div div.dg ul li div.dg {
+            margin-bottom: 0px;
         }
     </style>
 
