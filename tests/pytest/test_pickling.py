@@ -3,7 +3,7 @@ from netgen.csg import unit_cube
 from ngsolve import *
 import pickle
 import numpy
-import io
+import io, pytest
 
 def test_pickle_volume_fespaces():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
@@ -128,7 +128,8 @@ def test_pickle_compoundfespace():
     errorflux = sqrt(Integrate((flux1[0]-flux2[0])*(flux1[0]-flux2[0])+(flux1[1]-flux2[1])*(flux1[1]-flux2[1]),mesh))
     assert error < 1e-14 and errorflux < 1e-14
 
-def test_pickle_periodic():
+@pytest.mark.parametrize("phase", [None, [-1]*10, [1J]*10])
+def test_pickle_periodic(phase):
     periodic = SplineGeometry()
     pnts = [ (0,0), (1,0), (1,1), (0,1) ]
     pnums = [periodic.AppendPoint(*p) for p in pnts]
@@ -137,7 +138,8 @@ def test_pickle_periodic():
     periodic.Append ( ["line", pnums[2], pnums[3]], bc="outer")
     periodic.Append ( ["line", pnums[0], pnums[3]], leftdomain=0, rightdomain=1, copy=lright, bc="periodic")
     mesh = Mesh(periodic.GenerateMesh(maxh=0.2))
-    fes = Periodic(H1(mesh,order=3,dirichlet="outer"))
+    is_complex = (phase is not None) and (type(phase[0]) != float)
+    fes = Periodic(H1(mesh,order=3, complex=is_complex, dirichlet="outer"),phase=phase)
     u,v = fes.TrialFunction(), fes.TestFunction()
     a = BilinearForm(fes,symmetric=True)
     a += SymbolicBFI(grad(u) * grad(v))
@@ -150,7 +152,8 @@ def test_pickle_periodic():
         u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
     data = pickle.dumps(u)
     u2 = pickle.loads(data)
-    assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
+    assert u2.space.is_complex == is_complex
+    assert Integrate(Norm(u-u2),mesh) < 1e-14
 
 def test_pickle_CoefficientFunctions():
     import netgen.csg as csg
