@@ -1355,8 +1355,8 @@ namespace ngbla
   {
     constexpr size_t bs = 256; // inner-product loop
     size_t wa = a.Width();
-    SIMD<double> *pa = &a(0);
-    SIMD<double> *pb = &b(0);
+    SIMD<double> *pa = a.Data();
+    SIMD<double> *pb = b.Data();
     double *pc = c.Data();
     for (size_t i = 0; i < wa; i += bs, pa+=bs, pb+=bs)
       TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
