@@ -1964,7 +1964,7 @@ namespace ngla
     // BaseMatrix::MultAdd (alpha, x, y);
 
     static Timer t("SparseMatrix::MultAdd Multivec"); RegionTimer reg(t);
-    t.AddFlops (this->NZE());
+    t.AddFlops (this->NZE()*x.Size());
 
 
     task_manager -> CreateJob
