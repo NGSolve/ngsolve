@@ -24,11 +24,11 @@ Make sure that you have the following packages installed:
 - libglu (again, the "dev"-version)
 - liblapacke-dev
 
-The following line should update/install all prerequisites (you need root privileges):
+The following line should update/install all prerequisites on Ubuntu (you need root privileges):
 
 .. code:: bash
 	    
-   sudo apt-get update && sudo apt-get -y install python3 python3-tk libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev liblapacke-dev
+   sudo apt-get update && sudo apt-get -y install python3 python3-distutils python3-tk libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev liblapacke-dev
 
 Getting the source
 ******************
