@@ -118,7 +118,7 @@ namespace ngla
     auto me = FVDouble();
     auto you = v.FVDouble();
 
-    if (&me(0) == &you(0) && scal==1.0) return *this;
+    if (me.Addr(0) == you.Addr(0) && scal==1.0) return *this;
     
     t.AddFlops (me.Size());
 
@@ -331,7 +331,7 @@ namespace ngla
   {
     FlatVector<Complex> fv = FVScal();
     return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
-                                reinterpret_cast<Complex*> (&fv(0)));
+                                reinterpret_cast<Complex*> (fv.Addr(0)));
   }
 
 
@@ -362,7 +362,7 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        FlatVector<double> lsv(Size(), &FVDouble()(0));
+        FlatVector<double> lsv(Size(), FVDouble().Addr(0));
         for (auto i : ind.Range())
           {
             int index = ind[i];
@@ -390,8 +390,8 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
-        FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
+        FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+        FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
           if (IsRegularIndex(ind[i]))
@@ -405,8 +405,8 @@ namespace ngla
   void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
 					    FlatVector<Complex> v) const 
   { 
-    FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
-    FlatSysVector<Complex> sv(ind.Size(), EntrySize(), &v(0));
+    FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+    FlatSysVector<Complex> sv(ind.Size(), EntrySize(), v.Addr(0));
 
     for (size_t i = 0; i < ind.Size(); i++)
       if (IsRegularIndex(ind[i]))
@@ -468,8 +468,8 @@ namespace ngla
   void BaseVector :: SetIndirect (FlatArray<int> ind, 
 				  FlatVector<double> v) 
   { 
-    FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
-    FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
+    FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+    FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
 
     for (size_t i = 0; i < ind.Size(); i++)
       if (IsRegularIndex(ind[i]))
@@ -548,7 +548,7 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        FlatVector<double> lsv(Size(), &FVDouble()(0));
+        FlatVector<double> lsv(Size(), FVDouble().Addr(0));
 
         if (!use_atomic)
           {
@@ -566,8 +566,8 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
-        FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
+        FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+        FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
           if (IsRegularIndex(ind[i]))
@@ -715,7 +715,7 @@ namespace ngla
   {
     FlatVector<Complex> fv = FVScal();
     return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
-                               reinterpret_cast<double*> (&fv(0)));
+                               reinterpret_cast<double*> (fv.Addr(0)));
   }
 
 
