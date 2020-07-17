@@ -148,18 +148,19 @@ namespace ngstd
 #endif
 #endif
 
-  typedef int64_t mask64;
-
+  // typedef int64_t mask64;
+  class mask64;
+  
   template <> 
   class SIMD<mask64,1>
   {
-    mask64 mask;
+    int64_t mask;
   public:
     SIMD (size_t i)
       : mask(i > 0 ? -1 : 0) { ; }
     bool Data() const { return mask; }
     static constexpr int Size() { return 1; }    
-    mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+    auto operator[] (int /* i */) const { return mask; }
   };
 
 
@@ -176,7 +177,7 @@ namespace ngstd
     SIMD (__m128i _mask) : mask(_mask) { ; }
     __m128i Data() const { return mask; }
     static constexpr int Size() { return 2; }    
-    mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+    int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
   };
 #endif
   
@@ -194,7 +195,7 @@ namespace ngstd
     SIMD (__m256i _mask) : mask(_mask) { ; }    
     __m256i Data() const { return mask; }
     static constexpr int Size() { return 4; }    
-    mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+    int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
   };
 #else
   template <> 
@@ -232,6 +233,25 @@ namespace ngstd
     // mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
   };
 #endif
+
+
+  
+  template<>
+  class SIMD<int64_t,1>
+  {
+    int64_t data;
+    
+  public:
+    static constexpr int Size() { return 1; }
+    SIMD () {}
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+    SIMD (int64_t val) { data = val; }
+
+    int64_t operator[] (int i) const { return ((int64_t*)(&data))[i]; }
+    auto Data() const { return data; }
+    auto & Data() { return data; }
+  };
 
   
   template<>
@@ -273,6 +293,31 @@ namespace ngstd
   
 
 #ifdef __SSE__
+
+  template<>
+  class SIMD<int64_t,2> 
+  {
+    __m128i data;
+    
+  public:
+    static constexpr int Size() { return 2; }
+    SIMD () {}
+    SIMD (const SIMD &) = default;
+    SIMD (int64_t v0, int64_t v1) { data = _mm_set_epi64x(v1,v0); }
+    
+    SIMD & operator= (const SIMD &) = default;
+
+    SIMD (int64_t val) { data = _mm_set1_epi64x(val); }
+    SIMD (__m128i _data) { data = _data; }
+
+    INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
+    INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
+    INLINE __m128i Data() const { return data; }
+    INLINE __m128i & Data() { return data; }
+  };
+
+
+  
   template<>
   class alignas(16) SIMD<double,2> : public AlignedAlloc<SIMD<double,2>>
   {
@@ -345,6 +390,33 @@ namespace ngstd
   
 
 #ifdef __AVX__
+
+  template<>
+  class SIMD<int64_t,4> 
+  {
+    __m256i data;
+    
+  public:
+    static constexpr int Size() { return 4; }
+    SIMD () {}
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+
+    SIMD (int64_t val) { data = _mm256_set1_epi64x(val); }
+    SIMD (int64_t v0, int64_t v1, int64_t v2, int64_t v3) { data = _mm256_set_epi64x(v3,v2,v1,v0); }
+    // SIMD (SIMD<double,2> v0, SIMD<double,2> v1) : SIMD(v0[0], v0[1], v1[0], v1[1]) { ; }
+    SIMD (__m256i _data) { data = _data; }
+
+    INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
+    INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
+    INLINE __m256i Data() const { return data; }
+    INLINE __m256i & Data() { return data; }
+
+    // SIMD<double,2> Lo() const { return _mm256_extractf128_pd(data, 0); }
+    // SIMD<double,2> Hi() const { return _mm256_extractf128_pd(data, 1); }
+  };
+
+
   
   template<>
   class /* alignas(32) */ SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
@@ -728,7 +800,14 @@ namespace ngstd
     return hsum;
     // return make_tuple(hsum[0], hsum[1], hsum[2], hsum[3]);
   }
+
   
+  INLINE SIMD<int64_t,4> If (SIMD<mask64,4> a, SIMD<int64_t,4> b, SIMD<int64_t,4> c)
+  { return _mm256_blendv_pd(c.Data(), b.Data(), a.Data()); }
+
+  INLINE SIMD<double,4> LoadIndirect (double * p, SIMD<int64_t,4> index)
+  { return _mm256_i64gather_pd (p, index.Data(), 8); }
+
 #endif  
   
 
