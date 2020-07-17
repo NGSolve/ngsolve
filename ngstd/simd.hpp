@@ -764,7 +764,7 @@ namespace ngstd
   { return _mm256_xor_si256 (a.Data(), _mm256_cmpeq_epi32(a.Data(),a.Data())); }
   
   INLINE SIMD<double,4> If (SIMD<mask64,4> a, SIMD<double,4> b, SIMD<double,4> c)
-  { return _mm256_blendv_pd(c.Data(), b.Data(), a.Data()); }
+  { return _mm256_blendv_pd(c.Data(), b.Data(), _mm256_castsi256_pd(a.Data())); }
   
   INLINE SIMD<double,4> IfPos (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
   {
@@ -804,7 +804,8 @@ namespace ngstd
 
   
   INLINE SIMD<int64_t,4> If (SIMD<mask64,4> a, SIMD<int64_t,4> b, SIMD<int64_t,4> c)
-  { return _mm256_blendv_pd(c.Data(), b.Data(), a.Data()); }
+  { return _mm256_blendv_pd(_mm256_castsi256_pd(c.Data()), _mm256_castsi256_pd(b.Data()),
+                            _mm256_castsi256_pd(a.Data())); }
 
   INLINE SIMD<double,4> LoadIndirect (double * p, SIMD<int64_t,4> index)
   { return _mm256_i64gather_pd (p, index.Data(), 8); }
