@@ -669,6 +669,30 @@ namespace ngstd
   INLINE SIMD<double,4> floor (SIMD<double,4> a) { return _mm256_floor_pd(a.Data()); }
   INLINE SIMD<double,4> ceil (SIMD<double,4> a) { return _mm256_ceil_pd(a.Data()); }
   INLINE SIMD<double,4> fabs (SIMD<double,4> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
+
+  INLINE SIMD<mask64> operator<= (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_LE_OQ); }
+  INLINE SIMD<mask64> operator< (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_LT_OQ); }
+  INLINE SIMD<mask64> operator>= (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_GE_OQ); }
+  INLINE SIMD<mask64> operator> (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_GT_OQ); }
+  INLINE SIMD<mask64> operator== (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_EQ_OQ); }
+  INLINE SIMD<mask64> operator!= (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_NEQ_OQ); }
+
+  INLINE SIMD<mask64> operator&& (SIMD<mask64> a, SIMD<mask64> b)
+  { return _mm256_and_si256 (a.Data(), b.Data()); }
+  INLINE SIMD<mask64> operator|| (SIMD<mask64> a, SIMD<mask64> b)
+  { return _mm256_or_si256 (a.Data(), b.Data()); }
+  INLINE SIMD<mask64> operator! (SIMD<mask64> a)
+  { return _mm256_xor_si256 (a.Data(), _mm256_cmpeq_epi32(a.Data(),a.Data())); }
+  
+  INLINE SIMD<double,4> If (SIMD<mask64,4> a, SIMD<double,4> b, SIMD<double,4> c)
+  { return _mm256_blendv_pd(c.Data(), b.Data(), a.Data()); }
+  
   INLINE SIMD<double,4> IfPos (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
   {
     auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
