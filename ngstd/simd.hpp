@@ -193,6 +193,7 @@ namespace ngstd
                                   _mm256_set_epi64x(3, 2, 1, 0)))
     { ; }
     SIMD (__m256i _mask) : mask(_mask) { ; }    
+    SIMD (__m256d _mask) : mask(_mm256_castpd_si256(_mask)) { ; }    
     __m256i Data() const { return mask; }
     static constexpr int Size() { return 4; }    
     int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
