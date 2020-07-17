@@ -1012,8 +1012,10 @@ namespace ngla
       
       Matrix<double> res(Size(), v2.Size());
 
+      // shared memory parallelization stays here
       ParallelFor (Size(), [&] (int i)
                    {
+                     // should call ngblas - multivector operation:
                      for (int j = 0; j < v2.Size(); j++)
                        res(i,j) = ngbla::InnerProduct ((*this)[i]->FVDouble(), v2[j]->FVDouble());
                    });
