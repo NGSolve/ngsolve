@@ -278,6 +278,25 @@ namespace ngbla
   }  
 
 
+
+
+
+  // MultiVector operations:
+
+  // ip(i,j) = InnerProduct(x_i, y_j)
+  extern NGS_DLL_HEADER  
+  void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip);
+
+  // x_i += sum_j a(i,j) y_j
+  extern NGS_DLL_HEADER  
+  void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a);
+
+
+
+
+
+  
+
   // ADD/POS 
   // f   f    C = -A*B
   // f   t    C = A*B
