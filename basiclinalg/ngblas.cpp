@@ -91,16 +91,18 @@ namespace ngbla
     double * pa = &a(i,0);
     for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
       {
-        SIMD<double,4> sum1, sum2;
-        tie(sum1, sum2) = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        // SIMD<double,4> sum1, sum2;
+        // tie(sum1, sum2) = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        auto [sum1, sum2] = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
         sum1.Store(&y(i));        
         sum2.Store(&y(i+4));        
       }
     
     if (i+4 <= h)
       {
-        SIMD<double,4> sum;
-        tie(sum) = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        // SIMD<double,4> sum;
+        // tie(sum) = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        auto [sum] = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
         sum.Store(&y(i));
         i += 4;
         pa += 4*a.Dist();
