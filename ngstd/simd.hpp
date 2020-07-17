@@ -804,8 +804,8 @@ namespace ngstd
 
   
   INLINE SIMD<int64_t,4> If (SIMD<mask64,4> a, SIMD<int64_t,4> b, SIMD<int64_t,4> c)
-  { return _mm256_blendv_pd(_mm256_castsi256_pd(c.Data()), _mm256_castsi256_pd(b.Data()),
-                            _mm256_castsi256_pd(a.Data())); }
+  { return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(c.Data()), _mm256_castsi256_pd(b.Data()),
+                                                _mm256_castsi256_pd(a.Data()))); }
 
   INLINE SIMD<double,4> LoadIndirect (double * p, SIMD<int64_t,4> index)
   { return _mm256_i64gather_pd (p, index.Data(), 8); }
