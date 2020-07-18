@@ -58,6 +58,16 @@ namespace pybind11::detail {
   struct is_holder_type<BaseMatrix, std::shared_ptr<BaseMatrix>> : std::true_type {};
 }
 
+template <typename T>
+Array<T> ArrayFromVector (const std::vector<T> & vec)
+{
+  Array<T> a (vec.size());
+  for (int i = 0; i < a.Size(); i++)
+    a[i] = vec[i];
+  return a;
+}
+
+
 template<typename T>
 void ExportSparseMatrix(py::module m)
 {
@@ -536,7 +546,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           throw Exception ("slices with non-unit distance not allowed");
         return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
       })
-
+    .def("__getitem__", [](MultiVector & self, std::vector<int> inds) {
+        return shared_ptr<MultiVector>(self.SubSet(ArrayFromVector(inds)));
+      })
+    
     .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
         {
           if( !x.IsComplex() )
@@ -568,6 +581,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           auto selfr = self.Range(IntRange(start, start+n));
           Vector<> ones(n); ones = 1;
           v2.AssignTo (ones, *selfr);
+      })
+    .def("__setitem__", [](MultiVector & self, std::vector<int> inds, MultiVector & y) {
+        return *self.SubSet(ArrayFromVector(inds));
+      })
+    .def("__setitem__", [](MultiVector & self, std::vector<int> inds, const MultiVectorExpr & v2) {
+        auto selfr = self.SubSet(ArrayFromVector(inds));
+        Vector<> ones(v2.Size()); ones = 1;
+        v2.AssignTo (ones, *selfr);
       })
 
     
