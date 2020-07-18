@@ -60,6 +60,7 @@ namespace ngla {
     shared_ptr<BaseVector> RefVec() const { return refvec; }
 
     virtual unique_ptr<MultiVector> Range(IntRange r) const;
+    virtual unique_ptr<MultiVector> SubSet(const Array<int> & indices) const;
     
     void Extend (size_t nr = 1) {
       for ([[maybe_unused]] auto i : ngstd::Range(nr))

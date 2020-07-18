@@ -66,6 +66,15 @@ namespace ngla {
     return mv2;
   }
 
+  unique_ptr<MultiVector> MultiVector :: SubSet(const Array<int> & indices) const
+  {
+    auto mv2 = make_unique<MultiVector>(refvec, 0);
+    for (auto i : indices)
+      mv2->vecs.Append (vecs[i]);
+    return mv2;
+  }
+
+  
 
   void MultiVector :: AssignTo (FlatVector<double> s, class MultiVector & v) const
   {
