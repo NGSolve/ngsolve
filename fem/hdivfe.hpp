@@ -74,6 +74,9 @@ namespace ngfem
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                   BareSliceMatrix<SIMD<double>> shapes) const;
 
+    virtual void CalcMappedNormalShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                        BareSliceMatrix<SIMD<double>> shapes) const;
+
     /// compute div of shape
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
 				     SliceVector<> divshape) const;

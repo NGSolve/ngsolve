@@ -137,6 +137,15 @@ namespace ngfem
     throw ExceptionNOSIMD(string("SIMD - HDivFE::CalcMappedShape not overloaded, et = ")
                           + typeid(*this).name());
   }
+
+  template <int D>
+  void HDivFiniteElement<D> ::
+  CalcMappedNormalShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                         BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    throw ExceptionNOSIMD(string("SIMD - HDivFE::CalcMappedShape not overloaded, et = ")
+                          + typeid(*this).name());
+  }
   
   
   /// compute curl of shape

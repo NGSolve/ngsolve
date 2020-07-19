@@ -164,6 +164,37 @@ namespace ngfem
            }
        });
   }
+
+  template <class FEL, ELEMENT_TYPE ET>
+  void T_HDivFiniteElement<FEL,ET>::
+  CalcMappedNormalShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                         BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    Iterate<4-DIM>
+      ([this,&bmir,shapes](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 auto nv = mir[i].GetNV();
+                 auto shapesi = shapes.Col(i);
+                 static_cast<const FEL*> (this) ->                 
+                   T_CalcShape (GetTIPHDiv(mir[i]),
+                                SBLambda ([shapesi, nv] (size_t j, auto s) 
+                                          {
+                                            auto vshape = HDiv2ShapeNew (s); 
+                                            // shapesi.Range(j*vshape.Size(), (j+1)*vshape.Size()) = vshape;
+                                            shapesi(j) = InnerProduct(nv, vshape);
+                                          }));
+               }
+           }
+       });
+  }
+
+
   
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET>::
