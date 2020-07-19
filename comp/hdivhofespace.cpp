@@ -24,6 +24,99 @@
 namespace ngcomp
 {
 
+
+
+  template<int D>
+  class DiffOpNormalComponentHDiv: public DiffOp<DiffOpNormalComponentHDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+    // enum { DIM_STRESS = D };
+
+    static Array<int> GetDimensions() { return Array<int> ({1}); }
+
+    /*
+      template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+    }
+    */
+    
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto & fel = dynamic_cast<const HDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,D,lh);
+      Vec<D> n = sip.GetNV();
+      Mat<D,D> mati;
+      fel.CalcMappedShape(sip,shape);
+      mat.Col(0) = shape * n;
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      // static Timer t("HDivDivFE - DiffOpNormalComponent", 2);
+      // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
+      auto & fel = static_cast<const HDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedNormalShape (bmir, mat);
+      /*
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D> &> (bmir);
+      LocalHeapMem<100000> lh("normalcomp");
+      auto & fel = dynamic_cast<const HDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<SIMD<double>> shape(nd*D, mir.Size(), lh);
+      fel.CalcMappedShape (mir, shape);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto nv = mir[i].GetNV();
+          for (size_t j = 0; j < nd; j++)
+            {
+              SIMD<double> sum = 0.0;
+              for (size_t k = 0; k < D; k++)
+                sum += shape(j*D+k, i) * nv(k);
+              mat(j, i) = sum;
+            }
+        }
+      */
+    }
+    
+    /*
+    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+    }    
+    */
+  };
+
+
+
+
+
+
+  
   
   HDivHighOrderFESpace ::  
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
@@ -1630,10 +1723,12 @@ namespace ngcomp
       case 2:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
 	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
+        additional.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDiv<2>>> ());
 	break;
       case 3:
 	additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
 	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
+        additional.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDiv<3>>> ());
 	break;
       default:
         ;

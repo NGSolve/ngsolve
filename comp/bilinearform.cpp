@@ -4636,6 +4636,7 @@ namespace ngcomp
     static Timer ty("BilinearForm::Apply - transform y");
     static Timer taddy("BilinearForm::Apply - add y");        
     static Timer tgf("BilinearForm::Apply - geomfree gridfunction");
+    static Timer tgfmult("BilinearForm::Apply - geomfree gridfunction - mult");
     static Timer tm("BilinearForm::Apply - geomfree mult");
     static Timer teval("BilinearForm::Apply - evaluate");
     RegionTimer reg(t);
@@ -4704,34 +4705,22 @@ namespace ngcomp
             
             VorB element_vb = bfi->ElementVB();
             Facet2ElementTrafo f2el(felx.ElementType(), bfi->ElementVB());
-            // int nfacet = (element_vb==VOL) ? 1 : f2el.GetNFacets();
-            int nfacet = f2el.GetNFacets();
             
-            for (int facet = 0; facet < nfacet; facet++)
+            for (auto facet : Range(f2el.GetNFacets()))
               {
-                const SIMD_IntegrationRule * pir;
-                if (element_vb == VOL)
-                  {
-                    pir = &bfi->Get_SIMD_IntegrationRule (felx, lh);
-                  }
-                else
-                  {
-                    const SIMD_IntegrationRule & ir_facet =
-                      bfi->GetSIMDIntegrationRule(f2el.FacetType (facet),
-                                                  felx.Order()+fely.Order()+bfi->GetBonusIntegrationOrder());
-                    pir = &f2el(facet, ir_facet, lh);
-                  }
+                const SIMD_IntegrationRule & simd_ir = (element_vb == VOL) ? 
+                  bfi->Get_SIMD_IntegrationRule (felx, lh)
+                  :
+                  f2el(facet,
+                       bfi->GetSIMDIntegrationRule(f2el.FacetType (facet),
+                                                   felx.Order()+fely.Order()+bfi->GetBonusIntegrationOrder()),
+                       lh);
                 
-                // const SIMD_IntegrationRule& simd_ir = bfi->Get_SIMD_IntegrationRule (felx, lh);
-                const SIMD_IntegrationRule& simd_ir = *pir;
                 auto & simd_mir = trafo(simd_ir, lh);
-                
-                if (element_vb == BND)
-                  simd_mir.ComputeNormalsAndMeasure (felx.ElementType(), facet);
-                
+
                 Array<Matrix<SIMD<double>>> melxi;
                 {
-                  RegionTimer regx(tx);            
+                  RegionTimer regx(tx);
                   for (auto proxynr : Range(trial_proxies))
                     {
                       auto proxy = trial_proxies[proxynr];
@@ -4749,6 +4738,7 @@ namespace ngcomp
                           hhmelxi.Rows(myrange) = melx.Rows(myrange) * hbmatx;
                         });
                       melxi.Append (std::move(hmelxi));
+                      tx.AddFlops (elclass_inds.Size()*hbmatx.Height()*hbmatx.Width());
                     }
                 }
 
@@ -4791,6 +4781,7 @@ namespace ngcomp
                               fes->GetDofNrs( { VOL, elclass_inds[i] }, dofnr);
                               vec.GetIndirect(dofnr, mgf.Row(i));                    
                             }
+                          RegionTracer rt(TaskManager::GetThreadId(), tgfmult);                          
                           hhmgfxi.Rows(myrange) = mgf.Rows(myrange) * hbmat;
                         });
                       
@@ -4802,7 +4793,9 @@ namespace ngcomp
                 for (auto proxy : test_proxies)
                   melyi.Append (Matrix<SIMD<double>>(elclass_inds.Size(),
                                                      proxy->Dimension()*simd_ir.Size()));
-            
+
+                {
+                RegionTimer reg(teval);
                 ParallelForRange
                   (elclass_inds.Size(), [&] (IntRange myrange)
                    {
@@ -4811,9 +4804,13 @@ namespace ngcomp
                      
                      auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, llh);
                      auto & simd_mir = trafo(simd_ir, llh);
+                     /*
                      if (element_vb == BND)
-                       simd_mir.ComputeNormalsAndMeasure (felx.ElementType(), facet);
-                     
+                       {
+                         simd_mir.ComputeNormalsAndMeasure (felx.ElementType(), facet);
+                         cout << "need it ? " << endl;
+                       }
+                     */
                      const_cast<ElementTransformation&>(trafo).userdata = &ud;
                      
                      ud.fel = &felx;
@@ -4863,7 +4860,7 @@ namespace ngcomp
                            }
                        }
                    });
-
+                }
                 {
                   RegionTimer regy(ty);            
                   for (auto proxynr : Range(test_proxies))
