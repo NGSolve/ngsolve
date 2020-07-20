@@ -4870,7 +4870,7 @@ public:
   MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
   {
     for(auto cf : aci)
-      if (cf->GetDescription() != "ZeroCF")
+      if (cf && cf->GetDescription() != "ZeroCF")
         return make_shared<DomainWiseCoefficientFunction> (move (aci));
     return ZeroCF(Array<int>({static_cast<int>(aci.Size())}));
   }
