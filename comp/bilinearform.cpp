@@ -4705,6 +4705,57 @@ namespace ngcomp
             
             VorB element_vb = bfi->ElementVB();
             Facet2ElementTrafo f2el(felx.ElementType(), bfi->ElementVB());
+
+
+            
+            Array<Matrix<>> mgfs;
+            {
+              RegionTimer reg(tgf);            
+              for (CoefficientFunction * cf : gridfunction_cfs)
+                {
+                  auto gfcf = dynamic_cast<GridFunctionCoefficientFunction*> (cf);
+                  if (!gfcf)
+                    {
+                      cout << "no gf" << endl;
+                      continue;
+                    }
+                  
+                  auto fes = gfcf->GetGridFunction().GetFESpace();
+                  auto & felgf = fes->GetFE(ei, lh);
+                  Matrix<> mgf(elclass_inds.Size(), felgf.GetNDof()*fes->GetDimension());
+                  auto & vec = gfcf->GetGridFunction().GetVector();
+                  
+                  /*
+                  auto diffop = gfcf->GetDifferentialOperator(trafo.VB());
+                  
+                  FlatMatrix<SIMD<double>> bmat(felgf.GetNDof()*fes->GetDimension()*
+                                                diffop->Dim(), // ??? right Dim
+                                                simd_ir.Size(), lh);
+                  FlatMatrix<double> hbmat(felgf.GetNDof()*fes->GetDimension(),
+                                           diffop->Dim()*    // right Dim ???
+                                           simd_ir.Size()*SIMD<double>::Size(),
+                                           &bmat(0)[0]);
+                  bmat = SIMD<double> (0.0);
+                  diffop->CalcMatrix(felgf, simd_mir, bmat);
+                  
+                  Matrix<SIMD<double>> hmgfxi(elclass_inds.Size(), diffop->Dim()*simd_ir.Size());
+                  FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), &hmgfxi(0)[0]);                      
+                  */  
+                  ParallelForRange
+                    (elclass_inds.Size(), [&] (IntRange myrange) {
+                      Array<DofId> dofnr;
+                      for (auto i : myrange)
+                        {
+                          fes->GetDofNrs( { VOL, elclass_inds[i] }, dofnr);
+                          vec.GetIndirect(dofnr, mgf.Row(i));                    
+                        }
+                    });
+                      
+                  mgfs.Append (move(mgf));
+                }
+            }
+            
+
             
             for (auto facet : Range(f2el.GetNFacets()))
               {
@@ -4744,7 +4795,8 @@ namespace ngcomp
 
                 Array<Matrix<SIMD<double>>> mgfxi;
                 {
-                  RegionTimer reg(tgf);            
+                  RegionTimer reg(tgf);
+                  int cntgf = 0;
                   for (CoefficientFunction * cf : gridfunction_cfs)
                     {
                       auto gfcf = dynamic_cast<GridFunctionCoefficientFunction*> (cf);
@@ -4768,24 +4820,28 @@ namespace ngcomp
                       bmat = SIMD<double> (0.0);
                       diffop->CalcMatrix(felgf, simd_mir, bmat);
                       
-                      Matrix<> mgf(elclass_inds.Size(), felgf.GetNDof()*fes->GetDimension());
+                      // Matrix<> mgf(elclass_inds.Size(), felgf.GetNDof()*fes->GetDimension());
                       Matrix<SIMD<double>> hmgfxi(elclass_inds.Size(), diffop->Dim()*simd_ir.Size());
                       FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), &hmgfxi(0)[0]);                      
-                      auto & vec = gfcf->GetGridFunction().GetVector();
+                      // auto & vec = gfcf->GetGridFunction().GetVector();
                       
                       ParallelForRange
                         (elclass_inds.Size(), [&] (IntRange myrange) {
+                          /*
                           Array<DofId> dofnr;
                           for (auto i : myrange)
                             {
                               fes->GetDofNrs( { VOL, elclass_inds[i] }, dofnr);
                               vec.GetIndirect(dofnr, mgf.Row(i));                    
                             }
-                          RegionTracer rt(TaskManager::GetThreadId(), tgfmult);                          
-                          hhmgfxi.Rows(myrange) = mgf.Rows(myrange) * hbmat;
+                          */
+                          // RegionTracer rt(TaskManager::GetThreadId(), tgfmult);                          
+                          // hhmgfxi.Rows(myrange) = mgf.Rows(myrange) * hbmat;
+                          hhmgfxi.Rows(myrange) = mgfs[cntgf].Rows(myrange) * hbmat;
                         });
                       
                       mgfxi.Append (move(hmgfxi));
+                      cntgf++;
                     }
                 }
                 
