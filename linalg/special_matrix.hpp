@@ -241,12 +241,12 @@ namespace ngla
   template <class TVR, class TVC>
   class Real2ComplexMatrix : public BaseMatrix
   {
-    const BaseMatrix * realmatrix;
+    shared_ptr<BaseMatrix> realmatrix;
     VVector<TVR> hx, hy;
   public:
-    NGS_DLL_HEADER Real2ComplexMatrix (const BaseMatrix * arealmatrix = 0);
+    NGS_DLL_HEADER Real2ComplexMatrix (shared_ptr<BaseMatrix> arealmatrix = nullptr);
     bool IsComplex() const override { return true; }     
-    void SetMatrix (const BaseMatrix * arealmatrix);
+    void SetMatrix (shared_ptr<BaseMatrix> arealmatrix);
     const BaseMatrix & GetMatrix () const { return *realmatrix; }
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
