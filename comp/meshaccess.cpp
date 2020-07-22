@@ -2109,6 +2109,35 @@ namespace ngcomp
   }
 
 
+  const Table<size_t> & MeshAccess :: GetElementsOfClass()
+  {
+    if (int(elements_of_class_timestamp) >= mesh.GetTimeStamp())
+      return elements_of_class;
+
+    Array<short> classnr(GetNE());
+    LocalHeap lh(10000);  // should use ParallelForRange, then we don't need the lh
+    IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+    
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+
+    elements_of_class = creator.MoveTable();
+    elements_of_class_timestamp = mesh.GetTimeStamp();
+    return elements_of_class;
+  }
+
+
+  
+
   class BoundaryFromVolumeCoefficientFunction :
     public T_CoefficientFunction<BoundaryFromVolumeCoefficientFunction>
   {
