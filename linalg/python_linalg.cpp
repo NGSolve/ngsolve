@@ -1192,6 +1192,11 @@ inverse : string
          py::arg("size"), py::arg("complex")=false)
     ;
 
+  py::class_<Real2ComplexMatrix<double,Complex>, shared_ptr<Real2ComplexMatrix<double,Complex>>,
+             BaseMatrix> (m, "Real2ComplexMatrix")
+    .def(py::init<shared_ptr<BaseMatrix>())
+    ;
+  
   py::class_<PermutationMatrix, shared_ptr<PermutationMatrix>, BaseMatrix> (m, "PermutationMatrix")
     .def(py::init([](size_t w, std::vector<size_t> ind)
                   {

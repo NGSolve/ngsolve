@@ -405,7 +405,7 @@ namespace ngla
   
   template <class TVR, class TVC>
   Real2ComplexMatrix<TVR,TVC> :: 
-  Real2ComplexMatrix (const BaseMatrix * arealmatrix)
+  Real2ComplexMatrix (shared_ptr<BaseMatrix> arealmatrix)
     : hx(0), hy(0)
   { 
     SetMatrix (arealmatrix); 
@@ -413,7 +413,7 @@ namespace ngla
   
   template <class TVR, class TVC>
   void Real2ComplexMatrix<TVR,TVC> ::
-  SetMatrix (const BaseMatrix * arealmatrix)
+  SetMatrix (shared_ptr<BaseMatrix> arealmatrix)
   {
     realmatrix = arealmatrix;
     if (realmatrix)
