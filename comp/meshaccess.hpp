@@ -1097,6 +1097,13 @@ namespace ngcomp
     const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
 
+  private:
+    Table<size_t> elements_of_class;
+    size_t elements_of_class_timestamp = -1;
+  public:
+    const Table<size_t> & GetElementsOfClass(); // classification by vertex numbers
+
+    
     virtual void PushStatus (const char * str) const;
     virtual void PopStatus () const;
     virtual void SetThreadPercentage (double percent) const;

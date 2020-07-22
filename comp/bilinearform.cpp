@@ -4646,7 +4646,8 @@ namespace ngcomp
     auto fesy = GetTestSpace();
     if (transpose) Swap (fesx, fesy);
     auto ma = GetMeshAccess();
-    
+
+    /*
     Array<short> classnr(ma->GetNE());
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
@@ -4662,9 +4663,15 @@ namespace ngcomp
       for (auto i : Range(classnr))
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
-
+    */
+    
+    const Table<size_t> & table = ma->GetElementsOfClass();
     // auto dof_tablex = fesx->CreateDofTable(VOL);
 
+
+
+#ifdef OLDPARALLEL
+    
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
@@ -4971,6 +4978,237 @@ namespace ngcomp
                 });
             }
           }
+#endif
+
+
+
+    for (auto elclass_inds : table)
+      ParallelForRange (elclass_inds.Size(), [&] (IntRange myrange) {
+
+          LocalHeap & clh = lh;
+          LocalHeap lh = clh.Split();
+          if (myrange.Size() == 0) return;
+
+          auto myinds = elclass_inds.Range(myrange);
+        
+          ElementId ei(VOL, myinds[0]);
+          auto & felx = GetTrialSpace()->GetFE (ei, lh);
+          auto & fely = GetTestSpace()->GetFE (ei, lh);
+          auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
+          
+          Matrix<> melx(myrange.Size(), felx.GetNDof()*fesx->GetDimension());
+          Matrix<> mely(myrange.Size(), fely.GetNDof()*fesy->GetDimension());
+          mely = 0.0;
+          auto tid = TaskManager::GetThreadId();
+          
+          {
+            RegionTracer rt(tid, tgetx);
+            Array<DofId> dofnr;
+            for (auto i : Range(myinds))
+              {
+                fesx->GetDofNrs( { VOL, myinds[i] }, dofnr);
+                x.GetIndirect(dofnr, melx.Row(i));
+              }
+          }
+
+          
+          for (auto bfi1 : geom_free_parts)
+            {
+              auto bfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi1);
+              
+              auto & trial_proxies = bfi->TrialProxies();
+              auto & test_proxies = bfi->TestProxies();
+              auto & gridfunction_cfs = bfi->GridFunctionCoefficients();
+              auto & cf = bfi->GetCoefficientFunction();
+              
+              VorB element_vb = bfi->ElementVB();
+              Facet2ElementTrafo f2el(felx.ElementType(), bfi->ElementVB());
+              
+              Array<Matrix<>> mgfs;
+              {
+                RegionTracer reg(tid, tgf);            
+                for (CoefficientFunction * cf : gridfunction_cfs)
+                  {
+                    auto gfcf = dynamic_cast<GridFunctionCoefficientFunction*> (cf);
+                    auto fes = gfcf->GetGridFunction().GetFESpace();
+                    auto & felgf = fes->GetFE(ei, lh);
+                    Matrix<> mgf(myinds.Size(), felgf.GetNDof()*fes->GetDimension());
+                    auto & vec = gfcf->GetGridFunction().GetVector();
+                    
+                    Array<DofId> dofnr;
+                    for (auto i : Range(myinds))
+                      {
+                        fes->GetDofNrs( { VOL, myinds[i] }, dofnr);
+                        vec.GetIndirect(dofnr, mgf.Row(i));                    
+                      }
+                    mgfs.Append (move(mgf));
+                  }
+              }
+
+              
+              for (auto facet : Range(f2el.GetNFacets()))
+                {
+                  const SIMD_IntegrationRule & simd_ir = (element_vb == VOL) ? 
+                    bfi->Get_SIMD_IntegrationRule (felx, lh)
+                    :
+                    f2el(facet,
+                         bfi->GetSIMDIntegrationRule(f2el.FacetType (facet),
+                                                     felx.Order()+fely.Order()+bfi->GetBonusIntegrationOrder()),
+                         lh);
+                  
+                  auto & simd_mir = trafo(simd_ir, lh);
+                  
+                  Array<Matrix<SIMD<double>>> melxi;
+                  {
+                    RegionTracer regx(tid, tx);
+                    for (auto proxynr : Range(trial_proxies))
+                      {
+                        auto proxy = trial_proxies[proxynr];
+                        FlatMatrix<SIMD<double>> bmatx(melx.Width()*proxy->Dimension(),
+                                                       simd_ir.Size(), lh);
+                        FlatMatrix<double> hbmatx(melx.Width(),
+                                                  proxy->Dimension()*simd_ir.Size()*SIMD<double>::Size(),
+                                                  &bmatx(0)[0]);
+                        
+                        bmatx = SIMD<double> (0.0);
+                        proxy->Evaluator()->CalcMatrix(felx, simd_mir, bmatx);
+                        Matrix<SIMD<double>> hmelxi(myinds.Size(), proxy->Dimension()*simd_ir.Size());
+                        FlatMatrix<> hhmelxi(hmelxi.Height(), hmelxi.Width()*SIMD<double>::Size(), &hmelxi(0)[0]);
+
+                        hhmelxi = melx * hbmatx;
+
+                        melxi.Append (std::move(hmelxi));
+                      }
+                  }
+
+                  Array<Matrix<SIMD<double>>> mgfxi;
+                  {
+                    RegionTracer reg(tid, tgf);
+                    int cntgf = 0;
+                    for (CoefficientFunction * cf : gridfunction_cfs)
+                      {
+                        auto gfcf = dynamic_cast<GridFunctionCoefficientFunction*> (cf);
+                      
+                        auto fes = gfcf->GetGridFunction().GetFESpace();
+                        auto & felgf = fes->GetFE(ei, lh);
+                        auto diffop = gfcf->GetDifferentialOperator(trafo.VB());
+                        
+                        FlatMatrix<SIMD<double>> bmat(felgf.GetNDof()*fes->GetDimension()*
+                                                      diffop->Dim(), // ??? right Dim
+                                                      simd_ir.Size(), lh);
+                        FlatMatrix<double> hbmat(felgf.GetNDof()*fes->GetDimension(),
+                                                 diffop->Dim()*    // right Dim ???
+                                                 simd_ir.Size()*SIMD<double>::Size(),
+                                                 &bmat(0)[0]);
+                        bmat = SIMD<double> (0.0);
+                        diffop->CalcMatrix(felgf, simd_mir, bmat);
+                        
+                        Matrix<SIMD<double>> hmgfxi(myinds.Size(), diffop->Dim()*simd_ir.Size());
+                        FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), &hmgfxi(0)[0]);                      
+                        
+                        hhmgfxi = mgfs[cntgf] * hbmat;
+                        
+                        mgfxi.Append (move(hmgfxi));
+                        cntgf++;
+                      }
+                  }
+                
+                  Array<Matrix<SIMD<double>>> melyi;
+                  for (auto proxy : test_proxies)
+                    melyi.Append (Matrix<SIMD<double>>(myinds.Size(),
+                                                       proxy->Dimension()*simd_ir.Size()));
+                  
+                  {
+                    RegionTracer reg(tid, teval);
+
+                    ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
+                     
+                     auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
+                     auto & simd_mir = trafo(simd_ir, lh);
+                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
+                     
+                     ud.fel = &felx;
+                     
+                     for (auto i : Range(myinds))
+                       {
+                         for (int proxynr : Range(trial_proxies))
+                           {
+                             auto proxy = trial_proxies[proxynr];
+                             ud.AssignMemory (proxy, FlatMatrix<SIMD<double>> (proxy->Dimension(), simd_ir.Size(), &melxi[proxynr](i,0)));
+                           }
+                         
+                         for (int cfnr : Range(gridfunction_cfs))
+                           {
+                             CoefficientFunction * cf = gridfunction_cfs[cfnr];
+                             ud.AssignMemory (cf, FlatMatrix<SIMD<double>> (cf->Dimension(), simd_ir.Size(), &mgfxi[cfnr](i,0)));
+                           }
+                             
+                         for (auto proxynr : Range(test_proxies))
+                           {
+                             auto proxy = test_proxies[proxynr];
+                             FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir.Size(), &melyi[proxynr](i,0));
+                             {
+                               // RegionTracer rt(TaskManager::GetThreadId(), teval);
+                               for (int k = 0; k < proxy->Dimension(); k++)
+                                 {
+                                   ud.testfunction = proxy;
+                                   ud.test_comp = k;
+                                   cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
+                                 }
+                             }
+                           }
+                       }
+                  }
+                  {
+                    RegionTracer regy(tid, ty);            
+                    for (auto proxynr : Range(test_proxies))
+                      {
+                        auto proxy = test_proxies[proxynr];
+                        FlatMatrix<SIMD<double>> bmaty(mely.Width()*proxy->Dimension(),
+                                                       simd_ir.Size(), lh);
+                        FlatMatrix<double> hbmaty(mely.Width(),
+                                                  proxy->Dimension()*simd_ir.Size()*SIMD<double>::Size(),
+                                                  &bmaty(0)[0]);
+
+                        bmaty = SIMD<double> (0.0);                      
+                        proxy->Evaluator()->CalcMatrix(fely, simd_mir, bmaty);
+                        for (size_t i = 0; i < bmaty.Height(); i++)
+                          {
+                            auto row = bmaty.Row(i);
+                            for (size_t j = 0; j < row.Size(); j++)
+                              row(j) *= simd_mir[j].GetWeight(); 
+                          }
+                        
+                        FlatMatrix<> hmely(melyi[proxynr].Height(),
+                                           melyi[proxynr].Width()*SIMD<double>::Size(),
+                                           &melyi[proxynr](0,0)[0]);
+                        
+                        mely += hmely * Trans(hbmaty);
+                      }
+                  }
+                } // for facet
+            } // for integrator   
+                  
+          {
+            RegionTracer reg(tid, taddy);
+            bool needs_atomic = fesy->ElementColoring().Size() > 1;
+            
+            Array<DofId> dofnr;
+            Vector<SCAL> elys(fely.GetNDof()*fesy->GetDimension());
+            
+            for (auto i : Range(myinds))
+              {
+                fesy->GetDofNrs({VOL, myinds[i]}, dofnr);
+                elys = val * mely.Row(i);
+                y.AddIndirect(dofnr, elys, needs_atomic);     // atomic add
+              }
+          }
+        });
+
+        
+
+
+
         
         /*
         Matrix<> temp_x(elclass_inds.Size(), !transpose ? elmat.Width() : elmat.Height());
@@ -5014,7 +5252,6 @@ namespace ngcomp
            });
         */
       }
-  }
   
   
   
