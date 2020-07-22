@@ -912,16 +912,16 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     switch (dim)
       {
       case 1:
-	cm = new Real2ComplexMatrix<double,Complex> (&creal->GetMatrix());
+	cm = new Real2ComplexMatrix<double,Complex> (creal->GetMatrixPtr());
 	break;
       case 2:
-	cm = new Real2ComplexMatrix<Vec<2,double>,Vec<2,Complex> > (&creal->GetMatrix());
+	cm = new Real2ComplexMatrix<Vec<2,double>,Vec<2,Complex> > (creal->GetMatrixPtr());
 	break;
       case 3:
-	cm = new Real2ComplexMatrix<Vec<3,double>,Vec<3,Complex> > (&creal->GetMatrix());
+	cm = new Real2ComplexMatrix<Vec<3,double>,Vec<3,Complex> > (creal->GetMatrixPtr());
 	break;
       case 4:
-	cm = new Real2ComplexMatrix<Vec<4,double>,Vec<4,Complex> > (&creal->GetMatrix());
+	cm = new Real2ComplexMatrix<Vec<4,double>,Vec<4,Complex> > (creal->GetMatrixPtr());
 	break;
       default:
 	cout << "Error: dimension " << dim << " for complex preconditioner not supported!" << endl;
