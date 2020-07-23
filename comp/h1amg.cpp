@@ -371,7 +371,7 @@ namespace ngcomp
 
       for (int i = 0; i < num_vertices; i++)
         nne[i] = (v2cv[i] != -1) ? 1 : 0;
-      prolongation = make_shared<SparseMatrix<double>> (nne, num_coarse_vertices);
+      prolongation = make_shared<SparseMatrix<double,SCAL,SCAL>> (nne, num_coarse_vertices);
       for (int i = 0; i < num_vertices; i++)
         if (v2cv[i] != -1)
           (*prolongation)(i, v2cv[i]) = 1;
@@ -382,7 +382,7 @@ namespace ngcomp
           for (auto i : Range(num_vertices))
             nne[i] = 1+v2e[i].Size();
 
-          auto smoothprol = make_shared<SparseMatrix<double>> (nne, num_vertices);
+          auto smoothprol = make_shared<SparseMatrix<double,SCAL,SCAL>> (nne, num_vertices);
           ParallelFor
             (num_vertices, [&] (auto i)
              {
@@ -409,7 +409,6 @@ namespace ngcomp
         }
 
       auto coarsemat = mat -> Restrict (*prolongation);
-
       // coarse freedofs
       auto coarse_freedofs = make_shared<BitArray> (num_coarse_vertices);
       coarse_freedofs->Clear();
@@ -428,7 +427,6 @@ namespace ngcomp
         coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrixTM<SCAL>> (coarsemat), coarse_freedofs,
                                                     coarse_e2v, coarse_edge_weights, coarse_vertex_weights, level+1);
 
-
       restriction = TransposeMatrix (*prolongation);
     }
 
@@ -437,11 +435,10 @@ namespace ngcomp
   {
       static Timer t("H1AMG::Mult"); RegionTimer reg(t);
       x = 0;
-
       smoother->GSSmooth(x, b, smoothing_steps);
       auto residuum = b.CreateVector();
       residuum = b - (*mat) * x;
-
+      
       auto coarse_residuum = coarse_precond->CreateColVector();
       coarse_residuum = *restriction * residuum;
 
@@ -463,11 +460,27 @@ namespace ngcomp
 
   public:
 
+    static shared_ptr<Preconditioner> Create (const PDE & pde, const Flags & flags, const string & name)
+    {
+      return make_shared<H1AMG_Preconditioner<double>> (pde, flags, name);      
+    }
+    
+    static shared_ptr<Preconditioner> CreateBF (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
+    {
+      if (bfa->GetFESpace()->IsComplex())
+        return make_shared<H1AMG_Preconditioner<Complex>> (bfa, flags, name);
+      else
+        return make_shared<H1AMG_Preconditioner<double>> (bfa, flags, name);
+    }
+
     H1AMG_Preconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
                           const string aname = "H1AMG_cprecond")
       : Preconditioner (abfa, aflags, aname)
     {
-      cout << IM(5) << "Create H1AMG" << endl;
+      if (is_same<SCAL,double>::value)
+        cout << IM(3) << "Create H1AMG" << endl;
+      else
+        cout << IM(3) << "Create H1AMG, complex" << endl;
     }
 
     H1AMG_Preconditioner (const PDE & pde, const Flags & aflags, const string & aname)
@@ -508,7 +521,7 @@ namespace ngcomp
          });
       vertex_weights_ht = ParallelHashTable<INT<1>,double>();
 
-      mat = make_shared<H1AMG_Matrix<double>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
+      mat = make_shared<H1AMG_Matrix<SCAL>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
     }
 
 
@@ -518,12 +531,12 @@ namespace ngcomp
                                    LocalHeap & lh) override
     {
       // vertex weights
-      static Timer t("h1amg - addelmat");
-      static Timer t1("h1amg - addelmat calc v-schur");
-      static Timer t3("h1amg - addelmat calc e-schur");
-      static Timer t5("h1amg - addelmat invert");
+      // static Timer t("h1amg - addelmat");
+      // static Timer t1("h1amg - addelmat calc v-schur");
+      // static Timer t3("h1amg - addelmat calc e-schur");
+      // static Timer t5("h1amg - addelmat invert");
 
-      ThreadRegionTimer reg (t, TaskManager::GetThreadId());
+      // ThreadRegionTimer reg (t, TaskManager::GetThreadId());
 
       size_t ndof = dnums.Size();
       BitArray used(ndof, lh);
@@ -532,29 +545,29 @@ namespace ngcomp
 
 
       {
-      ThreadRegionTimer reg (t5, TaskManager::GetThreadId());
-      ext_elmat.Rows(0,ndof).Cols(0,ndof) = elmat;
-      ext_elmat.Row(ndof) = 1;
-      ext_elmat.Col(ndof) = 1;
-      ext_elmat(ndof, ndof) = 0;
-      CalcInverse (ext_elmat);
+        // ThreadRegionTimer reg (t5, TaskManager::GetThreadId());
+        ext_elmat.Rows(0,ndof).Cols(0,ndof) = elmat;
+        ext_elmat.Row(ndof) = 1;
+        ext_elmat.Col(ndof) = 1;
+        ext_elmat(ndof, ndof) = 0;
+        CalcInverse (ext_elmat);
       }
 
       {
-      ThreadRegionTimer reg (t1, TaskManager::GetThreadId());
-      for (size_t i = 0; i < dnums.Size(); i++)
-        {
-          Mat<2,2,SCAL> ai;
-          ai(0,0) = ext_elmat(i,i);
-          ai(0,1) = ai(1,0) = ext_elmat(i, ndof);
-          ai(1,1) = ext_elmat(ndof, ndof);
-          ai = Inv(ai);
-          double weight = fabs(ai(0,0));
-          vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
-        }
+        // ThreadRegionTimer reg (t1, TaskManager::GetThreadId());
+        for (size_t i = 0; i < dnums.Size(); i++)
+          {
+            Mat<2,2,SCAL> ai;
+            ai(0,0) = ext_elmat(i,i);
+            ai(0,1) = ai(1,0) = ext_elmat(i, ndof);
+            ai(1,1) = ext_elmat(ndof, ndof);
+            ai = Inv(ai);
+            double weight = fabs(ai(0,0));
+            vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
+          }
       }
       {
-      ThreadRegionTimer reg (t3, TaskManager::GetThreadId());
+        // ThreadRegionTimer reg (t3, TaskManager::GetThreadId());
       for (size_t i = 0; i < dnums.Size(); i++)
         for (size_t j = 0; j < i; j++)
           {
@@ -610,5 +623,12 @@ namespace ngcomp
   };
 
   template class H1AMG_Matrix<double>;
-  static RegisterPreconditioner<H1AMG_Preconditioner<double> > initpre ("h1amg");
+  template class H1AMG_Matrix<Complex>;
+  // static RegisterPreconditioner<H1AMG_Preconditioner<double> > initpre ("h1amg");
+  auto initpre = [] () {
+    GetPreconditionerClasses().AddPreconditioner("h1amg",
+                                                 H1AMG_Preconditioner<double>::Create,
+                                                 H1AMG_Preconditioner<double>::CreateBF);
+    return 1;
+  } ();
 }
