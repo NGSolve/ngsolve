@@ -1302,7 +1302,14 @@ namespace ngla
                  });
     t1.Stop();
     t2.Start();
-    auto trans = make_shared<SparseMatrix<double>>(cnt, mat.Height());
+
+    shared_ptr<SparseMatrixTM<double>> trans;
+    if (dynamic_cast<const SparseMatrix<double,double,double>*>(&mat))
+      trans = make_shared<SparseMatrix<double>>(cnt, mat.Height());
+    else if (dynamic_cast<const SparseMatrix<double,Complex,Complex>*>(&mat))
+      trans = make_shared<SparseMatrix<double,Complex,Complex>>(cnt, mat.Height());
+    else
+      throw Exception(string("SparseMatrix-Transpose, not available for type")+typeid(mat).name()); 
 
     cnt = 0;
     ParallelFor (mat.Height(), [&] (int i)
@@ -1429,7 +1436,24 @@ namespace ngla
     t1a.Stop();
     t1b.Start();
     t1b1.Start();
-    auto prod = make_shared<SparseMatrix<TM_Res>>(cnt, matb.Width());
+    // auto prod = make_shared<SparseMatrix<TM_Res>>(cnt, matb.Width());
+    shared_ptr<SparseMatrixTM<TM_Res>> prod;
+    
+    if constexpr (is_same<TM_Res,double>()) {
+        if (dynamic_cast<const SparseMatrix<double,double,double>*>(&mata) &&
+            dynamic_cast<const SparseMatrix<double,double,double>*>(&matb))
+          prod = make_shared<SparseMatrix<TM_Res,double,double>>(cnt, matb.Width());
+        else if (dynamic_cast<const SparseMatrix<double,Complex,Complex>*>(&mata) ||
+                 dynamic_cast<const SparseMatrix<double,Complex,Complex>*>(&matb))
+          prod = make_shared<SparseMatrix<TM_Res,Complex,Complex>>(cnt, matb.Width());
+        else
+          prod = make_shared<SparseMatrix<TM_Res>>(cnt, matb.Width());  // as it was, no complex supported
+      }
+    else
+      prod = make_shared<SparseMatrix<TM_Res>>(cnt, matb.Width());  // as it was, no complex supported      
+                      
+        
+        
     prod->AsVector() = 0.0;
     t1b1.Stop();
     // fill col-indices
@@ -1525,8 +1549,8 @@ namespace ngla
     return prod;
   }
 
-  shared_ptr<SparseMatrixTM<double>> MatMult (const SparseMatrix<double, double, double> & mata,
-                const SparseMatrix<double, double, double> & matb)
+  shared_ptr<SparseMatrixTM<double>> MatMult (const SparseMatrixTM<double> & mata,
+                                              const SparseMatrixTM<double> & matb)
   {
     return MatMult<double, double, double>(mata, matb);
   }
