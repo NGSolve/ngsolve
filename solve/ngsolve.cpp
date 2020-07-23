@@ -208,9 +208,13 @@ static shared_ptr<PDE> pde;
     Socket & sock;
   public:
     SocketOutArchive (Socket & asock) : Archive(true), sock(asock)
-    { (*this) & GetLibraryVersions(); }
+    {
+      auto versions = GetLibraryVersions();
+      (*this) & versions;
+    }
+
     const VersionInfo& GetVersion(const std::string& library)
-    { return GetLibraryVersions()[library]; }
+    { return GetLibraryVersions().at(library); }
 
     using Archive::operator&;
     virtual Archive & operator & (double & d) 

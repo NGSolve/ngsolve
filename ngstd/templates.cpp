@@ -10,6 +10,7 @@
 
 #include <ngstd.hpp>
 #include <ngsolve_version.hpp>
+#include <netgen_version.hpp>
 
 namespace ngstd
 {
@@ -29,4 +30,19 @@ namespace ngstd
   }();
 #endif // USE_MKL
 
+  static bool dummy = [] ()
+  {
+    ngcore::SetLibraryVersion("ngsolve", NGSOLVE_VERSION);
+    auto ng_version_compiled = ngcore::VersionInfo(NETGEN_VERSION);
+    auto ng_version=ngcore::GetLibraryVersion("netgen");
+    if( ng_version != ng_version_compiled )
+    {
+      cerr << "================================================================" << endl;
+      cerr << "WARNING: NGSolve was compiled with Netgen " << endl;
+      cerr << "         version " << ng_version_compiled.to_string() << " but" << endl;
+      cerr << "         version " << ng_version.to_string() << " is loaded at run-time!!!" << endl;
+      cerr << "================================================================" << endl;
+    }
+    return true;
+  }();
 }
