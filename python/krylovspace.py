@@ -630,6 +630,8 @@ printrates : bool = True
     H = []
     Q.append(b.CreateVector())
     r_norm = norm(r)
+    if printrates:
+        print("Step 0, error = ", r_norm)
     if reltol is not None:
         rtol = reltol * abs(r_norm)
         tol = rtol if tol is None else max(rtol, tol)
