@@ -5054,7 +5054,9 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
-      if (cf_if->Evaluate(ip) > 0)
+      Vec<1> val;
+      cf_if->Evaluate(ip, val);
+      if (val(0) > 0)
         return cf_then->Evaluate(ip);
       else
         return cf_else->Evaluate(ip);      
@@ -5062,7 +5064,9 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
 
     virtual void Evaluate (const BaseMappedIntegrationPoint& ip, FlatVector<double> values) const override
     {
-      if(cf_if->Evaluate(ip) > 0)
+      Vec<1> val;
+      cf_if->Evaluate(ip, val);
+      if(val(0) > 0)
         cf_then->Evaluate(ip,values);
       else
         cf_else->Evaluate(ip,values);
