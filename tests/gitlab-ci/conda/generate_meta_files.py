@@ -37,3 +37,6 @@ meta = open("ngsolve/meta_template.yaml","r").read()   \
         .replace("{{netgen_version}}", v_netgen_dep) \
         .replace("{{suffix}}", package_name_suffix)
 open("ngsolve/meta.yaml","w").write(meta)
+
+open("../../../external_dependencies/netgen/version.txt", "w").write(subprocess.run(["git", "describe", "--tags", "--long"], capture_output=True, cwd="../../../external_dependencies/netgen").stdout.decode())
+
