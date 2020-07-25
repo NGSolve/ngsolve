@@ -9,16 +9,15 @@ if(NETGEN_USE_PYTHON)
 
 # build stub files for pybind11 packages
 if(BUILD_STUB_FILES)
-find_program(PYBIND11_STUBS NAMES pybind11-stubgen)
-if(PYBIND11_STUBS)
-  message("-- Found pybind11-stubgen: ${PYBIND11_STUBS}")
-  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../stubs/ngsolve-stubs/)
-  install(CODE "execute_process(COMMAND ${PYBIND11_STUBS} --no-setup-py ngsolve)")
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../stubs/ngsolve-stubs/ DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/ COMPONENT ngsolve)
-else(PYBIND11_STUBS)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import pybind11_stubgen; print(pybind11_stubgen.__file__)" OUTPUT_VARIABLE stubgen_path RESULT_VARIABLE pybind11_stubgen)
+if(pybind11_stubgen AND NOT ${pybind11_stubgen} EQUAL 0)
   message(WARNING "pybind11-stubgen not found, if you want to create stub files
 for better autocompletion support install it with pip.")
-endif(PYBIND11_STUBS)
+else()
+  message("-- Found pybind11-stubgen: ${stubgen_path}")
+  install(CODE "execute_process(COMMAND ${PYTHON_EXEcUTABLE} -m pybind11_stubgen --no-setup-py ngsolve)")
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../stubs/netgen-stubs/ DESTINATION ${NG_INSTALL_DIR_PYTHON}/netgen/ COMPONENT netgen)
+endif()
 endif(BUILD_STUB_FILES)
 
 add_subdirectory(webgui)
