@@ -2005,6 +2005,28 @@ space : ngsolve.FESpace
          py::arg("trialspace"),
          py::arg("testspace"))
 
+    .def(py::init([bf_class](shared_ptr<SumOfIntegrals> igls, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
+                    shared_ptr<FESpace> trial_space, test_space;
+                    for (auto igl : igls->icfs)
+                      igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                          if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
+                            {
+                              if (proxy->IsTrialFunction())
+                                trial_space = proxy->GetFESpace();
+                              else
+                                test_space = proxy->GetFESpace();
+                            }
+                        });
+                    auto biform = (trial_space == test_space) ?
+                      CreateBilinearForm (trial_space, "biform_from_py", flags)
+                      :
+                      CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
+                    py::cast(biform) += py::cast(igls);
+                    return biform;
+                  }))
+    
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -2064,7 +2086,13 @@ integrator : ngsolve.fem.BFI
 
 )raw_string"))
     
-    .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
+    .def("Add", [](py::object self, shared_ptr<SumOfIntegrals> sum) 
+         {
+           self += py::cast(sum);
+           return self;
+         })
+
+         .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
     .def("__iadd__", [](BF & self, shared_ptr<SumOfIntegrals> sum) -> BilinearForm& 
          {
            for (auto icf : sum->icfs)
@@ -2140,9 +2168,10 @@ integrator : ngsolve.fem.BFI
     .def_property_readonly("loform", [](shared_ptr<BilinearForm> self) 
 			   { return self->GetLowOrderBilinearForm(); })
     
-    .def("Assemble", [](BF & self, bool reallocate)
+    .def("Assemble", [](shared_ptr<BilinearForm> self, bool reallocate)
          {
-           self.ReAssemble(glh,reallocate);
+           self->ReAssemble(glh,reallocate);
+           return self;
          }, py::call_guard<py::gil_scoped_release>(),
          py::arg("reallocate")=false, docu_string(R"raw_string(
 Assemble the bilinear form.
@@ -2321,6 +2350,29 @@ flags : dict
                     return f;
                   }),
          py::arg("space"))
+
+    .def(py::init([lf_class](shared_ptr<SumOfIntegrals> igls, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(kwargs, lf_class);
+                    shared_ptr<FESpace> test_space;
+                    for (auto igl : igls->icfs)
+                      igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                          if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
+                            {
+                              if (proxy->IsTrialFunction())
+                                throw Exception("Linearform should not have TrialFunction");
+                              else
+                                test_space = proxy->GetFESpace();
+                            }
+                        });
+                    auto liform = CreateLinearForm (test_space, "liform_from_py", flags);
+                    py::cast(liform) += py::cast(igls);
+                    liform->AllocateVector();
+                    return liform;
+                  }))
+
+
+    
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -2354,6 +2406,12 @@ integrator : ngsolve.fem.LFI
   input linear form integrator
 
 )raw_string"))
+
+    .def("Add", [](py::object self, shared_ptr<SumOfIntegrals> sum) 
+         {
+           self += py::cast(sum);
+           return self;
+         })
     
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
          { (*self)+=lfi; return self; }, py::arg("lfi"))
@@ -2393,7 +2451,8 @@ integrator : ngsolve.fem.LFI
                            { return MakePyTuple (self->Integrators()); }, "returns tuple of integrators of the linear form")
 
     .def("Assemble", [](shared_ptr<LF> self)
-         { self->Assemble(glh); }, py::call_guard<py::gil_scoped_release>(), "Assemble linear form")
+         { self->Assemble(glh); return self; },
+         py::call_guard<py::gil_scoped_release>(), "Assemble linear form")
     
     .def_property_readonly("components", [](shared_ptr<LF> self)
                    { 
