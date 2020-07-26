@@ -32,50 +32,12 @@ namespace ngcomp
                        LocalHeap & lh);
   
 
-  // shall move to fespace.hpp, but keep compilation time low douring testing ...
-  template <typename BASESPACE>
-  class VectorFESpace : public CompoundFESpace
-  {
-  public:
-    VectorFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
-                   bool checkflags = false)
-      : CompoundFESpace (ama, flags)
-    {
-      Array<string> dirichlet_comp;
-      string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
-      for (int i = 0; i <  ma->GetDimension(); i++)
-        {
-          Flags tmpflags = flags;
-          if (flags.StringFlagDefined(dirnames[i]))
-            tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
-          if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
-            tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
-          AddSpace (make_shared<BASESPACE> (ama, tmpflags));
-        }
 
-      for (auto vb : { VOL, BND, BBND, BBBND })
-        {
-          if (auto eval = spaces[0] -> GetEvaluator(vb))
-            evaluator[vb] = make_shared<VectorDifferentialOperator> (eval, ma->GetDimension());
-          if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
-            flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, ma->GetDimension());
-        }
 
-      auto additional = spaces[0]->GetAdditionalEvaluators();
-      for (int i = 0; i < additional.Size(); i++)
-        additional_evaluators.Set (additional.GetName(i),
-                                   make_shared<VectorDifferentialOperator>(additional[i], ma->GetDimension()));
 
-      type = "Vector"+(*this)[0]->type;
-    }
 
-    virtual string GetClassName () const override
-    {
-      return "Vector"+ (*this)[0]->GetClassName();
-    }
-    
-  };
 
+  
 }
 
 
@@ -1085,10 +1047,77 @@ rho : ngsolve.fem.CoefficientFunction
          {
            return self == other;
          }, py::arg("space"))
+    
+    .def("__mul__", [] (shared_ptr<FESpace> space1, shared_ptr<FESpace> space2) {
+        bool is_complex = space1->IsComplex();
+        if (is_complex != space2->IsComplex())
+          throw Exception("Product space must consist of all real or all complex spaces");
+        int dim = space1->GetDimension();
+        if (dim != space2->GetDimension())
+          throw Exception("Product space needs same dimension for all components");
+        Flags flags;
+        if (is_complex) flags.SetFlag("complex");
+        flags.SetFlag ("dim", dim);
+        auto productspace = make_shared<CompoundFESpace> (space1->GetMeshAccess(), flags);
+
+        for (auto s : { space1, space2 })
+          {
+            const FESpace & fes = *s; // avoid side effect warning
+            if (typeid(fes) == typeid(CompoundFESpace)) // exactly Compound and not more
+              for (auto spc : dynamic_pointer_cast<CompoundFESpace> (s) -> Spaces())
+                productspace->AddSpace(spc);
+            else
+              productspace->AddSpace (s);
+          }
+        productspace->Update();
+        productspace->FinalizeUpdate();
+        return productspace;
+      })
+
+    .def("__pow__", [] (shared_ptr<FESpace> space, int p) {
+        bool is_complex = space->IsComplex();
+        int dim = space->GetDimension();
+        Flags flags;
+        if (is_complex) flags.SetFlag("complex");
+        flags.SetFlag ("dim", dim);
+        auto productspace = make_shared<CompoundFESpaceAllSame> (space, p, flags);
+        productspace->Update();
+        productspace->FinalizeUpdate();
+        return productspace;
+      })
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
-    (m,"CompoundFESpace")
+    (m,"ProductSpace")
+    .def(py::init([] (py::args pyspaces) {
+
+          /*
+          Array<shared_ptr<FESpace>> spaces;
+          for (auto fes : pyspaces )
+            spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
+          */
+          auto spaces = makeCArray<shared_ptr<FESpace>> (pyspaces);
+            
+          Flags flags;
+          if (spaces.Size() == 0)
+            throw Exception("Product space must have at least one space");
+          int dim = spaces[0]->GetDimension();
+          for (auto space : spaces)
+            if (space->GetDimension() != dim)
+              throw Exception("Product space of spaces with different dimensions is not allowed");
+          flags.SetFlag ("dim", dim);
+          bool is_complex = spaces[0]->IsComplex();
+          for (auto space : spaces)
+            if (space->IsComplex() != is_complex)
+              throw Exception("Product space of spaces with complex and real spaces is not allowed");
+          if (is_complex)
+            flags.SetFlag ("complex");
+
+          auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+          fes->Update();
+          fes->FinalizeUpdate();
+          return fes;
+        }))
     .def(py::pickle([] (py::object pyfes)
                     {
                       auto fes = py::cast<shared_ptr<CompoundFESpace>>(pyfes);
@@ -1111,6 +1140,10 @@ rho : ngsolve.fem.CoefficientFunction
                       py::cast(fes).attr("__dict__") = state[2];
                       return fes;
                     }))
+    ;
+
+  py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
+    (m,"ProductSpaceAllSame")
     ;
 
   

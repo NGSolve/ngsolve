@@ -3241,6 +3241,42 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+
+
+
+  CompoundFESpaceAllSame ::
+  CompoundFESpaceAllSame (shared_ptr<FESpace> space, int dim, const Flags & flags,
+                          bool checkflags)
+    : CompoundFESpace (space->GetMeshAccess(), flags)
+  {
+    for (int i = 0; i < dim; i++)
+      AddSpace (space);
+    
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      {
+        if (auto eval = spaces[0] -> GetEvaluator(vb))
+          evaluator[vb] = make_shared<VectorDifferentialOperator> (eval, dim);
+        if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
+            flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, dim);
+      }
+    
+    auto additional = spaces[0]->GetAdditionalEvaluators();
+    for (int i = 0; i < additional.Size(); i++)
+      additional_evaluators.Set (additional.GetName(i),
+                                 make_shared<VectorDifferentialOperator>(additional[i], dim));
+    
+    type = "Vector"+(*this)[0]->type;
+  }
+  
+  string CompoundFESpaceAllSame :: GetClassName () const
+  {
+    return "Vector"+ (*this)[0]->GetClassName();
+  }
+
+
+  
+
+
   
   ApplyMass :: ApplyMass (shared_ptr<FESpace> afes,
                           shared_ptr<CoefficientFunction> arho,
