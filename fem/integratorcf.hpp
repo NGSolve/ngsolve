@@ -56,6 +56,9 @@ namespace ngfem
     SumOfIntegrals (shared_ptr<Integral> icf)
     { icfs += icf; }
 
+    auto begin() const { return icfs.begin(); }
+    auto end() const { return icfs.end(); }
+    
     shared_ptr<SumOfIntegrals>
     Diff (shared_ptr<CoefficientFunction> var,
           shared_ptr<CoefficientFunction> dir) const

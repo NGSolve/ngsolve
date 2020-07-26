@@ -1944,6 +1944,9 @@ diffop : ngsolve.fem.DifferentialOperator
   py::class_<Integral, shared_ptr<Integral>> (m, "Integral")
     .def_property_readonly("coef", [] (shared_ptr<Integral> igl) { return igl->cf; })
     .def_property_readonly("symbol", [] (shared_ptr<Integral> igl) { return igl->dx; })
+    .def("__radd__", [](shared_ptr<Integral> igl, int i) {
+        if (i != 0) throw Exception("can only add integer 0 to Integral (for Python sum(list))");
+        return make_shared<SumOfIntegrals>(igl); })
     ;
      
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
@@ -1963,6 +1966,9 @@ diffop : ngsolve.fem.DifferentialOperator
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
     .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
     .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
+    .def("__radd__", [](shared_ptr<SumOfIntegrals> igls, int i) {
+        if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
+        return igls; })
     ;
 
   py::class_<Variation> (m, "Variation")
@@ -2009,7 +2015,7 @@ space : ngsolve.FESpace
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
                     shared_ptr<FESpace> trial_space, test_space;
-                    for (auto igl : igls->icfs)
+                    for (auto igl : *igls)
                       igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
@@ -2355,7 +2361,7 @@ flags : dict
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, lf_class);
                     shared_ptr<FESpace> test_space;
-                    for (auto igl : igls->icfs)
+                    for (auto igl : *igls)
                       igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
@@ -2418,7 +2424,7 @@ integrator : ngsolve.fem.LFI
 
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
-           for (auto icf : sum->icfs)
+           for (auto icf : (*sum))
              {
                auto & dx = icf->dx;
                shared_ptr<LinearFormIntegrator> lfi;
@@ -3052,7 +3058,7 @@ element_wise: bool = False
          [] (const SumOfIntegrals & igls, const MeshAccess & ma, bool element_wise) -> py::object
          {
            bool iscomplex = false;
-           for (auto & ci : igls.icfs)
+           for (auto & ci : igls)
              iscomplex |= ci->cf->IsComplex();
 
            auto integrate = [&] (auto tscal) 
@@ -3063,7 +3069,7 @@ element_wise: bool = False
              Vector<TSCAL> elvals(element_wise ? ma.GetNE() : 0);
              elvals = TSCAL(0.0);
              
-             for (auto & ci : igls.icfs)
+             for (auto & ci : igls)
                sum += ci->Integrate<TSCAL>(ma, elvals);
              if (element_wise) return py::cast(elvals);
              return py::cast(sum);
