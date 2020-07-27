@@ -252,8 +252,8 @@ namespace ngla
       MultAdd (s, x, y);
     }
 
-    AutoVector CreateRowVector () const override { return make_shared<VVector<TV>> (height); }
-    AutoVector CreateColVector () const override { return make_shared<VVector<TV>> (height); }
+    AutoVector CreateRowVector () const override { return make_unique<VVector<TV>> (height); }
+    AutoVector CreateColVector () const override { return make_unique<VVector<TV>> (height); }
 
     void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const override;
 

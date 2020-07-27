@@ -16,9 +16,9 @@ namespace ngla
 #ifdef PARALLEL
   
   template <typename TM> AutoVector MasterInverse<TM> :: CreateRowVector () const
-  { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
   template <typename TM> AutoVector MasterInverse<TM> :: CreateColVector () const
-  { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
   
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
@@ -435,18 +435,18 @@ namespace ngla
   {
     if (IsComplex()) {
       if (row_paralleldofs == nullptr)
-	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	return make_unique<S_ParallelBaseVectorPtr<Complex>>
 	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
       else
-	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	return make_unique<S_ParallelBaseVectorPtr<Complex>>
 	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
     }
     else {
       if (row_paralleldofs == nullptr)
-	return make_shared<S_ParallelBaseVectorPtr<double>>
+	return make_unique<S_ParallelBaseVectorPtr<double>>
 	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
       else
-	return make_shared<S_ParallelBaseVectorPtr<double>>
+	return make_unique<S_ParallelBaseVectorPtr<double>>
 	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
     }
   }
@@ -455,18 +455,18 @@ namespace ngla
   {
     if (IsComplex()) {
       if (col_paralleldofs==nullptr)
-	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	return make_unique<S_ParallelBaseVectorPtr<Complex>>
 	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
       else
-	return make_shared<S_ParallelBaseVectorPtr<Complex>>
+	return make_unique<S_ParallelBaseVectorPtr<Complex>>
 	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
     }
     else {
       if (col_paralleldofs==nullptr)
-	return make_shared<S_ParallelBaseVectorPtr<double>>
+	return make_unique<S_ParallelBaseVectorPtr<double>>
 	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
       else
-	return make_shared<S_ParallelBaseVectorPtr<double>>
+	return make_unique<S_ParallelBaseVectorPtr<double>>
 	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
     }
   }
@@ -518,11 +518,11 @@ namespace ngla
       throw Exception("ParallelMatrix::CreateVector called for nonsymmetric case (use CreateRowVector of CreateColVector)!");
     }
     if (IsComplex()) {
-      return make_shared<S_ParallelBaseVectorPtr<Complex>>
+      return make_unique<S_ParallelBaseVectorPtr<Complex>>
 	(mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
     }
     else {
-      return make_shared<S_ParallelBaseVectorPtr<double>>
+      return make_unique<S_ParallelBaseVectorPtr<double>>
 	(mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
     }
   }
@@ -692,15 +692,15 @@ namespace ngla
   {
     // throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined");
     if (u_paralleldofs==nullptr) {
-      return make_shared<VVector<double>>(VHeight());
+      return make_unique<VVector<double>>(VHeight());
     }
-    return make_shared<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
+    return make_unique<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
 						 u_paralleldofs);
   }
   
   AutoVector FETI_Jump_Matrix :: CreateColVector () const
   {
-    return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
+    return make_unique<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
 						 jump_paralleldofs);
   }
   

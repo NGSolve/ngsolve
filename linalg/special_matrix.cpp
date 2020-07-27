@@ -795,7 +795,7 @@ namespace ngla
     for(auto col:Range(w)) {
       vecs[col] = col_reps[col]->CreateRowVector();
     }
-    return make_shared<BlockVector>(vecs);
+    return make_unique<BlockVector>(vecs);
   }
   
   AutoVector BlockMatrix :: CreateColVector () const {
@@ -803,7 +803,7 @@ namespace ngla
     for (auto row:Range(h)) {
       vecs[row] = row_reps[row]->CreateColVector();
     }
-    return make_shared<BlockVector>(vecs);
+    return make_unique<BlockVector>(vecs);
   }
 
 

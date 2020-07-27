@@ -286,7 +286,7 @@ namespace ngla {
       
     void CalcComponent(size_t nr, BaseVector & bv) const override
     {
-      shared_ptr<BaseVector> tmp = bv.CreateVector();
+      auto tmp = bv.CreateVector();
       e1->CalcComponent(nr, *tmp);
       e2->CalcComponent(nr, bv);
       bv += *tmp;

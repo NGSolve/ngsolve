@@ -181,11 +181,11 @@ namespace ngla
 
     AutoVector CreateRowVector() const override
     {
-      return make_shared<VVector<TV>> (height/entrysize);
+      return make_unique<VVector<TV>> (height/entrysize);
     }
     AutoVector CreateColVector () const override
     {
-      return make_shared<VVector<TV>> (height/entrysize);
+      return make_unique<VVector<TV>> (height/entrysize);
     }
   };
 

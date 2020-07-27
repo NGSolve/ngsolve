@@ -870,12 +870,12 @@ namespace ngla
 
   AutoVector ConstantElementByElementMatrix :: CreateRowVector () const
   {
-    return make_shared<VVector<>> (w);
+    return make_unique<VVector<>> (w);
   }
   
   AutoVector ConstantElementByElementMatrix :: CreateColVector () const 
   {
-    return make_shared<VVector<>> (h);
+    return make_unique<VVector<>> (h);
   }
 
   
