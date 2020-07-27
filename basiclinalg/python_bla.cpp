@@ -86,7 +86,13 @@ void PyVecAccess( py::module &m, TCLASS &c )
         c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("__rmul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("__neg__" , [](T &self) { return TNEW(-self); });        
-        c.def("InnerProduct",  [](T & x, T & y) { return InnerProduct (x, y); }, py::arg("y"), "Returns InnerProduct with other object");
+        c.def("InnerProduct",  [](T & x, T & y, bool conjugate)
+              {
+                if (conjugate)
+                  return InnerProduct (x, Conj(y));
+                else
+                  return InnerProduct (x, y);
+              }, py::arg("y"), py::arg("conjugate")=true, "Returns InnerProduct with other object");
         c.def("Norm",  [](T & x) { return L2Norm(x); }, "Returns L2-norm");
 }
 
