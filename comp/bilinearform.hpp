@@ -408,8 +408,8 @@ namespace ngcomp
     virtual Array<MemoryUsage> GetMemoryUsage () const;
 
     /// creates a compatible vector
-    virtual shared_ptr<BaseVector> CreateRowVector() const = 0;
-    virtual shared_ptr<BaseVector> CreateColVector() const = 0;
+    virtual unique_ptr<BaseVector> CreateRowVector() const = 0;
+    virtual unique_ptr<BaseVector> CreateColVector() const = 0;
 
     /// frees matrix 
     virtual void CleanUpLevel() { ; }
@@ -654,8 +654,8 @@ namespace ngcomp
     virtual void AllocateMatrix ();
 
     ///
-    virtual shared_ptr<BaseVector> CreateRowVector() const;
-    virtual shared_ptr<BaseVector> CreateColVector() const;
+    virtual unique_ptr<BaseVector> CreateRowVector() const;
+    virtual unique_ptr<BaseVector> CreateColVector() const;
 
     ///
     virtual void CleanUpLevel();
@@ -695,8 +695,8 @@ namespace ngcomp
     virtual void AllocateMatrix ();
     virtual void CleanUpLevel();
 
-    virtual shared_ptr<BaseVector> CreateRowVector() const;
-    virtual shared_ptr<BaseVector> CreateColVector() const;
+    virtual unique_ptr<BaseVector> CreateRowVector() const;
+    virtual unique_ptr<BaseVector> CreateColVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -737,8 +737,8 @@ namespace ngcomp
     virtual void AllocateMatrix () { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
     virtual void CleanUpLevel() { ; } 
 
-    virtual shared_ptr<BaseVector> CreateRowVector() const;
-    virtual shared_ptr<BaseVector> CreateColVector() const;
+    virtual unique_ptr<BaseVector> CreateRowVector() const;
+    virtual unique_ptr<BaseVector> CreateColVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -789,8 +789,8 @@ namespace ngcomp
     virtual ~T_BilinearFormDiagonal ();
 
     virtual void AllocateMatrix ();
-    virtual shared_ptr<BaseVector> CreateRowVector() const;
-    virtual shared_ptr<BaseVector> CreateColVector() const;
+    virtual unique_ptr<BaseVector> CreateRowVector() const;
+    virtual unique_ptr<BaseVector> CreateColVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -873,9 +873,9 @@ namespace ngcomp
     { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
     virtual void ModifyRHS (BaseVector & f) const 
     { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
-    virtual shared_ptr<BaseVector> CreateRowVector() const 
+    virtual unique_ptr<BaseVector> CreateRowVector() const 
     { throw Exception ("comp-bf - CreateRowVector is illegal"); } 
-    virtual shared_ptr<BaseVector> CreateColVector() const 
+    virtual unique_ptr<BaseVector> CreateColVector() const 
     { throw Exception ("comp-bf - CreateColVector is illegal"); } 
     virtual void DoAssemble (LocalHeap & lh) 
     { throw Exception ("comp-bf - DoAssemble is illegal"); } 
@@ -999,8 +999,8 @@ namespace ngcomp
     virtual ~ElementByElement_BilinearForm () override;
     
     virtual void AllocateMatrix () override;
-    virtual shared_ptr<BaseVector> CreateRowVector() const override;
-    virtual shared_ptr<BaseVector> CreateColVector() const override;
+    virtual unique_ptr<BaseVector> CreateRowVector() const override;
+    virtual unique_ptr<BaseVector> CreateColVector() const override;
     
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,

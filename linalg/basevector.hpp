@@ -352,20 +352,22 @@ namespace ngla
   
   class AutoVector : public BaseVector
   {
-    shared_ptr<BaseVector> vec;
+    unique_ptr<BaseVector> vec;
   public:
     AutoVector () { ; }
 
-    AutoVector (const AutoVector & av2) : vec(av2.vec) 
+    AutoVector (AutoVector && av2) : vec(move(av2.vec)) 
     { size = av2.Size(), entrysize = av2.EntrySize(); }
 
-    AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) 
+    AutoVector (unique_ptr<BaseVector> hvec) : vec(move(hvec)) 
     { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     template<typename U>
-    AutoVector (shared_ptr<U> hvec) : vec(hvec) 
+    AutoVector (unique_ptr<U> hvec) : vec(move(hvec)) 
     { size = vec->Size(), entrysize = vec->EntrySize(); }
 
+    ~AutoVector();
+    
     template <typename T> 
     BaseVector & operator= (const VVecExpr<T> & v)
     {
@@ -386,9 +388,9 @@ namespace ngla
       return *this;
     }
     ///
-    BaseVector & AssignPointer (const AutoVector & v)
+    BaseVector & AssignPointer (AutoVector && v)
     {
-      vec = v.vec;
+      vec = move(v.vec);
       size = v.size;
       entrysize = v.entrysize;
       return *this;
@@ -406,7 +408,8 @@ namespace ngla
       return *this;
     }
 
-    operator shared_ptr<BaseVector> () { return vec; }
+    operator unique_ptr<BaseVector> () && { return move(vec); }
+    operator shared_ptr<BaseVector> () && { return move(vec); }
     BaseVector & operator* () { return *vec; }
     const BaseVector & operator* () const { return *vec; }
 
@@ -431,7 +434,7 @@ namespace ngla
 
     virtual AutoVector CreateVector () const
     {
-      return std::move(vec->CreateVector());
+      return vec->CreateVector();
     }
 
     virtual double InnerProductD (const BaseVector & v2) const

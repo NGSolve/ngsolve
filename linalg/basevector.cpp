@@ -308,21 +308,21 @@ namespace ngla
 
   AutoVector CreateBaseVector(size_t size, bool is_complex, int es)
   {
-    shared_ptr<BaseVector> res;
+    unique_ptr<BaseVector> res;
     if(es > 1)
       {
         if(is_complex)
-          res = make_shared<S_BaseVectorPtr<Complex>> (size, es);
+          res = make_unique<S_BaseVectorPtr<Complex>> (size, es);
         else
-          res = make_shared<S_BaseVectorPtr<double>> (size, es);
-        return res;
+          res = make_unique<S_BaseVectorPtr<double>> (size, es);
+        return move(res);
       }
     
     if (is_complex)
-      res = make_shared<VVector<Complex>> (size);
+      res = make_unique<VVector<Complex>> (size);
     else
-      res = make_shared<VVector<double>> (size);
-    return res;
+      res = make_unique<VVector<double>> (size);
+    return move(res);
   }
 
 
@@ -718,7 +718,7 @@ namespace ngla
                                reinterpret_cast<double*> (fv.Addr(0)));
   }
 
-
+  AutoVector :: ~AutoVector() { ; }
 
   BlockVector & dynamic_cast_BlockVector (BaseVector & x)
   {
@@ -782,7 +782,7 @@ namespace ngla
     Array<shared_ptr<BaseVector>> v2;
     for (auto & v : vecs)
       v2 += v->CreateVector();
-    return make_shared<BlockVector> (v2);
+    return make_unique<BlockVector> (v2);
   }
   
   double BlockVector :: InnerProductD (const BaseVector & v2) const
@@ -905,11 +905,11 @@ namespace ngla
   {
     switch (es)
       {
-      case 1: return make_shared<VVector<TSCAL>> (this->size);
-      case 2: return make_shared<VVector<Vec<2,TSCAL>>> (this->size);
-      case 3: return make_shared<VVector<Vec<3,TSCAL>>> (this->size);
+      case 1: return make_unique<VVector<TSCAL>> (this->size);
+      case 2: return make_unique<VVector<Vec<2,TSCAL>>> (this->size);
+      case 3: return make_unique<VVector<Vec<3,TSCAL>>> (this->size);
       }
-    return make_shared<S_BaseVectorPtr<TSCAL>> (this->size, es);
+    return make_unique<S_BaseVectorPtr<TSCAL>> (this->size, es);
   }
   
   template <typename TSCAL>
@@ -937,13 +937,13 @@ namespace ngla
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (size_t begin, size_t end) const
   {
-    return make_shared<S_BaseVectorPtr<TSCAL>> (end-begin, es, pdata+begin*es);
+    return make_unique<S_BaseVectorPtr<TSCAL>> (end-begin, es, pdata+begin*es);
   }
   
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (T_Range<size_t> range) const
   {
-    return make_shared<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
+    return make_unique<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
   }
 
 

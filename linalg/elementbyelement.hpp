@@ -53,8 +53,8 @@ namespace ngla
     int VHeight() const override { return height; }
     int VWidth() const override { return width; }
 
-    AutoVector CreateRowVector () const override { return make_shared<VVector<double>> (width); } 
-    AutoVector CreateColVector () const override { return make_shared<VVector<double>> (height); }
+    AutoVector CreateRowVector () const override { return make_unique<VVector<double>> (width); } 
+    AutoVector CreateColVector () const override { return make_unique<VVector<double>> (height); }
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;

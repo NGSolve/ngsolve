@@ -5608,26 +5608,26 @@ namespace ngcomp
 
 
   template <class TM, class TV>
-  shared_ptr<BaseVector> T_BilinearForm<TM, TV>::
+  unique_ptr<BaseVector> T_BilinearForm<TM, TV>::
   CreateRowVector() const
   {
     auto afespace = this->GetTrialSpace();
     
     if (afespace->IsParallel())
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
-      return make_shared<VVector<TV>> (afespace->GetNDof());
+      return make_unique<VVector<TV>> (afespace->GetNDof());
   }
   
   template <class TM, class TV>
-  shared_ptr<BaseVector> T_BilinearForm<TM, TV>::
+    unique_ptr<BaseVector> T_BilinearForm<TM, TV>::
   CreateColVector() const
   {
     auto afespace = this->GetTestSpace();
     if (afespace->IsParallel())
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
-      return make_shared<VVector<TV>> (afespace->GetNDof());
+      return make_unique<VVector<TV>> (afespace->GetNDof());
   }
 
 
@@ -5758,31 +5758,31 @@ namespace ngcomp
 
 
   template <class TM, class TV>
-  shared_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
+  unique_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
   CreateRowVector() const
   {
     auto afespace = this->GetTrialSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV> (afespace->GetNDof());
-      return make_shared<VVector<TV>> (afespace->GetNDof());
+      return make_unique<VVector<TV>> (afespace->GetNDof());
   }
 
   template <class TM, class TV>
-  shared_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
+  unique_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
   CreateColVector() const
   {
     auto afespace = this->GetTestSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV> (afespace->GetNDof());
-      return make_shared<VVector<TV>> (afespace->GetNDof());
+      return make_unique<VVector<TV>> (afespace->GetNDof());
   }
   
 
@@ -5884,31 +5884,31 @@ namespace ngcomp
 
 
   template <class TM>
-  shared_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
+  unique_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
   CreateRowVector() const
   {
     auto afespace = this->GetTrialSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV_COL> (afespace->GetNDof());
-      return make_shared<VVector<TV_COL>> (afespace->GetNDof());
+      return make_unique<VVector<TV_COL>> (afespace->GetNDof());
   }
   
   template <class TM>
-  shared_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
+  unique_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
   CreateColVector() const
   {
     auto afespace = this->GetTestSpace();
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV_COL> (afespace->GetNDof());
-      return make_shared<VVector<TV_COL>> (afespace->GetNDof());
+      return make_unique<VVector<TV_COL>> (afespace->GetNDof());
   }
 
 
@@ -6590,23 +6590,23 @@ namespace ngcomp
   { ; }
 
   template <class SCAL>
-  shared_ptr<BaseVector> S_BilinearFormNonAssemble<SCAL> :: 
+  unique_ptr<BaseVector> S_BilinearFormNonAssemble<SCAL> :: 
   CreateRowVector() const
   {
     auto afespace = this->GetTrialSpace();
     if (afespace->IsParallel())
-      return make_shared<S_ParallelBaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension(), afespace->GetParallelDofs(), DISTRIBUTED);
-    return make_shared<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
+      return make_unique<S_ParallelBaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension(), afespace->GetParallelDofs(), DISTRIBUTED);
+    return make_unique<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
   }
   
   template <class SCAL>
-  shared_ptr<BaseVector> S_BilinearFormNonAssemble<SCAL> :: 
+  unique_ptr<BaseVector> S_BilinearFormNonAssemble<SCAL> :: 
   CreateColVector() const
   {
     auto afespace = this->GetTestSpace();
     if (afespace->IsParallel())
-      return make_shared<S_ParallelBaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension(), afespace->GetParallelDofs(), DISTRIBUTED);
-    return make_shared<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
+      return make_unique<S_ParallelBaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension(), afespace->GetParallelDofs(), DISTRIBUTED);
+    return make_unique<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
   }
   
   
@@ -6633,14 +6633,14 @@ namespace ngcomp
 
 
   template<class SCAL>
-  shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateRowVector() const
+    unique_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateRowVector() const
   {
-    return make_shared<VVector<SCAL>> (this->GetTrialSpace()->GetNDof());
+    return make_unique<VVector<SCAL>> (this->GetTrialSpace()->GetNDof());
   }
   template<class SCAL>
-  shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateColVector() const
+    unique_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateColVector() const
   {
-    return make_shared<VVector<SCAL>> (this->GetTestSpace()->GetNDof());
+    return make_unique<VVector<SCAL>> (this->GetTestSpace()->GetNDof());
   }
 
   template<class SCAL>

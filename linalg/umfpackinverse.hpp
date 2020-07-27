@@ -110,8 +110,8 @@ namespace ngla
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultTrans (const BaseVector & x, BaseVector & y) const override;
     ///
-    AutoVector CreateRowVector () const override { return make_shared<VVector<TV>> (height/entrysize); }
-    AutoVector CreateColVector () const override { return make_shared<VVector<TV>> (height/entrysize); }
+    AutoVector CreateRowVector () const override { return make_unique<VVector<TV>> (height/entrysize); }
+    AutoVector CreateColVector () const override { return make_unique<VVector<TV>> (height/entrysize); }
   };
 
 }

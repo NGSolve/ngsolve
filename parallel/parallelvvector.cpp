@@ -363,7 +363,7 @@ namespace ngla
   AutoVector S_ParallelBaseVectorPtr<SCAL> :: 
   CreateVector () const
   {
-    return make_shared<S_ParallelBaseVectorPtr<TSCAL>>
+    return make_unique<S_ParallelBaseVectorPtr<TSCAL>>
       (this->size, this->es, paralleldofs, status);
     /*
     S_ParallelBaseVectorPtr<TSCAL> * parvec = 

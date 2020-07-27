@@ -697,21 +697,39 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }
       
       AutoVector CreateRowVector () const override {
+        pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
+        if (overload) {
+          auto vec = py::cast<shared_ptr<BaseVector>> (overload());
+          return vec->CreateVector();
+        }
+        throw Exception ("CreateRowVector not overloaded from python");        
+        // python can only create shared_ptr<BaseVector>, create another unique_ptr<vector> from C++
+#ifdef NONE
         PYBIND11_OVERLOAD_PURE(
            shared_ptr<BaseVector>, /* Return type */
            BaseMatrix,             /* Parent class */
            CreateRowVector,        /* Name of function */
            );
+#endif
       }
 
       AutoVector CreateColVector () const override {
+        pybind11::function overload = pybind11::get_overload(this, "CreateColVector");
+        if (overload) {
+          auto vec = py::cast<shared_ptr<BaseVector>> (overload());
+          return vec->CreateVector();
+        }
+        throw Exception ("CreateColVector not overloaded from python");        
+#ifdef NONE        
         PYBIND11_OVERLOAD_PURE(
            shared_ptr<BaseVector>, /* Return type */
            BaseMatrix,             /* Parent class */
            CreateColVector,        /* Name of function */
            );
+#endif
       }
 
+#ifdef NONE                
       AutoVector CreateVector () const override {
         PYBIND11_OVERLOAD_PURE(
            shared_ptr<BaseVector>, /* Return type */
@@ -719,6 +737,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            CreateVector,           /* Name of function */
            );
       }
+#endif
 
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
