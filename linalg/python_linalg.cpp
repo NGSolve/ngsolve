@@ -240,6 +240,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
          "size"_a, "complex"_a=false, "entrysize"_a=1)
+    .def(py::init([] (DynamicVectorExpression expr)
+                  { cout << IM(5) << "experimental: vector from expression" << endl;
+                    return shared_ptr<BaseVector> (expr.Evaluate()); }))
+    
     .def_property_readonly("local_vec", [](shared_ptr<BaseVector> self) -> shared_ptr<BaseVector> {
 #ifdef PARALLEL
 	auto pv = dynamic_cast_ParallelBaseVector (self.get());
@@ -1061,7 +1065,19 @@ inverse : string
     .def(py::self-py::self)
     .def("__neg__", [] (DynamicVectorExpression a) { return (-1.0)*a; })    
     .def(double()*py::self)
-    .def("__rmul__", [] (DynamicVectorExpression a, Complex scal) { return scal*a; })    
+    .def("__rmul__", [] (DynamicVectorExpression a, Complex scal) { return scal*a; })
+
+    /*
+      // crashing, why ? 
+    .def("InnerProduct", [](DynamicVectorExpression a, py::args la, py::kwargs kw)
+         { auto evalv = a.Evaluate();
+           reeturn py::cast(evalv).attr("InnerProduct")(la, kw);
+         })
+    */
+    // only the real case, for the moment ..
+    .def("InnerProduct", [](DynamicVectorExpression v1, BaseVector & v2)
+         { auto v = v1.Evaluate();
+           return InnerProduct<double> (v, v2); })
   ;
 
   // just for testing
@@ -1069,6 +1085,7 @@ inverse : string
            { return a+b; } );
 
   py::implicitly_convertible<BaseVector, DynamicVectorExpression>();
+  py::implicitly_convertible<DynamicVectorExpression, BaseVector>();
   
 #ifndef PARALLEL
 

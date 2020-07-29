@@ -654,7 +654,7 @@ namespace ngla
     RegionTimer reg(t);
 
     if (conjugate)
-      return ngbla::InnerProduct (Conj(FVScal()), v2.FV<SCAL>());
+      return ngbla::InnerProduct (FVScal(), Conj(v2.FV<SCAL>()));
     else
       return ngbla::InnerProduct (FVScal(), v2.FV<SCAL>());
     // dynamic_cast<const S_BaseVector&>(v2).FVScal());

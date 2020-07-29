@@ -370,6 +370,9 @@ namespace ngla {
     MultiVecAxpyExpr (Vector<TSCAL> aa, shared_ptr<MultiVector> ax)
       : a(aa), x(ax) { }
 
+    AutoVector CreateVector() const override
+    { return x->RefVec()->CreateVector(); }    
+    
     void AssignTo (double s, BaseVector & v) const override
     {
       v = 0.0;
