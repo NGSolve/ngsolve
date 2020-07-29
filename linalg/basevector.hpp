@@ -1024,14 +1024,14 @@ namespace ngla
   template <> inline Complex 
   S_InnerProduct<ComplexConjugate> (const BaseVector & v1, const BaseVector & v2)
   {
-    return v2.InnerProductC(v1, true);
+    return v1.InnerProductC(v2, true);
     // return InnerProduct( v1.FVComplex(), Conj(v2.FVComplex()) );
   }
 
   template <>
   inline Complex S_InnerProduct<ComplexConjugate2> (const BaseVector & v1, const BaseVector & v2)
   {
-    return v1.InnerProductC(v1, true);
+    return v2.InnerProductC(v1, true);
     // return InnerProduct( v2.FVComplex(), Conj(v1.FVComplex()) );
   }
 
@@ -1056,6 +1056,7 @@ namespace ngla
   public:
     DynamicBaseExpression () { } 
     virtual ~DynamicBaseExpression() { }
+    virtual AutoVector CreateVector() const = 0;
     virtual void AssignTo (double s, BaseVector & v2) const = 0;
     virtual void AddTo (double s, BaseVector & v2) const = 0;
     virtual void AssignTo (Complex s, BaseVector & v2) const = 0;
@@ -1069,6 +1070,8 @@ namespace ngla
     shared_ptr<BaseVector> a;
   public:
     DynamicVecExpression (shared_ptr<BaseVector> aa) : a(aa) { ; }
+    AutoVector CreateVector() const override
+    { return a->CreateVector(); }
     void AssignTo (double s, BaseVector & v2) const override
     { v2.Set (s, *a); }
     void AddTo (double s, BaseVector & v2) const override
@@ -1082,6 +1085,9 @@ namespace ngla
   class DynamicSumExpression : public DynamicBaseExpression
   {
     shared_ptr<DynamicBaseExpression> a,b;
+    
+    AutoVector CreateVector() const override
+    { return a->CreateVector(); }    
     void AssignTo (double s, BaseVector & v2) const override
     {
       a->AssignTo(s, v2);
@@ -1111,6 +1117,10 @@ namespace ngla
   class DynamicSubExpression : public DynamicBaseExpression
   {
     shared_ptr<DynamicBaseExpression> a,b;
+    
+    AutoVector CreateVector() const override
+    { return a->CreateVector(); }    
+
     void AssignTo (double s, BaseVector & v2) const override
     {
       a->AssignTo(s, v2);
@@ -1142,6 +1152,9 @@ namespace ngla
   {
     T scale;
     shared_ptr<DynamicBaseExpression> a;
+
+    AutoVector CreateVector() const override
+    { return a->CreateVector(); }    
     
     void AssignTo (double s, BaseVector & v2) const override
     {
@@ -1174,7 +1187,15 @@ namespace ngla
     DynamicVectorExpression() { } 
     DynamicVectorExpression (shared_ptr<DynamicBaseExpression> ave) : ve(ave) { }
     DynamicVectorExpression (shared_ptr<BaseVector> v)
-      : ve(make_shared<DynamicVecExpression>(v)) { } 
+      : ve(make_shared<DynamicVecExpression>(v)) { }
+
+    AutoVector Evaluate() const
+    {
+      auto vec = ve->CreateVector();
+      ve->AssignTo (1, vec);
+      return vec;
+    }
+    
     void AssignTo (double s, BaseVector & v2) const
     { ve->AssignTo(s,v2); }
     void AddTo (double s, BaseVector & v2) const

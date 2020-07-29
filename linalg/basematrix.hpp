@@ -243,6 +243,9 @@ namespace ngla
   {
     shared_ptr<BaseMatrix> m;
     shared_ptr<BaseVector> v;
+
+    AutoVector CreateVector() const override
+    { return m->CreateColVector(); }    
     
     void AssignTo (double s, BaseVector & v2) const override
     {
