@@ -151,6 +151,9 @@ namespace ngla
 
     bool IsMasterDof (size_t localdof) const
     { return true; }
+
+    shared_ptr<BitArray> MasterDofs () const;
+    void EnumerateGlobally (shared_ptr<BitArray> freedofs, Array<int> & globnum, int & num_glob_dofs) const;
     
     template <typename T>
     void ReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }

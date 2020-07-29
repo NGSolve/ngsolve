@@ -16,7 +16,7 @@
 namespace ngla
 {
 
-  extern void MyFunction();
+  // extern void MyFunction();  ????
   
   ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
@@ -166,4 +166,38 @@ namespace ngla
 
 }
 
+
+#else 
+namespace ngla
+{
+  
+  shared_ptr<BitArray> ParallelDofs :: MasterDofs () const
+  {
+    auto ismaster = make_shared<BitArray> (ndof);
+    ismaster->Set();
+    return ismaster;
+  }
+  
+  void ParallelDofs ::
+  EnumerateGlobally (shared_ptr<BitArray> freedofs, Array<int> & globnum, int & num_glob_dofs) const
+  {
+    if (!freedofs)
+      {
+        for (int i = 0; i < globnum.Size(); i++)
+          globnum[i] = i;
+        num_glob_dofs = globnum.Size();
+      }
+    else
+      {
+        int cnt = 0;
+        for (int i = 0; i < globnum.Size(); i++)
+          if (freedofs->Test(i))
+            globnum[i] = cnt++;
+          else
+            globnum[i] = -1;            
+        num_glob_dofs = cnt;
+      }
+  }
+  
+}
 #endif
