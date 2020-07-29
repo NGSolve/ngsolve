@@ -93,17 +93,17 @@ namespace ngla
     ///
     virtual AutoVector CreateVector () const
     {
-      return make_shared<VVector<TV>> (height);
+      return make_unique<VVector<TV>> (height);
     }
 
     virtual AutoVector CreateRowVector () const
     {
-      return make_shared<VVector<TV>> (height);
+      return make_unique<VVector<TV>> (height);
     }
 
     virtual AutoVector CreateColVector () const
     {
-      return make_shared<VVector<TV>> (height);
+      return make_unique<VVector<TV>> (height);
     }
 
   };
