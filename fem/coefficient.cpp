@@ -5432,6 +5432,13 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       auto v2 = input[2];
       values = v1+v2;
     }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (this == var) return dir;
+      return IfPos (cf_if, cf_then->Diff(var, dir), cf_else->Diff(var, dir));
+    }  
   };
   
   extern
