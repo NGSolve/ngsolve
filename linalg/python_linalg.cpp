@@ -210,6 +210,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          { return self.GetDistantProcs(dof); }, py::arg("dof"))
     .def("Proc2Dof", [] (const ParallelDofs & self, int proc)
          { return self.GetExchangeDofs(proc); }, py::arg("proc"))
+    .def("EnumerateGlobally", [] (shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> freedofs) {
+        Array<int> globnum;
+        int num_glob_dofs;
+        pardofs->EnumerateGlobally (freedofs, globnum, num_glob_dofs);
+        return tuple ( py::cast(globnum), py::cast(num_glob_dofs) );
+      }, py::arg("freedofs")=nullptr)
     ;
 
     m.def("CreateVVector",
@@ -233,6 +239,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #endif
 	  },
           py::arg("pardofs"));
+     
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
