@@ -216,6 +216,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pardofs->EnumerateGlobally (freedofs, globnum, num_glob_dofs);
         return tuple ( py::cast(globnum), py::cast(num_glob_dofs) );
       }, py::arg("freedofs")=nullptr)
+    .def("MasterDofs", &ParallelDofs::MasterDofs)
     ;
 
     m.def("CreateVVector",

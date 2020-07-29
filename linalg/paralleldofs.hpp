@@ -74,7 +74,10 @@ namespace ngla
 
     bool IsMasterDof (size_t localdof) const
     { return ismasterdof.Test(localdof); }
-
+    
+    auto MasterDofs () const
+    { return ismasterdof; }
+    
     size_t GetNDofLocal () const { return ndof; }
 
     size_t GetNDofGlobal () const { return global_ndof; }
