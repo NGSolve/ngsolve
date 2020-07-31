@@ -70,7 +70,7 @@ namespace ngcomp
       throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
 
     pardofs = pmat.GetParallelDofs ();
-    NgsMPI_Comm comm = pardofs->GetCommunicator();
+    NgMPI_Comm comm = pardofs->GetCommunicator();
     int ndof = pardofs->GetNDofLocal();
 
     int ntasks = comm.Size();
@@ -170,7 +170,7 @@ namespace ngcomp
   {
     static Timer t("hypre mult");
     RegionTimer reg(t);
-    NgsMPI_Comm comm = pardofs->GetCommunicator();
+    NgMPI_Comm comm = pardofs->GetCommunicator();
 
     f.Distribute();
     u.SetParallelStatus(DISTRIBUTED);

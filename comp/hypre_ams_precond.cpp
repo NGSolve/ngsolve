@@ -27,7 +27,7 @@ namespace ngcomp
 				FlatArray<int> row_gnums, FlatArray<int> col_gnums,
 				bool matrix_cumulated = false)
   {
-    NgsMPI_Comm comm = row_pardofs->GetCommunicator();
+    NgMPI_Comm comm = row_pardofs->GetCommunicator();
     HYPRE_IJMatrixCreate(comm, row_ilower, row_iupper, col_ilower, col_iupper, ijmat);
     HYPRE_IJMatrixSetPrintLevel(*ijmat, 1);
     HYPRE_IJMatrixSetObjectType(*ijmat, HYPRE_PARCSR);
@@ -89,7 +89,7 @@ namespace ngcomp
   /**
      Creates hypre-IJvector from ngsolve-vector and copies values.
    **/
-  void Create_IJVec_from_BVec(NgsMPI_Comm & comm, HYPRE_IJVector & v, HYPRE_ParVector & pv, double* vals,
+  void Create_IJVec_from_BVec(NgMPI_Comm & comm, HYPRE_IJVector & v, HYPRE_ParVector & pv, double* vals,
 			      Array<int> & global_nums, int ilower, int iupper, bool full_vals) {    
     HYPRE_IJVectorCreate(comm, ilower, iupper,&v);
     HYPRE_IJVectorSetPrintLevel(v, 1);
@@ -183,7 +183,7 @@ namespace ngcomp
     HYPRE_Int err;	
 
     this->parallel = this->hcurlfes->GetParallelDofs()!=nullptr;
-    NgsMPI_Comm comm = this->parallel ? this->hcurlfes->GetParallelDofs()->GetCommunicator() : NgMPI_Comm(MPI_COMM_WORLD);
+    NgMPI_Comm comm = this->parallel ? this->hcurlfes->GetParallelDofs()->GetCommunicator() : NgMPI_Comm(MPI_COMM_WORLD);
     this->rank = comm.Rank();
     this->np = comm.Size();
     this->parallel = (np>1);

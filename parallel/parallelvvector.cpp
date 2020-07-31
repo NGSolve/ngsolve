@@ -140,13 +140,14 @@ namespace ngla
     SetStatus(CUMULATED);
 #endif
   }
+  
 
 
 
   void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
   {
 #ifdef PARALLEL
-    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
+    MPI_Datatype mpi_t = this->paralleldofs->GetMPI_Type(dest);
     MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
 #endif
   }
@@ -325,7 +326,7 @@ namespace ngla
   void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, MPI_Request & request )
   {
 #ifdef PARALLEL
-    MPI_Datatype MPI_TS = MyGetMPIType<TSCAL> ();
+    MPI_Datatype MPI_TS = GetMPIType<TSCAL> ();
     MPI_Irecv( &( (*recvvalues)[dest][0]), 
 	       (*recvvalues)[dest].Size(), 
 	       MPI_TS, dest, 

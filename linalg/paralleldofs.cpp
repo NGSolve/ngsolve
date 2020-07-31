@@ -71,8 +71,7 @@ namespace ngla
     
     MPI_Datatype mpi_type;
     
-    mpi_type = iscomplex ?
-      MyGetMPIType<Complex>() : MyGetMPIType<double>(); 
+    mpi_type = iscomplex ? GetMPIType<Complex>() : GetMPIType<double>(); 
     
     if (es != 1)
       {

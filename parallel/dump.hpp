@@ -250,13 +250,13 @@ namespace ngstd
 			      Array<MPI_Request> & requests)
   {
     // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
-    MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
+    MPI_Datatype mpi_type_array = GetMPIType<DT>();
 
     //get type for keys
     // MPI_Datatype mpi_type_key;
     // SetMPIType<NT>(&mpi_type_key);
     typedef typename key_trait<NT>::TKEY tkey;
-    MPI_Datatype mpi_type_key = MyGetMPIType<tkey>();    
+    MPI_Datatype mpi_type_key = GetMPIType<tkey>();    
 
     bool has_extra = n%pkg_size;
     int n_packages = n/pkg_size + (has_extra ? 1 : 0);
@@ -299,7 +299,7 @@ namespace ngstd
   template<typename DT, NODE_TYPE NT>
   void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key_trait<NT>::TKEY *array_dnrs, int n, int p_in, int p_out)
   {
-    NgsMPI_Comm comm(MPI_COMM_WORLD);
+    NgMPI_Comm comm(MPI_COMM_WORLD);
 
     typedef typename key_trait<NT>::TKEY TKEY;
 
@@ -446,12 +446,12 @@ namespace ngstd
   void merge_in_in_out (int pkg_size, int rank, int np, int p1, int p2, int p_out)
   {
     // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
-    MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
+    MPI_Datatype mpi_type_array = GetMPIType<DT>();
     //get type for keys
     // MPI_Datatype mpi_type_key;
     // SetMPIType<NT>(&mpi_type_key);
     typedef typename key_trait<NT>::TKEY tkey;
-    MPI_Datatype mpi_type_key = MyGetMPIType<tkey>();    
+    MPI_Datatype mpi_type_key = GetMPIType<tkey>();    
 
     int in_buf_size = pkg_size * 2;
     DT* a1 = (DT*) malloc (sizeof(DT) * in_buf_size);
@@ -786,7 +786,7 @@ namespace ngstd
     typedef typename key_trait<NT>::TKEY tkey;
     // MPI_Datatype mpi_type_key = MyGetMPIType<tkey>();     
 
-    NgsMPI_Comm comm(MPI_COMM_WORLD);
+    NgMPI_Comm comm(MPI_COMM_WORLD);
     int rank = comm.Rank();
     int np = comm.Size();
     /*

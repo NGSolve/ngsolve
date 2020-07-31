@@ -1138,7 +1138,7 @@ namespace ngcomp
     template <int DIMS, int DIMR> friend class Ng_ConstElementTransformation;
 
 
-    NgsMPI_Comm GetCommunicator () const { return mesh.GetCommunicator(); }
+    NgMPI_Comm GetCommunicator () const { return mesh.GetCommunicator(); }
 
     /**
        Returns the list of other MPI - processes where node is present.
@@ -1281,7 +1281,7 @@ namespace ngcomp
   void MeshAccess::
   AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const
   {
-    NgsMPI_Comm comm = GetCommunicator();
+    NgMPI_Comm comm = GetCommunicator();
     if (comm.Size() <= 1) return;
 
     Array<int> cnt(comm.Size());
