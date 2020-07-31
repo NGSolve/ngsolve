@@ -363,6 +363,7 @@ conda_win:
   script:
     - call C:\Users\mhochsteger\Miniconda3\Scripts\activate.bat C:\Users\mhochsteger\Miniconda3
     - call conda build purge
+    - call conda clean -a -y
     - cd %CI_PROJECT_DIR%\tests\gitlab-ci\conda
     - python generate_meta_files.py
     - cd netgen
@@ -382,6 +383,7 @@ conda_linux:
   script:
     - export PATH="/home/gitlab-runner/miniconda3/bin:$PATH"
     - conda build purge
+    - conda clean -a -y
     - cd tests/gitlab-ci/conda
     - python3 generate_meta_files.py
     - cd netgen
@@ -399,6 +401,7 @@ conda_mac:
   script:
     - conda activate
     - conda build purge
+    - conda clean -a -y
     - cd tests/gitlab-ci/conda
     - python3 generate_meta_files.py
     - cd netgen

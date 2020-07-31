@@ -1,0 +1,17 @@
+python:
+  - 3.7
+  - 3.8
+
+tk:
+  - 8.6.9
+  - 8.6.10
+
+zip_keys:
+  - python
+  - tk
+
+mpi:
+  - openmpi
+#  - mpich
+
+
