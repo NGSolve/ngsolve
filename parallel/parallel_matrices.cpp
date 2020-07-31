@@ -278,7 +278,7 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
     
-    NgsMPI_Comm comm = paralleldofs->GetCommunicator();
+    NgMPI_Comm comm = paralleldofs->GetCommunicator();
     int id = comm.Rank();
     int ntasks = comm.Size();
 

@@ -864,7 +864,7 @@ namespace ngla
     y.SetParallelStatus (CUMULATED);
 
 
-    NgsMPI_Comm comm = paralleldofs->GetCommunicator();
+    NgMPI_Comm comm = paralleldofs->GetCommunicator();
     int ntasks = comm.Size();
     int id = comm.Rank();
 

@@ -681,8 +681,8 @@ namespace ngcomp
   {
     static Timer t("dummy - gather"); RegionTimer r(t);
     
-    MPI_Gather (&d, 1, MyGetMPIType<T>(), 
-		NULL, 1, MyGetMPIType<T>(), 0, comm);
+    MPI_Gather (&d, 1, GetMPIType<T>(), 
+		NULL, 1, GetMPIType<T>(), 0, comm);
   }
 
   template <typename T>
@@ -691,8 +691,8 @@ namespace ngcomp
     static Timer t("dummy - gather"); RegionTimer r(t);
 
     d[0] = T(0);
-    MPI_Gather (MPI_IN_PLACE, 1, MyGetMPIType<T>(), 
-		&d[0], 1, MyGetMPIType<T>(), 0,
+    MPI_Gather (MPI_IN_PLACE, 1, GetMPIType<T>(), 
+		&d[0], 1, GetMPIType<T>(), 0,
 		comm);
   }
 #endif

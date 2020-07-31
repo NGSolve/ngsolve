@@ -21,7 +21,7 @@ namespace ngla
   {
   protected:
     /// the communicator 
-    NgsMPI_Comm comm;
+    NgMPI_Comm comm;
     
     /// local ndof
     size_t ndof;
@@ -85,10 +85,10 @@ namespace ngla
     bool IsExchangeProc (int proc) const
     { return exchangedofs[proc].Size() != 0; }
 
-    MPI_Datatype MyGetMPI_Type (int dest) const
+    MPI_Datatype GetMPI_Type (int dest) const
     { return mpi_t[dest]; }
 
-    const NgsMPI_Comm & GetCommunicator () const { return comm; }
+    const NgMPI_Comm & GetCommunicator () const { return comm; }
 
     int GetEntrySize () const { return es; }
     bool IsComplex () const { return complex; }
@@ -257,7 +257,7 @@ namespace ngla
     Array<int> cnt(ntasks);
     cnt = 0;
     
-    MPI_Datatype type = MyGetMPIType<T>();
+    MPI_Datatype type = GetMPIType<T>();
     for (int i = 0; i < GetNDofLocal(); i++)
       if (IsMasterDof(i))
 	{
