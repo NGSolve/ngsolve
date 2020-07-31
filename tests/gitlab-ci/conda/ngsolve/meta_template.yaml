@@ -6,14 +6,17 @@ package:
 
 requirements:
   build:
-    - python 3.7.*
+    - python {{ python }}
+    - {{mpi}}     # [not win]
     - netgen{{suffix}} {{netgen_version}}
     - cmake 3.15.*
     - mkl-devel
+    - nodejs      # [not win]
 
   run:
-    - python 3.7.*
+    - python {{ python }}
     - netgen{{suffix}} {{netgen_version}}
+    - {{mpi}}     # [not win]
     - mkl
     - mkl-devel
     - intel-openmp

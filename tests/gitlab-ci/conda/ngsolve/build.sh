@@ -35,6 +35,7 @@ cmake -G "Unix Makefiles" \
   -DLAPACK_LIBRARIES=${PREFIX}/lib/libmkl_rt.${SHARED_EXT} \
   -DUSE_UMFPACK=OFF \
   -DBUILD_STUB_FILES=OFF \
+   -DBUILD_JUPYTER_WIDGETS=ON \
   ${SRC_DIR}
 
 make -j$CPU_COUNT
