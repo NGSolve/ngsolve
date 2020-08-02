@@ -350,23 +350,25 @@ namespace ngla
   AutoVector CreateBaseVector(size_t size, bool is_complex, int es);
 
   
-  class AutoVector : public BaseVector
+  class AutoVector // : public BaseVector
   {
     unique_ptr<BaseVector> vec;
   public:
     AutoVector () { ; }
 
-    AutoVector (AutoVector && av2) : vec(move(av2.vec)) 
-    { size = av2.Size(), entrysize = av2.EntrySize(); }
+    AutoVector (AutoVector && av2) : vec(move(av2.vec)) { } 
+    // { size = av2.Size(), entrysize = av2.EntrySize(); }
 
-    AutoVector (unique_ptr<BaseVector> hvec) : vec(move(hvec)) 
-    { size = vec->Size(), entrysize = vec->EntrySize(); }
+    AutoVector (unique_ptr<BaseVector> hvec) : vec(move(hvec)) { } 
+    // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     template<typename U>
-    AutoVector (unique_ptr<U> hvec) : vec(move(hvec)) 
-    { size = vec->Size(), entrysize = vec->EntrySize(); }
+    AutoVector (unique_ptr<U> hvec) : vec(move(hvec)) { } 
+    // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     ~AutoVector();
+
+    auto Size() const { return vec->Size(); }
     
     template <typename T> 
     BaseVector & operator= (const VVecExpr<T> & v)
@@ -387,12 +389,72 @@ namespace ngla
       vec->Set (1.0, *v);
       return *this;
     }
+
+    template <typename T>
+    auto & operator+= (const VVecExpr<T> & v)
+    {
+      (*vec) += v;
+      return *this;
+    }
+
+    auto & operator+= (const BaseVector & v)
+    {
+      (*vec) += v;
+      return *this;
+    }
+    
+    template <typename T>
+    auto & operator-= (const VVecExpr<T> & v)
+    {
+      (*vec) -= v;
+      return *this;
+    }
+
+    auto & operator-= (const BaseVector & v)
+    {
+      (*vec) -= v;
+      return *this;
+    }
+
+    auto & operator*= (double s)
+    {
+      (*vec) *= s;
+      return *this;
+    }
+
+    ///
+    auto & operator*= (Complex s)
+    {
+      (*vec) *= s;
+      return *this;
+    }
+
+    auto & operator/= (double s)
+    {
+      (*vec) /= s;
+      return *this;
+    }
+
+    ///
+    auto & operator/= (Complex s)
+    {
+      (*vec) /= s;
+      return *this;
+    }
+
+    auto & SetRandom ()
+    {
+      vec->SetRandom();
+      return *this;
+    }
+
+    
     ///
     BaseVector & AssignPointer (AutoVector && v)
     {
       vec = move(v.vec);
-      size = v.size;
-      entrysize = v.entrysize;
+      // size = v.size;
+      // entrysize = v.entrysize;
       return *this;
     }
     ///
@@ -412,11 +474,15 @@ namespace ngla
     operator shared_ptr<BaseVector> () && { return move(vec); }
     BaseVector & operator* () { return *vec; }
     const BaseVector & operator* () const { return *vec; }
-
+    operator BaseVector & () { return *vec; }
+    operator const BaseVector & () const { return *vec; }
 
     virtual AutoVector Range (size_t begin, size_t end) const { return vec->Range(begin,end); }
     virtual AutoVector Range (T_Range<size_t> range) const { return vec->Range(range); }
 
+    template <typename T>
+    auto FV () const { return vec->FV<T>(); }
+    
 
     virtual void * Memory () const throw () 
     {
