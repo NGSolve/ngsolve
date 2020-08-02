@@ -12,21 +12,15 @@
 
 #include <la.hpp>
 
-#ifdef PARALLEL
-#include "../parallel/parallelvector.hpp"
-#endif
+// #ifdef PARALLEL
+#include "../parallel/parallelvector.hpp"   // for BlockVector
+// #endif
 
 
 namespace ngla
 {
-
   using namespace ngbla;
   
-#ifdef PARALLEL
-  class ParallelBaseVector;
-#endif
-
-
   unique_ptr<MultiVector> BaseVector :: CreateMultiVector (size_t cnt) const
   {
     return make_unique<MultiVector> (CreateVector(), cnt);
@@ -741,23 +735,24 @@ namespace ngla
     size = 0;
     for (auto & vec:vecs)
       size += vec->Size();
-#ifdef PARALLEL
+    // #ifdef PARALLEL
     ispar.Clear();
+    for (size_t k = 0; k < vecs.Size(); k++)
+      if (vecs[k]->GetParallelStatus() != NOT_PARALLEL)
+        {
+          ispar.SetBit(k);
+          comm = dynamic_pointer_cast<ParallelBaseVector> (vecs[k])->GetParallelDofs()->GetCommunicator();
+        }
+    /*
     for (size_t k = 0; k<vecs.Size(); k++) {
       auto stat = vecs[k]->GetParallelStatus();
       if ( stat==NOT_PARALLEL ) continue;
       ispar.SetBit(k);
       auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
       comm = pv->GetParallelDofs()->GetCommunicator();
-      /*
-      auto vcomm = pv->GetParallelDofs()->GetCommunicator();
-      if (comm==MPI_COMM_NULL)
-	comm = vcomm;
-      else if (comm != vcomm)
-	throw Exception("Tried to construct a BlockVector with components in different MPI-Communicators!!");
-      */
     }
-#endif
+    */
+    // #endif
   }
 
   void * BlockVector :: Memory () const

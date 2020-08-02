@@ -1088,10 +1088,6 @@ inverse : string
            return InnerProduct<double> (v, v2); })
   ;
 
-  // just for testing
-  m.def ("Sum", [](DynamicVectorExpression a, DynamicVectorExpression b)
-           { return a+b; } );
-
   py::implicitly_convertible<BaseVector, DynamicVectorExpression>();
   py::implicitly_convertible<DynamicVectorExpression, BaseVector>();
   
