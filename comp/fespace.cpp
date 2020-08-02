@@ -1987,7 +1987,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   bool FESpace :: IsParallel() const
   {
     return ma->GetCommunicator().Size() > 1;
-    // return paralleldofs != NULL; 
+    // return paralleldofs != nullptr; 
   }
 
   size_t FESpace :: GetNDofGlobal() const 
