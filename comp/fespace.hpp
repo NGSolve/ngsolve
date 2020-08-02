@@ -1430,7 +1430,7 @@ ANY                  1 1 1 1 | 15
 
 
 
-
+#ifdef OLD
   // #ifdef PARALLEL
 
   class ParallelMeshDofs : public ParallelDofs
@@ -1458,7 +1458,8 @@ ANY                  1 1 1 1 | 15
   };
 
 #endif
-
+#endif
+  
 }
 
 

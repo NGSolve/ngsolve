@@ -1948,8 +1948,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpace :: UpdateParallelDofs ( )
   {
-    if (!ma->GetCommunicator().ValidCommunicator()) return;
-    // if (ma->GetCommunicator().Size() == 1) return;
+    // if (!ma->GetCommunicator().ValidCommunicator()) return;
+    if (ma->GetCommunicator().Size() == 1) return;
 
     static Timer timer ("FESpace::UpdateParallelDofs"); RegionTimer reg(timer);
 
@@ -3445,7 +3445,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
 
 
-
+#ifdef OLD
 
   // #ifdef PARALLEL
   ParallelMeshDofs :: ParallelMeshDofs (shared_ptr<MeshAccess> ama, 
@@ -3457,7 +3457,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   { ; }
   // #endif
 
-
+#endif
 
 
 
