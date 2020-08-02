@@ -2390,11 +2390,7 @@ namespace ngcomp
               }
             
             for (auto pre : preconditioners)
-              {
-                cout << "type pre = " << typeid(*pre).name() << endl;
-                pre -> FinalizeLevel(&GetMatrix());
-                cout << "pre finalizelevel done" << endl;
-              }
+              pre -> FinalizeLevel(&GetMatrix());
             
             if (print)
               (*testout) << "mat = " << endl << GetMatrix() << endl;
