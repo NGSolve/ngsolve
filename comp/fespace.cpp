@@ -1913,7 +1913,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return sum;    
   }
 
-
+#ifdef OLD
   Table<int> Nodes2Table (const MeshAccess & ma,
                           const Array<NodeId> & dofnodes)
   {
@@ -1943,17 +1943,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
           creator.Add (i, ma.GetDistantProcs (dofnodes[i]));
     return creator.MoveTable();
   }
-
+#endif
   
   
   void FESpace :: UpdateParallelDofs ( )
   {
-    // if (!ma->GetCommunicator().ValidCommunicator()) return;
-    if (ma->GetCommunicator().Size() == 1) return;
+    if (!ma->GetCommunicator().ValidCommunicator()) return;
+    // if (ma->GetCommunicator().Size() == 1) return;
 
     static Timer timer ("FESpace::UpdateParallelDofs"); RegionTimer reg(timer);
 
-    Array<NodeId> dofnodes (GetNDof());
+    size_t ndof = GetNDof();
+    Array<NodeId> dofnodes (ndof);
     dofnodes = NodeId (NT_VERTEX, -1);
 
     Array<int> dnums;
@@ -1966,18 +1967,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	} 
 
     // paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
-    paralleldofs = make_shared<ParallelDofs>
-      (ma->GetCommunicator(), Nodes2Table(*ma, dofnodes), dimension, iscomplex);
+    // paralleldofs = make_shared<ParallelDofs>
+    // (ma->GetCommunicator(), Nodes2Table(*ma, dofnodes), dimension, iscomplex);
 
-    // if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM, ma->GetCommunicator()))
+    TableCreator<int> creator(ndof);
+    for ( ; !creator.Done(); creator++)
+      for (size_t i = 0; i < ndof; i++)
+        if (dofnodes[i].GetNr() != -1) 
+          creator.Add (i, ma->GetDistantProcs (dofnodes[i]));
+    
+    paralleldofs = make_shared<ParallelDofs>
+      (ma->GetCommunicator(), creator.MoveTable(), dimension, iscomplex);
+
     if (ma->GetCommunicator().AllReduce (ctofdof.Size(), MPI_SUM))
       paralleldofs -> AllReduceDofData (ctofdof, MPI_MAX);
   }
 
 
   bool FESpace :: IsParallel() const
-  { 
-    return paralleldofs != NULL; 
+  {
+    return ma->GetCommunicator().Size() > 1;
+    // return paralleldofs != NULL; 
   }
 
   size_t FESpace :: GetNDofGlobal() const 
