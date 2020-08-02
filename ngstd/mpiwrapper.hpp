@@ -15,7 +15,7 @@ namespace ngstd
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
 
-  // #define NGSMPI_ENABLE_FOR_STD typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0
+#ifdef OLD
 #define NGSMPI_ENABLE_FOR_STD typename T2 = decltype(ngcore::GetMPIType<T>()) 
   /*
   template <class T, NGSMPI_ENABLE_FOR_STD>
@@ -30,7 +30,8 @@ namespace ngstd
   {
     return ngcore::GetMPIType<T>();
   }
-
+#endif
+  
   /** --- blocking P2P --- **/
 
   INLINE void MyMPI_SendCmd (const char * cmd, NgMPI_Comm comm)
@@ -56,6 +57,7 @@ namespace ngstd
   
   /** --- collectives --- **/
 
+#ifdef OLD
   template <typename T, NGSMPI_ENABLE_FOR_STD>
   [[deprecated("mympi_gather, use comm.gather instead")]]            
   INLINE void MyMPI_Gather (T d, FlatArray<T> recv, // = FlatArray<T>(0, NULL),
@@ -87,7 +89,8 @@ namespace ngstd
     MPI_Alltoall (send.Data(), 1, MyGetMPIType<T>(), 
 		  recv.Data(), 1, MyGetMPIType<T>(), comm);
   }
-
+#endif
+  
   using ngcore::NgMPI_Comm;
   
 
@@ -148,6 +151,7 @@ public:
   // INLINE void MyMPI_Barrier (MPI_Comm comm) { ; }
   INLINE void MyMPI_SendCmd (const char * cmd, MPI_Comm comm) { ; }
 
+  /*
   template <typename T>
   INLINE void MyMPI_Send (const T & data, int dest, int tag = 0)
   { ; }
@@ -155,7 +159,8 @@ public:
   template <typename T>
   INLINE void MyMPI_Recv (const T & data, int dest, int tag = 0)
   { ; }
-
+  */
+  
   // template <typename T>
   // INLINE T MyMPI_AllReduce (T d, int op, MPI_Comm comm)  { return d; }
 

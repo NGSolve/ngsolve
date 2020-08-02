@@ -20,6 +20,11 @@ namespace ngcomp
 					  bool localop = false, bool parmat = true, bool use_simd = true,
 					  int bonus_intorder_ab = 0, int bonus_intorder_bb = 0)
   {
+    static Timer t ("ConvertOperator");
+    RegionTimer regt(t);
+    static Timer tass("CovnertOperator - assemble");
+    static Timer telmat("CovnertOperator - elmat");
+    
     /** Solves gfb = diffop(gfa), where gfb is a function from space_b and gfa one from space_a **/
 
     /** Other Sparse-Matrix templates are not instantiated **/
@@ -227,6 +232,7 @@ namespace ngcomp
 	  { cnt_b[dnum]++; }
     };
 
+    tass.Start();
     if (use_simd) {
       it_els([&](FESpace::Element & ei, LocalHeap & lh) {
 	  try { fill_lam(ei, lh); }
@@ -241,7 +247,7 @@ namespace ngcomp
     }
     else // use_simd
       { it_els(fill_lam); }
-	      
+    tass.Stop();
 #ifdef PARALLEL
     if (space_b->IsParallel() && !localop)
       { AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
