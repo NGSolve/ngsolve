@@ -211,6 +211,7 @@ namespace ngla
     using ParallelBaseVector :: local_vec;
 
   public:
+    [[deprecated("too much info, use ParallelVVector(pardofs) instead")]]
     explicit ParallelVVector (int as, shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (as, ES), VVector<T> (as), 

@@ -199,7 +199,7 @@ namespace ngcomp
     void UnsetPreconditioner(Preconditioner* pre);
 
     /// generates matrix graph
-    virtual MatrixGraph * GetGraph (int level, bool symmetric);
+    virtual MatrixGraph GetGraph (int level, bool symmetric);
 
     /// assembles the matrix
     void Assemble (LocalHeap & lh);
@@ -636,7 +636,7 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef SparseMatrix<TM,TV,TV> TMATRIX;
-    TMATRIX * mymatrix;
+    shared_ptr<TMATRIX> mymatrix;
   protected:
 
   public:
@@ -683,7 +683,7 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef SparseMatrixSymmetric<TM,TV> TMATRIX;
-    TMATRIX * mymatrix;    
+    shared_ptr<TMATRIX> mymatrix;    
   protected:
     
 

@@ -341,7 +341,7 @@ namespace ngcomp
   }
 
 
-  MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
+  MatrixGraph BilinearForm :: GetGraph (int level, bool symmetric)
   {
     static Timer timer ("BilinearForm::GetGraph");
     RegionTimer reg (timer);
@@ -561,7 +561,7 @@ namespace ngcomp
       }
     
     graph -> FindSameNZE();
-    return graph;
+    return move(*graph);
   }
 
 
@@ -5554,7 +5554,7 @@ namespace ngcomp
     for (int i = 0; i < this->mats.Size(); i++)
       {
       delete this->mats[i];
-        this->mats[i].reset();
+      this->mats[i].reset();
       }
     */
   }
@@ -5568,10 +5568,10 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
-    MatrixGraph * graph = this->GetGraph (this->ma->GetNLevels()-1, false);
+    MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
-    auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
-    mymatrix = spmat.get();
+    auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (graph, 1);
+    mymatrix = spmat; // .get();
     
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
@@ -5584,7 +5584,7 @@ namespace ngcomp
     this->mats.Last() = mat;
     // this->mats.Append (mat);
 
-    delete graph;
+    // delete graph;
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
@@ -5717,10 +5717,10 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
-    MatrixGraph * graph = this->GetGraph (this->ma->GetNLevels()-1, true);
+    MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, true);
 
-    auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
-    mymatrix = spmat.get();
+    auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (graph, 1);
+    mymatrix = spmat; // .get();
     
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
@@ -5731,7 +5731,7 @@ namespace ngcomp
     
     this->mats.Append (mat);
 
-    delete graph;
+    // delete graph;
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
@@ -5747,13 +5747,7 @@ namespace ngcomp
   {
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size(); i++)
-        {
-          /*
-          delete this->mats[i];
-          this->mats[i] = 0;
-          */
-          this->mats[i].reset();
-        }
+        this->mats[i].reset();
   }
 
 
@@ -5761,28 +5755,24 @@ namespace ngcomp
   unique_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
   CreateRowVector() const
   {
-    auto afespace = this->GetTrialSpace();
-#ifdef PARALLEL
-    if ( afespace->IsParallel() )
-      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    auto fes = this->GetTrialSpace();
+
+    if ( fes->IsParallel() )
+      return make_unique<ParallelVVector<TV>> (fes->GetParallelDofs());
     else
-#endif
-      // return new VVector<TV> (afespace->GetNDof());
-      return make_unique<VVector<TV>> (afespace->GetNDof());
+      return make_unique<VVector<TV>> (fes->GetNDof());
   }
 
   template <class TM, class TV>
   unique_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
   CreateColVector() const
   {
-    auto afespace = this->GetTestSpace();
-#ifdef PARALLEL
-    if ( afespace->IsParallel() )
-      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    auto fes = this->GetTestSpace();
+
+    if ( fes->IsParallel() )
+      return make_unique<ParallelVVector<TV>> (fes->GetParallelDofs());
     else
-#endif
-      // return new VVector<TV> (afespace->GetNDof());
-      return make_unique<VVector<TV>> (afespace->GetNDof());
+      return make_unique<VVector<TV>> (fes->GetNDof());
   }
   
 
@@ -5887,28 +5877,22 @@ namespace ngcomp
   unique_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
   CreateRowVector() const
   {
-    auto afespace = this->GetTrialSpace();
-#ifdef PARALLEL
-    if ( afespace->IsParallel() )
-      return make_unique<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    auto fes = this->GetTrialSpace();
+    if ( fes->IsParallel() )
+      return make_unique<ParallelVVector<TV_COL>> (fes->GetParallelDofs());
     else
-#endif
-      // return new VVector<TV_COL> (afespace->GetNDof());
-      return make_unique<VVector<TV_COL>> (afespace->GetNDof());
+      return make_unique<VVector<TV_COL>> (fes->GetNDof());
   }
   
   template <class TM>
   unique_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
   CreateColVector() const
   {
-    auto afespace = this->GetTestSpace();
-#ifdef PARALLEL
-    if ( afespace->IsParallel() )
-      return make_unique<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
+    auto fes = this->GetTestSpace();
+    if ( fes->IsParallel() )
+      return make_unique<ParallelVVector<TV_COL>> (fes->GetParallelDofs());
     else
-#endif
-      // return new VVector<TV_COL> (afespace->GetNDof());
-      return make_unique<VVector<TV_COL>> (afespace->GetNDof());
+      return make_unique<VVector<TV_COL>> (fes->GetNDof());
   }
 
 
