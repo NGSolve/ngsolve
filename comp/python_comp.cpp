@@ -3843,9 +3843,6 @@ spacea/spaceb integrals.
 	   pchar * pptr = &ptrs[0];
           
 	   static MyMPI mympi(1, (char**)pptr);
-	   // netgen::ng_comm = MPI_COMM_WORLD;
-	   // ngcore::id = MyMPI_GetId(MPI_COMM_WORLD);
-	   // ngcore::ntasks = MyMPI_GetNTasks(MPI_COMM_WORLD);
 	   return NgMPI_Comm(MPI_COMM_WORLD);
 	 });
 

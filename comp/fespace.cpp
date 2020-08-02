@@ -1914,16 +1914,48 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  Table<int> Nodes2Table (const MeshAccess & ma,
+                          const Array<NodeId> & dofnodes)
+  {
+    size_t ndof = dofnodes.Size();
+
+    /*
+    Array<int> ndistprocs(ndof);
+    ndistprocs = 0;
+    for (size_t i = 0; i < ndof; i++)
+      {
+	if (dofnodes[i].GetNr() == -1) continue;
+        ndistprocs[i] = ma.GetDistantProcs (dofnodes[i]).Size();
+      }
+
+    Table<int> dist_procs(ndistprocs);
+    for (size_t i = 0; i < ndof; i++)
+      {
+	if (dofnodes[i].GetNr() == -1) continue;
+	dist_procs[i] = ma.GetDistantProcs (dofnodes[i]);
+      }
+    return dist_procs;
+    */
+    TableCreator<int> creator(ndof);
+    for ( ; !creator.Done(); creator++)
+      for (size_t i = 0; i < ndof; i++)
+        if (dofnodes[i].GetNr() != -1) 
+          creator.Add (i, ma.GetDistantProcs (dofnodes[i]));
+    return creator.MoveTable();
+  }
+
+  
   
   void FESpace :: UpdateParallelDofs ( )
   {
-    if (ma->GetCommunicator().Size() == 1) return;
+    if (!ma->GetCommunicator().ValidCommunicator()) return;
+    // if (ma->GetCommunicator().Size() == 1) return;
 
     static Timer timer ("FESpace::UpdateParallelDofs"); RegionTimer reg(timer);
 
     Array<NodeId> dofnodes (GetNDof());
     dofnodes = NodeId (NT_VERTEX, -1);
-    
+
     Array<int> dnums;
     for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL, NT_GLOBAL })
       for (NodeId ni : ma->Nodes(nt))
@@ -1933,7 +1965,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (IsRegularDof(d)) dofnodes[d] = ni;
 	} 
 
-    paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
+    // paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
+    paralleldofs = make_shared<ParallelDofs>
+      (ma->GetCommunicator(), Nodes2Table(*ma, dofnodes), dimension, iscomplex);
 
     // if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM, ma->GetCommunicator()))
     if (ma->GetCommunicator().AllReduce (ctofdof.Size(), MPI_SUM))
@@ -3411,30 +3445,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
 
 
-  Table<int> Nodes2Table (const MeshAccess & ma,
-                          const Array<NodeId> & dofnodes)
-  {
-    size_t ndof = dofnodes.Size();
-
-    Array<int> ndistprocs(ndof);
-    ndistprocs = 0;
-    
-    for (size_t i = 0; i < ndof; i++)
-      {
-	if (dofnodes[i].GetNr() == -1) continue;
-        ndistprocs[i] = ma.GetDistantProcs (dofnodes[i]).Size();
-      }
-    
-    Table<int> dist_procs(ndistprocs);
-
-    for (size_t i = 0; i < ndof; i++)
-      {
-	if (dofnodes[i].GetNr() == -1) continue;
-	dist_procs[i] = ma.GetDistantProcs (dofnodes[i]);
-      }
-
-    return dist_procs;
-  }
 
 
   // #ifdef PARALLEL

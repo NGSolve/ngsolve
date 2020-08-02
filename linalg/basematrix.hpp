@@ -28,8 +28,6 @@ namespace ngla
     /// 
     BaseMatrix ();
     /// 
-    // BaseMatrix (const BaseMatrix & amat);
-    //
     BaseMatrix (shared_ptr<ParallelDofs> aparalleldofs); 
 
   public:
@@ -73,9 +71,7 @@ namespace ngla
     virtual ostream & Print (ostream & ost) const;
     virtual Array<MemoryUsage> GetMemoryUsage () const;
     virtual size_t NZE () const;
-    // virtual const void * Data() const;
-    // virtual void * Data();
-    
+
     template <typename T>
       shared_ptr<T> SharedFromThis()
     { return dynamic_pointer_cast<T> (shared_from_this()); }
@@ -83,8 +79,6 @@ namespace ngla
     virtual void Update() { ; } 
     /// creates matrix of same type
     virtual shared_ptr<BaseMatrix> CreateMatrix () const;
-    /// creates matrix of same type
-    // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     /// creates a matching vector, size = width
     virtual AutoVector CreateRowVector () const = 0;
     /// creates a matching vector, size = height
