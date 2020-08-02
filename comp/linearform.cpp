@@ -653,12 +653,10 @@ namespace ngcomp
     // delete vec;
     // using this::fespace;
     auto fes = this->fespace;
-#ifdef PARALLEL
-    if ( fes->GetParallelDofs() )
+    if ( fes->IsParallel() )
       vec = make_shared<ParallelVVector<TV>> (fes->GetNDof(), 
                                               fes->GetParallelDofs(), DISTRIBUTED);
     else
-#endif
       vec = make_shared<VVector<TV>> (fes->GetNDof());
     (*vec) = TSCAL(0);
     vec->SetParallelStatus (DISTRIBUTED);
