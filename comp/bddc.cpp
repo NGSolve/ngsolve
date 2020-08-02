@@ -35,8 +35,8 @@ namespace ngcomp
     string inversetype;   //sparsecholesky or pardiso or ....
     string coarsetype;    //general precond.. (e.g. AMG)
 
-    BaseVector * tmp;
-    BaseVector * tmp2;
+    unique_ptr<BaseVector> tmp;
+    unique_ptr<BaseVector> tmp2;
 
     shared_ptr<BitArray> wb_free_dofs;
 
@@ -68,8 +68,8 @@ namespace ngcomp
       inv = NULL;
 
       inv_coarse = NULL;
-      tmp = NULL;
-      tmp2 = NULL;
+      // tmp = NULL;
+      // tmp2 = NULL;
       RegionTimer reg(timer);
 
       // auto fes = bfa -> GetFESpace();
@@ -384,8 +384,8 @@ namespace ngcomp
 	  inv_coarse = pwbmat->InverseMatrix(clusters);
 	  cout << IM(3) << "has inverse" << endl << endl;
 	  
-	  tmp = new VVector<>(ndof);
-	  tmp2 = new VVector<>(ndof);
+	  tmp = make_unique<VVector<>>(ndof);
+	  tmp2 = make_unique<VVector<>>(ndof);
 	}
       else
 	{
@@ -408,7 +408,7 @@ namespace ngcomp
                 else
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
 
-	      tmp = new ParallelVVector<TV>(ndof, pardofs);
+	      tmp = make_unique<ParallelVVector<TV>>(pardofs);
 	      innersolve = make_shared<ParallelMatrix> (innersolve, pardofs);
 	      harmonicext = make_shared<ParallelMatrix> (harmonicext, pardofs);
 	      if (harmonicexttrans)
@@ -435,7 +435,7 @@ namespace ngcomp
                 inv = pwbmat->InverseMatrix(wb_free_dofs);
               }
 	      cout << IM(3) << "has inverse" << endl;
-	      tmp = new VVector<TV>(ndof);
+	      tmp = make_unique<VVector<TV>>(ndof);
 	    }
 	}
     }
@@ -450,8 +450,8 @@ namespace ngcomp
       // delete innersolve;
       // delete wb_free_dofs;
 
-      delete tmp;
-      delete tmp2;
+      // delete tmp;
+      // delete tmp2;
     }
 
     AutoVector CreateRowVector() const override { return bfa->GetMatrix().CreateColVector(); }
