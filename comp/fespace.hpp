@@ -85,14 +85,14 @@ ANY                  1 1 1 1 | 15
   using ngmg::Prolongation;
 
 
-  struct ProxyNode
+  struct ProxyNode : public shared_ptr<ProxyFunction>
   {
-    shared_ptr<ProxyFunction> proxy;
+    // shared_ptr<ProxyFunction> proxy;
     std::vector<ProxyNode> list;
     
-    ProxyNode (shared_ptr<ProxyFunction> _proxy) : proxy(_proxy) { }
+    ProxyNode (shared_ptr<ProxyFunction> _proxy) : shared_ptr<ProxyFunction>(_proxy) { }
     ProxyNode (std::vector<ProxyNode> _list) : list(_list) { }
-    auto operator* () const { return proxy; }
+    auto operator* () const { return shared_ptr<ProxyFunction> (*this); }
     auto operator[] (int i) const { return list[i]; }
   };
 
