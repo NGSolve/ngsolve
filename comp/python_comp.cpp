@@ -69,27 +69,19 @@ public:
 
 py::object ProxyNode2Py (const ProxyNode & node)
 {
-  if (auto pf = node.proxy)
-    return py::cast(pf);
-
+  if (auto proxy = *node)
+    return py::cast(proxy);
+  
   py::list l;
   for (auto & sub : node.list)
     l.append (ProxyNode2Py(sub));
   return l;
 }
 
-
 py::object MakeProxyFunction (shared_ptr<FESpace> fes,
                               bool testfunction) 
 {
-  return ProxyNode2Py
-    (
-     fes->GetProxyFunction(testfunction)
-     /*
-     MakeProxyFunction2 (fes, testfunction, 
-                         [&] (shared_ptr<ProxyFunction> proxy) { return proxy; })
-     */
-     );
+  return ProxyNode2Py(fes->GetProxyFunction(testfunction));
 }
 
 
