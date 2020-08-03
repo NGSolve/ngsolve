@@ -66,7 +66,29 @@ public:
 };
 
 
-py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
+struct ProxyNode
+{
+  shared_ptr<ProxyFunction> proxy;
+  std::vector<shared_ptr<ProxyNode>> list;
+  
+  ProxyNode (shared_ptr<ProxyFunction> _proxy) : proxy(_proxy) { }
+  ProxyNode (std::vector<shared_ptr<ProxyNode>> _list) : list(_list) { }
+  auto operator* () const { return proxy; }
+  auto operator[] (int i) const { return list[i]; }
+};
+
+py::object ProxyNode2Py (shared_ptr<ProxyNode> node)
+{
+  if (auto pf = node->proxy)
+    return py::cast(pf);
+
+  py::list l;
+  for (auto sub : node->list)
+    l.append (ProxyNode2Py(sub));
+  return l;
+}
+
+shared_ptr<ProxyNode> MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                bool testfunction,
                                const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
@@ -80,11 +102,11 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
   auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
   if (compspace && !fes->GetEvaluator())
     {
-      py::list l;
+      std::vector<shared_ptr<ProxyNode>> l;
       int nspace = compspace->GetNSpaces();
       for (int i = 0; i < nspace; i++)
         {
-          l.append (MakeProxyFunction2 ((*compspace)[i], testfunction,
+          l.push_back (MakeProxyFunction2 ((*compspace)[i], testfunction,
                                          [&] (shared_ptr<ProxyFunction> proxy)
                                          {
                                            auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
@@ -115,7 +137,7 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
                                            return block_proxy;
                                          }));
         }
-      return std::move(l);
+      return make_shared<ProxyNode> (std::move(l));
     }
 
   auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
@@ -130,15 +152,17 @@ py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
 
   proxy = addblock(proxy);
-  return py::cast(proxy);
+  return make_shared<ProxyNode> (proxy);
 }
 
 py::object MakeProxyFunction (shared_ptr<FESpace> fes,
                               bool testfunction) 
 {
-  return 
-    MakeProxyFunction2 (fes, testfunction, 
-                        [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
+  return ProxyNode2Py
+    (
+     MakeProxyFunction2 (fes, testfunction, 
+                         [&] (shared_ptr<ProxyFunction> proxy) { return proxy; })
+     );
 }
 
 
@@ -198,8 +222,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   static size_t global_heapsize = 10000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
-
-  
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
