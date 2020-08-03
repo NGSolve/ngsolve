@@ -84,6 +84,21 @@ ANY                  1 1 1 1 | 15
   
   using ngmg::Prolongation;
 
+
+  struct ProxyNode
+  {
+    shared_ptr<ProxyFunction> proxy;
+    std::vector<ProxyNode> list;
+    
+    ProxyNode (shared_ptr<ProxyFunction> _proxy) : proxy(_proxy) { }
+    ProxyNode (std::vector<ProxyNode> _list) : list(_list) { }
+    auto operator* () const { return proxy; }
+    auto operator[] (int i) const { return list[i]; }
+  };
+
+
+
+  
   /**
      Base class for finite element space.
      Provides finite elements, global degrees of freedom, 
@@ -643,6 +658,11 @@ ANY                  1 1 1 1 | 15
       return integrator[vb];
     }
     */
+
+    virtual ProxyNode GetProxyFunction(bool testfunction) const;
+    
+    auto GetTrialFunction() const { return GetProxyFunction(false); }
+    auto GetTestFunction() const { return GetProxyFunction(true); }
     
 
     virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
