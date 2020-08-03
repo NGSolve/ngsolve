@@ -66,102 +66,29 @@ public:
 };
 
 
-struct ProxyNode
-{
-  shared_ptr<ProxyFunction> proxy;
-  std::vector<shared_ptr<ProxyNode>> list;
-  
-  ProxyNode (shared_ptr<ProxyFunction> _proxy) : proxy(_proxy) { }
-  ProxyNode (std::vector<shared_ptr<ProxyNode>> _list) : list(_list) { }
-  auto operator* () const { return proxy; }
-  auto operator[] (int i) const { return list[i]; }
-};
 
-py::object ProxyNode2Py (shared_ptr<ProxyNode> node)
+py::object ProxyNode2Py (const ProxyNode & node)
 {
-  if (auto pf = node->proxy)
+  if (auto pf = node.proxy)
     return py::cast(pf);
 
   py::list l;
-  for (auto sub : node->list)
+  for (auto & sub : node.list)
     l.append (ProxyNode2Py(sub));
   return l;
 }
 
-shared_ptr<ProxyNode> MakeProxyFunction2 (shared_ptr<FESpace> fes,
-                               bool testfunction,
-                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
-{
-  if (auto periodicspace = dynamic_pointer_cast<PeriodicFESpace>(fes))
-    return MakeProxyFunction2 (periodicspace->GetBaseSpace(), testfunction, addblock);
-  if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
-    return MakeProxyFunction2 (compressedspace->GetBaseSpace(), testfunction, addblock);
-  if (auto reorderedspace = dynamic_pointer_cast<ReorderedFESpace>(fes))
-    return MakeProxyFunction2 (reorderedspace->GetBaseSpace(), testfunction, addblock);
-  
-  auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
-  if (compspace && !fes->GetEvaluator())
-    {
-      std::vector<shared_ptr<ProxyNode>> l;
-      int nspace = compspace->GetNSpaces();
-      for (int i = 0; i < nspace; i++)
-        {
-          l.push_back (MakeProxyFunction2 ((*compspace)[i], testfunction,
-                                         [&] (shared_ptr<ProxyFunction> proxy)
-                                         {
-                                           auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
-                                           shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
-                                           if (proxy->DerivEvaluator() != nullptr)
-                                             block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
-                                           shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
-                                           if (proxy->TraceEvaluator() != nullptr)
-                                             block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
-					   shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
-					   if (proxy->TTraceEvaluator() != nullptr)
-					     block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
-                                           shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
-                                           if (proxy->TraceDerivEvaluator() != nullptr)
-                                             block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
-					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
-					   if (proxy->TTraceDerivEvaluator() != nullptr)
-					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
-                                           auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
-					  block_ttrace_eval, block_ttrace_deriv_eval);
-
-                                           SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
-                                           for (int j = 0; j < add.Size(); j++)
-                                             block_proxy->SetAdditionalEvaluator(add.GetName(j),
-                                                                                 make_shared<CompoundDifferentialOperator> (add[j], i));
-                                           
-                                           block_proxy = addblock(block_proxy);
-                                           return block_proxy;
-                                         }));
-        }
-      return make_shared<ProxyNode> (std::move(l));
-    }
-
-  auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
-                                            fes->GetEvaluator(),
-                                            fes->GetFluxEvaluator(),
-                                            fes->GetEvaluator(BND),
-                                            fes->GetFluxEvaluator(BND),
-					    fes->GetEvaluator(BBND),
-					    fes->GetFluxEvaluator(BBND));
-  auto add_diffops = fes->GetAdditionalEvaluators();
-  for (int i = 0; i < add_diffops.Size(); i++)
-    proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
-
-  proxy = addblock(proxy);
-  return make_shared<ProxyNode> (proxy);
-}
 
 py::object MakeProxyFunction (shared_ptr<FESpace> fes,
                               bool testfunction) 
 {
   return ProxyNode2Py
     (
+     fes->GetProxyFunction(testfunction)
+     /*
      MakeProxyFunction2 (fes, testfunction, 
                          [&] (shared_ptr<ProxyFunction> proxy) { return proxy; })
+     */
      );
 }
 
