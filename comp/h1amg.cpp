@@ -218,12 +218,23 @@ namespace ngcomp
                      }, TasksPerThread(5));
       Table<int> edge_dag = edge_dag_creator.MoveTable();
 
+      
+      BitArray isolated_verts(num_vertices);
+      isolated_verts.Clear();
+      for (size_t i = 0; i < num_vertices; i++)
+        if (sum_vertex_weights[i] <= 1.1 * vertex_weights[i] ||
+            (*freedofs)[i] == false)
+          isolated_verts.SetBit(i);
+
+      
       RunParallelDependency (edge_dag,
                              [&] (int edgenr)
                              {
                                auto v0 = e2v[edgenr][0];
                                auto v1 = e2v[edgenr][1];
-                               if (edge_collapse_weights[edgenr] >= 0.01 && !vertex_collapse[v0] && !vertex_collapse[v1] && (*freedofs)[v0] && (*freedofs)[v1])
+                               if (edge_collapse_weights[edgenr] >= 0.01 && !vertex_collapse[v0] && !vertex_collapse[v1]
+                                   && !isolated_verts[v0] && !isolated_verts[v1])
+                                 // && (*freedofs)[v0] && (*freedofs)[v1])
                                  {
                                    edge_collapse[edgenr] = true;
                                    vertex_collapse[v0] = true;
@@ -242,12 +253,6 @@ namespace ngcomp
             vertex_collapse[max2(v0,v1)] = true;
           }
 
-      BitArray isolated_verts(num_vertices);
-      isolated_verts.Clear();
-      for (size_t i = 0; i < num_vertices; i++)
-        if (sum_vertex_weights[i] == vertex_weights[i] ||
-            (*freedofs)[i] == false)
-          isolated_verts.SetBit(i);
 
       // vertex 2 coarse vertex
       Array<size_t> v2cv(num_vertices);
@@ -543,7 +548,6 @@ namespace ngcomp
 
       FlatMatrix<SCAL> ext_elmat(ndof+1, ndof+1, lh);
 
-
       {
         // ThreadRegionTimer reg (t5, TaskManager::GetThreadId());
         ext_elmat.Rows(0,ndof).Cols(0,ndof) = elmat;
@@ -583,7 +587,6 @@ namespace ngcomp
             edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
       }
-
 
 
       /*
