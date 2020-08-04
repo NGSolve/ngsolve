@@ -418,7 +418,7 @@ namespace ngcomp
                       coarse_freedofs->SetBitAtomic(v2cv[v]);
                   });
 
-      if (num_coarse_vertices < 10)
+      if ( (num_coarse_vertices < 10) || (num_coarse_vertices == num_vertices) )
 	{
 	  coarsemat->SetInverseType(SPARSECHOLESKY);
 	  coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
