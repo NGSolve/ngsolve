@@ -108,6 +108,9 @@ namespace ngla
 
   void ParallelBaseVector :: Cumulate () const
   {
+    static Timer t("ParallelVector - Cumulate");
+    RegionTimer reg(t);
+    
 #ifdef PARALLEL
     if (status != DISTRIBUTED) return;
     
@@ -167,6 +170,9 @@ namespace ngla
   template <class SCAL>
   SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2, bool conjugate) const
   {
+    static Timer t("ParallelVector - InnerProduct");
+    RegionTimer reg(t);
+    
     const ParallelBaseVector * parv2 = dynamic_cast_ParallelBaseVector(&v2);
 
     // two distributed vectors -- cumulate one
