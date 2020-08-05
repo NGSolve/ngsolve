@@ -13,13 +13,13 @@ Using the Python package manager pip you can install Jupyter via
    # Mac/Linux
    pip3 install jupyter
 
-On Windows you need to use pip instead of pip3. Due to a bug in ipykernel on Windows you also need to downgrade it to version 4.10 (see https://github.com/ipython/ipykernel/issues/358 ):
+On Windows you need to use pip instead of pip3. Due to a bug in ipykernel on Windows you need upgrade it to at least ipykernel version 5.3.2. (see https://github.com/ipython/ipykernel/issues/358 ):
 
 .. code:: bash
 
    # Windows
-   pip install jupyter
-   pip install ipykernel==4.10.0
+   pip install --upgrade jupyter
+   pip install --upgrade ipykernel
 
 To install the NGSolve Jupyter notebook extension, run
 
