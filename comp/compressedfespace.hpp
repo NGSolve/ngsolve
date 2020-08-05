@@ -70,6 +70,11 @@ namespace ngcomp
       FESpace::FinalizeUpdate();
     }
 
+    ProxyNode MakeProxyFunction (bool testfunction,
+                                 const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override
+    {
+      return GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+    }
 
     virtual bool DefinedOn (ElementId id) const
     {

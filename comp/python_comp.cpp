@@ -75,7 +75,7 @@ py::object ProxyNode2Py (const ProxyNode & node)
   py::list l;
   for (auto & sub : node.list)
     l.append (ProxyNode2Py(sub));
-  return l;
+  return py::object(l);
 }
 
 py::object MakeProxyFunction (shared_ptr<FESpace> fes,
@@ -871,37 +871,6 @@ coupling : bool
          { return self->GetProlongation(); },
          "Return prolongation operator for use in multi-grid")
 
-    .def("Range",
-         [] (shared_ptr<FESpace> self, int comp)
-         {
-           auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
-           if (!compspace)
-             throw py::type_error("'Range' is available only for product spaces");
-           return compspace->GetRange(comp);
-         },
-         py::arg("component"), docu_string(R"raw_string(
-         Return interval of dofs of a component of a product space.
-
-Parameters:
-
-component : int
-  input component
-
-)raw_string"))
-    
-    .def_property_readonly("components", 
-                  [](shared_ptr<FESpace> self)-> py::tuple
-                   { 
-                     auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
-                     if (!compspace)
-                       throw py::type_error("'components' is available only for product spaces");
-                     py::tuple vecs(compspace->GetNSpaces());
-                     for (int i = 0; i < compspace -> GetNSpaces(); i++) 
-                       vecs[i]= py::cast((*compspace)[i]);
-                     return vecs;
-                   },
-                  "Return a list of the components of a product space")
-
     .def("TrialFunction",
          [] (const shared_ptr<FESpace> self)
          {
@@ -1081,6 +1050,39 @@ rho : ngsolve.fem.CoefficientFunction
                       py::cast(fes).attr("__dict__") = state[2];
                       return fes;
                     }))
+
+    .def("Range",
+         [] (shared_ptr<CompoundFESpace> self, int comp)
+         {
+           return self->GetRange(comp);
+         },
+         py::arg("component"), docu_string(R"raw_string(
+         Return interval of dofs of a component of a product space.
+
+Parameters:
+
+component : int
+  input component
+
+)raw_string"))
+
+    .def("Embedding", [] (shared_ptr<CompoundFESpace> self, int comp)
+         {
+           return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp));
+         },
+         py::arg("component"), "create embedding operator for this component")
+    
+    .def_property_readonly("components", 
+                  [](shared_ptr<CompoundFESpace> self)-> py::tuple
+                   { 
+                     py::tuple vecs(self->GetNSpaces());
+                     for (int i = 0; i < self -> GetNSpaces(); i++) 
+                       vecs[i]= py::cast((*self)[i]);
+                     return vecs;
+                   },
+                  "Return a list of the components of a product space")
+
+    
     ;
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>

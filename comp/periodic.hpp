@@ -34,6 +34,12 @@ namespace ngcomp
       FESpace::FinalizeUpdate();
     }
 
+    ProxyNode MakeProxyFunction (bool testfunction,
+                                 const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override
+    {
+      return GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+    }
+    
     shared_ptr<Array<int>> GetUsedIdnrs() const { return used_idnrs; }
     virtual string GetClassName() const override { return "Periodic" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
