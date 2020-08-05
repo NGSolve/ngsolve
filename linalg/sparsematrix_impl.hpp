@@ -605,8 +605,44 @@ namespace ngla
     return cmat;
   }
 
+  template <class TM>
+  shared_ptr<BaseSparseMatrix> SparseMatrixTM<TM> ::
+  CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&,int)> & creator) const
+  {
+    Array<int> cnt(this->Width());
+    cnt = 0;
+    ParallelFor (this->Height(), [&] (int i)
+                 {
+                   for (int c : this->GetRowIndices(i))
+                     AsAtomic (cnt[c]) ++;
+                 });
+
+    auto trans = creator(cnt, this->Height());
+
+    cnt = 0;
+    ParallelFor (this->Height(), [&] (int i)
+                 {
+                   for (int ci : Range(this->GetRowIndices(i)))
+                     {
+                       int c = this->GetRowIndices(i)[ci];
+                       int pos = AsAtomic(cnt[c])++;
+                       trans -> GetRowIndices(c)[pos] = i;
+                       trans -> GetRowValues(c)[pos] = Trans(this->GetRowValues(i)[ci]);
+                     }
+                 });
+
+    ParallelFor (trans->Height(), [&] (int r)
+                 {
+                   auto rowvals = trans->GetRowValues(r);
+                   BubbleSort (trans->GetRowIndices(r),
+                               FlatArray(rowvals.Size(), rowvals.Data()));
+                 });
+
+    return trans;
+  }
 
 
+  
 
   template <class TM>
   void SparseMatrixTM<TM> ::
