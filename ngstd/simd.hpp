@@ -37,6 +37,38 @@ INLINE __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
 INLINE __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
 INLINE __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
 INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
+
+/*Some integer arithmetic operations are not defined. Check
+https://github.com/vectorclass/version2/blob/master/vectori128.h
+for possible implementations*/
+
+INLINE __m128i operator-(__m128i a) { return _mm_sub_epi64(_mm_setzero_si128(), a); }
+INLINE __m128i operator+ (__m128i a, __m128i b) { return _mm_add_epi64(a,b); }
+INLINE __m128i operator- (__m128i a, __m128i b) { return _mm_sub_epi64(a,b); }
+
+INLINE __m128i operator+= (__m128i &a, __m128i b) { return a = a+b; }
+INLINE __m128i operator-= (__m128i &a, __m128i b) { return a = a-b; }
+
+INLINE __m256i operator-(__m256i a) { return _mm256_sub_epi64(_mm256_setzero_si256(), a); }
+
+#ifdef __AVX2__
+INLINE __m256i operator+ (__m256i a, __m256i b) { return _mm256_add_epi64(a,b); }
+INLINE __m256i operator- (__m256i a, __m256i b) { return _mm256_sub_epi64(a,b); }
+#else
+INLINE __m256i operator+ (__m256i a, __m256i b) {
+  auto lo_sum = _mm256_extractf128_si256(a, 0) + _mm256_extractf128_si256(b, 0);
+  auto hi_sum = _mm256_extractf128_si256(a, 1) + _mm256_extractf128_si256(b, 1);
+  return _mm256_set_m128i(hi_sum,lo_sum);
+}
+INLINE __m256i operator- (__m256i a, __m256i b) {
+  auto lo_sub = _mm256_extractf128_si256(a, 0) - _mm256_extractf128_si256(b, 0);
+  auto hi_sub = _mm256_extractf128_si256(a, 1) - _mm256_extractf128_si256(b, 1);
+  return _mm256_set_m128i(hi_sub,lo_sub);
+}
+#endif
+INLINE __m256i operator+= (__m256i &a, __m256i b) { return a = a+b; }
+INLINE __m256i operator-= (__m256i &a, __m256i b) { return a = a-b; }
+
 #endif
 #endif
 
@@ -129,8 +161,16 @@ namespace ngstd
 
   // #endif
 
-  
-#ifdef __AVX__
+#ifndef __AVX__
+  INLINE __m128i my_mm_cmpgt_epi64(__m128i a, __m128i b) {
+    auto  res_lo = _mm_cvtsi128_si64(a)  > _mm_cvtsi128_si64(b) ? -1:0;
+    auto  res_hi = _mm_cvtsi128_si64(_mm_srli_si128(a,8)) > _mm_cvtsi128_si64(_mm_srli_si128(b,8)) ? -1 : 0;
+    return _mm_set_epi64x(res_hi,res_lo);
+  }
+#else
+  INLINE __m128i my_mm_cmpgt_epi64(__m128i a, __m128i b) {
+    return _mm_cmpgt_epi64(a,b);
+  }
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
   {
@@ -311,6 +351,12 @@ namespace ngstd
     SIMD (int64_t val) { data = _mm_set1_epi64x(val); }
     SIMD (__m128i _data) { data = _data; }
 
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<int64_t(int)>>::value, int>::type = 0>
+    SIMD (const T & func)
+    {   
+      data = _mm_set_epi64(func(1), func(0));             
+    }
+    
     INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
     INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
     INLINE __m128i Data() const { return data; }
@@ -413,8 +459,8 @@ namespace ngstd
     INLINE __m256i Data() const { return data; }
     INLINE __m256i & Data() { return data; }
 
-    // SIMD<double,2> Lo() const { return _mm256_extractf128_pd(data, 0); }
-    // SIMD<double,2> Hi() const { return _mm256_extractf128_pd(data, 1); }
+    SIMD<int64_t,2> Lo() const { return _mm256_extractf128_si256(data, 0); }
+    SIMD<int64_t,2> Hi() const { return _mm256_extractf128_si256(data, 1); }
   };
 
 
@@ -468,6 +514,43 @@ namespace ngstd
 
 #else // AVX
 
+  template<>
+  class /* alignas(32) */ SIMD<int64_t,4> : public AlignedAlloc<SIMD<int64_t,4>>
+  {
+    SIMD<int64_t,2> data[2];
+    
+  public:
+    static constexpr int Size() { return 4; }
+    SIMD () {}
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+    
+    SIMD (int64_t val) : data{val,val} { ; }
+    SIMD (int64_t v0, int64_t v1, int64_t v2, int64_t v3)
+    {
+      data[0] = SIMD<int64_t,2>(v0,v1);
+      data[1] = SIMD<int64_t,2>(v2,v3);
+    }    
+    SIMD (SIMD<int64_t,2> lo, SIMD<int64_t,2> hi) : data{lo,hi} { ; }
+
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<int64_t(int)>>::value, int>::type = 0>
+      SIMD (const T & func)
+    {   
+      data = _mm256_set_epi64x(func(3), func(2), func(1), func(0));             
+    }
+    
+    auto Lo() const { return data[0]; }
+    auto & Lo() { return data[0]; }
+    auto Hi() const { return data[1]; }
+    auto & Hi() { return data[1]; }
+    
+    INLINE int64_t operator[] (int i) const { return ((int64_t*)(&data[0]))[i]; }
+    INLINE int64_t & operator[] (int i) { return ((int64_t*)(&data[0]))[i]; }
+
+    operator tuple<int64_t&,int64_t&,int64_t&,int64_t&> ()
+    { return tuple<int64_t&,int64_t&,int64_t&,int64_t&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
+  };
+  
   template<>
   class /* alignas(32) */ SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
   {
@@ -619,11 +702,75 @@ namespace ngstd
     INLINE __m512d & Data() { return data; }
   };
 
+  template<>
+  class SIMD<int64_t,8> 
+  {
+    __m512i data;
+    
+  public:
+    static constexpr int Size() { return 8; }
+    SIMD () {}
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+
+    SIMD (int64_t val) { data = _mm512_set1_epi64(val); }
+    SIMD (int64_t v0, int64_t v1, int64_t v2, int64_t v3, int64_t v4, int64_t v5, int64_t v6, int64_t v7) { data = _mm512_set_epi64(v7,v6,v5,v4,v3,v2,v1,v0); }
+    SIMD (__m512i _data) { data = _data; }
+
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<int64_t(int)>>::value, int>::type = 0>
+      SIMD (const T & func)
+    {   
+      data = _mm512_set_epi64(func(7), func(6), func(5), func(4), func(3), func(2), func(1), func(0));              
+    }
+    
+
+    INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
+    INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
+    INLINE __m512i Data() const { return data; }
+    INLINE __m512i & Data() { return data; }
+
+    // SIMD<double,4> Lo() const { return _mm512_extracti64x4_epi64(data, 0); }
+    // SIMD<double,4> Hi() const { return _mm512_extracti64x4_epi64(data, 1); }
+  };
 #endif
   
 
+  //integer arithmetic operators
+    template <int N>
+  INLINE SIMD<int64_t,N> operator+ (SIMD<int64_t,N> a, SIMD<int64_t,N> b) { return a.Data()+b.Data(); }
+#ifndef __AVX__
+  INLINE SIMD<int64_t,4> operator+ (SIMD<int64_t,4> a, SIMD<int64_t,4> b) { return { a.Lo()+b.Lo(), a.Hi()+b.Hi() }; }
+#endif
+  
+  template <int N>
+  INLINE SIMD<int64_t,N> operator+ (SIMD<int64_t,N> a, int64_t b) { return a+SIMD<int64_t,N>(b); }
+  template <int N>
+  INLINE SIMD<int64_t,N> operator+ (int64_t a, SIMD<int64_t,N> b) { return SIMD<int64_t,N>(a)+b; }
+  template <int N>  
+  INLINE SIMD<int64_t,N> operator- (SIMD<int64_t,N> a, SIMD<int64_t,N> b) { return a.Data()-b.Data(); }
+#ifndef __AVX__
+  INLINE SIMD<int64_t,4> operator- (SIMD<int64_t,4> a, SIMD<int64_t,4> b) { return { a.Lo()-b.Lo(), a.Hi()-b.Hi() }; }
+#endif
 
-
+  template <int N>  
+  INLINE SIMD<int64_t,N> operator- (int64_t a, SIMD<int64_t,N> b) { return SIMD<int64_t,N>(a)-b; }
+  template <int N>  
+  INLINE SIMD<int64_t,N> operator- (SIMD<int64_t,N> a, int64_t b) { return a-SIMD<int64_t,N>(b); }
+  template <int N>  
+  INLINE SIMD<int64_t,N> operator- (SIMD<int64_t,N> a) { return -a.Data(); }
+#ifndef __AVX__
+  INLINE SIMD<int64_t,4> operator- (SIMD<int64_t,4> a) { return { -a.Lo(), -a.Hi() }; }
+#endif
+  
+  
+  template <int N>  
+  INLINE SIMD<int64_t,N> & operator+= (SIMD<int64_t,N> & a, SIMD<int64_t,N> b) { a=a+b; return a; }
+  template <int N>  
+  INLINE SIMD<int64_t,N> & operator+= (SIMD<int64_t,N> & a, int64_t b) { a+=SIMD<int64_t,N>(b); return a; }
+  template <int N>  
+  INLINE SIMD<int64_t,N> & operator-= (SIMD<int64_t,N> & a, SIMD<int64_t,N> b) { a.Data()-=b.Data(); return a; }
+  template <int N>  
+  INLINE SIMD<int64_t,N> & operator-= (SIMD<int64_t,N> & a, int64_t b) { a-=SIMD<int64_t,N>(b); return a; }
 
   
   template <int N>
@@ -710,6 +857,54 @@ namespace ngstd
   using std::ceil;  
   INLINE SIMD<double,2> ceil (SIMD<double,2> a) 
   { return ngstd::SIMD<double,2>([&](int i)->double { return ceil(a[i]); } ); }
+
+  INLINE SIMD<mask64,2> operator<= (SIMD<double,2> a , SIMD<double,2> b)
+  { return _mm_castpd_si128( _mm_cmple_pd(a.Data(),b.Data())); }
+  INLINE SIMD<mask64,2> operator< (SIMD<double,2> a , SIMD<double,2> b)
+  { return _mm_castpd_si128( _mm_cmplt_pd(a.Data(),b.Data())); }
+  INLINE SIMD<mask64,2> operator>= (SIMD<double,2> a , SIMD<double,2> b)
+  { return _mm_castpd_si128( _mm_cmpge_pd(a.Data(),b.Data())); }
+  INLINE SIMD<mask64,2> operator> (SIMD<double,2> a , SIMD<double,2> b)
+  { return _mm_castpd_si128( _mm_cmpgt_pd(a.Data(),b.Data())); }
+  INLINE SIMD<mask64,2> operator== (SIMD<double,2> a , SIMD<double,2> b)
+  { return _mm_castpd_si128( _mm_cmpeq_pd(a.Data(),b.Data())); }
+  INLINE SIMD<mask64,2> operator!= (SIMD<double,2> a , SIMD<double,2> b)
+  { return _mm_castpd_si128( _mm_cmpneq_pd(a.Data(),b.Data())); }
+
+  INLINE SIMD<mask64,2> operator<= (SIMD<int64_t,2> a , SIMD<int64_t,2> b)
+  { return  _mm_xor_si128(_mm_cmpgt_epi64(a.Data(),b.Data()),_mm_set1_epi32(-1)); }
+  INLINE SIMD<mask64,2> operator< (SIMD<int64_t,2> a , SIMD<int64_t,2> b)
+  { return  my_mm_cmpgt_epi64(b.Data(),a.Data()); }
+  INLINE SIMD<mask64,2> operator>= (SIMD<int64_t,2> a , SIMD<int64_t,2> b)
+  { return  _mm_xor_si128(_mm_cmpgt_epi64(b.Data(),a.Data()),_mm_set1_epi32(-1)); }
+  INLINE SIMD<mask64,2> operator> (SIMD<int64_t,2> a , SIMD<int64_t,2> b)
+  { return  my_mm_cmpgt_epi64(a.Data(),b.Data()); }
+  INLINE SIMD<mask64,2> operator== (SIMD<int64_t,2> a , SIMD<int64_t,2> b)
+  { return  _mm_cmpeq_epi64(a.Data(),b.Data()); }
+  INLINE SIMD<mask64,2> operator!= (SIMD<int64_t,2> a , SIMD<int64_t,2> b)
+  { return  _mm_xor_si128(_mm_cmpeq_epi64(a.Data(),b.Data()),_mm_set1_epi32(-1)); }
+
+  
+  
+ INLINE SIMD<mask64,2> operator&& (SIMD<mask64,2> a, SIMD<mask64,2> b)
+  { return _mm_castpd_si128(_mm_and_pd (_mm_castsi128_pd(a.Data()),_mm_castsi128_pd( b.Data()))); }
+  INLINE SIMD<mask64,2> operator|| (SIMD<mask64,2> a, SIMD<mask64,2> b)
+  { return _mm_castpd_si128(_mm_or_pd (_mm_castsi128_pd(a.Data()), _mm_castsi128_pd(b.Data()))); }
+  INLINE SIMD<mask64,2> operator! (SIMD<mask64,2> a)
+  { return _mm_castpd_si128(_mm_xor_pd (_mm_castsi128_pd(a.Data()),_mm_castsi128_pd( _mm_cmpeq_epi64(a.Data(),a.Data())))); }
+#ifdef __SSE4_1__
+  INLINE SIMD<double,2> If (SIMD<mask64,2> a, SIMD<double,2> b, SIMD<double,2> c)
+  { return _mm_blendv_pd(c.Data(), b.Data(), _mm_castsi128_pd(a.Data())); }
+#else
+  INLINE SIMD<double,2> If (SIMD<mask64,2> a, SIMD<double,2> b, SIMD<double,2> c)
+  {
+    return _mm_or_pd(
+                      _mm_andnot_pd(_mm_castsi128_pd(a.Data()),c.Data()),
+                      _mm_and_pd(b.Data(),_mm_castsi128_pd(a.Data()))
+                      );}
+#endif
+
+  
   INLINE SIMD<double,2> IfPos (SIMD<double,2> a, SIMD<double,2> b, SIMD<double,2> c)
   { return ngstd::SIMD<double,2>([&](int i)->double { return a[i]>0 ? b[i] : c[i]; }); }
   INLINE SIMD<double,2> IfZero (SIMD<double,2> a, SIMD<double,2> b, SIMD<double,2> c)
@@ -734,6 +929,14 @@ namespace ngstd
     SIMD<double,2> hsum2 = my_mm_hadd_pd (v3.Data(), v4.Data());
     return SIMD<double,4> (hsum1, hsum2);
   }
+
+  INLINE SIMD<int64_t, 2> If(SIMD<mask64, 2> a, SIMD<int64_t, 2> b,
+                             SIMD<int64_t, 2> c) {
+    return _mm_or_si128(
+                        _mm_andnot_si128(a.Data(),c.Data()),
+                        _mm_and_si128(b.Data(),a.Data())
+                        );
+  }
 #endif
 
   
@@ -756,13 +959,34 @@ namespace ngstd
   INLINE SIMD<mask64,4> operator!= (SIMD<double,4> a , SIMD<double,4> b)
   { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_NEQ_OQ); }
 
+  INLINE SIMD<mask64,4> operator<= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_xor_si256(_mm256_cmpgt_epi64(a.Data(),b.Data()),_mm256_set1_epi32(-1)); }
+  INLINE SIMD<mask64,4> operator< (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_cmpgt_epi64(b.Data(),a.Data()); }
+  INLINE SIMD<mask64,4> operator>= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_xor_si256(_mm256_cmpgt_epi64(b.Data(),a.Data()),_mm256_set1_epi32(-1)); }
+  INLINE SIMD<mask64,4> operator> (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_cmpgt_epi64(a.Data(),b.Data()); }
+  INLINE SIMD<mask64,4> operator== (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_cmpeq_epi64(a.Data(),b.Data()); }
+  INLINE SIMD<mask64,4> operator!= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_xor_si256(_mm256_cmpeq_epi64(a.Data(),b.Data()),_mm256_set1_epi32(-1)); }
+
+#ifdef __AVX2__
   INLINE SIMD<mask64,4> operator&& (SIMD<mask64,4> a, SIMD<mask64,4> b)
   { return _mm256_and_si256 (a.Data(), b.Data()); }
   INLINE SIMD<mask64,4> operator|| (SIMD<mask64,4> a, SIMD<mask64,4> b)
   { return _mm256_or_si256 (a.Data(), b.Data()); }
   INLINE SIMD<mask64,4> operator! (SIMD<mask64,4> a)
-  { return _mm256_xor_si256 (a.Data(), _mm256_cmpeq_epi32(a.Data(),a.Data())); }
-  
+  { return _mm256_xor_si256 (a.Data(), _mm256_cmpeq_epi64(a.Data(),a.Data())); }
+#else //AVX2 is a superset of AVX. Without it, it is necessary to reinterpret the types
+  INLINE SIMD<mask64,4> operator&& (SIMD<mask64,4> a, SIMD<mask64,4> b)
+  { return _mm256_castpd_si256(_mm256_and_pd (_mm256_castsi256_pd(a.Data()),_mm256_castsi256_pd( b.Data()))); }
+  INLINE SIMD<mask64,4> operator|| (SIMD<mask64,4> a, SIMD<mask64,4> b)
+  { return _mm256_castpd_si256(_mm256_or_pd (_mm256_castsi256_pd(a.Data()), _mm256_castsi256_pd(b.Data()))); }
+  INLINE SIMD<mask64,4> operator! (SIMD<mask64,4> a)
+  { return _mm256_castpd_si256(_mm256_xor_pd (_mm256_castsi256_pd(a.Data()),_mm256_castsi256_pd( _mm256_cmpeq_epi64(a.Data(),a.Data())))); }
+#endif
   INLINE SIMD<double,4> If (SIMD<mask64,4> a, SIMD<double,4> b, SIMD<double,4> c)
   { return _mm256_blendv_pd(c.Data(), b.Data(), _mm256_castsi256_pd(a.Data())); }
   
@@ -818,6 +1042,43 @@ namespace ngstd
   INLINE SIMD<double,8> floor (SIMD<double,8> a) { return _mm512_floor_pd(a.Data()); }
   INLINE SIMD<double,8> ceil (SIMD<double,8> a) { return _mm512_ceil_pd(a.Data()); }  
   INLINE SIMD<double,8> fabs (SIMD<double,8> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
+
+  INLINE SIMD<mask64,8> operator<= (SIMD<double,8> a , SIMD<double,8> b)
+  { return _mm512_cmp_pd_mask (a.Data(), b.Data(), _CMP_LE_OQ); }
+  INLINE SIMD<mask64,8> operator< (SIMD<double,8> a , SIMD<double,8> b)
+  { return _mm512_cmp_pd_mask (a.Data(), b.Data(), _CMP_LT_OQ); }
+  INLINE SIMD<mask64,8> operator>= (SIMD<double,8> a , SIMD<double,8> b)
+  { return _mm512_cmp_pd_mask (a.Data(), b.Data(), _CMP_GE_OQ); }
+  INLINE SIMD<mask64,8> operator> (SIMD<double,8> a , SIMD<double,8> b)
+  { return _mm512_cmp_pd_mask (a.Data(), b.Data(), _CMP_GT_OQ); }
+  INLINE SIMD<mask64,8> operator== (SIMD<double,8> a , SIMD<double,8> b)
+  { return _mm512_cmp_pd_mask (a.Data(), b.Data(), _CMP_EQ_OQ); }
+  INLINE SIMD<mask64,8> operator!= (SIMD<double,8> a , SIMD<double,8> b)
+  { return _mm512_cmp_pd_mask (a.Data(), b.Data(), _CMP_NEQ_OQ); }
+
+  INLINE SIMD<mask64,8> operator<= (SIMD<int64_t,8> a , SIMD<int64_t,8> b)
+  { return _mm512_cmp_epi64_mask (a.Data(), b.Data(), _MM_CMPINT_LE); }
+  INLINE SIMD<mask64,8> operator< (SIMD<int64_t,8> a , SIMD<int64_t,8> b)
+  { return _mm512_cmp_epi64_mask (a.Data(), b.Data(), _MM_CMPINT_LT); }
+  INLINE SIMD<mask64,8> operator>= (SIMD<int64_t,8> a , SIMD<int64_t,8> b)
+  { return _mm512_cmp_epi64_mask (a.Data(), b.Data(),  _MM_CMPINT_NLT); }
+  INLINE SIMD<mask64,8> operator> (SIMD<int64_t,8> a , SIMD<int64_t,8> b)
+  { return _mm512_cmp_epi64_mask (a.Data(), b.Data(), _MM_CMPINT_NLE); }
+  INLINE SIMD<mask64,8> operator== (SIMD<int64_t,8> a , SIMD<int64_t,8> b)
+  { return _mm512_cmp_epi64_mask (a.Data(), b.Data(), _MM_CMPINT_EQ); }
+  INLINE SIMD<mask64,8> operator!= (SIMD<int64_t,8> a , SIMD<int64_t,8> b)
+  { return _mm512_cmp_epi64_mask (a.Data(), b.Data(), _MM_CMPINT_NE); }
+  
+  INLINE SIMD<mask64,8> operator&& (SIMD<mask64,8> a, SIMD<mask64,8> b)
+  { return (__mmask8)(a.Data() & b.Data()); }
+  INLINE SIMD<mask64,8> operator|| (SIMD<mask64,8> a, SIMD<mask64,8> b)
+  { return (__mmask8)(a.Data() | b.Data()); }
+  INLINE SIMD<mask64,8> operator! (SIMD<mask64,8> a)
+  { return (__mmask8)(~a.Data()); }
+  
+  INLINE SIMD<double,8> If (SIMD<mask64,8> a, SIMD<double,8> b, SIMD<double,8> c)
+  { return _mm512_mask_blend_pd(a.Data(), c.Data(), b.Data()); }
+  
   INLINE SIMD<double,8> IfPos (SIMD<double,8> a, SIMD<double> b, SIMD<double> c)
   {
     auto k = _mm512_cmp_pd_mask(a.Data(),_mm512_setzero_pd(), _CMP_GT_OS);
@@ -829,6 +1090,9 @@ namespace ngstd
     return _mm512_mask_blend_pd(k,c.Data(),b.Data());
   }
 
+
+   INLINE SIMD<int64_t,8> If (SIMD<mask64,8> a, SIMD<int64_t,8> b, SIMD<int64_t,8> c)
+  { return _mm512_mask_blend_epi64(a.Data(), c.Data(), b.Data()); }
 
   INLINE auto Unpack (SIMD<double,8> a, SIMD<double,8> b)
   {
