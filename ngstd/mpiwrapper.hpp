@@ -79,7 +79,7 @@ public:
   enum { MPI_TAG_SOLVE = 1110 };
   
   // typedef int MPI_Comm;
-  typedef int MPI_Datatype;
+  // typedef int MPI_Datatype;
   // typedef int MPI_Request;
 
   INLINE void MyMPI_SendCmd (const char * cmd, MPI_Comm comm) { ; }
@@ -89,11 +89,6 @@ public:
   public:
     MyMPI(int argc, char ** argv) { ; }
   };
-
-  enum { MPI_LOR = 4711 };
-  // enum { MPI_SUM = 4711 };
-  // enum { MPI_MAX = 4711 };
-  // enum { MPI_MIN = 4711 };
 
 #endif
 }

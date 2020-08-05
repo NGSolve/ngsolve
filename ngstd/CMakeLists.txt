@@ -29,7 +29,7 @@ install( FILES
         bessel.hpp blockalloc.hpp evalfunc.hpp
         memusage.hpp ngstd.hpp
         stringops.hpp templates.hpp
-        parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
+        statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp sockets.hpp cuda_ngstd.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
         bspline.hpp simd.hpp
