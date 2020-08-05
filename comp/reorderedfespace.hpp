@@ -27,6 +27,12 @@ namespace ngcomp
 
     virtual void FinalizeUpdate() override;
 
+    ProxyNode MakeProxyFunction (bool testfunction,
+                                 const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override
+    {
+      return GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+    }
+    
     virtual string GetClassName() const override { return "Reordered" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
     

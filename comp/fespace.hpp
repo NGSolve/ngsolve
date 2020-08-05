@@ -659,7 +659,9 @@ ANY                  1 1 1 1 | 15
     }
     */
 
-    virtual ProxyNode GetProxyFunction(bool testfunction) const;
+    ProxyNode GetProxyFunction(bool testfunction) const;
+    virtual ProxyNode MakeProxyFunction (bool testfunction,
+                                         const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const;
     
     auto GetTrialFunction() const { return GetProxyFunction(false); }
     auto GetTestFunction() const { return GetProxyFunction(true); }
@@ -1170,6 +1172,9 @@ ANY                  1 1 1 1 | 15
     void Update() override;
     /// updates also components
     void FinalizeUpdate() override;
+
+    ProxyNode MakeProxyFunction (bool testfunction,
+                                 const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override;
 
     /// copies dofcoupling from components
     void UpdateCouplingDofArray() override;

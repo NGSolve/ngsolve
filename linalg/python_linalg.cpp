@@ -939,6 +939,9 @@ inverse : string
          { return make_shared<ProductMatrix> (ma, mb); }, py::arg("mat"))
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
+    .def("__radd__", [](shared_ptr<BM> ma, int i) {
+        if (i != 0) throw Exception("can only add integer 0 to BaseMatrix (for Python sum(list))");
+        return ma; })
     .def("__sub__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<SumMatrix> (ma, mb, 1, -1); }, py::arg("mat"))
     .def("__rmul__", [](shared_ptr<BM> ma, double a)->shared_ptr<BaseMatrix>

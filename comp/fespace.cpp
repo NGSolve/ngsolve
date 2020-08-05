@@ -2011,79 +2011,42 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  ProxyNode MakeProxyFunction2 (shared_ptr<FESpace> fes,
-                                bool testfunction,
-                                const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
+  ProxyNode FESpace ::
+  MakeProxyFunction (bool testfunction,
+                     const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const
   {
-  if (auto periodicspace = dynamic_pointer_cast<PeriodicFESpace>(fes))
-    return MakeProxyFunction2 (periodicspace->GetBaseSpace(), testfunction, addblock);
-  if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
-    return MakeProxyFunction2 (compressedspace->GetBaseSpace(), testfunction, addblock);
-  if (auto reorderedspace = dynamic_pointer_cast<ReorderedFESpace>(fes))
-    return MakeProxyFunction2 (reorderedspace->GetBaseSpace(), testfunction, addblock);
+    shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<FESpace*>(this)->shared_from_this());
+
+    //should get virtual functions ....
+    // if (auto periodicspace = dynamic_pointer_cast<PeriodicFESpace>(fes))
+    // return periodicspace->GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+    // if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
+    // return compressedspace->GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+    // if (auto reorderedspace = dynamic_pointer_cast<ReorderedFESpace>(fes))
+    // return reorderedspace->GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+    
+
+    auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
+                                              fes->GetEvaluator(),
+                                              fes->GetFluxEvaluator(),
+                                              fes->GetEvaluator(BND),
+                                              fes->GetFluxEvaluator(BND),
+                                              fes->GetEvaluator(BBND),
+                                              fes->GetFluxEvaluator(BBND));
+    
+    auto add_diffops = fes->GetAdditionalEvaluators();
+    for (int i = 0; i < add_diffops.Size(); i++)
+      proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
+    
+    proxy = addblock(proxy);
+    return ProxyNode (proxy);
+  }
   
-  auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
-  if (compspace && !fes->GetEvaluator())
-    {
-      std::vector<ProxyNode> l;
-      int nspace = compspace->GetNSpaces();
-      for (int i = 0; i < nspace; i++)
-        {
-          l.push_back (MakeProxyFunction2 ((*compspace)[i], testfunction,
-                                         [&] (shared_ptr<ProxyFunction> proxy)
-                                         {
-                                           auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
-                                           shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
-                                           if (proxy->DerivEvaluator() != nullptr)
-                                             block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
-                                           shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
-                                           if (proxy->TraceEvaluator() != nullptr)
-                                             block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
-					   shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
-					   if (proxy->TTraceEvaluator() != nullptr)
-					     block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
-                                           shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
-                                           if (proxy->TraceDerivEvaluator() != nullptr)
-                                             block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
-					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
-					   if (proxy->TTraceDerivEvaluator() != nullptr)
-					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
-                                           auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
-					  block_ttrace_eval, block_ttrace_deriv_eval);
-
-                                           SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
-                                           for (int j = 0; j < add.Size(); j++)
-                                             block_proxy->SetAdditionalEvaluator(add.GetName(j),
-                                                                                 make_shared<CompoundDifferentialOperator> (add[j], i));
-                                           
-                                           block_proxy = addblock(block_proxy);
-                                           return block_proxy;
-                                         }));
-        }
-      return ProxyNode (std::move(l));
-    }
-
-  auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
-                                            fes->GetEvaluator(),
-                                            fes->GetFluxEvaluator(),
-                                            fes->GetEvaluator(BND),
-                                            fes->GetFluxEvaluator(BND),
-					    fes->GetEvaluator(BBND),
-					    fes->GetFluxEvaluator(BBND));
-  auto add_diffops = fes->GetAdditionalEvaluators();
-  for (int i = 0; i < add_diffops.Size(); i++)
-    proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
-
-  proxy = addblock(proxy);
-  return ProxyNode (proxy);
-}
-
 
   ProxyNode FESpace :: GetProxyFunction(bool testfunction) const
   {
-    return MakeProxyFunction2 (dynamic_pointer_cast<FESpace> (const_cast<FESpace*>(this)->shared_from_this()), 
-                               testfunction, 
-                               [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
+    return MakeProxyFunction
+      ( testfunction, [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
   }
   
 
@@ -3104,7 +3067,62 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 
+  ProxyNode CompoundFESpace ::
+  MakeProxyFunction (bool testfunction,
+                     const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const
+  {
+    if (this->GetEvaluator())
+      return FESpace::MakeProxyFunction (testfunction, addblock);
 
+    auto fes = dynamic_pointer_cast<CompoundFESpace> (const_cast<CompoundFESpace*>(this)->shared_from_this());    
+    
+    std::vector<ProxyNode> l;
+    int nspace = fes->GetNSpaces();
+    for (int i = 0; i < nspace; i++)
+      {
+        l.push_back ((*fes)[i]->MakeProxyFunction
+                     (testfunction,
+                      [&] (shared_ptr<ProxyFunction> proxy)
+                      {
+                        // auto addcomp = [] (shared_ptr<DifferentialOperator> diffop, int comp) -> shared_ptr<CompoundDifferentialOperator>
+                        // { return diffop ? make_shared<CompoundDifferentialOperator> (diffop, comp) : nullptr; };
+                        
+                        auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
+
+                        // auto block_deriv_eval = addcomp (proxy->DerivEvaluator(), i);
+                        shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
+                        if (proxy->DerivEvaluator() != nullptr)
+                          block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
+                        shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
+                        if (proxy->TraceEvaluator() != nullptr)
+                          block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
+                        shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
+                        if (proxy->TTraceEvaluator() != nullptr)
+                          block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
+                        shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
+                        if (proxy->TraceDerivEvaluator() != nullptr)
+                          block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
+                        shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
+                        if (proxy->TTraceDerivEvaluator() != nullptr)
+                          block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
+                        
+                        auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),                                                                                                                  block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
+                                                                       block_ttrace_eval, block_ttrace_deriv_eval);
+                        
+                        SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
+                        for (int j = 0; j < add.Size(); j++)
+                          block_proxy->SetAdditionalEvaluator(add.GetName(j),
+                                                              make_shared<CompoundDifferentialOperator> (add[j], i));
+                        
+                        block_proxy = addblock(block_proxy);
+                        return block_proxy;
+                      }));
+      }
+    return ProxyNode (std::move(l));
+  }
+  
+
+  
 
   FiniteElement & CompoundFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
