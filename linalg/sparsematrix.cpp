@@ -1287,9 +1287,12 @@ namespace ngla
 {
 
 
+  // #ifdef OLD  leave it for a while
   shared_ptr<SparseMatrixTM<double>>
   TransposeMatrix (const SparseMatrixTM<double> & mat)
   {
+    return dynamic_pointer_cast<SparseMatrixTM<double>> (mat.CreateTranspose());
+    /*
     static Timer t1("TransposeMatrix 1");
     static Timer t2("TransposeMatrix 2");
     t1.Start();
@@ -1332,8 +1335,10 @@ namespace ngla
 
     t2.Stop();
     return trans;
+    */
   }
-
+  // #endif
+  
   shared_ptr<SparseMatrix<double,double>>
   MakeFullMatrix (const SparseMatrix<double, double> & mat)
   {
@@ -1699,7 +1704,8 @@ namespace ngla
     static Timer t ("sparsematrix - restrict");
     RegionTimer reg(t);
 
-    auto prolT = TransposeMatrix(prol);
+    // auto prolT = TransposeMatrix(prol);
+    auto prolT = dynamic_pointer_cast<SparseMatrixTM<double>> (prol.CreateTranspose());
 
     auto prod1 = MatMult<double, double, double>(*this, prol);
     auto prod = MatMult<double, double, double>(*prolT, *prod1);
@@ -1713,8 +1719,9 @@ namespace ngla
     static Timer t ("sparsematrix - restrict");
     RegionTimer reg(t);
     // new version
-    auto prolT = TransposeMatrix(prol);
-
+    // auto prolT = TransposeMatrix(prol);
+    auto prolT = dynamic_pointer_cast<SparseMatrixTM<double>> (prol.CreateTranspose());
+    
     auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol);
     auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1);
     return prod;
@@ -1731,7 +1738,8 @@ namespace ngla
     static Timer t ("sparsematrixsymmetric - restrict");
     RegionTimer reg(t);
     // new version
-    auto prolT = TransposeMatrix(prol);
+    // auto prolT = TransposeMatrix(prol);
+    auto prolT = dynamic_pointer_cast<SparseMatrixTM<double>> (prol.CreateTranspose());    
     auto full = MakeFullMatrix(*this);
 
     auto prod1 = MatMult<double, double, double>(*full, prol);

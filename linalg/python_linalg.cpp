@@ -155,8 +155,8 @@ void ExportSparseMatrix(py::module m)
                   // return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
                 }, py::arg("col_ind"), py::arg("row_ind"), py::arg("matrices"), py::arg("h"), py::arg("w"))
     
-    .def("CreateTranspose", [] (const SparseMatrix<double> & sp)
-         { return TransposeMatrix (sp); }, "Return transposed matrix")
+    .def("CreateTranspose", [] (const SparseMatrix<T> & sp)
+         { return sp.CreateTranspose (); }, "Return transposed matrix")
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
          { return MatMult(a,b); }, py::arg("mat"))

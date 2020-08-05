@@ -432,7 +432,8 @@ namespace ngcomp
         coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrixTM<SCAL>> (coarsemat), coarse_freedofs,
                                                     coarse_e2v, coarse_edge_weights, coarse_vertex_weights, level+1);
 
-      restriction = TransposeMatrix (*prolongation);
+      // restriction = TransposeMatrix (*prolongation);
+      restriction = dynamic_pointer_cast<SparseMatrixTM<double>>(prolongation->CreateTranspose());
     }
 
   template <typename SCAL>
