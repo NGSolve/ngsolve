@@ -346,9 +346,9 @@ namespace ngcomp
                       AtomicAdd(coarse_edge_weights[e2ce[e]], edge_weights[e]);
                     int v0 = e2v[e][0], v1 = e2v[e][1];
                     bool free0 = (*freedofs)[v0], free1 = (*freedofs)[v1];
-                    if (free0 && !free1)
+                    if (free0 && !free1 && v2cv[v0] != -1)
                       AtomicAdd(coarse_vertex_weights[v2cv[v0]], edge_weights[e]);
-                    if (free1 && !free0)
+                    if (free1 && !free0 && v2cv[v1] != -1)
                       AtomicAdd(coarse_vertex_weights[v2cv[v1]], edge_weights[e]);
                   });
 
