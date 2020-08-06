@@ -962,11 +962,11 @@ namespace ngstd
   INLINE SIMD<mask64,4> operator<= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
   { return  _mm256_xor_si256(_mm256_cmpgt_epi64(a.Data(),b.Data()),_mm256_set1_epi32(-1)); }
   INLINE SIMD<mask64,4> operator< (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
-  { return  _mm256_cmpgt_epi64(b.Data(),a.Data()); }
+  { return  my_mm256_cmpgt_epi64(b.Data(),a.Data()); }
   INLINE SIMD<mask64,4> operator>= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
   { return  _mm256_xor_si256(_mm256_cmpgt_epi64(b.Data(),a.Data()),_mm256_set1_epi32(-1)); }
   INLINE SIMD<mask64,4> operator> (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
-  { return  _mm256_cmpgt_epi64(a.Data(),b.Data()); }
+  { return  my_mm256_cmpgt_epi64(a.Data(),b.Data()); }
   INLINE SIMD<mask64,4> operator== (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
   { return  _mm256_cmpeq_epi64(a.Data(),b.Data()); }
   INLINE SIMD<mask64,4> operator!= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
