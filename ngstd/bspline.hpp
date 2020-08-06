@@ -34,6 +34,7 @@ namespace ngstd
     BSpline Integrate () const;
 
     double Evaluate (double x) const;
+    SIMD<double> Evaluate(SIMD<double> x) const;
     double operator() (double x) const { return Evaluate(x); }
     Complex operator() (Complex x) const { return Evaluate(x.real()); }
     /*I had to explicitly write double and SIMD<double>
