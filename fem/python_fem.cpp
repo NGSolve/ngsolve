@@ -1235,7 +1235,12 @@ vals : list
           }), py::arg("order"), py::arg("knots"), py::arg("vals"),
         "B-Spline of a certain order, provide knot and value vectors")
     .def("__str__", &ToString<BSpline>)
-    .def("__call__", &BSpline::Evaluate)
+    .def("__call__", [] (shared_ptr<BSpline> self, double pt)
+          {
+            return self->Evaluate(pt);
+          },
+      py::arg("pt"),
+      py::return_value_policy::move)
     .def("__call__", [](shared_ptr<BSpline> sp, shared_ptr<CF> coef)
           {
             return UnaryOpCF (coef, GenericBSpline(sp) /* , GenericBSpline(sp) */);
