@@ -108,23 +108,24 @@ namespace ngla
   {
     size_t height;
     IntRange range;
+    bool is_complex;
   public:
-    Embedding (size_t aheight, IntRange arange)
-      : height(aheight), range(arange) { ; }
+    Embedding (size_t aheight, IntRange arange, bool ais_complex = false)
+      : height(aheight), range(arange), is_complex(ais_complex) { ; }
 
-    virtual bool IsComplex() const override { return false; } 
+    virtual bool IsComplex() const override { return is_complex; } 
 
     virtual int VHeight() const override { return height; }
     virtual int VWidth() const override { return range.Size(); }
 
     virtual AutoVector CreateRowVector () const override
     {
-      return CreateBaseVector(range.Size(), false, 1);
+      return CreateBaseVector(range.Size(), is_complex, 1);
     }
     
     virtual AutoVector CreateColVector () const override
     {
-      return CreateBaseVector(height, false, 1);
+      return CreateBaseVector(height, is_complex, 1);
     }
 
     auto GetRange() const { return range; }
@@ -154,14 +155,12 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override
     {
-      // return CreateBaseVector(range.Size(), false, 1);
       return mat->CreateRowVector();      
     }
     
     virtual AutoVector CreateColVector () const override
     {
-      // return mat->CreateColVector();
-      return CreateBaseVector(height, false, 1);      
+      return CreateBaseVector(height, IsComplex(), 1);      
     }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
@@ -176,21 +175,24 @@ namespace ngla
   {
     size_t width;
     IntRange range;
+    bool is_complex;
   public:
-    EmbeddingTranspose (size_t awidth, IntRange arange)
-      : width(awidth), range(arange) { ; }
+    EmbeddingTranspose (size_t awidth, IntRange arange, bool ais_complex = false)
+      : width(awidth), range(arange), is_complex(ais_complex) { ; }
 
+    virtual bool IsComplex() const override { return is_complex; } 
+    
     virtual int VHeight() const override { return range.Size(); }
     virtual int VWidth() const override { return width; }
 
     virtual AutoVector CreateRowVector () const override
     {
-      return CreateBaseVector(width, false, 1);
+      return CreateBaseVector(width, is_complex, 1);
     }
     
     virtual AutoVector CreateColVector () const override
     {
-      return CreateBaseVector(range.Size(), false, 1);
+      return CreateBaseVector(range.Size(), is_complex, 1);
     }
 
     auto GetRange() const { return range; }
@@ -219,7 +221,7 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override
     {
-      return CreateBaseVector(width, false, 1);
+      return CreateBaseVector(width, mat->IsComplex(), 1);
     }
     
     virtual AutoVector CreateColVector () const override

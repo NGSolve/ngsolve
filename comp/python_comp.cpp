@@ -1068,7 +1068,7 @@ component : int
 
     .def("Embedding", [] (shared_ptr<CompoundFESpace> self, int comp)
          {
-           return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp));
+           return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
          py::arg("component"), "create embedding operator for this component")
     
