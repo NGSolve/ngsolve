@@ -1270,17 +1270,25 @@ inverse : string
     
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
+    .def_property("tol", &KrylovSpaceSolver::GetPrecision, &KrylovSpaceSolver::SetPrecision)
+    .def_property("maxsteps", &KrylovSpaceSolver::GetMaxSteps, &KrylovSpaceSolver::SetMaxSteps)
+    .def("SetAbsolutePrecision", &KrylovSpaceSolver::SetAbsolutePrecision)
     ;
 
   m.def("CGSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
-                                          bool iscomplex, bool printrates, 
-                                          double precision, int maxsteps)
+                       bool iscomplex, bool printrates,
+                       double precision, int maxsteps, bool conjugate)
                                        {
                                          shared_ptr<KrylovSpaceSolver> solver;
                                          if(mat->IsComplex()) iscomplex = true;
                                          
                                          if (iscomplex)
-                                           solver = make_shared<CGSolver<Complex>> (mat, pre);
+                                           {
+                                             if(conjugate)
+                                               solver = make_shared<CGSolver<ComplexConjugate>>(mat, pre);
+                                             else
+                                               solver = make_shared<CGSolver<Complex>> (mat, pre);
+                                           }
                                          else
                                            solver = make_shared<CGSolver<double>> (mat, pre);
                                          solver->SetPrecision(precision);
@@ -1289,7 +1297,8 @@ inverse : string
                                          return solver;
                                        },
            py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
-        py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+        py::arg("precision")=1e-8, py::arg("maxsteps")=200, py::arg("conjugate")=false,
+        docu_string(R"raw_string(
 A CG Solver.
 
 Parameters:
