@@ -709,6 +709,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }
       
       AutoVector CreateRowVector () const override {
+        py::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
         if (overload) {
           auto vec = py::cast<shared_ptr<BaseVector>> (overload());
@@ -726,6 +727,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }
 
       AutoVector CreateColVector () const override {
+        py::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "CreateColVector");
         if (overload) {
           auto vec = py::cast<shared_ptr<BaseVector>> (overload());
