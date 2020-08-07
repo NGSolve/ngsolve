@@ -387,7 +387,7 @@ namespace ngcomp
                   const Region * reg, 
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh,
-                  bool dualdiffop = false, bool use_simd = true)
+                  bool dualdiffop = false, bool use_simd = true, int mdcomp = 0)
   {
     static Timer sv("timer setvalues"); RegionTimer r(sv);
 
@@ -461,7 +461,7 @@ namespace ngcomp
                           ", but coefficient-dim = " + ToString(coef->Dimension()));
         
         
-        u.GetVector() = 0.0;
+        u.GetVector(mdcomp) = 0.0;
         
         ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
         
@@ -545,9 +545,9 @@ namespace ngcomp
 
 		     /** Write into large vector **/
 		     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-                     u.GetElementVector (ei.GetDofs(), elflux);
+                     u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
                      elfluxi += elflux;
-                     u.SetElementVector (ei.GetDofs(), elfluxi);
+                     u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
                      
                      for (auto d : ei.GetDofs())
                        if (IsRegularDof(d)) cnti[d]++;
@@ -628,9 +628,9 @@ namespace ngcomp
              
 	     /** Write into large vector **/
              fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-             u.GetElementVector (ei.GetDofs(), elflux);
+             u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
              elfluxi += elflux;
-             u.SetElementVector (ei.GetDofs(), elfluxi);
+             u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
              
              for (auto d : ei.GetDofs())
                if (d != -1) cnti[d]++;
@@ -678,7 +678,7 @@ namespace ngcomp
           throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
                           ", but coefficient-dim = " + ToString(coef->Dimension()));
         
-        u.GetVector() = 0.0;
+        u.GetVector(mdcomp) = 0.0;
         
         ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
         
@@ -769,9 +769,9 @@ namespace ngcomp
                      
                      fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
                      
-                     u.GetElementVector (ei.GetDofs(), elflux);
+                     u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
                      elfluxi += elflux;
-                     u.SetElementVector (ei.GetDofs(), elfluxi);
+                     u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
                      
                      for (auto d : ei.GetDofs())
                        if (IsRegularDof(d)) cnti[d]++;
@@ -839,9 +839,9 @@ namespace ngcomp
              
              fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
              
-             u.GetElementVector (ei.GetDofs(), elflux);
+             u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
              elfluxi += elflux;
-             u.SetElementVector (ei.GetDofs(), elfluxi);
+             u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
              
              for (auto d : ei.GetDofs())
                if (d != -1) cnti[d]++;
@@ -858,8 +858,8 @@ namespace ngcomp
 
 #ifdef PARALLEL
     AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
-    u.GetVector().SetParallelStatus(DISTRIBUTED);
-    u.GetVector().Cumulate(); 	 
+    u.GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+    u.GetVector(mdcomp).Cumulate(); 	 
 #endif
 
 
@@ -873,9 +873,9 @@ namespace ngcomp
            if (cnti[i])
              {
                dnums[0] = i;
-               u.GetElementVector (dnums, fluxi);
+               u.GetElementVector (mdcomp, dnums, fluxi);
                fluxi /= double (cnti[i]);
-               u.SetElementVector (dnums, fluxi);
+               u.SetElementVector (mdcomp, dnums, fluxi);
              }
        });
     
@@ -887,12 +887,14 @@ namespace ngcomp
 				 VorB vb,
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh,
-                                 bool dualdiffop, bool use_simd)
+                                 bool dualdiffop,
+                                 bool use_simd,
+                                 int mdcomp)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd);
+      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp);
     else
-      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd);
+      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp);
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -900,12 +902,12 @@ namespace ngcomp
 				 const Region & reg, 
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh,
-                                 bool dualdiffop, bool use_simd)
+                                 bool dualdiffop, bool use_simd, int mdcomp)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd);
+      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp);
     else
-      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd);
+      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp);
   }
 
 
