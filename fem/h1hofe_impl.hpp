@@ -503,6 +503,21 @@ namespace ngfem
   }
 
 
+  template<>
+  inline void H1HighOrderFE_Shape<ET_PRISM> ::
+  CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    auto & ip = mip.IP();
+    shape = 0.0;
+
+    if(order > 1)
+      throw Exception("H1Ho prism dual shapes only implemented for order==1!");
+
+    if(ip.VB() == BBBND)
+      for(auto i : Range(6))
+        shape[i] = (i == ip.FacetNr()) ? 1 : 0;
+
+  }
 
  
 
