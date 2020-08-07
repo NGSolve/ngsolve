@@ -70,6 +70,9 @@ namespace ngla
     void SetRelativePrecision (double aprec)
     {  prec = aprec; stop_absolute = 0; }
 
+    double GetPrecision() const { return prec; }
+    int GetMaxSteps() const { return maxsteps; }
+
 
     void SetPrintRates (int pr = 1)
     { printrates = pr; }
