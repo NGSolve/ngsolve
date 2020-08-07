@@ -76,13 +76,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("__repr__", [] ( DummyArgument & self) { return "<ngsolve.ngstd.DummyArgument>"; })
     ;
   
-  py::class_<PajeTrace >(m, "Tracer")
-    .def("SetTraceThreads", &PajeTrace::SetTraceThreads)
-    .def("SetTraceThreadCounter", &PajeTrace::SetTraceThreadCounter)
-    .def("SetMaxTracefileSize", &PajeTrace::SetMaxTracefileSize)
-    ;
-
-
   py::class_<ngstd::LocalHeap> (m, "LocalHeap", "A heap for fast memory allocation")
      .def(py::init<size_t,const char*>(), "size"_a=1000000, "name"_a="PyLocalHeap")
     ;
