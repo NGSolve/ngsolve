@@ -55,10 +55,14 @@ class CGSolver(BaseMatrix):
             self.tol, self.maxsteps, self.callback
         if initialize:
             u[:] = 0
-        d.data = rhs - mat * u
-        w.data = pre * d if pre else d
+            d.data = rhs
+        else:
+            d.data = rhs - mat * u
+        w.data = pre * d
         s.data = w
         wdn = w.InnerProduct(d, conjugate=conjugate)
+        if wdn == 0:
+            wdn = 1.
         err0 = sqrt(abs(wdn))
 
         self.errors = [err0]
@@ -75,11 +79,12 @@ class CGSolver(BaseMatrix):
             w.data = mat * s
             wd = wdn
             as_s = s.InnerProduct(w, conjugate=conjugate)        
+            if as_s == 0: break
             alpha = wd / as_s
             u.data += alpha * s
             d.data += (-alpha) * w
 
-            w.data = pre*d if pre else d
+            w.data = pre*d
 
             wdn = w.InnerProduct(d, conjugate=conjugate)
             beta = wdn / wd
@@ -632,7 +637,7 @@ printrates : bool = True
     r_norm = norm(r)
     if printrates:
         print("Step 0, error = ", r_norm)
-    if reltol is not None:
+    if reltol is not None and r_norm != 0:
         rtol = reltol * abs(r_norm)
         tol = rtol if tol is None else max(rtol, tol)
     if tol is None:
