@@ -77,52 +77,24 @@ namespace ngla {
     MultiVector & operator= (double val)
     {
       SetScalar (val);
-      // for (auto & vec : vecs)
-      // *vec = val;
       return *this;
     }
 
     MultiVector & operator= (Complex val)
     {
       SetScalar (val);
-      // for (auto & vec : vecs) 
-      // *vec = val;
       return *this;      
     }
 
-    MultiVector & operator= (const MultiVector & v2)
-    { 
-      for ([[maybe_unused]] auto i : ngstd::Range(vecs))
-        *vecs[i] = *v2.vecs[i];
-      return *this;
-    }
-    
-    MultiVector & operator= (const MultiVectorExpr & expr)
-    {
-      Vector<double> ones(Size());
-      ones = 1;
-      expr.AssignTo(ones, *this);
-      return *this;
-    }
-    
-    MultiVector operator+= (const MultiVectorExpr & expr)
-    {
-      Vector<double> ones(Size());
-      ones = 1;      
-      expr.AddTo(ones, *this);
-      return *this;
-    }
-    
-    MultiVector & operator-= (const MultiVectorExpr & expr)
-    {
-      Vector<double> mones(Size());
-      mones = -1;
-      expr.AddTo(mones, *this);
-      return *this;
-    }
+    MultiVector & operator= (const MultiVector & v2);
+    MultiVector & operator= (const MultiVectorExpr & expr);
+    MultiVector operator+= (const MultiVectorExpr & expr);
+    MultiVector & operator-= (const MultiVectorExpr & expr);
 
     void Orthogonalize (BaseMatrix * ipmat);
-
+    template <class T>
+    Matrix<T> T_Orthogonalize (BaseMatrix * ipmat);
+    
     virtual void SetScalar (double s);
     virtual void SetScalar (Complex s);
     

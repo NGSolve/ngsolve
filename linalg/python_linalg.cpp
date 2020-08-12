@@ -599,8 +599,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       })
     .def("__setitem__", [](MultiVector & self, std::vector<int> inds, const MultiVectorExpr & v2) {
         auto selfr = self.SubSet(ArrayFromVector(inds));
+        *selfr = v2;
+        /*
         Vector<> ones(v2.Size()); ones = 1;
         v2.AssignTo (ones, *selfr);
+        */
       })
 
     
@@ -609,9 +612,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   { return self; },
                   [](shared_ptr<MultiVector> self, const MultiVectorExpr & v2)
                   {
+                    *self = v2;
+                    /*
                     Vector<> ones(self->Size());
                     ones = 1;
                     v2.AssignTo(ones, *self);
+                    */
                     /*
                     if( !self->IsComplex() )
                         v2.AssignTo(1, *self);
@@ -645,8 +651,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            x.Orthogonalize(ipmat);
          },py::arg("ipmat")=nullptr)
     */
-    .def("Orthogonalize", &MultiVector::Orthogonalize,
-         py::arg("ipmat")=nullptr)
+    .def("Orthogonalize",[](MultiVector & x, BaseMatrix * ipmat)
+         {
+           if (!x.IsComplex())
+             return py::cast(x.T_Orthogonalize<double>(ipmat));
+           else
+             return py::cast(x.T_Orthogonalize<Complex>(ipmat));
+         }, py::arg("ipmat")=nullptr,
+         "Orthogonalize vectors by modified Gram-Schmidt, returns R-factor of QR decomposition (only ipmat version, for the moment)")
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
          { // cout << "in double __mul__" << endl;
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })

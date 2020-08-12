@@ -58,6 +58,64 @@ namespace ngla {
   // }
 
 
+
+
+
+
+
+
+  MultiVector & MultiVector::operator= (const MultiVector & v2)
+  {
+    if (Size() != v2.Size())
+      throw Exception("MultiVector assignment sizes mismatch, my size = "
+                      + ToString(Size()) + " other size = " + ToString(v2.Size()));
+    
+    for (auto i : ngstd::Range(vecs))
+      *vecs[i] = *v2.vecs[i];
+    return *this;
+  }
+  
+  MultiVector & MultiVector::operator= (const MultiVectorExpr & expr)
+  {
+    if (Size() != expr.Size())
+      throw Exception("MultiVector assignment sizes mismatch, my size = "
+                      + ToString(Size()) + " other size = " + ToString(expr.Size()));
+    
+    Vector<double> ones(Size());
+    ones = 1;
+    expr.AssignTo(ones, *this);
+    return *this;
+  }
+  
+  MultiVector MultiVector::operator+= (const MultiVectorExpr & expr)
+  {
+    if (Size() != expr.Size())
+      throw Exception("MultiVector assignment-add sizes mismatch, my size = "
+                      + ToString(Size()) + " other size = " + ToString(expr.Size()));
+    
+    Vector<double> ones(Size());
+    ones = 1;      
+    expr.AddTo(ones, *this);
+    return *this;
+  }
+  
+  MultiVector & MultiVector::operator-= (const MultiVectorExpr & expr)
+  {
+    if (Size() != expr.Size())
+      throw Exception("MultiVector assignment-sub sizes mismatch, my size = "
+                      + ToString(Size()) + " other size = " + ToString(expr.Size()));
+
+    Vector<double> mones(Size());
+    mones = -1;
+    expr.AddTo(mones, *this);
+    return *this;
+  }
+  
+
+
+
+
+  
   unique_ptr<MultiVector> MultiVector :: Range(IntRange r) const
   {
     auto mv2 = make_unique<MultiVector>(refvec, 0);
@@ -162,8 +220,14 @@ namespace ngla {
 
   
   template <class T>
-  void T_Orthogonalize (MultiVector & mv, BaseMatrix * ipmat)
+  Matrix<T> MultiVector::T_Orthogonalize (BaseMatrix * ipmat)
   {
+    static Timer t("MultiVector::Orthogonalize");
+    RegionTimer reg(t);
+
+    auto & mv = *this;
+    Matrix<T> Rfactor(mv.Size());
+    Rfactor = T(0.0);
     if (ipmat)
       {
         auto tmp = mv.RefVec()->CreateVector();
@@ -171,9 +235,14 @@ namespace ngla {
           {
             *tmp = *ipmat * *mv[i];
             double norm = sqrt(fabs(InnerProduct<T>(*tmp, *mv[i], true)));
+            Rfactor(i,i) = norm;
             *mv[i] *= 1.0 / norm;
             for (int j = i+1; j < mv.Size(); j++)
-              *mv[j] -= InnerProduct<T>(*tmp, *mv[j], true)/norm * *mv[i];
+              {
+                T rij = InnerProduct<T>(*tmp, *mv[j], true) / norm;
+                Rfactor(i,j) = rij;
+                *mv[j] -= rij * *mv[i];
+              }
           }
       }
     else
@@ -191,25 +260,16 @@ namespace ngla {
             mv2->Add (*mv1, ip);
             mv2->Orthogonalize(ipmat);
           }
-        /*
-        for (int i = 0; i < mv.Size(); i++)
-          {
-            *mv[i] *= 1.0 / (*mv[i]).L2Norm();
-            for (int j = i+1; j < mv.Size(); j++)
-              *mv[j] -= InnerProduct<T>(*mv[i], *mv[j], true) * *mv[i];
-          }
-        */
       }
+    return Rfactor;
   }
   
   void MultiVector :: Orthogonalize (BaseMatrix * ipmat)
   {
-    static Timer t("MultiVector::Orthogonalize");
-    RegionTimer reg(t);
     if (IsComplex())
-      T_Orthogonalize<Complex> (*this, ipmat);
+      this->T_Orthogonalize<Complex> (ipmat);
     else
-      T_Orthogonalize<double> (*this, ipmat);
+      this->T_Orthogonalize<double> (ipmat);
   }
 
 
@@ -220,9 +280,9 @@ namespace ngla {
     *vecs.Last() = *v;
 
     if (IsComplex())    
-      T_Orthogonalize<Complex> (*this, ipmat);
+      this->T_Orthogonalize<Complex> (ipmat);
     else
-      T_Orthogonalize<double> (*this, ipmat);
+      this->T_Orthogonalize<double> (ipmat);
   }
 
   void MultiVector :: SetScalar (double s)
