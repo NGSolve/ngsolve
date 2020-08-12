@@ -599,32 +599,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       })
     .def("__setitem__", [](MultiVector & self, std::vector<int> inds, const MultiVectorExpr & v2) {
         auto selfr = self.SubSet(ArrayFromVector(inds));
-        *selfr = v2;
-        /*
-        Vector<> ones(v2.Size()); ones = 1;
-        v2.AssignTo (ones, *selfr);
-        */
-      })
+        *selfr = v2; })
 
     
     .def_property("data",
                   [](shared_ptr<MultiVector> self)
                   { return self; },
                   [](shared_ptr<MultiVector> self, const MultiVectorExpr & v2)
-                  {
-                    *self = v2;
-                    /*
-                    Vector<> ones(self->Size());
-                    ones = 1;
-                    v2.AssignTo(ones, *self);
-                    */
-                    /*
-                    if( !self->IsComplex() )
-                        v2.AssignTo(1, *self);
-                    else
-                        v2.AssignTo(Complex(1), *self); 
-                    */
-                  })
+                  { *self = v2; })
     .def("Expand", &MultiVector::Extend, "deprecated, use Extend instead")
     .def("Extend", &MultiVector::Extend)
     .def("Append", &MultiVector::Append)
