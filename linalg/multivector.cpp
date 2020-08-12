@@ -248,17 +248,24 @@ namespace ngla {
     else
       {
         if (mv.Size() == 1)
-          *mv[0] *= 1.0 / (*mv[0]).L2Norm();
+          {
+            double norm = (*mv[0]).L2Norm();
+            Rfactor(0,0) = norm;
+            *mv[0] *= 1.0 / norm;
+          }
         else
           {
             int half = mv.Size()/2;
-            auto mv1 = mv.Range(IntRange(0, half));
-            auto mv2 = mv.Range(IntRange(half, mv.Size()));
-            mv1->Orthogonalize(ipmat);
+            auto r1 = IntRange(0,half);
+            auto r2 = IntRange(half, mv.Size());
+            auto mv1 = mv.Range(r1);
+            auto mv2 = mv.Range(r2);
+            Rfactor.Rows(r1).Cols(r1) = mv1->T_Orthogonalize<T>(ipmat);
             Matrix<T> ip = InnerProduct<T> (*mv1, *mv2, true);
+            Rfactor.Rows(r1).Cols(r2) = ip;
             ip *= -1;
             mv2->Add (*mv1, ip);
-            mv2->Orthogonalize(ipmat);
+            Rfactor.Rows(r2).Cols(r2) = mv2->T_Orthogonalize<T>(ipmat);
           }
       }
     return Rfactor;
