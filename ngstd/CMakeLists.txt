@@ -2,7 +2,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
-        stringops.cpp
+        stringops.cpp statushandler.cpp
         cuda_ngstd.cpp python_ngstd.cpp
         bspline.cpp
         )

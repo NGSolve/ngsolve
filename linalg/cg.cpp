@@ -35,7 +35,7 @@ namespace ngla
     SetMaxSteps (200); 
     SetInitialize (1);
     printrates = 0;
-    sh = NULL;
+    sh = make_shared<BaseStatusHandler>();
     useseed = false;
   }
   
@@ -50,7 +50,7 @@ namespace ngla
     SetMaxSteps (200);
     SetInitialize (1);
     printrates = 0;
-    sh = NULL;
+    sh = make_shared<BaseStatusHandler>();
     useseed = false;
   }
 
@@ -66,7 +66,7 @@ namespace ngla
     SetMaxSteps (200);
     SetInitialize (1);
     printrates = 0;
-    sh = NULL;
+    sh = make_shared<BaseStatusHandler>();
     useseed = false;
   }
 
