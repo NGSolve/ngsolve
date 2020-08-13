@@ -1103,18 +1103,6 @@ namespace ngcomp
   public:
     const Table<size_t> & GetElementsOfClass(); // classification by vertex numbers
 
-    
-    virtual void PushStatus (const char * str) const;
-    virtual void PopStatus () const;
-    virtual void SetThreadPercentage (double percent) const;
-    virtual void GetStatus (string & str, double & percent) const;
-
-    virtual void SetTerminate(void) const;
-    virtual void UnSetTerminate(void) const;
-    virtual bool ShouldTerminate(void) const;
-  
-
-
   private:
     Array<bool> higher_integration_order;
   public:

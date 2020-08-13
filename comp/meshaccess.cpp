@@ -1402,38 +1402,6 @@ namespace ngcomp
       }
   }
 
-  void MeshAccess::PushStatus (const char * str) const
-  { 
-    Ng_PushStatus (str);
-  }
-  void MeshAccess::PopStatus () const
-  { 
-    Ng_PopStatus ();
-  }
-  void MeshAccess::SetThreadPercentage (double percent) const
-  { 
-    Ng_SetThreadPercentage (percent); 
-  }
-  void MeshAccess :: GetStatus (string & str, double & percent) const
-  {
-    char * s;
-    Ng_GetStatus(&s,percent);
-    str = s;
-  }
-
-  void MeshAccess :: SetTerminate(void) const
-  {
-    Ng_SetTerminate();
-  }
-  void MeshAccess :: UnSetTerminate(void) const
-  {
-    Ng_UnSetTerminate();
-  }
-  bool MeshAccess :: ShouldTerminate(void) const
-  {
-    return (Ng_ShouldTerminate() != 0);
-  }
-  
   void MeshAccess :: GetVertexElements (size_t vnr, Array<int> & elnrs) const
   {
     elnrs = ArrayObject(mesh.GetNode<0> (vnr).elements);
