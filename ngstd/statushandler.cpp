@@ -1,7 +1,6 @@
 
 #include <nginterface.h>
-
-#include "statushandler.hpp"
+#include <ngstd.hpp>
 
 namespace ngstd
 {
