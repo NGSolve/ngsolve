@@ -2395,7 +2395,7 @@ namespace ngbla
     #ifdef __AVX512F__
         constexpr size_t HA = 6;
     #else
-      constexpr size_t HA = 4;
+      constexpr size_t HA = 3;
     #endif
 
     int x_size = x.Size();
