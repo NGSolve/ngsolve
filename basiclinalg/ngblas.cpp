@@ -2390,6 +2390,79 @@ namespace ngbla
   }
 
 
+  void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip) {
+
+    #ifdef __AVX512F__
+        constexpr size_t HA = 6;
+    #else
+      constexpr size_t HA = 4;
+    #endif
+
+    int x_size = x.Size();
+    int y_size = y.Size();
+
+    size_t j = 0;
+    for (; j+HA <= x_size; j+=HA) {
+
+      size_t k = 0;
+      for (; k+4 <= y_size; k+=4) {
+
+        auto res = MultiVecScalAB<HA, 4>(n, &x[j], &y[k]);
+
+        Iterate<HA> ([&] (auto i) {
+          auto sum = get<i.value>(res);
+          sum.Store(&ip(j + i.value, k));
+        });
+
+      }
+
+      for (; k+2 <= y_size; k+=2) {
+
+        auto res = MultiVecScalAB<HA, 2>(n, &x[j], &y[k]);
+
+        Iterate<HA> ([&] (auto i) {
+          auto sum = get<i.value>(res);
+          sum.Store(&ip(j + i.value, k));
+        });
+
+      }
+
+      for (; k < y_size; k++) {
+
+        auto res = MultiVecScalAB<HA, 1>(n, &x[j], &y[k]);
+
+        Iterate<HA> ([&] (auto i) {
+          auto sum = get<i.value>(res);
+          ip(j + i.value, k) = sum;
+        });
+
+      }
+    }
+
+    for ( ; j < x_size; j++)
+    {
+
+      size_t k = 0;
+      for (; k+4 <= y_size; k+=4) {
+
+        auto res = MultiVecScalAB<1, 4>(n, &x[j], &y[k]);
+
+        auto sum0 = get<0>(res);
+        sum0.Store(&ip(j, k));
+      }
+
+      for (; k < y_size; k++) {
+
+	       auto res = MultiVecScalAB<1, 1>(n, &x[j], &y[k]);
+
+         auto sum0 = get<0>(res);
+         ip(j, k) = sum0;
+      }
+    }
+
+  }
+
+
   
 
   /**************** timings *********************** */
