@@ -72,6 +72,11 @@ namespace ngla {
       *vecs.Last() = *v;
     }
 
+    void Replace (int i, shared_ptr<BaseVector> v)
+    {
+      vecs[i] = v;
+    }
+
     void AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ip);
 
     MultiVector & operator= (double val)
