@@ -498,7 +498,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            size_t h = self.Size()/w;
            return FlatMatrix<> (h, w, &self.FVDouble()(0));
          }, py::arg("width"))
-    .def("SetRandom", &BaseVector::SetRandom)
+    .def("SetRandom", [] (BaseVector & self, optional<unsigned int> seed)
+         {
+           if (seed.has_value())
+             srand(seed.value());
+           self.SetRandom();
+         }, py::arg("seed") = optional<unsigned int>())
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
@@ -613,6 +618,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("AppendOrthogonalize", &MultiVector::AppendOrthogonalize,
          py::arg("vec"), py::arg("ipmat")=nullptr,
          "assumes that existing vectors are orthogonal, and orthogonalize new vector against existing vectors")
+    .def("Replace", [](MultiVector & x, int ind, shared_ptr<BaseVector> v2)
+         {
+           x.Replace(ind, v2);
+         }, py::arg("ind"), py::arg("v2"))
+    .def("Replace", [](MultiVector & x, std::vector<int> inds, MultiVector & v2)
+         {
+           for (size_t i = 0; i < inds.size(); i++)
+             x.Replace(inds[i], v2[i]);
+         }, py::arg("inds"), py::arg("mv2"))
     .def("InnerProduct", [](MultiVector & x, MultiVector & y, bool conjugate)
         { 
           if( !x.IsComplex() )
