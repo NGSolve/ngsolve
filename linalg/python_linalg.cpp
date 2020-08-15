@@ -498,12 +498,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            size_t h = self.Size()/w;
            return FlatMatrix<> (h, w, &self.FVDouble()(0));
          }, py::arg("width"))
-    .def("SetRandom", [] (BaseVector & self, optional<unsigned int> seed)
+    .def("SetRandom", [] (BaseVector & self, optional<unsigned int> seed = {})
          {
            if (seed.has_value())
-             srand(seed.value());
+             srand(seed.value_or(0));
            self.SetRandom();
-         }, py::arg("seed") = optional<unsigned int>())
+         }, py::arg("seed")) //  = optional<unsigned int>())
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
