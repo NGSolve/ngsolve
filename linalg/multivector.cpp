@@ -239,7 +239,7 @@ namespace ngla {
             *mv[i] *= 1.0 / norm;
             for (int j = i+1; j < mv.Size(); j++)
               {
-                T rij = InnerProduct<T>(*tmp, *mv[j], true) / norm;
+                T rij = InnerProduct<T>(*mv[j], *tmp, true) / norm;
                 Rfactor(i,j) = rij;
                 *mv[j] -= rij * *mv[i];
               }
