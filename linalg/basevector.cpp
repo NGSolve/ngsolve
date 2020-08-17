@@ -1025,7 +1025,7 @@ namespace ngla
         }
 
         // store pointers to vectors of first multivector
-        double** ppx = double* [Size()];
+        double** ppx = new double* [Size()];
         for (int ell=0; ell < Size(); ell++) {
           ppx[ell] = (*this)[ell]->FVDouble().Addr(i0);
         }
