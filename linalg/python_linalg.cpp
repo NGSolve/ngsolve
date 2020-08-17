@@ -1099,6 +1099,11 @@ inverse : string
     .def("InnerProduct", [](DynamicVectorExpression v1, BaseVector & v2)
          { auto v = v1.Evaluate();
            return InnerProduct<double> (v, v2); })
+
+    .def("Evaluate", [](DynamicVectorExpression expr)
+         {
+           return shared_ptr<BaseVector> (expr.Evaluate());
+         }, "create vector and evaluate expression into it")
   ;
 
   py::implicitly_convertible<BaseVector, DynamicVectorExpression>();
