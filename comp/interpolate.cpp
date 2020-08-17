@@ -803,6 +803,18 @@ namespace ngcomp
   };
     
 
+  shared_ptr<FESpace> FindProxySpace(shared_ptr<CoefficientFunction> func)
+  {
+    shared_ptr<FESpace> space;
+    
+    func->TraverseTree
+      ( [&] (CoefficientFunction & nodecf)
+        {
+          if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+            space = proxy->GetFESpace();
+        } );
+    return space;
+  }
 
   InterpolateProxy :: InterpolateProxy (shared_ptr<CoefficientFunction> afunc,
                                         shared_ptr<FESpace> aspace,
@@ -810,7 +822,8 @@ namespace ngcomp
                                         shared_ptr<DifferentialOperator> diffop,
                                         int abonus_intorder,
                                         VorB avb)
-    : ProxyFunction(aspace, atestfunction, false,
+    : ProxyFunction( /* aspace */
+                    FindProxySpace(afunc), atestfunction, false,
                     make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder,atestfunction, avb), nullptr, nullptr,
                     nullptr, nullptr, nullptr),
       func(afunc), space(aspace), testfunction(atestfunction),
