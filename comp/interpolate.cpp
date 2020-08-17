@@ -678,6 +678,21 @@ namespace ngcomp
       rhsi = elmat * rhs;
       diffop->Apply(interpol_fel, mir, rhsi, flux, lh);
     }
+
+
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<double> flux,
+		BareSliceVector<double> x, 
+		LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+      FlatMatrix<double,ColMajor> mat(flux.Height()*flux.Width(), fel.GetNDof(), lh);
+      CalcMatrix (fel, mir, mat, lh);
+      x.Range(0,fel.GetNDof()) = Trans(mat)*flux.AsVector();
+    }
+
     
     NGS_DLL_HEADER virtual void
     ApplyLinearizedTrans (const FiniteElement & fel,
