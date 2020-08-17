@@ -46,10 +46,7 @@ namespace ngla
     
 
     Array<int> first_master_dof(ntasks);
-    MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
-		   &first_master_dof[0], 1, MPI_INT, 
-		   comm);
-
+    comm.AllGather (num_master_dofs, first_master_dof);
     
     int num_glob_dofs = 0;
     for (int i = 0; i < ntasks; i++)
