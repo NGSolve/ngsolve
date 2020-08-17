@@ -110,11 +110,17 @@ namespace ngla
     static Timer t("SparseMatrix::SetZero (taskhandler)");
     t.AddFlops (this->NZE());
     RegionTimer reg(t);
-        
+
+    /*
     ParallelFor (balance, [&](int row) 
                  {
                    data.Range(firsti[row], firsti[row+1]) = TM(0.0);
                  });
+    */
+    ParallelForRange (balance, [&](IntRange r) 
+                      {
+                        data.Range(firsti[r.First()], firsti[r.Next()]) = TM(0.0);
+                      });
     
   }
   
@@ -133,6 +139,17 @@ namespace ngla
     static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
     t.AddFlops (this->NZE());
 
+    ParallelForRange
+      (balance, [&] (IntRange myrange)
+       {
+         FlatVector<TVX> fx = x.FV<TVX>(); 
+         FlatVector<TVY> fy = y.FV<TVY>(); 
+
+         for (auto i : myrange)
+           fy(i) += s * RowTimesVector (i, fx);
+       });
+    
+#ifdef OLD
     if (task_manager)
       {
 	FlatVector<TVX> fx = x.FV<TVX>(); 
@@ -163,7 +180,9 @@ namespace ngla
     int h = this->Height();
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
+#endif
 
+    
   }
 
   template <class TM, class TV_ROW, class TV_COL>
