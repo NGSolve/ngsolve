@@ -263,61 +263,117 @@ namespace ngla
     virtual size_t NZE () const override { return nze; }
   };
 
+  
+  template <typename TSCAL>
+  class NGS_DLL_HEADER S_BaseSparseMatrix : public BaseSparseMatrix,
+                                            public S_BaseMatrix<TSCAL>
+  {
+  protected:
+    int entry_height, entry_width;
+    // in general entry_size=entry_height*entry_width, but matrix entry type could
+    // also be a diagonal matrix
+    int entry_size;
+    VFlatVector<TSCAL> asvec;
+  public:
+    using BaseSparseMatrix::BaseSparseMatrix;
+    void SetEntrySize (int eh, int ew, int es)
+    {
+      entry_height = eh;
+      entry_width = ew;
+      entry_size = es;
+    }
+
+    FlatVector<TSCAL> GetRowValue (int row, int j)
+    {
+      return asvec(entry_size * (firsti[row] + j));
+    }
+    
+    FlatMatrix<TSCAL> GetRowValueMat (int row, int j)
+    {
+      TSCAL * p = asvec(entry_size * (firsti[row] + j)).Data(0);
+      return FlatMatrix<TSCAL> (entry_height, entry_width, p);
+    }
+  };
+
+  
   /// A general, sparse matrix
   template<class TM>
-  class  NGS_DLL_HEADER SparseMatrixTM : public BaseSparseMatrix, 
-					 public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
+  class  NGS_DLL_HEADER SparseMatrixTM : public S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL>
+    // public BaseSparseMatrix, public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
     // Array<TM, size_t> data;
     NumaDistributedArray<TM> data;
-    VFlatVector<typename mat_traits<TM>::TSCAL> asvec;
     TM nul;
+    
+    typedef S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL> BASE;
+    using BASE::firsti;
+    using BASE::colnr;
+    using BASE::owner;
+    using BASE::size;
+    using BASE::width;
+    using BASE::nze;
+    using BASE::balance;
+    using BASE::asvec;
+  public:
+    using BASE::CreatePosition;
+    using BASE::GetPositionTest;
+    using BASE::FindSameNZE;
+    using BASE::SetEntrySize;
 
   public:
     typedef TM TENTRY;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     SparseMatrixTM (int as, int max_elsperrow)
-      : BaseSparseMatrix (as, max_elsperrow),
+      : BASE (as, max_elsperrow),
 	data(nze), nul(TSCAL(0))
     {
-      ; 
+      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
     }
 
     SparseMatrixTM (const Array<int> & elsperrow, int awidth)
-      : BaseSparseMatrix (elsperrow, awidth), 
+      : BASE (elsperrow, awidth), 
 	data(nze), nul(TSCAL(0))
     {
-      ; 
+      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
     }
 
     SparseMatrixTM (int size, int width, const Table<int> & rowelements, 
 		    const Table<int> & colelements, bool symmetric)
-      : BaseSparseMatrix (size, width, rowelements, colelements, symmetric), 
+      : BASE (size, width, rowelements, colelements, symmetric), 
 	data(nze), nul(TSCAL(0))
     { 
-      ; 
+      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
     }
 
     SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
-      : BaseSparseMatrix (agraph, stealgraph), 
+      : BASE (agraph, stealgraph), 
 	data(nze), nul(TSCAL(0))
     { 
+      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       FindSameNZE();
     }
 
     SparseMatrixTM (const SparseMatrixTM & amat)
-    : BaseSparseMatrix (amat), 
+      : BASE (amat), 
       data(nze), nul(TSCAL(0))
-    { 
+    {
+      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));      
       AsVector() = amat.AsVector(); 
     }
 
     SparseMatrixTM (SparseMatrixTM && amat)
-      : BaseSparseMatrix (move(amat)), nul(TSCAL(0))
+      : BASE (move(amat)), nul(TSCAL(0))
     {
+      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       data.Swap(amat.data);
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));            
     }
 
     static shared_ptr<SparseMatrixTM> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
@@ -365,15 +421,14 @@ namespace ngla
     
     virtual BaseVector & AsVector() override
     {
-      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
+      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       return asvec; 
     }
 
     virtual const BaseVector & AsVector() const override
     { 
-      const_cast<VFlatVector<TSCAL>&> (asvec).
-	AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Data());
+      // const_cast<VFlatVector<TSCAL>&> (asvec).
+      // AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Data());
       return asvec; 
     }
 
