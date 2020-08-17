@@ -261,7 +261,7 @@ namespace ngla {
             auto mv1 = mv.Range(r1);
             auto mv2 = mv.Range(r2);
             Rfactor.Rows(r1).Cols(r1) = mv1->T_Orthogonalize<T>(ipmat);
-            Matrix<T> ip = InnerProduct<T> (*mv1, *mv2, true);
+            Matrix<T> ip = Conj(InnerProduct<T> (*mv1, *mv2, true));
             Rfactor.Rows(r1).Cols(r2) = ip;
             ip *= -1;
             mv2->Add (*mv1, ip);
