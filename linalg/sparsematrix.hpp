@@ -283,9 +283,31 @@ namespace ngla
       entry_size = es;
     }
 
+
+    int Height() const { return size; }
+    int Width() const { return width; }
+    virtual int VHeight() const override { return size; }
+    virtual int VWidth() const override { return width; }
+
+
+    virtual BaseVector & AsVector() override
+    {
+      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
+      return asvec; 
+    }
+
+    virtual const BaseVector & AsVector() const override
+    { 
+      // const_cast<VFlatVector<TSCAL>&> (asvec).
+      // AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Data());
+      return asvec; 
+    }
+    
+    
     FlatVector<TSCAL> GetRowValue (int row, int j)
     {
-      return asvec(entry_size * (firsti[row] + j));
+      TSCAL * p = asvec(entry_size * (firsti[row] + j)).Data(0);
+      return FlatVector<TSCAL> (entry_size, p);
     }
     
     FlatMatrix<TSCAL> GetRowValueMat (int row, int j)
@@ -320,6 +342,7 @@ namespace ngla
     using BASE::GetPositionTest;
     using BASE::FindSameNZE;
     using BASE::SetEntrySize;
+    using BASE::AsVector;
 
   public:
     typedef TM TENTRY;
@@ -381,10 +404,6 @@ namespace ngla
       
     virtual ~SparseMatrixTM ();
 
-    int Height() const { return size; }
-    int Width() const { return width; }
-    virtual int VHeight() const override { return size; }
-    virtual int VWidth() const override { return width; }
 
     TM & operator[] (int i)  { return data[i]; }
     const TM & operator[] (int i) const { return data[i]; }
@@ -419,18 +438,6 @@ namespace ngla
                                            BareSliceMatrix<TSCAL> elmat,
                                            bool use_atomic = false);
     
-    virtual BaseVector & AsVector() override
-    {
-      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-      return asvec; 
-    }
-
-    virtual const BaseVector & AsVector() const override
-    { 
-      // const_cast<VFlatVector<TSCAL>&> (asvec).
-      // AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Data());
-      return asvec; 
-    }
 
     virtual void SetZero() override;
 
