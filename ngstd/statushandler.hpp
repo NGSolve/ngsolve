@@ -11,18 +11,15 @@ namespace ngstd
   {
   public:
     virtual ~BaseStatusHandler () { ; }
-    virtual void PushStatus (const char * str) const = 0;
+    virtual void PushStatus (const char * str) const;
+    virtual void PopStatus () const;
+    virtual void SetThreadPercentage (double percent) const;
 
-    virtual void PopStatus () const = 0;
+    virtual void GetStatus (string & str, double & percent) const;
 
-    virtual void SetThreadPercentage (double percent) const = 0;
-
-    virtual void GetStatus (string & str, double & percent) const = 0;
-
-    virtual void SetTerminate(void) const = 0;
-    virtual void UnSetTerminate(void) const = 0;
-    virtual bool ShouldTerminate(void) const = 0;
-  
+    virtual void SetTerminate(void) const;
+    virtual void UnSetTerminate(void) const;
+    virtual bool ShouldTerminate(void) const;
   };
 
 }
