@@ -142,9 +142,12 @@ namespace ngla
 	global_nums[i] = num_master_dofs++;
     
     Array<int> first_master_dof(ntasks);
+    /*
     MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
 		   &first_master_dof[0], 1, MPI_INT, 
 		   GetCommunicator());
+    */
+    GetCommunicator().AllGather (num_master_dofs, first_master_dof);
 
     num_glob_dofs = 0;
     for (int i = 0; i < ntasks; i++)
