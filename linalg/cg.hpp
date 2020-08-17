@@ -38,7 +38,7 @@ namespace ngla
     bool useseed;
 
     ///
-    const BaseStatusHandler * sh;
+    shared_ptr<BaseStatusHandler> sh;
 
   public:
     ///
@@ -80,8 +80,8 @@ namespace ngla
     void SetInitialize (int ai)
     { initialize = ai; }
     ///
-    void SetStatusHandler (const BaseStatusHandler & stha)
-    { sh = &stha; }
+    void SetStatusHandler (shared_ptr<BaseStatusHandler> stha)
+    { sh = stha; }
     
 
     void UseSeed(const bool useit = true)

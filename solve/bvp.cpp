@@ -366,7 +366,7 @@ namespace ngsolve
         invmat->SetPrecision (prec);
         invmat->SetPrintRates ();
         invmat->SetInitialize (0);
-        invmat->SetStatusHandler(*ma);
+        invmat->SetStatusHandler(ma);
 	invmat->UseSeed(useseedvariant);
       }
     else

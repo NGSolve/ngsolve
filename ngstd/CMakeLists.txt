@@ -2,7 +2,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
-        stringops.cpp
+        stringops.cpp statushandler.cpp
         cuda_ngstd.cpp python_ngstd.cpp
         bspline.cpp
         )
@@ -18,7 +18,7 @@ target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${NETGEN
 
 add_dependencies( ngstd generate_version_file )
 
-target_link_libraries(ngstd PUBLIC ngcore)
+target_link_libraries(ngstd PUBLIC ngcore nglib)
 
 target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE netgen_python)
 target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
