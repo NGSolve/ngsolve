@@ -976,7 +976,7 @@ namespace ngla
       RegionTimer reg(t);
       t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FVDouble().Size());
       ParallelForRange
-        (refvec->Size(), [&] (IntRange myrange)
+        (refvec->FVDouble().Size(), [&] (IntRange myrange)
          {
            for (int i = 0; i < mat.Width(); i++)
              for (int j = 0; j < mat.Height(); j++)
