@@ -510,15 +510,15 @@ void ExportVisFunctions(py::module &m) {
                         auto & mir = GetMappedIR(ma, el, ir, lh);
                         // normals of corner vertices
                         for (auto j : ngcomp::Range(2)) {
-                            auto p = static_cast<DimMappedIntegrationPoint<1>&>(mir[j]);
-                            auto n = p.GetNV();
                             for (auto i : Range(3))
-                                vertices.Append(n[i]);
+                                vertices.Append(0.0);
                         }
                         // mapped coordinates of midpoint (for P2 interpolation)
                         auto p = mir[2].GetPoint();
-                        for (auto i : Range(3))
+                        for (auto i : Range(p.Size()))
                             vertices.Append(p[i]);
+                        for (auto i : Range(p.Size(),3UL))
+                            vertices.Append(0.0);
                     }
                 }
                 if(edges[0].nelements>0) element_data[vb].append(toDict(edges[0]));
@@ -556,8 +556,10 @@ void ExportVisFunctions(py::module &m) {
                         // mapped coordinates of edge midpoints (for P2 interpolation)
                         for (auto j : ngcomp::Range(nverts,ir.Size())) {
                             auto p = mir[j].GetPoint();
-                            for (auto i : Range(3))
+                            for (auto i : Range(p.Size()))
                                 vertices.Append(p[i]);
+                            for (auto i : Range(p.Size(),3UL))
+                                vertices.Append(0.0);
                         }
                     }
                 }
