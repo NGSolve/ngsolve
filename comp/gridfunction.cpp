@@ -812,9 +812,8 @@ namespace ngcomp
 	  {
 	    int start = fes.GetDimension() * positions[index[i]][0];
 	    int end = fes.GetDimension() * positions[index[i]][1];
-	    
 	    for (int j = 0; j < end; j++)
-	      SaveBin<SCAL>(ost, data[start++]);
+              SaveBin<SCAL>(ost, data[start++]);
 	  }
 	tw.Stop();	
       }
