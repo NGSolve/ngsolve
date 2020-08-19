@@ -1547,6 +1547,23 @@ active_dofs : BitArray or None
                 })
     .def(py::pickle([] (const GridFunction& gf)
                     {
+                      if (ngcore::parallel_pickling && gf.GetMeshAccess()->GetCommunicator().Size() > 1)
+                        {
+                          ostringstream str; // (ios::binary);
+                          gf.Save(str);
+                          string s = str.str();
+                          VFlatVector<double> vec(str.str().length()/8, (double*)(void*)&s[0]);
+                          shared_ptr<BaseVector> v2 = make_shared<VVector<double>> (vec.Size());
+                          *v2 = vec;
+                          
+                          if (gf.GetMeshAccess()->GetCommunicator().Rank() == 0)
+                            return
+                              py::make_tuple(gf.GetFESpace(),
+                                             gf.GetName(),
+                                             Flags(gf.GetFlags()).SetFlag("parallel"),
+                                             v2);
+                        }
+                      
                       return py::make_tuple(gf.GetFESpace(),
                                             gf.GetName(),
                                             gf.GetFlags(),
@@ -1558,7 +1575,19 @@ active_dofs : BitArray or None
                                                    state[1].cast<string>(),
                                                    state[2].cast<Flags>());
                       gf->Update();
-                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+
+                      if (!state[2].cast<Flags>().GetDefineFlag("parallel"))
+                        {
+                          gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                        }
+                      else
+                        {
+                          auto vec = py::cast<shared_ptr<BaseVector>>(state[3]);
+                          // cout << "unpickle cf, vec = " << *vec << endl;
+                          string str((char*)(void*)vec->FVDouble().Data(), 8*vec->Size());
+                          istringstream in(str);
+                          gf->Load(in);
+                        }
                       return gf;
                     }
                     ))
