@@ -517,7 +517,7 @@ void ExportVisFunctions(py::module &m) {
                         auto p = mir[2].GetPoint();
                         for (auto i : Range(p.Size()))
                             vertices.Append(p[i]);
-                        for (auto i : Range(p.Size(),3UL))
+                        for (auto i : IntRange(p.Size(),3ULL))
                             vertices.Append(0.0);
                     }
                 }
@@ -558,7 +558,7 @@ void ExportVisFunctions(py::module &m) {
                             auto p = mir[j].GetPoint();
                             for (auto i : Range(p.Size()))
                                 vertices.Append(p[i]);
-                            for (auto i : Range(p.Size(),3UL))
+                            for (auto i : IntRange(p.Size(),3ULL))
                                 vertices.Append(0.0);
                         }
                     }
