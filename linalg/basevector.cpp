@@ -1005,7 +1005,7 @@ namespace ngla
       RegionTimer reg(t);
       t.AddFlops (Size()*v2.Size()*this->RefVec()->FVDouble().Size());
 
-      int n = this->RefVec()->FVDouble().Size();
+      size_t n = this->RefVec()->FVDouble().Size();
 
       Matrix<double> res(Size(), v2.Size());
       res = 0;
