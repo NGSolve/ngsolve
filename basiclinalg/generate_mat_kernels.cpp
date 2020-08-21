@@ -340,6 +340,109 @@ void GenerateScalAB (ostream & out, int h, int w)
 }
 
 
+/*
+  C = A * B^t
+  A ... h x n
+  B ... w * n
+
+  similar to ScalAB but with nonconstant distances between vectors
+*/
+void GenerateMultiVecScalAB (ostream & out, int h, int w)
+{
+  out << "template <> INLINE auto MultiVecScalAB<" << h << ", " << w << ">" << endl
+      << "    (size_t n," << endl
+      << "     " << "double** ppa," << endl
+      << "     " << "double** ppb)" << endl
+      << "{" << endl;
+
+    out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++)
+    for (int j = 0; j < w; j++)
+      out << "SIMD<double> sum" << i << j << "(0);" << endl;
+
+
+
+  for (int i = 0; i < h; i++) {
+    out << "double* pa" << i << " = ppa[" << i << "];" << endl;
+  }
+  for (int i = 0; i < w; i++) {
+    out << "double* pb" << i << " = ppb[" << i << "];" << endl;
+  }
+
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+	    out << "SIMD<double> b" << j << "(pb" << j << "+i);" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          if (h*w < 12)  // with 12 we are on the limit of registers -> fmaasm better
+            out << "sum" << i << j << " += a" << i << " * b" << j << ";" << endl;
+          else
+            out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        }
+    }
+  out << "}" << endl;
+
+  out << "size_t r = n % SW;" << endl;
+  out << "if (r) {" << endl;
+  out << "SIMD<mask64> mask(r);" << endl;
+  for (int i = 0; i < h; i++)
+	out << "SIMD<double> a" << i << "(pa" << i << "+i, mask);" << endl;
+
+
+      for (int j = 0; j < w; j++)
+        {
+          out << "SIMD<double> b" << j << "(pb" << j << "+i, mask);" << endl;
+          for (int i = 0; i < h; i++)
+            out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        }
+      out << "}" << endl;
+
+
+  if (w == 1 && (h % 4 == 0))
+    {
+      out << "return make_tuple(";
+      for (int i = 0; i < h; i+=4)
+        {
+          out << "HSum(sum" << i << "0, sum" << i+1 << "0, sum" << i+2 << "0, sum" << i+3 <<"0)";
+          if (i+4 < h) out << ",";
+        }
+      out << ");"  << endl;
+    }
+
+  else
+
+    {
+      out << "return make_tuple(";
+      for (int i = 0; i < h; i++)
+        {
+          out << "HSum(";
+          for (int j = 0; j < w; j++)
+            {
+              out << "sum"<< i << j;
+              if (j < w-1)
+                out << ",";
+              else
+                out << ")";
+            }
+          if (i < h-1)
+            out << ",";
+          else
+            out << ");" << endl;
+        }
+    }
+  out << "}" << endl;
+}
+
+
+
 void GenKernel (ofstream & out, int h, int w)
 {
   out << "template <> inline void MyScalTrans<" << h << ", " << w << ">" << endl
@@ -1322,6 +1425,26 @@ int main ()
   GenerateScalAB (out, 3, 1);  
   GenerateScalAB (out, 2, 1);  
   GenerateScalAB (out, 1, 1);  
+  
+  
+    // MultiVecScalAB
+
+  out << "template <size_t H, size_t W> inline auto MultiVecScalAB" << endl
+      << "    (size_t n," << endl
+      << "     double ** ppa," << endl
+      << "     double ** ppb);" << endl;
+
+  GenerateMultiVecScalAB (out, 6, 4);
+  GenerateMultiVecScalAB (out, 3, 4);
+  GenerateMultiVecScalAB (out, 1, 4);
+  GenerateMultiVecScalAB (out, 6, 2);
+  GenerateMultiVecScalAB (out, 3, 2);
+  GenerateMultiVecScalAB (out, 8, 1);
+  GenerateMultiVecScalAB (out, 6, 1);
+  GenerateMultiVecScalAB (out, 4, 1);
+  GenerateMultiVecScalAB (out, 3, 1);
+  GenerateMultiVecScalAB (out, 2, 1);
+  GenerateMultiVecScalAB (out, 1, 1);
 
 
   
