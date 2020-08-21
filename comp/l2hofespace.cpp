@@ -720,7 +720,10 @@ global system.
                    shared_ptr<Region> defon,
                    LocalHeap & lh) const
   {
-    if (rho->ElementwiseConstant() && all_dofs_together && order_policy == CONSTANT_ORDER)
+    bool curved = false;
+    for (auto el : ma->Elements(VOL))
+      if (el.is_curved) curved = true;
+    if (rho->ElementwiseConstant() && all_dofs_together && order_policy == CONSTANT_ORDER && !curved)
       {
         return make_shared<ApplyMassL2Const>
           (dynamic_pointer_cast<FESpace>(const_cast<L2HighOrderFESpace*>(this)->shared_from_this()),
@@ -1601,17 +1604,169 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
   }
+
+
+  class NGS_DLL_HEADER ApplyL2Mass : public ApplyMass
+  {
+    // ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
+    // Table<int> acol_dnums, Table<int> arow_dnums);
+    shared_ptr<ConstantElementByElementMatrix> bmat;
+    shared_ptr<DiagonalMatrix<double>> diag;
+
+    Vector<double> rho_jac; // product of rho * Jacobian
+    Vector<double> weights;
+    shared_ptr<Table<DofId>> dofs;
+    Matrix<> elbmat;
+    Vector<double> eldiag;
+    
+  public:
+    ///
+    ApplyL2Mass (shared_ptr<FESpace> afes,
+                 shared_ptr<CoefficientFunction> arho,
+                 bool ainverse,
+                 shared_ptr<Region> adefinedon,
+                 Matrix<double> aelbmat, Vector<double> aeldiag, Vector<double> arho_jac, Vector<double> aweights,
+                 shared_ptr<Table<DofId>> adofs,
+                 LocalHeap & alh)
+      : ApplyMass (afes, arho, ainverse, adefinedon, alh),
+      rho_jac(arho_jac), weights(aweights), dofs(adofs), elbmat(aelbmat), eldiag(aeldiag)
+      {
+        Array<int> cnt(adofs->Size());
+        cnt = elbmat.Height();
+        Table<int> coldofs(cnt);
+        for (int i = 0, ii = 0; i < coldofs.Size(); i++)
+          for (int j = 0; j < elbmat.Height(); j++, ii++)
+            coldofs[i][j] = ii;
+        bmat = make_shared<ConstantElementByElementMatrix> (elbmat.Height()*adofs->Size(), fes->GetNDof(), elbmat,
+                                                            move(coldofs), Table<int>(*dofs));
+      }
+
+    shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override
+    {
+      // return make_shared<ApplyMass> (fes, rho, !inverse, definedon, lh);
+      Matrix<> scaled_elbmat { elbmat };
+      for (int i = 0; i < eldiag.Size(); i++)
+        scaled_elbmat.Col(i) /= eldiag(i);
+      Vector<double> inv_rhojac(rho_jac.Size());
+      for (size_t i = 0; i < rho_jac.Size(); i++)
+        inv_rhojac(i) = 1.0/rho_jac(i);
+      return make_shared<ApplyL2Mass> (fes, rho, !inverse, definedon,
+                                       scaled_elbmat, eldiag, inv_rhojac, weights, dofs, 
+                                       lh);
+    }
+
+    void Mult (const BaseVector & v, BaseVector & prod) const override
+    {
+      AutoVector tmp = bmat->CreateColVector();
+      tmp = *bmat * v;
+      
+      auto tmpfv = tmp.FV<double>();
+      for (int i = 0, ii = 0; i < dofs->Size(); i++)
+        for (int j = 0; j < weights.Size(); j++, ii++)
+          tmpfv(ii) *= weights(j)*rho_jac(ii);
+
+      prod = Transpose(*bmat) * tmp;
+    }
+    
+    void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override
+    {
+      // ApplyMass::MultAdd (val, v, prod);
+
+      AutoVector tmp = bmat->CreateColVector();
+      tmp = *bmat * v;
+      
+      auto tmpfv = tmp.FV<double>();
+      for (int i = 0, ii = 0; i < dofs->Size(); i++)
+        for (int j = 0; j < weights.Size(); j++, ii++)
+          tmpfv(ii) *= weights(j)*rho_jac(ii);
+
+      prod += val * Transpose(*bmat) * tmp;
+    }
+  
+    
+  };
+
+  
+  shared_ptr<BaseMatrix> L2SurfaceHighOrderFESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const 
+  {
+    // return FESpace::GetMassOperator(rho, defon, lh);
+
+    
+    auto dofs = make_shared<Table<DofId>> (CreateDofTable(BND));
+    Matrix<> bmat;
+    Vector<double> rho_jac;
+    Vector<double> eldiag;
+    Vector<double> weights;
+
+    bool firsttime = true;
+    // IterateElements (*this, BND, lh,
+    for (auto el : Elements(BND))
+      {
+        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
+        const ElementTransformation & trafo = el.GetTrafo();
+        
+        IntegrationRule ir1(fel.ElementType(), 2*fel.Order());
+        Array<int> verts { el.Vertices() };
+        Facet2SurfaceElementTrafo f2s(fel.ElementType(), verts);
+        auto & ir = f2s(ir1, lh);
+        auto & mir = trafo(ir, lh);
+        
+        FlatMatrix<> rhovals(ir.Size(), 1, lh);
+        if (rho)
+          rho->Evaluate (mir, rhovals);
+        else
+          rhovals = 1;
+        for (size_t i = 0; i < ir.Size(); i++)
+          rhovals.Row(i) *= mir[i].GetMeasure();
+
+        Matrix<> shapes(fel.GetNDof(), ir.Size());
+        bmat.SetSize(ir.Size(), fel.GetNDof());
+        fel.CalcShape (ir, shapes);
+        if (firsttime)
+          {
+            firsttime = false;
+            bmat = Trans(shapes);
+            
+            eldiag.SetSize(fel.GetNDof());
+            fel.GetDiagMassMatrix (eldiag);
+
+            weights.SetSize(ir.Size());
+            for (int i = 0; i < ir.Size(); i++)
+              weights(i) = ir[i].Weight();
+
+            rho_jac.SetSize(rhovals.Height() * ma->GetNE(BND));
+          }
+        else
+          { // for checking only
+            if (L2Norm(bmat-Trans(shapes)) > 1e-8)
+              cout << "surface mass bmats not constant !" << endl;
+          }
+        rho_jac.Range ( rhovals.Height() * IntRange(el.Nr(), el.Nr()+1) ) = rhovals.Col(0);
+      }
+    
+    // cout << "doftable = " << doftable << endl;
+    // cout << "eldiag = " << eldiag << endl;
+    return make_shared<ApplyL2Mass> (dynamic_pointer_cast<FESpace>(const_cast< L2SurfaceHighOrderFESpace*>(this)->shared_from_this()),
+                                     rho, false, defon,
+                                     bmat, eldiag, rho_jac, weights, dofs,
+                                     lh);    
+  }
+  
   
   void L2SurfaceHighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                   LocalHeap & lh) const
   {
-    static Timer t("SolveM"); RegionTimer reg(t);
+    static Timer t("SolveM - Surface"); RegionTimer reg(t);
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighSurfaceOrderFESpace::SolveM needs a scalar density");
     IterateElements (*this, BND, lh,
                      [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
+
                        const ElementTransformation & trafo = el.GetTrafo();
                        
                        Array<int> dnums(fel.GetNDof(), lh);
@@ -1677,7 +1832,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   void L2SurfaceHighOrderFESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                      LocalHeap & lh) const
   {
-    static Timer t("ApplyM"); RegionTimer reg(t);
+    static Timer t("ApplyM - Surf"); RegionTimer reg(t);
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
 
@@ -2612,12 +2767,16 @@ One can evaluate the vector-valued function, and one can take the gradient.
                    shared_ptr<Region> defon,
                    LocalHeap & lh) const
   {
+    bool curved = false;
+    for (auto el : ma->Elements(VOL))
+      if (el.is_curved) curved = true;
+    
     /*
     cout << "VectorL2, GetMassOp" << endl
          << "rho = " << *rho << endl
          << "elwiseconst = " << rho->ElementwiseConstant() << endl;
     */
-    if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER)
+    if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER && !curved)
       // && (covariant || piola || (rho && rho->Dimension() > 1) )
       {
         // cout << "optimized vector-apply-mass" << endl;

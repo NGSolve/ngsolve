@@ -192,6 +192,10 @@ namespace ngcomp
   
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 
+    virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                    shared_ptr<Region> defon,
+                                                    LocalHeap & lh) const override;
+    
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
