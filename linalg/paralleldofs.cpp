@@ -131,9 +131,6 @@ namespace ngla
 					  Array<int> & global_nums,
 					  int & num_glob_dofs) const
   {
-    int ntasks = comm.Size();
-    int id = comm.Rank();
-
     global_nums.SetSize(ndof);
     global_nums = -1;
     int num_master_dofs = 0;
@@ -141,29 +138,23 @@ namespace ngla
       if (IsMasterDof (i) && (!freedofs || (freedofs && freedofs->Test(i))))
 	global_nums[i] = num_master_dofs++;
     
-    Array<int> first_master_dof(ntasks);
-    /*
-    MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
-		   &first_master_dof[0], 1, MPI_INT, 
-		   GetCommunicator());
-    */
-    GetCommunicator().AllGather (num_master_dofs, first_master_dof);
+    Array<int> first_master_dof(comm.Size());
+    comm.AllGather (num_master_dofs, first_master_dof);
 
     num_glob_dofs = 0;
-    for (int i = 0; i < ntasks; i++)
+    for (int i = 0; i < first_master_dof.Size(); i++)
       {
 	int cur = first_master_dof[i];
 	first_master_dof[i] = num_glob_dofs;
 	num_glob_dofs += cur;
       }
-    
+
+    int rank = comm.Rank();
     for (int i = 0; i < ndof; i++)
       if (global_nums[i] != -1)
-	global_nums[i] += first_master_dof[id];
+	global_nums[i] += first_master_dof[rank];
     
     ScatterDofData (global_nums); 
-    
-
   }
 
 }

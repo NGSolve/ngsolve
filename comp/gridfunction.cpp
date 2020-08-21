@@ -504,7 +504,7 @@ namespace ngcomp
 	    Vec<N+1, int> key;
 	    key = -1;
 	    for (int j = 0; j < pnums.Size(); j++)
-	      key[j] = ma->GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	      key[j] = ma->GetGlobalVertexNum (pnums[j]);
 	    key[N] = dnums.Size();
 	    
 	    nodekeys.Append (key);	
@@ -738,7 +738,7 @@ namespace ngcomp
 	    Vec<N+1, int> points;
 	    points = -1;
 	    for (int j = 0; j < pnums.Size(); j++)
-	      points[j] = ma->GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	      points[j] = ma->GetGlobalVertexNum (pnums[j]);
 	    points[N] = dnums.Size();
 	    
 	    nodenums.Append(points);
