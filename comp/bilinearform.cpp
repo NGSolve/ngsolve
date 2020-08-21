@@ -745,13 +745,13 @@ namespace ngcomp
             has_vb = true;
         if (!has_vb)
           continue;
-        
+
         Array<short> classnr(ma->GetNE(vb));
         ma->IterateElements
           (vb, lh, [&] (auto el, LocalHeap & llh)
            {
              classnr[el.Nr()] = 
-               SwitchET<ET_TRIG,ET_TET>
+               SwitchET<ET_SEGM, ET_TRIG,ET_TET>
                (el.GetType(),
                 [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
            });
