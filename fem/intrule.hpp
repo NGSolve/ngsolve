@@ -1361,7 +1361,7 @@ namespace ngfem
       
       for (int i = 0; i < irfacet.GetNIP(); i++)
         {
-          irvol[i].SetFacetNr(fnr);
+          // irvol[i].SetFacetNr(fnr);
           irvol[i].SetWeight(irfacet[i].Weight());
         }
       
