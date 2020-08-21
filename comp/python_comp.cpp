@@ -1071,6 +1071,18 @@ component : int
            return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
          py::arg("component"), "create embedding operator for this component")
+
+    .def_property_readonly("embeddings", 
+                  [](shared_ptr<CompoundFESpace> self)-> py::list
+                   { 
+                     py::list embeddings(self->GetNSpaces());
+                     for (int i = 0; i < self -> GetNSpaces(); i++) 
+                       embeddings[i]= py::cast(make_shared<Embedding> (self->GetNDof(), self->GetRange(i),
+                                                                       self->IsComplex()));
+                     return embeddings;
+                   },
+                  "returns a list of embeddings for the component spaces")
+
     
     .def_property_readonly("components", 
                   [](shared_ptr<CompoundFESpace> self)-> py::tuple
