@@ -49,6 +49,162 @@ namespace ngcomp
   };
 
 
+
+  /// Identity
+  template <int DIM_EL, int DIM_SPC>
+  class DiffOpIdDual : public DiffOp<DiffOpIdDual<DIM_EL, DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_EL };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+    static INT<0> GetDimensions() { return INT<0>(); };
+    
+    static bool SupportsVB (VorB checkvb) { return true; }
+    
+    static string Name() { return "IdDual"; }
+    // static constexpr bool SUPPORT_PML = true;
+    
+    static const BaseScalarFiniteElement & Cast (const FiniteElement & fel) 
+    { return static_cast<const BaseScalarFiniteElement&> (fel); }
+    
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+      mat.Row(0) /= mip.GetMeasure();
+    }
+#ifdef UNUSED
+    template <typename MAT>
+    static void GenerateMatrixIR (const FiniteElement & fel, 
+                                  const BaseMappedIntegrationRule & mir,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mir.IR(), Trans(mat));
+      for (int i = 0; i < mir.Size(); i++)
+        mat.Row(i) /= mir[i].GetMeasure();      
+    }
+#endif
+    
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcShape (mir.IR(), mat);      
+      for (int i = 0; i < mir.Size(); i++)
+        mat.Col(i).Range(0,fel.GetNDof()) /= mir[i].GetMeasure();      
+    }
+    
+#ifdef  UNSUED
+    template <typename MIP, class TVX, class TVY>
+    static void Apply (const FiniteElement & fel, const MIP & mip,
+		       const TVX & x, TVY & y,
+		       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
+      y(0) /= mip.GetMeasure();
+    }
+
+    static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
+		       BareSliceVector<double> x, FlatVector<double> y,
+		       LocalHeap & lh) 
+    {
+      y(0) = Cast(fel).Evaluate(mip.IP(), x);
+      y(0) /= mip.GetMeasure();
+    }
+
+
+    using DiffOp<DiffOpIdDual>::ApplyIR;
+    template <class MIR, class TMY>
+    static void ApplyIR (const FiniteElement & fel, const MIR & mir,
+                         BareSliceVector<double> x, TMY y,
+			 LocalHeap & lh)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Col(0));
+      for (int i = 0; i < mir.Size(); i++)
+        y(i,0) /= mir[i].GetMeasure();
+    }
+
+
+    // using ApplySIMDIR;
+    using DiffOp<DiffOpIdDual>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+      for (int i = 0; i < mir.Size(); i++)
+        y(0,i) /= mir[i].GetMeasure();
+      
+    }
+
+
+    template <typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FiniteElement & fel, const MIP & mip,
+			    const TVX & x, TVY & y,
+			    LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      y.Range(0,fel.GetNDof()) = (x(0)/mip.GetMeasure()) * Cast(fel).GetShape (mip.IP(), lh);
+    }
+
+    /*
+    // using DiffOp<DiffOpId<D, FEL> >::ApplyTransIR;
+    template <class MIR>
+    static void ApplyTransIR (const FiniteElement & fel, 
+			      const MIR & mir,
+			      FlatMatrix<double> x, BareSliceVector<double> y,
+			      LocalHeap & lh)
+    {
+      Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+    }
+
+    template <class MIR>
+    static void ApplyTransIR (const FiniteElement & fel, 
+			      const MIR & mir,
+			      FlatMatrix<Complex> x, BareSliceVector<Complex> y,
+			      LocalHeap & lh)
+    {
+      DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
+    }
+
+    using DiffOp<DiffOpId<D, FEL> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }
+*/
+
+    
+    /*
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
+    */
+#endif
+  };
+
+
+
+
+
+
+
+
+
+  
+
+  
   
   L2HighOrderFESpace ::  
   L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
@@ -1255,30 +1411,46 @@ global system.
     lowest_order_wb = flags.GetDefineFlagX ("lowest_order_wb").IsTrue();
 
     discontinuous = flags.GetDefineFlagX ("discontinuous").IsTrue();
+    dual_mapping = flags.GetDefineFlagX("dual_mapping").IsTrue();
 
     if (lowest_order_wb && discontinuous)
       throw Exception("In L2SurfaceFESpace: lowest_order_wb and discontinuous flag are set!");
-    
-    if (ma->GetDimension() == 2)
+
+    if (!dual_mapping)
       {
-        integrator[BND] = 
-          make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
-        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
-        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
-	      flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
+        if (ma->GetDimension() == 2)
+          {
+            integrator[BND] = 
+              make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
+            flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
+          }
+        else
+          {
+            integrator[BND] = 
+              make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>(); // to avoid exception "grad does not exist"
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
+            flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
+          }
       }
     else
       {
-	integrator[BND] = 
-          make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
-        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>(); // to avoid exception "grad does not exist"
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
-	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
-          
+        if (ma->GetDimension() == 2)
+          {
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension            
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<1,2>>>();
+          }
+        if (ma->GetDimension() == 3)
+          {
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension                        
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<2,3>>>();
+          }
       }
-
+    
     if (dimension > 1)
     {
       integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
@@ -1614,7 +1786,6 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     shared_ptr<DiagonalMatrix<double>> diag;
 
     Vector<double> rho_jac; // product of rho * Jacobian
-    Vector<double> weights;
     shared_ptr<Table<DofId>> dofs;
     Matrix<> elbmat;
     Vector<double> eldiag;
@@ -1625,11 +1796,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                  shared_ptr<CoefficientFunction> arho,
                  bool ainverse,
                  shared_ptr<Region> adefinedon,
-                 Matrix<double> aelbmat, Vector<double> aeldiag, Vector<double> arho_jac, Vector<double> aweights,
+                 Matrix<double> aelbmat, Vector<double> aeldiag, Vector<double> arho_jac, 
                  shared_ptr<Table<DofId>> adofs,
                  LocalHeap & alh)
       : ApplyMass (afes, arho, ainverse, adefinedon, alh),
-      rho_jac(arho_jac), weights(aweights), dofs(adofs), elbmat(aelbmat), eldiag(aeldiag)
+      rho_jac(arho_jac), dofs(adofs), elbmat(aelbmat), eldiag(aeldiag)
       {
         Array<int> cnt(adofs->Size());
         cnt = elbmat.Height();
@@ -1644,14 +1815,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override
     {
       // return make_shared<ApplyMass> (fes, rho, !inverse, definedon, lh);
-      Matrix<> scaled_elbmat { elbmat };
+      Matrix<> scaled_elbmat = elbmat;
       for (int i = 0; i < eldiag.Size(); i++)
         scaled_elbmat.Col(i) /= eldiag(i);
       Vector<double> inv_rhojac(rho_jac.Size());
       for (size_t i = 0; i < rho_jac.Size(); i++)
         inv_rhojac(i) = 1.0/rho_jac(i);
       return make_shared<ApplyL2Mass> (fes, rho, !inverse, definedon,
-                                       scaled_elbmat, eldiag, inv_rhojac, weights, dofs, 
+                                       scaled_elbmat, eldiag, inv_rhojac, dofs, 
                                        lh);
     }
 
@@ -1661,10 +1832,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       tmp = *bmat * v;
       
       auto tmpfv = tmp.FV<double>();
+      /*
       for (int i = 0, ii = 0; i < dofs->Size(); i++)
         for (int j = 0; j < weights.Size(); j++, ii++)
           tmpfv(ii) *= weights(j)*rho_jac(ii);
-
+      */
+      for (int i = 0; i < tmpfv.Size(); i++)
+        tmpfv(i) *= rho_jac(i);
+      
       prod = Transpose(*bmat) * tmp;
     }
     
@@ -1676,9 +1851,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       tmp = *bmat * v;
       
       auto tmpfv = tmp.FV<double>();
+      /*
       for (int i = 0, ii = 0; i < dofs->Size(); i++)
         for (int j = 0; j < weights.Size(); j++, ii++)
           tmpfv(ii) *= weights(j)*rho_jac(ii);
+      */
+      for (int i = 0; i < tmpfv.Size(); i++)
+        tmpfv(i) *= rho_jac(i);
 
       prod += val * Transpose(*bmat) * tmp;
     }
@@ -1719,8 +1898,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           rho->Evaluate (mir, rhovals);
         else
           rhovals = 1;
-        for (size_t i = 0; i < ir.Size(); i++)
-          rhovals.Row(i) *= mir[i].GetMeasure();
+        if (!dual_mapping)
+          for (size_t i = 0; i < ir.Size(); i++)
+            rhovals.Row(i) *= mir[i].GetMeasure();
+        else
+          for (size_t i = 0; i < ir.Size(); i++)
+            rhovals.Row(i) /= mir[i].GetMeasure();
+          
 
         Matrix<> shapes(fel.GetNDof(), ir.Size());
         bmat.SetSize(ir.Size(), fel.GetNDof());
@@ -1749,9 +1933,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     
     // cout << "doftable = " << doftable << endl;
     // cout << "eldiag = " << eldiag << endl;
+
+    for (int i = 0; i < weights.Size(); i++)
+      bmat.Row(i) *= sqrt(weights(i));
     return make_shared<ApplyL2Mass> (dynamic_pointer_cast<FESpace>(const_cast< L2SurfaceHighOrderFESpace*>(this)->shared_from_this()),
                                      rho, false, defon,
-                                     bmat, eldiag, rho_jac, weights, dofs,
+                                     bmat, eldiag, rho_jac, dofs,
                                      lh);    
   }
   

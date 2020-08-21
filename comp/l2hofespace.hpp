@@ -158,7 +158,7 @@ namespace ngcomp
 
     bool lowest_order_wb;
     bool discontinuous;
-
+    bool dual_mapping; // u(x) = 1/measure * u(hatx)
   public:
 
     L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
