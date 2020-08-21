@@ -2219,6 +2219,12 @@ namespace ngcomp
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
   }
+
+  size_t MeshAccess :: GetGlobalVertexNum (int locnum) const
+  {
+    // return NgPar_GetGlobalNodeNum (NT_VERTEX, locnum);
+    return mesh.GetGlobalVertexNum (locnum);
+  }
   
   void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
@@ -2238,11 +2244,10 @@ namespace ngcomp
 	}
       }
       else { // node.GetType() == NT_GLOBAL
-	auto tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
-	procs.SetSize(get<0>(tup));
-	auto* ptr = get<1>(tup);
-	for(auto k : Range(procs.Size()))
-	  { procs[k] = ptr[k]; }
+	auto dps = mesh.GetDistantProcs(node.GetType(), node.GetNr());
+	procs.SetSize(dps.Size());
+	for (auto k : Range(procs.Size()))
+          procs[k] = dps[k]; 
       }
     }
     else // GetCommunicator().Size() > 1

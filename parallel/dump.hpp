@@ -118,8 +118,9 @@ namespace ngstd
   template <>
   inline auto GetGlobalNodeId<NT_VERTEX> (const MeshAccess & ma, int nr) 
     -> typename key_trait<NT_VERTEX>::TKEY 
-  { 
-    return ma.GetGlobalNodeNum (Node(NT_VERTEX, nr));
+  {
+    cout << "GetGlobalNodeId<vertex>" << endl;    
+    return ma.GetGlobalVertexNum (nr);
   }
 
   template <>
@@ -129,9 +130,9 @@ namespace ngstd
     // ma.GetEdgePNums (nr, pi1, pi2);
     auto pts = ma.GetEdgePNums(nr);
     int pi1 = pts[0], pi2 = pts[1];
-    
-    return INT<2> (ma.GetGlobalNodeNum (Node(NT_VERTEX, pi1)),
-		   ma.GetGlobalNodeNum (Node(NT_VERTEX, pi2)));
+    cout << "GetGlobalNodeId<edge>" << endl;
+    return INT<2> (ma.GetGlobalVertexNum (pi1),
+		   ma.GetGlobalVertexNum (pi2));
   }
 
   template <>

@@ -275,9 +275,6 @@ namespace ngla
   template <typename T>
   void ParallelDofs :: ScatterDofData (FlatArray<T> data) const
   {
-    // if (this == NULL)   // illformed C++, shall get rid of this
-    // throw Exception("ScatterDofData for null-object");
-    
     static Timer t0("ParallelDofs :: ScatterDofData");
     RegionTimer rt(t0);
 
@@ -286,12 +283,12 @@ namespace ngla
     int rank = comm.Rank();
     if (ntasks <= 1) return;
 
-
     Array<int> nsend(ntasks), nrecv(ntasks);
     nsend = 0;
     nrecv = 0;
 
     /** Count send/recv size **/
+    /*
     for (int i = 0; i < GetNDofLocal(); i++) {
       auto dps = GetDistantProcs(i);
       if(!dps.Size()) continue;
@@ -302,12 +299,23 @@ namespace ngla
       else
 	nrecv[master]++;
     }
-
+    */
+    for (int i = 0; i < GetNDofLocal(); i++) 
+      if (auto dps = GetDistantProcs(i); dps.Size() > 0)
+        {
+          if (rank < dps[0])
+            for (auto p : dps)
+              nsend[p]++;
+          else
+            nrecv[dps[0]]++;
+        }
+    
     Table<T> send_data(nsend);
     Table<T> recv_data(nrecv);
 
     /** Fill send_data **/
     nsend = 0;
+    /*
     for (int i = 0; i < GetNDofLocal(); i++) {
       auto dps = GetDistantProcs(i);
       if(!dps.Size()) continue;
@@ -316,7 +324,13 @@ namespace ngla
 	for(auto p:dps)
 	  send_data[p][nsend[p]++] = data[i];
     }
-
+    */
+    for (int i = 0; i < GetNDofLocal(); i++) 
+      if (auto dps = GetDistantProcs(i); dps.Size() > 0)
+        if (rank < dps[0])
+          for (auto p : dps)
+            send_data[p][nsend[p]++] = data[i];
+    
     Array<MPI_Request> requests;
     for (int i = 0; i < ntasks; i++)
       {
@@ -330,7 +344,8 @@ namespace ngla
 
     Array<int> cnt(ntasks);
     cnt = 0;
-    
+
+    /*
     for (int i = 0; i < GetNDofLocal(); i++)
       if (!IsMasterDof(i))
 	{
@@ -339,6 +354,13 @@ namespace ngla
 	  int master = ntasks;
 	  for (int j = 0; j < distprocs.Size(); j++)
 	    master = min (master, distprocs[j]);
+	  data[i] = recv_data[master][cnt[master]++];
+	}
+    */
+    for (int i = 0; i < GetNDofLocal(); i++)
+      if (!IsMasterDof(i))
+	{
+	  int master = GetDistantProcs (i)[0];
 	  data[i] = recv_data[master][cnt[master]++];
 	}
   }    
