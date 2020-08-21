@@ -1012,51 +1012,47 @@ namespace ngla
 
       constexpr size_t BBH = 512;
       constexpr size_t BH = 256;
+      constexpr size_t AH = 256;
 
       ParallelFor ( 1 + n / BBH, [&] (int i) {
 
         int i0 = BBH * i;
-        int is;
-        if (i0 + BBH < n) {
-          is = BBH;
-        }
-        else {
-          is = n - i0;
-        }
+        int is = min(BBH, n - i0);
 
-        // store pointers to vectors of first multivector
-        double** ppx = new double* [Size()];
-        for (int ell=0; ell < Size(); ell++) {
-          ppx[ell] = (*this)[ell]->FVDouble().Addr(i0);
-        }
+        STACK_ARRAY(double*, ppx, AH);
+        STACK_ARRAY(double*, ppy, BH);
 
-        for (int k = 0; k < 1 + v2.Size() / BH; k++) {
-          int k0 = BH * k;
-          int ks = min(BH, v2.Size() - k0);
+        for (int j0 = 0; j0 < Size(); j0 += AH) {
+          int js = min(AH, Size() - j0);
 
-          // store pointers to vectors of second multivector
-          double** ppy = new double* [ks];
-          for(int ell=0; ell < ks; ell++) {
-            ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
+          // store pointers to vectors of first multivector
+          for (int ell=0; ell < js; ell++) {
+            ppx[ell] = (*this)[j0 + ell]->FVDouble().Addr(i0);
           }
 
-          // calculate result
-          Matrix<double> res_sub(Size(), ks);
+          for (int k0 = 0; k0 < v2.Size(); k0 += BH) {
+            int ks = min(BH, v2.Size() - k0);
 
-          ngbla::PairwiseInnerProduct(is, FlatArray(Size(), ppx), FlatArray(ks, ppy), res_sub);
-
-          // add the results to the matrix res
-          for (int ell_j = 0; ell_j < Size(); ell_j++) {
-            for (int ell_k = 0; ell_k < ks; ell_k++) {
-              AtomicAdd(res(ell_j, k0 + ell_k), res_sub(ell_j, ell_k));
+            // store pointers to vectors of second multivector
+            for(int ell=0; ell < ks; ell++) {
+              ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
             }
+
+            // calculate result
+            Matrix<double> res_sub(js, ks);
+
+            ngbla::PairwiseInnerProduct(is, FlatArray(js, ppx), FlatArray(ks, ppy), res_sub);
+
+            // add the results to the matrix res
+            for (int ell_j = 0; ell_j < js; ell_j++) {
+              for (int ell_k = 0; ell_k < ks; ell_k++) {
+                AtomicAdd(res(j0 + ell_j, k0 + ell_k), res_sub(ell_j, ell_k));
+              }
+            }
+
           }
-          
-          delete[] ppy;
 
         }
-        
-        delete[] ppx;
 
       });
 
