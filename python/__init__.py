@@ -46,6 +46,22 @@ from .utils import x, y, z, dx, ds, grad, Grad, curl, div, PyId, PyTrace, \
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize
 from . import solvers
 
+CF = CoefficientFunction
+
+# sum function for vector valued CFs as well
+from builtins import sum as builtin_sum
+def sum(iterable, start=None):
+    # if there is no element use builtin_sum to handle args, kwargs correctly
+    if start is not None:
+        return builtin_sum(iterable, start)
+    generator = iter(iterable)
+    try:
+        first = next(generator)
+    except StopIteration:
+        return 0
+    if isinstance(first, CoefficientFunction) and start is None:
+        return builtin_sum(generator, first)
+    return builtin_sum((first, *generator))
 
 from .timing import Timing
 
