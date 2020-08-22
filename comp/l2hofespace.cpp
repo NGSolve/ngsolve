@@ -1846,20 +1846,47 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override
     {
       // ApplyMass::MultAdd (val, v, prod);
-
+      /*
       AutoVector tmp = bmat->CreateColVector();
       tmp = *bmat * v;
       
       auto tmpfv = tmp.FV<double>();
-      /*
-      for (int i = 0, ii = 0; i < dofs->Size(); i++)
-        for (int j = 0; j < weights.Size(); j++, ii++)
-          tmpfv(ii) *= weights(j)*rho_jac(ii);
-      */
+
       for (int i = 0; i < tmpfv.Size(); i++)
         tmpfv(i) *= rho_jac(i);
 
       prod += val * Transpose(*bmat) * tmp;
+      */
+      auto fx = v.FV<double>();
+      auto fy = prod.FV<double>();
+      ParallelForRange
+        (dofs->Size(), [&] (IntRange r)
+         {
+           constexpr size_t BS = 128;
+           Matrix<> hx(BS, elbmat.Width());
+           Matrix<> tmp(BS, elbmat.Height());
+           
+           for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+             {
+               size_t li = min2(bi+BS, r.Next());
+               size_t num = li-bi;
+               
+               for (size_t i = 0; i < num; i++)
+                 hx.Row(i) = fx( (*dofs)[bi+i]);
+
+               tmp.Rows(0, num) = hx.Rows(0, num) * Trans(elbmat);
+
+               size_t base = r.First()*tmp.Width();
+               for (size_t i : Range(num*tmp.Width()))
+                 tmp(i) *= rho_jac(base+i);
+               
+               hx.Rows(0, num) = tmp.Rows(0,num) * elbmat;
+               for (size_t i = 0; i < num; i++)
+                 fy( (*dofs)[bi+i]) += val * hx.Row(i);
+             }
+         });
+      
+      
     }
   
     
