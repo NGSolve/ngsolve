@@ -13,7 +13,7 @@ def masterprint (*args, comm=MPI.COMM_WORLD):
 comm = MPI.COMM_WORLD
 
 if comm.rank == 0:
-    ngmesh = unit_cube.GenerateMesh(maxh=.05).Distribute(comm)
+    ngmesh = unit_cube.GenerateMesh(maxh=0.1).Distribute(comm)
 else:
     ngmesh = netgen.meshing.Mesh.Receive(comm)
 
