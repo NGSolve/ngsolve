@@ -1205,10 +1205,18 @@ public:
         values(i,j) = lam (in0(i,j));
   }
 
+
+  virtual shared_ptr<CoefficientFunction>
+  Operator (const string & name) const override
+  { throw Exception ("unarycf "+name+" does not provide Operator"); }
+
+  
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
 
+
+  
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,

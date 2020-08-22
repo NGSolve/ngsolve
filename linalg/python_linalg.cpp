@@ -563,10 +563,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           throw Exception ("slices with non-unit distance not allowed");
         return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
       })
+    /*
     .def("__getitem__", [](MultiVector & self, std::vector<int> inds) {
         return shared_ptr<MultiVector>(self.SubSet(ArrayFromVector(inds)));
       })
-    
+    */
+    .def("__getitem__", [](MultiVector & self, Array<int> inds) {
+        return shared_ptr<MultiVector>(self.SubSet(inds));
+      })
     .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
         {
           if( !x.IsComplex() )

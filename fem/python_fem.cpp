@@ -186,6 +186,14 @@ cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
   return hcf;
 }
 
+template <>
+shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
+{
+  return c1->Operator(name);
+}
+
+
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
   static string Name() { return "sin"; }
@@ -895,7 +903,9 @@ cf : ngsolve.CoefficientFunction
     
     .def ("Other", MakeOtherCoefficientFunction,
           "Evaluate on other element, as needed for DG jumps")
-
+    .def ("Operator", [](shared_ptr<CF> coef, string name) {
+        return coef->Operator(name);
+      })
     .def ("Derive",
           // &CoefficientFunction::Diff,
           [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
