@@ -89,8 +89,9 @@ namespace ngfem
   
   void CoefficientFunction :: PrintReportRec (ostream & ost, int level) const
   {
-    for (int i = 0; i < 2*level; i++)
-      ost << ' ';
+    ost << string(2*level, ' ');
+    // for (int i = 0; i < 2*level; i++)
+    // ost << ' ';
     ost << "coef " << GetDescription() << ","
         << (IsComplex() ? " complex" : " real");
     if (Dimensions().Size() == 1)
@@ -101,7 +102,10 @@ namespace ngfem
 
     Array<shared_ptr<CoefficientFunction>> input = InputCoefficientFunctions();
     for (int i = 0; i < input.Size(); i++)
-      input[i] -> PrintReportRec (ost, level+1);
+      if (input[i])
+        input[i] -> PrintReportRec (ost, level+1);
+      else
+        ost << string(2*level+2, ' ') << "none" << endl;
   }
   
   string CoefficientFunction :: GetDescription () const
@@ -4659,7 +4663,8 @@ public:
     for (auto & cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
     for (auto & cf : ci)
-      if (cf) SetDimensions(cf->Dimensions());
+      if (cf)
+        SetDimensions(cf->Dimensions());
 
     elementwise_constant = true;
     for (auto cf : ci)
@@ -4735,6 +4740,18 @@ public:
       cfa.Append (cf);
     return Array<shared_ptr<CoefficientFunction>>(cfa);
   } 
+
+  shared_ptr<CoefficientFunction> Operator (const string & name) const override
+  {
+    Array<shared_ptr<CoefficientFunction>> cfop;
+    
+    for (auto & cf : ci)
+      if (cf)
+        cfop.Append (cf->Operator(name));
+      else
+        cfop.Append (nullptr);
+    return MakeDomainWiseCoefficientFunction(move (cfop));
+  }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
