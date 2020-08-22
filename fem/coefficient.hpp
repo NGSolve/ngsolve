@@ -21,6 +21,7 @@ namespace ngfem
   protected:
     bool elementwise_constant = false;
     bool is_complex = false;
+    int spacedim = -1;  // needed for grad(x), grad(1), ...
   public:
     // default constructor for archive
     CoefficientFunction() = default;
@@ -170,6 +171,9 @@ namespace ngfem
       dimension = 1;
       for (int d : dims) dimension *= d;
     }
+
+    int SpaceDim () const { return spacedim; } 
+    void SetSpaceDim (int adim);
     
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const
@@ -1497,6 +1501,11 @@ public:
         values(i,j) = lam (in0(i,j), in1(i,j));
   }
 
+  using CoefficientFunction::Operator;
+  virtual shared_ptr<CoefficientFunction>
+  Operator (const string & name) const override
+  { throw Exception ("binarycf "+opname+" does not provide Operator"); }
+  
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }

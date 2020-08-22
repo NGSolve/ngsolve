@@ -805,6 +805,10 @@ val : can be one of the following:
                            [] (CF &  self) { return self.IsComplex(); },
                            "is CoefficientFunction complex-valued ?")
     
+    .def_property("spacedim",
+                  [] (CF & self) { return self.SpaceDim(); },
+                  [] (CF & self, int dim) { self.SetSpaceDim(dim); })
+    
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
