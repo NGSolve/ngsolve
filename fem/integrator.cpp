@@ -279,11 +279,35 @@ namespace ngfem
 	if (cnt == 2) cout << "(further warnings suppressed)" << endl;
 	cnt++;
       }
-    FlatMatrix<double> mat(elx.Size(), lh);
+    FlatMatrix<double> mat(ely.Size(), elx.Size(), lh);
     CalcElementMatrix (fel, eltrans, mat, lh);
     ely = mat * elx;
   }
 
+  void BilinearFormIntegrator ::
+  ApplyElementMatrixTrans (const FiniteElement & fel, 
+                           const ElementTransformation & eltrans, 
+                           FlatVector<double> elx, 
+                           FlatVector<double> ely,
+                           void * precomputed,
+                           LocalHeap & lh) const
+  {
+    static atomic<int> cnt(0);
+    static mutex m;
+    if (cnt < 3)
+      {
+        lock_guard<mutex> guard(m);
+        if (cnt < 3) 
+          cout << "WARNING: call baseclass ApplyElementMatrixTrans, type = " << typeid(*this).name() << endl;
+	if (cnt == 2) cout << "(further warnings suppressed)" << endl;
+	cnt++;
+      }
+    FlatMatrix<double> mat(elx.Size(), ely.Size(), lh);
+    CalcElementMatrix (fel, eltrans, mat, lh);
+    ely = Trans(mat) * elx;
+  }
+
+  
   void BilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & fel, 
 		      const ElementTransformation & eltrans, 
@@ -303,12 +327,40 @@ namespace ngfem
 	cnt++;
       }
 
-    FlatMatrix<Complex> mat(elx.Size(), lh);
+    FlatMatrix<Complex> mat(ely.Size(), elx.Size(), lh);
     CalcElementMatrix (fel, eltrans, mat, lh);
     ely = mat * elx;
   }
 
+  void BilinearFormIntegrator ::
+  ApplyElementMatrixTrans (const FiniteElement & fel, 
+                           const ElementTransformation & eltrans, 
+                           FlatVector<Complex> elx, 
+                           FlatVector<Complex> ely,
+                           void * precomputed,
+                           LocalHeap & lh) const
+  {
+    static atomic<int> cnt(0);
+    static mutex m;
+    if (cnt < 3)
+      {
+        lock_guard<mutex> guard(m);
+        if (cnt < 3) 
+          cout << "WARNING: call baseclass ApplyElementMatrixTrans, type = " << typeid(*this).name() << endl;
+	if (cnt == 2) cout << "(further warnings suppressed)" << endl;
+	cnt++;
+      }
+    FlatMatrix<Complex> mat(elx.Size(), ely.Size(), lh);
+    CalcElementMatrix (fel, eltrans, mat, lh);
+    ely = Trans(mat) * elx;
+  }
 
+
+
+
+
+
+  
   void BilinearFormIntegrator ::
   ApplyLinearizedElementMatrix (const FiniteElement & fel, 
 				const ElementTransformation & eltrans, 

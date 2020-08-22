@@ -458,6 +458,25 @@ namespace ngfem
 			void * precomputed,
 			LocalHeap & lh) const;
 
+    virtual void 
+    ApplyElementMatrixTrans (const FiniteElement & fel, 
+                             const ElementTransformation & eltrans, 
+                             const FlatVector<double> elx, 
+                             FlatVector<double> ely,
+                             void * precomputed,
+                             LocalHeap & lh) const;
+    
+    virtual void 
+    ApplyElementMatrixTrans (const FiniteElement & fel, 
+                             const ElementTransformation & eltrans, 
+                             const FlatVector<Complex> elx, 
+                             FlatVector<Complex> ely,
+                             void * precomputed,
+                             LocalHeap & lh) const;
+    
+
+
+    
     /*
     template < int S, class T>
     void ApplyElementMatrix (const FiniteElement & fel, 

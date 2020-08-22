@@ -740,6 +740,23 @@ public:
                                  void * precomputed,
                                  LocalHeap & lh) const;
 
+    NGS_DLL_HEADER virtual void 
+    ApplyElementMatrixTrans (const FiniteElement & fel, 
+                             const ElementTransformation & trafo, 
+                             const FlatVector<double> elx, 
+                             FlatVector<double> ely,
+                             void * precomputed,
+                             LocalHeap & lh) const override;
+    
+    template <typename SCAL, typename SCAL_SHAPES>
+    void T_ApplyElementMatrixTransEB (const FiniteElement & fel, 
+                                      const ElementTransformation & trafo, 
+                                      const FlatVector<double> elx, 
+                                      FlatVector<double> ely,
+                                      void * precomputed,
+                                      LocalHeap & lh) const;
+
+    
     const auto & GetCoefficientFunction() { return cf; }
     const auto & TrialProxies() { return trial_proxies; } 
     const auto & TestProxies() { return test_proxies; } 

@@ -4006,8 +4006,91 @@ namespace ngcomp
     if (geom_free_parts.Size())
       AddMatrixGF(val, x, y, true, clh);
     if (geom_free_parts.Size() == parts.Size()) return;
+
+    if (!MixedSpaces())
+      {
+        for (auto vb : { VOL, BND, BBND, BBBND } )
+          if (VB_parts[vb].Size())
+            {
+              IterateElements 
+                (*fespace, vb, clh, 
+                 [&] (FESpace::Element el, LocalHeap & lh)
+                 {
+                   // ThreadRegionTimer reg (timer_loop, TaskManager::GetThreadId());                   
+                   auto & fel = el.GetFE();
+                   auto & trafo = el.GetTrafo();
+                   auto dnums = el.GetDofs();
+                   
+                   FlatVector<SCAL> elvecx (dnums.Size() * fespace->GetDimension(), lh);
+                   FlatVector<SCAL> elvecy (dnums.Size() * fespace->GetDimension(), lh);
+                   
+                   x.GetIndirect (dnums, elvecx);
+                   this->fespace->TransformVec (el, elvecx, TRANSFORM_SOL);
+                   
+                   for (auto & bfi : VB_parts[vb])
+                     {
+                       if (!bfi->DefinedOn (el.GetIndex())) continue;
+                       if (!bfi->DefinedOnElement (el.Nr())) continue;
+
+                       auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);
+                       
+                       bfi->ApplyElementMatrixTrans (fel, mapped_trafo, elvecx, elvecy, 0, lh);
+
+                       this->fespace->TransformVec (el, elvecy, TRANSFORM_RHS);
+                       
+                       elvecy *= val;
+                       y.AddIndirect (dnums, elvecy, fespace->HasAtomicDofs());  // coloring
+                     }
+                 });
+            } 
+      }
+    else // MixedSpaces
+      {
+        static Timer timer ("Apply Matrix Trans - mixed"); RegionTimer reg(timer);
+
+        for (auto vb : { VOL, BND, BBND } )
+          if (VB_parts[vb].Size())
+            {        
+              IterateElements 
+                (*fespace, vb, clh, 
+                 [&] (ElementId ei, LocalHeap & lh)
+           
+                 {
+                   if (!fespace->DefinedOn (ei)) return;
+                   if (!fespace2->DefinedOn (ei)) return;
+                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+                   const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+                   ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+             
+                   Array<int> dnums1 (fel1.GetNDof(), lh);
+                   fespace->GetDofNrs (ei, dnums1);
+                   Array<int> dnums2 (fel2.GetNDof(), lh);
+                   fespace2->GetDofNrs (ei, dnums2);
+                   
+                   FlatVector<SCAL> elvecx (dnums2.Size() * fespace2->GetDimension(), lh);
+                   FlatVector<SCAL> elvecy (dnums1.Size() * fespace ->GetDimension(), lh);
+
+                   x.GetIndirect (dnums2, elvecx);
+                   this->fespace2->TransformVec (ei, elvecx, TRANSFORM_SOL);
+
+                   for (auto & bfi : VB_parts[vb])
+                     {
+                       if (!bfi->DefinedOn (this->ma->GetElIndex (ei))) continue;
+                       if (!bfi->DefinedOnElement (ei.Nr())) continue;                        
+
+                       MixedFiniteElement fel(fel1, fel2);
+                       bfi->ApplyElementMatrixTrans (fel, eltrans, elvecx, elvecy, 0, lh);
+                       
+                       this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
+        
+                       elvecy *= val;
+                       y.AddIndirect (dnums1, elvecy);  // coloring	      
+                     }
+                 });
+            }
+      }
     
-    throw Exception ("AddMatrixTrans only supported for geom-free");
+    // throw Exception ("AddMatrixTrans only supported for geom-free");
   }
 
 
