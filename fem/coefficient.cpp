@@ -131,7 +131,10 @@ namespace ngfem
     throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
   }
 
-
+  void CoefficientFunction :: SetSpaceDim (int adim)
+  {
+    TraverseTree ([adim](CoefficientFunction & cf) { cf.spacedim = adim; });
+  }
   
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
@@ -1136,6 +1139,16 @@ public:
     values = AutoDiffDiff<1,bool>(false);
   }
 
+  using CoefficientFunction::Operator;
+  shared_ptr<CoefficientFunction> Operator (const string & name) const override
+  {
+    if (spacedim == -1)
+      throw Exception("cannot differentiate constant since we don't know the space dimension, use 'coef.spacedim=dim'");
+    if (name != "grad")
+      throw Exception ("cannot apply operator "+name+" for constant");
+    return ZeroCF ( Array( { spacedim } ) );
+  }
+  
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                           shared_ptr<CoefficientFunction> dir) const override
   {
@@ -4149,6 +4162,13 @@ cl_BinaryOpCF<GenericPlus>::Diff(const CoefficientFunction * var,
   return c1->Diff(var,dir) + c2->Diff(var,dir);
 }
 
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericPlus>::Operator(const string & name) const
+{
+  return c1->Operator(name) + c2->Operator(name);
+}
+
 shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
 {
   if (c1->GetDescription() == "ZeroCF")
@@ -4174,6 +4194,14 @@ cl_BinaryOpCF<GenericMinus>::Diff(const CoefficientFunction * var,
   return c1->Diff(var,dir) - c2->Diff(var,dir);
 }
 
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericMinus>::Operator(const string & name) const
+{
+  return c1->Operator(name) - c2->Operator(name);
+}
+
+
 shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
 {
   if (c1->GetDescription() == "ZeroCF")
@@ -4187,6 +4215,17 @@ shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, s
     return c1;
 
   return BinaryOpCF (c1, c2, gen_minus, "-");
+}
+
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericMult>::Operator(const string & name) const
+{
+  if (c1->Dimension() != 1 || c2->Dimension() != 1)
+    throw Exception ("can only differentiate scalar multiplication");
+  if (name != "grad")
+    throw Exception ("can only from 'grad' operator of product");
+  return c1->Operator(name) * c2  + c1 * c2->Operator(name);
 }
 
 template <> 
@@ -5806,6 +5845,22 @@ public:
     }
     */
 
+    using CoefficientFunction::Operator;
+    shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    {
+      if (spacedim == -1)
+        throw Exception("cannot differentiate coordinate since we don't know the space dimension, use 'coef.spacedim=dim'");
+      if (name != "grad")
+        throw Exception ("cannot apply operator "+name+" for coordinate");
+      
+      Array<shared_ptr<CoefficientFunction>> funcs(spacedim);
+      funcs = make_shared<ConstantCoefficientFunction> (0);
+      funcs[dir] = make_shared<ConstantCoefficientFunction> (1);
+      return MakeVectorialCoefficientFunction (move(funcs));
+    }
+    
+    
+    
     shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dirdiff) const override
     {
