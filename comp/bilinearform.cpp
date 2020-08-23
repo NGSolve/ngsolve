@@ -5642,9 +5642,11 @@ namespace ngcomp
     for (auto igt : this->parts)
       this->low_order_bilinear_form->AddIntegrator(igt);      
 
-    LocalHeap lh(10*1000*1000);
-    this->low_order_bilinear_form -> Assemble(lh);
-    
+    if (this->mats.Size())
+      {
+        LocalHeap lh(10*1000*1000);
+        this->low_order_bilinear_form -> Assemble(lh);
+      }
     return this->low_order_bilinear_form;
   }
 
@@ -5815,9 +5817,11 @@ namespace ngcomp
     for (auto igt : this->parts)
       this->low_order_bilinear_form->AddIntegrator(igt);      
 
-    LocalHeap lh(10*1000*1000);
-    this->low_order_bilinear_form -> Assemble(lh);
-    
+    if (this->mats.Size())
+      {
+        LocalHeap lh(10*1000*1000);
+        this->low_order_bilinear_form -> Assemble(lh);
+      }
     return this->low_order_bilinear_form;
   }
 
