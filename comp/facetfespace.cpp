@@ -126,7 +126,7 @@ namespace ngcomp
       loflags.SetFlag("complex");
 
     low_order_space = 0; // never used?
-    all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
+    all_dofs_together = flags.GetDefineFlagX ("all_dofs_together").IsMaybeTrue();
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  

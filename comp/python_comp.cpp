@@ -630,6 +630,28 @@ kwargs : kwargs
            self->FinalizeUpdate(); //Update FreeDofs
          }, py::arg("component")=DummyArgument(), 
          "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
+
+    .def_property_readonly("components", 
+                  [](shared_ptr<CompoundFESpace> self)-> py::tuple
+                   { 
+                     if (auto compspace = dynamic_pointer_cast<CompoundFESpace>(self))
+                       {
+                         py::tuple vecs(compspace->GetNSpaces());
+                         for (int i = 0; i < compspace -> GetNSpaces(); i++) 
+                           vecs[i]= py::cast((*compspace)[i]);
+                         return vecs;
+                       }
+                     throw Exception("components only available for ProductSpace");                     
+                   }, "deprecated, will be only available for ProductSpace")
+    .def("Range",
+         [] (shared_ptr<CompoundFESpace> self, int comp)
+         {
+           if (auto compspace = dynamic_pointer_cast<CompoundFESpace>(self))
+             return compspace->GetRange(comp);
+           throw Exception("Range only available for ProductSpace");
+         }, "deprecated, will be only available for ProductSpace")
+
+    
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
@@ -1086,7 +1108,7 @@ component : int
     
     .def_property_readonly("components", 
                   [](shared_ptr<CompoundFESpace> self)-> py::tuple
-                   { 
+                   {
                      py::tuple vecs(self->GetNSpaces());
                      for (int i = 0; i < self -> GetNSpaces(); i++) 
                        vecs[i]= py::cast((*self)[i]);
