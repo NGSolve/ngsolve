@@ -6279,8 +6279,11 @@ namespace ngcomp
       }
 
     
-    bool symmetric_storage = flags.GetDefineFlag ("symmetric") || flags.GetDefineFlag ("spd");
-    if (flags.GetDefineFlag("nonsym") || flags.GetDefineFlag("nonsym_storage")) symmetric_storage = false;
+    // bool symmetric_storage = flags.GetDefineFlag ("symmetric") || flags.GetDefineFlag ("spd");
+    // if (flags.GetDefineFlag("nonsym") || flags.GetDefineFlag("nonsym_storage")) symmetric_storage = false;
+    bool symmetric_storage = false;
+    if (flags.GetDefineFlagX("nonsym_storage").IsFalse() || flags.GetDefineFlagX("symmetric_storage").IsTrue())
+      symmetric_storage = true;
     
     
     if (symmetric_storage)
