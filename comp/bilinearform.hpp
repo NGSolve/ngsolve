@@ -287,8 +287,8 @@ namespace ngcomp
     /// is there a low-order biform ?
     bool HasLowOrderBilinearForm () const { return low_order_bilinear_form != NULL; }
 
-    /// returns the low-order biform
-    shared_ptr<BilinearForm> GetLowOrderBilinearForm() const
+    /// returns the low-order biform, if we can provide it ...
+    virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() 
     {
       return low_order_bilinear_form;
     }
@@ -651,23 +651,25 @@ namespace ngcomp
     virtual ~T_BilinearForm ();
 
     ///
-    virtual void AllocateMatrix ();
+    virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() override;
+
+    virtual void AllocateMatrix () override;
 
     ///
-    virtual unique_ptr<BaseVector> CreateRowVector() const;
-    virtual unique_ptr<BaseVector> CreateColVector() const;
+    virtual unique_ptr<BaseVector> CreateRowVector() const override;
+    virtual unique_ptr<BaseVector> CreateColVector() const override;
 
     ///
-    virtual void CleanUpLevel();
+    virtual void CleanUpLevel() override;
 
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
 				   BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, 
-				   LocalHeap & lh);
+				   LocalHeap & lh) override;
 
-    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
+    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
   };
 
 
@@ -690,19 +692,20 @@ namespace ngcomp
   public:
     T_BilinearFormSymmetric (shared_ptr<FESpace> afespace, const string & aname,
 			     const Flags & flags);
-    virtual ~T_BilinearFormSymmetric ();
+    virtual ~T_BilinearFormSymmetric () override;
 
-    virtual void AllocateMatrix ();
-    virtual void CleanUpLevel();
-
-    virtual unique_ptr<BaseVector> CreateRowVector() const;
-    virtual unique_ptr<BaseVector> CreateColVector() const;
+    virtual void AllocateMatrix () override;
+    virtual void CleanUpLevel() override;
+    virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() override;
+    
+    virtual unique_ptr<BaseVector> CreateRowVector() const override;
+    virtual unique_ptr<BaseVector> CreateColVector() const override;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
                                    BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, 
-				   LocalHeap & lh);
+				   LocalHeap & lh) override;
     /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
@@ -716,10 +719,10 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
     */
-    virtual bool SymmetricStorage() const { return true; }
+    virtual bool SymmetricStorage() const override { return true; }
 
 
-    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
+    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
   };
 
 

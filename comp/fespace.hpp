@@ -519,8 +519,10 @@ ANY                  1 1 1 1 | 15
     // const FiniteElement & GetFE (ELEMENT_TYPE type) const;
 
     /// according low-order FESpace (if available)
+    [[deprecated("Use LowOrderFESpacePtr instead!")]]            
     FESpace & LowOrderFESpace () { return *low_order_space; }
     /// according low-order FESpace (if available)
+    [[deprecated("Use LowOrderFESpacePtr instead!")]]                
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
     shared_ptr<BaseMatrix> LowOrderEmbedding () const { return low_order_embedding; }

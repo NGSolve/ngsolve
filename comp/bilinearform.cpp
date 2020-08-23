@@ -5611,12 +5611,7 @@ namespace ngcomp
   T_BilinearForm<TM,TV>::
   T_BilinearForm (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, aname, flags)
-  { 
-    if (this->fespace->LowOrderFESpacePtr())
-      this->low_order_bilinear_form = 
-        make_shared<T_BilinearForm<TM,TV>> 
-        (this->fespace->LowOrderFESpacePtr(), aname+string(" low-order"), flags);
-  }
+  { }
 
   template <class TM, class TV>
   T_BilinearForm<TM,TV>::
@@ -5625,24 +5620,33 @@ namespace ngcomp
                   const string & aname,
                   const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, afespace2, aname, flags) 
-  {
-    ;
-  }
+  { } 
 
   template <class TM, class TV>
-  T_BilinearForm<TM,TV>::
-  ~T_BilinearForm ()
+  T_BilinearForm<TM,TV>:: ~T_BilinearForm () { }
+
+  template <class TM, class TV>
+    shared_ptr<BilinearForm>  T_BilinearForm<TM,TV>::
+    GetLowOrderBilinearForm()
   {
-    /*
-    for (int i = 0; i < this->mats.Size(); i++)
-      {
-      delete this->mats[i];
-      this->mats[i].reset();
-      }
-    */
+    if (this->low_order_bilinear_form)
+      return this->low_order_bilinear_form;
+    
+    auto lospace = this->fespace->LowOrderFESpacePtr();
+    if (!lospace) return nullptr;
+
+    cout << IM(3) << "creating low order biform on demand" << endl;
+    this->low_order_bilinear_form = 
+      make_shared<T_BilinearForm<TM,TV>> (lospace, this->name+string(" low-order"), this->flags);
+
+    for (auto igt : this->parts)
+      this->low_order_bilinear_form->AddIntegrator(igt);      
+
+    LocalHeap lh(10*1000*1000);
+    this->low_order_bilinear_form -> Assemble(lh);
+    
+    return this->low_order_bilinear_form;
   }
-
-
 
   template <class TM, class TV>
   void T_BilinearForm<TM,TV>::
@@ -5779,18 +5783,44 @@ namespace ngcomp
                            const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, aname, flags) 
   {
+    /*
     if (this->fespace->LowOrderFESpacePtr())
       {
         this->low_order_bilinear_form = 
           make_shared<T_BilinearFormSymmetric<TM,TV>> 
           (this->fespace->LowOrderFESpacePtr(), aname+string(" low-order"), flags);
       }
+    */
   }
 
   template <class TM, class TV>
   T_BilinearFormSymmetric<TM,TV> :: 
   ~T_BilinearFormSymmetric ()
   { ; }
+
+  template <class TM, class TV>
+    shared_ptr<BilinearForm>  T_BilinearFormSymmetric<TM,TV>::
+    GetLowOrderBilinearForm()
+  {
+    if (this->low_order_bilinear_form)
+      return this->low_order_bilinear_form;
+    
+    auto lospace = this->fespace->LowOrderFESpacePtr();
+    if (!lospace) return nullptr;
+
+    cout << IM(3) << "creating low order biform on demand" << endl;
+    this->low_order_bilinear_form = 
+      make_shared<T_BilinearFormSymmetric<TM,TV>> (lospace, this->name+string(" low-order"), this->flags);
+
+    for (auto igt : this->parts)
+      this->low_order_bilinear_form->AddIntegrator(igt);      
+
+    LocalHeap lh(10*1000*1000);
+    this->low_order_bilinear_form -> Assemble(lh);
+    
+    return this->low_order_bilinear_form;
+  }
+
 
   
   template <class TM, class TV>
