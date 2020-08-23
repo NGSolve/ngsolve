@@ -91,13 +91,16 @@ namespace ngcomp
     virtual void GetFacetDofNrs (int nr, Array<DofId> & dnums) const
     {
       dnums.SetSize0();
-      dnums += nr;
+      if (!all_dofs_together)
+        dnums += nr;
       dnums += GetFacetDofs(nr);
     }
 
     ///
     virtual int GetNFacetDofs (int felnr) const 
-    { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
+    {
+      return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + (all_dofs_together ? 0 : 1) );
+    }
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     ///
@@ -123,11 +126,9 @@ namespace ngcomp
       dnums.SetSize0();
       if (ma->GetDimension() == 3) return;
 
-      /*
-      dnums += nr;
-      dnums += GetFacetDofs(nr);
-      */
-      dnums = MakeTuple (nr, GetFacetDofs(nr));
+      if (!all_dofs_together)
+        dnums += nr;
+      dnums += IntRange (first_facet_dof[nr], first_facet_dof[nr+1]); 
     }
 
     virtual void GetFaceDofNrs (int nr, Array<DofId> & dnums) const override
@@ -135,8 +136,9 @@ namespace ngcomp
       dnums.SetSize(0);
       if (ma->GetDimension() == 2) return;
 
-      dnums += nr;
-      dnums += GetFacetDofs(nr);
+      if (!all_dofs_together)
+        dnums += nr;
+      dnums += IntRange (first_facet_dof[nr], first_facet_dof[nr+1]); 
     }
   
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
@@ -144,8 +146,7 @@ namespace ngcomp
       dnums.SetSize0();
     }
     
-    bool AllDofsTogether(){return all_dofs_together;};
-    
+    bool AllDofsTogether() {return all_dofs_together;};
   };
 
 
