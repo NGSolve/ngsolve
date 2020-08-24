@@ -46,6 +46,20 @@ from .utils import x, y, z, dx, ds, grad, Grad, curl, div, PyId, PyTrace, \
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize
 from . import solvers
 
+CF = CoefficientFunction
+
+from builtins import sum as builtin_sum
+def sum(iterable, start=None):
+    """NGSolve sum function that uses the first element of an iterable as
+start argument if no start argument is provided."""
+    if start is not None:
+        return builtin_sum(iterable, start)
+    generator = iter(iterable)
+    try:
+        first = next(generator)
+    except StopIteration:
+        return 0
+    return builtin_sum(generator, first)
 
 from .timing import Timing
 
