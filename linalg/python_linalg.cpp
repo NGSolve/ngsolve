@@ -1271,8 +1271,8 @@ inverse : string
     ;
   
   py::class_<Embedding, shared_ptr<Embedding>, BaseMatrix> (m, "Embedding")
-    .def(py::init<size_t, IntRange>(),
-         py::arg("height"), py::arg("range"),
+    .def(py::init<size_t, IntRange, bool>(),
+         py::arg("height"), py::arg("range"), py::arg("complex")=false,
          "Linear operator embedding a shorter vector into a longer vector")
     .def_property_readonly("T", [](shared_ptr<Embedding> m)->shared_ptr<EmbeddingTranspose>
                            { return make_shared<EmbeddingTranspose> (m->Height(), m->GetRange()); }, "Return transpose of matrix")
