@@ -144,6 +144,16 @@ namespace ngfem
     }
     */
 
+
+    using CoefficientFunction::Operator;
+    shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    {
+      if (name == "grad" || name == "Grad")
+        return WeingartenCF (D);
+      throw Exception("Normalvector cannot build operator " + name);
+    }
+    
+
     virtual shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {

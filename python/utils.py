@@ -31,8 +31,9 @@ def VectorFacet (mesh, **args):
 
 def grad(func):
     try:
-        if "normal vector" in str(func):
-            return specialcf.Weingarten(func.dim)
+        # now in C++ code
+        # if "normal vector" in str(func):
+        # return specialcf.Weingarten(func.dim)
         if func.derivname == "grad":
             return func.Deriv()
     except:
@@ -46,8 +47,9 @@ def grad(func):
 
 def Grad(func):
     """ Jacobi-matrix"""
-    if "normal vector" in str(func):        
-        return specialcf.Weingarten(func.dim)
+    # now in C++ code    
+    # if "normal vector" in str(func):        
+    # return specialcf.Weingarten(func.dim)
     try:
         return func.Operator("Grad")
     except:
