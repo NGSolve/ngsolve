@@ -1107,13 +1107,8 @@ component : int
 
     
     .def_property_readonly("components", 
-                  [](shared_ptr<CompoundFESpace> self)-> py::tuple
-                   {
-                     py::tuple vecs(self->GetNSpaces());
-                     for (int i = 0; i < self -> GetNSpaces(); i++) 
-                       vecs[i]= py::cast((*self)[i]);
-                     return vecs;
-                   },
+                           [](shared_ptr<CompoundFESpace> self)
+                           { return Array (self->Spaces()); },
                   "Return a list of the components of a product space")
 
     
