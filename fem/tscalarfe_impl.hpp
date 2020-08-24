@@ -720,13 +720,29 @@ namespace ngfem
   CalcMappedDShape (const BaseMappedIntegrationPoint & bmip, 
 		    BareSliceMatrix<> dshape) const
   {
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
-    // Vec<DIM, AutoDiff<DIM>> adp = mip;
-    auto dshapes = dshape.AddSize(ndof, DIM);
-
-    T_CalcShape (GetTIP(mip), // TIP<DIM, AutoDiff<DIM>> (adp),
-                 SBLambda ([dshapes] (int i, auto shape)
-                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
+    if (bmip.DimSpace() == DIM)
+      {
+        auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
+        auto dshapes = dshape.AddSize(ndof, DIM);
+        
+        T_CalcShape (GetTIP(mip),
+                     SBLambda ([dshapes] (int i, auto shape)
+                               { dshapes.Row(i) = ngbla::GetGradient(shape); }));
+      }
+    else if (bmip.DimSpace() == DIM+1)
+      {
+        constexpr int DIM1 = DIM<3 ? DIM+1 : DIM;
+        auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM1> &> (bmip);
+        auto dshapes = dshape.AddSize(ndof, DIM1);
+        
+        T_CalcShape (GetTIP(mip),
+                     SBLambda ([dshapes] (int i, auto shape)
+                               {dshapes.Row(i) = ngbla::GetGradient(shape);}));
+      }
+    else
+      {
+        cout << "CalcMappedDShape called for bboundary (not implemented)" << endl;        
+      }
   }
 
 
