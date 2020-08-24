@@ -603,7 +603,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
    
       auto symdyadic = SymDyadProd(ls,le);
           
-      LegendrePolynomial::EvalScaled(order_inner[0], ls-le,ls+le,
+      LegendrePolynomial::Eval(order_inner[0], ls-le,
                                      SBLambda([shape,symdyadic, &ii] (size_t nr, auto val)
                                               {
                                                 shape[ii++] = T_REGGE_Shape<1,T>(val*symdyadic);
@@ -652,12 +652,12 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       int ii = 0;
 
 
-      int maxorder_facet =
+      /*int maxorder_facet =
         max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
       ArrayMem<Tx,20> ha(maxorder_facet+1);
       ArrayMem<Tx,20> u(order_inner[0]+2), v(order_inner[0]+2);
       
-      /*for (int i = 0; i < 3; i++)
+      for (int i = 0; i < 3; i++)
         {
           INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort(i,vnums);
 	  Tx ls = llami[e[0]], le = llami[e[1]];
@@ -819,7 +819,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(xi,xi);
 
 
-          IntLegNoBubble::
+          //IntLegNoBubble::
+          LegendrePolynomial::
+
             EvalMult (order_edge[i], 
                       xi, lam_e, SBLambda ([&](int i, auto val)
                                            {
@@ -1092,8 +1094,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           order = max2(order, order_facet[i][0]);
         }
       int p = order_inner[0];
-      int ninner =  p > 0 ? (3*p*(p)*(p+1)/2 + (p+1)*(2*p*(p-1)/2 + (p+2)*(p-1)/2)) : 0;
-              
+      int ninner =  3*p*(p+1)/2*p + (p-1)*(p)/2*(p+1) + (p+1)*p*(p+1);
       ndof += ninner;
 
       order = 1+max2(order, p);
@@ -1177,12 +1178,10 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       for(int fa = 2; fa < 5; fa++)
         {
           int of = order_facet[fa][0];
-          //INT<4> f = ET_trait<ET_PRISM>::GetFaceSort (fa, vnums);
           
           int fmax = 0;
           for(int j = 1; j < 4; j++)
             if(vnums[faces[fa][j]] > vnums[faces[fa][fmax]]) fmax = j;
-          
           int fz,ftrig;
           fz = 3 - fmax;
           ftrig = fmax^1;          
@@ -1197,34 +1196,37 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           LegendrePolynomial (of, xi, leg_u);
 
           auto W = uDv_minus_vDu(lx[ftrig],lx[fmax]);
-          Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(GetGradient(eta),W.Value());   //^= (0,1, 1,0) * P(y)
+          Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(GetGradient(eta),W.Value());   //^= (0,1, 1,0) * P(x)*P(y)
+          // // Old Version
+          // for (int j = 0; j <= of; j++)
+          //   shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
+          // if (of > 0)
+          //   {
+          //     IntLegNoBubble::EvalScaledMult (of-1, xi, lx[ftrig]+lx[fmax], lx[ftrig]*lx[fmax],
+          //                                     SBLambda ([&](int nr, auto val)
+          //                                               {
+          //                                                     auto tmp = Du (val);
+          //                                                     auto symdyadic = SymDyadProd(GetGradient(eta),tmp.Value());
+          //                                                     for (int j = 0; j <= of; j++)
+          //                                                       shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
+          //                                               }));
+          //   }
+        
+          // New version
           for (int j = 0; j <= of; j++)
-            shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
+            for (int k = 0; k <= of; k++)
+              shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*leg_u[k]*symdyadic);
 
-          if (of > 0)
-            {
-              IntLegNoBubble::EvalScaledMult (of-1, xi, lx[ftrig]+lx[fmax], lx[ftrig]*lx[fmax],
-                                SBLambda ([&](int nr, auto val)
-                                          {
-                                            auto tmp = Du (val);
-                                            auto symdyadic = SymDyadProd(GetGradient(eta),tmp.Value());
-                                            for (int j = 0; j <= of; j++)
-                                              shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
-                                          }));
-            }
+          
           auto symdyad = lx[ftrig]*lx[fmax]*SymDyadProd(eta,eta);  //^= x*(1-x)*(0,0, 0,1) * P(x) * P(y)
           for (int i = 0; i < of; i++)
             for (int j = 0; j <= of; j++)
-              {
                 shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*symdyad);
-              }
 
           symdyad = lz[fz]*lz[fmax]*SymDyadProd(lx[ftrig],lx[fmax]);    //^= y*(1-y)*(1,0, 0,0) * P(x)*P(y)
           for (int j = 0; j < of; j++)
             for (int i = 0; i <= of; i++)
-              {
                 shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*symdyad);
-              }
         }
       
       //inner shapes
@@ -1242,7 +1244,8 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
 
           AutoDiff<3,T> eta = lz[0]-lz[4];
           LegendrePolynomial (p, eta, leg_w);
-                
+
+          // Reg(T) x [0,1]
           DubinerBasis::Eval(p-1, ls,le,
                              SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape,p,leg_w] (size_t nr, auto val)
                                       {
@@ -1255,11 +1258,10 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                       }));
           
 
-          if(p > 1)
-            {
-              Vec<6, AutoDiff<3,T>> symdyadic = ls*le*lt*SymDyadProd(eta,eta);
-              DubinerBasis::Eval(p-2, ls,le,
-                                 SBLambda([symdyadic, &ii, shape,p,leg_w] (size_t nr, auto val)
+          // H1(T) x [0,1]
+          Vec<6, AutoDiff<3,T>> symdyadic = ls*le*lt*SymDyadProd(eta,eta);
+          DubinerBasis::Eval(p-2, ls,le,
+                             SBLambda([symdyadic, &ii, shape,p,leg_w] (size_t nr, auto val)
                                       {
                                         for(int j=0; j <= p; j++)
                                           {
@@ -1267,46 +1269,35 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                           }
                                       }));
 
-              DubinerBasis::EvalMult(p-2, ls, le,ls*le*lt, 
-                                     SBLambda
-                                     ([&](int nr, auto val)
-                                      {
-                                        auto tmp = Du(val);
-                                        Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
-                                        for(int j=0; j <= p; j++)
+
+          // Nedelec_1 x [0,1]
+          DubinerBasis::EvalMult(p-2, lx[f[0]], lx[f[1]],lx[f[0]]*lx[f[1]]*lx[f[2]], 
+                                 SBLambda([&](int nr, auto val)
                                           {
-                                            shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
-                                          }
-                                      }));
-
-              auto xi  = ls-le;
-            	
-              TrigShapesInnerLegendre::CalcSplitted(p+1, xi, lt, leg_u,leg_v);
-              
-              // other combination
-              for (int j = 0; j < p-1; j++)
-                for (int k = 0; k < p-1-j; k++)
-                  {
-                    auto tmp = uDv_minus_vDu (leg_v[k], leg_u[j]);
-                    auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
-                    for(int l=0; l <= p; l++)
-                      {
-                        shape[ii++] = T_REGGE_Shape<3,T>(leg_w[l]*symdyadic);
-                      }
-                  }
-              // rec_pol * Nedelec0 
-              for (int j = 0; j < p-1; j++)
-                {
-                  auto tmp = wuDv_minus_wvDu (le, ls, leg_v[j]);
-                  auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
-                  for(int l=0; l <= p; l++)
-                      {
-                        shape[ii++] = T_REGGE_Shape<3,T>(leg_w[l]*symdyadic);
-                      }
-                }
-              
-
-            }
+                                            auto tmp = Du(val);
+                                            auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                            for(int j=0; j <= p; j++)
+                                              shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
+                                          }));
+          
+          DubinerBasis::EvalMult(p-1, lx[f[0]], lx[f[1]], lx[f[0]], 
+                                 SBLambda([&ii,shape,p,leg_w,eta,f,lx](int nr, auto val)
+                                          {
+                                            auto tmp = wuDv_minus_wvDu (lx[f[1]], lx[f[2]], val);
+                                            auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                            for(int j=0; j <= p; j++)
+                                              shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
+                                          }));
+          
+          LegendrePolynomial::EvalMult(p-1, lx[f[2]]-lx[f[1]], lx[f[2]], 
+                                       SBLambda([&ii,shape,p,leg_w,eta,lx,f] (int j, auto val)
+                                                {
+                                                  auto tmp = wuDv_minus_wvDu (lx[f[1]], lx[f[0]], val);
+                                                  auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                                  for(int j=0; j <= p; j++)
+                                                    shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
+                                                }));
+          
         }
 
     };
@@ -1572,8 +1563,10 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           AutoDiff<3,T> xi  = sigma[e[1]]-sigma[e[0]];
           AutoDiff<3,T> lam_e = lami[e[0]]+lami[e[1]];  
           Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(xi,xi);
+
           
-          IntLegNoBubble::
+          //IntLegNoBubble::
+          LegendrePolynomial::
             EvalMult (p, xi, lam_e, SBLambda ([&](int i, auto val)
                                               {
                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
@@ -1592,7 +1585,6 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
           AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
           AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
-          // auto nv = GetGradient(lam_f);
           
           LegendrePolynomial (p, eta, leg_u);
           LegendrePolynomial (p, xi, leg_v);
