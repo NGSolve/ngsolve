@@ -59,9 +59,7 @@ def sum(iterable, start=None):
         first = next(generator)
     except StopIteration:
         return 0
-    if isinstance(first, CoefficientFunction) and start is None:
-        return builtin_sum(generator, first)
-    return builtin_sum((first, *generator))
+    return builtin_sum(generator, first)
 
 from .timing import Timing
 
