@@ -883,7 +883,7 @@ namespace ngcomp
                 break;
               case ET_PRISM:
                 if (oi[0] > 0)
-                  ndof += 3*oi[0]*(oi[0])*(oi[0]+1)/2 + (oi[0]+1)*(2*oi[0]*(oi[0]-1)/2 + (oi[0]+2)*(oi[0]-1)/2);
+                  ndof += 3*oi[0]*(oi[0])*(oi[0]+1)/2 + (oi[0]-1)*oi[0]/2*(oi[0]+1) + (oi[0]+1)*oi[0]*(oi[0]+1);
                 
                 if(discontinuous)
                   {
