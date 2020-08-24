@@ -1145,6 +1145,8 @@ component : int
 
   ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
 
+  ExportFESpace<TangentialSurfaceL2FESpace> (m, "TangentialSurfaceL2");
+
   ExportFESpace<NumberFESpace> (m, "NumberSpace");
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
