@@ -138,15 +138,14 @@ namespace ngcomp
   class NGS_DLL_HEADER L2SurfaceHighOrderFESpace : public FESpace
   {
   protected:
-  
     // Level
-    int level;
+    // int level;
 
     // Number of Elements
-    int nel;
+    // int nel;
 
     Array<int> first_element_dof;
-    int ndof;
+    // int ndof;
 
 
     // if order is relative to mesh order 
@@ -167,7 +166,7 @@ namespace ngcomp
 
     static DocInfo GetDocu ();
 
-    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
+    // static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
     virtual string GetClassName () const override
     {
@@ -180,7 +179,7 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray() override;    
     //virtual void UpdateDofTables() override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
@@ -275,6 +274,48 @@ namespace ngcomp
 
   };
 
+
+
+
+
+
+
+  class TangentialSurfaceL2FESpace : public CompoundFESpace
+  {
+    bool piola;
+  public:
+    TangentialSurfaceL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
+
+    static DocInfo GetDocu ();
+    
+    void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+    
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                         LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                         LocalHeap & lh) const override;
+
+
+    template <int DIM>
+    void SolveM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * region,
+                     LocalHeap & lh) const;
+
+    template <int DIM>
+    void ApplyM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
+                     LocalHeap & lh) const;
+
+    virtual string GetClassName () const override
+    {
+      return "TangentialSurfaceL2FESpace";
+    }
+
+  };
+
+
+
+  
 }
 
 #endif
