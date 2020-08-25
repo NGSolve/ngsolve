@@ -64,7 +64,7 @@ html_template = """
 
 
 class WebGLScene:
-    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate):
+    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping=None):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
@@ -77,6 +77,7 @@ class WebGLScene:
         self.autoscale = autoscale
         self.interpolate_multidim = interpolate_multidim
         self.animate = animate
+        self.clipping = clipping
 
         if isinstance(deformation, ngs.CoefficientFunction):
             if deformation.dim==2:
@@ -107,6 +108,13 @@ class WebGLScene:
             if self.max is not None:
                 d['funcmax'] = self.max
             d['autoscale'] = self.autoscale
+
+        if self.clipping is not None:
+            d['clipping'] = True
+            for name, val in self.clipping.items():
+                if not (name in ("x", "y", "z", "dist")):
+                    raise Exception('Only "x", "y", "z", "dist" allowed as arguments for clipping!')
+                d['clipping_' + name] = val
 
         return d
 
@@ -418,7 +426,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False):
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -431,7 +439,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping)
     if _IN_IPYTHON:
         if _IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
