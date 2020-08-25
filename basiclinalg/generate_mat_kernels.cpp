@@ -442,6 +442,76 @@ void GenerateMultiVecScalAB (ostream & out, int h, int w)
 }
 
 
+/*
+  A[i] += sum_j c(j,i) * y[j]
+  A ... h x n
+  B ... w x n
+*/
+void GenerateMultiScaleAdd (ostream & out, int h, int w)
+{
+  out << "template <> INLINE void MultiScaleAdd<" << h << ", " << w << ">" << endl
+      << "    (size_t n," << endl
+      << "     double ** ppa, " << endl
+      << "     double ** ppb, " << endl
+      << "     double * pc, size_t dc)" << endl
+      << "{" << endl;
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      out << "double c" << i << "_" << j << " = pc[" << i << "+" << j << "*dc];" << endl;
+    }
+  }
+
+  for (int i = 0; i < h; i++) {
+    out << "double* pa" << i << " = ppa[" << i << "];" << endl;
+  }
+  for (int j = 0; j < w; j++) {
+    out << "double* pb" << j << " = ppb[" << j << "];" << endl;
+  }
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<double> b" << j << "(pb" << j << "+i);" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << "a" << i << " += c" << i << "_" << j << " * b" << j << ";" << endl;
+        }
+    }
+
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".Store(pa" << i << "+i);" << endl;
+
+  out << "}" << endl;
+
+  out << "size_t r = n % SW;" << endl;
+  out << "if (r) {" << endl;
+  out << "SIMD<mask64> mask(r);" << endl;
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i, mask);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<double> b" << j << "(pb" << j << "+i, mask);" << endl;
+      for (int i = 0; i < h; i++)
+          out << "a" << i << " += c" << i << "_" << j << " * b" << j << ";" << endl;
+    }
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".Store(pa" << i << "+i, mask);" << endl;
+
+  out << "}" << endl;
+
+  out << "}" << endl;
+}
+
+
+
 
 void GenKernel (ofstream & out, int h, int w)
 {
@@ -1445,6 +1515,25 @@ int main ()
   GenerateMultiVecScalAB (out, 3, 1);
   GenerateMultiVecScalAB (out, 2, 1);
   GenerateMultiVecScalAB (out, 1, 1);
+
+
+
+    // MultiScaleAdd
+  out << "template <size_t H, size_t W> inline void MultiScaleAdd" << endl
+      << "    (size_t n," << endl
+      << "     double ** pa, " << endl
+      << "     double ** pb, " << endl
+      << "     double * pc, size_t dc);" << endl;
+
+  GenerateMultiScaleAdd(out, 6, 6);
+  GenerateMultiScaleAdd(out, 2, 6);
+  GenerateMultiScaleAdd(out, 1, 6);
+  GenerateMultiScaleAdd(out, 6, 2);
+  GenerateMultiScaleAdd(out, 2, 2);
+  GenerateMultiScaleAdd(out, 1, 2);
+  GenerateMultiScaleAdd(out, 6, 1);
+  GenerateMultiScaleAdd(out, 2, 1);
+  GenerateMultiScaleAdd(out, 1, 1);
 
 
   
