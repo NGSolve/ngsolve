@@ -763,6 +763,11 @@ export class Scene {
       if(render_data.draw_vol)
       {
         gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
+        if('clipping_function' in render_data)
+          {
+              this.gui_status_default.Clipping.function = render_data.clipping_function;
+              gui_status.Clipping.function = render_data.clipping_function;
+          }
 
         this.clipping_function_object = this.createClippingPlaneMesh(render_data);
         this.pivot.add(this.clipping_function_object);
@@ -812,6 +817,22 @@ export class Scene {
       gui_vec.add(gui_status.Vectors, "show").onChange(animate);
       gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(()=>this.updateGridsize());
       gui_vec.add(gui_status.Vectors, "offset", -1.0, 1.0, 0.001).onChange(animate);
+
+      if(render_data.vectors)
+        {
+            this.gui_status_default.Vectors.show = true;
+            gui_status.Vectors.show = true;
+            if(render_data.vectors_grid_size)
+            {
+                this.gui_status_default.Vectors.grid_size = render_data.vectors_grid_size;
+                gui_status.Vectors.Vectors.grid_size = render_data.vectors_grid_size;
+            }
+            if(render_data.vectors_offset)
+            {
+                this.gui_status_default.Vectors.offset = render_data.vectors_offset;
+                gui_status.Vectors.Vectors.offset = render_data.vectors_offset;
+            }
+        }
 
       if(render_data.mesh_dim==2)
         this.buffer_object = this.mesh_object.clone();
