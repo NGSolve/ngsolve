@@ -1108,7 +1108,9 @@ component : int
     
     .def_property_readonly("components", 
                            [](shared_ptr<CompoundFESpace> self)
-                           { return Array (self->Spaces()); },
+                           {
+                             return Array<shared_ptr<FESpace>>(self->Spaces());
+                           },
                   "Return a list of the components of a product space")
 
     
