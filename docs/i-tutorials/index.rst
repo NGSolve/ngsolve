@@ -154,6 +154,7 @@ Whetting the Appetite
    unit-5a.1-mpi/poisson_mpi.ipynb 
    unit-5a.2-pardofs/pardofs.ipynb 
    unit-5a.3-petsc/petsc.ipynb 
+   unit-5a.3-petsc/petsc_interface.ipynb 
    
    
 6. Various Topics
