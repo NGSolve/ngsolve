@@ -975,13 +975,47 @@ namespace ngla
       static Timer t("BaseVector-MV :: mult mat");
       RegionTimer reg(t);
       t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FVDouble().Size());
-      ParallelForRange
-        (refvec->FVDouble().Size(), [&] (IntRange myrange)
-         {
-           for (int i = 0; i < mat.Width(); i++)
-             for (int j = 0; j < mat.Height(); j++)
-               vecs[i]->FVDouble().Range(myrange) += mat(j,i) * v2[j]->FVDouble().Range(myrange);
-         });
+
+      size_t n = refvec->FVDouble().Size();
+
+      size_t BBH = 256;
+      size_t AH = 512;
+      size_t BH = 128;
+
+      ParallelFor(1 + n / BBH, [&] (int i) {
+
+        int i0 = BBH * i;
+        int is = min(BBH, n - i0);
+
+        // allocate memory for pointer arrays
+        STACK_ARRAY(double*, ppx, AH);
+        STACK_ARRAY(double*, ppy, BH);
+
+        for (int j0 = 0; j0 < Size(); j0 += AH) {
+          int js = min(AH, Size() - j0);
+
+          // get pointers of first multivector
+          for (int ell = 0; ell < js; ell++) {
+            ppx[ell] = (*this)[j0 + ell]->FVDouble().Addr(i0);
+          }
+
+            for (int k0 = 0; k0 < v2.Size(); k0+=BH) {
+              int ks = min(BH, v2.Size() - k0);
+
+              // get pointers of second multivector
+              for (int ell = 0; ell < ks; ell++) {
+                ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
+              }
+
+
+            MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(js, ks, mat.Width(), &mat(j0,k0)));
+
+          }
+
+        }
+
+      });
+
     }
 
     

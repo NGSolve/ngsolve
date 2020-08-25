@@ -2462,6 +2462,56 @@ namespace ngbla
 
   }
 
+    // x_i += sum_j a(j,i) y_j
+  void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a) {
+
+    constexpr int Hx = 6;
+    constexpr int Hy = 6;
+
+    size_t i = 0;
+    for (; i + Hy <= y.Size(); i += Hy) {
+
+      size_t j = 0;
+      for (; j + Hx <= x.Size(); j+=Hx) {
+        MultiScaleAdd<Hx,Hy>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j + 2 <= x.Size(); j+=2) {
+        MultiScaleAdd<2,Hy>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j < x.Size(); j++) {
+        MultiScaleAdd<1,Hy>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+
+    }
+    for (; i + 2 <= y.Size(); i += 2) {
+      size_t j = 0;
+      for (; j + Hx <= x.Size(); j+=Hx) {
+        MultiScaleAdd<Hx,2>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j + 2 <= x.Size(); j+=2) {
+        MultiScaleAdd<2,2>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j < x.Size(); j++) {
+        MultiScaleAdd<1,2>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+    }
+    for (; i < y.Size(); i++) {
+
+      size_t j = 0;
+      for (; j + Hx <= x.Size(); j+=Hx) {
+        MultiScaleAdd<Hx,1>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j + 2 <= x.Size(); j+=2) {
+        MultiScaleAdd<2,1>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j < x.Size(); j++) {
+        MultiScaleAdd<1,1>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+
+    }
+  }
+
+
 
   
 
