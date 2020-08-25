@@ -196,6 +196,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	  return new ParallelDofs(comm, ct.MoveTable());
 	}), py::arg("dist_procs"), py::arg("comm"))
 #endif
+    .def_property_readonly ("comm", [](const ParallelDofs & self) { return self.GetCommunicator(); })
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
                             "number of degrees of freedom")

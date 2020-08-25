@@ -5,7 +5,8 @@ import numpy as np
 
 def CreatePETScMatrix (ngs_mat):
     pardofs = ngs_mat.row_pardofs
-    comm = MPI.COMM_WORLD  # should get mpi-communicator from pardofs
+    # comm = MPI.COMM_WORLD  
+    comm = pardofs.comm.mpi4py
     globnums, nglob = pardofs.EnumerateGlobally()
     iset = psc.IS().createGeneral (indices=globnums, comm=comm)
     lgmap = psc.LGMap().createIS(iset)
@@ -29,7 +30,7 @@ def CreatePETScMatrix (ngs_mat):
 class VectorMapping:
     def __init__ (self, pardofs):
         self.pardofs = pardofs
-        comm = MPI.COMM_WORLD  # should get mpi-communicator from pardofs        
+        comm = pardofs.comm.mpi4py        
         globnums, nglob = pardofs.EnumerateGlobally()
         self.iset = psc.IS().createGeneral (indices=globnums, comm=comm)
 
