@@ -773,6 +773,34 @@ export class Scene {
       gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
       gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
       gui_clipping.add(gui_status.Clipping, "dist", -1.2*this.mesh_radius, 1.2*this.mesh_radius).onChange(animate);
+      if(render_data.clipping)
+        {
+            console.log("render data clipping found");
+            this.gui_status_default.Clipping.enable = true;
+            gui_status.Clipping.enable = true;
+            if(render_data.clipping_x)
+            {
+                this.gui_status_default.Clipping.x = render_data.clipping_x;
+                gui_status.Clipping.x = render_data.clipping_x;
+            }
+            if(render_data.clipping_y)
+            {
+                this.gui_status_default.Clipping.y = render_data.clipping_y;
+                gui_status.Clipping.y = render_data.clipping_y;
+            }
+            if(render_data.clipping_z)
+            {
+                this.gui_status_default.Clipping.z = render_data.clipping_z;
+                gui_status.Clipping.z = render_data.clipping_z;
+            }
+            if(render_data.clipping_dist)
+            {
+                this.gui_status_default.Clipping.dist = render_data.clipping_dist;
+                gui_status.Clipping.dist = render_data.clipping_dist;
+            }
+        }
+        else
+            console.log("render data not clipping found!!!");
     }
 
     uniforms.function_mode = new THREE.Uniform( 0 );
