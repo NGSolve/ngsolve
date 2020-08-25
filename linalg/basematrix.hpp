@@ -512,7 +512,7 @@ namespace ngla
         {
           return bma.CreateRowVector();
         }
-      catch (Exception e)
+      catch (Exception & e)
         {
           return bmb.CreateRowVector();          
         }
@@ -523,7 +523,7 @@ namespace ngla
         {
           return bma.CreateColVector();
         }
-      catch (Exception e)
+      catch (Exception & e)
         {
           return bmb.CreateColVector();          
         }

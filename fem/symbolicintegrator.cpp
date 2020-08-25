@@ -1793,7 +1793,7 @@ namespace ngfem
       {
         T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, symmetric_so_far, lh);
       }
-    catch (ExceptionNOSIMD e)
+    catch (ExceptionNOSIMD & e)
       {
         elmat = 0.0;        
         T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, symmetric_so_far, lh);        
