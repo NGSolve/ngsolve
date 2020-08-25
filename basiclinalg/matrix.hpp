@@ -552,6 +552,15 @@ namespace ngbla
       Swap (this->data, m2.data);
       return *this;
     }
+
+    template<typename M2>
+    Matrix & operator+= (const M2 & m) 
+    { 
+      CMCPMatExpr<FlatMatrix<T,ORD> >::operator+= (m);
+      return *this;
+    }
+
+    
   };
 
 
