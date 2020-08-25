@@ -2,7 +2,7 @@ mkdir %SRC_DIR%
 xcopy . %SRC_DIR%\ /O /X /E /H /K /Q
 cd %SRC_DIR%
 
-pip3 install pybind11-stubgen==0.3
+pip3 install pybind11-stubgen==0.6
 
 git submodule update --init --recursive
 IF %errorlevel% NEQ 0 exit /b %errorlevel%
