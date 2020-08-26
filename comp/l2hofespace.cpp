@@ -2125,7 +2125,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      cout << "apply simdir" << endl;      
+      // cout << "apply simdir" << endl;
       // static Timer t("DiffOpIdVectorL2Piola::ApplySIMDIR");
       // RegionTracer rt(TaskManager::GetThreadId(), t);
       
