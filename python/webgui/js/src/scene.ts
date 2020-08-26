@@ -538,9 +538,9 @@ export class Scene {
 
 
     var t2 = new THREE.Vector3();
-    if(normal.z<0.5)
+    if(Math.abs(normal.z)<0.5)
       plane0.projectPoint(new THREE.Vector3(0,0,1), t2);
-    else if(normal.y<0.5)
+    else if(Math.abs(normal.y)<0.5)
       plane0.projectPoint(new THREE.Vector3(0,1,0), t2);
     else
       plane0.projectPoint(new THREE.Vector3(1,0,0), t2);
