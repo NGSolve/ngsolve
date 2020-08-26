@@ -762,7 +762,6 @@ export class Scene {
       let gui_clipping = gui.addFolder("Clipping");
       if(render_data.draw_vol)
       {
-        gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
         if('clipping_function' in render_data)
           {
               this.gui_status_default.Clipping.function = render_data.clipping_function;
@@ -771,13 +770,9 @@ export class Scene {
 
         this.clipping_function_object = this.createClippingPlaneMesh(render_data);
         this.pivot.add(this.clipping_function_object);
+        gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
       }
 
-      gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
-      gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
-      gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
-      gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
-      gui_clipping.add(gui_status.Clipping, "dist", -1.2*this.mesh_radius, 1.2*this.mesh_radius).onChange(animate);
       if(render_data.clipping)
         {
             console.log("render data clipping found");
@@ -806,6 +801,12 @@ export class Scene {
         }
         else
             console.log("render data not clipping found!!!");
+
+      gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
+      gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
+      gui_clipping.add(gui_status.Clipping, "y", -1.0, 1.0).onChange(animate);
+      gui_clipping.add(gui_status.Clipping, "z", -1.0, 1.0).onChange(animate);
+      gui_clipping.add(gui_status.Clipping, "dist", -1.2*this.mesh_radius, 1.2*this.mesh_radius).onChange(animate);
     }
 
     uniforms.function_mode = new THREE.Uniform( 0 );
@@ -813,11 +814,6 @@ export class Scene {
     draw_vectors = draw_vectors && (render_data.draw_surf && render_data.mesh_dim==2 || render_data.draw_vol && render_data.mesh_dim==3);
     if(draw_vectors)
     {
-      let gui_vec = gui.addFolder("Vectors");
-      gui_vec.add(gui_status.Vectors, "show").onChange(animate);
-      gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(()=>this.updateGridsize());
-      gui_vec.add(gui_status.Vectors, "offset", -1.0, 1.0, 0.001).onChange(animate);
-
       if(render_data.vectors)
         {
             this.gui_status_default.Vectors.show = true;
@@ -833,6 +829,12 @@ export class Scene {
                 gui_status.Vectors.Vectors.offset = render_data.vectors_offset;
             }
         }
+
+      let gui_vec = gui.addFolder("Vectors");
+      gui_vec.add(gui_status.Vectors, "show").onChange(animate);
+      gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(()=>this.updateGridsize());
+      gui_vec.add(gui_status.Vectors, "offset", -1.0, 1.0, 0.001).onChange(animate);
+
 
       if(render_data.mesh_dim==2)
         this.buffer_object = this.mesh_object.clone();
@@ -1010,6 +1012,7 @@ export class Scene {
 
     this.updateRenderData(render_data);
     setTimeout(()=> this.onResize(), 0);
+    console.log("Scene init done", this);
   }
 
   updateColormap( )
