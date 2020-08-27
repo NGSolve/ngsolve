@@ -751,10 +751,16 @@ export class Scene {
       cgui.add(gui_status.Complex, "speed", 0.0, 10, 0.0001).onChange(animate);
       uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
     }
-    else if(render_data.funcdim==2)
-      gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
-    else if(render_data.funcdim==3)
-      gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+      else if(render_data.funcdim==2)
+      {
+          gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
+          gui_status.eval = 3;
+      }
+      else if(render_data.funcdim==3)
+      {
+          gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+          gui_status.eval = 3;
+      }
 
 
     if(render_data.mesh_dim == 3)
@@ -821,12 +827,12 @@ export class Scene {
             if(render_data.vectors_grid_size)
             {
                 this.gui_status_default.Vectors.grid_size = render_data.vectors_grid_size;
-                gui_status.Vectors.Vectors.grid_size = render_data.vectors_grid_size;
+                gui_status.Vectors.grid_size = render_data.vectors_grid_size;
             }
             if(render_data.vectors_offset)
             {
                 this.gui_status_default.Vectors.offset = render_data.vectors_offset;
-                gui_status.Vectors.Vectors.offset = render_data.vectors_offset;
+                gui_status.Vectors.offset = render_data.vectors_offset;
             }
         }
 
@@ -1687,8 +1693,8 @@ export class Scene {
 
     let three_clipping_plane = this.three_clipping_plane;
     three_clipping_plane.normal.set(gui_status.Clipping.x, gui_status.Clipping.y, gui_status.Clipping.z);
-    three_clipping_plane.normal.normalize();
-    three_clipping_plane.constant = gui_status.Clipping.dist; // -three_clipping_plane.normal.dot(mesh_center);
+      three_clipping_plane.normal.normalize();
+    three_clipping_plane.constant = gui_status.Clipping.dist-three_clipping_plane.normal.dot(this.mesh_center);
 
     // console.log("three_clipping_plane normal and const", three_clipping_plane.normal, three_clipping_plane.constant);
 
