@@ -1188,7 +1188,7 @@ namespace ngcomp
     Region() {}
     NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, string pattern);
     NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, const BitArray & amask);
-    NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, bool empty = true);
+    NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, bool all = false);
     Region (const Region &) = default;
     explicit operator VorB () const { return vb; }
     VorB VB() const { return vb; }
