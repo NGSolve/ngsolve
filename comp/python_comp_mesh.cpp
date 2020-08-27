@@ -315,6 +315,19 @@ nr : int
     .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
     .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); }, "BitArray mask of the region")
     .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
+    .def("Split", [](Region& self)
+    {
+      py::list regions;
+      for(auto i : Range(self.Mask()))
+        if(self.Mask()[i])
+          {
+            Region reg(self.Mesh(), self.VB());
+            reg.Mask().SetBit(i);
+            regions.append(reg);
+          }
+      return regions;
+    }, "Split region in domains/surfaces/...")
+    .def("Neighbours", &Region::GetNeighbours)
     .def(py::self + py::self)
     .def(py::self + string())
     .def(py::self - py::self)
