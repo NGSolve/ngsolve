@@ -1676,6 +1676,11 @@ namespace ngcomp
     : mesh(amesh), vb(avb), mask(amask)
   { ; }
 
+  Region :: Region (const shared_ptr<MeshAccess> & amesh, VorB avb, bool empty)
+    : mesh(amesh), vb(avb), mask(empty ? BitArray(amesh->GetNRegions(avb)).Clear() :
+                                 BitArray(amesh->GetNRegions(avb)).Set())
+  { ; }
+
   Region Region :: GetNeighbours(VorB other_vb)
   {
     if(vb == BND)
