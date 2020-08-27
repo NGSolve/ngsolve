@@ -538,9 +538,9 @@ export class Scene {
 
 
     var t2 = new THREE.Vector3();
-    if(normal.z<0.5)
+    if(Math.abs(normal.z)<0.5)
       plane0.projectPoint(new THREE.Vector3(0,0,1), t2);
-    else if(normal.y<0.5)
+    else if(Math.abs(normal.y)<0.5)
       plane0.projectPoint(new THREE.Vector3(0,1,0), t2);
     else
       plane0.projectPoint(new THREE.Vector3(1,0,0), t2);
@@ -751,10 +751,16 @@ export class Scene {
       cgui.add(gui_status.Complex, "speed", 0.0, 10, 0.0001).onChange(animate);
       uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
     }
-    else if(render_data.funcdim==2)
-      gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
-    else if(render_data.funcdim==3)
-      gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+      else if(render_data.funcdim==2)
+      {
+          gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
+          gui_status.eval = 3;
+      }
+      else if(render_data.funcdim==3)
+      {
+          gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+          gui_status.eval = 3;
+      }
 
 
     if(render_data.mesh_dim == 3)
@@ -762,11 +768,45 @@ export class Scene {
       let gui_clipping = gui.addFolder("Clipping");
       if(render_data.draw_vol)
       {
-        gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
+        if('clipping_function' in render_data)
+          {
+              this.gui_status_default.Clipping.function = render_data.clipping_function;
+              gui_status.Clipping.function = render_data.clipping_function;
+          }
 
         this.clipping_function_object = this.createClippingPlaneMesh(render_data);
         this.pivot.add(this.clipping_function_object);
+        gui_clipping.add(gui_status.Clipping, "function").onChange(animate);
       }
+
+      if(render_data.clipping)
+        {
+            console.log("render data clipping found");
+            this.gui_status_default.Clipping.enable = true;
+            gui_status.Clipping.enable = true;
+            if(render_data.clipping_x)
+            {
+                this.gui_status_default.Clipping.x = render_data.clipping_x;
+                gui_status.Clipping.x = render_data.clipping_x;
+            }
+            if(render_data.clipping_y)
+            {
+                this.gui_status_default.Clipping.y = render_data.clipping_y;
+                gui_status.Clipping.y = render_data.clipping_y;
+            }
+            if(render_data.clipping_z)
+            {
+                this.gui_status_default.Clipping.z = render_data.clipping_z;
+                gui_status.Clipping.z = render_data.clipping_z;
+            }
+            if(render_data.clipping_dist)
+            {
+                this.gui_status_default.Clipping.dist = render_data.clipping_dist;
+                gui_status.Clipping.dist = render_data.clipping_dist;
+            }
+        }
+        else
+            console.log("render data not clipping found!!!");
 
       gui_clipping.add(gui_status.Clipping, "enable").onChange(animate);
       gui_clipping.add(gui_status.Clipping, "x", -1.0, 1.0).onChange(animate);
@@ -780,10 +820,27 @@ export class Scene {
     draw_vectors = draw_vectors && (render_data.draw_surf && render_data.mesh_dim==2 || render_data.draw_vol && render_data.mesh_dim==3);
     if(draw_vectors)
     {
+      if(render_data.vectors)
+        {
+            this.gui_status_default.Vectors.show = true;
+            gui_status.Vectors.show = true;
+            if(render_data.vectors_grid_size)
+            {
+                this.gui_status_default.Vectors.grid_size = render_data.vectors_grid_size;
+                gui_status.Vectors.grid_size = render_data.vectors_grid_size;
+            }
+            if(render_data.vectors_offset)
+            {
+                this.gui_status_default.Vectors.offset = render_data.vectors_offset;
+                gui_status.Vectors.offset = render_data.vectors_offset;
+            }
+        }
+
       let gui_vec = gui.addFolder("Vectors");
       gui_vec.add(gui_status.Vectors, "show").onChange(animate);
       gui_vec.add(gui_status.Vectors, "grid_size", 1, 100, 1).onChange(()=>this.updateGridsize());
       gui_vec.add(gui_status.Vectors, "offset", -1.0, 1.0, 0.001).onChange(animate);
+
 
       if(render_data.mesh_dim==2)
         this.buffer_object = this.mesh_object.clone();
@@ -961,6 +1018,7 @@ export class Scene {
 
     this.updateRenderData(render_data);
     setTimeout(()=> this.onResize(), 0);
+    console.log("Scene init done", this);
   }
 
   updateColormap( )
@@ -1635,8 +1693,8 @@ export class Scene {
 
     let three_clipping_plane = this.three_clipping_plane;
     three_clipping_plane.normal.set(gui_status.Clipping.x, gui_status.Clipping.y, gui_status.Clipping.z);
-    three_clipping_plane.normal.normalize();
-    three_clipping_plane.constant = gui_status.Clipping.dist; // -three_clipping_plane.normal.dot(mesh_center);
+      three_clipping_plane.normal.normalize();
+    three_clipping_plane.constant = gui_status.Clipping.dist-three_clipping_plane.normal.dot(this.mesh_center);
 
     // console.log("three_clipping_plane normal and const", three_clipping_plane.normal, three_clipping_plane.constant);
 
