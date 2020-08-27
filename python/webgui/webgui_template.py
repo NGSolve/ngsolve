@@ -113,9 +113,17 @@ class WebGLScene:
         if self.clipping is not None:
             d['clipping'] = True
             if isinstance(self.clipping, dict):
+                allowed_args = ("x", "y", "z", "dist", "function", "pnt", "vec")
+                if "vec" in self.clipping:
+                    vec = self.clipping["vec"]
+                    self.clipping["x"] = vec[0]
+                    self.clipping["y"] = vec[1]
+                    self.clipping["z"] = vec[2]
+                if "pnt" in self.clipping:
+                    d['mesh_center'] = list(self.clipping["pnt"])
                 for name, val in self.clipping.items():
-                    if not (name in ("x", "y", "z", "dist", "function")):
-                        raise Exception('Only "x", "y", "z", "dist" allowed as arguments for clipping!')
+                    if not (name in allowed_args):
+                        raise Exception('Only {} allowed as arguments for clipping!'.format(", ".join(allowed_args)))
                     d['clipping_' + name] = val
 
         if self.vectors is not None:
