@@ -1676,7 +1676,30 @@ namespace ngcomp
     : mesh(amesh), vb(avb), mask(amask)
   { ; }
 
-  
+  Region Region :: GetNeighbours(VorB other_vb)
+  {
+    if(vb == BND)
+      {
+        if(other_vb == VOL)
+          {
+            auto ngmesh = mesh->GetNetgenMesh();
+            Region neighbours(mesh, VOL);
+            for(auto i : Range(mask))
+              {
+                if(mask[i])
+                  {
+                    auto& fd = ngmesh->GetFaceDescriptor(i+1);
+                    if(int index = fd.DomainIn(); index > 0)
+                      neighbours.Mask().SetBit(index-1);
+                    if(int index = fd.DomainOut(); index > 0)
+                      neighbours.Mask().SetBit(index-1);
+                  }
+              }
+            return neighbours;
+          }
+      }
+    throw Exception("GetNeighbours not yet implemented for this VB combination!");
+  }
 
   double MeshAccess :: ElementVolume (int elnr) const
   {
