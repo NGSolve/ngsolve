@@ -134,10 +134,11 @@ namespace ngla
 
     size_t NZE() const { return nze; }
 
+    // full col-index array
+    FlatArray<int> GetColIndices() const { return colnr; }
+
+    // col-indices of the i-th row
     FlatArray<int> GetRowIndices(size_t i) const
-      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
-      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
-      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
     { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }      
 
     size_t First (int i) const { return firsti[i]; }
@@ -423,9 +424,11 @@ namespace ngla
     }
 
     void PrefetchRow (int rownr) const;
-    
+
+    // full value array
+    FlatVector<TM> GetValues() const { return FlatVector<TM> (data.Size(), data.Addr(0)); }
+
     FlatVector<TM> GetRowValues(int i) const
-      // { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
     { return FlatVector<TM> (firsti[i+1]-firsti[i], data+firsti[i]); }
 
     static bool IsRegularIndex (int index) { return index >= 0; }

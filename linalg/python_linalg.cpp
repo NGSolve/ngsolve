@@ -120,8 +120,10 @@ void ExportSparseMatrix(py::module m)
     
     .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
          {
-           FlatArray<int> colind(sp->NZE(), sp->GetRowIndices(0).Addr(0));
-           FlatVector<T> values(sp->NZE(), sp->GetRowValues(0).Addr(0));
+           // FlatArray<int> colind(sp->NZE(), sp->GetRowIndices().Addr(0));
+           FlatArray<int> colind = sp->GetColIndices();
+           // FlatVector<T> values(sp->NZE(), sp->GetRowValues().Addr(0));
+           FlatVector<T> values = sp->GetValues();
            FlatArray<size_t> first = sp->GetFirstArray();
            return py::make_tuple (values, colind, first); 
          },
