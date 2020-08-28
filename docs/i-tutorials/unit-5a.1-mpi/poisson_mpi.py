@@ -5,15 +5,13 @@ from netgen.geom2d import unit_square
 comm = MPI.COMM_WORLD
 
 if comm.rank == 0:
-    ngmesh = unit_square.GenerateMesh(maxh=0.02)
-    ngmesh.Save("square.vol")
-    mesh = ngmesh.Distribute(comm)
+    ngmesh = unit_square.GenerateMesh(maxh=0.1).Distribute(comm)
 else:
-    mesh = netgen.meshing.Mesh.Receive(comm)
+    ngmesh = netgen.meshing.Mesh.Receive(comm)
 
-ngmesh.Refine()
+for l in range(3):
+    ngmesh.Refine()
 mesh = Mesh(ngmesh)
-
     
 fes = H1(mesh, order=3, dirichlet=".*")
 u,v = fes.TnT()
@@ -35,7 +33,6 @@ if comm.rank == 0:
 # (u,f) = 0.03514425357822445
 
     
-
 import pickle
 netgen.meshing.SetParallelPickling(True)
 pickle.dump (gfu, open("solution.pickle"+str(comm.rank), "wb"))
