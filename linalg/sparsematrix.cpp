@@ -55,7 +55,7 @@ namespace ngla
     firsti[size] = nze;
     
     // colnr.SetSize (nze+1);
-    colnr = NumaDistributedArray<int> (nze);
+    colnr = NumaDistributedArray<int> (nze);   // nze+1
 
     /*
     for (size_t i = 0; i < nze; i++)
@@ -879,7 +879,7 @@ namespace ngla
             firsti[size] = nze;
             timer_prefix.Stop();
             
-            colnr = NumaDistributedArray<int> (nze+1);
+            colnr = NumaDistributedArray<int> (nze);  // nze+1
 
 	    CalcBalancing ();
 
