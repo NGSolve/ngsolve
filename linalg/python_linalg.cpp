@@ -125,6 +125,13 @@ void ExportSparseMatrix(py::module m)
            // FlatVector<T> values(sp->NZE(), sp->GetRowValues().Addr(0));
            FlatVector<T> values = sp->GetValues();
            FlatArray<size_t> first = sp->GetFirstArray();
+           if (sp->NZE() != colind.Size() || sp->NZE() != values.Size())
+             {
+               cout << "sizes don't match:" << endl
+                    << "nze = " << sp->NZE() << endl
+                    << "val.size = " << values.Size() << endl
+                    << "colind.size = " << colind.Size() << endl;
+             }
            return py::make_tuple (values, colind, first); 
          },
          py::return_value_policy::reference_internal)
