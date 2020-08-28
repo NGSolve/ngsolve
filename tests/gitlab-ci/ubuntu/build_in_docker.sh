@@ -23,10 +23,10 @@ else
   export USE_NATIVE_ARCH="OFF"
 fi
 
-if [ "$IMAGE_NAME" == "mpi" ]
+if [ "$IMAGE_NAME" == "mpi" ] || [ "$IMAGE_NAME" == "avx" ]
 then
-  apt-get update && apt-get -y install libopenmpi-dev openmpi-bin gfortran-7 python3-mpi4py
-  export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF -DBUILD_STUB_FILES=OFF"
+    apt-get update && apt-get -y install libopenmpi-dev openmpi-bin gfortran-7 python3-mpi4py python3-petsc4py
+  export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=ON -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF -DBUILD_STUB_FILES=OFF"
 fi
 
 cd 
@@ -66,7 +66,9 @@ then
 
   export NGS_NUM_THREADS=4
   echo "build docu"
-  pip3 install jupyter widgetsnbextension
+  pip3 install --upgrade jupyter widgetsnbextension ipyparallel
+  ipython profile create --parallel --profile=mpi
+  echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_mpi/ipcluster_config.py
   jupyter nbextension install --py widgetsnbextension
   jupyter nbextension enable --py widgetsnbextension
   jupyter nbextension install --py ngsolve

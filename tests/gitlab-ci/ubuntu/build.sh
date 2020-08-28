@@ -12,6 +12,9 @@ docker run \
       -e CMAKE_ARGS="-DCPACK_DEBIAN_PACKAGE_NAME=ngsolve${PACKAGE_NAME_SUFFIX}" \
       -e CCACHE_DIR=/ccache \
       -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" \
+      -e MKL_NUM_THREADS=1 \
+      -e MKL_DOMAIN_THREADS="MKL_DOMAIN_PARDISO=6" \
+      -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64 \
       -e RUN_SLOW_TESTS="$RUN_SLOW_TESTS" \
       -v /opt/intel:/opt/intel \
       -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
