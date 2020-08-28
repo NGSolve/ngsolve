@@ -3,6 +3,7 @@ if(NETGEN_USE_PYTHON)
             __expr.py internal.py __console.py
             __init__.py utils.py solvers.py eigenvalues.py meshes.py
             krylovspace.py nonlinearsolvers.py bvp.py timing.py TensorProductTools.py
+            ngs2petsc.py
             DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve
             COMPONENT ngsolve
             )
