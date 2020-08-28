@@ -69,8 +69,6 @@ namespace ngla
 			hcolnr.Range(myrange) = -1;
 		      });
 
-    colnr[nze] = 0;
-
     CalcBalancing ();
   }
                                                                                                                                                                                                                   
@@ -764,7 +762,7 @@ namespace ngla
                        }
                      else
                        {
-                         auto ptr = &colnr[firsti[i]];
+                         auto ptr = colnr.Data()+firsti[i];
                          MergeArrays(ptrs, sizes, [&ptr] (int col) 
                                      {
                                        *ptr = col;
