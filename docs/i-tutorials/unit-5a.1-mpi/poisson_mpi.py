@@ -7,11 +7,14 @@ comm = MPI.COMM_WORLD
 if comm.rank == 0:
     ngmesh = unit_square.GenerateMesh(maxh=0.02)
     ngmesh.Save("square.vol")
-    mesh = Mesh(ngmesh.Distribute(comm))
+    mesh = ngmesh.Distribute(comm)
 else:
-    mesh = Mesh(netgen.meshing.Mesh.Receive(comm))
+    mesh = netgen.meshing.Mesh.Receive(comm)
 
+ngmesh.Refine()
+mesh = Mesh(ngmesh)
 
+    
 fes = H1(mesh, order=3, dirichlet=".*")
 u,v = fes.TnT()
 
@@ -29,12 +32,13 @@ gfu.vec.data = inv*f.vec
 ip = InnerProduct(gfu.vec, f.vec)
 if comm.rank == 0:
     print ("(u,f) =", ip)
+# (u,f) = 0.03514425357822445
 
-# if comm.size == 1:
-#     Draw (gfu)
-gfu.Save("solution.sol", parallel=True)
+    
 
-
+import pickle
+netgen.meshing.SetParallelPickling(True)
+pickle.dump (gfu, open("solution.pickle"+str(comm.rank), "wb"))
 
 
 

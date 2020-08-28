@@ -55,7 +55,7 @@ namespace ngla
     firsti[size] = nze;
     
     // colnr.SetSize (nze+1);
-    colnr = NumaDistributedArray<int> (nze+1);
+    colnr = NumaDistributedArray<int> (nze);
 
     /*
     for (size_t i = 0; i < nze; i++)
