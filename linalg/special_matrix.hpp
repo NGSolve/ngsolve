@@ -334,6 +334,74 @@ namespace ngla
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
   };
+
+
+
+
+  class LoggingMatrix : public BaseMatrix
+  {
+    shared_ptr<BaseMatrix> mat;
+    string label;
+    unique_ptr<ostream> out;
+  public:
+    LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string filename);
+    ~LoggingMatrix ();
+    int VHeight() const override { return mat->VHeight(); }
+    int VWidth() const override { return mat->VWidth(); }
+    bool IsComplex() const override { return mat->IsComplex(); }
+    
+    BaseVector & AsVector() override;
+    const BaseVector & AsVector() const override;
+    void SetZero() override;
+
+    ostream & Print (ostream & ost) const override { return mat->Print(ost); }
+    Array<MemoryUsage> GetMemoryUsage () const override { return mat->GetMemoryUsage(); }
+    size_t NZE () const override { return mat->NZE(); }
+
+    void Update() override { mat->Update(); }
+    shared_ptr<BaseMatrix> CreateMatrix () const override { return mat->CreateMatrix(); }
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
+
+    void Mult (const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const override;
+    
+    void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+                   const BitArray * ainner = NULL,
+                   const Array<int> * acluster = NULL) const override
+    { mat->MultAdd1 (s, x, y, ainner, acluster); }
+    
+    void MultAdd2 (double s, const BaseVector & x, BaseVector & y,
+                   const BitArray * ainner = NULL,
+                   const Array<int> * acluster = NULL) const override
+    { mat->MultAdd2 (s, x, y, ainner, acluster); }
+
+    shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override
+    { return mat->InverseMatrix(subset); }
+    
+    shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override
+    { return mat->InverseMatrix(clusters); }
+    
+    INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override
+    { return mat->SetInverseType(ainversetype); }
+    INVERSETYPE SetInverseType ( string ainversetype ) const override
+    { return mat->SetInverseType(ainversetype); }
+    INVERSETYPE  GetInverseType () const override
+    { return mat->GetInverseType(); }
+    void DoArchive (Archive & ar) override
+    { mat->DoArchive(ar); }
+  };
+  
+
+
+
+  
 }
 
 
