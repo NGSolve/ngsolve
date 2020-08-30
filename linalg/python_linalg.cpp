@@ -229,14 +229,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("MasterDofs", &ParallelDofs::MasterDofs)
     ;
 
+
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
 
     m.def("CreateParallelVector",
-          [] (shared_ptr<ParallelDofs> pardofs) -> shared_ptr<BaseVector>
+          [] (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status) -> shared_ptr<BaseVector>
           {
+            return CreateParallelVector(pardofs, status);
+            /*
 #ifdef PARALLEL
 	    if(pardofs->IsComplex())
 	      return make_shared<S_ParallelBaseVectorPtr<Complex>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, DISTRIBUTED);
@@ -248,8 +251,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	    else
 	      return make_shared<VVector<double>>(pardofs->GetNDofLocal());
 #endif
+            */
 	  },
-          py::arg("pardofs"));
+          py::arg("pardofs"), py::arg("status"));
      
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
@@ -1019,12 +1023,16 @@ inverse : string
            return m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel);
          }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false)
      ;
-
+  
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
     (m, "S_BaseMatrixD", "base sparse matrix");
   py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
     (m, "S_BaseMatrixC", "base sparse matrix");
 
+  py::class_<CumulationOperator, shared_ptr<CumulationOperator>, BaseMatrix> (m, "CumulationOperator")
+    .def(py::init<shared_ptr<ParallelDofs>>())
+    ;
+  
   py::class_<ConstantElementByElementMatrix, shared_ptr<ConstantElementByElementMatrix>, BaseMatrix>
     (m, "ConstEBEMatrix")
     .def(py::init<> ([] (size_t h, size_t w, Matrix<> mat,

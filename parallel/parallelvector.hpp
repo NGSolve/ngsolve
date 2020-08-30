@@ -258,6 +258,11 @@ namespace ngla
     virtual ~ParallelVFlatVector() throw()
     { ; }
   };
+
+
+
+  extern AutoVector CreateParallelVector (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status);
+  
 }
 
 // #endif

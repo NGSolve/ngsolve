@@ -410,6 +410,23 @@ namespace ngla
   }
 
 
+  AutoVector CreateParallelVector (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status)
+  {
+    if (!pardofs)
+      throw Exception ("CreateParallelVector called, but pardofs is nulltpr");
+
+    // taken this version from the py-interface, maybe we should always create a parallel-vector 
+    // #ifdef PARALLEL
+    if(pardofs->IsComplex())
+      return make_unique<S_ParallelBaseVectorPtr<Complex>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, status);
+    else
+      return make_unique<S_ParallelBaseVectorPtr<double>> (pardofs->GetNDofLocal(), pardofs->GetEntrySize(), pardofs, status);
+    // #else
+    // return CreateBaseVector (pardofs->GetNDofLocal(), pardofs->IsComplex(), pardofs->GetEntrySize());
+    // #endif
+  }
+
+  
   template class S_ParallelBaseVectorPtr<double>;
   template class S_ParallelBaseVectorPtr<Complex>;
 }
