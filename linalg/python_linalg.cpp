@@ -1032,6 +1032,10 @@ inverse : string
   py::class_<CumulationOperator, shared_ptr<CumulationOperator>, BaseMatrix> (m, "CumulationOperator")
     .def(py::init<shared_ptr<ParallelDofs>>())
     ;
+
+  py::class_<LoggingMatrix, shared_ptr<LoggingMatrix>, BaseMatrix> (m, "LoggingMatrix")
+    .def(py::init<shared_ptr<BaseMatrix>,string,string>(),py::arg("mat"), py::arg("label"), py::arg("logfile")="stdout")
+    ;
   
   py::class_<ConstantElementByElementMatrix, shared_ptr<ConstantElementByElementMatrix>, BaseMatrix>
     (m, "ConstEBEMatrix")

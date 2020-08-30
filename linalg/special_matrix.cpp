@@ -807,5 +807,103 @@ namespace ngla
   }
 
 
+  string PS(PARALLEL_STATUS stat)
+  {
+    switch (stat)
+      {
+      case DISTRIBUTED: return "distributed";
+      case CUMULATED: return "cumulated";
+      default: return "sequential";
+      }
+  }
+  LoggingMatrix :: LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string logfile)
+    : mat(amat), label(alabel)
+  {
+    if(logfile=="stdout")
+      out = make_unique<ostream>(cout.rdbuf());
+    else if(logfile=="stderr")
+      out = make_unique<ostream>(cerr.rdbuf());
+    else
+      out = make_unique<ofstream>(logfile);
+  }
+      
+  LoggingMatrix :: ~LoggingMatrix () { } 
+  
+  BaseVector & LoggingMatrix :: AsVector()
+  {
+    *out << "matrix '" << label << "' AsVector called" << endl;
+    return mat->AsVector();
+  }
+  
+  const BaseVector & LoggingMatrix :: AsVector() const
+  {
+    *out << "matrix '" << label << "' AsVector called" << endl;
+    return mat->AsVector();
+  }
+  
+  void LoggingMatrix :: SetZero()
+  {
+    mat->SetZero();
+  }
+
+  AutoVector LoggingMatrix :: CreateRowVector () const 
+  {
+    unique_ptr<BaseVector> vec = mat->CreateRowVector();
+    *out << "matrix '" << label << "' CreateRowVector "
+         << "size: " << vec->Size() << " " << PS(vec->GetParallelStatus()) << endl;
+    return move(vec);
+  }
+  
+  AutoVector LoggingMatrix :: CreateColVector () const
+  {
+    unique_ptr<BaseVector> vec = mat->CreateColVector();
+    *out << "matrix '" << label << "' CreateColVector "
+         << "size: " << vec->Size() << " " << PS(vec->GetParallelStatus()) << endl;
+    return move(vec);
+  }
+
+  
+  void LoggingMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    *out << "matrix '" << label << "' Mult: " 
+         << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
+         << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
+    mat->Mult(x,y);
+    *out << "matrix '" << label << "' Mult complete" << endl;
+  }
+  
+  void LoggingMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultTrans (x,y);
+  }
+  void LoggingMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    *out << "matrix '" << label << "' MultAdd: "
+         << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
+         << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
+    mat->MultAdd(s,x,y);
+    *out << "matrix '" << label << "' MultAdd complete" << endl;    
+  }
+  void LoggingMatrix :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultAdd(s,x,y);
+  }
+  void LoggingMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultTransAdd (s,x,y);
+  }
+  void LoggingMatrix :: MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultTransAdd (s,x,y);
+  }
+  void LoggingMatrix :: MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    mat->MultConjTransAdd (s,x,y);
+  }
+  void LoggingMatrix :: MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const
+  {
+    mat->MultAdd (alpha, x, y);
+  }
+
   
 }
