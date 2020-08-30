@@ -956,14 +956,50 @@ namespace ngcomp
         if (store_inner)
           innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
         */
-        harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nodofs, false, false, false);
+        auto ext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nodofs, false, false, false);
+        harmonicext = ext;
+        harmonicext_ptr = ext.get();
+        
         if (!symmetric)
-          harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nodofs, nidofs, false, false, false);
+          {
+            auto extt = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nodofs, nidofs, false, false, false);
+            harmonicexttrans = extt;
+            harmonicexttrans_ptr = extt.get();
+          }
         else
-          harmonicexttrans = make_shared<Transpose>(*harmonicext);
-        innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nidofs, false, true, true);
+          {
+            harmonicexttrans = make_shared<Transpose>(*harmonicext);
+            harmonicexttrans_ptr = nullptr;
+          }
+        auto isol = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nidofs, false, true, true);
+        innersolve = isol; 
+        innersolve_ptr = isol.get();
+        
         if (store_inner)
-          innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nidofs, false, true, true);
+          {
+            auto imat = make_shared<ElementByElementMatrix<SCAL>>(ndof, ndof, nidofs, nidofs, false, true, true);
+            innermatrix = imat;
+            innermatrix_ptr = imat.get();
+          }
+        else
+          innermatrix_ptr = nullptr;
+
+        if (this->GetFESpace()->IsParallel())
+          {
+            harmonicext = make_shared<ParallelMatrix> (harmonicext,
+                                                       this->GetTrialSpace()->GetParallelDofs(),
+                                                       this->GetTrialSpace()->GetParallelDofs(), C2C);
+            harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans,
+                                                            this->GetTestSpace()->GetParallelDofs(),
+                                                            this->GetTestSpace()->GetParallelDofs(), D2D);
+            innersolve = make_shared<ParallelMatrix> (innersolve,
+                                                      this->GetTestSpace()->GetParallelDofs(),
+                                                      this->GetTrialSpace()->GetParallelDofs(), D2C);
+            if (innermatrix)
+              innermatrix = make_shared<ParallelMatrix> (innermatrix,
+                                                         this->GetTrialSpace()->GetParallelDofs(),
+                                                         this->GetTestSpace()->GetParallelDofs(), C2D);
+          }
       }
   }
 
@@ -1491,10 +1527,10 @@ namespace ngcomp
                                          LapackAInvBt (dd, db);    // b <--- b d^-1
                                          LapackMultAddABt (db, dc, -1, da);   
                              
-                                         innermatrix ->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
+                                         innermatrix_ptr->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
                                        }
                                        else
-                                       innermatrix ->AddElementMatrix(el.Nr(),idnums,idnums,d);
+                                         innermatrix_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
                                      }
                                      
                                      /*
@@ -1537,18 +1573,17 @@ namespace ngcomp
                                        he = -d * Trans(c);
                                      }
                                      
-                                     harmonicext ->AddElementMatrix(el.Nr(),idnums,ednums,he);
+                                     harmonicext_ptr->AddElementMatrix(el.Nr(),idnums,ednums,he);
                                      if (!symmetric)
                                        {
                                          FlatMatrix<SCAL> het (sizeo, sizei, lh);
                                          // het = -b*d | Lapack;
                                          // MinusMultAB (b, d, het);
                                          het = -b * d;
-                                         static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans.get())
-                                           ->AddElementMatrix(el.Nr(),ednums,idnums,het);
+                                         harmonicexttrans_ptr->AddElementMatrix(el.Nr(),ednums,idnums,het);
                                        }
                                      
-                                     innersolve ->AddElementMatrix(el.Nr(),idnums,idnums,d);
+                                     innersolve_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
                                      {
                                        ThreadRegionTimer reg (statcondtimer_mult, TaskManager::GetThreadId());
                                        NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
@@ -3352,9 +3387,7 @@ namespace ngcomp
                              // he=0.0;
                              // LapackMultAddABt (d, c, -1, he);
                              he = -d * Trans(c);
-                             
-                             static_cast<ElementByElementMatrix<SCAL>*>(harmonicext.get())
-                               ->AddElementMatrix(i,idnums,ednums,he);
+                             harmonicext_ptr->AddElementMatrix(i,idnums,ednums,he);
                                   
                              if (!symmetric)
                                {
@@ -3362,11 +3395,9 @@ namespace ngcomp
                                  // het = 0.0;
                                  // LapackMultAddAB (b, d, -1, het);
                                  het = -b * d;
-                                 static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans.get())
-                                   ->AddElementMatrix(i,ednums,idnums,het);
+                                 harmonicexttrans_ptr->AddElementMatrix(i,ednums,idnums,het);
                                }
-                             static_cast<ElementByElementMatrix<SCAL>*>(innersolve.get())
-                               ->AddElementMatrix(i,idnums,idnums,d);
+                             innersolve_ptr->AddElementMatrix(i,idnums,idnums,d);
                              
                              // LapackMultAddAB (b, he, 1.0, a);
                              a += b*he;

@@ -437,11 +437,14 @@ namespace ngcomp
   {
   protected:
 
-    shared_ptr<ElementByElementMatrix<SCAL>> harmonicext; //  = NULL;
-    shared_ptr<BaseMatrix> harmonicexttrans; //  = NULL;
-    shared_ptr<ElementByElementMatrix<SCAL>> innersolve; //  = NULL;
-    shared_ptr<ElementByElementMatrix<SCAL>> innermatrix; //  = NULL;
+    shared_ptr<BaseMatrix> harmonicext;
+    shared_ptr<BaseMatrix> harmonicexttrans; 
+    shared_ptr<BaseMatrix> innersolve;
+    shared_ptr<BaseMatrix> innermatrix;
 
+    ElementByElementMatrix<SCAL> *harmonicext_ptr, *harmonicexttrans_ptr, *innersolve_ptr, *innermatrix_ptr;
+
+    
 #ifdef PARALLEL
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;
