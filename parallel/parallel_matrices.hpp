@@ -72,6 +72,33 @@ namespace ngla
 
 
 
+  class CumulationOperator : public BaseMatrix
+  {
+    shared_ptr<ParallelDofs> pardofs;
+    
+  public:
+    CumulationOperator (shared_ptr<ParallelDofs> apardofs)
+      : pardofs(apardofs) { } 
+    ~CumulationOperator() override;
+    bool IsComplex() const override { return pardofs->IsComplex(); } 
+    void Mult (const BaseVector & x, BaseVector & y) const override ;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override ;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
+
+    int VHeight() const override;
+    int VWidth() const override;
+
+    ostream & Print (ostream & ost) const override;
+    PARALLEL_OP GetOpType () const { return PARALLEL_OP::D2C; }
+  };
+
+
+  
+
   
 #ifdef PARALLEL
 

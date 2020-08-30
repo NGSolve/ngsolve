@@ -608,6 +608,91 @@ namespace ngla
   }
 
 
+  CumulationOperator :: ~CumulationOperator() { } 
+  
+  void CumulationOperator :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    if (pardofs->GetCommunicator().Size() == 1)
+      {
+        y = x;
+        return;
+      }
+    
+    if (x.GetParallelStatus() != DISTRIBUTED)
+      throw Exception ("CumulationOperator::Mult called, but x is not distributed");
+    if (y.GetParallelStatus() != CUMULATED)
+      throw Exception ("CumulationOperator::Mult called, but y is not distributed");
+
+    dynamic_cast<ParallelBaseVector&> (y).SetStatus(DISTRIBUTED);
+    y = x;
+    y.Cumulate();
+  }
+
+  void CumulationOperator :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    if (pardofs->GetCommunicator().Size() == 1)
+      {
+        y += s * x;
+        return;
+      }
+    
+    if (x.GetParallelStatus() != DISTRIBUTED)
+      throw Exception ("CumulationOperator::MultAdd called, but x is not distributed");
+    if (y.GetParallelStatus() != CUMULATED)
+      throw Exception ("CumulationOperator::MultAdd called, but y is not distributed");
+
+    y.Distribute();
+    y += s*x;
+    y.Cumulate();
+  }
+  
+  void CumulationOperator :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    throw Exception ("CumulationOp, multtrans not implemented");
+  }
+  
+  void CumulationOperator :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    throw Exception ("CumulationOp, multtransadd not implemented");
+  }
+
+  AutoVector CumulationOperator :: CreateRowVector () const
+  {
+    return CreateParallelVector(pardofs, DISTRIBUTED);
+  }
+  
+  AutoVector CumulationOperator :: CreateColVector () const
+  {
+    return CreateParallelVector(pardofs, CUMULATED);    
+  }
+
+  int CumulationOperator :: VHeight() const
+  {
+    return pardofs->GetNDofLocal();
+  }
+  
+  int CumulationOperator :: VWidth() const 
+  {
+    return pardofs->GetNDofLocal();
+  }
+
+
+  ostream & CumulationOperator :: Print (ostream & ost) const
+  {
+    ost << "CumulationOperator" << endl;
+    return ost;
+  }
+
+
+
+
+
+
+
+
+
+
+  
 
 #ifdef PARALLEL
 

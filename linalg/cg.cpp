@@ -560,10 +560,11 @@ namespace ngla
 	if(sh)
 	  sh->SetThreadPercentage(0);
  
+        auto w = u.CreateVector();
+        auto s = u.CreateVector();
         auto d = f.CreateVector();
-        auto w = f.CreateVector();
-        auto s = f.CreateVector();
-
+        auto as = f.CreateVector();
+        
 	int n = 0;
 	SCAL al, be, wd, wdn, kss;
 	double err;
@@ -598,15 +599,15 @@ namespace ngla
 	
 	while (n++ < maxsteps && Abs(wdn) > err && !(sh && sh->ShouldTerminate()))
 	  {
-	    w = (*a) * s;
+	    as = (*a) * s;
 	    wd = wdn;
-	    kss = S_InnerProduct<IPTYPE> (s, w);
+	    kss = S_InnerProduct<IPTYPE> (s, as);
 	    if (kss == 0.0) break;
 	    
 	    al = wd / kss;
 	    u += al * s;
-	    d -= al * w;
-
+	    d -= al * as;
+            
 	    if (c)
 	      w = (*c) * d;
 	    else
