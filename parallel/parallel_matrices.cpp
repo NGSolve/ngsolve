@@ -430,6 +430,9 @@ namespace ngla
   
   AutoVector ParallelMatrix :: CreateRowVector () const
   {
+    auto pd = row_paralleldofs ? row_paralleldofs : paralleldofs;
+    return CreateParallelVector (pd, DISTRIBUTED);
+    /*
     if (IsComplex()) {
       if (row_paralleldofs == nullptr)
 	return make_unique<S_ParallelBaseVectorPtr<Complex>>
@@ -446,10 +449,14 @@ namespace ngla
 	return make_unique<S_ParallelBaseVectorPtr<double>>
 	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
     }
+    */
   }
   
   AutoVector ParallelMatrix :: CreateColVector () const
   {
+    auto pd = col_paralleldofs ? col_paralleldofs : paralleldofs;
+    return CreateParallelVector (pd, DISTRIBUTED);
+    /*
     if (IsComplex()) {
       if (col_paralleldofs==nullptr)
 	return make_unique<S_ParallelBaseVectorPtr<Complex>>
@@ -466,6 +473,7 @@ namespace ngla
 	return make_unique<S_ParallelBaseVectorPtr<double>>
 	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
     }
+    */
   }
 
 
