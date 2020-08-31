@@ -91,14 +91,8 @@ namespace ngla
     virtual void AddRecvValues( int sender ) = 0;
     // { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
 
-    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs, 
-				  const Array<int> * procs = 0) = 0;
-    /*
-    { 
-      if ( aparalleldofs == 0 ) return;
-      cerr << "ERROR -- SetParallelDofs called for BaseVector, is not parallel" << endl; 
-    }
-    */
+    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs) = 0;
+    // const Array<int> * procs = 0) = 0;
   };
 
 
@@ -180,15 +174,16 @@ namespace ngla
     using ParallelBaseVector :: local_vec;
 
   public:
-    // S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
+    S_ParallelBaseVectorPtr (int as, int aes, void * adata, shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw();
     S_ParallelBaseVectorPtr (int as, int aes, shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw();
 
     virtual ~S_ParallelBaseVectorPtr ();
-    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs, const Array<int> * procs=0 );
+    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs); // , const Array<int> * procs=0 );
 
     virtual void Distribute() const;
     virtual ostream & Print (ostream & ost) const;
-
+    virtual AutoVector Range (T_Range<size_t> range) const;
+    
     virtual void  IRecvVec ( int dest, MPI_Request & request );
     // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender );

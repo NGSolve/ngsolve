@@ -183,12 +183,12 @@ namespace ngla
       InnerProduct (v2, conjugate);
   }
 
-
+  /*
   AutoVector BaseVector ::Range (size_t begin, size_t end) const
   {
     throw Exception ("BaseVector::Range const called");
   }
-
+  */
   AutoVector BaseVector :: Range (T_Range<size_t> range) const
   {
     throw Exception ("BaseVector::Range (IntRange) const called");
@@ -928,12 +928,13 @@ namespace ngla
   }
   
   
-
+  /*
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (size_t begin, size_t end) const
   {
     return make_unique<S_BaseVectorPtr<TSCAL>> (end-begin, es, pdata+begin*es);
   }
+  */
   
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (T_Range<size_t> range) const

@@ -249,7 +249,8 @@ namespace ngla
 
     virtual void SetRandom ();
 
-    virtual AutoVector Range (size_t begin, size_t end) const;
+    inline AutoVector Range (size_t begin, size_t end) const;
+    // { return Range(T_Range(begin, end)); }
     virtual AutoVector Range (T_Range<size_t> range) const;
 
     static bool IsRegularIndex (int index) { return index >= 0; }
@@ -477,119 +478,124 @@ namespace ngla
     operator BaseVector & () { return *vec; }
     operator const BaseVector & () const { return *vec; }
 
-    virtual AutoVector Range (size_t begin, size_t end) const { return vec->Range(begin,end); }
-    virtual AutoVector Range (T_Range<size_t> range) const { return vec->Range(range); }
+    AutoVector Range (size_t begin, size_t end) const { return vec->Range(begin,end); }
+    AutoVector Range (T_Range<size_t> range) const { return vec->Range(range); }
 
     template <typename T>
     auto FV () const { return vec->FV<T>(); }
     
 
-    virtual void * Memory () const throw () 
+    void * Memory () const throw () 
     {
       return vec->Memory();
     }
 
-    virtual FlatVector<double> FVDouble () const 
+    FlatVector<double> FVDouble () const 
     {
       return vec->FVDouble();
     }
-    virtual FlatVector<Complex> FVComplex () const
+    
+    FlatVector<Complex> FVComplex () const
     {
       return vec->FVComplex();
     }
 
-    virtual AutoVector CreateVector () const
+    AutoVector CreateVector () const
     {
       return vec->CreateVector();
     }
 
-    virtual double InnerProductD (const BaseVector & v2) const
+    double InnerProductD (const BaseVector & v2) const
     {
       return vec->InnerProductD (v2);
     }
 
-    virtual Complex InnerProductC (const BaseVector & v2, bool conjugate) const
+    Complex InnerProductC (const BaseVector & v2, bool conjugate) const
     {
       return vec->InnerProductC (v2, conjugate);
     }
 
-    virtual double L2Norm () const
+    double L2Norm () const
     {
       return vec->L2Norm();
     }
 
-    virtual bool IsComplex() const 
+    bool IsComplex() const 
     {
       return vec->IsComplex();
     }
 
-    virtual BaseVector & Scale (double scal)
+    BaseVector & Scale (double scal)
     {
       return vec->Scale(scal);
     }
 
-    virtual BaseVector & Scale (Complex scal)
+    BaseVector & Scale (Complex scal)
     {
       return vec->Scale(scal);
     }
 
-    virtual BaseVector & SetScalar (double scal)
+    BaseVector & SetScalar (double scal)
     {
       return vec->SetScalar(scal);
     }
-    virtual BaseVector & SetScalar (Complex scal)
+    BaseVector & SetScalar (Complex scal)
     {
       return vec->SetScalar(scal);
     }
 
-    virtual BaseVector & Set (double scal, const BaseVector & v)
+    BaseVector & Set (double scal, const BaseVector & v)
     {
       return vec->Set (scal,v);
     }
-    virtual BaseVector & Set (Complex scal, const BaseVector & v)
+    BaseVector & Set (Complex scal, const BaseVector & v)
     {
       return vec->Set (scal,v);
     }
 
-    virtual BaseVector & Add (double scal, const BaseVector & v)
+    BaseVector & Add (double scal, const BaseVector & v)
     {
       return vec->Add (scal,v);
     }
-    virtual BaseVector & Add (Complex scal, const BaseVector & v)
+    BaseVector & Add (Complex scal, const BaseVector & v)
     {
       return vec->Add (scal,v);
     }
 
-    virtual ostream & Print (ostream & ost) const
+    ostream & Print (ostream & ost) const
     {
       return vec->Print (ost);
     }
 
 
-    virtual void GetIndirect (FlatArray<int> ind, 
+    void GetIndirect (FlatArray<int> ind, 
 			      FlatVector<double> v) const
     {
       vec -> GetIndirect (ind, v);
     }
-    virtual void GetIndirect (FlatArray<int> ind, 
+    void GetIndirect (FlatArray<int> ind, 
 			      FlatVector<Complex> v) const
     {
       vec -> GetIndirect (ind, v);
     }
 
-    virtual void Cumulate () const 
+    void Cumulate () const 
     { vec -> Cumulate(); }
 
-    virtual void Distribute() const
+    void Distribute() const
     { vec -> Distribute(); }
 
-    virtual PARALLEL_STATUS GetParallelStatus () const
+    PARALLEL_STATUS GetParallelStatus () const
     { return vec -> GetParallelStatus(); }
 
-    virtual void SetParallelStatus (PARALLEL_STATUS stat) const
+    void SetParallelStatus (PARALLEL_STATUS stat) const
     { vec -> SetParallelStatus(stat); }
   };
 
+  AutoVector BaseVector::Range (size_t begin, size_t end) const
+  {
+    return Range(T_Range(begin, end));
+  }
 
   template <>
   inline FlatVector<double> BaseVector::FV<double> () const

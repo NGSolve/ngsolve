@@ -256,6 +256,30 @@ namespace ngla
     local_vec = make_shared<S_BaseVectorPtr<SCAL>>(as, aes, (void*)pdata);
   }
 
+
+  template <class SCAL>
+  S_ParallelBaseVectorPtr<SCAL> :: 
+  S_ParallelBaseVectorPtr (int as, int aes, void * adata,
+			   shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw()
+    : S_BaseVectorPtr<SCAL> (as, aes, adata)
+  { 
+    recvvalues = NULL;
+    if ( apd != 0 )
+      {
+	this -> SetParallelDofs ( apd );
+	status = stat;
+      }
+    else
+      {
+	paralleldofs = 0;
+	status = NOT_PARALLEL;
+      }
+    local_vec = make_shared<S_BaseVectorPtr<SCAL>>(as, aes, (void*)pdata);
+  }
+
+
+
+
   template <class SCAL>
   S_ParallelBaseVectorPtr<SCAL> :: ~S_ParallelBaseVectorPtr ()
   {
@@ -265,7 +289,7 @@ namespace ngla
 
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: 
-  SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs, const Array<int> * procs )
+  SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs) // , const Array<int> * procs )
   {
     if (this->paralleldofs == aparalleldofs) return;
 
@@ -283,13 +307,6 @@ namespace ngla
     auto dps = paralleldofs->GetDistantProcs();
     this->sreqs.SetSize(dps.Size());
     this->rreqs.SetSize(dps.Size());
-    // for (auto k : Range(dps)) {
-    //   auto p = dps[k];
-    //   MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(p);
-    //   MPI_Send_init( this->Memory(), 1, mpi_t, p, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &sreqs[k]);
-    //   MPI_Recv_init( &( (*recvvalues)[p][0]), (*recvvalues)[p].Size(), MyGetMPIType<TSCAL> (),
-    // 		     p, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &rreqs[k]);
-    // }
   }
 
 
@@ -327,6 +344,15 @@ namespace ngla
     return ost;
   }
 
+  template < class SCAL >  
+  AutoVector S_ParallelBaseVectorPtr<SCAL> :: Range (T_Range<size_t> range) const
+  {
+    AutoVector locvec = S_BaseVectorPtr<SCAL>::Range (range);
+    auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(), this->EntrySize(),
+                                                           locvec.Memory(), 
+                                                           nullptr, this->GetParallelStatus());
+    return move(vec);
+  }
 
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, MPI_Request & request )

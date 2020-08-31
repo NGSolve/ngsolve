@@ -963,6 +963,8 @@ inverse : string
 
     .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); }, "Return transpose of matrix")
     .def_property_readonly("H", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<ConjTrans> (m); }, "Return conjugate transpose of matrix (WIP, only partially supported)")
+    .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<EmbeddingTranspose> mb)->shared_ptr<BaseMatrix>
+         { return make_shared<EmbeddedTransposeMatrix> (mb->Width(), mb->GetRange(), mb); }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<ProductMatrix> (ma, mb); }, py::arg("mat"))
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
@@ -1304,9 +1306,7 @@ inverse : string
   
   py::class_<EmbeddingTranspose, shared_ptr<EmbeddingTranspose>, BaseMatrix> (m, "EmbeddingTranspose")
     .def("__rmatmul__", [](shared_ptr<EmbeddingTranspose> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         {
-           return make_shared<EmbeddedTransposeMatrix> (ma->Width(), ma->GetRange(), mb);
-         }, py::arg("mat"))
+         { return make_shared<EmbeddedTransposeMatrix> (ma->Width(), ma->GetRange(), mb); }, py::arg("mat"))
     ;
     
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")

@@ -865,7 +865,7 @@ namespace ngla
   
   void LoggingMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    *out << "matrix '" << label << "' Mult: " 
+    *out << "matrix '" << label << "' Mult: " << typeid(*mat).name() << " "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
     mat->Mult(x,y);
