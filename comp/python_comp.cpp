@@ -1963,7 +1963,10 @@ diffop : ngsolve.fem.DifferentialOperator
            if (definedon)
              {
                if (auto definedon_region = get_if<Region>(&*definedon); definedon_region)
-                 dx.definedon = definedon_region->Mask();
+                 {
+                   dx.definedon = definedon_region->Mask();
+                   dx.vb = VorB(*definedon_region);
+                 }
                if (auto definedon_string = get_if<string>(&*definedon); definedon_string)
                  dx.definedon = *definedon_string;
              }
