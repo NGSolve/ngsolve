@@ -133,6 +133,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
             dirichlet_constraints[BBND].SetBit(i);
       }
 
+    if (flags.StringFlagDefined("dirichlet_bbbnd"))
+      {
+        dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
+        dirichlet_constraints[BBBND].Clear();
+        
+        std::regex pattern(flags.GetStringFlag("dirichlet_bbbnd"));
+        for (int i : Range(ma->GetNRegions(BBBND)))
+          if (std::regex_match (ma->GetMaterial(BBBND, i), pattern))
+            
+            dirichlet_constraints[BBBND].SetBit(i);
+      }
+
     
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
@@ -337,6 +349,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  i.e. points in 2D and edges in 3D.\n"
       "  More than one boundary can be combined by the | operator,\n"
       "  i.e.: dirichlet_bbnd = 'top|right'";
+    docu.Arg("dirichlet_bbbnd") = "regexpr\n"
+      "  Regular expression string defining the dirichlet bbboundary,\n"
+      "  i.e. points in 3D.\n"
+      "  More than one boundary can be combined by the | operator,\n"
+      "  i.e.: dirichlet_bbbnd = 'top|right'";
     docu.Arg("definedon") = "Region or regexpr\n"
       "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
       "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
@@ -407,7 +424,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             }
     }
     */
-    for (auto vb : { BND, BBND, BBND })
+    for (auto vb : { BND, BBND, BBBND })
       {
         auto & dc = dirichlet_constraints[int(vb)];
         if (dc.Size())
@@ -473,7 +490,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
     */
 
-    for (auto vb : { BND, BBND, BBND })
+    for (auto vb : { BND, BBND, BBBND })
       {
         auto & dc = dirichlet_constraints[int(vb)];
         if (dc.Size())
