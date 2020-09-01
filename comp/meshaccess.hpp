@@ -1220,6 +1220,9 @@ namespace ngcomp
       return *this - Region(mesh, vb, pattern2);
     }
 
+    bool operator==(const Region& other) const;
+    size_t Hash() const;
+
     // Get adjacent regions of codim other_vb
     Region GetNeighbours(VorB other_vb);
   };
