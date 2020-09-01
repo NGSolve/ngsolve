@@ -328,6 +328,8 @@ nr : int
       return regions;
     }, "Split region in domains/surfaces/...")
     .def("Neighbours", &Region::GetNeighbours)
+    .def("__hash__", &Region::Hash)
+    .def("__eq__", &Region::operator==)
     .def(py::self + py::self)
     .def(py::self + string())
     .def(py::self - py::self)
