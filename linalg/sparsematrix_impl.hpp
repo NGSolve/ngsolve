@@ -23,7 +23,7 @@ namespace ngla
   {
 #ifdef __GNUC__
     size_t fi = firsti[rownr], fin = firsti[rownr+1];
-    int * pi = &colnr[fi], * pin = &colnr[fin];
+    int * pi = &colnr[fi], * pin = (&colnr[fin-1])+1;
     while (pi < pin)
       {
         _mm_prefetch (reinterpret_cast<void*>(pi), _MM_HINT_T2);
