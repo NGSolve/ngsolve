@@ -1706,6 +1706,23 @@ namespace ngcomp
     throw Exception("GetNeighbours not yet implemented for this VB combination!");
   }
 
+  bool Region :: operator==(const Region& other) const
+  {
+    if(mesh.get() != other.Mesh().get())
+      return false;
+    if(vb != other.VB())
+      return false;
+    return mask == other.Mask();
+  }
+
+  size_t Region :: Hash() const
+  {
+    HashArchive ar;
+    BitArray copy = mask;
+    ar & copy;
+    return ar.GetHash();
+  }
+
   double MeshAccess :: ElementVolume (int elnr) const
   {
     static FE_Segm0 segm0;
