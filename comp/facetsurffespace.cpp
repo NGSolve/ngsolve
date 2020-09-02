@@ -251,8 +251,8 @@ namespace ngcomp
       {
         //throw Exception("FacetSurfaceFESpace only implemented for 3d!");
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<2>>>();
-	      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<2>>>();
-	      evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<2>>>();
+        evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<2>>>();
 	
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
@@ -268,6 +268,8 @@ namespace ngcomp
     {
       throw Exception("FacetSurfaceFESpace only implemented for 2d and 3d");
     }
+
+    additional_evaluators.Set ("dual", evaluator[BND]);
 
   }
   
