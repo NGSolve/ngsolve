@@ -496,17 +496,22 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
   else {
     #if defined __AVX512F__
       #define SIMD_BITS "512"
-    #else
+    #elif defined __AVX__
       #define SIMD_BITS "256"
+    #elif defined __SSE__
+      #define SIMD_BITS "128"
     #endif
 
     int shuffle1, shuffle2;
     #if defined __AVX512F__
       shuffle1 = 0b11111111;
       shuffle2 = 0b01010101;
-    #else
+    #elif defined __AVX__
       shuffle1 = 0b1111;
       shuffle2 = 0b0101;
+    #elif defined __SSE__
+      shuffle1 = 0b11;
+      shuffle2 = 0b01;
     #endif
 
     out << "constexpr int SW = SIMD<double>::Size();" << endl;
@@ -515,8 +520,10 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
     if (c) {
       #if defined __AVX512F__
         out << "SIMD<double> conj(_mm512_set_pd(-1,1,-1,1,-1,1,-1,1));" << endl;
-      #else
+      #elif defined __AVX__
         out << "SIMD<double> conj(1,-1,1,-1);" << endl;
+      #elif defined __SSE__
+        out << "SIMD<double> conj(1,-1);" << endl;
       #endif
     }
 
@@ -535,14 +542,20 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
 
     for (int i = 0; i < h; i++) {
       out << "SIMD<double> a" << i << "(pa" << i << " + i);" << endl;
+      #ifdef __AVX__
       out << "__m"<<SIMD_BITS<<"d a" << i << "Im = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), "<<shuffle1<<");" << endl;
       out << "__m"<<SIMD_BITS<<"d a" << i << "Re = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+      #elif defined __SSE__
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Im = _mm_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), "<<shuffle1<<");" << endl;
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Re = _mm_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+      #endif
     }
     for (int j = 0; j < w; j++) {
       out << "SIMD<double> b" << j << " (pb" << j << " + i);" << endl;
       if (c) {
         out << "b" << j << " *= conj;" << endl;
       }
+      #ifdef __AVX__
       out << "__m"<<SIMD_BITS<<"d b" << j << "Swap = _mm"<<SIMD_BITS<<"_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), "<<shuffle2<<");" << endl;
       for (int i = 0; i < h; i++) {
         out << "__m"<<SIMD_BITS<<"d a" << i << "Im_b" << j << "Swap = _mm"<<SIMD_BITS<<"_mul_pd(a" << i << "Im, b" << j << "Swap);" << endl;
@@ -550,6 +563,15 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
       for (int i = 0; i < h; i++) {
         out << "sum" << i << "_" << j << " += SIMD<double> (_mm"<<SIMD_BITS<<"_fmaddsub_pd(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
       }
+      #elif defined __SSE__
+      out << "__m"<<SIMD_BITS<<"d b" << j << "Swap = _mm_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), "<<shuffle2<<");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << "__m"<<SIMD_BITS<<"d a" << i << "Im_b" << j << "Swap = _mm_mul_pd(a" << i << "Im, b" << j << "Swap);" << endl;
+      }
+      for (int i = 0; i < h; i++) {
+        out << "sum" << i << "_" << j << " += SIMD<double> (_mm_fmaddsub_pd(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
+      }
+      #endif
     }
     out << "}" << endl;
 
@@ -560,14 +582,20 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
 
     for (int i = 0; i < h; i++) {
       out << "SIMD<double> a" << i << "(pa" << i << " + i, mask);" << endl;
+      #ifdef __AVX__
       out << "__m"<<SIMD_BITS<<"d a" << i << "Im = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), "<<shuffle1<<");" << endl;
       out << "__m"<<SIMD_BITS<<"d a" << i << "Re = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+      #elif defined __SSE__
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Im = _mm_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), "<<shuffle1<<");" << endl;
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Re = _mm_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+      #endif
     }
     for (int j = 0; j < w; j++) {
       out << "SIMD<double> b" << j << " (pb" << j << " + i, mask);" << endl;
       if (c) {
         out << "b" << j << " *= conj;" << endl;
       }
+      #ifdef __AVX__
       out << "__m"<<SIMD_BITS<<"d b" << j << "Swap = _mm"<<SIMD_BITS<<"_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), "<<shuffle2<<");" << endl;
       for (int i = 0; i < h; i++) {
         out << "__m"<<SIMD_BITS<<"d a" << i << "Im_b" << j << "Swap = _mm"<<SIMD_BITS<<"_mul_pd(a" << i << "Im, b" << j << "Swap);" << endl;
@@ -575,6 +603,15 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
       for (int i = 0; i < h; i++) {
         out << "sum" << i << "_" << j << " += SIMD<double> (_mm"<<SIMD_BITS<<"_fmaddsub_pd(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
       }
+      #elif defined __SSE__
+      out << "__m"<<SIMD_BITS<<"d b" << j << "Swap = _mm_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), "<<shuffle2<<");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << "__m"<<SIMD_BITS<<"d a" << i << "Im_b" << j << "Swap = _mm_mul_pd(a" << i << "Im, b" << j << "Swap);" << endl;
+      }
+      for (int i = 0; i < h; i++) {
+        out << "sum" << i << "_" << j << " += SIMD<double> (_mm_fmaddsub_pd(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
+      }
+      #endif
     }
     out << "}" << endl;
 
@@ -584,9 +621,12 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
         #if defined __AVX512F__
           out << "pc[" << j << "+" << i << "*dc].real((sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]) + (sum" << i << "_" << j << "[4] + sum" << i << "_" << j << "[6]));" << endl;
           out << "pc[" << j << "+" << i << "*dc].imag((sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]) + (sum" << i << "_" << j << "[5] + sum" << i << "_" << j << "[7]));" << endl;
-        #else
+        #elif defined __AVX__
           out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]);" << endl;
           out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]);" << endl;
+        #elif defined __SSE__
+          out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0]);" << endl;
+          out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1]);" << endl;
         #endif
       }
     }
@@ -676,14 +716,18 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
 {
   #if defined __AVX512F__
     #define SIMD_BITS "512"
-  #else
+  #elif defined __AVX__
     #define SIMD_BITS "256"
+  #elif defined __SSE__
+    #define SIMD_BITS "128"
   #endif
 
   #if defined __AVX512F__
     int swap_pairs = 0b01010101;
-  #else
+  #elif defined __AVX__
     int swap_pairs = 0b0101;
+  #elif defined __SSE__
+    int swap_pairs = 0b01;
   #endif
 
   out << "template <> INLINE void MultiScaleAddC<" << h << ", " << w << ">" << endl
@@ -696,8 +740,13 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
 
   for (int i = 0; i < h; i++) {
     for (int j = 0; j < w; j++) {
+      #ifdef __AVX__
       out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Re = _mm" << SIMD_BITS << "_set1_pd(pc[" << i << "+" << j << "*dc].real());" << endl;
       out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im = _mm" << SIMD_BITS << "_set1_pd(pc[" << i << "+" << j << "*dc].imag());" << endl;
+      #elif defined __SSE__
+      out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Re = _mm_set1_pd(pc[" << i << "+" << j << "*dc].real());" << endl;
+      out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im = _mm_set1_pd(pc[" << i << "+" << j << "*dc].imag());" << endl;
+      #endif
     }
   }
 
@@ -717,12 +766,21 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
   for (int j = 0; j < w; j++)
     {
       out << "SIMD<double> b" << j << "(pb" << j << "+i);" << endl;
+      #ifdef __AVX__
       out << "__m" << SIMD_BITS << "d b" << j << "Swap = _mm" << SIMD_BITS << "_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
       for (int i = 0; i < h; i++)
         {
           out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im_b" << j << "Swap = _mm" << SIMD_BITS << "_mul_pd(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
           out << "a" << i << " += SIMD<double> (_mm" << SIMD_BITS << "_fmaddsub_pd(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
         }
+      #elif defined __SSE__
+      out << "__m" << SIMD_BITS << "d b" << j << "Swap = _mm_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im_b" << j << "Swap = _mm_mul_pd(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
+          out << "a" << i << " += SIMD<double> (_mm_fmaddsub_pd(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
+        }
+      #endif
     }
 
   for (int i = 0; i < h; i++)
@@ -739,11 +797,19 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
   for (int j = 0; j < w; j++)
     {
       out << "SIMD<double> b" << j << "(pb" << j << "+i, mask);" << endl;
+      #ifdef __AVX__
       out << "__m" << SIMD_BITS << "d b" << j << "Swap = _mm" << SIMD_BITS << "_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
       for (int i = 0; i < h; i++) {
         out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im_b" << j << "Swap = _mm" << SIMD_BITS << "_mul_pd(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
         out << "a" << i << " += SIMD<double> (_mm" << SIMD_BITS << "_fmaddsub_pd(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
       }
+      #elif defined __SSE__
+      out << "__m" << SIMD_BITS << "d b" << j << "Swap = _mm_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im_b" << j << "Swap = _mm_mul_pd(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
+        out << "a" << i << " += SIMD<double> (_mm_fmaddsub_pd(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
+      }
+      #endif
     }
   for (int i = 0; i < h; i++)
     out << "a" << i << ".Store(pa" << i << "+i, mask);" << endl;
