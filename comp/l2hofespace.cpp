@@ -3634,6 +3634,91 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       dnums.Range(j*locndof1, (j+1)*locndof1) = eldofs + j*ndof1;
   }
 
+
+
+
+  shared_ptr<BaseMatrix> TangentialSurfaceL2FESpace ::
+  GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                   shared_ptr<Region> defon,
+                   LocalHeap & lh) const 
+  {
+    if (ma->GetDimension() != 2)
+      return FESpace::GetMassOperator(rho, defon, lh);
+    
+    auto dofs = make_shared<Table<DofId>> (CreateDofTable(BND));
+    Matrix<> bmat;
+    Vector<double> rho_jac;
+    Vector<double> eldiag;
+    Vector<double> weights;
+
+    constexpr int DIM = 2;
+    bool firsttime = true;
+    // IterateElements (*this, BND, lh,
+    for (auto el : Elements(BND))
+      {
+        auto & cfel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+        auto & fel = static_cast<const BaseScalarFiniteElement&>(cfel[0]);
+        // auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
+        const ElementTransformation & trafo = el.GetTrafo();
+        
+        IntegrationRule ir1(fel.ElementType(), 2*fel.Order());
+        Array<int> verts { el.Vertices() };
+        Facet2SurfaceElementTrafo f2s(fel.ElementType(), verts);
+        auto & ir = f2s(ir1, lh);
+        // auto & mir = trafo(ir, lh);
+        MappedIntegrationRule<DIM-1,DIM> mir(ir, trafo, lh);
+        
+        
+        FlatMatrix<> rhovals(ir.Size(), 1, lh);
+        if (rho)
+          rho->Evaluate (mir, rhovals);
+        else
+          rhovals = 1;
+        
+        for (size_t i = 0; i < ir.Size(); i++)
+          {
+            Mat<DIM,DIM-1> trans;
+            trans = 1/mir[i].GetJacobiDet() * mir[i].GetJacobian();
+            rhovals.Row(i) *= mir[i].GetMeasure() * (Trans(trans)*trans)(0,0);
+          }
+
+        Matrix<> shapes(fel.GetNDof(), ir.Size());
+        bmat.SetSize(ir.Size(), fel.GetNDof());
+        fel.CalcShape (ir, shapes);
+        if (firsttime)
+          {
+            firsttime = false;
+            bmat = Trans(shapes);
+            
+            eldiag.SetSize(fel.GetNDof());
+            fel.GetDiagMassMatrix (eldiag); 
+
+            weights.SetSize(ir.Size());
+            for (int i = 0; i < ir.Size(); i++)
+              weights(i) = ir[i].Weight();
+
+            rho_jac.SetSize(rhovals.Height() * ma->GetNE(BND));
+          }
+        else
+          { // for checking only
+            if (L2Norm(bmat-Trans(shapes)) > 1e-8)
+              cout << "surface mass bmats not constant !" << endl;
+          }
+        rho_jac.Range ( rhovals.Height() * IntRange(el.Nr(), el.Nr()+1) ) = rhovals.Col(0);
+      }
+    
+    // cout << "doftable = " << doftable << endl;
+    // cout << "eldiag = " << eldiag << endl;
+
+    for (int i = 0; i < weights.Size(); i++)
+      bmat.Row(i) *= sqrt(weights(i));
+    return make_shared<ApplyL2Mass> (dynamic_pointer_cast<FESpace>(const_cast< TangentialSurfaceL2FESpace*>(this)->shared_from_this()),
+                                     rho, false, defon,
+                                     bmat, eldiag, rho_jac, dofs,
+                                     lh);    
+  }
+  
+
   
   void TangentialSurfaceL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                              LocalHeap & lh) const
