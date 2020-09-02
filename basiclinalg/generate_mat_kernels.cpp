@@ -443,6 +443,172 @@ void GenerateMultiVecScalAB (ostream & out, int h, int w)
 
 
 /*
+  C = A * B^t
+  A ... h x n
+  B ... w * n
+
+  bool c for conjugate
+*/
+void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
+{
+
+  out << "template <> INLINE void MultiVecScalC<" << h << ", " << w << ", " << c << ">" << endl
+      << "    (size_t n," << endl
+      << "     Complex** ppa," << endl
+      << "     Complex** ppb," << endl
+      << "     Complex* pc, size_t dc)" << endl
+      << "{" << endl;
+
+  // LoadFast and StoreFast is significantly faster for h == w == 1
+  if (h == 1 && w == 1) {
+    out << "constexpr int SW = SIMD<double>::Size();" << endl
+         << "SIMD<Complex> sum0_0(0);" << endl
+         << "Complex* pa0 = ppa[0];" << endl
+         << "Complex* pb0 = ppb[0];" << endl
+         << "size_t i = 0;" << endl
+         << "for ( ; i+SW <= n; i+=SW) {" << endl
+         << "SIMD<Complex> a0;" << endl
+         << "a0.LoadFast(pa0+i);" << endl
+         << "SIMD<Complex> b0;" << endl
+         << "b0.LoadFast(pb0+i);" << endl;
+    if (c) {
+      out << "sum0_0 += a0 * Conj(b0);" << endl;
+    }
+    else {
+      out << "sum0_0 += a0 * b0;" << endl;
+    }
+    out << "}" << endl
+         << "int r = n % SW;" << endl
+         << "if (r) {" << endl
+         << "SIMD<Complex> a0;" << endl
+         << "a0.LoadFast(pa0+i, r);" << endl
+         << "SIMD<Complex> b0;" << endl
+         << "b0.LoadFast(pb0+i, r);" << endl;
+    if (c) {
+      out << "sum0_0 += a0 * Conj(b0);" << endl;
+    }
+    else {
+      out << "sum0_0 += a0 * b0;" << endl;
+    }
+    out << "}" << endl
+         << "*(pc+0*dc) = HSum(sum0_0);" << endl;
+  }
+  else {
+    #if defined __AVX512F__
+      #define SIMD_BITS "512"
+    #elif defined __AVX__
+      #define SIMD_BITS "256"
+    #elif defined __SSE__
+      #define SIMD_BITS "128"
+    #endif
+
+    int shuffle1, shuffle2;
+    #if defined __AVX512F__
+      shuffle1 = 0b11111111;
+      shuffle2 = 0b01010101;
+    #elif defined __AVX__
+      shuffle1 = 0b1111;
+      shuffle2 = 0b0101;
+    #else
+      shuffle1 = 0b11;
+      shuffle2 = 0b01;
+    #endif
+
+    out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+    // declare variables
+    if (c) {
+      #if defined __AVX512F__
+        out << "SIMD<double> conj(_mm512_set_pd(-1,1,-1,1,-1,1,-1,1));" << endl;
+      #elif defined __AVX__
+        out << "SIMD<double> conj(1,-1,1,-1);" << endl;
+      #else
+        out << "SIMD<double> conj(1,-1);" << endl;
+      #endif
+    }
+
+    for (int i = 0; i < h; i++)
+      for (int j = 0; j < w; j++)
+        out << "SIMD<double> sum" << i << "_" << j << "(0);" << endl;
+
+    for (int i = 0; i < h; i++)
+      out << "double* pa" << i << " = (double*) ppa[" << i << "];" << endl;
+    for (int j = 0; j < w; j++)
+      out << "double* pb" << j << " = (double*) ppb[" << j << "];" << endl;
+
+    // calculate inner-product
+    out << "size_t i = 0;" << endl;
+    out << "for (; i+SW <= 2*n; i+=SW) {" << endl; // 2*n since the vectors are complex
+
+    for (int i = 0; i < h; i++) {
+      out << "SIMD<double> a" << i << "(pa" << i << " + i);" << endl;
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Im = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), "<<shuffle1<<");" << endl;
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Re = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+    }
+    for (int j = 0; j < w; j++) {
+      out << "SIMD<double> b" << j << " (pb" << j << " + i);" << endl;
+      if (c) {
+        out << "b" << j << " *= conj;" << endl;
+      }
+      out << "__m"<<SIMD_BITS<<"d b" << j << "Swap = _mm"<<SIMD_BITS<<"_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), "<<shuffle2<<");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << "__m"<<SIMD_BITS<<"d a" << i << "Im_b" << j << "Swap = _mm"<<SIMD_BITS<<"_mul_pd(a" << i << "Im, b" << j << "Swap);" << endl;
+      }
+      for (int i = 0; i < h; i++) {
+        out << "sum" << i << "_" << j << " += SIMD<double> (_mm"<<SIMD_BITS<<"_fmaddsub_pd(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
+      }
+    }
+    out << "}" << endl;
+
+    // remaining coefficients
+    out << "int r = (2*n) % SW;" << endl;
+    out << "if (r) {" << endl;
+    out << "SIMD<mask64> mask(r);" << endl;
+
+    for (int i = 0; i < h; i++) {
+      out << "SIMD<double> a" << i << "(pa" << i << " + i, mask);" << endl;
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Im = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), "<<shuffle1<<");" << endl;
+      out << "__m"<<SIMD_BITS<<"d a" << i << "Re = _mm"<<SIMD_BITS<<"_shuffle_pd(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+    }
+    for (int j = 0; j < w; j++) {
+      out << "SIMD<double> b" << j << " (pb" << j << " + i, mask);" << endl;
+      if (c) {
+        out << "b" << j << " *= conj;" << endl;
+      }
+      out << "__m"<<SIMD_BITS<<"d b" << j << "Swap = _mm"<<SIMD_BITS<<"_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), "<<shuffle2<<");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << "__m"<<SIMD_BITS<<"d a" << i << "Im_b" << j << "Swap = _mm"<<SIMD_BITS<<"_mul_pd(a" << i << "Im, b" << j << "Swap);" << endl;
+      }
+      for (int i = 0; i < h; i++) {
+        out << "sum" << i << "_" << j << " += SIMD<double> (_mm"<<SIMD_BITS<<"_fmaddsub_pd(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
+      }
+    }
+    out << "}" << endl;
+
+    // store results
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        #if defined __AVX512F__
+          out << "pc[" << j << "+" << i << "*dc].real((sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]) + (sum" << i << "_" << j << "[4] + sum" << i << "_" << j << "[6]));" << endl;
+          out << "pc[" << j << "+" << i << "*dc].imag((sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]) + (sum" << i << "_" << j << "[5] + sum" << i << "_" << j << "[7]));" << endl;
+        #elif defined __AVX__
+          out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]);" << endl;
+          out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]);" << endl;
+        #else
+          out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0]);" << endl;
+          out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1]);" << endl;
+        #endif
+      }
+    }
+  }
+
+  out << "}" << endl;
+
+}
+
+
+
+/*
   A[i] += sum_j c(j,i) * y[j]
   A ... h x n
   B ... w x n
@@ -509,6 +675,98 @@ void GenerateMultiScaleAdd (ostream & out, int h, int w)
 
   out << "}" << endl;
 }
+
+
+/*
+  A[i] += sum_j c(j,i) * y[j]
+  A ... h x n
+  B ... w x n
+*/
+void GenerateMultiScaleAddC (ostream & out, int h, int w)
+{
+  #if defined __AVX512F__
+    #define SIMD_BITS "512"
+  #elif defined __AVX__
+    #define SIMD_BITS "256"
+  #elif defined __SSE__
+    #define SIMD_BITS "128"
+  #endif
+
+  #if defined __AVX512F__
+    int swap_pairs = 0b01010101;
+  #elif defined __AVX__
+    int swap_pairs = 0b0101;
+  #else
+    int swap_pairs = 0b01;
+  #endif
+
+  out << "template <> INLINE void MultiScaleAddC<" << h << ", " << w << ">" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** ppa, " << endl
+      << "     Complex ** ppb, " << endl
+      << "     Complex * pc, size_t dc)" << endl
+      << "{" << endl;
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Re = _mm" << SIMD_BITS << "_set1_pd(pc[" << i << "+" << j << "*dc].real());" << endl;
+      out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im = _mm" << SIMD_BITS << "_set1_pd(pc[" << i << "+" << j << "*dc].imag());" << endl;
+    }
+  }
+
+  for (int i = 0; i < h; i++) {
+    out << "double* pa" << i << " = (double*) ppa[" << i << "];" << endl;
+  }
+  for (int j = 0; j < w; j++) {
+    out << "double* pb" << j << " = (double*) ppb[" << j << "];" << endl;
+  }
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= 2*n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<double> b" << j << "(pb" << j << "+i);" << endl;
+      out << "__m" << SIMD_BITS << "d b" << j << "Swap = _mm" << SIMD_BITS << "_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im_b" << j << "Swap = _mm" << SIMD_BITS << "_mul_pd(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
+          out << "a" << i << " += SIMD<double> (_mm" << SIMD_BITS << "_fmaddsub_pd(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
+        }
+    }
+
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".Store(pa" << i << "+i);" << endl;
+
+  out << "}" << endl;
+
+  out << "size_t r = (2 * n) % SW;" << endl;
+  out << "if (r) {" << endl;
+  out << "SIMD<mask64> mask(r);" << endl;
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i, mask);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<double> b" << j << "(pb" << j << "+i, mask);" << endl;
+      out << "__m" << SIMD_BITS << "d b" << j << "Swap = _mm" << SIMD_BITS << "_shuffle_pd(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << "__m" << SIMD_BITS << "d c" << i << "_" << j << "Im_b" << j << "Swap = _mm" << SIMD_BITS << "_mul_pd(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
+        out << "a" << i << " += SIMD<double> (_mm" << SIMD_BITS << "_fmaddsub_pd(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
+      }
+    }
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".Store(pa" << i << "+i, mask);" << endl;
+
+  out << "}" << endl;
+
+  out << "}" << endl;
+}
+
 
 
 
@@ -1517,6 +1775,30 @@ int main ()
   GenerateMultiVecScalAB (out, 1, 1);
 
 
+  // MultiVecScalC
+  out << "template <size_t H, size_t W, bool conjugate> inline void MultiVecScalC" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** ppa," << endl
+      << "     Complex ** ppb," << endl
+      << "     Complex* pc, size_t dc);" << endl;
+
+  GenerateMultiVecScalC(out, 6, 2, 0);
+  GenerateMultiVecScalC(out, 6, 1, 0);
+  GenerateMultiVecScalC(out, 3, 2, 0);
+  GenerateMultiVecScalC(out, 3, 1, 0);
+  GenerateMultiVecScalC(out, 1, 8, 0);
+  GenerateMultiVecScalC(out, 1, 4, 0);
+  GenerateMultiVecScalC(out, 1, 1, 0);
+  GenerateMultiVecScalC(out, 6, 2, 1);
+  GenerateMultiVecScalC(out, 6, 1, 1);
+  GenerateMultiVecScalC(out, 3, 2, 1);
+  GenerateMultiVecScalC(out, 3, 1, 1);
+  GenerateMultiVecScalC(out, 1, 8, 1);
+  GenerateMultiVecScalC(out, 1, 4, 1);
+  GenerateMultiVecScalC(out, 1, 1, 1);
+
+
+
 
     // MultiScaleAdd
   out << "template <size_t H, size_t W> inline void MultiScaleAdd" << endl
@@ -1534,6 +1816,22 @@ int main ()
   GenerateMultiScaleAdd(out, 6, 1);
   GenerateMultiScaleAdd(out, 2, 1);
   GenerateMultiScaleAdd(out, 1, 1);
+
+
+    // MultiScaleAddC
+  out << "template <size_t H, size_t W> inline void MultiScaleAddC" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** pa, " << endl
+      << "     Complex ** pb, " << endl
+      << "     Complex * pc, size_t dc);" << endl;
+
+
+  GenerateMultiScaleAddC (out, 3, 4);
+  GenerateMultiScaleAddC (out, 2, 4);
+  GenerateMultiScaleAddC (out, 1, 4);
+  GenerateMultiScaleAddC (out, 3, 1);
+  GenerateMultiScaleAddC (out, 2, 1);
+  GenerateMultiScaleAddC (out, 1, 1);
 
 
   
