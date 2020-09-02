@@ -632,7 +632,7 @@ kwargs : kwargs
          "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
 
     .def_property_readonly("components", 
-                  [](shared_ptr<CompoundFESpace> self)-> py::tuple
+                  [](shared_ptr<FESpace> self)-> py::tuple
                    { 
                      if (auto compspace = dynamic_pointer_cast<CompoundFESpace>(self))
                        {
@@ -644,7 +644,7 @@ kwargs : kwargs
                      throw Exception("components only available for ProductSpace");                     
                    }, "deprecated, will be only available for ProductSpace")
     .def("Range",
-         [] (shared_ptr<CompoundFESpace> self, int comp)
+         [] (shared_ptr<FESpace> self, int comp)
          {
            if (auto compspace = dynamic_pointer_cast<CompoundFESpace>(self))
              return compspace->GetRange(comp);
