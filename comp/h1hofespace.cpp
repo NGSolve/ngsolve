@@ -2306,6 +2306,8 @@ into the wirebasket.
             tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
           if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
             tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
+          if (flags.StringFlagDefined(dirnames[i]+"_bbbnd"))
+            tmpflags.SetFlag ("dirichlet_bbbnd", flags.GetStringFlag(dirnames[i]+"_bbbnd"));
           AddSpace (make_shared<H1HighOrderFESpace> (ama, tmpflags));
         }
 
@@ -2365,6 +2367,15 @@ into the wirebasket.
       "  Dirichlet bboundary for the second component";
     docu.Arg("dirichletz_bbnd") = "regexpr\n"
       "  Dirichlet bboundary for the third component";
+    docu.Arg("dirichletx_bbbnd") = "regexpr\n"
+      "  Regular expression string defining the dirichlet bbboundary,\n"
+      "  i.e. points in 3D, on the first component.\n"
+      "  More than one bbboundary can be combined by the | operator,\n"
+      "  i.e.: dirichletx_bbbnd = 'top|right'";
+    docu.Arg("dirichlety_bbbnd") = "regexpr\n"
+      "  Dirichlet bbboundary for the second component";
+    docu.Arg("dirichletz_bbbnd") = "regexpr\n"
+      "  Dirichlet bbboundary for the third component";
 
     return docu;
   }
