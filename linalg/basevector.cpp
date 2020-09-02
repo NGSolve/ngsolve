@@ -1019,6 +1019,56 @@ namespace ngla
 
     }
 
+
+    void Add (const MultiVector & v2, FlatMatrix<Complex> mat) override
+    {
+      static Timer t("BaseVector-MV :: mult mat complex");
+      RegionTimer reg(t);
+      t.AddFlops (4*mat.Height()*mat.Width()*this->RefVec()->FVComplex().Size());
+
+      size_t n = refvec->FVComplex().Size();
+
+      size_t BBH = 128;
+      size_t AH = 256;
+      size_t BH = 128;
+
+
+      ParallelFor(1 + n / BBH, [&] (int i) {
+
+        int i0 = BBH * i;
+        int is = min(BBH, n - i0);
+
+        // allocate memory for pointer arrays
+        STACK_ARRAY(Complex*, ppx, AH);
+        STACK_ARRAY(Complex*, ppy, BH);
+
+        for (int j0 = 0; j0 < Size(); j0 += AH) {
+          int js = min(AH, Size() - j0);
+
+          // get pointers of first multivector
+          for (int ell = 0; ell < js; ell++) {
+            ppx[ell] = (*this)[j0 + ell]->FVComplex().Addr(i0);
+          }
+
+          for (int k0 = 0; k0 < v2.Size(); k0+=BH) {
+            int ks = min(BH, v2.Size() - k0);
+
+            // get pointers of second multivector
+            for (int ell = 0; ell < ks; ell++) {
+              ppy[ell] = v2[k0 + ell]->FVComplex().Addr(i0);
+            }
+
+            MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(js, ks, mat.Width(), &mat(j0,k0)));
+
+          }
+
+        }
+
+      });
+
+    }
+
+
     
     Vector<> InnerProductD (const BaseVector & v2) const override
     {
@@ -1094,6 +1144,70 @@ namespace ngla
       return res;
 
     }
+
+    Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate) const override
+    {
+      static Timer t("BaseVector-MultiVector::InnerProductC");
+      RegionTimer reg(t);
+      t.AddFlops (4*Size()*v2.Size()*this->RefVec()->FVComplex().Size());
+
+      size_t n = this->RefVec()->FVComplex().Size();
+
+      Matrix<Complex> res(Size(), v2.Size());
+      res = 0. + 0i;
+
+      constexpr size_t BBH = 256;
+      constexpr size_t BH = 256;
+
+      // first multivector is split to avoid stack overflow when allocating ppx
+      constexpr size_t AH = 256;
+
+      ParallelFor ( 1 + n / BBH, [&] (int i) {
+
+        int i0 = BBH * i;
+        int is = min(BBH, n - i0);
+
+        STACK_ARRAY(Complex*, ppx, AH);
+        STACK_ARRAY(Complex*, ppy, BH);
+
+        for (int j0 = 0; j0 < Size(); j0 += AH) {
+          int js = min(AH, Size() - j0);
+
+          // store pointers to vectors of first multivector
+          for (int ell=0; ell < js; ell++) {
+            ppx[ell] = (*this)[j0 + ell]->FVComplex().Addr(i0);
+          }
+
+          for (int k0 = 0; k0 < v2.Size(); k0 += BH) {
+            int ks = min(BH, v2.Size() - k0);
+
+            // store pointers to vectors of second multivector
+            for(int ell=0; ell < ks; ell++) {
+              ppy[ell] = v2[k0 + ell]->FVComplex().Addr(i0);
+            }
+
+            // calculate result
+            Matrix<Complex> res_sub(js, ks);
+
+            ngbla::PairwiseInnerProduct(is, FlatArray(js, ppx), FlatArray(ks, ppy), res_sub, conjugate);
+
+            // add the results to the matrix res
+            for (int ell_j = 0; ell_j < js; ell_j++) {
+              for (int ell_k = 0; ell_k < ks; ell_k++) {
+                AtomicAdd(res(j0 + ell_j, k0 + ell_k), res_sub(ell_j, ell_k));
+              }
+            }
+
+          }
+
+        }
+
+      });
+
+
+      return res;
+    }
+
 
   };
 
