@@ -459,41 +459,88 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
       << "     Complex* pc, size_t dc)" << endl
       << "{" << endl;
 
-  // LoadFast and StoreFast is significantly faster for h == w == 1
-  if (h == 1 && w == 1) {
-    out << "constexpr int SW = SIMD<double>::Size();" << endl
-         << "SIMD<Complex> sum0_0(0);" << endl
-         << "Complex* pa0 = ppa[0];" << endl
-         << "Complex* pb0 = ppb[0];" << endl
-         << "size_t i = 0;" << endl
-         << "for ( ; i+SW <= n; i+=SW) {" << endl
-         << "SIMD<Complex> a0;" << endl
-         << "a0.LoadFast(pa0+i);" << endl
-         << "SIMD<Complex> b0;" << endl
-         << "b0.LoadFast(pb0+i);" << endl;
-    if (c) {
-      out << "sum0_0 += a0 * Conj(b0);" << endl;
-    }
-    else {
-      out << "sum0_0 += a0 * b0;" << endl;
-    }
-    out << "}" << endl
-         << "int r = n % SW;" << endl
-         << "if (r) {" << endl
-         << "SIMD<Complex> a0;" << endl
-         << "a0.LoadFast(pa0+i, r);" << endl
-         << "SIMD<Complex> b0;" << endl
-         << "b0.LoadFast(pb0+i, r);" << endl;
-    if (c) {
-      out << "sum0_0 += a0 * Conj(b0);" << endl;
-    }
-    else {
-      out << "sum0_0 += a0 * b0;" << endl;
-    }
-    out << "}" << endl
-         << "*(pc+0*dc) = HSum(sum0_0);" << endl;
+
+  #ifndef __FMA__
+
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++)
+    for (int j = 0; j < w; j++)
+      out << "SIMD<Complex> sum" << i << "_" << j << "(0);" << endl;
+
+  for (int i = 0; i < h; i++) {
+    out << "Complex* pa" << i << " = ppa[" << i << "];" << endl;
   }
-  else {
+  for (int i = 0; i < w; i++) {
+    out << "Complex* pb" << i << " = ppb[" << i << "];" << endl;
+  }
+
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++)
+  {
+    out << "SIMD<Complex> a" << i << ";" << endl;
+    out << "a" << i << ".LoadFast(pa" << i << "+i);" << endl;
+  }
+
+  for (int j = 0; j < w; j++)
+    {
+	    out << "SIMD<Complex> b" << j << ";" << endl;
+      if (c) {
+        out << "b" << j << "=" << "Conj(b" << j << ");" << endl;
+      }
+      out << "b" << j << ".LoadFast(pb" << j << "+i);" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << "sum" << i << "_" << j << " += a" << i << " * b" << j << ";" << endl;
+        }
+    }
+  out << "}" << endl;
+
+  out << "int r = n % SW;" << endl;
+  out << "if (r) {" << endl;
+  for (int i = 0; i < h; i++) {
+	   out << "SIMD<Complex> a" << i << ";" << endl;
+     out << "a" << i << ".LoadFast(pa" << i << "+i, r);" << endl;
+  }
+
+      for (int j = 0; j < w; j++)
+        {
+          out << "SIMD<Complex> b" << j << ";" << endl;
+          if (c) {
+            out << "b" << j << "=" << "Conj(b" << j << ");" << endl;
+          }
+          out << "b" << j << ".LoadFast(pb" << j << "+i, r);" << endl;
+          for (int i = 0; i < h; i++)
+            out << "sum" << i << "_" << j << " += a" << i << " * b" << j << ";" << endl;
+        }
+      out << "}" << endl;
+
+
+  if (w == 1)
+  {
+    for (int i = 0; i < h; i++)
+    {
+      out << "*(pc+" << i << "*dc) = HSum(sum" << i << "_0);" << endl;
+    }
+  }
+  else
+  {
+    for (int i = 0; i < h; i++)
+    {
+      int j = 0;
+      for(; j < w; j++) {
+        out << "*(pc+" << i << "*dc+" << j << ") = HSum(sum" << i << "_" << j << ");" << endl;
+      }
+    }
+  }
+
+  out << "}" << endl;
+
+  #else
+
     #if defined __AVX512F__
       #define SIMD_BITS "512"
     #elif defined __AVX__
@@ -630,9 +677,9 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
         #endif
       }
     }
-  }
 
   out << "}" << endl;
+  #endif
 
 }
 
@@ -711,9 +758,80 @@ void GenerateMultiScaleAdd (ostream & out, int h, int w)
   A[i] += sum_j c(j,i) * y[j]
   A ... h x n
   B ... w x n
+
+  complex version
 */
 void GenerateMultiScaleAddC (ostream & out, int h, int w)
 {
+  out << "template <> INLINE void MultiScaleAddC<" << h << ", " << w << ">" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** ppa, " << endl
+      << "     Complex ** ppb, " << endl
+      << "     Complex * pc, size_t dc)" << endl
+      << "{" << endl;
+
+  #ifndef __FMA__
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      out << "Complex c" << i << "_" << j << " = pc[" << i << "+" << j << "*dc];" << endl;
+    }
+  }
+
+  for (int i = 0; i < h; i++) {
+    out << "Complex* pa" << i << " = ppa[" << i << "];" << endl;
+  }
+  for (int j = 0; j < w; j++) {
+    out << "Complex* pb" << j << " = ppb[" << j << "];" << endl;
+  }
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++) {
+    out << "SIMD<Complex> a" << i << ";" << endl;
+    out << "a" << i << ".LoadFast(pa" << i << "+i);" << endl;
+  }
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<Complex> b" << j << ";" << endl;
+      out << "b" << j << ".LoadFast(pb" << j << "+i);" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << "a" << i << " += c" << i << "_" << j << " * b" << j << ";" << endl;
+        }
+    }
+
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".StoreFast(pa" << i << "+i);" << endl;
+
+  out << "}" << endl;
+
+  out << "int r = n % SW;" << endl;
+  out << "if (r) {" << endl;
+  for (int i = 0; i < h; i++) {
+    out << "SIMD<Complex> a" << i << ";" << endl;
+    out << "a" << i << ".LoadFast(pa" << i << "+i, r);" << endl;
+  }
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<Complex> b" << j << ";" << endl;
+      out << "b" << j << ".LoadFast(pb" << j << "+i, r);" << endl;
+      for (int i = 0; i < h; i++)
+          out << "a" << i << " += c" << i << "_" << j << " * b" << j << ";" << endl;
+    }
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".StoreFast(pa" << i << "+i, r);" << endl;
+
+  out << "}" << endl;
+
+  out << "}" << endl;
+
+  #else
+
   #if defined __AVX512F__
     #define SIMD_BITS "512"
   #elif defined __AVX__
@@ -730,12 +848,6 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
     int swap_pairs = 0b01;
   #endif
 
-  out << "template <> INLINE void MultiScaleAddC<" << h << ", " << w << ">" << endl
-      << "    (size_t n," << endl
-      << "     Complex ** ppa, " << endl
-      << "     Complex ** ppb, " << endl
-      << "     Complex * pc, size_t dc)" << endl
-      << "{" << endl;
   out << "constexpr int SW = SIMD<double>::Size();" << endl;
 
   for (int i = 0; i < h; i++) {
@@ -817,6 +929,8 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
   out << "}" << endl;
 
   out << "}" << endl;
+
+  #endif
 }
 
 
