@@ -496,22 +496,17 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
   else {
     #if defined __AVX512F__
       #define SIMD_BITS "512"
-    #elif defined __AVX__
+    #else
       #define SIMD_BITS "256"
-    #elif defined __SSE__
-      #define SIMD_BITS "128"
     #endif
 
     int shuffle1, shuffle2;
     #if defined __AVX512F__
       shuffle1 = 0b11111111;
       shuffle2 = 0b01010101;
-    #elif defined __AVX__
+    #else
       shuffle1 = 0b1111;
       shuffle2 = 0b0101;
-    #else
-      shuffle1 = 0b11;
-      shuffle2 = 0b01;
     #endif
 
     out << "constexpr int SW = SIMD<double>::Size();" << endl;
@@ -520,10 +515,8 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
     if (c) {
       #if defined __AVX512F__
         out << "SIMD<double> conj(_mm512_set_pd(-1,1,-1,1,-1,1,-1,1));" << endl;
-      #elif defined __AVX__
-        out << "SIMD<double> conj(1,-1,1,-1);" << endl;
       #else
-        out << "SIMD<double> conj(1,-1);" << endl;
+        out << "SIMD<double> conj(1,-1,1,-1);" << endl;
       #endif
     }
 
@@ -591,12 +584,9 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
         #if defined __AVX512F__
           out << "pc[" << j << "+" << i << "*dc].real((sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]) + (sum" << i << "_" << j << "[4] + sum" << i << "_" << j << "[6]));" << endl;
           out << "pc[" << j << "+" << i << "*dc].imag((sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]) + (sum" << i << "_" << j << "[5] + sum" << i << "_" << j << "[7]));" << endl;
-        #elif defined __AVX__
+        #else
           out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]);" << endl;
           out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]);" << endl;
-        #else
-          out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0]);" << endl;
-          out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1]);" << endl;
         #endif
       }
     }
@@ -686,18 +676,14 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
 {
   #if defined __AVX512F__
     #define SIMD_BITS "512"
-  #elif defined __AVX__
+  #else
     #define SIMD_BITS "256"
-  #elif defined __SSE__
-    #define SIMD_BITS "128"
   #endif
 
   #if defined __AVX512F__
     int swap_pairs = 0b01010101;
-  #elif defined __AVX__
-    int swap_pairs = 0b0101;
   #else
-    int swap_pairs = 0b01;
+    int swap_pairs = 0b0101;
   #endif
 
   out << "template <> INLINE void MultiScaleAddC<" << h << ", " << w << ">" << endl
