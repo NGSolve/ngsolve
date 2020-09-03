@@ -141,6 +141,9 @@ namespace ngla
     
     int GetNTasks() const { return 1; }
     NgMPI_Comm GetCommunicator () const { return NgMPI_Comm(MPI_COMM_WORLD); }
+
+    shared_ptr<ParallelDofs> Range (IntRange range) const
+    { return nullptr; }
     
     FlatArray<int> GetExchangeDofs (int proc) const
     { return FlatArray<int> (0, nullptr); }

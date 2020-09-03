@@ -33,7 +33,7 @@ namespace ngla
       return DISTRIBUTED;
   }
 
-  static PARALLEL_OP ParallelOp (PARALLEL_STATUS stat_row, PARALLEL_STATUS stat_col)
+  inline PARALLEL_OP ParallelOp (PARALLEL_STATUS stat_row, PARALLEL_STATUS stat_col)
   {
     if (stat_row == CUMULATED)
       return (stat_col == CUMULATED) ? C2C : C2D;

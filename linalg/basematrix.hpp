@@ -750,6 +750,7 @@ namespace ngla
   shared_ptr<BaseMatrix> ComposeOperators (shared_ptr<BaseMatrix> a,
                                            shared_ptr<BaseMatrix> b);
 
+  shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat);
   
   /// output operator for matrices
   inline ostream & operator<< (ostream & ost, const BaseMatrix & m)
