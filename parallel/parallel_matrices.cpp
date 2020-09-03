@@ -427,6 +427,17 @@ namespace ngla
     : ParallelMatrix(amat, apardofs, apardofs)
   { }
 
+
+  BaseMatrix::OperatorInfo ParallelMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = "ParallelMatrix, optype = " + ToString(RowType(op)) + " --> " + ToString(ColType(op));
+    info.height = Height();
+    info.width = Width();
+    info.childs += mat.get();
+    return info;
+  }
+
   
   AutoVector ParallelMatrix :: CreateRowVector () const
   {

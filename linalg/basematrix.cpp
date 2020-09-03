@@ -312,6 +312,93 @@ namespace ngla
   }
 
 
+  BaseMatrix::OperatorInfo BaseMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = typeid(*this).name();
+    info.height = Height();
+    info.width = Width();
+    return info;
+  }
+
+  BaseMatrix::OperatorInfo IdentityMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    if (has_format)
+      {
+        info.name = "Identity";
+        info.height = Height();
+        info.width = Width();
+      }
+    else
+      {
+        info.name = "Identity (any format)";
+        info.height = 0;
+        info.width = 0;
+      }
+    return info;
+  }
+
+
+  
+  BaseMatrix::OperatorInfo SumMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = "SumMatrix";
+    try
+      {
+        info.height = Height();
+        info.width = Width();
+      }
+    catch (Exception &)
+      {
+        cerr << "SumMatrix::GetOperatorInfo, got exception for H/W" << endl;        
+      };
+    info.childs += &bma;
+    info.childs += &bmb;
+    return info;
+  }
+
+  
+  
+  BaseMatrix::OperatorInfo ProductMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = "ProductMatrix";
+    try
+      {
+        info.height = Height();
+        info.width = Width();
+      }
+    catch (Exception &)
+      {
+        cerr << "ProductMatrix::GetOperatorInfo, got exception for H/W" << endl;
+      }
+    info.childs += &bma;
+    info.childs += &bmb;
+    return info;
+  }
+
+
+  
+  void BaseMatrix :: PrintOperatorInfo (ostream & ost, int level) const
+  {
+    auto info = GetOperatorInfo();
+    
+    ost << string(2*level, ' ');
+    ost << info.name << ", h = " << info.height << ", w = " << info.width << endl;
+    for (auto c : info.childs)
+      {
+        try
+          {
+            c->PrintOperatorInfo (ost, level+1);
+          }
+        catch (Exception & e)
+          {
+            ost << "got exception, child type is " << typeid(*c).name() << endl;
+          } 
+      }
+  }
 
 
 
@@ -335,14 +422,21 @@ namespace ngla
     auto para = dynamic_pointer_cast<ParallelMatrix> (a);
     auto parb = dynamic_pointer_cast<ParallelMatrix> (b);
 
-    if (para && parb && (RowType(para->GetOpType()) == ColType(parb->GetOpType())))
+    if (para && parb)
       {
-        // cout << "combining parallel matrices" << endl;
-        auto localprod = ComposeOperators (para->GetMatrix(), parb->GetMatrix());
-        return make_shared<ParallelMatrix> (localprod,
-                                            parb->GetRowParallelDofs(),
-                                            para->GetColParallelDofs(),
-                                            ParallelOp(RowType(parb->GetOpType()), ColType(para->GetOpType())));
+        if (RowType(para->GetOpType()) == ColType(parb->GetOpType()))
+          {
+            // cout << "combining parallel matrices" << endl;
+            auto localprod = ComposeOperators (para->GetMatrix(), parb->GetMatrix());
+            return make_shared<ParallelMatrix> (localprod,
+                                                parb->GetRowParallelDofs(),
+                                                para->GetColParallelDofs(),
+                                                ParallelOp(RowType(parb->GetOpType()), ColType(para->GetOpType())));
+          }
+        else
+          {
+            cerr << "illegal operator composition" << endl;
+          }
       }
 
     

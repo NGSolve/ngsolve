@@ -71,8 +71,17 @@ namespace ngla
 
 
   enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
-
-
+  inline ostream & operator<< (ostream & ost, PARALLEL_STATUS stat)
+  {
+    switch (stat)
+      {
+      case DISTRIBUTED: ost << "distributed"; break;
+      case CUMULATED: ost << "cumulated"; break;
+      default: ost << "sequential";
+      }
+    return ost;
+  }
+  
 
   /**
      Base vector for linalg
