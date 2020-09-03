@@ -9,6 +9,7 @@
 */
 
 #include <la.hpp>
+#include <../parallel/parallel_matrices.hpp>
 
 namespace ngla
 {
@@ -309,5 +310,64 @@ namespace ngla
       }
     return "";
   }
+
+
+
+
+
+
+
+  shared_ptr<BaseMatrix> ComposeOperators (shared_ptr<BaseMatrix> a,
+                                           shared_ptr<BaseMatrix> b)
+  {
+    if (auto embb = dynamic_pointer_cast<EmbeddingTranspose> (b))
+      {
+        // cout << "embeddingT optimization" << endl;
+        return make_shared<EmbeddedTransposeMatrix> (embb->Width(), embb->GetRange(), a);
+      }
+    
+    if (auto emba = dynamic_pointer_cast<Embedding> (a))
+      {
+        // cout << "embedding optimization" << endl;        
+        return make_shared<EmbeddedMatrix> (emba->Height(), emba->GetRange(), b);
+      }
+
+    auto para = dynamic_pointer_cast<ParallelMatrix> (a);
+    auto parb = dynamic_pointer_cast<ParallelMatrix> (b);
+
+    if (para && parb && (RowType(para->GetOpType()) == ColType(parb->GetOpType())))
+      {
+        // cout << "combining parallel matrices" << endl;
+        auto localprod = ComposeOperators (para->GetMatrix(), parb->GetMatrix());
+        return make_shared<ParallelMatrix> (localprod,
+                                            parb->GetRowParallelDofs(),
+                                            para->GetColParallelDofs(),
+                                            ParallelOp(RowType(parb->GetOpType()), ColType(para->GetOpType())));
+      }
+
+    
+    return make_shared<ProductMatrix> (a, b);
+  }
+
+
+  shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat)
+  {
+    if (auto emb = dynamic_pointer_cast<Embedding> (mat))
+      return make_shared<EmbeddingTranspose> (emb->Height(), emb->GetRange());
+
+    if (auto emb = dynamic_pointer_cast<EmbeddingTranspose> (mat))
+      return make_shared<Embedding> (emb->Width(), emb->GetRange());
+
+    if (auto parmat = dynamic_pointer_cast<ParallelMatrix> (mat))
+      return make_shared<ParallelMatrix> (TransposeOperator(parmat->GetMatrix()),
+                                          parmat->GetColParallelDofs(),
+                                          parmat->GetRowParallelDofs(),
+                                          ParallelOp(ColType(parmat->GetOpType()), RowType(parmat->GetOpType())));
+
+    
+    return make_shared<Transpose> (mat);
+  }
+  
+    
 
 }
