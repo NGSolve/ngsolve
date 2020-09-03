@@ -896,6 +896,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
+
+    .def("GetOperatorInfo", [] (BaseMatrix & self)
+         {
+           stringstream str;
+           self.PrintOperatorInfo(str);
+           return str.str();
+         })
+    
     .def("CreateMatrix", [] ( BaseMatrix & self)
          { return self.CreateMatrix(); }, "Create matrix of same dimension and same sparsestructure" )
 
