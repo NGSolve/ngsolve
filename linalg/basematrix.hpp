@@ -130,7 +130,17 @@ namespace ngla
     virtual INVERSETYPE  GetInverseType () const;
 
     virtual void DoArchive (Archive & ar);
+
+    class OperatorInfo
+    {
+    public:
+      string name = "undef";
+      size_t height = 0, width = 0;
+      Array<const BaseMatrix*> childs;
+    };
     
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const;
+    void PrintOperatorInfo (ostream & ost, int level = 0) const;
   private:
     BaseMatrix & operator= (const BaseMatrix & m2) { return *this; }
   };
@@ -423,6 +433,7 @@ namespace ngla
     }
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
     virtual AutoVector CreateRowVector () const override { return bmb.CreateRowVector(); }
     virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
@@ -505,6 +516,8 @@ namespace ngla
     { ; }
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
+
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
     virtual AutoVector CreateRowVector () const override
     {
@@ -673,6 +686,8 @@ namespace ngla
       : has_format(true), size(asize), is_complex(ais_complex) { ; }
     
     virtual bool IsComplex() const override { return is_complex; }
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+    
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {

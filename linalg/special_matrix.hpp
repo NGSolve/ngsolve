@@ -153,6 +153,8 @@ namespace ngla
     virtual int VHeight() const override { return height; }
     virtual int VWidth() const override { return mat->VWidth(); }
 
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+
     virtual AutoVector CreateRowVector () const override
     {
       return mat->CreateRowVector();      
@@ -216,6 +218,8 @@ namespace ngla
 
     virtual bool IsComplex() const override { return mat->IsComplex(); } 
 
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+    
     virtual int VHeight() const override { return mat->Height(); }
     virtual int VWidth() const override { return width; }
 
