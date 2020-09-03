@@ -3138,7 +3138,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ProxyNode (std::move(l));
   }
   
+  shared_ptr<BaseMatrix> CompoundFESpace :: EmbeddingOperator (int spacenr) const
+  {
+    shared_ptr<BaseMatrix> emb = make_shared<Embedding> (GetNDof(), GetRange(spacenr), IsComplex());
+    if (IsParallel())
+      emb = make_shared<ParallelMatrix> (emb, spaces[spacenr] -> GetParallelDofs(),
+                                         GetParallelDofs(), C2C);
+    return emb;
+  }
 
+  
+  shared_ptr<BaseMatrix> CompoundFESpace :: RestrictionOperator (int spacenr) const
+  {
+    shared_ptr<BaseMatrix> emb = make_shared<EmbeddingTranspose> (GetNDof(), GetRange(spacenr), IsComplex());
+    if (IsParallel())
+      emb = make_shared<ParallelMatrix> (emb,
+                                         GetParallelDofs(),
+                                         spaces[spacenr] -> GetParallelDofs(),
+                                         C2C);
+    return emb;
+  }
+  
   
 
   FiniteElement & CompoundFESpace :: GetFE (ElementId ei, Allocator & alloc) const

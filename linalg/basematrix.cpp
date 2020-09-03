@@ -362,7 +362,8 @@ namespace ngla
       return make_shared<ParallelMatrix> (TransposeOperator(parmat->GetMatrix()),
                                           parmat->GetColParallelDofs(),
                                           parmat->GetRowParallelDofs(),
-                                          ParallelOp(ColType(parmat->GetOpType()), RowType(parmat->GetOpType())));
+                                          ParallelOp(InvertType(ColType(parmat->GetOpType())),
+                                                     InvertType(RowType(parmat->GetOpType()))));
 
     
     return make_shared<Transpose> (mat);
