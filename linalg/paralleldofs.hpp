@@ -58,6 +58,8 @@ namespace ngla
 		  int dim = 1, bool iscomplex = false);
 
     shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
+
+    shared_ptr<ParallelDofs> Range (IntRange range) const;
       
     virtual ~ParallelDofs();
 

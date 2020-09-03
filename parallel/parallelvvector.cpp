@@ -8,6 +8,110 @@
 namespace ngla
 {
 
+  class ParallelRangeVector : public ParallelBaseVector
+  {
+  protected:
+    const ParallelBaseVector * orig;
+    IntRange range;
+  public:
+    ParallelRangeVector (const ParallelBaseVector * aorig, IntRange arange)
+      : BaseVector(), ParallelBaseVector(), orig(aorig), range(arange)
+    {
+      BaseVector::entrysize = aorig->EntrySize();
+      this->size = range.Size();
+      status = orig->GetParallelStatus();
+      local_vec = orig->GetLocalVector()->Range(range);
+    }
+    
+    ~ParallelRangeVector () override { ; }
+
+    void * Memory () const override
+    { return orig->GetLocalVector()->Range(range).Memory(); }
+
+    virtual bool IsComplex() const override
+    { return orig->IsComplex(); } 
+    
+    FlatVector<double> FVDouble () const override
+    { return orig->GetLocalVector()->Range(range).FVDouble(); }
+
+    FlatVector<Complex> FVComplex () const override
+    { return orig->GetLocalVector()->Range(range).FVComplex(); }
+
+    AutoVector Range (T_Range<size_t> range2) const override
+    {
+      T_Range<size_t> totrange(range.First()+range2.First(), range.First()+range2.Next());
+      return make_unique<ParallelRangeVector> (orig, totrange);
+    }
+    
+    AutoVector CreateVector () const override
+    {
+      cout << "CreateVector" << endl;
+      throw Exception("CreateVector not avail");
+    }
+    
+    void GetIndirect (FlatArray<int> ind, 
+                      FlatVector<double> v) const override
+    {
+      local_vec -> GetIndirect (ind, v);
+    }
+    void GetIndirect (FlatArray<int> ind, 
+                      FlatVector<Complex> v) const override
+    {
+      local_vec -> GetIndirect (ind, v);
+    }
+
+    void Cumulate () const override
+    {
+      orig->Cumulate();
+      status = CUMULATED;
+    }
+
+    void Distribute() const override
+    {
+      orig->Distribute();
+      status = DISTRIBUTED;
+    }
+    
+    PARALLEL_STATUS GetParallelStatus () const override
+    {
+
+      return orig->GetParallelStatus();
+    }
+    
+    virtual void SetParallelStatus (PARALLEL_STATUS stat) const override
+    {
+      if (stat != status)
+        {
+          cout << "setparallel, should changed from " << status << " to " << stat << endl;
+          throw Exception("SetParallelStatus of rangevec called, change from"
+                          +ToString(status) + " to " +ToString(stat));
+        }
+    }
+
+    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs) override
+    {
+      if (Size() != aparalleldofs->GetNDofLocal())
+        throw Exception("SetParallelDofs of rangevec called, wrong sizes");
+      paralleldofs = aparalleldofs;
+    }
+
+
+    void IRecvVec ( int dest, MPI_Request & request ) override
+    {
+      cout << "irecvec, and throw" << endl;
+      throw Exception("ParallelRangeVector, don't know how to IRecVec");
+    }
+    
+    void AddRecvValues( int sender ) override
+    {
+      cout << "addvecrec, and throw" << endl;
+      throw Exception("ParallelRangeVector, don't know how to IRecVec");
+    }
+    
+  };
+
+
+  
   BaseVector & ParallelBaseVector :: SetScalar (double scal)
   {
     if (IsComplex())
@@ -347,11 +451,33 @@ namespace ngla
   template < class SCAL >  
   AutoVector S_ParallelBaseVectorPtr<SCAL> :: Range (T_Range<size_t> range) const
   {
+    /*
+      Version 1: 
+      A ParallelFlatVector
+      + possible to cumulate / distribue by its own (???)
+      - requies Range of pardofs, expensive ? 
+      .... will provide method   Range (range, pardofs)
+     */
+
+    shared_ptr<ParallelDofs> sub_pardofs;
+    if (paralleldofs)
+      sub_pardofs = paralleldofs->Range(range);
+    
     AutoVector locvec = S_BaseVectorPtr<SCAL>::Range (range);
     auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(), this->EntrySize(),
                                                            locvec.Memory(), 
-                                                           nullptr, this->GetParallelStatus());
+                                                           sub_pardofs,
+                                                           this->GetParallelStatus());
+
     return move(vec);
+
+    /*
+      Version 2:
+      Has pointer to original vector + Range
+      - cumulate/distribute acts on original vector -> expensive
+     */
+    
+    // return make_unique<ParallelRangeVector> (this, range);
   }
 
   template <typename SCAL>
