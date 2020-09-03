@@ -1194,6 +1194,9 @@ ANY                  1 1 1 1 | 15
       return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
     }
 
+    shared_ptr<BaseMatrix> EmbeddingOperator (int spacenr) const;
+    shared_ptr<BaseMatrix> RestrictionOperator (int spacenr) const;
+    
     /// get component space
     shared_ptr<FESpace> operator[] (int i) const { return spaces[i]; }
 

@@ -1090,10 +1090,19 @@ component : int
 
     .def("Embedding", [] (shared_ptr<CompoundFESpace> self, int comp)
          {
-           return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
+           return self->EmbeddingOperator(comp);
+           // return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
          py::arg("component"), "create embedding operator for this component")
 
+    .def("Restriction", [] (shared_ptr<CompoundFESpace> self, int comp)
+         {
+           return self->RestrictionOperator(comp);
+           // return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
+         },
+         py::arg("component"), "create embedding operator for this component")
+
+    
     .def_property_readonly("embeddings", 
                   [](shared_ptr<CompoundFESpace> self)-> py::list
                    { 
