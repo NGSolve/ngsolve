@@ -963,10 +963,15 @@ inverse : string
 
     .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); }, "Return transpose of matrix")
     .def_property_readonly("H", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<ConjTrans> (m); }, "Return conjugate transpose of matrix (WIP, only partially supported)")
+    /*
     .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<EmbeddingTranspose> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<EmbeddedTransposeMatrix> (mb->Width(), mb->GetRange(), mb); }, py::arg("mat"))
+         { return make_shared<EmbeddedTransposeMatrix> (mb->Width(), mb->GetRange(), ma); }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<ProductMatrix> (ma, mb); }, py::arg("mat"))
+    */
+    .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         { return ComposeOperators (ma, mb); }, py::arg("mat"))
+    
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
     .def("__radd__", [](shared_ptr<BM> ma, int i) {
@@ -1300,13 +1305,23 @@ inverse : string
          "Linear operator embedding a shorter vector into a longer vector")
     .def_property_readonly("T", [](shared_ptr<Embedding> m)->shared_ptr<EmbeddingTranspose>
                            { return make_shared<EmbeddingTranspose> (m->Height(), m->GetRange()); }, "Return transpose of matrix")
+    /*
     .def("__matmul__", [](shared_ptr<Embedding> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<EmbeddedMatrix> (ma->Height(), ma->GetRange(), mb); }, py::arg("mat"))
+    */
+    .def("__matmul__", [](shared_ptr<Embedding> ma, shared_ptr<BM> mb)
+         { return ComposeOperators(ma, mb); }, py::arg("mat"))
+    
     ;
   
   py::class_<EmbeddingTranspose, shared_ptr<EmbeddingTranspose>, BaseMatrix> (m, "EmbeddingTranspose")
+    /*
     .def("__rmatmul__", [](shared_ptr<EmbeddingTranspose> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<EmbeddedTransposeMatrix> (ma->Width(), ma->GetRange(), mb); }, py::arg("mat"))
+    */
+    .def("__rmatmul__", [](shared_ptr<EmbeddingTranspose> ma, shared_ptr<BM> mb)
+         { return ComposeOperators(mb, ma); }, py::arg("mat"))
+    
     ;
     
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")

@@ -17,6 +17,31 @@ namespace ngla
                                C2D = 2,   // 10
                                C2C = 3 }; // 11
 
+  inline PARALLEL_STATUS RowType (PARALLEL_OP op)
+  {
+    if (op == C2D || op == C2C)
+      return CUMULATED;
+    else
+      return DISTRIBUTED;
+  }
+
+  inline PARALLEL_STATUS ColType (PARALLEL_OP op)
+  {
+    if (op == D2C || op == C2C)
+      return CUMULATED;
+    else
+      return DISTRIBUTED;
+  }
+
+  static PARALLEL_OP ParallelOp (PARALLEL_STATUS stat_row, PARALLEL_STATUS stat_col)
+  {
+    if (stat_row == CUMULATED)
+      return (stat_col == CUMULATED) ? C2C : C2D;
+    else
+      return (stat_col == CUMULATED) ? D2C : D2D;
+  }
+
+  
   class ParallelMatrix : public BaseMatrix
   {
     shared_ptr<BaseMatrix> mat;
