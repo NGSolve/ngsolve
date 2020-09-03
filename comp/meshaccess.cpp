@@ -241,10 +241,11 @@ namespace ngcomp
     ALE_ElementTransformation (const MeshAccess * amesh, 
                                ELEMENT_TYPE aet, ElementId ei, int elindex,
                                const GridFunction * adeform,
-                               LocalHeap & lh)
+                               Allocator & alh)
       : BASE(amesh, aet, ei, elindex), 
         deform(adeform) 
     {
+      LocalHeap & lh = dynamic_cast<LocalHeap&> (alh);
       this->iscurved = true;
 
       auto & bfel = deform->GetFESpace()->GetFE(ei, lh);
@@ -1482,8 +1483,8 @@ namespace ngcomp
             ALE_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
-             loc_deformation, 
-             dynamic_cast<LocalHeap&> (lh));
+             loc_deformation, lh); 
+        // dynamic_cast<LocalHeap&> (lh));
 
         else
 
@@ -1491,8 +1492,8 @@ namespace ngcomp
             ALE_ElementTransformation<DIM, DIM, Ng_ConstElementTransformation<DIM,DIM>>
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
-             loc_deformation, 
-             dynamic_cast<LocalHeap&> (lh));
+             loc_deformation, lh);
+        //dynamic_cast<LocalHeap&> (lh));
       }
 
     else if ( el.is_curved )
@@ -1535,8 +1536,8 @@ namespace ngcomp
       eltrans = new (lh) ALE_ElementTransformation<DIM-1,DIM, Ng_ElementTransformation<DIM-1,DIM>>
         (this, el.GetType(), 
          ElementId(BND,elnr), el.GetIndex(),
-         loc_deformation, 
-         dynamic_cast<LocalHeap&> (lh)); 
+         loc_deformation, lh);
+         // dynamic_cast<LocalHeap&> (lh)); 
     
     else if ( el.is_curved )
 
@@ -1572,8 +1573,8 @@ namespace ngcomp
       eltrans = new (lh) ALE_ElementTransformation<DIM-2,DIM, Ng_ElementTransformation<DIM-2,DIM>>
 	(this,el.GetType(),
 	 ElementId(BBND,elnr), el.GetIndex(),
-	 loc_deformation,
-	 dynamic_cast<LocalHeap&>(lh));
+	 loc_deformation, lh);
+    // dynamic_cast<LocalHeap&>(lh));
     else if( el.is_curved )
       eltrans = new (lh) Ng_ElementTransformation<DIM-2,DIM> (this, el.GetType(),
 							      ElementId(BBND,elnr), el.GetIndex());
@@ -1647,8 +1648,8 @@ namespace ngcomp
             eltrans = new (lh) ALE_ElementTransformation<0,3, Ng_ElementTransformation<0,3>>
               (this,el.GetType(),
                ElementId(BBBND,elnr), el.GetIndex(),
-               loc_deformation,
-               dynamic_cast<LocalHeap&>(lh));
+               loc_deformation, lh);
+          // dynamic_cast<LocalHeap&>(lh));
           else 
             eltrans = new (lh) Ng_ConstElementTransformation<0,3> (this, el.GetType(),
                                                                    ElementId(BBBND,elnr), el.GetIndex());
