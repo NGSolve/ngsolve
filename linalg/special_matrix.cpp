@@ -317,6 +317,17 @@ namespace ngla
   }
 
   
+  BaseMatrix::OperatorInfo EmbeddedMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = "EmbeddedMatrix";
+    info.height = Height();
+    info.width = Width();
+    info.childs += mat.get();
+    return info;
+  }
+
+  
   void EmbeddedMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     if (Height() != y.Size()) throw Exception("Embedded matrix, h = "+ToString(Height())
@@ -372,6 +383,15 @@ namespace ngla
   }
 
 
+  BaseMatrix::OperatorInfo EmbeddedTransposeMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = "EmbeddedTransposeMatrix";
+    info.height = Height();
+    info.width = Width();
+    info.childs += mat.get();
+    return info;
+  }
 
   void EmbeddedTransposeMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {

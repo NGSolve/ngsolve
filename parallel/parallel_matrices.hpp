@@ -35,6 +35,7 @@ namespace ngla
 
   inline PARALLEL_STATUS InvertType (PARALLEL_STATUS stat)
   {
+    if (stat == NOT_PARALLEL) return NOT_PARALLEL;
     return (stat == CUMULATED) ? DISTRIBUTED : CUMULATED;
   }
   
@@ -66,7 +67,9 @@ namespace ngla
 		    shared_ptr<ParallelDofs> acpardofs, PARALLEL_OP op = C2D);
 
     virtual ~ParallelMatrix () override;
-    virtual bool IsComplex() const override { return mat->IsComplex(); } 
+    virtual bool IsComplex() const override { return mat->IsComplex(); }
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+    
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override ;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
