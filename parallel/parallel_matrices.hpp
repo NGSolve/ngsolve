@@ -33,6 +33,11 @@ namespace ngla
       return DISTRIBUTED;
   }
 
+  inline PARALLEL_STATUS InvertType (PARALLEL_STATUS stat)
+  {
+    return (stat == CUMULATED) ? DISTRIBUTED : CUMULATED;
+  }
+  
   inline PARALLEL_OP ParallelOp (PARALLEL_STATUS stat_row, PARALLEL_STATUS stat_col)
   {
     if (stat_row == CUMULATED)
