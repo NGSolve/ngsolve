@@ -40,13 +40,13 @@ namespace ngla
 
     virtual PARALLEL_STATUS Status () const { return status; }
 
-    virtual void SetStatus ( PARALLEL_STATUS astatus ) const
+    virtual void SetStatus ( PARALLEL_STATUS astatus ) const  
     {
       status = astatus;
     }
 
-    virtual PARALLEL_STATUS GetParallelStatus () const { return Status(); }
-    virtual void SetParallelStatus (PARALLEL_STATUS stat) const { SetStatus (stat); }
+    virtual PARALLEL_STATUS GetParallelStatus () const override { return Status(); }
+    virtual void SetParallelStatus (PARALLEL_STATUS stat) const override { SetStatus (stat); }
 
 
 
@@ -60,23 +60,24 @@ namespace ngla
       return (this->Status() != NOT_PARALLEL);
     }
     
-    virtual BaseVector & SetScalar (double scal);
-    virtual BaseVector & SetScalar (Complex scal);
+    virtual BaseVector & SetScalar (double scal) override;
+    virtual BaseVector & SetScalar (Complex scal) override;
+    virtual void SetZero () override;
     
-    virtual BaseVector & Set (double scal, const BaseVector & v);
-    virtual BaseVector & Set (Complex scal, const BaseVector & v);
+    virtual BaseVector & Set (double scal, const BaseVector & v) override;
+    virtual BaseVector & Set (Complex scal, const BaseVector & v) override;
 
-    virtual BaseVector & Add (double scal, const BaseVector & v);
-    virtual BaseVector & Add (Complex scal, const BaseVector & v);
+    virtual BaseVector & Add (double scal, const BaseVector & v) override;
+    virtual BaseVector & Add (Complex scal, const BaseVector & v) override;
 
     void PrintStatus ( ostream & ost ) const;
 
     virtual shared_ptr<BaseVector> GetLocalVector () const
     { return local_vec; }
     
-    virtual void Cumulate () const; 
+    virtual void Cumulate () const override; 
     
-    virtual void Distribute() const = 0;
+    virtual void Distribute() const override = 0;
     // { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
     
     virtual void ISend ( int dest, MPI_Request & request ) const;
@@ -178,18 +179,19 @@ namespace ngla
     S_ParallelBaseVectorPtr (int as, int aes, shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw();
 
     virtual ~S_ParallelBaseVectorPtr ();
-    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs); // , const Array<int> * procs=0 );
+    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs) override; 
 
-    virtual void Distribute() const;
-    virtual ostream & Print (ostream & ost) const;
-    virtual AutoVector Range (T_Range<size_t> range) const;
+    virtual void Distribute() const override;
+    virtual ostream & Print (ostream & ost) const override;
+    virtual AutoVector Range (T_Range<size_t> range) const override;
+    virtual AutoVector Range (DofRange range) const override;
     
-    virtual void  IRecvVec ( int dest, MPI_Request & request );
+    virtual void  IRecvVec ( int dest, MPI_Request & request ) override;
     // virtual void  RecvVec ( int dest );
-    virtual void AddRecvValues( int sender );
-    virtual AutoVector CreateVector () const;
+    virtual void AddRecvValues( int sender ) override;
+    virtual AutoVector CreateVector () const override;
 
-    virtual double L2Norm () const;
+    virtual double L2Norm () const override;
   };
  
 
