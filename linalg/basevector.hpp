@@ -130,6 +130,11 @@ namespace ngla
       return *this;
     }
 
+    virtual void SetZero ()
+    {
+      SetScalar(0);
+    }
+    
     ///
     template <typename T>
     BaseVector & operator+= (const VVecExpr<T> & v)
@@ -261,6 +266,8 @@ namespace ngla
     inline AutoVector Range (size_t begin, size_t end) const;
     // { return Range(T_Range(begin, end)); }
     virtual AutoVector Range (T_Range<size_t> range) const;
+    virtual AutoVector Range (DofRange range) const;
+      // { return Range(T_Range<size_t>(range)); }
 
     static bool IsRegularIndex (int index) { return index >= 0; }
     virtual void GetIndirect (FlatArray<int> ind, 
@@ -489,7 +496,7 @@ namespace ngla
 
     AutoVector Range (size_t begin, size_t end) const { return vec->Range(begin,end); }
     AutoVector Range (T_Range<size_t> range) const { return vec->Range(range); }
-
+    
     template <typename T>
     auto FV () const { return vec->FV<T>(); }
     
@@ -605,6 +612,7 @@ namespace ngla
   {
     return Range(T_Range(begin, end));
   }
+
 
   template <>
   inline FlatVector<double> BaseVector::FV<double> () const
