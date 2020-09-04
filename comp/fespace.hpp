@@ -1187,11 +1187,13 @@ ANY                  1 1 1 1 | 15
     ///
     // virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
 
-    IntRange GetRange (int spacenr) const
+    DofRange GetRange (int spacenr) const
     {
       if (spacenr+1 >= cummulative_nd.Size())
         throw Exception("spacenr >= cummulative_nd.Size() in CompoundFESpace!");
-      return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
+      
+      return DofRange(IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]),
+                      spaces[spacenr]->GetParallelDofs());
     }
 
     shared_ptr<BaseMatrix> EmbeddingOperator (int spacenr) const;
