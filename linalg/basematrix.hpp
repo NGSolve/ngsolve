@@ -291,7 +291,8 @@ namespace ngla
     Transpose (shared_ptr<BaseMatrix> aspbm) : bm(*aspbm), spbm(aspbm) { ; }
     ///
     virtual bool IsComplex() const override { return bm.IsComplex(); }
-
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+    
     virtual AutoVector CreateRowVector () const override { return bm.CreateColVector(); }
     virtual AutoVector CreateColVector () const override { return bm.CreateRowVector(); }
 
@@ -597,8 +598,29 @@ namespace ngla
       bmb.MultTransAdd (b*s, x, y);
     }  
 
-    virtual int VHeight() const override { return bma.VHeight(); }
-    virtual int VWidth() const override { return bma.VWidth(); }
+    virtual int VHeight() const override
+    {
+      try
+        {
+          return bma.VHeight();
+        }
+      catch (Exception &)
+        {
+          return bmb.VHeight();
+        }
+    }
+    
+    virtual int VWidth() const override
+    {
+      try
+        {
+          return bma.VWidth();
+        }
+      catch (Exception &)
+        {
+          return bmb.VWidth();
+        }
+    }
 
     virtual ostream & Print (ostream & ost) const override
     {

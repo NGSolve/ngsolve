@@ -135,6 +135,11 @@ namespace ngla
     return *this;
   }
 
+  void ParallelBaseVector :: SetZero ()
+  {
+    local_vec->SetZero();
+  }
+  
   BaseVector & ParallelBaseVector :: Set (double scal, const BaseVector & v)
   {
     FVDouble() = scal * v.FVDouble();
@@ -480,6 +485,23 @@ namespace ngla
     // return make_unique<ParallelRangeVector> (this, range);
   }
 
+
+  template < class SCAL >  
+  AutoVector S_ParallelBaseVectorPtr<SCAL> :: Range (DofRange range) const
+  {
+    cout << "range(DofRange) called" << endl;
+
+    AutoVector locvec = S_BaseVectorPtr<SCAL>::Range (range);
+    auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(), this->EntrySize(),
+                                                           locvec.Memory(), 
+                                                           range.GetParallelDofs(),
+                                                           this->GetParallelStatus());
+    return move(vec);
+  }
+
+
+
+  
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, MPI_Request & request )
   {
