@@ -836,8 +836,9 @@ namespace ngla
       default: return "sequential";
       }
   }
-  LoggingMatrix :: LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string logfile)
-    : mat(amat), label(alabel)
+  LoggingMatrix :: LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string logfile,
+                                  optional<NgMPI_Comm> acomm)
+    : mat(amat), label(alabel), comm(acomm)
   {
     if(logfile=="stdout")
       out = make_unique<ostream>(cout.rdbuf());
@@ -885,10 +886,12 @@ namespace ngla
   
   void LoggingMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
+    if (comm.has_value()) comm->Barrier();
     *out << "matrix '" << label << "' Mult: " << typeid(*mat).name() << " "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
     mat->Mult(x,y);
+    if (comm.has_value()) comm->Barrier();
     *out << "matrix '" << label << "' Mult complete" << endl;
   }
   
@@ -898,10 +901,12 @@ namespace ngla
   }
   void LoggingMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if (comm.has_value()) comm->Barrier();    
     *out << "matrix '" << label << "' MultAdd: "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
     mat->MultAdd(s,x,y);
+    if (comm.has_value()) comm->Barrier();    
     *out << "matrix '" << label << "' MultAdd complete" << endl;    
   }
   void LoggingMatrix :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
