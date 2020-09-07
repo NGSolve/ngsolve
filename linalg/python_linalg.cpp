@@ -229,6 +229,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("MasterDofs", &ParallelDofs::MasterDofs)
     ;
 
+  py::class_<DofRange> (m, "DofRange")
+    ;
 
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
@@ -386,6 +388,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           return shared_ptr<BaseVector>(self.Range(start, start+n));
       }, py::arg("inds"), "Return values at given position" )
     .def("__getitem__", [](BaseVector& self, IntRange range)
+         {
+           return shared_ptr<BaseVector>(self.Range(range));
+         })
+    .def("__getitem__", [](BaseVector& self, DofRange range)
          {
            return shared_ptr<BaseVector>(self.Range(range));
          })
@@ -1050,7 +1056,8 @@ inverse : string
     ;
 
   py::class_<LoggingMatrix, shared_ptr<LoggingMatrix>, BaseMatrix> (m, "LoggingMatrix")
-    .def(py::init<shared_ptr<BaseMatrix>,string,string>(),py::arg("mat"), py::arg("label"), py::arg("logfile")="stdout")
+    .def(py::init<shared_ptr<BaseMatrix>,string,string,optional<NgMPI_Comm>>(),
+         py::arg("mat"), py::arg("label"), py::arg("logfile")="stdout", py::arg("comm")=std::nullopt)
     ;
   
   py::class_<ConstantElementByElementMatrix, shared_ptr<ConstantElementByElementMatrix>, BaseMatrix>

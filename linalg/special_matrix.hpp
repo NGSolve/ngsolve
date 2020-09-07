@@ -347,8 +347,10 @@ namespace ngla
     shared_ptr<BaseMatrix> mat;
     string label;
     unique_ptr<ostream> out;
+    optional<NgMPI_Comm> comm;
   public:
-    LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string filename);
+    LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string filename,
+                   optional<NgMPI_Comm> acomm);
     ~LoggingMatrix ();
     int VHeight() const override { return mat->VHeight(); }
     int VWidth() const override { return mat->VWidth(); }

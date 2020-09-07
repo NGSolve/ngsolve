@@ -409,10 +409,10 @@ namespace ngcomp
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
 
 	      tmp = make_unique<ParallelVVector<TV>>(pardofs);
-	      innersolve = make_shared<ParallelMatrix> (innersolve, pardofs);
-	      harmonicext = make_shared<ParallelMatrix> (harmonicext, pardofs);
+	      innersolve = make_shared<ParallelMatrix> (innersolve, pardofs, pardofs, C2D);
+	      harmonicext = make_shared<ParallelMatrix> (harmonicext, pardofs, pardofs, C2D);
 	      if (harmonicexttrans)
-		harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans, pardofs);
+		harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans, pardofs, pardofs, C2D);
 	    }
 	  else
 	    {
@@ -440,19 +440,8 @@ namespace ngcomp
 	}
     }
 
-    ~BDDCMatrix()
-    {
-      // delete inv;
-      // delete pwbmat;
-      // delete inv_coarse;
-      // delete harmonicext;
-      // delete harmonicexttrans;
-      // delete innersolve;
-      // delete wb_free_dofs;
+    ~BDDCMatrix()  { } 
 
-      // delete tmp;
-      // delete tmp2;
-    }
 
     AutoVector CreateRowVector() const override { return bfa->GetMatrix().CreateColVector(); }
     AutoVector CreateColVector() const override { return bfa->GetMatrix().CreateRowVector(); }
@@ -474,7 +463,8 @@ namespace ngcomp
 
       x.Cumulate();
       y = x;
-
+      y.Distribute();
+      
       timerharmonicexttrans.Start();
 
       if (bfa->SymmetricStorage())
@@ -511,12 +501,14 @@ namespace ngcomp
       timerwb.Stop();
 
       timerifs.Start();
+      tmp->Distribute(); 
       *tmp += *innersolve * x;
       timerifs.Stop();
 
       timerharmonicext.Start();
       
       y = *tmp;
+      tmp->Cumulate();
       y += *harmonicext * *tmp;
 
       timerharmonicext.Stop();
