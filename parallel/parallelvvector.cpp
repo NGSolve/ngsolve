@@ -489,8 +489,6 @@ namespace ngla
   template < class SCAL >  
   AutoVector S_ParallelBaseVectorPtr<SCAL> :: Range (DofRange range) const
   {
-    cout << "range(DofRange) called" << endl;
-
     AutoVector locvec = S_BaseVectorPtr<SCAL>::Range (range);
     auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(), this->EntrySize(),
                                                            locvec.Memory(), 
