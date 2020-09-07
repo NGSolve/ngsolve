@@ -851,7 +851,8 @@ namespace ngcomp
     this -> vec.SetSize (gf_parent->GetMultiDim());
     GridFunction::multidim = gf_parent->GetMultiDim();
 
-#ifdef PARALLEL
+#ifdef PARALLEL_OLD
+    // is now done by ParallelVector(DofRange)
     auto comm = ma->GetCommunicator();
     if (comm.Size()>1)
       {
