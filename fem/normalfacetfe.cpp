@@ -160,6 +160,68 @@ namespace ngfem
                                      }));
       }
   }
+
+    template <> template<typename Tx, typename TFA>  
+  void NormalFacetVolumeFE_Shape<ET_HEX>::
+  T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+  {
+    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
+    
+    Tx x = ip.x, y = ip.y, z = ip.z;
+
+    Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
+                  (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
+    Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+                   (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
+
+    int ii=1;
+    const FACE * faces = ElementTopology::GetFaces (ET_HEX);
+    for (int i = 0; i < 6; i++)
+      {
+        if (ip.facetnr != i)
+          {
+            for (int j : Range(first_facet_dof[i], first_facet_dof[i+1]))
+              shape[j] = Du_Cross_Dv (Tx(0.0), Tx(0.0));
+            continue;
+          }
+          
+        int first = first_facet_dof[i];
+        int p = facet_order[i][0];
+        
+
+	Tx lam_f(0);
+	for (int j = 0; j < 4; j++)
+	  lam_f += lami[faces[i][j]];
+
+
+        INT<4> f = GetFaceSort (i, vnums);	  
+        Tx xi  = sigma[f[0]]-sigma[f[1]];
+        Tx eta = sigma[f[0]]-sigma[f[3]];
+
+        shape[first] = wDu_Cross_Dv(eta, xi, -0.25*lam_f);
+
+
+        ArrayMem<Tx, 20> L_xi(order+2),L_eta(order+2);
+
+        IntegratedLegendrePolynomial::Eval(p+1,xi,L_xi);
+        IntegratedLegendrePolynomial::Eval(p+1,eta,L_eta);
+        
+        /*for(int j = 0; j <= p; j++)
+          for(int k = 0; k <= p; k++)
+          shape[first + ii++] = L_xi[j]*L_eta[k]*lam_f;*/
+
+        for (int k = 0; k < p; k++)
+          for (int l = 0; l < p; l++, ii++)
+            shape[first + ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
+        
+        for (int k = 0; k < p; k++)
+          shape[first + ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
+
+        for (int k = 0; k < p; k++)
+          shape[first + ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,xi); //divfree
+      }
+
+  }
     
     
 
@@ -377,8 +439,7 @@ namespace ngfem
   void NormalFacetFacetFE<ET_TRIG>::T_CalcShape(TIP<DIM,Tx> tip, 
                                                 TFA &  shape) const
   {
-
-    Tx lam[4] = { tip.x, tip.y, 1-tip.x-tip.y } ;
+    Tx lam[3] = { tip.x, tip.y, 1-tip.x-tip.y } ;
 
   
     INT<4> f = GetVertexOrientedFace (0);
@@ -423,54 +484,51 @@ namespace ngfem
 
   /* **************************** Facet Quad ********************************* */
 
-  template<>
-  void NormalFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
-					  FlatVector<> shape) const
+  template<> template <typename Tx, typename TFA>
+  void NormalFacetFacetFE<ET_QUAD>::T_CalcShape(TIP<DIM,Tx> tip, 
+                                                TFA &  shape) const
   {
-    throw Exception ("normal facet not readsy 32424bnd");
-    /*
-    AutoDiff<2> x (ip(0), 0);
-    AutoDiff<2> y (ip(1), 1);
+    Tx lam[4] = {(1-tip.x)*(1-tip.y),tip.x*(1-tip.y),tip.x*tip.y,(1-tip.x)*tip.y};  
+    Tx sigma[4] = {(1-tip.x)+(1-tip.y),tip.x+(1-tip.y),tip.x+tip.y,(1-tip.x)+tip.y};
 
-    // orient: copied from h1
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
-    int fmax = 0; 
-    for (int j = 1; j < 4; j++)
-      if (vnums[j] > vnums[fmax]) fmax = j;
-    int f1 = (fmax+3)%4; 
-    int f2 = (fmax+1)%4; 
-    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f1 > f2; 
 
-    AutoDiff<2> xi  = sigma[fmax] - sigma[f1]; 
-    AutoDiff<2> eta = sigma[fmax] - sigma[f2]; 
-    
+    Tx lam_f(0);
+    int p = order;
     int ii = 0;
     
-    int n = max2(order_inner[0],order_inner[1]);
-    ArrayMem<double, 20> polx(n+1), poly(n+1);
+    INT<4> f = GetFaceSort (0, vnums);	  
+    Tx xi  = sigma[f[0]]-sigma[f[1]];
+    Tx eta = sigma[f[0]]-sigma[f[3]];
+    lam_f = Cross(xi,eta);
+    shape[ii++] = wDu_Cross_Dv(eta, xi, -0.25*lam_f);
 
-    LegendrePolynomial (n, xi.Value(), polx);
-    LegendrePolynomial (n, eta.Value(), poly);
+
+    ArrayMem<Tx, 20> L_xi(p+2),L_eta(p+2);
     
-    for (int i = 0; i <= order_inner[0]; i++)
-      for (int j = 0; j <= order_inner[1]; j++)
-	{
-	  double val = polx[i] * poly[j];
-	  shape(ii,0) = val * xi.DValue(0);
-	  shape(ii,1) = val * xi.DValue(1);
-	  ii++;
-	  shape(ii,0) = val * eta.DValue(0);
-	  shape(ii,1) = val * eta.DValue(1);
-	  ii++;
-	}
-    */
+    IntegratedLegendrePolynomial::Eval(p+1,xi,L_xi);
+    IntegratedLegendrePolynomial::Eval(p+1,eta,L_eta);
+    
+    /*for(int j = 0; j <= p; j++)
+      for(int k = 0; k <= p; k++)
+      shape[ii++] = L_xi[j]*L_eta[k]*lam_f;*/
+
+    for (int k = 0; k < p; k++)
+      for (int l = 0; l < p; l++, ii++)
+        shape[ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
+    
+    for (int k = 0; k < p; k++)
+      shape[ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
+    
+    for (int k = 0; k < p; k++)
+      shape[ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,xi); //divfree
+
   }
 
   template<>
   void NormalFacetFacetFE<ET_QUAD>::ComputeNDof()
   {
     order = max2( order_inner[0], order_inner[1] );
-    ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
+    ndof = (order_inner[0]+1) * (order_inner[1]+1);
   }
 
 
@@ -993,7 +1051,7 @@ namespace ngfem
     for (int i=0; i<6; i++)
       {
 	first_facet_dof[i] = ndof;
-	ndof += 2* (facet_order[i][0]+1) * (facet_order[i][0]+1);
+	ndof += (facet_order[i][0]+1) * (facet_order[i][0]+1);
       }
     first_facet_dof[6] = ndof;
   }
@@ -1074,6 +1132,7 @@ namespace ngfem
   
   template class NormalFacetFacetFE<ET_SEGM>;
   template class NormalFacetFacetFE<ET_TRIG>;
+  template class NormalFacetFacetFE<ET_QUAD>;
   
   // template class NormalFacetVolumeFE<ET_SEGM>;
   template class NormalFacetVolumeFE<ET_TRIG>;
