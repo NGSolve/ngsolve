@@ -666,9 +666,9 @@ void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
   // If FMA is not available we need
   // SIMD<Complex>, LoadFast and StoreFast
   #ifdef __FMA__
-    GenerateMultiVecScalC_nofma (out, h, w, c);
-  #else
     GenerateMultiVecScalC_fma (out, h, w, c);
+  #else
+    GenerateMultiVecScalC_nofma (out, h, w, c);
   #endif
 
 }
@@ -926,9 +926,9 @@ void GenerateMultiScaleAddC (ostream & out, int h, int w)
   // If FMA is not available we need
   // SIMD<Complex>, LoadFast and StoreFast
   #ifdef __FMA__
-    GenerateMultiScaleAddC_nofma(out, h, w);
-  #else
     GenerateMultiScaleAddC_fma(out, h, w);
+  #else
+    GenerateMultiScaleAddC_nofma(out, h, w);
   #endif
 }
 
