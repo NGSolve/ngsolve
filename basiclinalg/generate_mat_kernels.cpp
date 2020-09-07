@@ -528,6 +528,7 @@ void GenerateMultiVecScalC_nofma (ostream & out, int h, int w, bool c)
 /*
   used in GenerateMultiVecScalC if __FMA__ is defined
 */
+#ifdef __FMA__
 void GenerateMultiVecScalC_fma (ostream & out, int h, int w, bool c)
 {
   #if defined __AVX512F__
@@ -643,6 +644,7 @@ void GenerateMultiVecScalC_fma (ostream & out, int h, int w, bool c)
 
 out << "}" << endl;
 }
+#endif
 
 /*
   C = A * B^t
@@ -812,6 +814,7 @@ void GenerateMultiScaleAddC_nofma (ostream & out, int h, int w)
 /*
   used in GenerateMultiScaleAddC if __FMA__ is defined
 */
+#ifdef __FMA__
 void GenerateMultiScaleAddC_fma (ostream & out, int h, int w)
 {
   #if defined __AVX512F__
@@ -903,6 +906,7 @@ void GenerateMultiScaleAddC_fma (ostream & out, int h, int w)
   out << "}" << endl;
 
 }
+#endif
 
 /*
   A[i] += sum_j c(j,i) * y[j]
