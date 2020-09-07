@@ -94,13 +94,15 @@ namespace ngla
   
   void BaseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    y = 0;
+    // y = 0;
+    y.SetZero();
     MultAdd (1, x, y);
   }
 
   void BaseMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    y = 0;
+    // y = 0;
+    y.SetZero();
     MultTransAdd (1, x, y);
   }
 
@@ -339,6 +341,22 @@ namespace ngla
     return info;
   }
 
+  BaseMatrix::OperatorInfo Transpose :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = "Transpose";
+    try
+      {
+        info.height = Height();
+        info.width = Width();
+      }
+    catch (Exception &)
+      {
+        cerr << "Transpose::GetOperatorInfo, got exception for H/W" << endl;        
+      };
+    info.childs += &bm;
+    return info;
+  }
 
   
   BaseMatrix::OperatorInfo SumMatrix :: GetOperatorInfo () const

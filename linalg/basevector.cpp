@@ -26,7 +26,11 @@ namespace ngla
     return make_unique<MultiVector> (CreateVector(), cnt);
   }
 
-  
+  AutoVector BaseVector::Range (DofRange range) const
+  {
+    return Range(T_Range<size_t>(range));
+  }
+
   double BaseVector :: L2Norm () const
   {
     static Timer t("BaseVector::L2Norm");
