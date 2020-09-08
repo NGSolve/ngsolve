@@ -11,7 +11,7 @@ void PyDefVecBuffer( TCLASS & c )
     typedef typename T::TSCAL TSCAL;
     c.def_buffer([](T &self) -> py::buffer_info {
         return py::buffer_info(
-            &self(0),                                     /* Pointer to buffer */
+            self.Data(),                                     /* Pointer to buffer */
             sizeof(TSCAL),                                /* Size of one scalar */
             py::format_descriptor<TSCAL>::format(),       /* Python struct-style format descriptor */
             1,                                            /* Number of dimensions */
@@ -33,7 +33,7 @@ void PyDefMatBuffer( TCLASS & c )
     typedef typename T::TSCAL TSCAL;
     c.def_buffer([](T &self) -> py::buffer_info {
         return py::buffer_info(
-            &self(0),                                     /* Pointer to buffer */
+            self.Data(),                                     /* Pointer to buffer */
             sizeof(TSCAL),                                /* Size of one scalar */
             py::format_descriptor<TSCAL>::format(),       /* Python struct-style format descriptor */
             2,                                            /* Number of dimensions */
