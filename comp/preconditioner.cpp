@@ -1257,43 +1257,32 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
-		      shared_ptr<Preconditioner> (*acreator)(const PDE & pde, const Flags & flags, const string & name),
-		      shared_ptr<Preconditioner> (*acreatorbf)(shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name))
+		      function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
+                      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf)
     : name(aname), creator(acreator), creatorbf(acreatorbf)
   {
     ;
   }
   
-  PreconditionerClasses :: PreconditionerClasses ()
-  {
-    ;
-  }
+  PreconditionerClasses :: PreconditionerClasses () { }
 
-  PreconditionerClasses :: ~PreconditionerClasses()
-  {
-    for(int i=0; i<prea.Size(); i++)
-      delete prea[i];
-  }
+  PreconditionerClasses :: ~PreconditionerClasses() { }
   
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
-		     shared_ptr<Preconditioner> (*acreator)
-                     (const PDE & pde, const Flags & flags, const string & name),
-                     shared_ptr<Preconditioner> (*acreatorbf)
-                     (shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name))
+                     function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
+                     function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf)
   {
-    prea.Append (new PreconditionerInfo(aname, acreator, acreatorbf));
+    prea.Append (make_unique<PreconditionerInfo>(aname, acreator, acreatorbf));
   }
 
   const PreconditionerClasses::PreconditionerInfo * 
   PreconditionerClasses::GetPreconditioner(const string & name)
   {
     for (int i = 0; i < prea.Size(); i++)
-      {
-	if (name == prea[i]->name)
-	  return prea[i];
-      }
-    return 0;
+      if (name == prea[i]->name)
+        return prea[i].get();
+    return nullptr;
   }
 
   void PreconditionerClasses :: Print (ostream & ost) const
