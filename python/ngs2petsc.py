@@ -74,11 +74,41 @@ class VectorMapping:
         if self.freedofs is None:
             ngs_vector.FV()[:] = ngs.Vector(psc_loc.getArray())
         else:
+            ngs_vector.FV().NumPy()[:] = 0
             ngs_vector.FV().NumPy()[self.locfree] = ngs.Vector(psc_loc.getArray())            
         return ngs_vector
     
 
-    
 
     
+class PETScPreconditioner(ngs.BaseMatrix):
+    def __init__(self,mat,freedofs=None):
+        ngs.BaseMatrix.__init__(self)
+        self.ngsmat = mat
+        self.vecmap = VectorMapping (mat.row_pardofs, freedofs)
+        self.mat = CreatePETScMatrix (mat, freedofs)
+
+        self.precond = psc.PC().create()
+        self.precond.setType("gamg")
+        self.precond.setOperators(self.mat)
+        self.pscx, self.pscy = self.mat.createVecs()
+        
+    def Height(self):
+        return self.ngsmat.H
+    def Width(self):
+        return self.ngsmat.W
+    
+    def Mult(self, x,y):
+        self.vecmap.N2P(x,self.pscx)
+        self.precond.apply(self.pscx, self.pscy)
+        self.vecmap.P2N(self.pscy, y)
+        
+
+def MakePreconditioner(mat, freedofs):
+    return PETScPreconditioner(mat, freedofs)
+
+from ngsolve.comp import RegisterPreconditioner
+RegisterPreconditioner ("gamg", MakePreconditioner)
+
+
     
