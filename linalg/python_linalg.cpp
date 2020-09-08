@@ -179,7 +179,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("MasterDofs", &ParallelDofs::MasterDofs)
     ;
 
-  py::class_<DofRange> (m, "DofRange")
+  py::class_<DofRange, IntRange> (m, "DofRange")
     ;
 
     m.def("CreateVVector",
