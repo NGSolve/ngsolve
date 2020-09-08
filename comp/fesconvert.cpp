@@ -361,45 +361,33 @@ namespace ngcomp
     /** element equivalence classes **/
     LocalHeap lh(10000000);
 
-    // Array<short> classnr(ma->GetNE());
-    // ma->IterateElements
-    //   (vb, lh, [&] (auto el, LocalHeap & llh)
-    //    {
-    //      classnr[el.Nr()] = 
-    //        SwitchET<ET_TRIG,ET_TET>
-    //        (el.GetType(),
-    //         [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
-    //    });
-
     /** #of equivalence classes per element type **/
     Array<short> et_eqc_cnt(ET_HEX+1); et_eqc_cnt = 0;
     ma->IterateElements
-      (vb, lh, [&] (auto el, LocalHeap & llh)
-       {
-	 short anum = 1 +
-	   SwitchET (el.GetType(),
-		     [&] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
-         et_eqc_cnt[int(el.GetType())] = max(et_eqc_cnt[int(el.GetType())], anum);
-       });
+      (vb, lh, [&] (auto el, LocalHeap & llh) {
+	short anum = 1 +
+	  SwitchET (el.GetType(),
+		    [&] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+	et_eqc_cnt[int(el.GetType())] = max(et_eqc_cnt[int(el.GetType())], anum);
+      });
     /** prefix-sum so we have a unique nr for every element-type/element-eqc pair **/
     Array<short> et_firsti(ET_HEX+2); et_firsti = 0;
     for (auto k : Range(et_eqc_cnt))
       { et_firsti[k+1] = et_eqc_cnt[k] + et_firsti[k]; }
     /** actual class nrs **/
-    Array<short> classnr(ma->GetNE());
+    Array<short> classnr(ma->GetNE(vb));
     ma->IterateElements
-      (vb, lh, [&] (auto el, LocalHeap & llh)
-       {
-         classnr[el.Nr()] = 
-           SwitchET
-           (el.GetType(),
-            [&] (auto et) { return et_firsti[int(et)] + ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
-       });
+      (vb, lh, [&] (auto el, LocalHeap & llh) {
+	classnr[el.Nr()] =
+	  SwitchET
+	  (el.GetType(),
+	   [&] (auto et) { return et_firsti[int(et)] + ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+      });
     
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        creator.Add (classnr[i], i);
+        { creator.Add (classnr[i], i); }
     Table<size_t> table = creator.MoveTable();
 
     /** assemble element matrix for every equivalence class **/
@@ -418,64 +406,64 @@ namespace ngcomp
       }
     };
 
-    for (auto elclass_inds : table)
-      {
-        HeapReset hr(lh);
-        if (elclass_inds.Size() == 0) continue;
+    for (auto elclass_inds : table) {
 
-	ElementId ei(vb, elclass_inds[0]);
+      HeapReset hr(lh);
 
-        auto & eltrans = ma->GetTrafo(ei, lh);
+      if (elclass_inds.Size() == 0) continue;
 
-	auto & fela = space_a->GetFE (ei, lh); int nda = fela.GetNDof();
-        auto & felb = space_b->GetFE (ei, lh); int ndb = felb.GetNDof();
-        MixedFiniteElement felab(fela, felb);
+      ElementId ei(vb, elclass_inds[0]);
 
-	FlatMatrix<SCAL> bamat(ndb*dimb, nda*dima, lh), bbmat(ndb*dimb, ndb*dimb, lh),
-	  elmat(ndb*dimb, nda*dima, lh);
+      auto & eltrans = ma->GetTrafo(ei, lh);
 
-	simd_guard([&]() {
-	    bamat = 0.0; bbmat = 0.0;
-	    bool symmetric_so_far = true; // will be set to false here
-	    for (auto bfi : ab_bfis)
-	      { bfi->CalcElementMatrixAdd(felab, eltrans, bamat, symmetric_so_far, lh); }
-	    symmetric_so_far = true; // will probably be set to false
-	    for (auto bfi : bb_bfis)
-	      { bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, symmetric_so_far, lh); }
-	  });
+      auto & fela = space_a->GetFE (ei, lh); int nda = fela.GetNDof();
+      auto & felb = space_b->GetFE (ei, lh); int ndb = felb.GetNDof();
+      MixedFiniteElement felab(fela, felb);
 
-	CalcInverse(bbmat);
-	elmat = bbmat * bamat;
+      FlatMatrix<SCAL> bamat(ndb*dimb, nda*dima, lh), bbmat(ndb*dimb, ndb*dimb, lh),
+	elmat(ndb*dimb, nda*dima, lh);
 
-	Table<DofId> adofs(elclass_inds.Size(), nda*dima),
-          bdofs(elclass_inds.Size(), ndb*dimb);
-        Array<DofId> dnumsa, dnumsb;
-	for (auto i : Range(elclass_inds))
-          {
-            ElementId ei(vb, elclass_inds[i]);
-            space_a->GetDofNrs(ei, dnumsa);
-            space_b->GetDofNrs(ei, dnumsb);
-            for (auto d : dnumsb)
-              { cnt_b[d]++; }
-	    int c = 0;
-	    for (auto l : Range(dnumsa))
-	      for (auto ll : Range(dima))
-		adofs[i][c++] = dima * dnumsa[l] + ll;
-	    c = 0;
-	    for (auto l : Range(dnumsb))
-	      for (auto ll : Range(dimb))
-		bdofs[i][c++] = dimb * dnumsb[l] + ll;
-          }
+      simd_guard([&]() {
+	  bamat = 0.0; bbmat = 0.0;
+	  bool symmetric_so_far = true; // will be set to false here
+	  for (auto bfi : ab_bfis)
+	    { bfi->CalcElementMatrixAdd(felab, eltrans, bamat, symmetric_so_far, lh); }
+	  symmetric_so_far = true; // will probably be set to false
+	  for (auto bfi : bb_bfis)
+	    { bfi->CalcElementMatrixAdd(felb, eltrans, bbmat, symmetric_so_far, lh); }
+	});
 
-        auto mat = make_shared<ConstantElementByElementMatrix>
-          (space_b->GetNDof(), space_a->GetNDof(),
-           elmat, std::move(bdofs), std::move(adofs));
+      CalcInverse(bbmat);
+      elmat = bbmat * bamat;
 
-        if (op != nullptr)
-          { op = make_shared<SumMatrix>(op, mat); }
-        else
-          { op = mat; }
+      Table<DofId> adofs(elclass_inds.Size(), nda*dima),
+	bdofs(elclass_inds.Size(), ndb*dimb);
+      Array<DofId> dnumsa, dnumsb;
+      for (auto i : Range(elclass_inds)) {
+	ElementId ei(vb, elclass_inds[i]);
+	space_a->GetDofNrs(ei, dnumsa);
+	space_b->GetDofNrs(ei, dnumsb);
+	for (auto d : dnumsb)
+	  { cnt_b[d]++; }
+	int c = 0;
+	for (auto l : Range(dnumsa))
+	  for (auto ll : Range(dima))
+	    { adofs[i][c++] = dima * dnumsa[l] + ll; }
+	c = 0;
+	for (auto l : Range(dnumsb))
+	  for (auto ll : Range(dimb))
+	    { bdofs[i][c++] = dimb * dnumsb[l] + ll; }
       }
+
+      auto mat = make_shared<ConstantElementByElementMatrix>
+	(space_b->GetNDof(), space_a->GetNDof(),
+	 elmat, std::move(bdofs), std::move(adofs));
+
+      if (op != nullptr)
+	{ op = make_shared<SumMatrix>(op, mat); }
+      else
+	{ op = mat; }
+    }
 
     if (op == nullptr) {
       // dummy op for empty FESpace
