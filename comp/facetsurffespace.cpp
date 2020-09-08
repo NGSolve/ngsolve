@@ -364,6 +364,12 @@ namespace ngcomp
       *testout << "couplingtypes = " << endl << ctofdof << endl;
   }
 
+  FlatArray<VorB> FacetSurfaceFESpace :: GetDualShapeNodes (VorB vb) const override
+  {
+    static VorB nodes[] = { BBND };
+    return FlatArray<VorB> (1, &nodes[0]);
+  }
+
     template <ELEMENT_TYPE ET>
   FiniteElement & FacetSurfaceFESpace :: T_GetFE (int elnr, Allocator & alloc) const
   {
