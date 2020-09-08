@@ -399,26 +399,23 @@ namespace ngcomp
     struct PreconditionerInfo
     {
       string name;
-      shared_ptr<Preconditioner> (*creator)(const PDE & pde, const Flags & aflags, const string & name);
-      shared_ptr<Preconditioner> (*creatorbf)(shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name);
+      function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> creator;
+      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> creatorbf;
       PreconditionerInfo (const string & aname,
-			  shared_ptr<Preconditioner> (*acreator)
-                          (const PDE & pde, const Flags & aflags, const string & name),
-			  shared_ptr<Preconditioner> (*acreatorbf)
-                          (shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name));
+			  function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
+                          function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags &, const string)> acreateorbf);
     };
   
-    Array<PreconditionerInfo*> prea;
+    Array<unique_ptr<PreconditionerInfo>> prea;
   public:
     PreconditionerClasses();
-    ~PreconditionerClasses();  
+    ~PreconditionerClasses();
+
     void AddPreconditioner (const string & aname, 
-			    shared_ptr<Preconditioner> (*acreator)
-                            (const PDE & pde, const Flags & aflags, const string & name),
-			    shared_ptr<Preconditioner> (*acreatorbf)
-                            (shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name));
-  
-    const Array<PreconditionerInfo*> & GetPreconditioners() { return prea; }
+			    function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> acreator,
+			    function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags&, const string)> createorbf);
+      
+    const Array<unique_ptr<PreconditionerInfo>> & GetPreconditioners() { return prea; }
     const PreconditionerInfo * GetPreconditioner(const string & name);
 
     void Print (ostream & ost) const;
@@ -433,7 +430,6 @@ namespace ngcomp
     RegisterPreconditioner (string label, bool isparallel = true)
     {
       GetPreconditionerClasses().AddPreconditioner (label, Create, CreateBF);
-      // cout << "register preconditioner '" << label << "'" << endl;
     }
     
     static shared_ptr<Preconditioner> Create (const PDE & pde, const Flags & flags, const string & name)
