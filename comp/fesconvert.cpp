@@ -396,14 +396,18 @@ namespace ngcomp
     shared_ptr<BaseMatrix> op;
 
     auto simd_guard = [&](auto some_lam) {
-      try { some_lam(); }
-      catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
-	for (auto bfi : ab_bfis)
-	  { bfi->SetSimdEvaluate(false); }
-	for (auto bfi : bb_bfis)
-	  { bfi->SetSimdEvaluate(false); }
-	some_lam();
+      if (use_simd) {
+	try { some_lam(); }
+	catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
+	  for (auto bfi : ab_bfis)
+	    { bfi->SetSimdEvaluate(false); }
+	  for (auto bfi : bb_bfis)
+	    { bfi->SetSimdEvaluate(false); }
+	  some_lam();
+	}
       }
+      else
+	{ some_lam(); }
     };
 
     for (auto elclass_inds : table) {
