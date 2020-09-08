@@ -29,7 +29,6 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
     mat.setISLocalMat(apsc_loc)
     mat.assemble()
     mat.convert("mpiaij")
-    mat.view()
     return mat
 
 
@@ -97,6 +96,10 @@ class PETScPreconditioner(ngs.BaseMatrix):
         return self.ngsmat.height
     def Width(self):
         return self.ngsmat.width
+    def CreateRowVector(self):
+        return self.ngsmat.CreateColVector()
+    def CreateColVector(self):
+        return self.ngsmat.CreateRowVector()
     
     def Mult(self, x,y):
         self.vecmap.N2P(x,self.pscx)
