@@ -1,7 +1,6 @@
 #ifndef NGSOLVE_PYTHON_LINALG_HPP
 #define NGSOLVE_PYTHON_LINALG_HPP
 
-#include <python_ngstd.hpp>
 #include <la.hpp>
 
 // Workaround to ensure same lifetime for C++ and Python objects
