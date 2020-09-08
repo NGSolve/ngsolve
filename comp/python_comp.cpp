@@ -2603,6 +2603,70 @@ integrator : ngsolve.fem.LFI
                 })
     ;
 
+
+  class PythonPreconditioner : public Preconditioner
+  {
+  protected:
+    shared_ptr<BitArray> freedofs;
+    py::object creator;
+    const BaseMatrix *  mat;    
+    shared_ptr<BaseMatrix> premat;
+  public:
+    PythonPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & flags,
+                          py::object acreator)
+      : Preconditioner(bfa, flags), creator(acreator) { }
+    virtual void InitLevel (shared_ptr<BitArray> afreedofs) { freedofs = afreedofs; }
+    virtual void FinalizeLevel (const ngla::BaseMatrix * amat)
+    {
+      mat = amat;
+      shared_ptr<BaseMatrix> dummy_sp(const_cast<BaseMatrix*>(amat), NOOP_Deleter);
+
+      py::gil_scoped_acquire agil;
+      premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs));
+    }
+
+    virtual void Update()
+    {
+      cout << "update pre" << endl;
+    }
+
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return *mat;
+    }
+    
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
+    {
+      return premat;
+    }
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override
+    {
+      premat->Mult(x, y);
+    }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      premat->MultAdd(s, x, y);
+    }
+  };
+
+
+  m.def("RegisterPreconditioner", [] (string name, py::object makepre)
+    {
+      cout << "register Python preconditioner " << name << endl;
+      
+      auto creator_function = [makepre]
+        (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
+        -> shared_ptr<Preconditioner> 
+        {
+          return make_shared<PythonPreconditioner> (bfa, flags, makepre);
+        };
+
+      GetPreconditionerClasses().AddPreconditioner (name, nullptr, creator_function);
+    }, py::arg("name"), py::arg("makepre"), "register creator-function makepre(BaseMatrix,FreeDofs)->BaseMatrix");
+  
+  
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<NumProc, NGS_Object, shared_ptr<NumProc>> (m, "NumProc")
