@@ -94,9 +94,9 @@ class PETScPreconditioner(ngs.BaseMatrix):
         self.pscx, self.pscy = self.mat.createVecs()
         
     def Height(self):
-        return self.ngsmat.H
+        return self.ngsmat.height
     def Width(self):
-        return self.ngsmat.W
+        return self.ngsmat.width
     
     def Mult(self, x,y):
         self.vecmap.N2P(x,self.pscx)
