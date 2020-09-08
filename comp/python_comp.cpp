@@ -2610,48 +2610,48 @@ integrator : ngsolve.fem.LFI
     shared_ptr<BitArray> freedofs;
     py::object creator;
     const BaseMatrix *  mat;
-    py::object pypremat;
     shared_ptr<BaseMatrix> premat;
   public:
     PythonPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & flags,
                           py::object acreator)
       : Preconditioner(bfa, flags), creator(acreator) { }
-    virtual void InitLevel (shared_ptr<BitArray> afreedofs) { freedofs = afreedofs; }
-    virtual void FinalizeLevel (const ngla::BaseMatrix * amat)
+    void InitLevel (shared_ptr<BitArray> afreedofs) override
+    { freedofs = afreedofs; }
+    void FinalizeLevel (const ngla::BaseMatrix * amat) override
     {
       mat = amat;
       shared_ptr<BaseMatrix> dummy_sp(const_cast<BaseMatrix*>(amat), NOOP_Deleter);
 
       py::gil_scoped_acquire agil;
-      // premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs));
-
-      // we have to keep the Python object, otherwise the Python-overload gets deleted
-      // why is this necessary ? 
-      pypremat = creator(dummy_sp, freedofs);        
-      premat = py::cast<shared_ptr<BaseMatrix>> (pypremat);
+      premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs));
     }
 
-    virtual void Update()
+    void Update() override
     {
       cout << "update pre" << endl;
     }
 
-    virtual const BaseMatrix & GetAMatrix() const
+    const BaseMatrix & GetAMatrix() const override
     {
       return *mat;
     }
+
+    const BaseMatrix& GetMatrix() const override
+    {
+      return *premat;
+    }
     
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
+    shared_ptr<BaseMatrix> GetMatrixPtr() override
     {
       return premat;
     }
 
-    virtual void Mult (const BaseVector & x, BaseVector & y) const override
+    void Mult (const BaseVector & x, BaseVector & y) const override
     {
       premat->Mult(x, y);
     }
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       premat->MultAdd(s, x, y);
     }
@@ -2666,6 +2666,7 @@ integrator : ngsolve.fem.LFI
         (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
         -> shared_ptr<Preconditioner> 
         {
+          py::gil_scoped_acquire aq;
           return make_shared<PythonPreconditioner> (bfa, flags, makepre);
         };
 

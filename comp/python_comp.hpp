@@ -2,6 +2,7 @@
 #define NGSOLVE_PYTHON_COMP_HPP
 
 #include <python_ngstd.hpp>
+#include <python_linalg.hpp>
 
 #include "comp.hpp"
 
