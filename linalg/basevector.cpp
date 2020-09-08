@@ -1009,7 +1009,7 @@ namespace ngla
               }
 
 
-            MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(js, ks, mat.Width(), &mat(j0,k0)));
+            MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(js, ks, mat.Width(), &mat(k0,j0)));
 
           }
 
@@ -1058,7 +1058,7 @@ namespace ngla
               ppy[ell] = v2[k0 + ell]->FVComplex().Addr(i0);
             }
 
-            MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(js, ks, mat.Width(), &mat(j0,k0)));
+            MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(js, ks, mat.Width(), &mat(k0,j0)));
 
           }
 
