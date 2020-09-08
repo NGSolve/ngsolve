@@ -2609,7 +2609,8 @@ integrator : ngsolve.fem.LFI
   protected:
     shared_ptr<BitArray> freedofs;
     py::object creator;
-    const BaseMatrix *  mat;    
+    const BaseMatrix *  mat;
+    py::object pypremat;
     shared_ptr<BaseMatrix> premat;
   public:
     PythonPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & flags,
@@ -2622,7 +2623,12 @@ integrator : ngsolve.fem.LFI
       shared_ptr<BaseMatrix> dummy_sp(const_cast<BaseMatrix*>(amat), NOOP_Deleter);
 
       py::gil_scoped_acquire agil;
-      premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs));
+      // premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs));
+
+      // we have to keep the Python object, otherwise the Python-overload gets deleted
+      // why is this necessary ? 
+      pypremat = creator(dummy_sp, freedofs);        
+      premat = py::cast<shared_ptr<BaseMatrix>> (pypremat);
     }
 
     virtual void Update()
