@@ -46,7 +46,7 @@ install( FILES
         pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
         sparsematrix_spec.hpp sparsematrix_impl.hpp sparsematrix_dyn.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
-        umfpackinverse.hpp vvector.hpp     
+        umfpackinverse.hpp vvector.hpp python_linalg.hpp
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp cuda_linalg.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
