@@ -2159,8 +2159,26 @@ namespace ngcomp
     return elements_of_class;
   }
 
-
-  
+  shared_ptr<CoefficientFunction> MeshAccess ::
+  RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value, const map<string, shared_ptr<CoefficientFunction>>& region_values)
+  {
+    Array<shared_ptr<CoefficientFunction>> cfs(GetNRegions(vb));
+    shared_ptr<MeshAccess> spm(this, NOOP_Deleter);
+    for(const auto& val : region_values)
+      {
+        const auto& key = val.first;
+        Region region = Region(spm, vb, key);
+        for(auto i : Range(region.Mask().Size()))
+          {
+            if(region.Mask()[i])
+              cfs[i] = val.second;
+          }
+      }
+    for(auto i : Range(cfs))
+      if(cfs[i] == nullptr)
+        cfs[i] = default_value;
+    return MakeDomainWiseCoefficientFunction(move(cfs));
+  }
 
   class BoundaryFromVolumeCoefficientFunction :
     public T_CoefficientFunction<BoundaryFromVolumeCoefficientFunction>

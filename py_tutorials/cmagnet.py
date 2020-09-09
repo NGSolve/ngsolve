@@ -36,12 +36,11 @@ fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
 u = fes.TrialFunction()
 v = fes.TestFunction()
 
-mur = { "core" : 1000, "coil" : 1, "air" : 1 }
+mur = mesh.MaterialCF(1, core=1000)
+# mur = mesh.MaterialCF(1, {"cor.*" : 1000 })
 mu0 = 1.257e-6
-nu_coef = [ 1/(mu0*mur[mat]) for mat in mesh.GetMaterials() ]
-print ("nu_coef=", nu_coef)
+nu = 1/(mu0*mur)
 
-nu = CoefficientFunction(nu_coef)
 a = BilinearForm(fes, symmetric=True)
 a += nu*curl(u)*curl(v)*dx + 1e-6*nu*u*v*dx
 
