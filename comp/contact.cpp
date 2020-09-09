@@ -1,15 +1,16 @@
-// #define GL_SILENCE_DEPRECATION 
-// #include <GL/gl.h>
-// #include <OpenGL/gl.h>
-// #include <incopengl.hpp>
+#include <netgen_config.hpp>
 
 #include "contact.hpp"
 
-// namespace netgen
-// {
-//   extern void AddUserVisualizationObject (UserVisualizationObject * vis);
-//   extern void DeleteUserVisualizationObject (UserVisualizationObject * vis);
-// }
+#if NETGEN_USE_GUI
+#include <incopengl.hpp>
+
+namespace netgen
+{
+  DLL_HEADER void AddUserVisualizationObject (UserVisualizationObject * vis);
+  DLL_HEADER void DeleteUserVisualizationObject (UserVisualizationObject * vis);
+}
+#endif // NETGEN_USE_GUI
 
 
 namespace ngcomp
@@ -750,8 +751,11 @@ namespace ngcomp
                                    Region _master, Region _other, bool draw_pairs_)
     : master(_master), other(_other), fes(_fes), draw_pairs(draw_pairs_)
   {
-//     if(draw_pairs)
-//       AddUserVisualizationObject (this);
+#if NETGEN_USE_GUI
+    if(draw_pairs)
+      AddUserVisualizationObject (this);
+#endif // NETGEN_USE_GUI
+
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       {
@@ -767,7 +771,9 @@ namespace ngcomp
 
   ContactBoundary :: ~ContactBoundary()
   {
-//     DeleteUserVisualizationObject (this);
+#if NETGEN_USE_GUI
+    DeleteUserVisualizationObject (this);
+#endif // NETGEN_USE_GUI
   }
 
   void ContactBoundary :: Draw()
@@ -775,7 +781,7 @@ namespace ngcomp
     if(!draw_pairs)
       return;
 
-    /*
+#if NETGEN_USE_GUI
     glBegin (GL_LINES);
     for (auto i : Range(master_points.Size()))
       {
@@ -785,7 +791,7 @@ namespace ngcomp
         glVertex3d (sp(0), sp(1), sp(2));
       }
     glEnd();
-    */
+#endif // NETGEN_USE_GUI
   }
 
   void ContactBoundary::AddEnergy(shared_ptr<CoefficientFunction> form)
