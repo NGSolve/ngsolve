@@ -3244,7 +3244,7 @@ namespace ngcomp
                  if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                    {
                      static Timer statcondtimer("static condensation", 2);
-                     RegionTimer regstat (statcondtimer);
+                     ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                      
                      // ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
