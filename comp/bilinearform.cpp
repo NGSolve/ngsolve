@@ -431,8 +431,14 @@ namespace ngcomp
         for (int i = 0; i < specialelements.Size(); i++)
           {
             specialelements[i]->GetDofNrs (dnums);
+            QuickSort(dnums);
+            int last = -1;
             for (int d : dnums)
-              if (IsRegularDof(d)) creator.Add (neV+neB+neBB+i, d);
+              {
+                if (d!=last && IsRegularDof(d))
+                    creator.Add (neV+neB+neBB+i, d);
+                last = d;
+              }
           }
 
         if (fespace->UsesDGCoupling())
