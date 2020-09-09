@@ -10,6 +10,7 @@
 
 // #include <nginterface.h>
 #include <nginterface_v2.hpp>
+#include <variant>
 
 namespace ngfem
 {
@@ -1096,6 +1097,17 @@ namespace ngcomp
     // Uses 0 based identification numbers! Returns periodic node pairs of given identifcation number
     const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
+    shared_ptr<CoefficientFunction> RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value, const map<string, shared_ptr<CoefficientFunction>>& region_values);
+
+    shared_ptr<CoefficientFunction> MaterialCF(shared_ptr<CoefficientFunction> default_value, const map<string, shared_ptr<CoefficientFunction>>& region_values)
+    {
+      return RegionCF(VOL, default_value, region_values);
+    }
+
+    shared_ptr<CoefficientFunction> BoundaryCF(shared_ptr<CoefficientFunction> default_value, map<string, shared_ptr<CoefficientFunction>> region_values)
+    {
+      return RegionCF(BND, default_value, region_values);
+    }
 
   private:
     Table<size_t> elements_of_class;

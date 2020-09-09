@@ -623,6 +623,70 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 (py::arg("self"), py::arg("pattern")),
 	 "Return co dim 3 boundary mesh-region matching the given regex pattern")
 
+    .def("RegionCF", [](MeshAccess& self, VorB vb,
+                        shared_ptr<CoefficientFunction> default_value,
+                        optional<map<string, shared_ptr<CoefficientFunction>>> map_,
+                        py::kwargs kwargs)
+    {
+      auto vals = py::cast<map<string, shared_ptr<CoefficientFunction>>>(kwargs);
+      if(map_)
+        vals.merge(*map_);
+      return self.RegionCF(vb, default_value, vals);
+    }, py::arg("VorB"), py::arg("_default"), py::arg("_map")=nullopt,
+         R"delimiter(Region wise CoefficientFunction.
+First argument is VorB, defining the co-dimension,
+second argument is the default value, on all not given subdomains.
+Specific subdomains can be given either as a dictionary from regexp to
+CoefficientFunction, for example:
+>>> sigma = mesh.RegionCF(VOL, 0., { "steel_.*" : 2e6 })
+will create a CF being 2e6 on all domains starting with 'steel_' and 0. elsewhere.
+The subdomains can be given as kwargs as well:
+>>> nu = mesh.RegionCF(VOL, 1., core=1000)
+Later given parameters override earlier given ones.
+)delimiter")
+
+    .def("MaterialCF", [](MeshAccess& self,
+                          shared_ptr<CoefficientFunction> default_value,
+                          optional<map<string, shared_ptr<CoefficientFunction>>> map_,
+                          py::kwargs kwargs)
+    {
+      auto vals = py::cast<map<string, shared_ptr<CoefficientFunction>>>(kwargs);
+      if(map_)
+        vals.merge(*map_);
+      return self.MaterialCF(default_value, vals);
+    }, py::arg("_default"), py::arg("_map")=nullopt,
+                  R"delimiter(Domain wise CoefficientFunction.
+First argument is the default value, on all not given subdomains.
+Specific subdomains can be given either as a dictionary from regexp to
+CoefficientFunction, for example:
+>>> sigma = mesh.MaterialCF(0., { "steel_.*" : 2e6 })
+will create a CF being 2e6 on all domains starting with 'steel_' and 0. elsewhere.
+The subdomains can be given as kwargs as well:
+>>> nu = mesh.MaterialCF(1., core=1000)
+Later given parameters override earlier given ones.
+)delimiter")
+
+    .def("BoundaryCF", [](MeshAccess& self,
+                          shared_ptr<CoefficientFunction> default_value,
+                          optional<map<string, shared_ptr<CoefficientFunction>>> map_,
+                          py::kwargs kwargs)
+    {
+      auto vals = py::cast<map<string, shared_ptr<CoefficientFunction>>>(kwargs);
+      if(map_)
+        vals.merge(*map_);
+      return self.BoundaryCF(default_value, vals);
+    }, py::arg("_default"), py::arg("_map")=nullopt,
+         R"delimiter(Boundary wise CoefficientFunction.
+First argument is the default value, on all not given boundaries.
+Specific boundaries can be given either as a dictionary from regexp to
+CoefficientFunction, for example:
+>>> sigma = mesh.BoundaryCF(0., { "top.*" : 1. })
+will create a CF being 1. on all boundaries starting with 'top' and 0. elsewhere.
+The boundaries can be given as kwargs as well:
+>>> nu = mesh.BoundaryCF(1., interface=1000)
+Later given parameters override earlier given ones.
+)delimiter")
+
     // TODO: explain how to mark elements
     .def("Refine",
          [](MeshAccess & ma, bool mark_surface_elements)
