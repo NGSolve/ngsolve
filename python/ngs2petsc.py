@@ -69,7 +69,8 @@ class VectorMapping:
         if ngs_vector is None:
             ngs_vector = ngs.la.CreateParallelVector(self.pardofs)
         psc_loc = psc_vector.getSubVector(self.iset)
-
+        
+        ngs_vector.SetParallelStatus(ngs.PARALLEL_STATUS.CUMULATED)
         if self.freedofs is None:
             ngs_vector.FV()[:] = ngs.Vector(psc_loc.getArray())
         else:
@@ -90,6 +91,7 @@ class PETScPreconditioner(ngs.BaseMatrix):
         self.precond = psc.PC().create()
         self.precond.setType("gamg")
         self.precond.setOperators(self.mat)
+        self.precond.setUp()
         self.pscx, self.pscy = self.mat.createVecs()
         
     def Height(self):
