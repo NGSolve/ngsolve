@@ -2248,7 +2248,14 @@ reallocate : bool
     .def_property_readonly("mat", [](shared_ptr<BF> self) -> shared_ptr<BaseMatrix>
                                          {
                                            if (self->NonAssemble())
-                                             return make_shared<BilinearFormApplication> (self, glh);
+                                             {
+                                               auto app = make_shared<BilinearFormApplication> (self, glh);
+                                               if (self->GetTrialSpace()->IsParallel())
+                                                 return make_shared<ParallelMatrix>(app,
+                                                                                    self->GetTrialSpace()->GetParallelDofs(),
+                                                                                    self->GetTestSpace()->GetParallelDofs(), C2D);
+                                               return app;
+                                             }
                                            auto mat = self->GetMatrixPtr();
                                            if (!mat)
                                              throw py::type_error("matrix not ready - assemble bilinearform first");

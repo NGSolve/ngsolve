@@ -586,7 +586,13 @@ namespace ngcomp
         // mats.Append (make_shared<BilinearFormApplication> (shared_ptr<BilinearForm>(this, NOOP_Deleter)), lh);
 
         mats.SetSize(ma->GetNLevels());
-        mats.Last() = make_shared<BilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), lh); 
+        shared_ptr<BaseMatrix> app = 
+          make_shared<BilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), lh);
+        cout << "craete bilinearformapplication" << endl;
+        if (fespace->IsParallel())
+          app = make_shared<ParallelMatrix> (app, GetTrialSpace()->GetParallelDofs(), GetTestSpace()->GetParallelDofs(), C2D);
+        
+        mats.Last() = app;
       
         if (precompute)
           {
@@ -3027,7 +3033,10 @@ namespace ngcomp
     lin.Cumulate();
 
     if (nonassemble) {
-      auto app = make_shared<LinearizedBilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), &lin, clh);
+      shared_ptr<BaseMatrix> app =
+        make_shared<LinearizedBilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), &lin, clh);
+      if (fespace->IsParallel())
+        app = make_shared<ParallelMatrix> (app, GetTrialSpace()->GetParallelDofs(), GetTestSpace()->GetParallelDofs(), C2D);
       if (this->mats.Size() < this->ma->GetNLevels())
 	mats.Append (app);
       else // we might be using a different vector now
