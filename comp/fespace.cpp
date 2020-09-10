@@ -1927,6 +1927,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
         auto diagmat = make_shared<DiagonalMatrix<>> (scaling);
         sum = make_shared<ProductMatrix> (diagmat, sum);
       }
+
+    if (IsParallel())
+      {
+        if (multiple)
+          throw Exception("parallel convertL2 operator only available for non-coupling spaces");
+        sum = make_shared<ParallelMatrix> (sum, GetParallelDofs(), l2space->GetParallelDofs(), C2C);
+      }
     
     return sum;    
   }
