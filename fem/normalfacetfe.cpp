@@ -174,7 +174,6 @@ namespace ngfem
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
                    (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
 
-    int ii=1;
     const FACE * faces = ElementTopology::GetFaces (ET_HEX);
     for (int i = 0; i < 6; i++)
       {
@@ -208,11 +207,18 @@ namespace ngfem
         
         /*for(int j = 0; j <= p; j++)
           for(int k = 0; k <= p; k++)
-          shape[first + ii++] = L_xi[j]*L_eta[k]*lam_f;*/
+          shape[first + ii++] = L_xi[j]*L_eta[k]*lam_f;
 
         for (int k = 0; k < p; k++)
           for (int l = 0; l < p; l++, ii++)
             shape[first + ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
+        */
+
+          // could be simpler, but leads to bug in XCode 11.6 (and certainly other):
+        size_t ii = 1;
+        for (size_t l = 0; l < p; l++, ii++)
+          for (size_t k = 0; k < p; k++)
+            shape[first + k*p+l] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
         
         for (int k = 0; k < p; k++)
           shape[first + ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
@@ -488,7 +494,7 @@ namespace ngfem
   void NormalFacetFacetFE<ET_QUAD>::T_CalcShape(TIP<DIM,Tx> tip, 
                                                 TFA &  shape) const
   {
-    Tx lam[4] = {(1-tip.x)*(1-tip.y),tip.x*(1-tip.y),tip.x*tip.y,(1-tip.x)*tip.y};  
+    // Tx lam[4] = {(1-tip.x)*(1-tip.y),tip.x*(1-tip.y),tip.x*tip.y,(1-tip.x)*tip.y};  
     Tx sigma[4] = {(1-tip.x)+(1-tip.y),tip.x+(1-tip.y),tip.x+tip.y,(1-tip.x)+tip.y};
 
 

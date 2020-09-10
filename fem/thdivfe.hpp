@@ -624,7 +624,7 @@ namespace ngfem
 
     INLINE THDiv2DivShape (const Class_curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
     { 
-      data = 0.0;
+      data = SCAL(0.0);
     }
 
     INLINE operator SCAL () const { return data; }
