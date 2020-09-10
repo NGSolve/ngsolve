@@ -890,9 +890,13 @@ namespace ngla
     *out << "matrix '" << label << "' Mult: " << typeid(*mat).name() << " "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
+    if (comm.has_value()) comm->Barrier();
+    
     mat->Mult(x,y);
+    
     if (comm.has_value()) comm->Barrier();
     *out << "matrix '" << label << "' Mult complete" << endl;
+    if (comm.has_value()) comm->Barrier();        
   }
   
   void LoggingMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
@@ -905,9 +909,13 @@ namespace ngla
     *out << "matrix '" << label << "' MultAdd: "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
+    if (comm.has_value()) comm->Barrier();
+    
     mat->MultAdd(s,x,y);
+    
     if (comm.has_value()) comm->Barrier();    
-    *out << "matrix '" << label << "' MultAdd complete" << endl;    
+    *out << "matrix '" << label << "' MultAdd complete" << endl;
+    if (comm.has_value()) comm->Barrier();        
   }
   void LoggingMatrix :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
