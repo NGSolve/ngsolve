@@ -409,10 +409,19 @@ namespace ngcomp
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
 
 	      tmp = make_unique<ParallelVVector<TV>>(pardofs);
-	      innersolve = make_shared<ParallelMatrix> (innersolve, pardofs, pardofs, C2D);
-	      harmonicext = make_shared<ParallelMatrix> (harmonicext, pardofs, pardofs, C2D);
+	      innersolve =
+                ComposeOperators(make_shared<ParallelMatrix> (innersolve, pardofs, pardofs, C2D),
+                                 make_shared<CumulationOperator> (pardofs));
+	      innersolve =
+                ComposeOperators(make_shared<CumulationOperator> (pardofs), innersolve);
+              
+	      harmonicext =
+                ComposeOperators(make_shared<CumulationOperator> (pardofs),
+                                 make_shared<ParallelMatrix> (harmonicext, pardofs, pardofs, C2D));
+              
 	      if (harmonicexttrans)
-		harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans, pardofs, pardofs, C2D);
+		harmonicexttrans = ComposeOperators(make_shared<ParallelMatrix> (harmonicexttrans, pardofs, pardofs, C2D),
+                                                    make_shared<CumulationOperator> (pardofs));
 	    }
 	  else
 	    {
@@ -461,9 +470,8 @@ namespace ngcomp
 
       RegionTimer reg (timer);
 
-      x.Cumulate();
+      x.Distribute();
       y = x;
-      y.Distribute();
       
       timerharmonicexttrans.Start();
 
@@ -501,14 +509,14 @@ namespace ngcomp
       timerwb.Stop();
 
       timerifs.Start();
-      tmp->Distribute(); 
+      // tmp->Distribute(); 
       *tmp += *innersolve * x;
       timerifs.Stop();
 
       timerharmonicext.Start();
-      
+
+      // tmp->Cumulate();
       y = *tmp;
-      tmp->Cumulate();
       y += *harmonicext * *tmp;
 
       timerharmonicext.Stop();
