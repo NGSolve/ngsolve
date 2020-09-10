@@ -1098,7 +1098,7 @@ namespace ngcomp
             size_t gcnt = 0; //global count (for all cases)
             
             for (auto pre : preconditioners)
-              pre -> InitLevel(fespace->GetFreeDofs());
+              pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
 
 	    mattimer1a.Stop();
 
@@ -3108,7 +3108,7 @@ namespace ngcomp
         Array<int> dnums;
 
         for (auto pre : preconditioners)
-          pre -> InitLevel(fespace->GetFreeDofs());
+          pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
 
         for (VorB vb : { VOL, BND, BBND, BBBND })
           if (VB_parts[vb].Size())
