@@ -442,7 +442,7 @@ namespace ngla
   AutoVector ParallelMatrix :: CreateRowVector () const
   {
     auto pd = row_paralleldofs ? row_paralleldofs : paralleldofs;
-    return CreateParallelVector (pd, DISTRIBUTED);
+    return CreateParallelVector (pd, RowType(op));
     /*
     if (IsComplex()) {
       if (row_paralleldofs == nullptr)
@@ -466,7 +466,7 @@ namespace ngla
   AutoVector ParallelMatrix :: CreateColVector () const
   {
     auto pd = col_paralleldofs ? col_paralleldofs : paralleldofs;
-    return CreateParallelVector (pd, DISTRIBUTED);
+    return CreateParallelVector (pd, ColType(op));
     /*
     if (IsComplex()) {
       if (col_paralleldofs==nullptr)
@@ -506,6 +506,49 @@ namespace ngla
     else
       y.Distribute();
     mat->MultAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
+  
+    /*
+    auto xpar = dynamic_cast<const ParallelBaseVector*> (&x);
+    auto ypar = dynamic_cast<ParallelBaseVector*> (&y);
+
+    const BaseVector * localx = &x;
+    if (xpar)
+      {
+        if (RowType(op) == CUMULATED && xpar->GetParallelStatus() != CUMULATED)
+          {
+            cout << "WARNING: ParallelMatrix::MultAdd, x needs cumulation" << endl;
+            xpar->Cumulate();
+          }
+        if (RowType(op) == DISTRIBUTED && xpar->GetParallelStatus() != DISTRIBUTED)
+          {
+            cout << "WARNING: ParallelMatrix::MultAdd, x needs distribution" << endl;        
+            xpar->Distribute();
+          }
+        localx = xpar->GetLocalVector().get();
+      }
+    else
+      cout << "WARNING: ParallelMatrix::MultAdd, x not parallel" << endl;
+
+    BaseVector * localy = &y;
+    if (ypar)
+      {
+        if (ColType(op) == CUMULATED && ypar->GetParallelStatus() != CUMULATED)
+          {
+            cout << "WARNING: ParallelMatrix::MultAdd, y needs cumulation" << endl;
+            ypar->Cumulate();
+          }
+        if (ColType(op) == DISTRIBUTED && ypar->GetParallelStatus() != DISTRIBUTED)
+          {
+            cout << "WARNING: ParallelMatrix::MultAdd, y needs distribution" << endl;        
+            ypar->Distribute();
+          }
+        localy = ypar->GetLocalVector().get();
+      }
+    else
+      cout << "WARNING: ParallelMatrix::MultAdd, y not parallel" << endl;
+    
+    mat->MultAdd (s, *localx, *localy);
+    */
   }
 
   void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -667,12 +710,14 @@ namespace ngla
   
   void CumulationOperator :: MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    throw Exception ("CumulationOp, multtrans not implemented");
+    Mult (x, y);
+    // throw Exception ("CumulationOp, multtrans not implemented");
   }
   
   void CumulationOperator :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    throw Exception ("CumulationOp, multtransadd not implemented");
+    MultAdd (s, x, y);
+    // throw Exception ("CumulationOp, multtransadd not implemented");
   }
 
   AutoVector CumulationOperator :: CreateRowVector () const
