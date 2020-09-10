@@ -367,7 +367,7 @@ namespace ngcomp
     docu.short_docu = "An H1-conforming finite element space.";
     docu.long_docu =
       R"raw_string(The H1 finite element space consists of continuous and
-elemenet-wise polynomial functions. It uses a hierarchical (=modal)
+element-wise polynomial functions. It uses a hierarchical (=modal)
 basis built from integrated Legendre polynomials on tensor-product elements,
 and Jaboci polynomials on simplicial elements. 
 

@@ -287,9 +287,16 @@ namespace ngbla
   extern NGS_DLL_HEADER  
   void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip);
 
+  extern NGS_DLL_HEADER
+  void PairwiseInnerProduct (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> ip, bool conj);
+
+
   // x_i += sum_j a(i,j) y_j
   extern NGS_DLL_HEADER  
   void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a);
+
+  extern NGS_DLL_HEADER
+  void MultiVectorAdd (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> a);
 
 
 

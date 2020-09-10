@@ -2462,6 +2462,80 @@ namespace ngbla
 
   }
 
+
+  void PairwiseInnerProduct (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> ip, bool conj) {
+
+    #ifdef __AVX512F__
+        constexpr size_t HA = 6;
+    #else
+      constexpr size_t HA = 3;
+    #endif
+
+    int x_size = x.Size();
+    int y_size = y.Size();
+
+    if (conj) {
+      size_t j = 0;
+      for (; j+HA <= x_size; j+=HA) {
+
+        size_t k = 0;
+        for (; k+2 <= y_size; k+=2) {
+          MultiVecScalC<HA, 2, 1>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+        for (; k < y_size; k++) {
+          MultiVecScalC<HA, 1, 1>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+
+      }
+
+      for ( ; j < x_size; j++)
+      {
+
+        size_t k = 0;
+        for (; k+8 <= y_size; k+=8) {
+          MultiVecScalC<1, 8, 1>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+        for (; k+4 <= y_size; k+=4) {
+          MultiVecScalC<1, 4, 1>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+        for (; k < y_size; k++) {
+          MultiVecScalC<1, 1, 1>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+      }
+    }
+    else {
+
+      size_t j = 0;
+      for (; j+HA <= x_size; j+=HA) {
+
+        size_t k = 0;
+        for (; k+2 <= y_size; k+=2) {
+          MultiVecScalC<HA, 2, 0>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+        for (; k < y_size; k++) {
+          MultiVecScalC<HA, 1, 0>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+      }
+
+      for ( ; j < x_size; j++)
+      {
+
+        size_t k = 0;
+        for (; k+8 <= y_size; k+=8) {
+          MultiVecScalC<1, 8, 0>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+        for (; k+4 <= y_size; k+=4) {
+          MultiVecScalC<1, 4, 0>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+        for (; k < y_size; k++) {
+          MultiVecScalC<1, 1, 0>(n, &x[j], &y[k], &ip(j,k), ip.Dist());
+        }
+      }
+    }
+
+  }
+
+
     // x_i += sum_j a(j,i) y_j
   void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a) {
 
@@ -2510,6 +2584,45 @@ namespace ngbla
 
     }
   }
+
+
+    void MultiVectorAdd (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> a) {
+
+    constexpr int Hx = 3;
+    constexpr int Hy = 4;
+
+    size_t i = 0;
+    for (; i + Hy <= y.Size(); i += Hy) {
+
+      size_t j = 0;
+      for (; j + Hx <= x.Size(); j+=Hx) {
+        MultiScaleAddC<Hx,Hy>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j + 2 <= x.Size(); j+=2) {
+        MultiScaleAddC<2,Hy>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j < x.Size(); j++) {
+        MultiScaleAddC<1,Hy>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+
+    }
+    for (; i < y.Size(); i++) {
+
+      size_t j = 0;
+      for (; j + Hx <= x.Size(); j+=Hx) {
+        MultiScaleAddC<Hx,1>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j + 2 <= x.Size(); j+=2) {
+        MultiScaleAddC<2,1>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+      for (; j < x.Size(); j++) {
+        MultiScaleAddC<1,1>(n, x+j, y+i, &a(i,j), a.Dist());
+      }
+
+    }
+
+  }
+
 
 
 

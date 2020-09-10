@@ -442,6 +442,240 @@ void GenerateMultiVecScalAB (ostream & out, int h, int w)
 }
 
 
+
+/*
+  used in GenerateMultiVecScalC if __FMA__ is not defined
+*/
+void GenerateMultiVecScalC_nofma (ostream & out, int h, int w, bool c)
+{
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++)
+    for (int j = 0; j < w; j++)
+      out << "SIMD<Complex> sum" << i << "_" << j << "(0);" << endl;
+
+  for (int i = 0; i < h; i++) {
+    out << "Complex* pa" << i << " = ppa[" << i << "];" << endl;
+  }
+  for (int i = 0; i < w; i++) {
+    out << "Complex* pb" << i << " = ppb[" << i << "];" << endl;
+  }
+
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++)
+  {
+    out << "SIMD<Complex> a" << i << ";" << endl;
+    out << "a" << i << ".LoadFast(pa" << i << "+i);" << endl;
+  }
+
+  for (int j = 0; j < w; j++)
+    {
+	    out << "SIMD<Complex> b" << j << ";" << endl;
+      if (c) {
+        out << "b" << j << "=" << "Conj(b" << j << ");" << endl;
+      }
+      out << "b" << j << ".LoadFast(pb" << j << "+i);" << endl;
+      for (int i = 0; i < h; i++)
+      {
+        if (c) {
+          out << "sum" << i << "_" << j << " += a" << i << " * Conj(b" << j << ");" << endl;
+        }
+        else {
+          out << "sum" << i << "_" << j << " += a" << i << " * b" << j << ";" << endl;
+        }
+      }
+    }
+  out << "}" << endl;
+
+  out << "int r = n % SW;" << endl;
+  out << "if (r) {" << endl;
+  for (int i = 0; i < h; i++) {
+	   out << "SIMD<Complex> a" << i << ";" << endl;
+     out << "a" << i << ".LoadFast(pa" << i << "+i, r);" << endl;
+  }
+
+      for (int j = 0; j < w; j++)
+        {
+          out << "SIMD<Complex> b" << j << ";" << endl;
+          if (c) {
+            out << "b" << j << "=" << "Conj(b" << j << ");" << endl;
+          }
+          out << "b" << j << ".LoadFast(pb" << j << "+i, r);" << endl;
+          for (int i = 0; i < h; i++) {
+            if (c) {
+              out << "sum" << i << "_" << j << " += a" << i << " * Conj(b" << j << ");" << endl;
+            }
+            else {
+              out << "sum" << i << "_" << j << " += a" << i << " * b" << j << ";" << endl;
+            }
+          }
+        }
+      out << "}" << endl;
+
+
+  for (int i = 0; i < h; i++) {
+    for(int j = 0; j < w; j++) {
+      out << "*(pc+" << i << "*dc+" << j << ") = HSum(sum" << i << "_" << j << ");" << endl;
+    }
+  }
+
+  out << "}" << endl;
+}
+
+/*
+  used in GenerateMultiVecScalC if __FMA__ is defined
+*/
+#ifdef __FMA__
+void GenerateMultiVecScalC_fma (ostream & out, int h, int w, bool c)
+{
+  #if defined __AVX512F__
+    const string SIMD_TYPE = "__m512d";
+    const string SIMD_SHUFFLE = "_mm512_shuffle_pd";
+    const string SIMD_MUL = "_mm512_mul_pd";
+    const string SIMD_FMAADDSUB = "_mm512_fmaddsub_pd";
+
+    constexpr int shuffle1 = 0b11111111;
+    constexpr int shuffle2 = 0b01010101;
+
+    if (c) out << "SIMD<double> conj(_mm512_set_pd(-1,1,-1,1,-1,1,-1,1));" << endl;
+
+  #elif defined __AVX__
+    const string SIMD_TYPE = "__m256d";
+    const string SIMD_SHUFFLE = "_mm256_shuffle_pd";
+    const string SIMD_MUL = "_mm256_mul_pd";
+    const string SIMD_FMAADDSUB = "_mm256_fmaddsub_pd";
+
+    constexpr int shuffle1 = 0b1111;
+    constexpr int shuffle2 = 0b0101;
+
+    if (c) out << "SIMD<double> conj(1,-1,1,-1);" << endl;
+
+  #elif defined __SSE__
+    const string SIMD_TYPE = "__m128d";
+    const string SIMD_SHUFFLE = "_mm_shuffle_pd";
+    const string SIMD_MUL = "_mm_mul_pd";
+    const string SIMD_FMAADDSUB = "_mm_fmaddsub_pd";
+
+    constexpr int shuffle1 = 0b11;
+    constexpr int shuffle2 = 0b01;
+
+    if (c) out << "SIMD<double> conj(1,-1);" << endl;
+  #endif
+
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++)
+    for (int j = 0; j < w; j++)
+      out << "SIMD<double> sum" << i << "_" << j << "(0);" << endl;
+
+  for (int i = 0; i < h; i++)
+    out << "double* pa" << i << " = (double*) ppa[" << i << "];" << endl;
+  for (int j = 0; j < w; j++)
+    out << "double* pb" << j << " = (double*) ppb[" << j << "];" << endl;
+
+  // calculate inner-product
+  out << "size_t i = 0;" << endl;
+  out << "for (; i+SW <= 2*n; i+=SW) {" << endl; // 2*n since the vectors are complex
+
+  for (int i = 0; i < h; i++) {
+    out << "SIMD<double> a" << i << "(pa" << i << " + i);" << endl;
+    out << SIMD_TYPE << " a" << i << "Im = " << SIMD_SHUFFLE << "(a" << i << ".Data(), a" << i << ".Data(), " << shuffle1 << ");" << endl;
+    out << SIMD_TYPE << " a" << i << "Re = " << SIMD_SHUFFLE << "(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+  }
+  for (int j = 0; j < w; j++) {
+    out << "SIMD<double> b" << j << " (pb" << j << " + i);" << endl;
+    if (c) {
+      out << "b" << j << " *= conj;" << endl;
+    }
+    out << SIMD_TYPE << " b" << j << "Swap = " << SIMD_SHUFFLE <<"(b" << j << ".Data(), b" << j << ".Data(), " << shuffle2 << ");" << endl;
+    for (int i = 0; i < h; i++) {
+      out << SIMD_TYPE << " a" << i << "Im_b" << j << "Swap = "<<SIMD_MUL<<"(a" << i << "Im, b" << j << "Swap);" << endl;
+    }
+    for (int i = 0; i < h; i++) {
+      out << "sum" << i << "_" << j << " += SIMD<double> (" << SIMD_FMAADDSUB << "(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
+    }
+  }
+  out << "}" << endl;
+
+  // remaining coefficients
+  out << "int r = (2*n) % SW;" << endl;
+  out << "if (r) {" << endl;
+  out << "SIMD<mask64> mask(r);" << endl;
+
+  for (int i = 0; i < h; i++) {
+    out << "SIMD<double> a" << i << "(pa" << i << " + i, mask);" << endl;
+    out << SIMD_TYPE << " a" << i << "Im = " << SIMD_SHUFFLE << "(a" << i << ".Data(), a" << i << ".Data(), " << shuffle1 << ");" << endl;
+    out << SIMD_TYPE << " a" << i << "Re = " << SIMD_SHUFFLE << "(a" << i << ".Data(), a" << i << ".Data(), 0);" << endl;
+
+  }
+  for (int j = 0; j < w; j++) {
+    out << "SIMD<double> b" << j << " (pb" << j << " + i, mask);" << endl;
+    if (c) {
+      out << "b" << j << " *= conj;" << endl;
+    }
+    out << SIMD_TYPE << " b" << j << "Swap = " << SIMD_SHUFFLE << "(b" << j << ".Data(), b" << j << ".Data(), " << shuffle2 << ");" << endl;
+    for (int i = 0; i < h; i++) {
+      out << SIMD_TYPE << " a" << i << "Im_b" << j << "Swap = " << SIMD_MUL << "(a" << i << "Im, b" << j << "Swap);" << endl;
+    }
+    for (int i = 0; i < h; i++) {
+      out << "sum" << i << "_" << j << " += SIMD<double> (" << SIMD_FMAADDSUB << "(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
+    }
+  }
+  out << "}" << endl;
+
+  // store results
+  for (int i = 0; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      #if defined __AVX512F__
+        out << "pc[" << j << "+" << i << "*dc].real((sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]) + (sum" << i << "_" << j << "[4] + sum" << i << "_" << j << "[6]));" << endl;
+        out << "pc[" << j << "+" << i << "*dc].imag((sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]) + (sum" << i << "_" << j << "[5] + sum" << i << "_" << j << "[7]));" << endl;
+      #elif defined __AVX__
+        out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0] + sum" << i << "_" << j << "[2]);" << endl;
+        out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1] + sum" << i << "_" << j << "[3]);" << endl;
+      #elif defined __SSE__
+        out << "pc[" << j << "+" << i << "*dc].real(sum" << i << "_" << j << "[0]);" << endl;
+        out << "pc[" << j << "+" << i << "*dc].imag(sum" << i << "_" << j << "[1]);" << endl;
+      #endif
+    }
+  }
+
+out << "}" << endl;
+}
+#endif
+
+/*
+  C = A * B^t
+  A ... h x n
+  B ... w * n
+
+  bool c for conjugate
+*/
+void GenerateMultiVecScalC (ostream & out, int h, int w, bool c)
+{
+  out << "template <> INLINE void MultiVecScalC<" << h << ", " << w << ", " << c << ">" << endl
+      << "    (size_t n," << endl
+      << "     Complex** ppa," << endl
+      << "     Complex** ppb," << endl
+      << "     Complex* pc, size_t dc)" << endl
+      << "{" << endl;
+
+  // The alternative version using fmaaddsub turned out to be faster
+  // If FMA is not available we need
+  // SIMD<Complex>, LoadFast and StoreFast
+  #ifdef __FMA__
+    GenerateMultiVecScalC_fma (out, h, w, c);
+  #else
+    GenerateMultiVecScalC_nofma (out, h, w, c);
+  #endif
+
+}
+
+
+
+
 /*
   A[i] += sum_j c(j,i) * y[j]
   A ... h x n
@@ -509,6 +743,195 @@ void GenerateMultiScaleAdd (ostream & out, int h, int w)
 
   out << "}" << endl;
 }
+
+
+/*
+  used in GenerateMultiScaleAddC if __FMA__ is not defined
+*/
+void GenerateMultiScaleAddC_nofma (ostream & out, int h, int w)
+{
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      out << "Complex c" << i << "_" << j << " = pc[" << i << "+" << j << "*dc];" << endl;
+    }
+  }
+
+  for (int i = 0; i < h; i++) {
+    out << "Complex* pa" << i << " = ppa[" << i << "];" << endl;
+  }
+  for (int j = 0; j < w; j++) {
+    out << "Complex* pb" << j << " = ppb[" << j << "];" << endl;
+  }
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++) {
+    out << "SIMD<Complex> a" << i << ";" << endl;
+    out << "a" << i << ".LoadFast(pa" << i << "+i);" << endl;
+  }
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<Complex> b" << j << ";" << endl;
+      out << "b" << j << ".LoadFast(pb" << j << "+i);" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << "a" << i << " += c" << i << "_" << j << " * b" << j << ";" << endl;
+        }
+    }
+
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".StoreFast(pa" << i << "+i);" << endl;
+
+  out << "}" << endl;
+
+  out << "int r = n % SW;" << endl;
+  out << "if (r) {" << endl;
+  for (int i = 0; i < h; i++) {
+    out << "SIMD<Complex> a" << i << ";" << endl;
+    out << "a" << i << ".LoadFast(pa" << i << "+i, r);" << endl;
+  }
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<Complex> b" << j << ";" << endl;
+      out << "b" << j << ".LoadFast(pb" << j << "+i, r);" << endl;
+      for (int i = 0; i < h; i++)
+          out << "a" << i << " += c" << i << "_" << j << " * b" << j << ";" << endl;
+    }
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".StoreFast(pa" << i << "+i, r);" << endl;
+
+  out << "}" << endl;
+
+  out << "}" << endl;
+
+}
+
+/*
+  used in GenerateMultiScaleAddC if __FMA__ is defined
+*/
+#ifdef __FMA__
+void GenerateMultiScaleAddC_fma (ostream & out, int h, int w)
+{
+  #if defined __AVX512F__
+    const string SIMD_TYPE = "__m512d";
+    const string SIMD_SET = "_mm512_set1_pd";
+    const string SIMD_SHUFFLE = "_mm512_shuffle_pd";
+    const string SIMD_MUL = "_mm512_mul_pd";
+    const string SIMD_FMAADDSUB = "_mm512_fmaddsub_pd";
+
+    constexpr int swap_pairs = 0b01010101;
+
+  #elif defined __AVX__
+    const string SIMD_TYPE = "__m256d";
+    const string SIMD_SET = "_mm256_set1_pd";
+    const string SIMD_SHUFFLE = "_mm256_shuffle_pd";
+    const string SIMD_MUL = "_mm256_mul_pd";
+    const string SIMD_FMAADDSUB = "_mm256_fmaddsub_pd";
+
+    constexpr int swap_pairs = 0b0101;
+
+  #elif defined __SSE__
+    const string SIMD_TYPE = "__m128d";
+    const string SIMD_SET = "_mm_set1_pd";
+    const string SIMD_SHUFFLE = "_mm_shuffle_pd";
+    const string SIMD_MUL = "_mm_mul_pd";
+    const string SIMD_FMAADDSUB = "_mm_fmaddsub_pd";
+
+    constexpr int swap_pairs = 0b01;
+  #endif
+
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+
+  for (int i = 0; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      out << SIMD_TYPE << " c" << i << "_" << j << "Re = " << SIMD_SET << "(pc[" << i << "+" << j << "*dc].real());" << endl;
+      out << SIMD_TYPE << " c" << i << "_" << j << "Im = " << SIMD_SET << "(pc[" << i << "+" << j << "*dc].imag());" << endl;
+    }
+  }
+
+  for (int i = 0; i < h; i++) {
+    out << "double* pa" << i << " = (double*) ppa[" << i << "];" << endl;
+  }
+  for (int j = 0; j < w; j++) {
+    out << "double* pb" << j << " = (double*) ppb[" << j << "];" << endl;
+  }
+
+  out << "size_t i = 0;" << endl;
+  out << "for ( ; i+SW <= 2*n; i+=SW) {" << endl;
+
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<double> b" << j << "(pb" << j << "+i);" << endl;
+      out << SIMD_TYPE << " b" << j << "Swap = " << SIMD_SHUFFLE << "(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
+      for (int i = 0; i < h; i++)
+        {
+          out << SIMD_TYPE << " c" << i << "_" << j << "Im_b" << j << "Swap = " << SIMD_MUL << "(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
+          out << "a" << i << " += SIMD<double> (" << SIMD_FMAADDSUB << "(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
+        }
+    }
+
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".Store(pa" << i << "+i);" << endl;
+
+  out << "}" << endl;
+
+  out << "size_t r = (2 * n) % SW;" << endl;
+  out << "if (r) {" << endl;
+  out << "SIMD<mask64> mask(r);" << endl;
+  for (int i = 0; i < h; i++)
+    out << "SIMD<double> a" << i << "(pa" << i << "+i, mask);" << endl;
+
+  for (int j = 0; j < w; j++)
+    {
+      out << "SIMD<double> b" << j << "(pb" << j << "+i, mask);" << endl;
+      out << SIMD_TYPE << " b" << j << "Swap = " << SIMD_SHUFFLE << "(b" << j << ".Data(), b" << j << ".Data(), " << swap_pairs << ");" << endl;
+      for (int i = 0; i < h; i++) {
+        out << SIMD_TYPE << " c" << i << "_" << j << "Im_b" << j << "Swap = " << SIMD_MUL << "(c" << i << "_" << j << "Im, b" << j << "Swap);" << endl;
+        out << "a" << i << " += SIMD<double> (" << SIMD_FMAADDSUB << "(c" << i << "_" << j << "Re, b" << j << ".Data(), c" << i << "_" << j << "Im_b" << j << "Swap));" << endl;
+      }
+    }
+  for (int i = 0; i < h; i++)
+    out << "a" << i << ".Store(pa" << i << "+i, mask);" << endl;
+
+  out << "}" << endl;
+
+  out << "}" << endl;
+
+}
+#endif
+
+/*
+  A[i] += sum_j c(j,i) * y[j]
+  A ... h x n
+  B ... w x n
+*/
+void GenerateMultiScaleAddC (ostream & out, int h, int w)
+{
+  out << "template <> INLINE void MultiScaleAddC<" << h << ", " << w << ">" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** ppa, " << endl
+      << "     Complex ** ppb, " << endl
+      << "     Complex * pc, size_t dc)" << endl
+      << "{" << endl;
+
+  // The alternative version using fmaaddsub turned out to be faster.
+  // If FMA is not available we need
+  // SIMD<Complex>, LoadFast and StoreFast
+  #ifdef __FMA__
+    GenerateMultiScaleAddC_fma(out, h, w);
+  #else
+    GenerateMultiScaleAddC_nofma(out, h, w);
+  #endif
+}
+
 
 
 
@@ -1517,6 +1940,30 @@ int main ()
   GenerateMultiVecScalAB (out, 1, 1);
 
 
+  // MultiVecScalC
+  out << "template <size_t H, size_t W, bool conjugate> inline void MultiVecScalC" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** ppa," << endl
+      << "     Complex ** ppb," << endl
+      << "     Complex* pc, size_t dc);" << endl;
+
+  GenerateMultiVecScalC(out, 6, 2, 0);
+  GenerateMultiVecScalC(out, 6, 1, 0);
+  GenerateMultiVecScalC(out, 3, 2, 0);
+  GenerateMultiVecScalC(out, 3, 1, 0);
+  GenerateMultiVecScalC(out, 1, 8, 0);
+  GenerateMultiVecScalC(out, 1, 4, 0);
+  GenerateMultiVecScalC(out, 1, 1, 0);
+  GenerateMultiVecScalC(out, 6, 2, 1);
+  GenerateMultiVecScalC(out, 6, 1, 1);
+  GenerateMultiVecScalC(out, 3, 2, 1);
+  GenerateMultiVecScalC(out, 3, 1, 1);
+  GenerateMultiVecScalC(out, 1, 8, 1);
+  GenerateMultiVecScalC(out, 1, 4, 1);
+  GenerateMultiVecScalC(out, 1, 1, 1);
+
+
+
 
     // MultiScaleAdd
   out << "template <size_t H, size_t W> inline void MultiScaleAdd" << endl
@@ -1534,6 +1981,22 @@ int main ()
   GenerateMultiScaleAdd(out, 6, 1);
   GenerateMultiScaleAdd(out, 2, 1);
   GenerateMultiScaleAdd(out, 1, 1);
+
+
+    // MultiScaleAddC
+  out << "template <size_t H, size_t W> inline void MultiScaleAddC" << endl
+      << "    (size_t n," << endl
+      << "     Complex ** pa, " << endl
+      << "     Complex ** pb, " << endl
+      << "     Complex * pc, size_t dc);" << endl;
+
+
+  GenerateMultiScaleAddC (out, 3, 4);
+  GenerateMultiScaleAddC (out, 2, 4);
+  GenerateMultiScaleAddC (out, 1, 4);
+  GenerateMultiScaleAddC (out, 3, 1);
+  GenerateMultiScaleAddC (out, 2, 1);
+  GenerateMultiScaleAddC (out, 1, 1);
 
 
   
