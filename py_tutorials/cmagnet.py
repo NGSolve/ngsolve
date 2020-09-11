@@ -36,8 +36,7 @@ fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
 u = fes.TrialFunction()
 v = fes.TestFunction()
 
-mur = mesh.MaterialCF(1, core=1000)
-# mur = mesh.MaterialCF(1, {"cor.*" : 1000 })
+mur = mesh.MaterialCF({mesh.Boundaries("outer") : 1000 }, default=1)
 mu0 = 1.257e-6
 nu = 1/(mu0*mur)
 
