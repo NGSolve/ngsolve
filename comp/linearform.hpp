@@ -22,6 +22,7 @@ namespace ngcomp
     ///
     Array<shared_ptr<LinearFormIntegrator>> parts;
     Array<shared_ptr<LinearFormIntegrator>> VB_parts[4];
+    Array<shared_ptr<PointEvaluationFunctional>> pnteval;
     /// do the integration on independent meshes
     bool independent;
     /// print the assembled vector to testout
@@ -73,6 +74,12 @@ namespace ngcomp
       return parts.Size(); 
     }
 
+    LinearForm & operator+= (shared_ptr<PointEvaluationFunctional> _pnteval)
+      {
+        pnteval += _pnteval;
+        return *this;
+      }
+    
     void SetIndependent (bool aindependent = true)
     { 
       independent = aindependent; 

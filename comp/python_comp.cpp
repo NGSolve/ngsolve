@@ -2485,6 +2485,9 @@ integrator : ngsolve.fem.LFI
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
          { (*self)+=lfi; return self; }, py::arg("lfi"))
 
+    .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<PointEvaluationFunctional> lfi)
+         { (*self)+=lfi; return self; }, py::arg("lfi"))
+
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
            for (auto icf : (*sum))
