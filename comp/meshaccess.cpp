@@ -2168,11 +2168,11 @@ namespace ngcomp
       {
         const auto& key = val.first;
         Region region;
-        if(holds_alternative<string>(key))
-          region = Region(spm, vb, get<string>(key));
+        if(auto skey = get_if<string>(&key); skey)
+          region = Region(spm, vb, *skey);
         else
           {
-            region = get<Region>(key);
+            region = *get_if<Region>(&key);
             if(region.VB() != vb)
               throw Exception("Region with false vb given to region wise CF!");
           }
