@@ -244,7 +244,7 @@ namespace ngcomp
                                                                make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>()};
 
-    Table<size_t> neighbours[4][4];
+    DynamicTable<size_t> neighbours[4][4];
     friend class Region;
   public:
     Signal<> updateSignal;
