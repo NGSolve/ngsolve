@@ -1059,6 +1059,153 @@ namespace ngcomp
         nbbboundaries++;
         nbbboundaries = GetCommunicator().AllReduce(nbbboundaries, MPI_MAX);
       }
+
+    const auto& nmesh = *GetNetgenMesh();
+    const auto& topology = nmesh.GetTopology();
+
+    TableCreator<size_t> creators[4][4] =
+      { { nregions[VOL], nregions[VOL], nregions[VOL], nregions[VOL] },
+        { nregions[BND], nregions[BND], nregions[BND], nregions[BND] },
+        { nregions[BBND], nregions[BBND], nregions[BBND], nregions[BBND] },
+        { nregions[BBBND], nregions[BBBND], nregions[BBBND], nregions[BBBND] } };
+
+    HashTable<INT<2>, int> edgemap(nmesh.LineSegments().Size());
+    for(auto seg : nmesh.LineSegments())
+      {
+        INT<2> pnums = { seg[0], seg[1] };
+        pnums.Sort();
+        if(GetDimension() == 3)
+          edgemap[pnums] = seg.edgenr-1;
+        else
+          edgemap[pnums] = seg.si-1;
+      }
+
+    netgen::NgArray<int> tmp_array;
+    while(!creators[0][1].Done())
+      {
+        if(GetDimension() == 3)
+          {
+            for(auto sei : Range(nmesh.SurfaceElements()))
+              {
+                int el1, el2;
+                topology.GetSurface2VolumeElement(sei+1, el1, el2);
+                const auto& sel = nmesh.SurfaceElements()[sei];
+                auto bc = nmesh.GetFaceDescriptor(sel.GetIndex()).BCProperty()-1;
+                if(el1 > 0)
+                  {
+                    auto index1 = nmesh.VolumeElement(el1).GetIndex()-1;
+                    creators[BND][VOL].Add(bc, index1);
+                    creators[VOL][BND].Add(index1, bc);
+                  }
+                if(el2 > 0)
+                  {
+                    auto index2 = nmesh.VolumeElement(el2).GetIndex()-1;
+                    creators[BND][VOL].Add(bc, index2);
+                    creators[VOL][BND].Add(index2, bc);
+                  }
+              }
+            for(auto ei : Range(nmesh.VolumeElements()))
+              {
+                const auto& el = nmesh.VolumeElements()[ei];
+                auto index = el.GetIndex()-1;
+                topology.GetElementEdges(ei+1, tmp_array);
+                for(auto edge : tmp_array)
+                  {
+                    INT<2> edge_verts;
+                    topology.GetEdgeVertices(edge, edge_verts[0], edge_verts[1]);
+                    edge_verts.Sort();
+                    if(edgemap.Used(edge_verts))
+                      {
+                        creators[VOL][BBND].Add(index, edgemap[edge_verts]);
+                        creators[BBND][VOL].Add(edgemap[edge_verts], index);
+                      }
+                  }
+                for(auto v : el.Vertices())
+                  {
+                    for(auto vel : topology.GetVertexPointElements(v))
+                      {
+                        auto vindex = nmesh.pointelements[vel].index-1;
+                        creators[BBBND][VOL].Add(vindex, index);
+                        creators[VOL][BBBND].Add(index, vindex);
+                      }
+                  }
+              }
+          }
+        auto edge_vb = VorB(GetDimension()-1);
+        auto point_vb = VorB(GetDimension());
+        if(GetDimension() >= 2)
+          {
+            auto surf_vb = VorB(GetDimension()-2);
+            for(auto sei : Range(nmesh.SurfaceElements()))
+              {
+                const auto& sel = nmesh.SurfaceElements()[sei];
+                auto index = sel.GetIndex()-1;
+                topology.GetSurfaceElementEdges(sei+1, tmp_array);
+                for(auto edge : tmp_array)
+                  {
+                    INT<2> edge_verts;
+                    topology.GetEdgeVertices(edge, edge_verts[0], edge_verts[1]);
+                    edge_verts.Sort();
+                    if(edgemap.Used(edge_verts))
+                      {
+                        creators[surf_vb][edge_vb].Add(index, edgemap[edge_verts]);
+                        creators[edge_vb][surf_vb].Add(edgemap[edge_verts], index);
+                      }
+                  }
+                for(auto v : sel.Vertices())
+                  {
+                    for(auto vel : topology.GetVertexPointElements(v))
+                      {
+                        auto vindex = nmesh.pointelements[vel].index-1;
+                        creators[surf_vb][point_vb].Add(index, vindex);
+                        creators[point_vb][surf_vb].Add(vindex, index);
+                      }
+                  }
+              }
+          }
+        if(GetDimension() >= 1)
+        {
+          for(auto si : Range(nmesh.LineSegments()))
+            {
+              const auto& seg = nmesh.LineSegments()[si];
+              auto index = GetDimension() == 3 ? seg.edgenr-1 : seg.si-1;
+              for(auto v : { seg[0], seg[1] })
+                {
+                  for(auto vel : topology.GetVertexPointElements(v))
+                    {
+                      auto vindex = nmesh.pointelements[vel].index-1;
+                      creators[edge_vb][point_vb].Add(index, vindex);
+                      creators[point_vb][edge_vb].Add(index, vindex);
+                    }
+                }
+            }
+        }
+        for(auto i : Range(4))
+          for(auto j : Range(4))
+            if(i != j)
+              creators[i][j]++;
+      }
+    for(auto i : Range(4))
+      for(auto j : Range(4))
+        if(i != j)
+          neighbours[i][j] = creators[i][j].MoveTable();
+
+    // same codim neighbours have common codim-1 neighbour
+    while(!creators[0][0].Done())
+      {
+        for(auto i : Range(4))
+          {
+            if(GetDimension() - i > 0)
+              for(auto j : Range(nregions[i]))
+                for(auto bnd : neighbours[i][i+1][j])
+                  for(auto mat : neighbours[i+1][i][bnd])
+                    if(mat != j)
+                      creators[i][i].Add(j, mat);
+            creators[i][i]++;
+          }
+      }
+    for(auto i : Range(4))
+      neighbours[i][i] = creators[i][i].MoveTable();
     
     // update periodic mappings
     auto nid = mesh.GetNIdentifications();
@@ -1694,27 +1841,12 @@ namespace ngcomp
 
   Region Region :: GetNeighbours(VorB other_vb)
   {
-    if(vb == BND)
-      {
-        if(other_vb == VOL)
-          {
-            auto ngmesh = mesh->GetNetgenMesh();
-            Region neighbours(mesh, VOL);
-            for(auto i : Range(mask))
-              {
-                if(mask[i])
-                  {
-                    auto& fd = ngmesh->GetFaceDescriptor(i+1);
-                    if(int index = fd.DomainIn(); index > 0)
-                      neighbours.Mask().SetBit(index-1);
-                    if(int index = fd.DomainOut(); index > 0)
-                      neighbours.Mask().SetBit(index-1);
-                  }
-              }
-            return neighbours;
-          }
-      }
-    throw Exception("GetNeighbours not yet implemented for this VB combination!");
+    Region neighbours(mesh, other_vb);
+    for(auto i : Range(mask.Size()))
+      if(mask.Test(i))
+        for(auto j : mesh->neighbours[vb][other_vb][i])
+          neighbours.Mask().SetBit(j);
+    return neighbours;
   }
 
   bool Region :: operator==(const Region& other) const
