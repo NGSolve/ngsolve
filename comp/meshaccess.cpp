@@ -2160,14 +2160,22 @@ namespace ngcomp
   }
 
   shared_ptr<CoefficientFunction> MeshAccess ::
-  RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value, const map<string, shared_ptr<CoefficientFunction>>& region_values)
+  RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value, const Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>>& region_values)
   {
     Array<shared_ptr<CoefficientFunction>> cfs(GetNRegions(vb));
     shared_ptr<MeshAccess> spm(this, NOOP_Deleter);
     for(const auto& val : region_values)
       {
         const auto& key = val.first;
-        Region region = Region(spm, vb, key);
+        Region region;
+        if(holds_alternative<string>(key))
+          region = Region(spm, vb, get<string>(key));
+        else
+          {
+            region = get<Region>(key);
+            if(region.VB() != vb)
+              throw Exception("Region with false vb given to region wise CF!");
+          }
         for(auto i : Range(region.Mask().Size()))
           {
             if(region.Mask()[i])
