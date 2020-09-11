@@ -246,8 +246,51 @@ namespace ngcomp
 		   });
 	      }
 	  }
-		
 
+        
+        for (auto pe : pnteval)
+          {
+            LocalHeap & lh = clh;
+            HeapReset hr(lh);
+
+            IntegrationPoint ip;
+            auto elnr = ma->FindElementOfPoint(pe->point, ip, false);
+
+            ElementId ei(VOL, elnr);
+            auto & trafo = ma->GetTrafo(ei, lh);
+            auto & fel = fespace->GetFE(ei, lh);
+            Array<int> dnums(fel.GetNDof(), lh);
+            fespace->GetDofNrs(ei, dnums);
+
+            IntegrationRule ir (1, &ip);
+            auto & mir = trafo(ir, lh);
+
+            pe->cf->TraverseTree
+              ([&] (CoefficientFunction& cf)
+               {
+                 if (auto * proxy = dynamic_cast<ProxyFunction*> (&cf))
+                   {
+                     FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), lh);
+                     FlatMatrix<SCAL> values(1, 1, lh);
+                     ProxyUserData ud;
+                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
+        
+                     elvec = 0;
+
+                     FlatMatrix<SCAL> proxyvalues(1, proxy->Dimension(), lh);
+                     for (int k = 0; k < proxy->Dimension(); k++)
+                       {
+                         ud.testfunction = proxy;
+                         ud.test_comp = k;
+                         
+                         pe->cf -> Evaluate (mir, values);
+                         proxyvalues(0,k) = values(0,0);
+                       }
+                     proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec, lh);
+                     AddElementVector (dnums, elvec);
+                   }
+               });
+          }
 
 	if(hasskeletonparts[VOL])
 	{
