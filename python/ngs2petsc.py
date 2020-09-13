@@ -8,18 +8,19 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
     comm = pardofs.comm.mpi4py
     globnums, nglob = pardofs.EnumerateGlobally(freedofs)
     if freedofs is not None:
-        globnums = np.array(globnums, dtype="int32")[freedofs]
-        
+        globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
+    
     iset = psc.IS().createGeneral (indices=globnums, comm=comm)
     lgmap = psc.LGMap().createIS(iset)
     
     locmat = ngs_mat.local_mat
     val,col,ind = locmat.CSR()
-    ind = np.array(ind, dtype='int32')
+    ind = np.array(ind).astype(psc.IntType)
+    col = np.array(col).astype(psc.IntType)    
     apsc_loc = psc.Mat().createAIJ(size=(locmat.height, locmat.width), csr=(ind,col,val), comm=MPI.COMM_SELF)
 
     if freedofs is not None:
-        locfree = [i for i,b in enumerate(freedofs) if b]
+        locfree = np.flatnonzero(freedofs).astype(psc.IntType)
         isfree_loc = psc.IS().createGeneral(indices=locfree)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
     
