@@ -262,6 +262,7 @@ namespace ngla
     void SetSPD (bool aspd = true) { spd = aspd; }
     bool IsSPD () const { return spd; }
     virtual size_t NZE () const override { return nze; }
+    virtual tuple<int,int> EntrySizes() const = 0;
   };
 
   
@@ -455,6 +456,8 @@ namespace ngla
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
 
+    virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
+    
     shared_ptr<BaseSparseMatrix>
       CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&, int)> & creator) const;
   };

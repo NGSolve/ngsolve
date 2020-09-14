@@ -74,6 +74,8 @@ void ExportSparseMatrix(py::module m)
            FlatArray<int> colind = sp->GetColIndices();
            // FlatVector<T> values(sp->NZE(), sp->GetRowValues().Addr(0));
            FlatVector<T> values = sp->GetValues();
+           typedef typename mat_traits<T>::TSCAL TSCAL;
+           FlatVector<TSCAL> svalues (values.Size()*sizeof(T)/sizeof(TSCAL), (TSCAL*)(void*)values.Addr(0));
            FlatArray<size_t> first = sp->GetFirstArray();
            if (sp->NZE() != colind.Size() || sp->NZE() != values.Size())
              {
@@ -82,9 +84,12 @@ void ExportSparseMatrix(py::module m)
                     << "val.size = " << values.Size() << endl
                     << "colind.size = " << colind.Size() << endl;
              }
-           return py::make_tuple (values, colind, first); 
+           return py::make_tuple (svalues, colind, first); 
          },
          py::return_value_policy::reference_internal)
+
+    .def_property_readonly("entrysizes", [](shared_ptr<SparseMatrix<T>> self)
+                           { return self->EntrySizes(); })
     
     .def_static("CreateFromCOO",
                 [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
@@ -177,6 +182,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         return tuple ( py::cast(globnum), py::cast(num_glob_dofs) );
       }, py::arg("freedofs")=nullptr)
     .def("MasterDofs", &ParallelDofs::MasterDofs)
+    .def_property_readonly("entrysize", [](shared_ptr<ParallelDofs> self)  { return self->GetEntrySize(); })
     ;
 
   py::class_<DofRange, IntRange> (m, "DofRange")

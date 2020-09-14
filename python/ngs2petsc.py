@@ -6,25 +6,38 @@ import numpy as np
 def CreatePETScMatrix (ngs_mat, freedofs=None):
     pardofs = ngs_mat.row_pardofs
     comm = pardofs.comm.mpi4py
-    globnums, nglob = pardofs.EnumerateGlobally(freedofs)
-    if freedofs is not None:
-        globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
-    
-    iset = psc.IS().createGeneral (indices=globnums, comm=comm)
-    lgmap = psc.LGMap().createIS(iset)
-    
+
     locmat = ngs_mat.local_mat
+    eh, ew = locmat.entrysizes
+    if eh != ew: raise Exception ("only square entries are allowed")
+    
     val,col,ind = locmat.CSR()
     ind = np.array(ind).astype(psc.IntType)
     col = np.array(col).astype(psc.IntType)    
-    apsc_loc = psc.Mat().createAIJ(size=(locmat.height, locmat.width), csr=(ind,col,val), comm=MPI.COMM_SELF)
+    apsc_loc = psc.Mat().createBAIJ(size=(eh*locmat.height, eh*locmat.width), bsize=eh, csr=(ind,col,val), comm=MPI.COMM_SELF)
 
     if freedofs is not None:
         locfree = np.flatnonzero(freedofs).astype(psc.IntType)
-        isfree_loc = psc.IS().createGeneral(indices=locfree)
+        # if eh > 1:
+        # locfree = [eh*g+j for g in locfree for j in range(eh)]
+        isfree_loc = psc.IS().createBlock(indices=locfree, bsize=eh)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
+
+    apsc_loc.view()
+
+
     
-    mat = psc.Mat().createPython(size=nglob, comm=comm)
+    globnums, nglob = pardofs.EnumerateGlobally(freedofs)
+    if freedofs is not None:
+        globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
+
+    if eh > 1:
+        globnums = [eh*g+j for g in globnums for j in range(eh)]
+    
+    iset = psc.IS().createBlock (indices=globnums, bsize=1, comm=comm)
+    lgmap = psc.LGMap().createIS(iset)
+        
+    mat = psc.Mat().createPython(size=nglob*eh, comm=comm)
     mat.setType(psc.Mat.Type.IS)
     mat.setLGMap(lgmap)
     mat.setISLocalMat(apsc_loc)
@@ -40,10 +53,17 @@ class VectorMapping:
         self.freedofs = freedofs
         comm = pardofs.comm.mpi4py        
         globnums, nglob = pardofs.EnumerateGlobally(freedofs)
+
+        es = self.pardofs.entrysize
+        self.es = es
         if self.freedofs is not None:
             globnums = np.array(globnums, dtype="int32")[freedofs]
             self.locfree = [i for i,b in enumerate(freedofs) if b]
-            # self.isfree_loc = psc.IS().createGeneral(indices=self.locfree)
+            if es > 1:
+                self.locfree = [es*g+j for g in self.locfree for j in range(es)]
+            
+        if es > 1:
+            globnums = [es*g+j for g in globnums for j in range(es)]
         
         self.iset = psc.IS().createGeneral (indices=globnums, comm=comm)
 
@@ -55,7 +75,7 @@ class VectorMapping:
     
     def N2P (self, ngs_vector, psc_vector=None):
         if psc_vector is None:
-            psc_vector = psc.Vec().createMPI(self.pardofs.ndofglobal, comm=MPI.COMM_WORLD)
+            psc_vector = psc.Vec().createMPI(self.pardofs.ndofglobal*self.es, bsize=self.es, comm=MPI.COMM_WORLD)
         ngs_vector.Cumulate()
         psc_loc = psc_vector.getSubVector(self.iset)
         if self.freedofs is None:

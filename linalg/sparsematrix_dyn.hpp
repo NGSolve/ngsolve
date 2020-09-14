@@ -50,7 +50,11 @@ namespace ngla
     { throw Exception("CreateRowVector not implemented for SparseMatrixDynamic!"); }
     AutoVector CreateColVector() const override
     { throw  Exception("CreateColVector not implemented for SparseMatrixDynamic!"); }
+
+    virtual tuple<int,int> EntrySizes() const override { return { bh, bw }; }
+
   };
+  
 
 
 
