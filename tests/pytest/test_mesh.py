@@ -1,6 +1,7 @@
 from ngsolve import *
 from netgen.csg import *
 ngsglobals.msg_level = 0
+from netgen.geom2d import *
 
 def test_multiple_meshes_refine():
     mesh = Mesh(unit_cube.GenerateMesh(maxh=1))
@@ -65,5 +66,22 @@ def test_neighbours():
     print(mesh.Materials("cond1").Neighbours(VOL).Mask())
     assert mesh.Materials("cond1").Neighbours(VOL) == mesh.Materials("cond2|cond3|air")
 
+def test_neighbours2d():
+    geo = CSG2d()
+    top = Rectangle((0.2,0.6), (0.8, 0.8), bc="outer", bottom="default", mat="top")
+    base = Rectangle((0,0), (1, 0.6), bc="outer")
+    chip = Solid2d([(0.5,0.15), (0.65,0.3), (0.5,0.45), (0.35,0.3)], mat="chip")
+    geo.Add((base-chip).Mat("base"))
+    geo.Add(top)
+    geo.Add(chip)
+    mesh = Mesh(geo.GenerateMesh())
+    Draw(mesh)
+    print(mesh.Materials("base").Boundaries().Mask())
+    print(mesh.Materials("chip").Boundaries().Mask())
+    print(mesh.Materials("top").Boundaries().Mask())
+    assert mesh.Materials("base").Boundaries() * mesh.Materials("top").Boundaries() == mesh.Boundaries("default")
+    assert mesh.Materials("base").Boundaries() * mesh.Materials("chip").Boundaries() == mesh.Boundaries("")
+
 if __name__ == "__main__":
+    test_neighbours2d()
     test_neighbours()
