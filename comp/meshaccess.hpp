@@ -243,6 +243,9 @@ namespace ngcomp
     shared_ptr<Array<Array<INT<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>(),
                                                                make_shared<Array<Array<INT<2>>>>()};
+
+    DynamicTable<size_t> neighbours[4][4];
+    friend class Region;
   public:
     Signal<> updateSignal;
 
@@ -1170,6 +1173,9 @@ namespace ngcomp
     /// Reduces MPI - distributed data associated with mesh-nodes
     template <typename T>
     void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const;
+
+  private:
+    void BuildNeighbours();
   };
 
 
@@ -1232,11 +1238,22 @@ namespace ngcomp
       return *this - Region(mesh, vb, pattern2);
     }
 
+    Region operator* (const Region& r2) const
+    {
+      return Region(mesh, vb, BitArray(mask).And(r2.Mask()));
+    }
+
+    Region operator* (const string& pattern) const
+    {
+      return *this * Region(mesh, vb, pattern);
+    }
+
     bool operator==(const Region& other) const;
     size_t Hash() const;
 
     // Get adjacent regions of codim other_vb
     Region GetNeighbours(VorB other_vb);
+    Region GetBoundaries() { return GetNeighbours(VorB(int(vb)+1)); }
   };
 
 
