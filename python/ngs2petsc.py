@@ -23,21 +23,18 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
         isfree_loc = psc.IS().createBlock(indices=locfree, bsize=eh)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
 
-    apsc_loc.view()
-
-
     
     globnums, nglob = pardofs.EnumerateGlobally(freedofs)
     if freedofs is not None:
         globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
 
-    if eh > 1:
-        globnums = [eh*g+j for g in globnums for j in range(eh)]
-    
-    iset = psc.IS().createBlock (indices=globnums, bsize=1, comm=comm)
-    lgmap = psc.LGMap().createIS(iset)
-        
-    mat = psc.Mat().createPython(size=nglob*eh, comm=comm)
+    # if eh > 1:
+    # globnums = [eh*g+j for g in globnums for j in range(eh)]
+    lgmap = psc.LGMap().create(indices=globnums, bsize=eh, comm=comm)
+
+    # mat = psc.Mat().createPython(size=nglob*eh, comm=comm)
+    mat = psc.Mat().create(comm=comm)
+    mat.setSizes(size=nglob*eh, bsize=eh)
     mat.setType(psc.Mat.Type.IS)
     mat.setLGMap(lgmap)
     mat.setISLocalMat(apsc_loc)
