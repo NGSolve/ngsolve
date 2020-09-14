@@ -1112,7 +1112,7 @@ namespace ngcomp
               }
             for(auto v : el.Vertices())
               {
-                for(auto vel : GetVertexElements(v))
+                for(auto vel : topology.GetVertexPointElements(v+1))
                   {
                     auto vindex = GetElement(ElementId(VorB(GetDimension()),vel)).GetIndex();
                     neighbours[BBBND][VOL].AddUnique(vindex, index);
@@ -1142,7 +1142,7 @@ namespace ngcomp
               }
             for(auto v : sel.Vertices())
               {
-                for(auto vel : GetVertexElements(v))
+                for(auto vel : topology.GetVertexPointElements(v+1))
                   {
                     auto vindex = GetElement(ElementId(VorB(GetDimension()),vel)).GetIndex();
                     neighbours[surf_vb][point_vb].AddUnique(index, vindex);
@@ -1153,17 +1153,17 @@ namespace ngcomp
       }
     if(GetDimension() >= 1)
       {
-        for(auto si : Range(nmesh.LineSegments()))
+        for(auto ei : Elements(BBND))
           {
-            const auto& seg = nmesh.LineSegments()[si];
-            auto index = GetDimension() == 3 ? seg.edgenr-1 : seg.si-1;
-            for(auto v : { seg[0], seg[1] })
+            const auto& seg = GetElement(ei);
+            auto index = seg.GetIndex();
+            for(auto v : seg.Vertices())
               {
-                for(auto vel : topology.GetVertexPointElements(v))
+                for(auto vel : topology.GetVertexPointElements(v+1))
                   {
-                    auto vindex = nmesh.pointelements[vel].index-1;
+                    auto vindex = GetElement(ElementId(VorB(GetDimension()),vel)).GetIndex();
                     neighbours[edge_vb][point_vb].AddUnique(index, vindex);
-                    neighbours[point_vb][edge_vb].AddUnique(index, vindex);
+                    neighbours[point_vb][edge_vb].AddUnique(vindex, index);
                   }
               }
           }
