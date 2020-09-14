@@ -1173,6 +1173,9 @@ namespace ngcomp
     /// Reduces MPI - distributed data associated with mesh-nodes
     template <typename T>
     void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const;
+
+  private:
+    void BuildNeighbours();
   };
 
 

@@ -1059,124 +1059,6 @@ namespace ngcomp
         nbbboundaries++;
         nbbboundaries = GetCommunicator().AllReduce(nbbboundaries, MPI_MAX);
       }
-
-    const auto& nmesh = *GetNetgenMesh();
-    const auto& topology = nmesh.GetTopology();
-
-    for(auto i : Range(4))
-      for(auto j : Range(4))
-        neighbours[i][j].SetSize(nregions[i]);
-
-    HashTable<INT<2>, int> edgemap(nmesh.LineSegments().Size());
-    for(auto seg : Elements(VorB(GetDimension()-1)))
-      {
-        INT<2> pnums = seg.Vertices();
-        pnums.Sort();
-        edgemap[pnums] = seg.GetIndex();
-      }
-
-    if(GetDimension() == 3)
-      {
-        for(auto sei : Range(nmesh.SurfaceElements()))
-          {
-            int el1, el2;
-            topology.GetSurface2VolumeElement(sei+1, el1, el2);
-            const auto& sel = nmesh.SurfaceElements()[sei];
-            auto bc = nmesh.GetFaceDescriptor(sel.GetIndex()).BCProperty()-1;
-            if(el1 > 0)
-              {
-                auto index1 = nmesh.VolumeElement(el1).GetIndex()-1;
-                neighbours[BND][VOL].AddUnique(bc, index1);
-                neighbours[VOL][BND].AddUnique(index1, bc);
-              }
-            if(el2 > 0)
-              {
-                auto index2 = nmesh.VolumeElement(el2).GetIndex()-1;
-                neighbours[BND][VOL].AddUnique(bc, index2);
-                neighbours[VOL][BND].AddUnique(index2, bc);
-              }
-          }
-        for(auto ei : Elements(VOL))
-          {
-            const auto& el = GetElement(ei);
-            auto index = el.GetIndex();
-            for(const auto& edge : el.Edges())
-              {
-                INT<2> edge_verts = GetEdgePNums(edge);
-                edge_verts.Sort();
-                if(edgemap.Used(edge_verts))
-                  {
-                    neighbours[VOL][BBND].AddUnique(index, edgemap[edge_verts]);
-                    neighbours[BBND][VOL].AddUnique(edgemap[edge_verts], index);
-                  }
-              }
-            for(auto v : el.Vertices())
-              {
-                for(auto vel : topology.GetVertexPointElements(v+1))
-                  {
-                    auto vindex = GetElement(ElementId(VorB(GetDimension()),vel)).GetIndex();
-                    neighbours[BBBND][VOL].AddUnique(vindex, index);
-                    neighbours[VOL][BBBND].AddUnique(index, vindex);
-                  }
-              }
-          }
-      }
-    auto edge_vb = VorB(GetDimension()-1);
-    auto point_vb = VorB(GetDimension());
-    if(GetDimension() >= 2)
-      {
-        auto surf_vb = VorB(GetDimension()-2);
-        for(auto sei : Elements(surf_vb))
-          {
-            const auto& sel = GetElement(sei);
-            auto index = sel.GetIndex();
-            for(auto edge : sel.Edges())
-              {
-                INT<2> edge_verts = GetEdgePNums(edge);
-                edge_verts.Sort();
-                if(edgemap.Used(edge_verts))
-                  {
-                    neighbours[surf_vb][edge_vb].AddUnique(index, edgemap[edge_verts]);
-                    neighbours[edge_vb][surf_vb].AddUnique(edgemap[edge_verts], index);
-                  }
-              }
-            for(auto v : sel.Vertices())
-              {
-                for(auto vel : topology.GetVertexPointElements(v+1))
-                  {
-                    auto vindex = GetElement(ElementId(VorB(GetDimension()),vel)).GetIndex();
-                    neighbours[surf_vb][point_vb].AddUnique(index, vindex);
-                    neighbours[point_vb][surf_vb].AddUnique(vindex, index);
-                  }
-              }
-          }
-      }
-    if(GetDimension() >= 1)
-      {
-        for(auto ei : Elements(edge_vb))
-          {
-            const auto& seg = GetElement(ei);
-            auto index = seg.GetIndex();
-            for(auto v : seg.Vertices())
-              {
-                for(auto vel : topology.GetVertexPointElements(v+1))
-                  {
-                    auto vindex = GetElement(ElementId(VorB(GetDimension()),vel)).GetIndex();
-                    neighbours[edge_vb][point_vb].AddUnique(index, vindex);
-                    neighbours[point_vb][edge_vb].AddUnique(vindex, index);
-                  }
-              }
-          }
-      }
-
-    // same codim neighbours have common codim-1 neighbour
-    for(auto i : Range(4))
-      if(GetDimension() - i > 0)
-        for(auto j : Range(nregions[i]))
-          for(auto bnd : neighbours[i][i+1][j])
-            for(auto mat : neighbours[i+1][i][bnd])
-              if(mat != j)
-                neighbours[i][i].AddUnique(j, mat);
     
     // update periodic mappings
     auto nid = mesh.GetNIdentifications();
@@ -1271,6 +1153,125 @@ namespace ngcomp
       }
     
     CalcIdentifiedFacets();
+  }
+
+  void MeshAccess :: BuildNeighbours()
+  {
+    static Timer timer_neighbours("Build neighbours");
+    RegionTimer reg(timer_neighbours);
+
+    const auto& nmesh = *GetNetgenMesh();
+    const auto& topology = nmesh.GetTopology();
+
+    for(auto i : Range(4))
+      for(auto j : Range(4))
+        neighbours[i][j].SetSize(nregions[i]);
+
+    Array<int> edgemap(GetNEdges());
+    edgemap = -1;
+    for(auto seg : Elements(VorB(dim-1)))
+      edgemap[seg.edges[0]] = seg.GetIndex();
+
+    Array<int> vertmap(GetNV());
+    vertmap = -1;
+    for(auto pel : Elements(VorB(dim)))
+      vertmap[pel.Vertices()[0]] = pel.GetIndex();
+
+    if(GetDimension() == 3)
+      {
+        for(auto sei : Range(nmesh.SurfaceElements()))
+          {
+            int el1, el2;
+            topology.GetSurface2VolumeElement(sei+1, el1, el2);
+            const auto& sel = nmesh.SurfaceElements()[sei];
+            auto bc = nmesh.GetFaceDescriptor(sel.GetIndex()).BCProperty()-1;
+            if(el1 > 0)
+              {
+                auto index1 = nmesh.VolumeElement(el1).GetIndex()-1;
+                neighbours[BND][VOL].AddUnique(bc, index1);
+                neighbours[VOL][BND].AddUnique(index1, bc);
+              }
+            if(el2 > 0)
+              {
+                auto index2 = nmesh.VolumeElement(el2).GetIndex()-1;
+                neighbours[BND][VOL].AddUnique(bc, index2);
+                neighbours[VOL][BND].AddUnique(index2, bc);
+              }
+          }
+        for(auto ei : Elements(VOL))
+          {
+            const auto& el = GetElement(ei);
+            auto index = el.GetIndex();
+            for(const auto& edge : el.Edges())
+              {
+                if(auto eindex = edgemap[edge]; eindex != -1)
+                  {
+                    neighbours[VOL][BBND].AddUnique(index, eindex);
+                    neighbours[BBND][VOL].AddUnique(eindex, index);
+                  }
+              }
+            for(auto v : el.Vertices())
+              {
+                if(auto vindex = vertmap[v]; vindex != -1)
+                  {
+                    neighbours[BBBND][VOL].AddUnique(vindex, index);
+                    neighbours[VOL][BBBND].AddUnique(index, vindex);
+                  }
+              }
+          }
+      }
+    auto edge_vb = VorB(GetDimension()-1);
+    auto point_vb = VorB(GetDimension());
+    if(GetDimension() >= 2)
+      {
+        auto surf_vb = VorB(GetDimension()-2);
+        for(auto sei : Elements(surf_vb))
+          {
+            const auto& sel = GetElement(sei);
+            auto index = sel.GetIndex();
+            for(auto edge : sel.Edges())
+              {
+                if(auto eindex = edgemap[edge]; eindex != -1)
+                  {
+                    neighbours[surf_vb][edge_vb].AddUnique(index, eindex);
+                    neighbours[edge_vb][surf_vb].AddUnique(eindex, index);
+                  }
+              }
+            for(auto v : sel.Vertices())
+              {
+                if(auto vindex = vertmap[v]; vindex != -1)
+                  {
+                    neighbours[surf_vb][point_vb].AddUnique(index, vindex);
+                    neighbours[point_vb][surf_vb].AddUnique(vindex, index);
+                  }
+              }
+          }
+      }
+    if(GetDimension() >= 1)
+      {
+        for(auto ei : Elements(edge_vb))
+          {
+            const auto& seg = GetElement(ei);
+            auto index = seg.GetIndex();
+            for(auto v : seg.Vertices())
+              {
+                if(auto vindex = vertmap[v]; vindex != -1)
+                  {
+                    neighbours[edge_vb][point_vb].AddUnique(index, vindex);
+                    neighbours[point_vb][edge_vb].AddUnique(vindex, index);
+                  }
+              }
+          }
+      }
+
+    // same codim neighbours have common codim-1 neighbour
+    for(auto i : Range(4))
+      if(GetDimension() - i > 0)
+        for(auto j : Range(nregions[i]))
+          for(auto bnd : neighbours[i][i+1][j])
+            for(auto mat : neighbours[i+1][i][bnd])
+              if(mat != j)
+                neighbours[i][i].AddUnique(j, mat);
   }
 
   void MeshAccess :: 
@@ -1812,6 +1813,13 @@ namespace ngcomp
 
   Region Region :: GetNeighbours(VorB other_vb)
   {
+    if(mesh->neighbours[vb][other_vb].Size() == 0)
+      {
+        static mutex calc_neighbour_mutex;
+        lock_guard<mutex> guard(calc_neighbour_mutex);
+        if(mesh->neighbours[vb][other_vb].Size() == 0)
+          mesh->BuildNeighbours();
+      }
     Region neighbours(mesh, other_vb);
     for(auto i : Range(mask.Size()))
       if(mask.Test(i))
