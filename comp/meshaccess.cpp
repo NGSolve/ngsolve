@@ -1126,7 +1126,7 @@ namespace ngcomp
     if(GetDimension() >= 2)
       {
         auto surf_vb = VorB(GetDimension()-2);
-        for(auto sei : Elements(BND))
+        for(auto sei : Elements(surf_vb))
           {
             const auto& sel = GetElement(sei);
             auto index = sel.GetIndex();
@@ -1153,7 +1153,7 @@ namespace ngcomp
       }
     if(GetDimension() >= 1)
       {
-        for(auto ei : Elements(BBND))
+        for(auto ei : Elements(edge_vb))
           {
             const auto& seg = GetElement(ei);
             auto index = seg.GetIndex();
