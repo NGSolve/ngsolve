@@ -225,7 +225,7 @@ namespace ngla
     if (printstat)
       cout << IM(4) << "," << flush;
     ta.Start();
-    Allocate (mdo->order,  mdo->vertices, &mdo->blocknr[0]);
+    Allocate (mdo->order,  mdo->vertices, mdo->blocknr.Data());
     ta.Stop();
 
     delete mdo;
