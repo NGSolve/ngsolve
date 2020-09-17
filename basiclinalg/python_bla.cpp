@@ -81,6 +81,14 @@ void PyVecAccess( py::module &m, TCLASS &c )
             for (int i=0; i<n; i++, start+=step)
                 self[start] = val;
           }, py::arg("inds"), py::arg("value"), "Set value at given positions" );
+        // c.def("__setitem__", [](T &self, py::slice inds, const std::vector<TSCAL> & vec ) {
+        c.def("__setitem__", [](T &self, py::slice inds, py::array_t<TSCAL> bvec ) {
+            auto vec = bvec. template unchecked<1>();
+            size_t start, step, n;
+            InitSlice( inds, self.Size(), start, step, n );
+            for (int i=0; i<n; i++, start+=step)
+              self[start] = vec(i);
+          }, py::arg("inds"), py::arg("value"), "Set value at given positions" );
         c.def("__add__" , [](T &self, T &v) { return TNEW(self+v); }, py::arg("vec") );
         c.def("__sub__" , [](T &self, T &v) { return TNEW(self-v); }, py::arg("vec") );
         c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
