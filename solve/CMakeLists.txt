@@ -52,6 +52,8 @@ if (NETGEN_USE_GUI)
     if(WIN32)
         set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
     endif(WIN32)
+
+    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES})
 endif (NETGEN_USE_GUI)
 
 
