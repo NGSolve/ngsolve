@@ -313,13 +313,6 @@ nr : int
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<Region::ElementRange> (m,"RegionElementRange")
-    .def("__iter__", [] (Region::ElementRange & r)
-         { return py::make_iterator(r.begin(), r.end()); },
-         py::keep_alive<0,1>())
-    ;
-
-  
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
     .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
@@ -339,7 +332,11 @@ nr : int
     }, "Split region in domains/surfaces/...")
     .def("Neighbours", &Region::GetNeighbours)
     .def("Boundaries", &Region::GetBoundaries)
-    .def("Elements", &Region::GetElements, py::keep_alive<0,1>())
+    .def("Elements", [](const Region& self)
+    {
+      auto range = self.GetElements();
+      return py::make_iterator(range.begin(), range.end());
+    }, py::keep_alive<0,1>())
     .def("__hash__", &Region::Hash)
     .def("__eq__", &Region::operator==)
     .def(py::self + py::self)

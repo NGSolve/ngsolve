@@ -12,6 +12,8 @@
 #include <nginterface_v2.hpp>
 #include <variant>
 
+#include <core/ranges.hpp>
+
 namespace ngfem
 {
   class ElementTransformation;
@@ -1255,41 +1257,11 @@ namespace ngcomp
     Region GetNeighbours(VorB other_vb);
     Region GetBoundaries() { return GetNeighbours(VorB(int(vb)+1)); }
 
-
-
-    class ElementIterator
+    auto GetElements() const
     {
-      const Region & reg;
-      size_t nr;
-    public:
-      ElementIterator (const Region & areg, size_t anr) : reg(areg), nr(anr) { FindValid(); }
-      ElementIterator operator++ () { nr++; FindValid(); return ElementIterator(reg, nr); }
-      INLINE Ngs_Element operator*() const { return reg.Mesh()->GetElement(ElementId(reg.VB(), nr)); }
-      void FindValid()
-      {
-        size_t ne = reg.Mesh()->GetNE(reg.VB());
-        while (nr < ne)
-          {
-            ElementId ei(reg.VB(), nr);
-            if (reg.Mask().Test(reg.Mesh()->GetElement(ei).GetIndex()))
-              return;
-            nr++;
-          }
-        nr = -1;
-      }
-      bool operator!=(ElementIterator id2) const { return nr != id2.nr; }
-      bool operator==(ElementIterator id2) const { return nr == id2.nr; }
-    };
-    
-    class ElementRange // : public IntRange
-    {
-      const Region & reg;
-    public:
-      ElementRange (const Region & areg) : reg(areg) { ; }
-      ElementIterator begin () const { return ElementIterator(reg, 0); }
-      ElementIterator end () const { return ElementIterator(reg, -1); }
-    };
-    ElementRange GetElements() const { return ElementRange(*this); }
+      return mesh->Elements(vb)
+        | filter([&](auto ei) { return mask.Test(mesh->GetElIndex(ei)); });
+    }
   };
 
 
