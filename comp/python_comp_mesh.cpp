@@ -109,6 +109,7 @@ nr : int
     auto & Mesh() { return ma; }
     MeshNode operator++ (int) { return MeshNode(NodeId::operator++(0),ma); }
     MeshNode operator++ () { return MeshNode(NodeId::operator++(), ma); }
+    MeshNode operator+ (size_t i) { return MeshNode(NodeId::operator+(i), ma); }
   };
 
   py::class_<MeshNode, NodeId> (m, "MeshNode", "a node within a mesh")
@@ -241,6 +242,8 @@ nr : int
     .def("__iter__", [] (ngstd::T_Range<MeshNode> & r)
          { return py::make_iterator(r.begin(), r.end()); },
          py::keep_alive<0,1>())
+    .def("__getitem__", [](ngstd::T_Range<MeshNode> & r, size_t i)
+         { return r.First()+i; })
     ;
 
 
