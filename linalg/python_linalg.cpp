@@ -224,7 +224,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   { cout << IM(5) << "experimental: vector from expression" << endl;
                     return shared_ptr<BaseVector> (expr.Evaluate()); }))
     .def(py::init([] (py::array_t<double> bvec)
-                  { // better: without copying, use VFlatVector, and take care of keeping alive
+                  { 
                     auto vec = bvec. template unchecked<1>();
                     shared_ptr<BaseVector> bv = CreateBaseVector(vec.size(), false, 1);
                     FlatVector<double> fv = bv->FV<double>();
@@ -1098,12 +1098,9 @@ inverse : string
     .def(py::init([] (py::array_t<double> bvec)
                   {
                     auto vec = bvec. template unchecked<1>();
-                    shared_ptr<BaseVector> bv = CreateBaseVector(vec.size(), false, 1);
-                    FlatVector<double> fv = bv->FV<double>();
-                    for (size_t i = 0; i < fv.Size(); i++)
-                      fv(i) = vec(i);
+                    shared_ptr<BaseVector> bv = make_shared<VFlatVector<const double>> (vec.size(), &vec(0));
                     return DynamicVectorExpression(bv);
-                  }))
+                  }), py::keep_alive<1,2>())
     .def(py::self+py::self)
     .def(py::self-py::self)
     .def("__neg__", [] (DynamicVectorExpression a) { return (-1.0)*a; })    
