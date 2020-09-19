@@ -530,6 +530,7 @@ namespace ngfem
     operator size_t () const { return nodenr; }
     NodeId operator++ (int) { return NodeId(nt,nodenr++); }
     NodeId operator++ () { return NodeId(nt,++nodenr); }
+    NodeId operator+ (size_t i) { return NodeId(nt,nodenr+i); }    
     // NodeId operator*() const { return *this; }
     bool operator!=(const NodeId id2) const { return nodenr != id2.nodenr || nt != id2.nt; }
     bool operator==(const NodeId id2) const { return nodenr == id2.nodenr && nt == id2.nt; }
