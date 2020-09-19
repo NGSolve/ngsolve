@@ -2980,6 +2980,8 @@ public:
   {
     SetDimensions (ngstd::INT<2> (dim, dim) );
   }
+  // For archive
+  IdentityCoefficientFunction() = default;
 
   void DoArchive(Archive& ar) override
   {
