@@ -215,10 +215,10 @@ namespace ngfem
         */
 
           // could be simpler, but leads to bug in XCode 11.6 (and certainly other):
-        size_t ii = 1;
-        for (size_t l = 0; l < p; l++, ii++)
+        for (size_t l = 0; l < p; l++)
           for (size_t k = 0; k < p; k++)
-            shape[first + k*p+l] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
+            shape[first + k*p+l+1] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
+        size_t ii = p*p+1;
         
         for (int k = 0; k < p; k++)
           shape[first + ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
