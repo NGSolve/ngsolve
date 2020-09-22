@@ -1539,7 +1539,7 @@ namespace ngfem
              TSCAL hsum = 0.0;
              
              bool this_simd = use_simd;
-             int order = 5;
+             int order = 5+this->dx.bonus_intorder;
              
              if (this_simd)
                {
@@ -1596,7 +1596,7 @@ namespace ngfem
                TSCAL hsum = 0.0;
                
                bool this_simd = false;  // use_simd;
-               int order = 5;
+               int order = 5+this->dx.bonus_intorder;
                
                /*
                  if (this_simd)
@@ -1666,7 +1666,7 @@ namespace ngfem
                TSCAL hsum = 0.0;
                
                bool this_simd = false;  // use_simd;
-               int order = 5;
+               int order = 5+this->dx.bonus_intorder;
 
                if (!this_simd)
                  {
