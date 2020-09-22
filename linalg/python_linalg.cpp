@@ -31,11 +31,11 @@ public:
     py::object shape = pyop.attr("shape");
     h = py::cast<size_t> (shape.attr("__getitem__")(0));
     w = py::cast<size_t> (shape.attr("__getitem__")(1));
-    // TODO: check for complex
-    // auto dtype = py::cast<string> (pyop.attr("dtype"));
-    // cout << "dtype = " << dtype << endl;
-    // py::print (pyop.attr("dtype"));
-    is_complex=false;
+
+    // auto dtype = pyop.attr("dtype");
+    // const auto pyarray_dtype = py::reinterpret_borrow<py::dtype>(dtype);
+    auto pyarray_dtype = py::cast<py::dtype>(pyop.attr("dtype"));
+    is_complex = (pyarray_dtype == pybind11::dtype::of<Complex>());
   }
 
   bool IsComplex() const override { return is_complex; }
@@ -48,10 +48,16 @@ public:
   {
     shared_ptr<BaseVector> spx(const_cast<BaseVector*>(&x), &NOOP_Deleter);
     py::object pyy = pyop * py::cast(spx);
-    auto pya = py::array_t<double> (pyy);
-    auto vec = pya. template unchecked<1>();
-    VFlatVector<const double> vv(vec.size(), &vec(0));
-    y = vv;
+    auto pyv = py::cast<DynamicVectorExpression> (pyy);
+    pyv.AssignTo (1, y);
+  }
+
+  void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+  {
+    shared_ptr<BaseVector> spx(const_cast<BaseVector*>(&x), &NOOP_Deleter);
+    py::object pyy = pyop * py::cast(spx);
+    auto pyv = py::cast<DynamicVectorExpression> (pyy);
+    pyv.AddTo (s, y);
   }
 };
 
@@ -904,6 +910,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                            { return self.Height(); }, "Height of the matrix" )
     .def_property_readonly("width", [] ( BaseMatrix & self)
                            { return self.Width(); }, "Width of the matrix" )
+    .def_property_readonly("is_complex", [] ( BaseMatrix & self)
+                           { return self.IsComplex(); }, "is the matrix complex-valued ?" )
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
@@ -1014,7 +1022,18 @@ inverse : string
          {
            return make_shared<MatMultiVecExpr> (mat, x); 
          })
-             
+
+    // to be used as scipy.LinearOperator
+    .def_property_readonly ("shape", [](shared_ptr<BM> mat)
+      { return tuple(mat->Height(), mat->Width()); })
+    .def_property_readonly("dtype", [](shared_ptr<BM> mat)
+      { return mat->IsComplex() ? py::dtype::of<Complex>() : py::dtype::of<double>(); })
+    .def("matvec", [](shared_ptr<BM> mat, shared_ptr<BaseVector> x) -> shared_ptr<BaseVector>
+         {
+           shared_ptr<BaseVector> y = mat->CreateColVector();
+           *y = *mat * *x;
+           return y;
+         })
     
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
@@ -1141,6 +1160,12 @@ inverse : string
                   {
                     auto vec = bvec. template unchecked<1>();
                     shared_ptr<BaseVector> bv = make_shared<VFlatVector<const double>> (vec.size(), &vec(0));
+                    return DynamicVectorExpression(bv);
+                  }), py::keep_alive<1,2>())
+    .def(py::init([] (py::array_t<Complex> bvec)
+                  {
+                    auto vec = bvec. template unchecked<1>();
+                    shared_ptr<BaseVector> bv = make_shared<VFlatVector<const Complex>> (vec.size(), &vec(0));
                     return DynamicVectorExpression(bv);
                   }), py::keep_alive<1,2>())
     .def(py::self+py::self)
