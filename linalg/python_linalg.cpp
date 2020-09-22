@@ -23,6 +23,7 @@ class PyLinearOperator : public BaseMatrix
 protected:
   py::object pyop;
   size_t h, w;
+  bool is_complex;
 public:
   PyLinearOperator (py::object apyop)
     : pyop(apyop)
@@ -30,13 +31,18 @@ public:
     py::object shape = pyop.attr("shape");
     h = py::cast<size_t> (shape.attr("__getitem__")(0));
     w = py::cast<size_t> (shape.attr("__getitem__")(1));
+    // TODO: check for complex
+    // auto dtype = py::cast<string> (pyop.attr("dtype"));
+    // cout << "dtype = " << dtype << endl;
+    // py::print (pyop.attr("dtype"));
+    is_complex=false;
   }
 
-  bool IsComplex() const override { return false; }
+  bool IsComplex() const override { return is_complex; }
   int VHeight() const override { return h; }
   int VWidth() const override { return w; }
-  AutoVector CreateRowVector () const override { return CreateBaseVector(w, false, 1); }
-  AutoVector CreateColVector () const override { return CreateBaseVector(h, false, 1); }
+  AutoVector CreateRowVector () const override { return CreateBaseVector(w, is_complex, 1); }
+  AutoVector CreateColVector () const override { return CreateBaseVector(h, is_complex, 1); }
 
   void Mult (const BaseVector & x, BaseVector & y) const override
   {
