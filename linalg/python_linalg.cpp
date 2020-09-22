@@ -18,6 +18,38 @@ Array<T> ArrayFromVector (const std::vector<T> & vec)
 }
 
 
+class PyLinearOperator : public BaseMatrix
+{
+protected:
+  py::object pyop;
+  size_t h, w;
+public:
+  PyLinearOperator (py::object apyop)
+    : pyop(apyop)
+  {
+    py::object shape = pyop.attr("shape");
+    h = py::cast<size_t> (shape.attr("__getitem__")(0));
+    w = py::cast<size_t> (shape.attr("__getitem__")(1));
+  }
+
+  bool IsComplex() const override { return false; }
+  int VHeight() const override { return h; }
+  int VWidth() const override { return w; }
+  AutoVector CreateRowVector () const override { return CreateBaseVector(w, false, 1); }
+  AutoVector CreateColVector () const override { return CreateBaseVector(h, false, 1); }
+
+  void Mult (const BaseVector & x, BaseVector & y) const override
+  {
+    shared_ptr<BaseVector> spx(const_cast<BaseVector*>(&x), &NOOP_Deleter);
+    py::object pyy = pyop * py::cast(spx);
+    auto pya = py::array_t<double> (pyy);
+    auto vec = pya. template unchecked<1>();
+    VFlatVector<const double> vv(vec.size(), &vec(0));
+    y = vv;
+  }
+};
+
+
 template<typename T>
 void ExportSparseMatrix(py::module m)
 {
@@ -849,6 +881,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     };
   
 
+    
+    
 
   py::class_<BaseMatrix, shared_ptr<BaseMatrix>, BaseMatrixTrampoline>(m, "BaseMatrix")
     /*
@@ -857,6 +891,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         )
     */
     .def(py::init<> ())
+    .def(py::init<>([] (py::object pyob)
+                    { return make_shared<PyLinearOperator> (pyob); }))
     .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )
     .def_property_readonly("height", [] ( BaseMatrix & self)
                            { return self.Height(); }, "Height of the matrix" )
