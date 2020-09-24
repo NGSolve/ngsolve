@@ -404,7 +404,9 @@ namespace ngla
     auto info = GetOperatorInfo();
     
     ost << string(2*level, ' ');
-    ost << info.name << ", h = " << info.height << ", w = " << info.width << endl;
+    ost << info.name << ", h = " << info.height << ", w = " << info.width;
+    if (IsComplex()) ost << " complex";
+    ost << endl;
     for (auto c : info.childs)
       {
         try
