@@ -3856,7 +3856,7 @@ Interpolation is done on the fly for each element, no global GridFunction is all
    m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
 				shared_ptr<ProxyFunction> trial_proxy, shared_ptr<CoefficientFunction> trial_cf,
 				optional<Region> definedon, VorB vb, shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
-				int bonus_io_ab, int bonus_io_bb) -> shared_ptr<BaseMatrix> {
+				int bonus_io_ab, int bonus_io_bb, bool geom_free) -> shared_ptr<BaseMatrix> {
 
 	   const Region* reg = NULL;
 	   if( definedon.has_value() ) {
@@ -3880,10 +3880,10 @@ Interpolation is done on the fly for each element, no global GridFunction is all
 	       { throw Exception("ProxyFunction has no BBBND evaluator!"); }
 	     if ( eval == nullptr )
 	       { throw Exception(string("trial-proxy has no evaluator vor vb = ") + to_string(vb) + string("!")); }
-	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb);
+	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb, geom_free);
 	   }
 	   else
-	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb); }
+	     { op = ConvertOperator(spacea, spaceb, vb, glh, nullptr, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb, geom_free); }
 
 	   return op;
 	 },
@@ -3898,6 +3898,7 @@ Interpolation is done on the fly for each element, no global GridFunction is all
 	 py::arg("use_simd") = true,
 	 py::arg("bonus_intorder_ab") = 0,
 	 py::arg("bonus_intorder_bb") = 0,
+	 py::arg("geom_free") = false,
      docu_string(R"raw_string(
 A conversion operator between FESpaces. Embedding if spacea is a subspace of spaceb, otherwise an interpolation operator defined by element-wise application of dual shapes (and averaging between elements).
 
@@ -3936,6 +3937,9 @@ use_simd:
 bonus_intorder_ab/bb: int
   Bonus integration order for spacea/spaceb and spaceb/spaceb integrals. Can be useful for curved elements. Should only be necessary for
 spacea/spaceb integrals.
+
+geom_free:
+  If True, assembles a matrix-free operator.
 )raw_string")
 	 );
 

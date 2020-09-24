@@ -19,6 +19,8 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
     static INT<0> GetDimensions() { return INT<0>(); };
+
+    typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,

@@ -57,6 +57,8 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
 
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     IntRange GetEdgeDofs (int nr) const
     { 
       return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]); 
