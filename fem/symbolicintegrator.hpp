@@ -62,12 +62,12 @@ public:
   const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
 
-  shared_ptr<ProxyFunction> Deriv() const;
+  NGS_DLL_HEADER shared_ptr<ProxyFunction> Deriv() const;
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Trace() const;
 
-  shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
+  NGS_DLL_HEADER shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
 
-  const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
+  NGS_DLL_HEADER const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
 
   void SetAdditionalEvaluator (string name, shared_ptr<DifferentialOperator> diffop)
   {
@@ -86,10 +86,10 @@ public:
     return additional_diffops;
   }
 
-  virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const;
+  NGS_DLL_HEADER virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const;
   
-  shared_ptr<CoefficientFunction> Operator (const string & name) const override;
-  shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction> Operator (const string & name) const override;
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
     
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
