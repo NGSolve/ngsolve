@@ -1196,6 +1196,8 @@ inverse : string
   py::implicitly_convertible<DynamicVectorExpression, BaseVector>();
   py::implicitly_convertible<py::array_t<double>, DynamicVectorExpression>();
   py::implicitly_convertible<py::array_t<double>, BaseVector>();
+  py::implicitly_convertible<py::array_t<Complex>, DynamicVectorExpression>();
+  py::implicitly_convertible<py::array_t<Complex>, BaseVector>();
   
 #ifndef PARALLEL
 
