@@ -40,7 +40,7 @@
 #if( __GNUC__==9 && __GNUC_MINOR__<=2)
 // gcc 9.1/9.2 generates wrong code on avx512_skylake platforms:
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93009
-#error "GCC 9.1/9.2 generates wrong code on AVX512 platforms (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93009 ). Either build for a different architecture (cmake -DUSE_NATIVE=OFF), or use a different compiler (like GCC 8.3 or Clang)"
+#error "GCC 9.1/9.2 generates wrong code on AVX512 platforms (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93009 ). Either build for a different architecture (cmake -DUSE_NATIVE_ARCH=OFF), or use a different compiler (like GCC 8.3 or Clang)"
 #endif
 #endif
 #endif
