@@ -523,7 +523,7 @@ namespace ngcomp
       vertex_weights_ht.IterateParallel
         ([&vertex_weights] (size_t i, INT<1> key, double weight)
          {
-           vertex_weights[i] = weight;
+           vertex_weights[key[0]] = weight;
          });
       vertex_weights_ht = ParallelHashTable<INT<1>,double>();
 
