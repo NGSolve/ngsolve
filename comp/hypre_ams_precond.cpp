@@ -78,7 +78,7 @@ namespace ngcomp
       }
     
       if(!s) continue; //no entries to add to matrix!
-      HYPRE_IJMatrixAddToValues(*ijmat, 1, &s, &row, &cg[0], &vg[0]);
+      HYPRE_IJMatrixAddToValues(*ijmat, 1, &s, &row, cg.Data(), vg.Data());
     }    
     HYPRE_IJMatrixAssemble(*ijmat);
     HYPRE_IJMatrixGetObject(*ijmat, (void**) pijmat);
@@ -99,9 +99,9 @@ namespace ngcomp
     if(zeros.Size()) {
       zeros = 0.0;
       if(full_vals) //cumul. or not parallel
-	HYPRE_IJVectorSetValues(v, global_nums.Size(), &global_nums[0], vals);
+	HYPRE_IJVectorSetValues(v, global_nums.Size(), global_nums.Data(), vals);
       else
-	HYPRE_IJVectorAddToValues(v, zeros.Size(), &global_nums[0], vals);
+	HYPRE_IJVectorAddToValues(v, zeros.Size(), global_nums.Data(), vals);
     }
     HYPRE_IJVectorAssemble(v);
     HYPRE_IJVectorGetObject(v, (void **) &pv);
@@ -202,7 +202,7 @@ namespace ngcomp
 	    global_nums[i] = num_master_dofs++;
 	Array<int> first_master_dof(this->np);
 	MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
-		       &first_master_dof[0], 1, MPI_INT, 
+		       first_master_dof.Data(), 1, MPI_INT,
 		       pardofs -> GetCommunicator());    
 	int num_glob_dofs = 0;
 	for (int i = 0; i < this->np; i++)
@@ -322,7 +322,7 @@ namespace ngcomp
       Table<double> c(rs);
       double* cp[3];
       if(h1_ndof)
-	for(auto k:Range(3)) cp[k] = &c[k][0];
+	for(auto k:Range(3)) cp[k] = c[k].Data();
       else
 	for(auto k:Range(3)) cp[k] = NULL;
       for(auto k:Range(3)) c[k] = 0.0;
@@ -343,8 +343,8 @@ namespace ngcomp
     /** working vectors **/
     Array<double> zeros(this->hc_ndof+1); //+1 for rank 0...
     zeros = 0.0;
-    (void) Create_IJVec_from_BVec (comm, this->b, this->par_b,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
-    (void) Create_IJVec_from_BVec (comm, this->x, this->par_x,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
+    (void) Create_IJVec_from_BVec (comm, this->b, this->par_b,  zeros.Data(), this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
+    (void) Create_IJVec_from_BVec (comm, this->x, this->par_x,  zeros.Data(), this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
     
     /** main system matrix **/
     const auto & matrix = this->bfa->GetMatrix();
@@ -395,13 +395,13 @@ namespace ngcomp
     HYPRE_IJVectorInitialize(this->b);
     HYPRE_IJVectorInitialize(this->x);
     if(this->hc_ndof) {
-      HYPRE_IJVectorSetValues(this->x, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_z[0]);
+      HYPRE_IJVectorSetValues(this->x, this->hc_intrange.Size(), this->hc_intrange.Data(), this->buf_z.Data());
       for(auto k:Range(this->buf_hc.Size()))
 	if(this->hc_freedofs->Test(this->hc_masterdofs[k]))
 	  buf_hc[k] = f.FVDouble()[this->hc_masterdofs[k]];
 	else
 	  buf_hc[k] = 0.0;
-      HYPRE_IJVectorSetValues(this->b, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_hc[0]);
+      HYPRE_IJVectorSetValues(this->b, this->hc_intrange.Size(), this->hc_intrange.Data(), this->buf_hc.Data());
     }
     HYPRE_IJVectorAssemble(this->b);    
     HYPRE_IJVectorGetObject(this->b, (void **) &this->par_b);
@@ -412,7 +412,7 @@ namespace ngcomp
     HYPRE_AMSSolve(this->precond, this->parcsr_A, this->par_b, this->par_x);
     
     /** get sol **/
-    HYPRE_IJVectorGetValues(x, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_hc[0]);    
+    HYPRE_IJVectorGetValues(x, this->hc_intrange.Size(), this->hc_intrange.Data(), this->buf_hc.Data());    
     if(this->hc_ndof) u.FVDouble() = 0.0;    
     for(auto k:Range(this->buf_hc.Size()))
       u.FVDouble()[this->hc_masterdofs[k]] = this->buf_hc[k];
