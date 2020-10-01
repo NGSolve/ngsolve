@@ -367,7 +367,7 @@ namespace ngla
   AutoVector CreateBaseVector(size_t size, bool is_complex, int es);
 
   
-  class AutoVector // : public BaseVector
+  class NGS_DLL_HEADER AutoVector // : public BaseVector
   {
     unique_ptr<BaseVector> vec;
   public:
