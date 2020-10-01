@@ -79,7 +79,7 @@ class CGSolver(BaseMatrix):
             w.data = mat * s
             wd = wdn
             as_s = s.InnerProduct(w, conjugate=conjugate)        
-            if as_s == 0: break
+            if as_s == 0 or wd == 0: break
             alpha = wd / as_s
             u.data += alpha * s
             d.data += (-alpha) * w
