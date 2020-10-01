@@ -415,9 +415,10 @@ namespace ngcomp
     filenamefinal << filename;
     if (output_cnt > 0)
       filenamefinal << "_" << output_cnt;
+    lastoutputname = filenamefinal.str();
     filenamefinal << ".vtk";
     fileout = make_shared<ofstream>(filenamefinal.str());
-    cout << IM(4) << " Writing VTK-Output";
+    cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
       cout << IM(4) << " ( " << output_cnt << " )";
     cout << IM(4) << ":" << flush;
