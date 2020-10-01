@@ -31,6 +31,7 @@ namespace ngcomp
   public:
     virtual ~BaseVTKOutput() { ; }
     virtual void Do (LocalHeap & lh, VorB vb = VOL, const BitArray * drawelems = 0) = 0;
+    string lastoutputname = "";
   };
   
   template <int D> 

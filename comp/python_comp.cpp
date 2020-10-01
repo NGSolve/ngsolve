@@ -3821,12 +3821,14 @@ deformation : ngsolve.comp.GridFunction
      .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb)
           { 
             self->Do(glh,vb);
+            return self->lastoutputname;
           },
           py::arg("vb")=VOL,
           py::call_guard<py::gil_scoped_release>())
      .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb, const BitArray * drawelems)
           { 
             self->Do(glh, vb, drawelems);
+            return self->lastoutputname;
           },
           py::arg("vb")=VOL,
           py::arg("drawelems"),
