@@ -243,7 +243,7 @@ namespace ngla
 
 
 
-  class DynamicMatVecExpression : public DynamicBaseExpression
+  class NGS_DLL_HEADER DynamicMatVecExpression : public DynamicBaseExpression
   {
     shared_ptr<BaseMatrix> m;
     shared_ptr<BaseVector> v;
@@ -281,7 +281,7 @@ namespace ngla
   /**
      The Transpose of a BaseMatrix.
   */
-  class Transpose : public BaseMatrix
+  class NGS_DLL_HEADER Transpose : public BaseMatrix
   {
     const BaseMatrix & bm;
     shared_ptr<BaseMatrix> spbm;
@@ -346,7 +346,7 @@ namespace ngla
   /**
      The conjugate transpose of a BaseMatrix.
   */
-  class ConjTrans : public BaseMatrix
+  class NGS_DLL_HEADER ConjTrans : public BaseMatrix
   {
     shared_ptr<BaseMatrix> spbm;
   public:
@@ -407,7 +407,7 @@ namespace ngla
   /* ************************** Product ************************* */
 
   /// action of product of two matrices 
-  class ProductMatrix : public BaseMatrix
+  class NGS_DLL_HEADER ProductMatrix : public BaseMatrix
   {
     const BaseMatrix & bma;
     const BaseMatrix & bmb;
@@ -498,7 +498,7 @@ namespace ngla
   /* ************************** Sum ************************* */
 
   /// action of product of two matrices 
-  class SumMatrix : public BaseMatrix
+  class NGS_DLL_HEADER SumMatrix : public BaseMatrix
   {
     const BaseMatrix & bma;
     const BaseMatrix & bmb;
@@ -695,7 +695,7 @@ namespace ngla
 
   /* ************************** Identity ************************* */
   
-  class IdentityMatrix : public BaseMatrix
+  class NGS_DLL_HEADER IdentityMatrix : public BaseMatrix
   {
     bool has_format;
     size_t size;
