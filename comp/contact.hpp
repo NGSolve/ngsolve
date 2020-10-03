@@ -12,7 +12,7 @@ namespace ngcomp
     IntegrationPoint master_ip, other_ip;
   };
 
-  class GapFunction : public CoefficientFunction
+  class GapFunction : public CoefficientFunctionNoDerivative
   {
   protected:
     shared_ptr<GridFunction> displacement;
@@ -23,7 +23,7 @@ namespace ngcomp
 
   public:
     GapFunction( shared_ptr<MeshAccess> ma_, Region master_, Region other_)
-      : CoefficientFunction(ma_->GetDimension()),
+      : CoefficientFunctionNoDerivative(ma_->GetDimension()),
         ma(ma_), master(master_), other(other_)
     { }
 
