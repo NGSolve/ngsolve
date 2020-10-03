@@ -623,50 +623,16 @@ direction : int
     shared_ptr<CF> GetTangentialVectorCF (int dim)
     {
       return TangentialVectorCF(dim);
-      /*
-      switch(dim)
-	{
-	case 1:
-	  return make_shared<TangentialVectorCF<1>>();
-	case 2:
-	  return make_shared<TangentialVectorCF<2>>();
-	default:
-	  return make_shared<TangentialVectorCF<3>>();
-	}
-      */
     }
 
-    shared_ptr<CF> GetJacobianMatrixCF (int dim)
+    shared_ptr<CF> GetJacobianMatrixCF (int dims, int dimr)
     {
-      return JacobianMatrixCF(dim);
-      /*
-      switch(dim)
-	{
-	case 1:
-	  return make_shared<JacobianMatrixCF<1>>();
-	case 2:
-	  return make_shared<JacobianMatrixCF<2>>();
-	default:
-	  return make_shared<JacobianMatrixCF<3>>();
-	}
-      */
+      return JacobianMatrixCF(dims,dimr);
     }
 
     shared_ptr<CF> GetWeingartenCF (int dim)
     {
       return WeingartenCF(dim);
-      /*
-      switch(dim)
-	{
-        case 1:
-          throw Exception ("no WeingartenCF in 1D");
-	  // return make_shared<WeingartenCF<1>>();
-	case 2:
-	  return make_shared<WeingartenCF<2>>();
-	default:
-	  return make_shared<WeingartenCF<3>>();
-	}
-      */
     }
   };
 
@@ -701,9 +667,22 @@ direction : int
     .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
          "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
-    .def("JacobianMatrix", &SpecialCoefficientFunctions::GetJacobianMatrixCF, py::arg("dim"),
+    .def("JacobianMatrix", [] (SpecialCoefficientFunctions& self, int dim)
+	  {
+            return self.GetJacobianMatrixCF(dim,dim);
+	  },
+         py::arg("dim"),
          "Jacobian matrix of transformation to physical element\n"
          "space-dimension must be provided")
+    .def("JacobianMatrix", [] (SpecialCoefficientFunctions& self, int dimr, int dims)
+	  {
+            if (dimr < dims)
+              throw Exception("In SpecialCoefficientFunctions::GetJacobianMatrixCF: dimr > dims");
+            return self.GetJacobianMatrixCF(dims,dimr);
+	  },
+         py::arg("dimr"), py::arg("dims"),
+         "Jacobian matrix of transformation to physical element\n"
+         "space-dimensions dimr >= dims must be provided")
     .def("Weingarten", &SpecialCoefficientFunctions::GetWeingartenCF, py::arg("dim"),
          "Weingarten tensor \n"
          "space-dimension must be provided")
