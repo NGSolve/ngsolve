@@ -250,13 +250,13 @@ namespace ngfem
   }
 
 
-  template <int D>
+  template <int DIMS, int DIMR>
   class cl_JacobianMatrixCF : public CoefficientFunctionNoDerivative
   {
   public:
-    cl_JacobianMatrixCF () : CoefficientFunctionNoDerivative(D*D,false)
+    cl_JacobianMatrixCF () : CoefficientFunctionNoDerivative(DIMR*DIMS,false)
     {
-      SetDimensions(Array<int>({D,D}));
+      SetDimensions(Array<int>({DIMR,DIMS}));
     }
 
     using CoefficientFunctionNoDerivative::Evaluate;
@@ -267,17 +267,17 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
-      if (ip.DimSpace() != D)
+      if (ip.DimSpace() != DIMR)
         throw Exception("illegal dim!");
-      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetJacobian();
+      res = static_cast<const MappedIntegrationPoint<DIMS,DIMR>&>(ip).GetJacobian().AsVector();
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
     {
-      if (ir[0].DimSpace() != D)
+      if (ir[0].DimSpace() != DIMR)
       	throw Exception("illegal dim!");
       for (int i = 0; i < ir.Size(); i++)
-      	res.Row(i).AddSize(D*D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetJacobian();
+      	res.Row(i).AddSize(DIMS*DIMR) = static_cast<const MappedIntegrationPoint<DIMS,DIMR>&>(ir[i]).GetJacobian().AsVector();
     }
     
     /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
@@ -294,16 +294,30 @@ namespace ngfem
     }
   };
 
-  shared_ptr<CoefficientFunction> JacobianMatrixCF (int dim)
+  shared_ptr<CoefficientFunction> JacobianMatrixCF (int dims,int dimr)
   {
-    switch(dim)
+    switch(dimr)
       {
       case 1:
-        return make_shared<cl_JacobianMatrixCF<1>>();
+        return make_shared<cl_JacobianMatrixCF<1,1>>();
       case 2:
-        return make_shared<cl_JacobianMatrixCF<2>>();
+        switch(dims)
+          {
+          case 1:
+            return make_shared<cl_JacobianMatrixCF<1,2>>();
+          default:
+            return make_shared<cl_JacobianMatrixCF<2,2>>();
+          }
       default:
-        return make_shared<cl_JacobianMatrixCF<3>>();
+        switch(dims)
+          {
+          case 1:
+            return make_shared<cl_JacobianMatrixCF<1,3>>();
+          case 2:
+            return make_shared<cl_JacobianMatrixCF<2,3>>();
+          default:
+            return make_shared<cl_JacobianMatrixCF<3,3>>();
+          }
       }
   }
 

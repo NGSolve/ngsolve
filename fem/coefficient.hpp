@@ -1727,7 +1727,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TangentialVectorCF (int dim);
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> JacobianMatrixCF (int dim);
+  shared_ptr<CoefficientFunction> JacobianMatrixCF (int dims, int dimr);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> WeingartenCF (int dim);
 
