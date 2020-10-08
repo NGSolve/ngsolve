@@ -129,7 +129,7 @@ namespace ngla
     int ndof;
     int es;
     bool complex;
-    
+    BitArray masterdofs;
   public:
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false)
@@ -157,7 +157,7 @@ namespace ngla
     bool IsMasterDof (size_t localdof) const
     { return true; }
 
-    shared_ptr<BitArray> MasterDofs () const;
+    const BitArray & MasterDofs () const;
     void EnumerateGlobally (shared_ptr<BitArray> freedofs, Array<int> & globnum, int & num_glob_dofs) const;
     
     template <typename T>

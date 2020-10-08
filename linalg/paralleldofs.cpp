@@ -179,11 +179,17 @@ namespace ngla
 namespace ngla
 {
   
-  shared_ptr<BitArray> ParallelDofs :: MasterDofs () const
+  const BitArray & ParallelDofs :: MasterDofs () const
   {
+    auto & nonconst_masterdofs = const_cast<BitArray&> (masterdofs);
+    nonconst_masterdofs.SetSize(ndof);
+    nonconst_masterdofs.Set();
+    returrn masterdofs;
+    /*
     auto ismaster = make_shared<BitArray> (ndof);
     ismaster->Set();
     return ismaster;
+    */
   }
   
   void ParallelDofs ::
