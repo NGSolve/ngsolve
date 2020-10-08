@@ -174,6 +174,7 @@ namespace ngla
     
   BaseVector & ParallelBaseVector :: Add (double scal, const BaseVector & v)
   {
+    static Timer t("ParallelVector::Add"); RegionTimer reg(t);
     const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( (*this).Status() != parv->Status() )
@@ -290,7 +291,23 @@ namespace ngla
     
     // two cumulated vectors -- distribute one
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-      Distribute();
+      {
+        // both cumulated
+        if (this->EntrySize() == 1)
+          {
+            static Timer t("masked ip"); RegionTimer reg(t);
+            FlatVector<> me = this->FVDouble();
+            FlatVector<> you = parv2->FVDouble();
+            const BitArray & ba = paralleldofs->MasterDofs();
+            double sum = 0;
+            for (size_t i = 0; i < me.Size(); i++)
+              if (ba.Test(i))
+                sum += me(i) * you(i);
+            return paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM);            
+          }
+
+        Distribute();
+      }
     
     SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
 					 dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
