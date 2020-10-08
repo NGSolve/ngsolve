@@ -753,13 +753,13 @@ export class Scene {
     }
       else if(render_data.funcdim==2)
       {
-          gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
           gui_status.eval = 3;
+          gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
       }
       else if(render_data.funcdim==3)
       {
-          gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
           gui_status.eval = 3;
+          gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
       }
 
 
@@ -1393,8 +1393,16 @@ export class Scene {
 
       if(this.gui_status.autoscale)
       {
-        this.gui_status.colormap_min = cmin;
-        this.gui_status.colormap_max = cmax;
+        if(this.gui_status.eval == 3) // norm of vector-valued function
+        {
+          this.gui_status.colormap_min = 0;
+          this.gui_status.colormap_max = Math.max(Math.abs(cmin), Math.abs(cmax));
+        }
+        else
+        {
+          this.gui_status.colormap_min = cmin;
+          this.gui_status.colormap_max = cmax;
+        }
         this.c_cmin.updateDisplay();
         this.c_cmax.updateDisplay();
         this.updateColormapLabels();
