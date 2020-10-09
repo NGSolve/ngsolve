@@ -399,6 +399,13 @@ if(USE_MKL AND NOT INSTALL_DEPENDENCIES AND NOT MKL_STATIC)
     set( ngsld_flags "${ngsld_flags} ${MKL_LINK_FLAGS}" )
 endif()
 
+if(USE_MPI)
+  set( ngsld_flags "${ngsld_flags} ${MPI_LINK_FLAGS}" )
+  foreach( lib ${MPI_CXX_LIBRARIES} )
+    set(ngsld_flags "${ngsld_flags} ${lib}")
+  endforeach()
+endif(USE_MPI)
+
 if(APPLE)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pictures/logo.icns DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/../ RENAME Netgen.icns)
     if(CMAKE_OSX_SYSROOT)
