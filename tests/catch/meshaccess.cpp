@@ -32,3 +32,26 @@ TEST_CASE ("ElementVolume", "[elementvolume]")
     }
 }
 
+TEST_CASE ("Region")
+{
+  SECTION("Constructors")
+    {
+      auto ma = make_shared<MeshAccess>("2_doms.vol");
+      auto nreg = ma->GetNRegions(VOL);
+      CHECK(nreg == 2);
+      BitArray compare(nreg);
+      compare.Clear();
+      auto none = Region(ma, VOL);
+      CHECK(none.Mask() == compare);
+      auto inner = Region(ma, VOL, "inner");
+      compare.SetBit(1);
+      CHECK(inner.Mask() == compare);
+      auto outer = Region(ma, VOL, "outer");
+      compare.Invert();
+      CHECK(outer.Mask() == compare);
+      auto all = Region(ma, VOL, true);
+      compare.Set();
+      CHECK(all.Mask() == compare);
+    }
+}
+
