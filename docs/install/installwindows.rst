@@ -11,10 +11,10 @@ Prerequisites
 
 Make sure that you have the following packages installed
 
-- You need a recent compiler, we advise Microsoft Visual Studio 2015  
-- Python |python_version|: You can get it `here <https://www.python.org/downloads/windows/>`__ if
+- You need a recent compiler, we advise Microsoft Visual Studio 2017 or newer
+- Python 3: You can get it `here <https://www.python.org/downloads/windows/>`__ if
   you don't already have it. Make sure to download one of the "x86-64"
-  installers. Also make sure to select the option "Add Python |python_version| to PATH"
+  installers. Also make sure to select the option "Add Python 3 to PATH"
   during the installation.
 - `cmake <http://www.cmake.org>`__ to generate
   Visual Studio Projects Files (Win32 Installer works for both
@@ -68,7 +68,7 @@ the sources. The standard configuring command looks like this:
 
        mkdir build
        cd build
-       cmake "../src" -DCMAKE_INSTALL_PREFIX="BASEDIR/install" -G "Visual Studio 14 Win64"
+       cmake "../src" -DCMAKE_INSTALL_PREFIX="BASEDIR/install" -G "Visual Studio 15 Win64"
 
 There are many options for cmake, which you can find using
 
