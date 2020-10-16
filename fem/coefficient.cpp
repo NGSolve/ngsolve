@@ -4236,7 +4236,9 @@ cl_BinaryOpCF<GenericMult>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;    
-  return c1->Diff(var,dir)*c2 + c1*c2->Diff(var,dir);
+  //return c1->Diff(var,dir)*c2 + c1*c2->Diff(var,dir); // would replace point-wise mult by InnerProduct
+  return BinaryOpCF (c1->Diff(var,dir), c2, gen_mult, "*") +
+    BinaryOpCF (c1, c2->Diff(var,dir), gen_mult, "*");
 }
 
 template <> 
@@ -4245,7 +4247,11 @@ cl_BinaryOpCF<GenericDiv>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;
-  return (c1->Diff(var,dir)*c2 - c1*c2->Diff(var,dir)) / (c2*c2);
+  cout << "i am here" << endl;
+  // return (c1->Diff(var,dir)*c2 - c1*c2->Diff(var,dir)) / (c2*c2);
+  return (BinaryOpCF (c1->Diff(var,dir), c2, gen_mult, "*") -
+          BinaryOpCF (c1, c2->Diff(var,dir), gen_mult, "*")) /
+          BinaryOpCF (c2, c2, gen_mult, "*");
 }
 
 
