@@ -1764,7 +1764,7 @@ use_simd : bool
     .def("Deriv",
          [](shared_ptr<GF> self) -> spCF
           {
-            return self->GetDeriv();
+            return self->Deriv();
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
     .def("Trace",  [](shared_ptr<GF> self)
