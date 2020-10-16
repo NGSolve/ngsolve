@@ -201,7 +201,13 @@ namespace ngcomp
     }
     shared_ptr<GridFunction> GetComponent (int compound_comp);
 
+    [[deprecated("Use GridFunction.Deriv instead!")]]
     shared_ptr<GridFunctionCoefficientFunction> GetDeriv()
+    {
+      return Deriv();
+    }
+
+    shared_ptr<GridFunctionCoefficientFunction> Deriv()
     {
       auto res = derivcf.lock();
       if(res) return res;
