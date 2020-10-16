@@ -324,7 +324,8 @@ cl_UnaryOpCF<GenericSin>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericCos(), "cos") * c1->Diff(var, dir);
+  // return UnaryOpCF(c1, GenericCos(), "cos") * c1->Diff(var, dir);
+  return CWMult (UnaryOpCF(c1, GenericCos(), "cos"), c1->Diff(var, dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -332,7 +333,8 @@ cl_UnaryOpCF<GenericCos>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Diff(var, dir);
+  // return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Diff(var, dir);
+  return CWMult (-1 * UnaryOpCF(c1, GenericSin(), "sin"),  c1->Diff(var, dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -348,7 +350,8 @@ cl_UnaryOpCF<GenericSinh>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericCosh(), "cosh") * c1->Diff(var, dir);
+  // return UnaryOpCF(c1, GenericCosh(), "cosh") * c1->Diff(var, dir);
+  return CWMult (UnaryOpCF(c1, GenericCosh(), "cosh"), c1->Diff(var, dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -356,20 +359,22 @@ cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
+  // return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
+  return CWMult (UnaryOpCF(c1, GenericSinh(), "sinh"), c1->Diff(var, dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericExp>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
+                               shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericExp(), "exp") * c1->Diff(var, dir);
+  // return UnaryOpCF(c1, GenericExp(), "exp") * c1->Diff(var, dir);
+  return CWMult (UnaryOpCF(c1, GenericExp(), "exp"), c1->Diff(var, dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericLog>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
+                               shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
   return c1->Diff(var, dir) / c1;

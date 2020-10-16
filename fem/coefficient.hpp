@@ -1633,6 +1633,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
+  // coponent-wise multiplication
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CWMult (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (double v1, shared_ptr<CoefficientFunction> c2);
