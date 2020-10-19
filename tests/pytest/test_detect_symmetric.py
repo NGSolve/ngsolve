@@ -17,7 +17,7 @@ def test_detect_symmetric():
   def jumpdn(u): return (grad(u)-grad(u).Other())*n
   def hess(u): return u.Operator("hesse")
   def Lap(u): return dxx(u)+dyy(u)
-  def signfct(a): return a/sqrt(a*a)
+  def signfct(a): return IfPos(a, 1, -1)
   d2udxx = -pi*pi*sin(pi*x)*sin(pi*y)
   d2udxy = pi*pi*cos(pi*x)*cos(pi*y)
   d2udyy = -pi*pi*sin(pi*x)*sin(pi*y)
