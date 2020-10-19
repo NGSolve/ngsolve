@@ -35,7 +35,7 @@ public:
     // auto dtype = pyop.attr("dtype");
     // const auto pyarray_dtype = py::reinterpret_borrow<py::dtype>(dtype);
     auto pyarray_dtype = py::cast<py::dtype>(pyop.attr("dtype"));
-    is_complex = (pyarray_dtype == pybind11::dtype::of<Complex>());
+    is_complex = pyarray_dtype.is(pybind11::dtype::of<Complex>());
   }
 
   bool IsComplex() const override { return is_complex; }
