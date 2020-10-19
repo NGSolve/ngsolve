@@ -1962,7 +1962,7 @@ namespace ngcomp
 					const Array<int> * const indices) const
   {
     static Timer t("FindElementOfPonit");
-    RegionTimer reg(t);
+    RegionTracer reg(TaskManager::GetThreadId(), t);
 
 
     if (indices != NULL)
