@@ -150,7 +150,7 @@ Whetting the Appetite
    unit-5a.3-petsc/petsc.ipynb 
    unit-5a.3-petsc/PETSc_interface.ipynb 
               
-   unit-5.0-mpi_basics/MPI-Parallelization in NGSolve.ipynb
+   unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
    unit-5.1-mpi_ngsolve/mpi_basics.ipynb
    unit-5.2-fetidp_point2d/feti-dp-i.ipynb
    unit-5.3-fetidp_point3d/feti-dp-ii.ipynb
