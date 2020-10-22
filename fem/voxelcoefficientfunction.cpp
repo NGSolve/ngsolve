@@ -17,7 +17,7 @@ namespace ngfem
           trafocf->Evaluate(ip,pnt);
 
         size_t ind[DIM];
-        size_t weight[DIM];
+        double weight[DIM];
         
         for(auto i : Range(DIM))
           {
