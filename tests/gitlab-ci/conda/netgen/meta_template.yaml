@@ -16,7 +16,7 @@ requirements:
     - zlib
     - occt 7.4.*
     - ffmpeg 3.4.*
-    - pybind11 2.4.3
+    - pybind11 2.6.0
   run:
     - vs2015_runtime # [win]
     - python {{ python }}
@@ -28,7 +28,7 @@ requirements:
     - zlib
     - occt 7.4.*
     - ffmpeg 3.4.*
-    - pybind11 2.4.3
+    - pybind11 2.6.0
 
 source:
   - path: ../../../../external_dependencies/netgen
