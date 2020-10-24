@@ -49,7 +49,7 @@ html_sourcelink_suffix = ''
 # nbsphinx_execute = 'never'
 
 # If True, the build process is continued even if an exception occurs:
-nbsphinx_allow_errors = True
+nbsphinx_allow_errors = False
 
 # This is processed by Jinja2 and inserted before each notebook
 nbsphinx_prolog = r"""
@@ -234,4 +234,4 @@ rst_epilog = """
 todo_include_todos = True
 
 def setup(app):
-    app.add_stylesheet("custom.css")
+    app.add_css_file("custom.css")
