@@ -1793,24 +1793,28 @@ namespace ngcomp
                     VorB avb, string pattern)
     : mesh(amesh), vb(avb)
   {
-    mask = BitArray(mesh->GetNRegions(vb));
-    mask.Clear();
+    mask = make_shared<BitArray>(mesh->GetNRegions(vb));
+    mask->Clear();
     regex re_pattern(pattern);
 
-    for (int i : Range(mask))
+    for (int i : Range(*mask))
       if (regex_match(mesh->GetMaterial(vb,i), re_pattern))
-        mask.SetBit(i);
+        mask->SetBit(i);
   }      
 
   Region :: Region (const shared_ptr<MeshAccess> & amesh, VorB avb, const BitArray & amask)
-    : mesh(amesh), vb(avb), mask(amask)
+    : mesh(amesh), vb(avb), mask(make_shared<BitArray>(amask))
   { ; }
 
   Region :: Region (const shared_ptr<MeshAccess> & amesh, VorB avb, bool all)
     : mesh(amesh), vb(avb),
-      mask(all ? BitArray(amesh->GetNRegions(avb)).Set() :
-           BitArray(amesh->GetNRegions(avb)).Clear())
-  { ; }
+      mask(make_shared<BitArray>(amesh->GetNRegions(avb)))
+  {
+    if(all)
+      mask->Set();
+    else
+      mask->Clear();
+  }
 
   Region Region :: GetNeighbours(VorB other_vb)
   {
@@ -1822,8 +1826,8 @@ namespace ngcomp
           mesh->BuildNeighbours();
       }
     Region neighbours(mesh, other_vb);
-    for(auto i : Range(mask.Size()))
-      if(mask.Test(i))
+    for(auto i : Range(mask->Size()))
+      if(mask->Test(i))
         for(auto j : mesh->neighbours[vb][other_vb][i])
           neighbours.Mask().SetBit(j);
     return neighbours;
@@ -1835,14 +1839,13 @@ namespace ngcomp
       return false;
     if(vb != other.VB())
       return false;
-    return mask == other.Mask();
+    return *mask == other.Mask();
   }
 
   size_t Region :: Hash() const
   {
     HashArchive ar;
-    BitArray copy = mask;
-    ar & copy;
+    ar & *mask;
     return ar.GetHash();
   }
 
