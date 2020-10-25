@@ -1203,7 +1203,7 @@ namespace ngcomp
   {
     shared_ptr<MeshAccess> mesh;
     VorB vb;
-    BitArray mask;
+    shared_ptr<BitArray> mask;
   public:
     Region() {}
     NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, string pattern);
@@ -1216,21 +1216,22 @@ namespace ngcomp
     bool IsVolume () const { return vb == VOL; }
     bool IsBoundary () const { return vb == BND; }
     bool IsCoDim2() const { return vb == BBND; }
-    const BitArray & Mask() const { return mask; }
-    BitArray& Mask() { return mask; }
-    operator const BitArray & () const { return mask; }
+    const BitArray & Mask() const { return *mask; }
+    BitArray& Mask() { return *mask; }
+    operator const BitArray & () const { return *mask; }
+    shared_ptr<BitArray> MaskPtr() { return mask; }
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
     Region operator+ (const Region & r2) const
     {
-      return Region (mesh, vb, BitArray(mask).Or (r2.Mask()));
+      return Region (mesh, vb, BitArray(*mask).Or(r2.Mask()));
     }
     Region operator- (const Region & r2) const
     {
-      return Region (mesh, vb, BitArray(mask).And ( BitArray(r2.Mask()).Invert() ));
+      return Region (mesh, vb, BitArray(*mask).And(BitArray(r2.Mask()).Invert()));
     }
     Region operator~ () const
     {
-      return Region (mesh, vb, BitArray(mask).Invert());
+      return Region (mesh, vb, BitArray(*mask).Invert());
     }
     Region operator+ (const string & pattern2) const
     {
@@ -1243,7 +1244,7 @@ namespace ngcomp
 
     Region operator* (const Region& r2) const
     {
-      return Region(mesh, vb, BitArray(mask).And(r2.Mask()));
+      return Region(mesh, vb, BitArray(*mask).And(r2.Mask()));
     }
 
     Region operator* (const string& pattern) const
@@ -1261,7 +1262,7 @@ namespace ngcomp
     auto GetElements() const
     {
       return mesh->Elements(vb)
-        | filter([&](auto ei) { return mask.Test(mesh->GetElIndex(ei)); });
+        | filter([&](auto ei) { return mask->Test(mesh->GetElIndex(ei)); });
     }
   };
 
