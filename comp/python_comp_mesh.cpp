@@ -316,7 +316,7 @@ nr : int
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
     .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
-    .def("Mask",[](Region & reg) { return shared_ptr<BitArray>(&reg.Mask(), NOOP_Deleter); }, "BitArray mask of the region", py::keep_alive<0, 1>())
+    .def("Mask",[](Region & reg) { return reg.MaskPtr(); }, "BitArray mask of the region")
     .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
     .def("Split", [](Region& self)
     {
