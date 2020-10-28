@@ -57,3 +57,14 @@ div.nboutput div.output_area {
 .highlight {
     background: #f5f5f5;
 }
+
+.rst-content code.literal {
+    background-color: #f5f5f5;
+    color: #404040;
+}
+
+
+.rst-content code.download {
+    color: rgb(41, 128, 185);
+    background-color: white;
+}
