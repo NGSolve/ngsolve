@@ -54,3 +54,6 @@ div.nboutput div.output_area {
     max-height: 400px;
 }
 
+.highlight {
+    background: #f5f5f5;
+}

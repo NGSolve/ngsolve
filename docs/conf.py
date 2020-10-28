@@ -227,7 +227,7 @@ html_favicon = "@CMAKE_CURRENT_SOURCE_DIR@/_static/favicon.ico"
 # """
 
 rst_epilog = """
-.. |python_version| replace:: 3.7
+.. |python_version| replace:: 3.8
 
 """
 
