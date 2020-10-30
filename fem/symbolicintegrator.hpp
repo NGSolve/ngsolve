@@ -92,6 +92,7 @@ public:
   NGS_DLL_HEADER shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
     
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
+  void SetFESpace(shared_ptr<ngcomp::FESpace> fespace) { fes = fespace; }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {

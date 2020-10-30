@@ -94,6 +94,15 @@ ANY                  1 1 1 1 | 15
     ProxyNode (std::vector<ProxyNode> _list) : list(_list) { }
     auto operator* () const { return shared_ptr<ProxyFunction> (*this); }
     auto operator[] (int i) const { return list[i]; }
+
+    void SetFESpace (shared_ptr<FESpace> fespace)
+    {
+      if (*this)
+        shared_ptr<ProxyFunction> (*this) -> SetFESpace(fespace);
+      else
+        for (auto node : list)
+          node.SetFESpace(fespace);
+    }
   };
 
 
