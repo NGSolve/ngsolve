@@ -1605,11 +1605,20 @@ active_dofs : BitArray or None
                                              Flags(gf.GetFlags()).SetFlag("parallel"),
                                              v2);
                         }
-                      
+
+                      py::list state;
+                      state.append (gf.GetFESpace());
+                      state.append (gf.GetName());
+                      state.append (gf.GetFlags());
+                      for (int i = 0; i < gf.GetMultiDim(); i++)
+                        state.append (gf.GetVectorPtr(i));
+                      return py::tuple(state);
+                      /*
                       return py::make_tuple(gf.GetFESpace(),
                                             gf.GetName(),
                                             gf.GetFlags(),
                                             gf.GetVectorPtr());
+                      */
                     },
                     [] (py::tuple state)
                     {
@@ -1617,10 +1626,10 @@ active_dofs : BitArray or None
                                                    state[1].cast<string>(),
                                                    state[2].cast<Flags>());
                       gf->Update();
-
                       if (!state[2].cast<Flags>().GetDefineFlag("parallel"))
                         {
-                          gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
+                          for (int i = 0; i < gf->GetMultiDim(); i++)                          
+                            gf->GetVector(i) = *py::cast<shared_ptr<BaseVector>>(state[3+i]);
                         }
                       else
                         {

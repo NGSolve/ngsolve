@@ -222,6 +222,7 @@ namespace ngcomp
     vec[multidim] = v.CreateVector();
     *vec[multidim] = v;
     multidim++;
+    flags.SetFlag ("multidim", multidim);
   }
 
 
