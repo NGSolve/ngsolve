@@ -455,7 +455,7 @@ export class Scene {
 
     this.label_style  = '-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; onselectstart="return false;';
     this.label_style += 'onmousedown="return false; user-select:none;-o-user-select:none;unselectable="on";';
-    this.label_style += 'position: absolute; z-index: 100; display:block;';
+    this.label_style += 'position: absolute; z-index: 1; display:block;';
     this.requestId = 0;
   }
 
@@ -701,7 +701,7 @@ export class Scene {
 
     let gui = new dat.GUI({autoplace: false, closeOnTop: true, scrollable: true});
     let gui_container = document.createElement( 'div' );
-    gui_container.setAttribute("style", 'position: absolute; z-index: 200; display:block; right: 0px; top: 0px');
+    gui_container.setAttribute("style", 'position: absolute; z-index: 2; display:block; right: 0px; top: 0px');
     gui_container.appendChild(gui.domElement);
     this.container.appendChild(gui_container);
 
