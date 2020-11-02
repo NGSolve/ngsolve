@@ -768,7 +768,7 @@ export class Scene {
       let gui_clipping = gui.addFolder("Clipping");
       if(render_data.draw_vol)
       {
-        if('clipping_function' in render_data)
+        if(render_data.clipping_function != undefined)
           {
               this.gui_status_default.Clipping.function = render_data.clipping_function;
               gui_status.Clipping.function = render_data.clipping_function;
@@ -784,22 +784,22 @@ export class Scene {
             console.log("render data clipping found");
             this.gui_status_default.Clipping.enable = true;
             gui_status.Clipping.enable = true;
-            if(render_data.clipping_x)
+            if(render_data.clipping_x != undefined)
             {
                 this.gui_status_default.Clipping.x = render_data.clipping_x;
                 gui_status.Clipping.x = render_data.clipping_x;
             }
-            if(render_data.clipping_y)
+            if(render_data.clipping_y != undefined)
             {
                 this.gui_status_default.Clipping.y = render_data.clipping_y;
                 gui_status.Clipping.y = render_data.clipping_y;
             }
-            if(render_data.clipping_z)
+            if(render_data.clipping_z != undefined)
             {
                 this.gui_status_default.Clipping.z = render_data.clipping_z;
                 gui_status.Clipping.z = render_data.clipping_z;
             }
-            if(render_data.clipping_dist)
+            if(render_data.clipping_dist != undefined)
             {
                 this.gui_status_default.Clipping.dist = render_data.clipping_dist;
                 gui_status.Clipping.dist = render_data.clipping_dist;
