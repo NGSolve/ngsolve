@@ -355,6 +355,7 @@ export class Scene {
   colormap_labels: any;
   container: any;
   stats: any;
+  event_handlers: any;
 
   gui: any;
   gui_status_default: any;
@@ -457,7 +458,26 @@ export class Scene {
     this.label_style += 'onmousedown="return false; user-select:none;-o-user-select:none;unselectable="on";';
     this.label_style += 'position: absolute; z-index: 1; display:block;';
     this.requestId = 0;
+    this.event_handlers = {};
   }
+
+  on( event_name, handler ) {
+    if(this.event_handlers[event_name] == undefined)
+      this.event_handlers[event_name] = [];
+
+    this.event_handlers[event_name].push( handler );
+  }
+
+  handleEvent( event_name, args )
+  {
+    let handlers = this.event_handlers[event_name];
+    if(handlers == undefined)
+      return;
+
+    for(var i=0; i<handlers.length; i++)
+      handlers[i].apply(null, args);
+  }
+
 
   setGuiSettings (settings) {
     console.log("in gui settings");
@@ -699,7 +719,7 @@ export class Scene {
     this.mouse = new THREE.Vector2(0.0, 0.0);
     this.center_tag = null;
 
-    let gui = new dat.GUI({autoplace: false, closeOnTop: true, scrollable: true});
+    let gui = new dat.GUI({autoplace: false, closeOnTop: true, scrollable: true, closed: true});
     let gui_container = document.createElement( 'div' );
     gui_container.setAttribute("style", 'position: absolute; z-index: 2; display:block; right: 0px; top: 0px');
     gui_container.appendChild(gui.domElement);
@@ -1565,7 +1585,6 @@ export class Scene {
     if (this.center_tag != null) {
       this.pivot.remove(this.center_tag);
       this.center_tag = null;
-      console.log("remove center tag");
     }
     if (position != null) {
       const n = 101;
@@ -1641,8 +1660,8 @@ export class Scene {
           this.controls.center.setComponent(i, (pixel_buffer[i]-this.trafo.y)/this.trafo.x);
         }
       }
-      console.log("controls.center", this.controls.center);
       this.setCenterTag(this.controls.center);
+      this.handleEvent('selectpoint', [this, this.controls.center] );
       this.mouse.set(0.0, 0.0);
       this.get_pixel = false;
     }
@@ -1651,6 +1670,8 @@ export class Scene {
 
     if(this.ortho_camera === undefined)
       return; // not fully initialized yet
+
+    this.handleEvent('beforerender', [this, frame_time]);
 
     let gui_status = this.gui_status;
     let uniforms = this.uniforms;
@@ -1804,5 +1825,6 @@ export class Scene {
       this.animate();
     }
     this.last_frame_time = now;
+    this.handleEvent('beforerender', [this, frame_time]);
   }
 }
