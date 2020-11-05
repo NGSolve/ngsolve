@@ -60,7 +60,7 @@ if(BUILD_JUPYTER_WIDGETS)
     ExternalProject_Add(
       download_widgets
       URL "https://registry.npmjs.org/ngsolve_jupyter_widgets/-/ngsolve_jupyter_widgets-${WIDGETS_VERSION}.tgz"
-      URL_HASH SHA1=80f13f1e08b135add0d69675d41538348277b84c
+      URL_HASH SHA1=34ddf312f8470343817ad8fadc16040847afabe4
       DOWNLOAD_NO_PROGRESS ON
       SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
       DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/
