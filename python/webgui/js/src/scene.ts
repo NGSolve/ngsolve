@@ -1019,6 +1019,10 @@ export class Scene {
     this.updateRenderData(render_data);
     setTimeout(()=> this.onResize(), 0);
     console.log("Scene init done", this);
+    if(render_data.on_init) {
+      var on_init = Function("scene", "render_data", render_data.on_init);
+      on_init(this, render_data);
+    }
   }
 
   updateColormap( )
