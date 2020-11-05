@@ -32,13 +32,17 @@ function setKeys (dst, src) {
   }
 }
 
-function getShader(name, defines = {})
+function getShader(name, defines = {}, user_eval_function = null)
 {
   defines = {...defines}; // copy dictionary
   if(name.endsWith(".vert"))
     defines["VERTEX_SHADER"] = true;
   if(name.endsWith(".frag"))
     defines["FRAGMENT_SHADER"] = true;
+
+  if(user_eval_function)
+    defines["USER_FUNCTION"] = user_eval_function;
+
   var s ="";
   var nl = String.fromCharCode(10); // avoid escape characters
   for(var key in defines)
@@ -1182,7 +1186,7 @@ export class Scene {
 
     var mesh_material = new THREE.RawShaderMaterial({
       vertexShader: getShader( 'trigsplines.vert', defines ),
-      fragmentShader: getShader( 'function.frag', defines ),
+      fragmentShader: getShader( 'function.frag', defines, this.render_data.user_eval_function ),
       side: THREE.DoubleSide,
       uniforms: this.uniforms
     });
@@ -1226,7 +1230,7 @@ export class Scene {
   {
     var material = new THREE.RawShaderMaterial({
       vertexShader: getShader( 'vector_function.vert' ),
-      fragmentShader: getShader( 'function.frag', {NO_CLIPPING: 1}),
+      fragmentShader: getShader( 'function.frag', {NO_CLIPPING: 1}, this.render_data.user_eval_function),
       side: THREE.DoubleSide,
       uniforms: this.uniforms
     });
@@ -1243,7 +1247,7 @@ export class Scene {
     const defines = {ORDER: data.order3d, SKIP_FACE_CHECK: 1, NO_CLIPPING: 1};
     var material = new THREE.RawShaderMaterial({
       vertexShader: getShader( 'clipping_vectors.vert', defines ),
-      fragmentShader: getShader( 'function.frag', defines ),
+      fragmentShader: getShader( 'function.frag', defines , this.render_data.user_eval_function),
       side: THREE.DoubleSide,
       uniforms: this.uniforms
     });
