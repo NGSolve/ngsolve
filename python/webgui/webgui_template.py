@@ -82,9 +82,6 @@ class WebGLScene:
         self.on_init = on_init
         self.eval_function = eval_function
 
-        if isinstance(deformation, ngs.CoefficientFunction):
-            if deformation.dim==2:
-                deformation = ngs.CoefficientFunction((deformation, 0.0))
         self.deformation = deformation
 
     def GetData(self, set_minmax=True):
@@ -96,10 +93,21 @@ class WebGLScene:
             gf = ngs.GridFunction(self.cf.space)
             dim = len(self.cf.vecs)
 
+            if isinstance(self.deformation, ngs.GridFunction) and len(self.deformation.vecs)==dim:
+                md_deformation = True
+                deformation = ngs.GridFunction(self.deformation.space)
+            else:
+                md_deformation = False
+                deformation = self.deformation
+
             data = []
             for i in range(1,dim):
                 gf.vec.data = self.cf.vecs[i]
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation))
+
+                if md_deformation:
+                    deformation.vec.data = self.deformation.vecs[i]
+
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -186,6 +194,9 @@ timer4 = ngs.Timer("func")
     
 def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None):
     timer.Start()
+
+    if isinstance(deformation, ngs.CoefficientFunction) and deformation.dim==2:
+        deformation = ngs.CoefficientFunction((deformation, 0.0))
 
     #TODO: handle quads and non-smooth functions
     #TODO: subdivision
