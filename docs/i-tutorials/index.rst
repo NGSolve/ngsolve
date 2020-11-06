@@ -134,7 +134,8 @@ Whetting the Appetite
 .. toctree::
    :maxdepth: 1
 
-   unit-4.1-geom2d/geom2d.ipynb
+   unit-4.1.1-geom2d/geom2d.ipynb
+   unit-4.1.2-csg2d/csg2d.ipynb
    unit-4.2-csg/csg.ipynb
    unit-4.3-manualmesh/manualmeshing.ipynb
 
