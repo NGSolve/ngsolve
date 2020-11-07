@@ -57,10 +57,12 @@ if(BUILD_JUPYTER_WIDGETS)
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
+    file(READ ${sdir}/js/package_sha1sum.txt NGS_JSPACKAGE_SHA1SUM)
+
     ExternalProject_Add(
       download_widgets
       URL "https://registry.npmjs.org/ngsolve_jupyter_widgets/-/ngsolve_jupyter_widgets-${WIDGETS_VERSION}.tgz"
-      URL_HASH SHA1=34ddf312f8470343817ad8fadc16040847afabe4
+      URL_HASH SHA1=${NGS_JSPACKAGE_SHA1SUM}
       DOWNLOAD_NO_PROGRESS ON
       SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
       DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/

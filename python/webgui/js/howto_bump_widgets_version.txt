@@ -1,5 +1,0 @@
-1) set new version in package.json
-2) build and install ngsolve -> generates .tgz with new package
-3) release widgets package with 'npm publish'
-4) update URL_HASH with value of 'sha1sum *.tgz' in ../CMakeLists.txt
-5) commit changes in ../CMakeLists.txt and package.json
