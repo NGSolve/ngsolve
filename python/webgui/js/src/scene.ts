@@ -724,6 +724,7 @@ export class Scene {
     this.center_tag = null;
 
     let gui = new dat.GUI({autoplace: false, closeOnTop: true, scrollable: true, closed: true});
+    gui.closed = true;
     let gui_container = document.createElement( 'div' );
     gui_container.setAttribute("style", 'position: absolute; z-index: 2; display:block; right: 0px; top: 0px');
     gui_container.appendChild(gui.domElement);
