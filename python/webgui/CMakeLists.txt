@@ -57,7 +57,7 @@ if(BUILD_JUPYTER_WIDGETS)
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    file(READ ${sdir}/js/package_sha1sum.txt NGS_JSPACKAGE_SHA1SUM)
+    file(READ ${sdir}/js/ngsolve_jupyter_widgets.sha1sum NGS_JSPACKAGE_SHA1SUM)
 
     ExternalProject_Add(
       download_widgets
