@@ -525,7 +525,7 @@ namespace ngfem
         normal *= 1.0/len;                  // normal vector on physical element
         mip.SetMeasure (len);
 
-        if (DIM_ELEMENT == DIM_SPACE)
+        if constexpr (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
             if (DIM_SPACE == 2)
@@ -533,19 +533,21 @@ namespace ngfem
           }
         else
           {
-            if(DIM_SPACE == 3 && DIM_ELEMENT == 1)
+            if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
               {
                 mip.SetTV(Vec<3>(normal));
               }
-            else if( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+            else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
               {
                 Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
                 mip.SetTV(tang);
               }
-            else if( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+            else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
               {
                 mip.SetTV(Vec<2>(normal));
               }
+            else if constexpr ( DIM_ELEMENT == 0 )
+               ;                 
             else
               {
                 throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
@@ -3397,7 +3399,7 @@ namespace ngfem
         // mip.SetNV(normal);
         mip.SetMeasure (len);
         
-        if (DIM_ELEMENT == DIM_SPACE)
+        if constexpr (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
             if (DIM_SPACE == 2)
@@ -3405,19 +3407,21 @@ namespace ngfem
           }
         else
           {
-            if(DIM_SPACE == 3 && DIM_ELEMENT == 1)
+            if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
               {
                 mip.SetTV(Vec<3,SIMD<double>>(normal));
               }
-            else if( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+            else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
               {
                 Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
                 mip.SetTV(tang);
               }
-            else if( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+            else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
               {
                 mip.SetTV(Vec<2,SIMD<double>>(normal));
               }
+            else if constexpr (DIM_ELEMENT == 0)
+                                ; 
             else
               {
                 throw Exception("In ComputeNormalsAndMeasure SIMD: not implemented yet!");
