@@ -53,7 +53,7 @@ if answer == 'y':
     print("done")
     print("update SHA1 sum in CMakeLists.txt...")
     sha1sum = runCommand(["sha1sum", "ngsolve_jupyter_widgets-{}.tgz".format(new_version)])
-    open("js/ngsolve_jupyter_widgets.sha1sum","w").write(sha1sum)
+    open("js/ngsolve_jupyter_widgets.sha1sum","w").write(sha1sum.split(' ')[0])
     print("git add package.json ngsolve_jupyter_widgets.sha1sum")
     runCommand(["git", "add", "package.json", "ngsolve_jupyter_widgets.sha1sum"])
     print("Done! Run git commit to commit the version bump")
