@@ -3967,16 +3967,22 @@ geom_free:
 
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
-     .def(py::init<shared_ptr<FESpace>, Region, Region, bool,
-          shared_ptr<FESpace>>(),
+     .def(py::init([](shared_ptr<FESpace> fes, Region master, Region minion,
+                      bool draw_pairs)
+     {
+       cout << "WARNING: ContactBoundary constructor with FESpace is deprecated, fes will be set correctly in Update!" << endl;
+       return make_shared<ContactBoundary>(master, minion, draw_pairs);
+     }), "fes"_a, "master"_a, "minion"_a, "draw_pairs"_a = false)
+     .def(py::init<Region, Region, bool>(),
           R"delimiter(
 Class for managing contact interfaces.
 The created object must be kept alive in python as long as
 operations of it are used!
-)delimiter", "fes"_a, "master"_a, "minion"_a, "draw_pairs"_a=false,
-          "fes_displacement"_a=nullptr)
-     .def("AddEnergy", &ContactBoundary::AddEnergy)
-     .def("AddIntegrator", &ContactBoundary::AddIntegrator)
+)delimiter", "master"_a, "minion"_a, "draw_pairs"_a=false)
+     .def("AddEnergy", &ContactBoundary::AddEnergy,
+          "form"_a, "deformed"_a = false)
+     .def("AddIntegrator", &ContactBoundary::AddIntegrator,
+          "form"_a, "deformed"_a = false)
      .def("Update", &ContactBoundary::Update,
           py::arg("gf"), py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,
