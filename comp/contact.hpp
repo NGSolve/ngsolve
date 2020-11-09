@@ -144,6 +144,7 @@ namespace ngcomp
     Region master, other;
     Array<shared_ptr<ContactEnergy>> energies;
     Array<shared_ptr<ContactIntegrator>> integrators;
+    shared_ptr<FESpace> fes_displacement;
     shared_ptr<FESpace> fes;
 
     // For visualization only
@@ -152,8 +153,8 @@ namespace ngcomp
     Array<Vec<3>> other_points;
   public:
     void Draw();
-    ContactBoundary(shared_ptr<FESpace> _fes, Region _master,
-                    Region _other, bool draw_pairs);
+    ContactBoundary(shared_ptr<FESpace> _fes, Region _master, Region _other,
+                    bool draw_pairs = false, shared_ptr<FESpace> _fes_disp=nullptr);
 
     ~ContactBoundary();
 

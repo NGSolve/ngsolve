@@ -748,8 +748,11 @@ namespace ngcomp
   }
 
   ContactBoundary::ContactBoundary(shared_ptr<FESpace> _fes,
-                                   Region _master, Region _other, bool draw_pairs_)
-    : master(_master), other(_other), fes(_fes), draw_pairs(draw_pairs_)
+                                   Region _master, Region _other,
+                                   bool _draw_pairs,
+                                   shared_ptr<FESpace> _fes_disp)
+    : fes(_fes), master(_master), other(_other), draw_pairs(_draw_pairs),
+      fes_displacement(_fes_disp ? _fes_disp : _fes)
   {
 #if NETGEN_USE_GUI
     if(draw_pairs)
@@ -808,6 +811,10 @@ namespace ngcomp
                                shared_ptr<BilinearForm> bf,
                                int intorder, double h)
   {
+    if(bf && (bf->GetFESpace().get() != fes.get()))
+      throw Exception("BilinearForm on different space as given to ContactBoundary!");
+    if(displacement_->GetFESpace().get() != fes_displacement.get())
+      throw Exception("Displacment on different space as given to ContactBoundary!");
     if(draw_pairs)
     {
       other_points.SetSize(0);
