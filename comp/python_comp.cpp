@@ -3967,12 +3967,14 @@ geom_free:
 
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
-     .def(py::init<shared_ptr<FESpace>, Region, Region, bool>(),
+     .def(py::init<shared_ptr<FESpace>, Region, Region, bool,
+          shared_ptr<FESpace>>(),
           R"delimiter(
 Class for managing contact interfaces.
 The created object must be kept alive in python as long as
 operations of it are used!
-)delimiter", py::arg("fes"), py::arg("master"), py::arg("minion"), py::arg("draw_pairs")=false)
+)delimiter", "fes"_a, "master"_a, "minion"_a, "draw_pairs"_a=false,
+          "fes_displacement"_a=nullptr)
      .def("AddEnergy", &ContactBoundary::AddEnergy)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator)
      .def("Update", &ContactBoundary::Update,
