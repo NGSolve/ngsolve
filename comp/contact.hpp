@@ -84,10 +84,13 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> cf;
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies;
+    bool deformed;
 
   public:
     ContactEnergy(shared_ptr<CoefficientFunction> _cf,
-                  shared_ptr<FESpace> _fes);
+                  bool _deformed=false);
+
+    bool IsDeformed() const { return deformed; }
 
     double CalcEnergy(const FiniteElement& m_fel,
                       const FiniteElement& s_fel,
@@ -115,11 +118,13 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> cf;
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies, test_proxies;
-    // CoefficientFunction * gap_function;
+    bool deformed;
 
   public:
     ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
-                      shared_ptr<FESpace> _fes);
+                      bool _deformed);
+
+    bool IsDeformed() const { return deformed; }
 
     void ApplyAdd(const FiniteElement& m_fel,
                   const FiniteElement& s_fel,
@@ -153,13 +158,14 @@ namespace ngcomp
     Array<Vec<3>> other_points;
   public:
     void Draw();
-    ContactBoundary(shared_ptr<FESpace> _fes, Region _master, Region _other,
-                    bool draw_pairs = false, shared_ptr<FESpace> _fes_disp=nullptr);
+    ContactBoundary(Region _master, Region _other, bool draw_pairs = false);
 
     ~ContactBoundary();
 
-    void AddEnergy(shared_ptr<CoefficientFunction> form);
-    void AddIntegrator(shared_ptr<CoefficientFunction> form);
+    void AddEnergy(shared_ptr<CoefficientFunction> form,
+                   bool deformed=false);
+    void AddIntegrator(shared_ptr<CoefficientFunction> form,
+                       bool deformed=false);
 
     // Update search tree for gap function, if bf is not
     // nullptr, update SpecialElements of bf
@@ -180,9 +186,11 @@ namespace ngcomp
     ContactPair<DIM> pair;
     ContactBoundary* cb;
     FESpace* fes;
+    GridFunction* deformation;
   public:
     ContactElement(const ContactPair<DIM>& _pair,
-                   ContactBoundary* _cb);
+                   ContactBoundary* _cb,
+                   GridFunction* deformation);
 
     void GetDofNrs(Array<DofId>& dnums) const override;
 
