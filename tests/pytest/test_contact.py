@@ -18,8 +18,7 @@ def mesh():
 
 def GetForms(fes):
     mesh = fes.mesh
-    cb = ContactBoundary(fes, mesh.Boundaries("master"),
-                         mesh.Boundaries("minion"))
+    cb = ContactBoundary(mesh.Boundaries("master"), mesh.Boundaries("minion"))
     u = fes.TrialFunction()
     X = CoefficientFunction((x,y))
     cf = (u - u.Other() + X - X.Other()) * cb.normal
@@ -111,7 +110,7 @@ def test_gapfunction():
     gfu = GridFunction(fes)
     gfu.vec[:] = 0.0
 
-    cb = ContactBoundary(fes, master, minion)
+    cb = ContactBoundary(master, minion)
     cb.Update(gfu, maxdist=1.)
     Draw(cb.gap, mesh, "gap")
     Draw(Norm(cb.gap), mesh, "dist")

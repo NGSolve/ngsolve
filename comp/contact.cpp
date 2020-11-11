@@ -15,6 +15,14 @@ namespace netgen
 
 namespace ngcomp
 {
+  inline int GetDomIn(const MeshAccess& ma, const Ngs_Element& el)
+  {
+    if(ma.GetDimension() ==3)
+      return ma.GetNetgenMesh()->GetFaceDescriptor(el.GetIndex()+1).DomainIn();
+    else
+      return ma.GetNetgenMesh()->LineSegments()[el.Nr()].domin;
+  }
+
   // Quadratic approximation of distance to pmaster
   template<int DIM>
   struct T2
@@ -167,6 +175,7 @@ namespace ngcomp
     const auto & el1 = ma->GetElement(trafo1.GetElementId());
     auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
     const auto & mip1_def = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo1_def(ip1, lh));
+    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
 
     const auto & p1 = mip1_def.GetPoint();
 
@@ -192,13 +201,14 @@ namespace ngcomp
        {
          auto el2 = ma->GetElement(ElementId(BND, elnr2));
          HeapReset hr(lh);
+         double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
 
          auto & trafo2 = ma->GetTrafo(el2, lh);
          auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
          IntegrationPoint ip2;
          Vec<DIM> p2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, mip1_def.GetNV(), mindist, trafo2_def, ip2, p2 );
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip1_def.GetNV(), mindist, trafo2_def, ip2, p2 );
          if(dist<mindist && dist < h)
          {
            mindist = dist;
@@ -300,6 +310,8 @@ namespace ngcomp
 
     auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
 
+    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
+
     auto & ip1 = ip.IP();
     Vec<DIM> p1;
     trafo1_def.CalcPoint(ip1, p1);
@@ -321,6 +333,7 @@ namespace ngcomp
        [&] (int elnr2)
        {
          auto el2 = ma->GetElement( ElementId (BND, elnr2) );
+         double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
          HeapReset hr(lh);
 
          bool common_vertex = false;
@@ -334,7 +347,7 @@ namespace ngcomp
 
          Vec<DIM> p2;
          IntegrationPoint ip2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, mip.GetNV(), mindist, trafo2_def, ip2, p2 );
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip.GetNV(), mindist, trafo2_def, ip2, p2 );
          if(dist<mindist && dist < h)
          {
            mindist = dist;
@@ -359,15 +372,19 @@ namespace ngcomp
   template<int DIM>
   void DisplacedNormal<DIM>::Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> values) const
   {
+    auto ma = displacement->GetMeshAccess();
+    const auto& el = ma->GetElement(ip.GetTransformation().GetElementId());
+    double inv_fac = GetDomIn(*ma, el) == 0 ? -1. : 1.;
+
     if(!displacement)
       {
-        values = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(ip).GetNV();
+        values = inv_fac * static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(ip).GetNV();
         return;
       }
     LocalHeapMem<10000> lh("deformednormal");
     auto& trafo_def = ip.GetTransformation().AddDeformation(displacement.get(), lh);
     auto& mip_def = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo_def(ip.IP(), lh));
-    values = mip_def.GetNV();
+    values = inv_fac * mip_def.GetNV();
   }
 
   template class DisplacedNormal<2>;
