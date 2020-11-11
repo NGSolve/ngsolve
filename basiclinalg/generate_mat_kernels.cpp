@@ -1197,12 +1197,25 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   
   // out << "#pragma unroll 2\n";  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
-      << "{\n"
-      << "SIMD<double> sum0 = 0.0;\n"
-      << "SIMD<double> sum1 = 0.0;\n";
+      << "{\n";
+  if (op == SET || op == SETNEG)
+    {
+      out << "SIMD<double> sum0 = 0.0;\n"
+          << "SIMD<double> sum1 = 0.0;\n";
+    }
+  else
+    {
+      out << "SIMD<double> sum0(pc2);\n";      
+      out << "SIMD<double> sum1(pc2+SW);\n";      
+    }
   for (int k = 0; k < wa; k++)
-    out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
-        << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
+    if (op == SET || op == ADD)
+      out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
+          << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
+    else
+      out << "sum0 -= SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
+          << "sum1 -= SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
+
   out << "sum0.Store(pc2);\n"
       << "sum1.Store(pc2+SW);\n"
       << "} }\n";
@@ -1210,6 +1223,47 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   out << "size_t rest = wb % (2*SW); \n"
       << "if (rest == 0) return; \n";
 
+  
+  for (int r : { 8, 4, 2, 1})
+    {
+      if (r > SIMD<double>::Size()) continue;
+      
+      out << "if (rest & " << r << ") {  \n";
+      if (wa > 0)
+        out << "double * pb2 = pb;\n";
+      for (int k = 0; k < wa; k++)
+        out << "SIMD<double,"<<r<<"> b" << k << "(pb2); pb2 += db;\n";
+      out << "double * pa2 = pa;\n"
+          << "double * pc2 = pc;\n"
+          << "__assume(ha>0);\n";
+  
+      out << "#pragma unroll 1\n";  
+      out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
+          << "{\n";
+      if (op == SET || op == SETNEG)
+        out << "SIMD<double,"<<r<<"> sum = 0.0;\n";
+      else
+        out << "SIMD<double,"<<r<<"> sum(pc2);\n";
+      
+      for (int k = 0; k < wa; k++)
+        if (op == SET || op == ADD)    
+          out << "sum += SIMD<double,"<<r<<">(pa2[" << k << "]) * b"<< k << ";\n";
+        else
+          out << "sum -= SIMD<double,"<<r<<">(pa2[" << k << "]) * b"<< k << ";\n";
+      
+      out << "sum.Store(pc2);\n"
+          << "}\n";
+
+      out << "pc += " << r << ";\n";
+      out << "pb += " << r << ";\n";      
+      out << "}\n";
+    }
+  out << "return; \n";
+
+  
+
+
+  
   out << "if (rest >= SW) \n"
       << "{\n"
       << "if (rest > SW)\n"
@@ -1227,12 +1281,26 @@ void GenerateShortSum (ostream & out, int wa, OP op)
 
   out << "#pragma unroll 1\n";    
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
-      << "{\n"
-      << "SIMD<double> sum0 = 0.0;\n"
-      << "SIMD<double> sum1 = 0.0;\n";
+      << "{\n";
+
+  if (op == SET || op == SETNEG)
+    {
+      out << "SIMD<double> sum0 = 0.0;\n"
+          << "SIMD<double> sum1 = 0.0;\n";
+    }
+  else
+    {
+      out << "SIMD<double> sum0(pc2);\n";      
+      out << "SIMD<double> sum1(pc2+SW,mask);\n";      
+    }
   for (int k = 0; k < wa; k++)
-    out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
-        << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
+    if (op == SET || op == ADD)
+      out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
+          << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
+    else
+      out << "sum0 -= SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
+          << "sum1 -= SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
+      
   out << "sum0.Store(pc2);\n"
       << "sum1.Store(pc2+SW,mask);\n"
       << "}\n";
@@ -1251,10 +1319,18 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   
   out << "#pragma unroll 1\n";  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
-      << "{\n"
-      << "SIMD<double> sum = 0.0;\n";
+      << "{\n";
+  if (op == SET || op == SETNEG)
+    out << "SIMD<double> sum = 0.0;\n";
+  else
+    out << "SIMD<double> sum(pc2);\n";
+    
   for (int k = 0; k < wa; k++)
+    if (op == SET || op == ADD)    
       out << "sum += SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+    else
+      out << "sum -= SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+      
   out << "sum.Store(pc2);\n"
       << "}\n";
   
@@ -1274,10 +1350,17 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   
   out << "#pragma unroll 1\n";  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
-      << "{\n"
-      << "SIMD<double> sum = 0.0;\n";
+      << "{\n";
+  if (op == SET || op == SETNEG)
+    out << "SIMD<double> sum = 0.0;\n";
+  else
+    out << "SIMD<double> sum(pc2, mask);\n";
+  
   for (int k = 0; k < wa; k++)
+    if (op == SET || op == ADD)    
       out << "sum += SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+    else
+      out << "sum -= SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
   out << "sum.Store(pc2, mask);\n"
       << "} }\n";
 

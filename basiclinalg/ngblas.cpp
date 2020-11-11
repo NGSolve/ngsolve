@@ -770,7 +770,7 @@ namespace ngbla
   REGCALL void MultMatMat_intern2_ShortSum (size_t ha, size_t wb,
                                            BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    if (WA <= 6 && OP==SET)
+    if (WA <= 6) //   && OP==SET)
       MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
     else
       MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
