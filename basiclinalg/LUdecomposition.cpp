@@ -120,15 +120,19 @@ namespace ngbla
               }
 
             // RegionTimer rmm2(tmm2);                
-            TriangularSolve<LowerLeft,Normalized> (a.Rows(i2, end2).Cols(i2, end2), a.Rows(i2, end2).Cols(end2, end1));
             if (end2 < end1)
-              a.Rows(end2,n).Cols(end2, end1) -= a.Cols(i2,end2).Rows(end2,n) * a.Rows(i2,end2).Cols(end2, end1);      
+              {
+                TriangularSolve<LowerLeft,Normalized> (a.Rows(i2, end2).Cols(i2, end2), a.Rows(i2, end2).Cols(end2, end1));
+                a.Rows(end2,n).Cols(end2, end1) -= a.Cols(i2,end2).Rows(end2,n) * a.Rows(i2,end2).Cols(end2, end1);
+              }
           }
 
         // RegionTimer rmm1(tmm1);      
-        TriangularSolve<LowerLeft,Normalized> (a.Rows(i1, end1).Cols(i1, end1), a.Rows(i1, end1).Cols(end1, n));
         if (end1 < n)
-          a.Rows(end1,n).Cols(end1, n) -= a.Cols(i1,end1).Rows(end1,n) * a.Rows(i1,end1).Cols(end1, n);      
+          {
+            TriangularSolve<LowerLeft,Normalized> (a.Rows(i1, end1).Cols(i1, end1), a.Rows(i1, end1).Cols(end1, n));
+            a.Rows(end1,n).Cols(end1, n) -= a.Cols(i1,end1).Rows(end1,n) * a.Rows(i1,end1).Cols(end1, n);
+          }
       }
   }
 

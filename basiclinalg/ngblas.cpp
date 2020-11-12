@@ -820,6 +820,7 @@ namespace ngbla
       &MultMatMat_intern2_ShortSum<12,ADD>
     };
 
+  /*
   pmultABW dispatch_subAB[13] =
     { &MultMatMat_intern2_ShortSumW<0,SUB>,
       &MultMatMat_intern2_ShortSumW<1,SUB>,
@@ -836,17 +837,17 @@ namespace ngbla
       // &MultMatMat_intern2_ShortSumW<12,SUB>
       &SubAB_intern
     };
-
-  /*
+  */
+  
   pmultABW dispatch_subAB[];
   auto init_subAB = [] ()
   {
     Iterate<std::size(dispatch_subAB)-1> ([&] (auto i)
-    { dispatch_matvec[i] = &MultMatMat_intern2_ShortSumW<i,SUM>; });
+    { dispatch_subAB[i] = &MultMatMat_intern2_ShortSumW<i,SUB>; });
     dispatch_subAB[std::size(dispatch_subAB)-1] = &SubAB_intern;
     return 1;
   }();
-  */
+
 
 
 
