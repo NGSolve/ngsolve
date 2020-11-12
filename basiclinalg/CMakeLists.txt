@@ -31,7 +31,7 @@ install( TARGETS ngbla ${ngs_install_dir} )
 
 install( FILES
         bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp 
-        vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h     
+        vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp ng_clapack.h     
         tensor.hpp cuda_bla.hpp avector.hpp ngblas.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
