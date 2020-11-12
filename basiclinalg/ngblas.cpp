@@ -3208,6 +3208,41 @@ namespace ngbla
           cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
         }
+
+        
+        {
+          Timer t("CalcLU");
+          Array<int> p(n);
+          Matrix<> ha = a;
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              ha = a;
+              CalcLU(ha, p);
+            }
+          t.Stop();
+          cout << "CalcLU GFlops = " << 1e-9 * tot/3*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("CalcLU", 1e-9 * tot/3 *its / t.GetTime()));
+        }
+
+        {
+          Timer t("InvFromLU");
+          Array<int> p(n);
+          CalcLU(a, p);          
+          Matrix<> ha = a;
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              ha = a;
+              InverseFromLU(ha, p);
+            }
+          t.Stop();
+          cout << "InvFromLU GFlops = " << 1e-9 * tot*2/3*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("InvFromLU", 1e-9 * tot*2/3 *its / t.GetTime()));
+        }
+
+
+
       }
 
     

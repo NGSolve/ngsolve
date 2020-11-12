@@ -67,9 +67,8 @@ namespace ngbla
   }
 
 
-
-
-  void CalcLU (SliceMatrix<double> a, FlatArray<int> p)
+  
+  void CalcLU1 (SliceMatrix<double> a, FlatArray<int> p)
   {
     size_t n = a.Height();
 
@@ -137,8 +136,78 @@ namespace ngbla
   }
 
 
+
+
+
+
+
+  void CalcLURec (SliceMatrix<double> a, FlatArray<int> p, IntRange r)
+  {
+    size_t n = a.Height();
+    
+    if (r.Size() == 0) return;
+    if (r.Size() == 1)
+      {
+        size_t i = r.First();
+        
+        size_t imax = i;
+        double valmax = fabs(a(i,i));
+      
+        for (size_t j = i+1; j < n; j++)
+          if (double valj = fabs(a(j,i)) > valmax)
+            {
+              valmax = valj;
+              imax = j;
+            }
+        
+        if (imax != i)
+          {
+            Swap (p[i], p[imax]);
+            SwapVectors (a.Row(i), a.Row(imax));
+          }
+        
+        if (i+1 < n)
+          a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
+        return;
+      }
+    
+    size_t mid = r.First() + r.Size()/2;
+    IntRange r1(r.First(), mid);
+    IntRange r2(mid, r.Next());
+    
+    CalcLURec (a, p, r1);
+    
+    TriangularSolve<LowerLeft,Normalized> (a.Rows(r1).Cols(r1), a.Rows(r1).Cols(r2));
+    a.Rows(mid,n).Cols(r2) -= a.Rows(mid,n).Cols(r1) * a.Rows(r1).Cols(r2);
+    
+    CalcLURec (a, p, r2);
+  }
+
+
+
+  void CalcLU (SliceMatrix<double> a, FlatArray<int> p)
+  {
+    size_t n = a.Height();
+    
+    static Timer t("CalcLU - rec"); RegionTimer reg(t);
+    t.AddFlops (n*n*n/3);
+    
+    for (size_t i = 0; i < n; i++) p[i] = i;
+    
+    CalcLURec (a, p, IntRange(n));
+  }
+  
+
+
+
+  
+
+
   // U .. upper right,
   // L .. lower left, normalized
+  static Timer tmulul1 ("MultUL - matmat");
+  static Timer tmulul2 ("MultUL - trigmultR");
+  static Timer tmulul3 ("MultUL - trigmultL");
   void MultUL (SliceMatrix<> A)
   {
     size_t n = A.Height();  
@@ -151,9 +220,16 @@ namespace ngbla
     auto A22 = A.Rows(r2).Cols(r2);
 
     MultUL (A11);
+    tmulul1.Start();
     A11 += A12 * A21;
+    tmulul1.Stop();
+    tmulul1.AddFlops (r1.Size()*r1.Size()*r2.Size());
+    tmulul2.Start();
     TriangularMult<UpperRight> (A22, A21);
+    tmulul2.Stop();
+    tmulul3.Start();
     TriangularMult<UpperRight,Normalized> (Trans(A22), Trans(A12));
+    tmulul3.Stop();
     MultUL (A22);
   }
 
@@ -164,17 +240,29 @@ namespace ngbla
     size_t n = A.Height();    
     static Timer t("InverseFromLU"); RegionTimer reg(t);
     t.AddFlops (2*n*n*n/3);
-  
+
+    static Timer tl("InvertL"); 
+    static Timer tu("InvertU"); 
+    static Timer tperm("permutation");
+    
+    tl.Start();
     TriangularInvert<LowerLeft,Normalized> (A);
+    tl.Stop();
+    tl.AddFlops (n*n*n/6);
+    tu.Start();
     TriangularInvert<UpperRight> (A);
+    tu.Stop();
+    tu.AddFlops (n*n*n/6);    
     MultUL (A);
-  
+
+    RegionTimer rperm(tperm);
     VectorMem<100> row(n);
     for (size_t i = 0; i < n; i++)
       {
+        auto rowi = A.Row(i);
         for (size_t j = 0; j < n; j++)
-          row(p[j]) = A(i,j);
-        A.Row(i) = row;
+          row(p[j]) = rowi(j);
+        rowi = row;
       }
   }
 
