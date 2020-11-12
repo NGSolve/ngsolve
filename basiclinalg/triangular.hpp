@@ -90,9 +90,9 @@ namespace ngbla
   // input X is overwritten 
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
             typename TT, typename TX, ORDERING OT, ORDERING OX>
-  void TriangularMult (SliceMatrix<TT,OT> T, SliceMatrix<TX,OX> X)
+  void TriangularMult2 (BareSliceMatrix<TT,OT> T, SliceMatrix<TX,OX> X)
   {
-    size_t n = T.Height();
+    size_t n = X.Height();
   
     if (n == 0) return;
     if (n == 1)
@@ -102,38 +102,52 @@ namespace ngbla
         return;
       }
 
-    if (X.Width() > 256)
-      {
-        size_t m = X.Width();
-        IntRange r1(0,m/2), r2(m/2,m);      
-        TriangularMult<SIDE,NORM> (T, X.Cols(r1));
-        TriangularMult<SIDE,NORM> (T, X.Cols(r2));
-        return;
-      }
-
   
     IntRange r1(0,n/2), r2(n/2,n);
     auto T11 = T.Rows(r1).Cols(r1);
-    auto T12 = T.Rows(r1).Cols(r2);
-    auto T21 = T.Rows(r2).Cols(r1);
+    auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());;
+    auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
     auto T22 = T.Rows(r2).Cols(r2);
     auto X1 = X.Rows(r1);
     auto X2 = X.Rows(r2);
 
     if (SIDE == LowerLeft)
       {
-        TriangularMult<SIDE,NORM> (T22, X2);
+        TriangularMult2<SIDE,NORM> (T22, X2);
         X2 += T21 * X1;
-        TriangularMult<SIDE,NORM> (T11, X1);
+        TriangularMult2<SIDE,NORM> (T11, X1);
       }
     else
       {
-        TriangularMult<SIDE,NORM> (T11, X1);
+        TriangularMult2<SIDE,NORM> (T11, X1);
         X1 += T12 * X2;
-        TriangularMult<SIDE,NORM> (T22, X2);
+        TriangularMult2<SIDE,NORM> (T22, X2);
       }
   }
 
+  // Y = T X
+  // input X is overwritten 
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
+            typename TT, typename TX, ORDERING OT, ORDERING OX>
+  void TriangularMult (BareSliceMatrix<TT,OT> T, SliceMatrix<TX,OX> X)
+  {
+    size_t i = 0;
+    constexpr size_t bw = 256;
+    for ( ; i+bw <= X.Width(); i += bw)
+      TriangularMult2<SIDE,NORM> (T, X.Cols(i,i+bw));
+    if (i < X.Width())
+      TriangularMult2<SIDE,NORM> (T, X.Cols(i,X.Width()));      
+  }
+
+
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
+            typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0,
+            typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
+  void TriangularMult (const TT & T, TX & X)
+  {
+    TriangularMult<SIDE,NORM> (BareSliceMatrix(make_SliceMatrix(T)), make_SliceMatrix(X));
+  }
+  
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, 
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0>
   void TriangularMult (const TT & T, FlatVector<> x)
