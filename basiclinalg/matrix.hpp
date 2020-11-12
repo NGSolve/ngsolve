@@ -1894,7 +1894,7 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const BareSliceMatrix<T> Cols (IntRange range) const
+    INLINE const BareSliceMatrix Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
