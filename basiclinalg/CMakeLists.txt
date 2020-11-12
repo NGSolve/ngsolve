@@ -14,7 +14,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
 add_custom_target(kernel_generated DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp)
 
 add_library(ngbla ${NGS_LIB_TYPE}
-        bandmatrix.cpp calcinverse.cpp cholesky.cpp 
+        bandmatrix.cpp calcinverse.cpp cholesky.cpp LUdecomposition.cpp
         eigensystem.cpp LapackGEP.cpp
         python_bla.cpp avector.cpp ngblas.cpp
         )
@@ -32,7 +32,7 @@ install( TARGETS ngbla ${ngs_install_dir} )
 install( FILES
         bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp 
         vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h     
-        tensor.hpp cuda_bla.hpp avector.hpp ngblas.hpp
+        tensor.hpp triangular.hpp cuda_bla.hpp avector.hpp ngblas.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

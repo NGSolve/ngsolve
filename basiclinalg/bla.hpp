@@ -79,6 +79,7 @@ namespace ngcore
 #include "cholesky.hpp"
 #include "symmetricmatrix.hpp"
 #include "bandmatrix.hpp"
+#include "triangular.hpp"
 #include "tensor.hpp"
 
 #include "cuda_bla.hpp"

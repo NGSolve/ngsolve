@@ -776,6 +776,18 @@ namespace ngbla
       MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
   }
 
+  template <size_t WA, OPERATION OP=SET> 
+  REGCALL void MultMatMat_intern2_ShortSumW (size_t ha, size_t wa, size_t wb,
+                                             BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    if (WA <= 6) //   && OP==SET)
+      MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+    else
+      MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+  }
+
+
+  
   pmultAB dispatch_multAB[13] =
     { &MultMatMat_intern2_ShortSum<0,SET>,
       &MultMatMat_intern2_ShortSum<1,SET>,
@@ -808,23 +820,33 @@ namespace ngbla
       &MultMatMat_intern2_ShortSum<12,ADD>
     };
 
-  pmultAB dispatch_subAB[13] =
-    { &MultMatMat_intern2_ShortSum<0,SUB>,
-      &MultMatMat_intern2_ShortSum<1,SUB>,
-      &MultMatMat_intern2_ShortSum<2,SUB>,
-      &MultMatMat_intern2_ShortSum<3,SUB>,
-      &MultMatMat_intern2_ShortSum<4,SUB>,
-      &MultMatMat_intern2_ShortSum<5,SUB>,
-      &MultMatMat_intern2_ShortSum<6,SUB>,
-      &MultMatMat_intern2_ShortSum<7,SUB>,
-      &MultMatMat_intern2_ShortSum<8,SUB>,
-      &MultMatMat_intern2_ShortSum<9,SUB>,
-      &MultMatMat_intern2_ShortSum<10,SUB>,
-      &MultMatMat_intern2_ShortSum<11,SUB>,
-      &MultMatMat_intern2_ShortSum<12,SUB>
+  pmultABW dispatch_subAB[13] =
+    { &MultMatMat_intern2_ShortSumW<0,SUB>,
+      &MultMatMat_intern2_ShortSumW<1,SUB>,
+      &MultMatMat_intern2_ShortSumW<2,SUB>,
+      &MultMatMat_intern2_ShortSumW<3,SUB>,
+      &MultMatMat_intern2_ShortSumW<4,SUB>,
+      &MultMatMat_intern2_ShortSumW<5,SUB>,
+      &MultMatMat_intern2_ShortSumW<6,SUB>,
+      &MultMatMat_intern2_ShortSumW<7,SUB>,
+      &MultMatMat_intern2_ShortSumW<8,SUB>,
+      &MultMatMat_intern2_ShortSumW<9,SUB>,
+      &MultMatMat_intern2_ShortSumW<10,SUB>,
+      &MultMatMat_intern2_ShortSumW<11,SUB>,
+      // &MultMatMat_intern2_ShortSumW<12,SUB>
+      &SubAB_intern
     };
 
-
+  /*
+  pmultABW dispatch_subAB[];
+  auto init_subAB = [] ()
+  {
+    Iterate<std::size(dispatch_subAB)-1> ([&] (auto i)
+    { dispatch_matvec[i] = &MultMatMat_intern2_ShortSumW<i,SUM>; });
+    dispatch_subAB[std::size(dispatch_subAB)-1] = &SubAB_intern;
+    return 1;
+  }();
+  */
 
 
 
@@ -2660,6 +2682,7 @@ namespace ngbla
           "150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n"
           "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned\n"
           "200.. CalcInverse        A = nxn\n"
+          "201.. CalcInverse by LU  A = nxn\n"          
           "205.. LDL                A = nxn\n"
           "210.. CalcInverseLapack  A = nxn\n"
              << endl;
@@ -3167,6 +3190,26 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 201)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        double tot = n*n*n;
+        int its = 1e9 / tot + 1;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            CalcInverse(a, INVERSE_LIB::INV_NGBLA_LU);
+          t.Stop();
+          cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    
 
     if (what == 0 || what == 205)
       {

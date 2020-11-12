@@ -17,14 +17,6 @@ namespace ngbla
   extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    /*
-    size_t sx = x.Size();
-    // if (sx <= 24)
-    if (sx < std::size(dispatch_matvec))
-      (*dispatch_matvec[sx])  (a, x, y);
-    else
-      MultMatVec_intern (a, x, y);
-    */
     size_t dsx = x.Size();
     if (dsx >= std::size(dispatch_matvec))
       dsx = std::size(dispatch_matvec)-1;
@@ -107,6 +99,7 @@ namespace ngbla
                                                         BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
 
   typedef void REGCALL (*pmultAB)(size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
+  typedef void REGCALL (*pmultABW)(size_t, size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);  
   extern NGS_DLL_HEADER pmultAB dispatch_multAB[13];
   
   inline void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
@@ -152,14 +145,19 @@ namespace ngbla
 
   extern NGS_DLL_HEADER void REGCALL SubAB_intern (size_t ha, size_t wa, size_t wb,
                                                    BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
-  extern NGS_DLL_HEADER pmultAB dispatch_subAB[13];
+  extern NGS_DLL_HEADER pmultABW dispatch_subAB[13];
   inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     size_t wa = a.Width();
+    if (wa >= std::size(dispatch_subAB))
+      wa = std::size(dispatch_subAB)-1;
+    (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+    /*
     if (wa <= 12)
-      (*dispatch_subAB[wa])  (a.Height(), b.Width(), a, b, c);
+      (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
     else
       SubAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
+    */
   }
 
 
