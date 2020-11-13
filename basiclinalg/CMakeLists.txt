@@ -14,7 +14,8 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
 add_custom_target(kernel_generated DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp)
 
 add_library(ngbla ${NGS_LIB_TYPE}
-        bandmatrix.cpp calcinverse.cpp cholesky.cpp LUdecomposition.cpp
+        bandmatrix.cpp triangular.cpp calcinverse.cpp cholesky.cpp
+        LUdecomposition.cpp 
         eigensystem.cpp LapackGEP.cpp
         python_bla.cpp avector.cpp ngblas.cpp
         )

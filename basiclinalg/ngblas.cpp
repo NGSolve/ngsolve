@@ -2670,6 +2670,8 @@ namespace ngbla
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           "11 .. C += A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
+          "20 .. X = T * X       T=n*n triangular, X=n*m "
+          "21 .. X = T^-1 * X     T=n*n triangular, X=n*m "
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
           "52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m\n"
@@ -2893,6 +2895,142 @@ namespace ngbla
           cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
         }
+      }
+
+    if (what == 0 || what == 20)
+      {
+        // C=A*B
+        Matrix<> a(n,n), b(n,m);
+        a = 1; b = 2;
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < n; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            b(i,j) = cos(i+3) * cos(j);
+        Matrix<> saveb = b;
+        
+        double tot = n*n*m/2;
+        int its = 1e10 / tot + 1;
+        // MultMatMat(a,b,c);
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<LowerLeft> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<L> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<L>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<UpperRight> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<R> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<R>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<LowerLeft,Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<L,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<L,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<UpperRight,Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<R,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<R,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+      }
+    if (what == 0 || what == 21)
+      {
+        // C=A*B
+        Matrix<> a(n,n), b(n,m);
+        a = 1; b = 2;
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < n; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            b(i,j) = cos(i+3) * cos(j);
+        Matrix<> saveb = b;
+        
+        double tot = n*n*m/2;
+        int its = 1e10 / tot + 1;
+        // MultMatMat(a,b,c);
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<LowerLeft> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<L> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<L>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<UpperRight> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<R> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<R>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<LowerLeft, Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<L,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<L,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<UpperRight, Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<R,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<R,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+
       }
 
     
