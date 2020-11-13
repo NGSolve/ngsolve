@@ -64,10 +64,13 @@ namespace ngbla
     // handle SIMD rest
     Switch<SIMD<double>::Size()> ( (n-i), [&] (auto r)
                                    {
-                                     Vec<r.value> ha = a.Range(i, i+r.value);
-                                     Vec<r.value> hb = b.Range(i, i+r.value);
-                                     a.Range(i,i+r.value) = hb;
-                                     b.Range(i,i+r.value) = ha;
+                                     if constexpr (r.value > 0)
+                                                    {
+                                                      Vec<r.value> ha = a.Range(i, i+r.value);
+                                                      Vec<r.value> hb = b.Range(i, i+r.value);
+                                                      a.Range(i,i+r.value) = hb;
+                                                      b.Range(i,i+r.value) = ha;
+                                                    }
                                    });
   }
 
