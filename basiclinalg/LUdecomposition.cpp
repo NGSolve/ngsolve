@@ -58,22 +58,18 @@ namespace ngbla
         vb.Store(&a(i));
       }
 
-    if(i==n)
-      return;
+    if (i==n) return;
 
     // handle SIMD rest
     Switch<SIMD<double>::Size()> ( (n-i), [&] (auto r)
                                    {
-                                     if constexpr (r.value > 0)
-                                                    {
-                                                      Vec<r.value> ha = a.Range(i, i+r.value);
-                                                      Vec<r.value> hb = b.Range(i, i+r.value);
-                                                      a.Range(i,i+r.value) = hb;
-                                                      b.Range(i,i+r.value) = ha;
-                                                    }
+                                     Vec<r.value> ha = a.Range(i, i+r.value);
+                                     Vec<r.value> hb = b.Range(i, i+r.value);
+                                     a.Range(i,i+r.value) = hb;
+                                     b.Range(i,i+r.value) = ha;
                                    });
   }
-
+  
 
   
   void CalcLU1 (SliceMatrix<double> a, FlatArray<int> p)
