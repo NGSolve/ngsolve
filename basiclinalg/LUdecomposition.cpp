@@ -145,6 +145,7 @@ namespace ngbla
   {
     size_t n = a.Height();
     
+    /*
     if (r.Size() == 0) return;
     if (r.Size() == 1)
       {
@@ -170,6 +171,36 @@ namespace ngbla
           a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
         return;
       }
+    */
+    if (r.Size() <= 8)
+      {
+        for (auto i : r)
+          {
+            size_t imax = i;
+            double valmax = fabs(a(i,i));
+            
+            for (size_t j = i+1; j < n; j++)
+              if (double valj = fabs(a(j,i)) > valmax)
+                {
+                  valmax = valj;
+                  imax = j;
+                }
+            
+            if (imax != i)
+              {
+                Swap (p[i], p[imax]);
+                SwapVectors (a.Row(i), a.Row(imax));
+              }
+
+            if (i+1 < n)
+              a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
+            if (i+1 < r.Next())
+              a.Rows(i+1,n).Cols(i+1,r.Next()) -= a.Rows(i+1,n).Cols(i,i+1) * a.Rows(i,i+1).Cols(i+1,r.Next());
+          }
+
+        return;
+      }
+    
     
     size_t mid = r.First() + r.Size()/2;
     IntRange r1(r.First(), mid);

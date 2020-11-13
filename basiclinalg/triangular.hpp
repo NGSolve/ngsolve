@@ -65,6 +65,12 @@ namespace ngbla
       }
   }
 
+  extern NGS_DLL_HEADER void TriangularSolveLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  template <> inline void TriangularSolve<LowerLeft,Normalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  {
+    TriangularSolveLLN(T,X);
+  }
+
 
 
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
@@ -140,6 +146,21 @@ namespace ngbla
   }
 
 
+  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  {
+    TriangularMultLL(T,X);
+  }
+
+  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  template <> inline void TriangularMult<LowerLeft,Normalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  {
+    TriangularMultLLN(T,X);
+  }
+
+
+  
+  
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0,
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
@@ -152,7 +173,7 @@ namespace ngbla
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0>
   void TriangularMult (const TT & T, FlatVector<> x)
   {
-    TriangularMult<SIDE,NORM> (make_SliceMatrix(T), SliceMatrix<>(x.Size(),1,1,&x(0)));
+    TriangularMult<SIDE,NORM> (BareSliceMatrix(make_SliceMatrix(T)), SliceMatrix<>(x.Size(),1,1,&x(0)));
   }
 
 
@@ -164,7 +185,7 @@ namespace ngbla
 
 
 
-
+  
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
             typename TT, ORDERING TO>
   void TriangularInvert (SliceMatrix<TT,TO> T)
