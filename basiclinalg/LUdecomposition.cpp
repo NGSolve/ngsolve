@@ -57,6 +57,11 @@ namespace ngbla
         va.Store(&b(i));
         vb.Store(&a(i));
       }
+
+    if(i==n)
+      return;
+
+    // handle SIMD rest
     Switch<SIMD<double>::Size()> ( (n-i), [&] (auto r)
                                    {
                                      Vec<r.value> ha = a.Range(i, i+r.value);
