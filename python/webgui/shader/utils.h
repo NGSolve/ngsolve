@@ -17,11 +17,10 @@ uniform vec3 light_dir;
 uniform vec4 light_mat; // x=ambient, y=diffuse, z=shininess, w=specularity
 
 // 0-2 ... function component
-// 3   ... length
+// 3   ... norm
 // 4   ... all 3 components (as rgb)
 // 5   ... real part
 // 6   ... imag part
-// 7   ... complex norm
 
 uniform float function_mode;
 uniform vec2 complex_scale;
@@ -38,7 +37,6 @@ float GetValue( vec3 value )
   if(function_mode==3.0) return length(value);
   if(function_mode==5.0) return value.x*complex_scale.x - value.y*complex_scale.y;
   if(function_mode==6.0) return value.x*complex_scale.y + value.y*complex_scale.x;
-  if(function_mode==7.0) return length(value)*length(complex_scale);
   return 0.0;
 }
 

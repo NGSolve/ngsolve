@@ -415,6 +415,7 @@ export class Scene {
 
   version_object: any;
   c_autoscale: any;
+  c_eval: any;
 
   colormap_texture: any;
 
@@ -610,6 +611,26 @@ export class Scene {
     this.animate();
   }
 
+  updateColormapToAutoscale()
+  {
+    let s = this.gui_status;
+    let def = this.gui_status_default;
+    if(s.eval==3) // drawing norm -> min is 0
+    {
+      s.colormap_min = 0.0;
+      s.colormap_max = Math.max(def.colormap_max, def.colormap_min);
+    }
+    else
+    {
+      s.colormap_min = def.colormap_min;
+      s.colormap_max = def.colormap_max;
+    }
+    this.c_cmin.updateDisplay();
+    this.c_cmax.updateDisplay();
+    this.updateColormapLabels();
+    this.animate();
+  }
+
   init (element, render_data)
   {
     this.last_frame_time = new Date().getTime();
@@ -768,7 +789,7 @@ export class Scene {
     {
       this.gui_status_default.eval = 5;
       gui_status.eval = 5;
-      gui.add(gui_status, "eval", {"real": 5,"imag":6,"norm":7}).onChange(animate);
+      this.c_eval = gui.add(gui_status, "eval", {"real": 5,"imag":6,"norm":3}).onChange(animate);
 
       let cgui = gui.addFolder("Complex");
       this.phase_controller = cgui.add(gui_status.Complex, "phase", 0, 2*Math.PI, 0.001).onChange(animate);
@@ -776,16 +797,29 @@ export class Scene {
       cgui.add(gui_status.Complex, "speed", 0.0, 10, 0.0001).onChange(animate);
       uniforms.complex_scale = new THREE.Uniform( new THREE.Vector2(1, 0) );
     }
-      else if(render_data.funcdim==2)
+    else if(render_data.funcdim==2)
+    {
+        gui_status.eval = 3;
+        this.c_eval = gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
+    }
+    else if(render_data.funcdim==3)
+    {
+        gui_status.eval = 3;
+        this.c_eval = gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
+    }
+
+    if(this.c_eval)
+    {
+      if(render_data.eval != undefined)
       {
-          gui_status.eval = 3;
-          gui.add(gui_status, "eval", {"0": 0,"1":1,"norm":3}).onChange(animate);
+        this.gui_status_default.eval = render_data.eval;
+        this.c_eval.setValue(render_data.eval);
       }
-      else if(render_data.funcdim==3)
-      {
-          gui_status.eval = 3;
-          gui.add(gui_status, "eval", {"0": 0,"1":1,"2":2,"norm":3}).onChange(animate);
-      }
+      this.c_eval.onChange(()=> {
+        if(gui_status.autoscale)
+          this.updateColormapToAutoscale();
+      });
+    }
 
 
     if(render_data.mesh_dim == 3)
@@ -904,14 +938,7 @@ export class Scene {
 
       this.c_autoscale.onChange((checked)=> {
         if(checked)
-        {
-          this.gui_status.colormap_min = this.gui_status_default.colormap_min;
-          this.gui_status.colormap_max = this.gui_status_default.colormap_max;
-          this.c_cmin.updateDisplay();
-          this.c_cmax.updateDisplay();
-          this.updateColormapLabels();
-          this.animate();
-        }
+          this.updateColormapToAutoscale();
       });
 
       if(cmax>cmin)
@@ -1048,6 +1075,8 @@ export class Scene {
       var on_init = Function("scene", "render_data", render_data.on_init);
       on_init(this, render_data);
     }
+
+    this.animate();
   }
 
   updateColormap( )
