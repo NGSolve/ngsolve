@@ -2708,11 +2708,11 @@ namespace ngbla
         FlatMatrix<SIMD<double>> a(n,WA/SIMD<double>::Size(),&mema[0]);
         b = 1;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Copy matrix, packed dest");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CopyMatrixIn(n,m, &b(0,0), m, &a(0,0), a.Width());
           t.Stop();
           cout << "Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2726,11 +2726,11 @@ namespace ngbla
         // A = 0
         Matrix<> a(n,m);
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Zero matrix, packed dest");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             a.Rows(0,n).Cols(0,m) = j;
           t.Stop();
           cout << "Zero matrix GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2744,11 +2744,11 @@ namespace ngbla
         Matrix<> a(n,m), b(m,n);
         b = 1;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Matrix Transpose");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             TransposeMatrix(b, a);
           t.Stop();
           cout << "Lapack GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -2765,14 +2765,14 @@ namespace ngbla
         Vector<> x(m), y(n);
         a = 1; x = 2;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           MultMatVec(a,x,y);
           if (L2Norm(a*x-y) > 1e-8)
             throw Exception("MultMatVec is faulty");
           Timer t("y = A*x");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultMatVec(a,x,y);
           t.Stop();
           cout << "MultMatVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2781,7 +2781,7 @@ namespace ngbla
         {
           Timer t("y = A*x, Lapack");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             LapackMultAx (a, x, y);
           t.Stop();
           cout << "MultMatVec Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2796,11 +2796,11 @@ namespace ngbla
         Vector<> x(n), y(m);
         a = 1; x = 2;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("y = A*x");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultMatTransVec(a,x,y);
           t.Stop();
           cout << "MultMatTransVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2818,11 +2818,11 @@ namespace ngbla
           index[i] = (17*i)%1000;
         a = 1; x = 2; y = 0;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("y = A*x");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultAddMatTransVecIndirect(1, a,x,y, index);
           t.Stop();
           cout << "MultAddMatTransVecIndirect GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2844,7 +2844,7 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         c = a * b;
         double err = L2Norm(a*b-c);
@@ -2855,11 +2855,11 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           if (!lapack)
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               // MultMatMat(a,b,c);
               c = a*b;
           else
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c = a*b | Lapack;
           t.Stop();
           cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
@@ -2880,16 +2880,16 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("C += A*B");
           t.Start();
           if (!lapack)
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c += a*b;
           else
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c += a*b | Lapack;
           t.Stop();
           cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
@@ -2911,12 +2911,12 @@ namespace ngbla
         Matrix<> saveb = b;
         
         double tot = n*n*m/2;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularMult<LowerLeft> (a, b);
@@ -2928,7 +2928,7 @@ namespace ngbla
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularMult<UpperRight> (a, b);
@@ -2941,7 +2941,7 @@ namespace ngbla
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularMult<LowerLeft,Normalized> (a, b);
@@ -2953,7 +2953,7 @@ namespace ngbla
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularMult<UpperRight,Normalized> (a, b);
@@ -2978,12 +2978,12 @@ namespace ngbla
         Matrix<> saveb = b;
         
         double tot = n*n*m/2;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularSolve<LowerLeft> (a, b);
@@ -2995,7 +2995,7 @@ namespace ngbla
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularSolve<UpperRight> (a, b);
@@ -3008,7 +3008,7 @@ namespace ngbla
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularSolve<LowerLeft, Normalized> (a, b);
@@ -3020,7 +3020,7 @@ namespace ngbla
         {
           Timer t("X = L * X");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               b = saveb;
               TriangularSolve<UpperRight, Normalized> (a, b);
@@ -3041,11 +3041,11 @@ namespace ngbla
         a = 1; b = 2;
         c = 0.0;        
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             // AddABt(a,b,c);
             c += a * Trans(b);
           t.Stop();
@@ -3065,11 +3065,11 @@ namespace ngbla
         a = SIMD<double>(1); b = SIMD<double>(2);
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), &a(0)[0]),
                    SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), &b(0)[0]),
                    // SliceMatrix<double> (AFlatMatrix<double>(b)),
@@ -3087,15 +3087,15 @@ namespace ngbla
         a = 1; b = 2;
         c = 0.0;        
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
           if (!lapack)
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c = a * Trans(b);
           else
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c = a * Trans(b) | Lapack;
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3112,11 +3112,11 @@ namespace ngbla
         a = 1, b = 1, d = 2;
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C -= A^t*D*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             SubAtDB(a, d, b, c);
           t.Stop();
           cout << "AddAtDB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3141,11 +3141,11 @@ namespace ngbla
         if (err > 1e-8)
           throw Exception("MultAtB is faulty");
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C -= A^t*D*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultAtB(a, b, c);
           t.Stop();
           cout << "MultAtB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3164,11 +3164,11 @@ namespace ngbla
         a = SIMD<double>(1); b = SIMD<double>(2);
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C += A*Bt, sym");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             AddABtSym(a, b, c);
           t.Stop();
           cout << "AddABt, sym GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3183,11 +3183,11 @@ namespace ngbla
         Matrix<> a(4,n), b(n,3*SW), c(4,3*SW);
         a = 1; b = 2; c = 0;
         double tot = n*4*3*SW;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
           t.Stop();
           cout << "MatKernelAddAB 3x4 = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3202,11 +3202,11 @@ namespace ngbla
         Matrix<SIMD<double>> b(n, 3);
         a = 1; b = SIMD<double>(2); c = 0;
         double tot = n*4*3*SW;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
           t.Stop();
           cout << "MatKernelAddAB 3x4, algined GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3222,11 +3222,11 @@ namespace ngbla
         Matrix<> a(4,n), b(n,m), c(4,m);
         a = 1; b = 2; c = 0;
         double tot = n*4*m;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             for (size_t i = 0; i+3*SW <= m; i += 3*SW)
               MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i), b.Width(), &c(i), c.Width());
           t.Stop();
@@ -3244,11 +3244,11 @@ namespace ngbla
         Matrix<SIMD<double>> b(n, m/SW);
         a = 1; b = SIMD<double>(2); c = 0;
         double tot = n*4*m;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             for (size_t i = 0; i+3*SW <= m; i += 3*SW)            
               MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i/SW), b.Width(), &c(i), c.Width());
           t.Stop();
@@ -3266,12 +3266,12 @@ namespace ngbla
         Matrix<> a(4,n), b(4,n), c(3,4);
         a = 1; b = 2; c = 0;
         double tot = n*4*3;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         SIMD<double,4> sum(0);
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               auto res = MatKernelScalAB<3,4>(n,&a(0), a.Width(), &b(0), b.Width());
               sum += get<0>(res) + get<1>(res) + get<2>(res);
@@ -3291,12 +3291,12 @@ namespace ngbla
         Matrix<> c(3,4);
         a = SIMD<double>(1); b = SIMD<double>(2); c = 0;
         double tot = n*4*3*SW;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         SIMD<double,4> sum(0);
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               auto res = MatKernelScalAB<3,4>(n,&a(0), a.Width(), &b(0), b.Width());
               sum += get<0>(res) + get<1>(res) + get<2>(res);
@@ -3317,11 +3317,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CalcInverse(a, INVERSE_LIB::INV_NGBLA);
           t.Stop();
           cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3336,11 +3336,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CalcInverse(a, INVERSE_LIB::INV_NGBLA_LU);
           t.Stop();
           cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3353,7 +3353,7 @@ namespace ngbla
           Array<int> p(n);
           Matrix<> ha = a;
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               ha = a;
               CalcLU(ha, p);
@@ -3369,7 +3369,7 @@ namespace ngbla
           CalcLU(a, p);          
           Matrix<> ha = a;
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               ha = a;
               InverseFromLU(ha, p);
@@ -3392,11 +3392,11 @@ namespace ngbla
         a = 1;
         Trans(a).Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CalcLDL (SliceMatrix<double,ColMajor> (a));
           t.Stop();
           cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3412,11 +3412,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             LapackInverse(a);
           t.Stop();
           cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3431,11 +3431,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             LapackInverseSPD(a);
           t.Stop();
           cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
