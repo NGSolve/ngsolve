@@ -38,10 +38,10 @@ namespace ngbla
         if constexpr (SIDE == UpperRight)
             for (size_t i = n; i-- > 0; )
               {
-                if (NORM==NonNormalized)
-                  X.Row(i) *= 1.0/T(i,i);
                 for (size_t j = i+1; j < n; j++)
                   X.Row(i) -= T(i,j) * X.Row(j);
+                if (NORM==NonNormalized)
+                  X.Row(i) *= 1.0/T(i,i);
               }
         else
           for (size_t i = 0; i < n; i++)
@@ -235,6 +235,60 @@ namespace ngbla
         return;
       }
 
+    
+    // if constexpr (SIDE == LowerLeft) //  && NORM == Normalized)
+                   {
+        if (n < 16)
+          {
+            
+            for (size_t j = 0; j < n; j++)
+              {
+                TT invdiag = 1.0;
+                if constexpr (NORM == NonNormalized) {
+                    invdiag = 1.0/T(j,j);    // known as hr
+
+                    if constexpr (SIDE==LowerLeft) {
+                        T.Row(j).Range(j) *= invdiag;
+                      }
+                    else {
+                      T.Row(j).Range(j+1,n) *= invdiag;
+                    }
+                      
+                    T(j,j) = invdiag;
+                  }
+                
+                if constexpr (SIDE == UpperRight) {
+                    for (size_t k = 0; k < j; k++)
+                      {
+                        TT help = T(k,j);
+                        // T2 h = help * hr;
+                        /*
+                        for (int i = 0; i < n; i++)
+                          {
+                            T2 h = help * inv(n*j+i); 
+                            inv(n*k+i) -= h;
+                          }
+                        
+                        inv(k,j) = -h;
+                        */
+                        T.Row(k).Range(j+1,n) -= help * T.Row(j).Range(j+1,n);
+                        T.Row(k)(j) = -help*invdiag;
+                      }
+                  }
+                else
+                  for (size_t k = j+1; k < n; k++)
+                    {
+                      TT help = T(k,j);
+                      T.Row(k).Range(j) -= help * T.Row(j).Range(j);
+                      T.Row(k)(j) = -help*invdiag;
+                    }
+              }
+            
+            return;
+          }
+      }
+    
+    
 
     IntRange r1(0,n/2), r2(n/2,n);
     auto T11 = T.Rows(r1).Cols(r1);
