@@ -2653,6 +2653,7 @@ namespace ngbla
 
   /**************** timings *********************** */
 
+  extern void MultUL (SliceMatrix<> A);
   
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack)
   {
@@ -2672,6 +2673,7 @@ namespace ngbla
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "20 .. X = T * X       T=n*n triangular, X=n*m "
           "21 .. X = T^-1 * X     T=n*n triangular, X=n*m "
+          "22 .. T^-1             T=n*n triangular"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
           "52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m\n"
@@ -2911,8 +2913,8 @@ namespace ngbla
         Matrix<> saveb = b;
         
         double tot = n*n*m/2;
-        size_t its = 1e10 / tot + 1;
-        // MultMatMat(a,b,c);
+        size_t its = 1e9 / tot + 1;
+
         {
           Timer t("X = L * X");
           t.Start();
@@ -2978,7 +2980,7 @@ namespace ngbla
         Matrix<> saveb = b;
         
         double tot = n*n*m/2;
-        size_t its = 1e10 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("X = L * X");
@@ -3033,6 +3035,90 @@ namespace ngbla
 
       }
 
+
+
+
+    if (what == 0 || what == 22)
+      {
+        // T^{-1}
+        Matrix<> a(n,n);
+        a = 1; 
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < n; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        Matrix<> savea = a;
+        
+        double tot = n*n*n/6;
+        size_t its = 1e9 / tot + 1;
+
+        {
+          Timer t("L^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = savea;
+              TriangularInvert<LowerLeft> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<L> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<L>", 1e-9 * n*n*n/6*its / t.GetTime()));
+        }
+        {
+          Timer t("R^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = savea;
+              TriangularInvert<UpperRight> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<R> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<R>", 1e-9 * n*n*n/6*its / t.GetTime()));
+        }
+        {
+          Timer t("L^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = savea;
+              TriangularInvert<LowerLeft, Normalized> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<LN> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<LN>", 1e-9 * n*n*n/6*its / t.GetTime()));
+        }
+        {
+          Timer t("R^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = savea;
+              TriangularInvert<UpperRight, Normalized> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<RN> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<RN>", 1e-9 * n*n*n/6*its / t.GetTime()));
+        }
+
+        {
+          Timer t("UL");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = savea;
+              MultUL (a);
+            }
+          t.Stop();
+          cout << "MultUL GFlops = " << 1e-9 * n*n*n/3*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultUL", 1e-9 * n*n*n/3*its / t.GetTime()));
+        }
+      }
+
+
+
+
+
+    
     
     if (what == 0 || what == 50)
       {
@@ -3333,8 +3419,11 @@ namespace ngbla
       {
         // CalcInverse
         Matrix<> a(n,n);
-        a = 1;
-        a.Diag() = 10000;
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++)
+            a(i,j) = cos(i+j);
+        // a = 1;
+        // a.Diag() = 1.1;
         double tot = n*n*n;
         size_t its = 1e9 / tot + 1;
         {
