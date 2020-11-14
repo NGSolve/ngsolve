@@ -2655,7 +2655,7 @@ namespace ngbla
 
   extern void MultUL (SliceMatrix<> A);
   
-  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack)
+  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits)
   {
     if (what < 0)
       {
@@ -3426,6 +3426,7 @@ namespace ngbla
         // a.Diag() = 1.1;
         double tot = n*n*n;
         size_t its = 1e9 / tot + 1;
+        if (its > maxits) its = maxits;
         {
           Timer t("Inv(A)");
           t.Start();

@@ -507,7 +507,7 @@ namespace ngbla
   }
 
   
-  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack);
+  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits);
 
 }
 
