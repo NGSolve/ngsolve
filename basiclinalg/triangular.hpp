@@ -33,6 +33,30 @@ namespace ngbla
         return;
       }
 
+    if (n < 8)
+      {
+        if constexpr (SIDE == UpperRight)
+            for (size_t i = n; i-- > 0; )
+              {
+                if (NORM==NonNormalized)
+                  X.Row(i) *= 1.0/T(i,i);
+                for (size_t j = i+1; j < n; j++)
+                  X.Row(i) -= T(i,j) * X.Row(j);
+              }
+        else
+          for (size_t i = 0; i < n; i++)
+            {
+              for (size_t j = 0; j < i; j++)
+                X.Row(i) -= T(i,j) * X.Row(j);
+              if (NORM==NonNormalized)
+                X.Row(i) *= 1.0/T(i,i);
+            }
+        return;
+      }
+
+
+
+    
     if (X.Width() > 256)
       {
         size_t m = X.Width();
@@ -108,7 +132,18 @@ namespace ngbla
         return;
       }
 
-  
+    if (n < 8)
+      if constexpr (SIDE == UpperRight) { 
+          for (size_t i = 0; i < n; i++)
+            {
+              if (NORM==NonNormalized)
+                X.Row(i) *= T(i,i);
+              for (size_t j = i+1; j < n; j++)
+                X.Row(i) += T(i,j) * X.Row(j);
+            }
+          return;
+        }
+    
     IntRange r1(0,n/2), r2(n/2,n);
     auto T11 = T.Rows(r1).Cols(r1);
     auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());;
