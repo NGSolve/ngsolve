@@ -10,7 +10,6 @@
 namespace ngbla
 {
 
-  
   /*
     void CalcLU (SliceMatrix<double> a, FlatArray<int> p)
     {
@@ -141,9 +140,14 @@ namespace ngbla
 
 
 
-
-
-
+  /*
+  static Timer calcLUSolveL("CalcLU - SolveL");
+  static Timer calcLUMatMat("CalcLU - MatMat");
+  static Timer calcLUSimple("CalcLU - simple");  
+  static Timer calcLUSimple2("CalcLU - simple2x");  
+  static Timer calcLUSearch("CalcLU - search");  
+  static Timer calcLUSwap("CalcLU - swap");  
+  */
 
   void CalcLURec (SliceMatrix<double> a, FlatArray<int> p, IntRange r)
   {
@@ -176,22 +180,30 @@ namespace ngbla
         return;
       }
     */
-    if (r.Size() <= 8)
+    constexpr size_t bs = 8;
+    if (r.Size() <= bs)
       {
+        // RegionTimer reg(calcLUSimple);
         for (auto i : r)
           {
             size_t imax = i;
             double valmax = fabs(a(i,i));
-            
+
+            {
+              // RegionTimer reg(calcLUSearch);
             for (size_t j = i+1; j < n; j++)
-              if (double valj = fabs(a(j,i)) > valmax)
-                {
-                  valmax = valj;
-                  imax = j;
-                }
-            
+              {
+                double valj = fabs(a(j,i));
+                if (valj > valmax)
+                  {
+                    valmax = valj;
+                    imax = j;
+                  }
+              }
+            }
             if (imax != i)
               {
+                // RegionTimer reg(calcLUSwap);                
                 Swap (p[i], p[imax]);
                 SwapVectors (a.Row(i), a.Row(imax));
               }
@@ -199,7 +211,17 @@ namespace ngbla
             if (i+1 < n)
               a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
             if (i+1 < r.Next())
-              a.Rows(i+1,n).Cols(i+1,r.Next()) -= a.Rows(i+1,n).Cols(i,i+1) * a.Rows(i,i+1).Cols(i+1,r.Next());
+              {
+                // RegionTimer reg(calcLUSimple2);                
+                a.Rows(i+1,n).Cols(i+1,r.Next()) -= a.Rows(i+1,n).Cols(i,i+1) * a.Rows(i,i+1).Cols(i+1,r.Next());
+                /*
+                double mem[bs];
+                FlatMatrix<> row(1, r.Size(), &mem[0]);
+                row.Row(0) = a.Row(i).Range(r);
+                row.Row(0).Range(i-r.First()+1) = 0.0;
+                a.Rows(i+1,n).Cols(r) -= a.Rows(i+1,n).Cols(i,i+1) * row;
+                */
+              }
           }
 
         return;
@@ -212,9 +234,15 @@ namespace ngbla
     
     CalcLURec (a, p, r1);
     
-    TriangularSolve<LowerLeft,Normalized> (a.Rows(r1).Cols(r1), a.Rows(r1).Cols(r2));
-    a.Rows(mid,n).Cols(r2) -= a.Rows(mid,n).Cols(r1) * a.Rows(r1).Cols(r2);
+    {
+      // RegionTimer r(calcLUSolveL);
+      TriangularSolve<LowerLeft,Normalized> (a.Rows(r1).Cols(r1), a.Rows(r1).Cols(r2));
+    }
     
+    {
+      // RegionTimer r(calcLUMatMat);
+      a.Rows(mid,n).Cols(r2) -= a.Rows(mid,n).Cols(r1) * a.Rows(r1).Cols(r2);
+    }
     CalcLURec (a, p, r2);
   }
 
@@ -224,8 +252,8 @@ namespace ngbla
   {
     size_t n = a.Height();
     
-    static Timer t("CalcLU - rec"); RegionTimer reg(t);
-    t.AddFlops (n*n*n/3);
+    // static Timer t("CalcLU - rec"); RegionTimer reg(t);
+    // t.AddFlops (n*n*n/3);
     
     for (size_t i = 0; i < n; i++) p[i] = i;
     
@@ -240,14 +268,38 @@ namespace ngbla
 
   // U .. upper right,
   // L .. lower left, normalized
-  static Timer tmulul1 ("MultUL - matmat");
-  static Timer tmulul2 ("MultUL - trigmultR");
-  static Timer tmulul3 ("MultUL - trigmultL");
+  // static Timer tmulul1 ("MultUL - matmat");
+  // static Timer tmulul2 ("MultUL - trigmultR");
+  // static Timer tmulul3 ("MultUL - trigmultL");
   void MultUL (SliceMatrix<> A)
   {
     size_t n = A.Height();  
     if (n <= 1) return;
-  
+
+    if (n <= 8)
+      {
+        for (size_t i = 0; i < n; i++)
+          {
+            auto rowi = A.Row(i);
+            for (size_t j = 0; j < i; j++)
+              {
+                double sum = 0;
+                for (size_t k = i; k < n; k++)
+                  sum += rowi(k) * A(k,j);
+                rowi(j) = sum;
+              }
+            for (size_t j = i; j < n; j++)
+              {
+                double sum = rowi(j);
+                for (size_t k = j+1; k < n; k++)
+                  sum += rowi(k) * A(k,j);
+                rowi(j) = sum;
+              }
+          }
+        return;
+      }
+
+    
     IntRange r1(0,n/2), r2(n/2,n);
     auto A11 = A.Rows(r1).Cols(r1);
     auto A12 = A.Rows(r1).Cols(r2);
@@ -255,16 +307,16 @@ namespace ngbla
     auto A22 = A.Rows(r2).Cols(r2);
 
     MultUL (A11);
-    tmulul1.Start();
+    // tmulul1.Start();
     A11 += A12 * A21;
-    tmulul1.Stop();
-    tmulul1.AddFlops (r1.Size()*r1.Size()*r2.Size());
-    tmulul2.Start();
+    // tmulul1.Stop();
+    // tmulul1.AddFlops (r1.Size()*r1.Size()*r2.Size());
+    // tmulul2.Start();
     TriangularMult<UpperRight> (A22, A21);
-    tmulul2.Stop();
-    tmulul3.Start();
+    // tmulul2.Stop();
+    // tmulul3.Start();
     TriangularMult<UpperRight,Normalized> (Trans(A22), Trans(A12));
-    tmulul3.Stop();
+    // tmulul3.Stop();
     MultUL (A22);
   }
 
@@ -273,24 +325,24 @@ namespace ngbla
   void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p)
   {
     size_t n = A.Height();    
-    static Timer t("InverseFromLU"); RegionTimer reg(t);
-    t.AddFlops (2*n*n*n/3);
+    // static Timer t("InverseFromLU"); RegionTimer reg(t);
+    // t.AddFlops (2*n*n*n/3);
 
-    static Timer tl("InvertL"); 
-    static Timer tu("InvertU"); 
-    static Timer tperm("permutation");
+    // static Timer tl("InvertL"); 
+    // static Timer tu("InvertU"); 
+    // static Timer tperm("permutation");
     
-    tl.Start();
+    // tl.Start();
     TriangularInvert<LowerLeft,Normalized> (A);
-    tl.Stop();
-    tl.AddFlops (n*n*n/6);
-    tu.Start();
+    // tl.Stop();
+    // tl.AddFlops (n*n*n/6);
+    // tu.Start();
     TriangularInvert<UpperRight> (A);
-    tu.Stop();
-    tu.AddFlops (n*n*n/6);    
+    // tu.Stop();
+    // tu.AddFlops (n*n*n/6);    
     MultUL (A);
 
-    RegionTimer rperm(tperm);
+    // RegionTimer rperm(tperm);
     VectorMem<100> row(n);
     for (size_t i = 0; i < n; i++)
       {

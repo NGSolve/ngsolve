@@ -666,7 +666,7 @@ complex : bool
              [] (py::object x) -> py::object
           { return py::object(x.attr("Norm")) (); }, py::arg("x"),"Compute Norm");
 
-    m.def("__timing__", &ngbla::Timing, py::arg("what"), py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lapack")=false);
+    m.def("__timing__", &ngbla::Timing, py::arg("what"), py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lapack")=false, py::arg("maxits")=size_t(1e10));
     m.def("CheckPerformance",
              [] (size_t n, size_t m, size_t k)
                               {

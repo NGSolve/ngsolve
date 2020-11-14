@@ -218,8 +218,13 @@ namespace ngbla
 
 
 
-
-
+  /*
+  static Timer triginv_loops ("TriangularInvert loops");
+  static Timer triginv_L1 ("TriangularInvert L1");
+  static Timer triginv_L2 ("TriangularInvert L2");
+  static Timer triginv_R1 ("TriangularInvert R1");
+  static Timer triginv_R2 ("TriangularInvert r2");
+  */
   
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
             typename TT, ORDERING TO>
@@ -236,59 +241,42 @@ namespace ngbla
       }
 
     
-    // if constexpr (SIDE == LowerLeft) //  && NORM == Normalized)
-                   {
-        if (n < 16)
+    if (n < 16)
+      {
+        // RegionTimer reg(triginv_loops);
+        for (size_t j = 0; j < n; j++)
           {
-            
-            for (size_t j = 0; j < n; j++)
-              {
-                TT invdiag = 1.0;
-                if constexpr (NORM == NonNormalized) {
-                    invdiag = 1.0/T(j,j);    // known as hr
-
-                    if constexpr (SIDE==LowerLeft) {
-                        T.Row(j).Range(j) *= invdiag;
-                      }
-                    else {
-                      T.Row(j).Range(j+1,n) *= invdiag;
-                    }
-                      
-                    T(j,j) = invdiag;
-                  }
+            TT invdiag = 1.0;
+            if constexpr (NORM == NonNormalized) {
+                invdiag = 1.0/T(j,j);  
                 
-                if constexpr (SIDE == UpperRight) {
-                    for (size_t k = 0; k < j; k++)
-                      {
-                        TT help = T(k,j);
-                        // T2 h = help * hr;
-                        /*
-                        for (int i = 0; i < n; i++)
-                          {
-                            T2 h = help * inv(n*j+i); 
-                            inv(n*k+i) -= h;
-                          }
-                        
-                        inv(k,j) = -h;
-                        */
-                        T.Row(k).Range(j+1,n) -= help * T.Row(j).Range(j+1,n);
-                        T.Row(k)(j) = -help*invdiag;
-                      }
+                if constexpr (SIDE==LowerLeft) {
+                    T.Row(j).Range(0,j) *= invdiag;
                   }
                 else
-                  for (size_t k = j+1; k < n; k++)
-                    {
-                      TT help = T(k,j);
-                      T.Row(k).Range(j) -= help * T.Row(j).Range(j);
-                      T.Row(k)(j) = -help*invdiag;
-                    }
+                  T.Row(j).Range(j+1,n) *= invdiag;
+                T(j,j) = invdiag;
               }
             
-            return;
+            if constexpr (SIDE == UpperRight) {
+                for (size_t k = 0; k < j; k++)
+                  {
+                    TT help = T(k,j);
+                    T.Row(k).Range(j+1,n) -= help * T.Row(j).Range(j+1,n);
+                    T.Row(k)(j) = -help*invdiag;
+                  }
+              }
+            else
+              for (size_t k = j+1; k < n; k++)
+                {
+                  TT help = T(k,j);
+                  T.Row(k).Range(j) -= help * T.Row(j).Range(j);
+                  T.Row(k)(j) = -help*invdiag;
+                }
           }
+        
+        return;
       }
-    
-    
 
     IntRange r1(0,n/2), r2(n/2,n);
     auto T11 = T.Rows(r1).Cols(r1);
@@ -296,21 +284,28 @@ namespace ngbla
     auto T21 = T.Rows(r2).Cols(r1);
     auto T22 = T.Rows(r2).Cols(r2);
 
+    TriangularInvert<SIDE,NORM> (T11);
+    TriangularInvert<SIDE,NORM> (T22);
+    
     if (SIDE == LowerLeft)
       {
-        TriangularInvert<SIDE,NORM> (T22);
         T21 *= -1;
+        // triginv_L1.Start();
         TriangularMult<SIDE,NORM> (T22, T21);
-        TriangularSolve<!SIDE,NORM> (Trans(T11), Trans(T21));
-        TriangularInvert<SIDE,NORM> (T11);
+        // triginv_L1.Stop();
+        // triginv_L2.Start();        
+        TriangularMult<!SIDE,NORM> (Trans(T11), Trans(T21));
+        // triginv_L2.Stop();        
       }
     else
       {
-        TriangularInvert<SIDE,NORM> (T11);
         T12 *= -1;
+        // triginv_R1.Start();        
         TriangularMult<SIDE,NORM> (T11, T12);
-        TriangularSolve<!SIDE,NORM> (Trans(T22), Trans(T12));
-        TriangularInvert<SIDE,NORM> (T22);
+        // triginv_R1.Stop();        
+        // triginv_R2.Start();        
+        TriangularMult<!SIDE,NORM> (Trans(T22), Trans(T12));
+        // triginv_R2.Stop();                
       }
   }
 
