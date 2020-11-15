@@ -721,32 +721,33 @@ namespace ngbla
     for (size_t i = 0; i < n; i++)
       X.Col(i) += X.Cols(i+1,n) * T.Col(i).Range(i+1,n); 
     */
-    double memb[8*128];
+    constexpr size_t BS = 2*SIMD<double>::Size();    
+    double memb[BS*128];
     size_t i = 0;
-    for ( ; i+8 <= n; i+= 8)
+    for ( ; i+BS <= n; i+= BS)
       {
         auto Xrest = X.Cols(i,n);
         // copy b
         for (size_t j = 0; j < n-i; j++)
-          for (size_t k = 0; k < 8; k++)
-            memb[8*j+k] = T(i+j,i+k);
-        for (int i = 0; i < 8; i++)
-          for (int j = i; j < 8; j++)
-            memb[8*i+j] = 0;
+          for (size_t k = 0; k < BS; k++)
+            memb[BS*j+k] = T(i+j,i+k);
+        for (int i = 0; i < BS; i++)
+          for (int j = i; j < BS; j++)
+            memb[BS*i+j] = 0;
         
-        FlatMatrix<> subb(n-i, 8, &memb[0]);
+        FlatMatrix<> subb(n-i, BS, &memb[0]);
         /*
         for (size_t j = 0; j < m; j++)
           {
-            Vec<8> c = Trans(subb) * Xrest.Row(j);
-            Xrest.Row(j).Range(0,8) += c;
+            Vec<BS> c = Trans(subb) * Xrest.Row(j);
+            Xrest.Row(j).Range(0,BS) += c;
           }
         */
         size_t j = 0;
         for ( ; j+4 <= m; j+=4)
-          MatKernelMultAB<4,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], 8, &Xrest(j,0), X.Dist());
+          MatKernelMultAB<4,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], BS, &Xrest(j,0), X.Dist());
         for ( ; j+1 <= m; j+=1)
-          MatKernelMultAB<1,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], 8, &Xrest(j,0), X.Dist());
+          MatKernelMultAB<1,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], BS, &Xrest(j,0), X.Dist());
       }
     for ( ; i < n; i++)
       X.Col(i) += X.Cols(i+1,n) * T.Col(i).Range(i+1,n); 
@@ -805,33 +806,34 @@ namespace ngbla
           X.Col(i) += T(j,i) * X.Col(j);
       }
     */
-    
-    double memb[8*128];
+
+    constexpr size_t BS = 2*SIMD<double>::Size();
+    double memb[BS*128];
     size_t i = n;
 
-    for ( ; i >= 8; i -= 8)
+    for ( ; i >= BS; i -= BS)
       {
         // copy b
         for (size_t j = 0; j < i; j++)
-          for (size_t k = 0; k < 8; k++)
-            memb[8*j+k] = T(j,i+k-8);
-        for (int k = 0; k < 8; k++)
+          for (size_t k = 0; k < BS; k++)
+            memb[BS*j+k] = T(j,i+k-BS);
+        for (int k = 0; k < BS; k++)
           for (int j = 0; j < k; j++)
-            memb[8*(i-8+k)+j] = 0;
+            memb[BS*(i-BS+k)+j] = 0;
 
         /*
-        FlatMatrix<> subb(i, 8, &memb[0]);
+        FlatMatrix<> subb(i, BS, &memb[0]);
         for (size_t j = 0; j < m; j++)
           {
-            Vec<8> c = Trans(subb) * X.Row(j).Range(0,i);
-            X.Row(j).Range(i-8,i) = c;
+            Vec<BS> c = Trans(subb) * X.Row(j).Range(0,i);
+            X.Row(j).Range(i-BS,i) = c;
           }
         */
         size_t j = 0;
         for ( ; j+4 <= m; j+=4)
-          MatKernelMultAB<4,2,SET> (i, &X(j,0), X.Dist(), &memb[0], 8, &X(j,i-8), X.Dist());
+          MatKernelMultAB<4,2,SET> (i, &X(j,0), X.Dist(), &memb[0], BS, &X(j,i-BS), X.Dist());
         for ( ; j+1 <= m; j+=1)
-          MatKernelMultAB<1,2,SET> (i, &X(j,0), X.Dist(), &memb[0], 8, &X(j,i-8), X.Dist());
+          MatKernelMultAB<1,2,SET> (i, &X(j,0), X.Dist(), &memb[0], BS, &X(j,i-BS), X.Dist());
       }
 
     for ( ; i >= 1; i--)
