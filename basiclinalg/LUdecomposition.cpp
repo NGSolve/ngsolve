@@ -315,7 +315,8 @@ namespace ngbla
     TriangularMult<UpperRight> (A22, A21);
     // tmulul2.Stop();
     // tmulul3.Start();
-    TriangularMult<UpperRight,Normalized> (Trans(A22), Trans(A12));
+    // TriangularMult<UpperRight,Normalized> (Trans(A22), Trans(A12));
+    MultTriangular<LowerLeft,Normalized> (A12, A22);
     // tmulul3.Stop();
     MultUL (A22);
   }

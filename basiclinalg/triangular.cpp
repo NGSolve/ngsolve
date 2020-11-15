@@ -688,13 +688,201 @@ namespace ngbla
   void TriangularSolveLLN (BareSliceMatrix<double> L, SliceMatrix<double> X)  
   {
     size_t i = 0;
-    constexpr size_t bw = 256;
+    constexpr size_t bw = 128;
     for ( ; i+bw <= X.Width(); i += bw)
       TriangularSolveLL2N (L, X.Cols(i,i+bw));
     if (i < X.Width())
       TriangularSolveLL2N (L, X.Cols(i,X.Width()));      
   }
 
+
+
+
+
+
+
+
+
+  /* ****************************** MultTriangular ************************/ 
+
+  /* **************** LowerLeft - Normalized *************************** */
+  
+
+  void MultTriangularLLN3 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    size_t m = X.Height();
+    /*
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = i+1; j < n; j++)
+        X.Col(i) += T(j,i) * X.Col(j);
+    */
+    /*
+    for (size_t i = 0; i < n; i++)
+      X.Col(i) += X.Cols(i+1,n) * T.Col(i).Range(i+1,n); 
+    */
+    double memb[8*128];
+    size_t i = 0;
+    for ( ; i+8 <= n; i+= 8)
+      {
+        auto Xrest = X.Cols(i,n);
+        // copy b
+        for (size_t j = 0; j < n-i; j++)
+          for (size_t k = 0; k < 8; k++)
+            memb[8*j+k] = T(i+j,i+k);
+        for (int i = 0; i < 8; i++)
+          for (int j = i; j < 8; j++)
+            memb[8*i+j] = 0;
+        
+        FlatMatrix<> subb(n-i, 8, &memb[0]);
+        /*
+        for (size_t j = 0; j < m; j++)
+          {
+            Vec<8> c = Trans(subb) * Xrest.Row(j);
+            Xrest.Row(j).Range(0,8) += c;
+          }
+        */
+        size_t j = 0;
+        for ( ; j+4 <= m; j+=4)
+          MatKernelMultAB<4,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], 8, &Xrest(j,0), X.Dist());
+        for ( ; j+1 <= m; j+=1)
+          MatKernelMultAB<1,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], 8, &Xrest(j,0), X.Dist());
+      }
+    for ( ; i < n; i++)
+      X.Col(i) += X.Cols(i+1,n) * T.Col(i).Range(i+1,n); 
+  }
+  
+  void MultTriangularLLN2 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    if (n <= 128)
+      {
+        MultTriangularLLN3 (X,T);
+        return;
+      }
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto T11 = T.Rows(r1).Cols(r1);
+    // auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
+    auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
+    auto T22 = T.Rows(r2).Cols(r2);
+    auto X1 = X.Cols(r1);
+    auto X2 = X.Cols(r2);
+
+    MultTriangularLLN2 (X1,T11);
+    X1 += X2 * T21;
+    MultTriangularLLN2 (X2,T22);
+  }
+  
+  void MultTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> L)  
+  {
+    size_t i = 0;
+    constexpr size_t bw = 128;
+    for ( ; i+bw <= X.Height(); i += bw)
+      MultTriangularLLN2 (X.Rows(i,i+bw), L);
+    if (i < X.Width())
+      MultTriangularLLN2 (X.Rows(i,X.Height()), L);      
+  }
+
+
+
+
+
+
+  /* **************** UpperRight - NonNormalized *************************** */
+
+  
+
+  void MultTriangularUR3 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    size_t m = X.Height();
+
+    /*
+    for (size_t i = n; i-->0; )
+      {
+        X.Col(i) *= T(i,i);
+        for (size_t j = 0; j < i; j++)
+          X.Col(i) += T(j,i) * X.Col(j);
+      }
+    */
+    
+    double memb[8*128];
+    size_t i = n;
+
+    for ( ; i >= 8; i -= 8)
+      {
+        // copy b
+        for (size_t j = 0; j < i; j++)
+          for (size_t k = 0; k < 8; k++)
+            memb[8*j+k] = T(j,i+k-8);
+        for (int k = 0; k < 8; k++)
+          for (int j = 0; j < k; j++)
+            memb[8*(i-8+k)+j] = 0;
+
+        /*
+        FlatMatrix<> subb(i, 8, &memb[0]);
+        for (size_t j = 0; j < m; j++)
+          {
+            Vec<8> c = Trans(subb) * X.Row(j).Range(0,i);
+            X.Row(j).Range(i-8,i) = c;
+          }
+        */
+        size_t j = 0;
+        for ( ; j+4 <= m; j+=4)
+          MatKernelMultAB<4,2,SET> (i, &X(j,0), X.Dist(), &memb[0], 8, &X(j,i-8), X.Dist());
+        for ( ; j+1 <= m; j+=1)
+          MatKernelMultAB<1,2,SET> (i, &X(j,0), X.Dist(), &memb[0], 8, &X(j,i-8), X.Dist());
+      }
+
+    for ( ; i >= 1; i--)
+      {
+        X.Col(i-1) *= T(i-1, i-1);
+        if (i > 1)
+          X.Col(i-1) += X.Cols(0, i-1) * T.Col(i-1).Range(0, i-1);
+      }
+  }
+  
+  void MultTriangularUR2 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    if (n <= 128)
+      {
+        MultTriangularUR3 (X,T);
+        return;
+      }
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto T11 = T.Rows(r1).Cols(r1);
+    auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
+    // auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
+    auto T22 = T.Rows(r2).Cols(r2);
+    auto X1 = X.Cols(r1);
+    auto X2 = X.Cols(r2);
+
+    MultTriangularUR2 (X2,T22);
+    X2 += X1 * T12;
+    MultTriangularUR2 (X1,T11);
+  }
+
+  void MultTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> U)  
+  {
+    // MultTriangularUR3 (X, L);
+    // return;
+    
+    size_t i = 0;
+    constexpr size_t bw = 128;
+    for ( ; i+bw <= X.Height(); i += bw)
+      MultTriangularUR2 (X.Rows(i,i+bw), U);
+    if (i < X.Width())
+      MultTriangularUR2 (X.Rows(i,X.Height()), U);      
+  }
+
+
+
+
+
+
+  
+  
   
 }
 
