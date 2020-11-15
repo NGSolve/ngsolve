@@ -212,9 +212,33 @@ namespace ngbla
   }
 
 
+  // X = X * T
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
+            typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0,
+            typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
+  void MultTriangular (TX & X, const TT & T)
+  {
+    TriangularMult<!SIDE,NORM> (Trans(BareSliceMatrix(make_SliceMatrix(T))), Trans(make_SliceMatrix(X)));
+  }
 
 
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
+            typename TT, typename TX, ORDERING OT, ORDERING OX>
+  void MultTriangular (SliceMatrix<TX,OX> X, SliceMatrix<TT,OT> T)
+  {
+    TriangularMult<!SIDE,NORM> (Trans(T), Trans(X));
+  }
 
+  extern NGS_DLL_HEADER void MultTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  template <> inline void MultTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, SliceMatrix<double> T)
+  {
+    MultTriangularLLN(X,T);
+  }
+  extern NGS_DLL_HEADER void MultTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  template <> inline void MultTriangular<UpperRight> (SliceMatrix<double> X, SliceMatrix<double> T)
+  {
+    MultTriangularUR(X,T);
+  }
 
 
 
@@ -225,7 +249,6 @@ namespace ngbla
   static Timer triginv_R1 ("TriangularInvert R1");
   static Timer triginv_R2 ("TriangularInvert r2");
   */
-  
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
             typename TT, ORDERING TO>
   void TriangularInvert (SliceMatrix<TT,TO> T)
@@ -278,7 +301,8 @@ namespace ngbla
         return;
       }
 
-    IntRange r1(0,n/2), r2(n/2,n);
+    size_t n2 = n/2;
+    IntRange r1(0,n2), r2(n2,n);
     auto T11 = T.Rows(r1).Cols(r1);
     auto T12 = T.Rows(r1).Cols(r2);
     auto T21 = T.Rows(r2).Cols(r1);
@@ -294,7 +318,8 @@ namespace ngbla
         TriangularMult<SIDE,NORM> (T22, T21);
         // triginv_L1.Stop();
         // triginv_L2.Start();        
-        TriangularMult<!SIDE,NORM> (Trans(T11), Trans(T21));
+        // TriangularMult<!SIDE,NORM> (Trans(T11), Trans(T21));
+        MultTriangular<SIDE,NORM> (T21, T11);
         // triginv_L2.Stop();        
       }
     else
@@ -304,7 +329,8 @@ namespace ngbla
         TriangularMult<SIDE,NORM> (T11, T12);
         // triginv_R1.Stop();        
         // triginv_R2.Start();        
-        TriangularMult<!SIDE,NORM> (Trans(T22), Trans(T12));
+        // TriangularMult<!SIDE,NORM> (Trans(T22), Trans(T12));
+        MultTriangular<SIDE,NORM> (T12, T22);
         // triginv_R2.Stop();                
       }
   }

@@ -2901,7 +2901,6 @@ namespace ngbla
 
     if (what == 0 || what == 20)
       {
-        // C=A*B
         Matrix<> a(n,n), b(n,m);
         a = 1; b = 2;
         for (size_t i = 0; i < n; i++)
@@ -2968,7 +2967,6 @@ namespace ngbla
       }
     if (what == 0 || what == 21)
       {
-        // C=A*B
         Matrix<> a(n,n), b(n,m);
         a = 1; b = 2;
         for (size_t i = 0; i < n; i++)
@@ -3050,7 +3048,7 @@ namespace ngbla
         
         double tot = n*n*n/6;
         size_t its = 1e9 / tot + 1;
-
+        if (its > maxits) its = maxits;
         {
           Timer t("L^-1");
           t.Start();
