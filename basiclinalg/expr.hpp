@@ -1654,6 +1654,7 @@ namespace ngbla
   
   extern NGS_DLL_HEADER void CalcLU (SliceMatrix<double> A, FlatArray<int> p);
   extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p);
+  extern NGS_DLL_HEADER void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X);
 
 
   /**

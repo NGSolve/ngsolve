@@ -421,7 +421,20 @@ namespace ngbla
   }
 
 
-
-
+  void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X)
+  {
+    size_t n = X.Height();
+    VectorMem<100,double> hv(n);
+    for (size_t i = 0; i < X.Width(); i++)
+      {
+        auto coli = X.Col(i);
+        hv = coli;
+        for (size_t j = 0; j < n; j++)
+          coli(j) = hv(p[j]);
+      }
+    
+    TriangularSolve<LowerLeft,Normalized> (A, X);
+    TriangularSolve<UpperRight> (A, X);
+  }
 
 }
