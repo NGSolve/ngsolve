@@ -459,17 +459,17 @@ namespace ngbla
       {
         Switch<HA> (reminder, [L,X,i] (auto r)
                     {
-                      if (i > 0)
-                        if constexpr (r.value > 0) {
+                      if constexpr (r.value > 0) {
+                          if (i > 0)
                             MatKernel2AddAB<r.value,SUB> (i, X.Width(),
                                                           &L(i,0), L.Dist(),
                                                           &X(0,0), X.Dist(),
                                                           &X(i,0), X.Dist());
-                            
-                            
-                            // TriangularSolveKernelN<r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
-                            KernelTriangularSolve<LowerLeft, Normalized,r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
-                          }
+                          
+                          
+                          // TriangularSolveKernelN<r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+                          KernelTriangularSolve<LowerLeft, Normalized,r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+                        }
                     });
       }
   }

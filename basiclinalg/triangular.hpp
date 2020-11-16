@@ -96,7 +96,6 @@ namespace ngbla
   }
 
 
-
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0,
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
@@ -180,7 +179,6 @@ namespace ngbla
       TriangularMult2<SIDE,NORM> (T, X.Cols(i,X.Width()));      
   }
 
-
   extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X);
   template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
@@ -198,7 +196,6 @@ namespace ngbla
   {
     TriangularMultUR(T,X);
   }
-
   
   
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
@@ -244,7 +241,6 @@ namespace ngbla
   {
     MultTriangularUR(X,T);
   }
-
 
 
   /*
