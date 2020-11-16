@@ -264,38 +264,40 @@ namespace ngbla
         return;
       }
 
-    
     if (n < 16)
       {
         // RegionTimer reg(triginv_loops);
         for (size_t j = 0; j < n; j++)
           {
+            auto rowj = T.Row(j);
             TT invdiag = 1.0;
             if constexpr (NORM == NonNormalized) {
                 invdiag = 1.0/T(j,j);  
                 
                 if constexpr (SIDE==LowerLeft) {
-                    T.Row(j).Range(0,j) *= invdiag;
+                    rowj.Range(0,j) *= invdiag;
                   }
                 else
-                  T.Row(j).Range(j+1,n) *= invdiag;
-                T(j,j) = invdiag;
+                  rowj.Range(j+1,n) *= invdiag;
+                rowj(j) = invdiag;
               }
             
             if constexpr (SIDE == UpperRight) {
                 for (size_t k = 0; k < j; k++)
                   {
-                    TT help = T(k,j);
-                    T.Row(k).Range(j+1,n) -= help * T.Row(j).Range(j+1,n);
-                    T.Row(k)(j) = -help*invdiag;
+                    auto rowk = T.Row(k);
+                    TT help = rowk(j);
+                    rowk.Range(j+1,n) -= help * rowj.Range(j+1,n);
+                    rowk(j) = -help*invdiag;
                   }
               }
             else
               for (size_t k = j+1; k < n; k++)
                 {
-                  TT help = T(k,j);
-                  T.Row(k).Range(j) -= help * T.Row(j).Range(j);
-                  T.Row(k)(j) = -help*invdiag;
+                  auto rowk = T.Row(k);                  
+                  TT help = rowk(j);
+                  rowk.Range(j) -= help * rowj.Range(j);
+                  rowk(j) = -help*invdiag;
                 }
           }
         
