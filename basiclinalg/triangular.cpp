@@ -290,7 +290,9 @@ namespace ngbla
 
 
 
-  
+  /*
+   ---> in generated kernels now
+
   template <int HC>
   void TriangularMultKernelN (size_t wx, double * pl, size_t dl, double * px, size_t dx);
 
@@ -423,6 +425,11 @@ namespace ngbla
         y3.Store (px+3*dx+i);
       }
   }
+  */
+
+
+
+
   
   void TriangularMultLL3N (BareSliceMatrix<double> bL, SliceMatrix<double> X)
   {
@@ -437,8 +444,9 @@ namespace ngbla
       {
         Switch<HA> (reminder, [L,X,i] (auto r)
                     {
-                      TriangularMultKernelN<r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
-                      
+                      // TriangularMultKernelN<r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
+                      if constexpr (r.value > 0)
+                                     KernelTriangularMult<LowerLeft,Normalized,r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
                       if (i > r)
                         if constexpr (r.value > 0)
                                        MatKernel2AddAB<r.value,ADD> (i-r.value, X.Width(),
@@ -451,7 +459,8 @@ namespace ngbla
     i -= reminder;
     for ( ; i >= HA; i -= HA)
       {
-        TriangularMultKernelN<4> (X.Width(), &L(i-HA,i-HA), L.Dist(), &X(i-HA,0), X.Dist());
+        // TriangularMultKernelN<4> (X.Width(), &L(i-HA,i-HA), L.Dist(), &X(i-HA,0), X.Dist());
+        KernelTriangularMult<LowerLeft,Normalized,4> (X.Width(), &L(i-HA,i-HA), L.Dist(), &X(i-HA,0), X.Dist());
         if (i > HA)
           MatKernel2AddAB<HA,ADD> (i-HA, X.Width(), &L(i-HA,0), L.Dist(), &X(0,0), X.Dist(), &X(i-HA,0), X.Dist());
       }
@@ -496,14 +505,11 @@ namespace ngbla
 
 
 
-
-
-
   /* ***************************  TriangularSolve - Normalized **************************** */
 
 
 
-  
+  /*
   template <int HC>
   void TriangularSolveKernelN (size_t wx, double * pl, size_t dl, double * px, size_t dx);
 
@@ -629,6 +635,7 @@ namespace ngbla
         x3.Store (px+3*dx+i);
       }
   }
+  */
   
   void TriangularSolveLL3N (BareSliceMatrix<double> bL, SliceMatrix<double> X)
   {
@@ -642,8 +649,8 @@ namespace ngbla
       {
         if (i > 0)
           MatKernel2AddAB<HA,SUB> (i, X.Width(), &L(i,0), L.Dist(), &X(0,0), X.Dist(), &X(i,0), X.Dist());
-        
-        TriangularSolveKernelN<4> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+        // TriangularSolveKernelN<4> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+        KernelTriangularSolve<LowerLeft, Normalized,4> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
       }
 
     
@@ -653,13 +660,16 @@ namespace ngbla
         Switch<HA> (reminder, [L,X,i] (auto r)
                     {
                       if (i > 0)
-                        if constexpr (r.value > 0)
-                                       MatKernel2AddAB<r.value,SUB> (i, X.Width(),
-                                                                     &L(i,0), L.Dist(),
-                                                                     &X(0,0), X.Dist(),
-                                                                     &X(i,0), X.Dist());
-                      
-                      TriangularSolveKernelN<r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+                        if constexpr (r.value > 0) {
+                            MatKernel2AddAB<r.value,SUB> (i, X.Width(),
+                                                          &L(i,0), L.Dist(),
+                                                          &X(0,0), X.Dist(),
+                                                          &X(i,0), X.Dist());
+                            
+                            
+                            // TriangularSolveKernelN<r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+                            KernelTriangularSolve<LowerLeft, Normalized,r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+                          }
                     });
       }
   }
