@@ -3054,48 +3054,52 @@ namespace ngbla
           t.Start();
           for (size_t j = 0; j < its; j++)
             {
-              a = savea;
+              // a = savea;
+              TriangularInvert<LowerLeft> (a);
               TriangularInvert<LowerLeft> (a);
             }
           t.Stop();
-          cout << "TriangularInvert<L> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("TriangularInvert<L>", 1e-9 * n*n*n/6*its / t.GetTime()));
+          cout << "TriangularInvert<L> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<L>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
         }
         {
           Timer t("R^-1");
           t.Start();
           for (size_t j = 0; j < its; j++)
             {
-              a = savea;
+              // a = savea;
+              TriangularInvert<UpperRight> (a);
               TriangularInvert<UpperRight> (a);
             }
           t.Stop();
-          cout << "TriangularInvert<R> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("TriangularInvert<R>", 1e-9 * n*n*n/6*its / t.GetTime()));
+          cout << "TriangularInvert<R> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<R>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
         }
         {
           Timer t("L^-1");
           t.Start();
           for (size_t j = 0; j < its; j++)
             {
-              a = savea;
+              // a = savea;
+              TriangularInvert<LowerLeft, Normalized> (a);
               TriangularInvert<LowerLeft, Normalized> (a);
             }
           t.Stop();
-          cout << "TriangularInvert<LN> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("TriangularInvert<LN>", 1e-9 * n*n*n/6*its / t.GetTime()));
+          cout << "TriangularInvert<LN> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<LN>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
         }
         {
           Timer t("R^-1");
           t.Start();
           for (size_t j = 0; j < its; j++)
             {
-              a = savea;
+              // a = savea;
+              TriangularInvert<UpperRight, Normalized> (a);
               TriangularInvert<UpperRight, Normalized> (a);
             }
           t.Stop();
-          cout << "TriangularInvert<RN> GFlops = " << 1e-9 * n*n*n/6*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("TriangularInvert<RN>", 1e-9 * n*n*n/6*its / t.GetTime()));
+          cout << "TriangularInvert<RN> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<RN>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
         }
 
         {
