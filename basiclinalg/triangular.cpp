@@ -289,147 +289,6 @@ namespace ngbla
   /* ***************************  TriangularMult - Normalized **************************** */
 
 
-
-  /*
-   ---> in generated kernels now
-
-  template <int HC>
-  void TriangularMultKernelN (size_t wx, double * pl, size_t dl, double * px, size_t dx);
-
-
-  template <>
-  void TriangularMultKernelN<0> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    ;
-  }
-  
-  template <>
-  void TriangularMultKernelN<1> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    ;
-  }
-
-  template <>
-  void TriangularMultKernelN<2> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    constexpr size_t SW = SIMD<double>::Size();
-    
-    SIMD<double> L10(pl[dl]);
-
-    size_t i = 0;
-    for ( ; i+SW <= wx; i+=SW)
-      {
-        SIMD<double> x0(px+i);
-        SIMD<double> x1(px+dx+i);
-        SIMD<double> y0 = x0;
-        SIMD<double> y1 = L10 * x0 + x1;
-        y0.Store (px+i);
-        y1.Store (px+dx+i);
-      }
-
-    for ( ; i+1 <= wx; i+=1)
-      {
-        SIMD<double,1> x0(px+i);
-        SIMD<double,1> x1(px+dx+i);
-        SIMD<double,1> y0 = x0;
-        SIMD<double,1> y1 = L10[0] * x0 + x1;
-        y0.Store (px+i);
-        y1.Store (px+dx+i);
-      }
-  }
-
-
-  
-
-  template <>
-  void TriangularMultKernelN<3> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    constexpr size_t SW = SIMD<double>::Size();
-    
-    SIMD<double> L10(pl[dl]);
-    SIMD<double> L20(pl[2*dl]);
-    SIMD<double> L21(pl[2*dl+1]);
-
-    size_t i = 0;
-    for ( ; i+SW <= wx; i+=SW)
-      {
-        SIMD<double> x0(px+i);
-        SIMD<double> x1(px+dx+i);
-        SIMD<double> x2(px+2*dx+i);
-        SIMD<double> y0 = x0;
-        SIMD<double> y1 = L10 * x0 + x1;
-        SIMD<double> y2 = L20 * x0 + L21 * x1 + x2;
-        y0.Store (px+i);
-        y1.Store (px+dx+i);
-        y2.Store (px+2*dx+i);
-      }
-
-    for ( ; i+1 <= wx; i+=1)
-      {
-        SIMD<double,1> x0(px+i);
-        SIMD<double,1> x1(px+dx+i);
-        SIMD<double,1> x2(px+2*dx+i);
-        SIMD<double,1> y0 = x0;
-        SIMD<double,1> y1 = L10[0] * x0 + x1;
-        SIMD<double,1> y2 = L20[0] * x0 + L21[0] * x1 + x2;
-        y0.Store (px+i);
-        y1.Store (px+dx+i);
-        y2.Store (px+2*dx+i);
-      }
-  }
-
-  
-  
-  template <>
-  void TriangularMultKernelN<4> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    constexpr size_t SW = SIMD<double>::Size();
-    
-    SIMD<double> L10(pl[dl]);
-    SIMD<double> L20(pl[2*dl]);
-    SIMD<double> L21(pl[2*dl+1]);
-    SIMD<double> L30(pl[3*dl]);
-    SIMD<double> L31(pl[3*dl+1]);
-    SIMD<double> L32(pl[3*dl+2]);
-
-    size_t i = 0;
-    for ( ; i+SW <= wx; i+=SW)
-      {
-        SIMD<double> x0(px+i);
-        SIMD<double> x1(px+dx+i);
-        SIMD<double> x2(px+2*dx+i);
-        SIMD<double> x3(px+3*dx+i);
-        SIMD<double> y0 = x0;
-        SIMD<double> y1 = L10 * x0 + x1;
-        SIMD<double> y2 = L20 * x0 + L21 * x1 + x2;
-        SIMD<double> y3 = L30 * x0 + L31 * x1 + L32 * x2 + x3;
-        y0.Store (px+i);
-        y1.Store (px+dx+i);
-        y2.Store (px+2*dx+i);
-        y3.Store (px+3*dx+i);
-      }
-
-    for ( ; i+1 <= wx; i+=1)
-      {
-        SIMD<double,1> x0(px+i);
-        SIMD<double,1> x1(px+dx+i);
-        SIMD<double,1> x2(px+2*dx+i);
-        SIMD<double,1> x3(px+3*dx+i);
-        SIMD<double,1> y0 = x0;
-        SIMD<double,1> y1 = L10[0] * x0 + x1;
-        SIMD<double,1> y2 = L20[0] * x0 + L21[0] * x1 + x2;
-        SIMD<double,1> y3 = L30[0] * x0 + L31[0] * x1 + L32[0] * x2 + x3;
-        y0.Store (px+i);
-        y1.Store (px+dx+i);
-        y2.Store (px+2*dx+i);
-        y3.Store (px+3*dx+i);
-      }
-  }
-  */
-
-
-
-
   
   void TriangularMultLL3N (BareSliceMatrix<double> bL, SliceMatrix<double> X)
   {
@@ -444,7 +303,6 @@ namespace ngbla
       {
         Switch<HA> (reminder, [L,X,i] (auto r)
                     {
-                      // TriangularMultKernelN<r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
                       if constexpr (r.value > 0)
                                      KernelTriangularMult<LowerLeft,Normalized,r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
                       if (i > r)
@@ -498,9 +356,77 @@ namespace ngbla
   }
 
 
+  
+
+  void TriangularMultUR3 (BareSliceMatrix<double> bU, SliceMatrix<double> X)  
+  {
+    size_t n = X.Height();
+    auto U = bU.AddSize(n,n);
+
+    /*
+    for (size_t i = 0; i < n; i++)
+      {
+        X.Row(i) *= U(i,i);
+        for (size_t j = i+1; j < n; j++)
+          X.Row(i) += U(i,j) * X.Row(j);
+      }
+    return;
+    */
+
+    constexpr size_t HA = 4;
+
+    size_t i = 0;
+    for ( ; i+HA <= n; i += HA)
+      {
+        KernelTriangularMult<UpperRight,NonNormalized,4> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
+        if (i+HA < n)
+          MatKernel2AddAB<HA,ADD> (n-i-HA, X.Width(), &U(i,i+HA), U.Dist(), &X(i+HA,0), X.Dist(), &X(i,0), X.Dist());
+      }
+
+    size_t reminder = n % HA;
+    if (reminder > 0)
+      {
+        Switch<HA> (reminder, [U,X,i] (auto r)
+                    {
+                      if constexpr (r.value > 0)
+                                     KernelTriangularMult<UpperRight,NonNormalized,r.value> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
+                    });
+      }
+  }
+
+  void TriangularMultUR2 (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  {
+    size_t n = X.Height();
+    if (n < 128)
+      {
+        TriangularMultUR3 (T,X);
+        return;
+      }
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto T11 = T.Rows(r1).Cols(r1);
+    auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
+    // auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
+    auto T22 = T.Rows(r2).Cols(r2);
+    auto X1 = X.Rows(r1);
+    auto X2 = X.Rows(r2);
+
+    TriangularMultUR2 (T11, X1);
+    X1 += T12 * X2;
+    TriangularMultUR2 (T22, X2);
+  }
+  
+  void TriangularMultUR (BareSliceMatrix<double> L, SliceMatrix<double> X)  
+  {
+    size_t i = 0;
+    constexpr size_t bw = 256;
+    for ( ; i+bw <= X.Width(); i += bw)
+      TriangularMultUR2 (L, X.Cols(i,i+bw));
+    if (i < X.Width())
+      TriangularMultUR2 (L, X.Cols(i,X.Width()));      
+  }
 
 
-
+  
 
 
 
@@ -509,133 +435,7 @@ namespace ngbla
 
 
 
-  /*
-  template <int HC>
-  void TriangularSolveKernelN (size_t wx, double * pl, size_t dl, double * px, size_t dx);
 
-
-  template <>
-  void TriangularSolveKernelN<0> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    ;
-  }
-  
-  template <>
-  void TriangularSolveKernelN<1> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    ;
-  }
-
-  template <>
-  void TriangularSolveKernelN<2> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    constexpr size_t SW = SIMD<double>::Size();
-    
-    SIMD<double> L10(pl[dl]);
-
-    size_t i = 0;
-    for ( ; i+SW <= wx; i+=SW)
-      {
-        SIMD<double> x0(px+i);
-        SIMD<double> x1(px+dx+i);
-        x1 -= L10 * x0;
-        // x0.Store (px+i);
-        x1.Store (px+dx+i);
-      }
-
-    for ( ; i+1 <= wx; i+=1)
-      {
-        SIMD<double,1> x0(px+i);
-        SIMD<double,1> x1(px+dx+i);
-        x1 -= L10[0] * x0;
-        // x0.Store (px+i);
-        x1.Store (px+dx+i);
-      }
-  }
-
-  
-
-  template <>
-  void TriangularSolveKernelN<3> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    constexpr size_t SW = SIMD<double>::Size();
-    
-    SIMD<double> L10(pl[dl]);
-    SIMD<double> L20(pl[2*dl]);
-    SIMD<double> L21(pl[2*dl+1]);
-
-    size_t i = 0;
-    for ( ; i+SW <= wx; i+=SW)
-      {
-        SIMD<double> x0(px+i);
-        SIMD<double> x1(px+dx+i);
-        SIMD<double> x2(px+2*dx+i);
-        x1 -= L10 * x0;
-        x2 -= L20 * x0 + L21 * x1;
-        // x0.Store (px+i);
-        x1.Store (px+dx+i);
-        x2.Store (px+2*dx+i);
-      }
-
-    for ( ; i+1 <= wx; i+=1)
-      {
-        SIMD<double,1> x0(px+i);
-        SIMD<double,1> x1(px+dx+i);
-        SIMD<double,1> x2(px+2*dx+i);
-        x1 -= L10[0] * x0;
-        x2 -= L20[0] * x0 + L21[0] * x1;
-        // x0.Store (px+i);
-        x1.Store (px+dx+i);
-        x2.Store (px+2*dx+i);
-      }
-  }
-
-  
-  
-  template <>
-  void TriangularSolveKernelN<4> (size_t wx, double * pl, size_t dl, double * px, size_t dx)
-  {
-    constexpr size_t SW = SIMD<double>::Size();
-    
-    SIMD<double> L10(pl[dl]);
-    SIMD<double> L20(pl[2*dl]);
-    SIMD<double> L21(pl[2*dl+1]);
-    SIMD<double> L30(pl[3*dl]);
-    SIMD<double> L31(pl[3*dl+1]);
-    SIMD<double> L32(pl[3*dl+2]);
-
-    size_t i = 0;
-    for ( ; i+SW <= wx; i+=SW)
-      {
-        SIMD<double> x0(px+i);
-        SIMD<double> x1(px+dx+i);
-        SIMD<double> x2(px+2*dx+i);
-        SIMD<double> x3(px+3*dx+i);
-        x1 -= L10 * x0;
-        x2 -= L20 * x0 + L21 * x1;
-        x3 -= L30 * x0 + L31 * x1 + L32 * x2;
-        // x0.Store (px+i);
-        x1.Store (px+dx+i);
-        x2.Store (px+2*dx+i);
-        x3.Store (px+3*dx+i);
-      }
-
-    for ( ; i+1 <= wx; i+=1)
-      {
-        SIMD<double,1> x0(px+i);
-        SIMD<double,1> x1(px+dx+i);
-        SIMD<double,1> x2(px+2*dx+i);
-        SIMD<double,1> x3(px+3*dx+i);
-        x1 -= L10[0] * x0;
-        x2 -= L20[0] * x0 + L21[0] * x1;
-        x3 -= L30[0] * x0 + L31[0] * x1 + L32[0] * x2;
-        // x0.Store (px+i);
-        x1.Store (px+dx+i);
-        x2.Store (px+2*dx+i);
-        x3.Store (px+3*dx+i);
-      }
-  }
-  */
   
   void TriangularSolveLL3N (BareSliceMatrix<double> bL, SliceMatrix<double> X)
   {

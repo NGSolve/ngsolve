@@ -193,6 +193,11 @@ namespace ngbla
     TriangularMultLLN(T,X);
   }
 
+  extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  template <> inline void TriangularMult<UpperRight,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  {
+    TriangularMultUR(T,X);
+  }
 
   
   
