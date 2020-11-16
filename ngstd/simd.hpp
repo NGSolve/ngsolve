@@ -1034,6 +1034,15 @@ namespace ngstd
   INLINE SIMD<double,4> LoadIndirect (double * p, SIMD<int64_t,4> index)
   { return _mm256_i64gather_pd (p, index.Data(), 8); }
 
+
+#else  // AVX
+
+  INLINE SIMD<double,4> If (SIMD<mask64,4> a, SIMD<double,4> b, SIMD<double,4> c)
+  {
+    return SIMD<double,4> (If(a.Lo(), b.Lo(), c.Lo()), If(a.Hi(), b.Hi(), c.Hi()));
+  }
+
+  
 #endif  
   
 
