@@ -1946,7 +1946,15 @@ void GenerateTriangular (ofstream & out, bool solve, bool lowerleft, bool normal
           out << "SIMD<double> U" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
     }
 
-
+  if (solve && !normalized)
+    {
+      if (lowerleft)
+        for (int i = 0; i < dim; i++)
+          out << "SIMD<double> Linv" << i << i << " = 1.0 / L" << i << i << ";\n";
+      else
+        for (int i = 0; i < dim; i++)
+          out << "SIMD<double> Uinv" << i << i << " = 1.0 / U" << i << i << ";\n";
+    }
   
 
   stringstream operation;
@@ -1976,16 +1984,23 @@ void GenerateTriangular (ofstream & out, bool solve, bool lowerleft, bool normal
   else
     { // solve
       if (lowerleft)
-        { //  lowerleft mult
-          if (normalized)
+        { //  lowerleft solve
+          for (int i = 0; i < dim; i++)
             {
-              for (int i = 1; i < dim; i++)
-                for (int j = 0; j < i; j++)
-                  operation << "x" << i << " -= L" << i << j << "*x" << j << ";\n";
+              for (int j = 0; j < i; j++)
+                operation << "x" << i << " -= L" << i << j << "*x" << j << ";\n";
+              if (!normalized)
+                operation << "x" << i << " *= " << "Linv" << i << i << ";\n";
             }
-          else
+        }
+      else
+        { //  upperright solve
+          for (int i = dim-1; i >= 0; i--)
             {
-              ;
+              for (int j = i+1; j < dim; j++)
+                operation << "x" << i << " -= U" << i << j << "*x" << j << ";\n";
+              if (!normalized)
+                operation << "x" << i << " *= " << "Uinv" << i << i << ";\n";
             }
         }
     }
@@ -2302,9 +2317,9 @@ int main ()
       GenerateTriangular (out, false, true, true, i);
       GenerateTriangular (out, false, false, false, i);
       GenerateTriangular (out, false, false, true, i);
-      // GenerateTriangular (out, true, true, false, i);
+      GenerateTriangular (out, true, true, false, i);
       GenerateTriangular (out, true, true, true, i);
-      // GenerateTriangular (out, true, false, false, i);
-      // GenerateTriangular (out, true, false, true, i);
+      GenerateTriangular (out, true, false, false, i);
+      GenerateTriangular (out, true, false, true, i);
     }
 }
