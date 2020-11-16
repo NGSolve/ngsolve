@@ -143,6 +143,7 @@ namespace ngbla
   static Timer calcLUSolveL("CalcLU - SolveL");
   static Timer calcLUMatMat("CalcLU - MatMat");
   static Timer calcLUSimple("CalcLU - simple");  
+  static Timer calcLUSimple_simd("CalcLU - simple SIMD");  
   static Timer calcLUSimple2("CalcLU - simple2x");  
   static Timer calcLUSearch("CalcLU - search");  
   static Timer calcLUSwap("CalcLU - swap");  
@@ -209,6 +210,7 @@ namespace ngbla
 
             if (r.Size() == 4)
               {
+                // RegionTimer reg(calcLUSimple_simd);                                
                 size_t rest = i-r.First();
                 double * ptr = &a(i, r.First());
                 
