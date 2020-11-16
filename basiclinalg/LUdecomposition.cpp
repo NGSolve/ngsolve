@@ -139,7 +139,6 @@ namespace ngbla
   }
 
 
-
   /*
   static Timer calcLUSolveL("CalcLU - SolveL");
   static Timer calcLUMatMat("CalcLU - MatMat");
@@ -148,7 +147,6 @@ namespace ngbla
   static Timer calcLUSearch("CalcLU - search");  
   static Timer calcLUSwap("CalcLU - swap");  
   */
-
   void CalcLURec (SliceMatrix<double> a, FlatArray<int> p, IntRange r)
   {
     size_t n = a.Height();
@@ -208,19 +206,48 @@ namespace ngbla
                 SwapVectors (a.Row(i), a.Row(imax));
               }
 
-            if (i+1 < n)
-              a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
-            if (i+1 < r.Next())
+            if (r.Size() == 8)
               {
-                // RegionTimer reg(calcLUSimple2);                
-                a.Rows(i+1,n).Cols(i+1,r.Next()) -= a.Rows(i+1,n).Cols(i,i+1) * a.Rows(i,i+1).Cols(i+1,r.Next());
-                /*
-                double mem[bs];
-                FlatMatrix<> row(1, r.Size(), &mem[0]);
-                row.Row(0) = a.Row(i).Range(r);
-                row.Row(0).Range(i-r.First()+1) = 0.0;
-                a.Rows(i+1,n).Cols(r) -= a.Rows(i+1,n).Cols(i,i+1) * row;
-                */
+                double scale[8];
+                
+                size_t rest = i-r.First();
+                for (size_t k = 0; k < rest; k++)
+                  scale[k] = 0.0;
+                double invaii = 1.0/a(i,i);
+                scale[rest] = invaii-1;
+                for (size_t k = rest+1; k < 8; k++)
+                  scale[k] = -a(i,r.First()+k)*invaii;
+
+                SIMD<double,4> scale1(&scale[0]), scale2(&scale[4]);
+
+                double * ptr = &a(i+1, r.First());
+                for (size_t j = i+1; j < n; j++, ptr+=a.Dist())
+                  {
+                    SIMD<double,4> row1(ptr);
+                    SIMD<double,4> row2(ptr+4);
+                    double fac = ptr[rest];
+                    row1 += fac*scale1;
+                    row2 += fac*scale2;
+                    row1.Store(ptr);
+                    row2.Store(ptr+4);
+                  }
+              }
+            else
+              {
+                if (i+1 < n)
+                  a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
+                if (i+1 < r.Next())
+                  {
+                    // RegionTimer reg(calcLUSimple2);                
+                    a.Rows(i+1,n).Cols(i+1,r.Next()) -= a.Rows(i+1,n).Cols(i,i+1) * a.Rows(i,i+1).Cols(i+1,r.Next());
+                    /*
+                      double mem[bs];
+                      FlatMatrix<> row(1, r.Size(), &mem[0]);
+                      row.Row(0) = a.Row(i).Range(r);
+                      row.Row(0).Range(i-r.First()+1) = 0.0;
+                      a.Rows(i+1,n).Cols(r) -= a.Rows(i+1,n).Cols(i,i+1) * row;
+                    */
+                  }
               }
           }
 
