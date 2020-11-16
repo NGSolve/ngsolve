@@ -1923,6 +1923,114 @@ void GenerateAddMatTransVecI (ostream & out, int wa)
 
 
 
+/* ********************* Triangular kernels ********************************** */
+
+void GenerateTriangular (ofstream & out, bool solve, bool lowerleft, bool normalized, int dim)
+{
+  out << "template <> " << endl
+      << "inline void " << (solve ? "KernelTriangularSolve" : "KernelTriangularMult")
+      << "<" << (lowerleft ? "LowerLeft" : "UpperRight") << ","
+      << (normalized ? "Normalized" : "NonNormalized") << "," << dim << ">" 
+      << "(size_t wx, double * pt, size_t dt, double * px, size_t dx) { " << endl;
+
+  if (lowerleft)
+    {
+      for (int i = 0; i < dim; i++)
+        for (int j = 0; j < (normalized ? i : i+1); j++)
+          out << "SIMD<double> L" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+    }
+  else
+    {
+      for (int i = 0; i < dim; i++)
+        for (int j = (normalized ? i+1 : i); j < dim; j++)
+          out << "SIMD<double> U" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+    }
+
+
+  
+
+  stringstream operation;
+  if (!solve)
+    { // mult
+      if (lowerleft)
+        { //  lowerleft mult
+          if (normalized)
+            {
+              for (int i = dim-1; i > 0; i--)
+                {
+                  operation << "x" << i << " += L" << i << "0*x0";
+                  for (int j = 1; j < i; j++)
+                    operation << "+L" << i << j << "*x" << j;
+                  operation << "; \n";
+                }
+            }
+          else
+            {
+              for (int i = dim-1; i >= 0; i--)
+                {
+                  operation << "x" << i << " = L00*x0";
+                  for (int j = 1; j <= i; j++)
+                    operation << "+L" << i << j << "*x" << j;
+                  operation << "; \n";
+                }
+            }
+        }
+      else
+        {  // upperright mult
+        }
+    }
+  else
+    { // solve
+      if (lowerleft)
+        { //  lowerleft mult
+          if (normalized)
+            {
+              for (int i = 1; i < dim; i++)
+                for (int j = 0; j < i; j++)
+                  operation << "x" << i << " -= L" << i << j << "*x" << j << ";\n";
+            }
+          else
+            {
+              ;
+            }
+        }
+    }
+
+  out << "constexpr size_t SW = SIMD<double>::Size(); \n"
+      << "size_t i = 0; \n"
+      << "for ( ; i+SW <= wx; i+=SW) { \n";
+  
+  for (int i = 0; i < dim; i++)
+    out << "SIMD<double> x" << i << "(px+" << i << "*dx+i); \n";
+
+  out << operation.str();
+
+  int begin = 0, end = dim;
+  if (lowerleft && normalized) begin++;
+  if (!lowerleft && normalized) end--;
+  for (int i = begin; i < end; i++)
+    out << "x" << i << ".Store(px+" << i << "*dx+i); \n";
+  
+  out << "}\n";
+
+  // remainder
+
+  // mask = ...
+  out << "size_t rest = wx % SW; \n"
+      << "if (rest == 0) return; \n"
+      << "SIMD<mask64> mask(rest);" << endl;
+  
+  for (int i = 0; i < dim; i++)
+    out << "SIMD<double> x" << i << "(px+" << i << "*dx+i, mask); \n";
+
+  out << operation.str();
+
+  for (int i = begin; i < end; i++)    
+    out << "x" << i << ".Store(px+" << i << "*dx+i, mask); \n";
+
+  out << "}\n";
+}
+
 
 
 
@@ -1933,6 +2041,14 @@ int main ()
   out << "static_assert(SIMD<double>::Size() == " << SIMD<double>::Size() << ", \"inconsistent compile flags for generate_mat_kernels.cpp and matkernel.hpp\");" << endl;
   out << "enum OPERATION { ADD, SUB, SET, SETNEG };" << endl;
 
+  out << " /* *********************** MatKernelMultAB ********************* */" << endl
+      << " /* A,B,C ... row major storage                                   */" << endl
+      << " /* dim C = H * (SW*W)     SW .. SIMD<double>::Size()             */" << endl
+      << " /* OP == SET:    C = A * B                                       */" << endl
+      << " /* OP == ADD:    C += A * B                                      */" << endl
+      << " /* OP == NEG:    C = -A * B                                      */" << endl
+      << " /* OP == SUB:    C -= A * B                                      */" << endl
+      << " /* ************************************************************* */" << endl;   
   out << "template <size_t H, size_t W, OPERATION OP>" << endl
       << "inline void MatKernelMultAB" << endl
       << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
@@ -1980,6 +2096,12 @@ int main ()
 
   
   // Scal AB
+  out << " /* *********************** MatKernelScalAB ********************* */" << endl
+      << " /* Inner products of rows of A with rows of B                    */" << endl
+      << " /* A,B ... row major storage                                     */" << endl
+      << " /* dim A = H * n                                                 */" << endl
+      << " /* dim B = W * n                                                 */" << endl
+      << " /* ************************************************************* */" << endl;
   
   out << "template <size_t H, size_t W> inline auto MatKernelScalAB" << endl
       << "    (size_t n," << endl
@@ -2168,4 +2290,27 @@ int main ()
       << "(double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind);" << endl;
   for (int i = 0; i <= 24; i++)
     GenerateAddMatTransVecI (out, i);
+
+
+
+
+  /* *********************** MatKernelTriangularMult ***************** */
+  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, int DIM>" << endl
+      << "inline void KernelTriangularMult (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
+  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, int DIM>" << endl
+      << "inline void KernelTriangularSolve (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
+
+
+  for (int i = 0; i <= 4; i++)
+    {
+      // bool solve, bool lowerleft, bool normalized, int dim
+      GenerateTriangular (out, false, true, false, i);
+      GenerateTriangular (out, false, true, true, i);
+      GenerateTriangular (out, false, false, false, i);
+      GenerateTriangular (out, false, false, true, i);
+      GenerateTriangular (out, true, true, false, i);
+      GenerateTriangular (out, true, true, true, i);
+      GenerateTriangular (out, true, false, false, i);
+      GenerateTriangular (out, true, false, true, i);
+    }
 }
