@@ -178,7 +178,7 @@ namespace ngbla
         return;
       }
     */
-    constexpr size_t bs = 8;
+    constexpr size_t bs = 4;
     if (r.Size() <= bs)
       {
         // RegionTimer reg(calcLUSimple);
@@ -206,7 +206,41 @@ namespace ngbla
                 SwapVectors (a.Row(i), a.Row(imax));
               }
 
-            if (r.Size() == 8)
+
+            if (r.Size() == 4)
+              {
+                size_t rest = i-r.First();
+                double * ptr = &a(i, r.First());
+                
+                double invaii = 1.0/ptr[rest];
+
+                /*
+                double scale[4] = { 0, 0, 0, 0 };
+                
+                // for (size_t k = 0; k < rest; k++)
+                // scale[k] = 0.0;
+                scale[rest] = invaii-1;
+                for (size_t k = rest+1; k < 4; k++)
+                  scale[k] = -a(i,r.First()+k)*invaii;
+                SIMD<double,4> scale1(&scale[0]);
+                */
+
+                SIMD<double,4> scale1 = 0.0;
+                SIMD<mask64,4> m1(rest);
+                scale1 = If (m1, scale1, SIMD<double,4>(invaii-1));
+                SIMD<mask64,4> m2(rest+1);
+                scale1 = If (m2, scale1, -SIMD<double,4>(ptr)*invaii);
+                ptr += a.Dist();
+                for (size_t j = i+1; j < n; j++, ptr+=a.Dist())
+                  {
+                    SIMD<double,4> row1(ptr);
+                    double fac = ptr[rest];
+                    row1 += fac*scale1;
+                    row1.Store(ptr);
+                  }
+              }
+            /*
+            else if (r.Size() == 8)
               {
                 double scale[8];
                 
@@ -232,6 +266,7 @@ namespace ngbla
                     row2.Store(ptr+4);
                   }
               }
+            */
             else
               {
                 if (i+1 < n)
@@ -254,8 +289,10 @@ namespace ngbla
         return;
       }
     
-    
-    size_t mid = r.First() + r.Size()/2;
+    size_t half = r.Size()/2;
+    if (half > bs)
+      half = half - (half % bs);
+    size_t mid = r.First() + half;
     IntRange r1(r.First(), mid);
     IntRange r2(mid, r.Next());
     
