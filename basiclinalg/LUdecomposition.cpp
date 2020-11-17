@@ -437,4 +437,25 @@ namespace ngbla
     TriangularSolve<UpperRight> (A, X);
   }
 
+
+  void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X)
+  {
+    TriangularSolve<LowerLeft> (Trans(A), X);
+    TriangularSolve<UpperRight,Normalized> (Trans(A), X);
+
+    size_t n = X.Height();
+
+    VectorMem<100,double> hv(n);
+    for (size_t i = 0; i < X.Width(); i++)
+      {
+        auto coli = X.Col(i);
+        hv = coli;
+        for (size_t j = 0; j < n; j++)
+          coli(p[j]) = hv(j);
+      }
+    
+  }
+
+
+  
 }
