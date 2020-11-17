@@ -25,6 +25,32 @@ namespace ngcomp
     c += a*b | Lapack;
   }
 
+  template <typename T>
+  inline void AInvBt (ngbla::FlatMatrix<T> a, ngbla::FlatMatrix<T> b)
+  {
+    // static Timer t("LapackAinvBt");
+    // RegionTimer reg(t);
+    LapackAInvBt (a, b, 'N');
+  }
+
+  // b <-- b A^{-1} 
+  inline void AInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b)
+  {
+    /*
+    Matrix ha = a;
+    Matrix hb = b;
+    LapackAInvBt(ha, hb, 'N');
+    */
+    // static Timer t("AinvBt - new LU");
+    // RegionTimer reg(t);    
+
+    ArrayMem<int, 100> p(a.Height());
+    CalcLU (a, p);
+    SolveTransFromLU (a, p, Trans(b));
+    
+    // cout << "diff = " << L2Norm(hb-b) << endl;
+  }
+  
   template <typename SCAL>
   void CalcSchur (FlatMatrix<SCAL> a, 
                   FlatMatrix<SCAL> schur,
@@ -1449,7 +1475,7 @@ namespace ngcomp
                                  // new Versions, July 07
                                  if (elim_only_hidden || !keep_internal) 
                                    {
-                                     LapackAInvBt (d, b);    // b <--- b d^-1
+                                     AInvBt (d, b);    // b <--- b d^-1
                                      LapackMultAddABt (b, c, -1, a);                                 
                                    }
                                  else
@@ -1536,7 +1562,7 @@ namespace ngcomp
                                            if (IsRegularDof(dof))
                                              cidnums.AppendHaveMem(dof);
 
-                                         LapackAInvBt (dd, db);    // b <--- b d^-1
+                                         AInvBt (dd, db);    // b <--- b d^-1
                                          LapackMultAddABt (db, dc, -1, da);   
                              
                                          innermatrix_ptr->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
@@ -3338,7 +3364,7 @@ namespace ngcomp
                          // new Versions, July 07
                          if (elim_only_hidden || !keep_internal)
                            {
-                             LapackAInvBt (d, b);
+                             AInvBt (d, b);
                              LapackMultAddABt (b, c, -1, a);
                            }
                          else
