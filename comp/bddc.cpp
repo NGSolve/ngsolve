@@ -177,6 +177,12 @@ namespace ngcomp
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
+      mem_tracer.Track(
+          *sparse_innersolve, "mat_innersolve",
+          *sparse_harmonicext, "mat_harmonicext",
+          *sparse_harmonicexttrans, "mat_harmonicexttrans"
+          );
+
       if (coarse)
       {
         flags.SetFlag ("not_register_for_auto_update");
@@ -523,6 +529,16 @@ namespace ngcomp
 
       y.Cumulate();
     }
+
+    const MemoryTracer & GetMemoryTracer() const
+    {
+      return mem_tracer;
+    }
+
+  private:
+    MemoryTracer mem_tracer = {"BDDC",
+      weight, "weight"
+    };
   };
 
 

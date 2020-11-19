@@ -107,6 +107,15 @@ namespace ngcomp
     void DefineStringListFlag (const char* s);
     void DefineNumListFlag (const char* s);
     int CheckFlags (const Flags& flags); 
+
+    MemoryTracer mem_tracer = {name};
+
+  public:
+    const MemoryTracer & GetMemoryTracer() const
+    {
+      return mem_tracer;
+    }
+
   };
 
 

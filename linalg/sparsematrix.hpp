@@ -151,6 +151,18 @@ namespace ngla
     ostream & Print (ostream & ost) const;
 
     virtual Array<MemoryUsage> GetMemoryUsage () const;    
+
+    const MemoryTracer & GetMemoryTracer() const
+    {
+      return mem_tracer;
+    }
+
+  private:
+    MemoryTracer mem_tracer = {"MatrixGraph",
+      colnr, "colnr",
+      firsti, "firsti",
+      same_nze, "same_nze"
+    };
   };
 
 
@@ -460,6 +472,17 @@ namespace ngla
     
     shared_ptr<BaseSparseMatrix>
       CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&, int)> & creator) const;
+
+    const MemoryTracer & GetMemoryTracer() const
+    {
+      return mem_tracer;
+    }
+
+  private:
+    MemoryTracer mem_tracer = {"SparseMatrixTM",
+      data, "data",
+      *static_cast<MatrixGraph*>(this), "MatrixGraph"
+    };
   };
   
 
