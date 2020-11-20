@@ -25,7 +25,7 @@ add_dependencies(ngbla kernel_generated)
 target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(ngbla PUBLIC -Wno-undefined-var-template)
 endif()
 
