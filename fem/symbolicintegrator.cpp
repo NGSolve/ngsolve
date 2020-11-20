@@ -89,22 +89,27 @@ namespace ngfem
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
-    if (trace_evaluator)
-      return make_shared<ProxyFunction> (fes, testfunction, is_complex,
-                                         trace_evaluator, trace_deriv_evaluator,
-                                         ttrace_evaluator, ttrace_deriv_evaluator,
-                                         nullptr, nullptr);
+    shared_ptr<ProxyFunction> trace_proxy = nullptr;
     
-    if (auto trace_from_diffop = evaluator->GetTrace())
-      {
-        return make_shared<ProxyFunction>(fes, testfunction, is_complex,
-                                          trace_from_diffop, nullptr,
-                                          nullptr, nullptr,
-                                          nullptr, nullptr);
-      }
-        
-    throw Exception (string("don't have a trace, primal evaluator = ")+
-                     evaluator->Name());
+    if (trace_evaluator)
+      trace_proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex,
+                                                trace_evaluator, trace_deriv_evaluator,
+                                                ttrace_evaluator, ttrace_deriv_evaluator,
+                                                nullptr, nullptr);
+    else if (auto trace_from_diffop = evaluator->GetTrace())
+      trace_proxy = make_shared<ProxyFunction>(fes, testfunction, is_complex,
+                                               trace_from_diffop, nullptr,
+                                               nullptr, nullptr,
+                                               nullptr, nullptr);
+    else
+      throw Exception (string("don't have a trace, primal evaluator = ")+
+                       evaluator->Name());
+    
+    for (int i = 0; i < additional_diffops.Size(); i++)
+      if (auto add_diffop_trace = additional_diffops[i]->GetTrace())
+        trace_proxy->SetAdditionalEvaluator (additional_diffops.GetName(i), add_diffop_trace);
+
+    return trace_proxy;
   }
 
   shared_ptr<ProxyFunction> ProxyFunction :: Other(shared_ptr<CoefficientFunction> _boundary_values) const
