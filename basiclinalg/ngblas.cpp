@@ -1,3 +1,5 @@
+#define COMPILE_NGBLAS
+
 #include <bla.hpp>
 
 
@@ -1164,29 +1166,26 @@ namespace ngbla
 
 
 
-  template <size_t WA>
-  void REGCALL MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+  template <size_t WA, OPERATION OP>
+  void REGCALL MultAtBSmallWA (size_t ha, size_t /* wa */, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                                BareSliceMatrix<double> c)
 
   {
-    if (WA <= 6)
+    if (WA <= 6 && OP == SET)
       {
         MultAtBSmallWA2<WA> (ha, wb, a, b, c);
         return;
       }
-    MatKernelAtB_SmallWA<WA,SET> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+    MatKernelAtB_SmallWA<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
   }
 
-  pfunc_atb dispatch_atb[13] =
-    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
-      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
-      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
-      &MultAtBSmallWA<12>
-    };
+  // template <> pmultABW dispatch_atb<false,true>[];
 
+  template <OPERATION OP>
   void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
+    // return;
     
     constexpr size_t bs = 8;
     size_t i = 0;
@@ -1196,11 +1195,52 @@ namespace ngbla
     BareSliceMatrix<> bare_a(a);
     BareSliceMatrix<> bare_b(b);
     for ( ; i+bs <= a.Width(); i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
-      MultAtBSmallWA<bs> (ha, wb, bare_a, bare_b, c);
-    dispatch_atb[a.Width()-i] (ha, wb, bare_a, bare_b, c);
+      MultAtBSmallWA<bs,OP> (ha, bs, wb, bare_a, bare_b, c);
+    
+    if constexpr (OP == SET)
+                   dispatch_atb<false,true>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == ADD)
+                   dispatch_atb<true,true>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == SETNEG)
+                   dispatch_atb<false,false>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == SUB)
+                   dispatch_atb<true,false>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+  }
+
+  template <OPERATION OP>
+  void REGCALL MultAtBVar (size_t ha, size_t wa, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                           BareSliceMatrix<double> c)
+  {
+    MultAtB_intern<OP> (SliceMatrix<> (ha, wa, a.Dist(), a.Data()),
+                        SliceMatrix<> (ha, wb, b.Dist(), b.Data()),
+                        SliceMatrix<> (wa, wb, c.Dist(), c.Data()));
   }
 
 
+  /*
+  pmultABW dispatch_atb[] =
+    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
+      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
+      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
+      &MultAtBSmallWA<12>, &MultAtBVar
+    };
+  */
+
+  auto init_atb = [] ()
+  {
+    Iterate<std::size(dispatch_atb<false,true>)-1> ([&] (auto i)
+    {
+      dispatch_atb<false,true>[i] = &MultAtBSmallWA<i,SET>;
+      dispatch_atb<true,true>[i] = &MultAtBSmallWA<i,ADD>;
+      dispatch_atb<false,false>[i] = &MultAtBSmallWA<i,SETNEG>;
+      dispatch_atb<true,false>[i] = &MultAtBSmallWA<i,SUB>;
+    });
+    dispatch_atb<false,true>[std::size(dispatch_atb<false,true>)-1] = &MultAtBVar<SET>;
+    dispatch_atb<true,true>[std::size(dispatch_atb<true,true>)-1] = &MultAtBVar<ADD>;
+    dispatch_atb<false,false>[std::size(dispatch_atb<false,false>)-1] = &MultAtBVar<SETNEG>;
+    dispatch_atb<true,false>[std::size(dispatch_atb<true,false>)-1] = &MultAtBVar<SUB>;
+    return 1;
+  }();
   
   /* ***************************** A * B^T *************************************** */
 
