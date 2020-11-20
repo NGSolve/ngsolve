@@ -1385,18 +1385,28 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
       << "for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)\n"
       << "{\n"
       << "double * pb2 = pb;\n";
-  for (int k = 0; k < wa; k++)
-    out << "SIMD<double> sum" << k << "(0.0);\n";
+        
   out << "double * pa2 = pa;\n"
       << "[[maybe_unused]] double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
+
+  for (int k = 0; k < wa; k++)
+    if (op == SET || op == SETNEG)
+      out << "SIMD<double> sum" << k << "(0.0);\n";
+    else
+      out << "SIMD<double> sum" << k << "(pc2); pc2 += dc;\n";
+  
   out << "#pragma unroll 1\n";
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n";
   out << "SIMD<double> bjk(pb2);\n";
   for (int k = 0; k < wa; k++)
-    out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    if (op == ADD || op == SET)    
+      out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    else
+      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
   out << "}\n";
+  out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
     out << "sum" << k << ".Store(pc2); pc2 += dc;\n";
   out << "}\n";
@@ -1406,19 +1416,31 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
       << "SIMD<mask64> mask(rest); \n";
   
   out << "double * pb2 = pb;\n";
-  for (int k = 0; k < wa; k++)
-    out << "SIMD<double> sum" << k << "(0.0);\n";    
+  // for (int k = 0; k < wa; k++)
+  // out << "SIMD<double> sum" << k << "(0.0);\n";    
   out << "double * pa2 = pa;\n"
       << "[[maybe_unused]] double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
 
+  for (int k = 0; k < wa; k++)
+    if (op == SET || op == SETNEG)
+      out << "SIMD<double> sum" << k << "(0.0);\n";
+    else
+      out << "SIMD<double> sum" << k << "(pc2,mask); pc2 += dc;\n";
+  
   out << "#pragma unroll 1\n";  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n"
       << "SIMD<double> bjk(pb2, mask);\n";    
   for (int k = 0; k < wa; k++)
-    out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";    
+    // out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    if (op == ADD || op == SET)    
+      out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    else
+      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
+  
   out << "}\n";
+  out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
     out << "sum" << k << ".Store(pc2, mask); pc2 += dc;\n";
   
@@ -2275,7 +2297,12 @@ int main ()
       << "(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);\n";
 
   for (int i = 0; i <= 12; i++)
-    GenerateAtB_SmallWA (out, i, SET);
+    {
+      GenerateAtB_SmallWA (out, i, SET);
+      GenerateAtB_SmallWA (out, i, ADD);
+      GenerateAtB_SmallWA (out, i, SUB);
+      GenerateAtB_SmallWA (out, i, SETNEG);
+    }
 
   out << "// y = A * x,  with fix width" << endl;
   out << "template <size_t WA, OPERATION OP>" << endl
