@@ -178,18 +178,13 @@ namespace ngbla
   }
   */
 
-#ifdef  COMPILE_NGBLAS
-#define EXTERN_NGBLAS   
-#else
-#define EXTERN_NGBLAS extern
-#endif
-  
-  
   template <bool ADD, bool POS> extern NGS_DLL_HEADER pmultABW dispatch_atb[14];
-  template <> EXTERN_NGBLAS NGS_DLL_HEADER pmultABW dispatch_atb<false,true>[14];
-  template <> EXTERN_NGBLAS NGS_DLL_HEADER pmultABW dispatch_atb<false,false>[14];
-  template <> EXTERN_NGBLAS NGS_DLL_HEADER pmultABW dispatch_atb<true,true>[14];
-  template <> EXTERN_NGBLAS NGS_DLL_HEADER pmultABW dispatch_atb<true,false>[14];
+#ifdef  COMPILE_NGBLAS
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<false,true>[14];
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<false,false>[14];
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<true,true>[14];
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<true,false>[14];
+#endif //  COMPILE_NGBLAS
   
   inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
