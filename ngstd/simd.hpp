@@ -1469,14 +1469,43 @@ namespace ngstd
   }
 
 
+#if defined __AVX512F__
 
-#ifdef __AVX512F__
-#endif
+  INLINE SIMD<mask64, 8> GetMaskFromBits (unsigned int i)
+  {
+    return SIMD<mask64, 8>(__mmask8(i));
+  }
 
-#ifdef __AVX__
-#endif
+#elif defined __AVX__
 
-#ifdef __SSE__
+  static SIMD<mask64, 4> masks_from_4bits[16] = {
+    _mm256_set_epi64x (0,0,0,0), _mm256_set_epi64x (0,0,0,-1),
+    _mm256_set_epi64x (0,0,-1,0), _mm256_set_epi64x (0,0,-1,-1),
+    _mm256_set_epi64x (0,-1,0,0), _mm256_set_epi64x (0,-1,0,-1),
+    _mm256_set_epi64x (0,-1,-1,0), _mm256_set_epi64x (0,-1,-1,-1),
+    _mm256_set_epi64x (-1,0,0,0), _mm256_set_epi64x (-1,0,0,-1),
+    _mm256_set_epi64x (-1,0,-1,0), _mm256_set_epi64x (-1,0,-1,-1),
+    _mm256_set_epi64x (-1,-1,0,0), _mm256_set_epi64x (-1,-1,0,-1),
+    _mm256_set_epi64x (-1,-1,-1,0), _mm256_set_epi64x (-1,-1,-1,-1)
+  };
+
+  INLINE SIMD<mask64, 4> GetMaskFromBits (unsigned int i)
+  {
+    return masks_from_4bits[i & 15];
+  }
+
+#elif defined __SSE__
+
+  static SIMD<mask64, 2> masks_from_2bits[4] = {
+    _mm_set_epi32 (0,0,0,0), _mm_set_epi32 (0,0,-1,0),
+    _mm_set_epi32 (-1,0,0,0), _mm_set_epi32 (-1,0,-1,0),
+  };
+
+  INLINE SIMD<mask64, 2> GetMaskFromBits (unsigned int i)
+  {
+    return masks_from_2bits[i & 3];
+  }
+
 #endif
 
   template <int i, typename T, int N>
