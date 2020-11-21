@@ -74,6 +74,10 @@ namespace ngmg
     virtual AutoVector CreateVector(int level) const = 0;
 
     virtual Array<MemoryUsage> GetMemoryUsage () const { return Array<MemoryUsage>(); }
+  private:
+  MemoryTracer mt = { "Smoother" };
+  public:
+  const MemoryTracer& GetMemoryTracer() const { return mt; }
   };
 
 

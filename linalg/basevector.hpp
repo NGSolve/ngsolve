@@ -361,6 +361,10 @@ namespace ngla
     virtual void Distribute() const;
     virtual PARALLEL_STATUS GetParallelStatus () const;
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const;
+
+    const MemoryTracer& GetMemoryTracer() const { return mt; }
+  private:
+  MemoryTracer mt = { "BaseVector" };
   };
 
 
