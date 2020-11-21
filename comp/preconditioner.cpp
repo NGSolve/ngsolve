@@ -10,7 +10,7 @@ namespace ngcomp
   
   Preconditioner :: Preconditioner (const PDE * const apde, const Flags & aflags, 
 				    const string aname)
-    : NGS_Object(apde->GetMeshAccess(), aname), flags(aflags)
+    : NGS_Object(apde->GetMeshAccess(), aflags, aname)
   {
     test = flags.GetDefineFlag ("test");
     timing = flags.GetDefineFlag ("timing");
@@ -41,7 +41,7 @@ namespace ngcomp
 
   Preconditioner :: Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
                                     const string aname)
-    : NGS_Object(bfa? bfa->GetMeshAccess(): nullptr, aname), bf(bfa), flags(aflags)
+    : NGS_Object(bfa? bfa->GetMeshAccess(): nullptr, aflags, aname), bf(bfa)
   {
     test = flags.GetDefineFlag ("test");
     timing = flags.GetDefineFlag ("timing");
