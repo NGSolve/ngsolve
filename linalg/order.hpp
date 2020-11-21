@@ -30,6 +30,18 @@ namespace ngla
     int GetDegree (int nr) const { return list[nr].degree; }
     void SetDegree (int nr, int deg);
     void Invalidate (int nr);
+
+    const MemoryTracer& GetMemoryTracer() const
+    {
+      return mt;
+    }
+
+    void StartMemoryTracing() const
+    {
+      mt.Track(list, "list", first_in_class, "first_in_class");
+    }
+  private:
+    MemoryTracer mt;
   };
 
 
@@ -196,6 +208,21 @@ namespace ngla
     }
 
     void SetMaster (int master, int minion);
+
+
+    void StartMemoryTracing() const
+    {
+      mt.Track(cliques, "cliques",
+               order, "order",
+               blocknr, "blocknr",
+               vertices, "vertices",
+               priqueue, "priqueue",
+               ball, "ball");
+    }
+    const MemoryTracer& GetMemoryTracer() const { return mt; }
+
+  private:
+    MemoryTracer mt;
   };
 
 

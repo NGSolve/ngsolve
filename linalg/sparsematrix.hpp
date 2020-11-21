@@ -368,6 +368,9 @@ namespace ngla
     {
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
+      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                              data, "data");
+      GetMemoryTracer().SetName("SparseMatrix");
     }
 
     SparseMatrixTM (const Array<int> & elsperrow, int awidth)
@@ -376,6 +379,10 @@ namespace ngla
     {
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
+      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                              data, "data");
+      GetMemoryTracer().SetName("SparseMatrix");
+
     }
 
     SparseMatrixTM (int size, int width, const Table<int> & rowelements, 
@@ -385,6 +392,10 @@ namespace ngla
     { 
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
+      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                              data, "data");
+      GetMemoryTracer().SetName("SparseMatrix");
+
     }
 
     SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
@@ -394,6 +405,9 @@ namespace ngla
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       FindSameNZE();
+      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                              data, "data");
+      GetMemoryTracer().SetName("SparseMatrix");
     }
 
     SparseMatrixTM (const SparseMatrixTM & amat)
@@ -402,13 +416,19 @@ namespace ngla
     {
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));      
-      AsVector() = amat.AsVector(); 
+      AsVector() = amat.AsVector();
+      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                              data, "data");
+      GetMemoryTracer().SetName("SparseMatrix");
     }
 
     SparseMatrixTM (SparseMatrixTM && amat)
       : BASE (move(amat)), nul(TSCAL(0))
     {
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                              data, "data");
+      GetMemoryTracer().SetName("SparseMatrix");
       data.Swap(amat.data);
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));            
     }
@@ -473,16 +493,8 @@ namespace ngla
     shared_ptr<BaseSparseMatrix>
       CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&, int)> & creator) const;
 
-    const MemoryTracer & GetMemoryTracer() const
-    {
-      return mem_tracer;
-    }
-
-  private:
-    MemoryTracer mem_tracer = {"SparseMatrixTM",
-      data, "data",
-      *static_cast<MatrixGraph*>(this), "MatrixGraph"
-    };
+  public:
+    using BaseMatrix::GetMemoryTracer;
   };
   
 

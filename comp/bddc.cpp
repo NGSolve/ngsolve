@@ -453,6 +453,10 @@ namespace ngcomp
 	      tmp = make_unique<VVector<TV>>(ndof);
 	    }
 	}
+      if(inv_coarse)
+        GetMemoryTracer().Track(*inv_coarse, "CoarseInverse");
+      if(inv)
+        GetMemoryTracer().Track(*inv, "Inverse");
     }
 
     ~BDDCMatrix()  { } 
