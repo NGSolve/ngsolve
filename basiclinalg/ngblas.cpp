@@ -1198,13 +1198,13 @@ namespace ngbla
       MultAtBSmallWA<bs,OP> (ha, bs, wb, bare_a, bare_b, c);
     
     if constexpr (OP == SET)
-                   dispatch_atb<false,true>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+                   dispatch_atb<false,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
     if constexpr (OP == ADD)
-                   dispatch_atb<true,true>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+                   dispatch_atb<true,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
     if constexpr (OP == SETNEG)
-                   dispatch_atb<false,false>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+                   dispatch_atb<false,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
     if constexpr (OP == SUB)
-                   dispatch_atb<true,false>[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+                   dispatch_atb<true,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
   }
 
   template <OPERATION OP>
@@ -1226,19 +1226,22 @@ namespace ngbla
     };
   */
 
+  template <bool ADD, bool POS>
+  pmultABW dispatch_atb<ADD,POS>::ptrs[14];
+
   auto init_atb = [] ()
   {
-    Iterate<std::size(dispatch_atb<false,true>)-1> ([&] (auto i)
+    Iterate<std::size(dispatch_atb<false,true>::ptrs)-1> ([&] (auto i)
     {
-      dispatch_atb<false,true>[i] = &MultAtBSmallWA<i,SET>;
-      dispatch_atb<true,true>[i] = &MultAtBSmallWA<i,ADD>;
-      dispatch_atb<false,false>[i] = &MultAtBSmallWA<i,SETNEG>;
-      dispatch_atb<true,false>[i] = &MultAtBSmallWA<i,SUB>;
+      dispatch_atb<false,true>::ptrs[i] = &MultAtBSmallWA<i,SET>;
+      dispatch_atb<true,true>::ptrs[i] = &MultAtBSmallWA<i,ADD>;
+      dispatch_atb<false,false>::ptrs[i] = &MultAtBSmallWA<i,SETNEG>;
+      dispatch_atb<true,false>::ptrs[i] = &MultAtBSmallWA<i,SUB>;
     });
-    dispatch_atb<false,true>[std::size(dispatch_atb<false,true>)-1] = &MultAtBVar<SET>;
-    dispatch_atb<true,true>[std::size(dispatch_atb<true,true>)-1] = &MultAtBVar<ADD>;
-    dispatch_atb<false,false>[std::size(dispatch_atb<false,false>)-1] = &MultAtBVar<SETNEG>;
-    dispatch_atb<true,false>[std::size(dispatch_atb<true,false>)-1] = &MultAtBVar<SUB>;
+    dispatch_atb<false,true>::ptrs[std::size(dispatch_atb<false,true>::ptrs)-1] = &MultAtBVar<SET>;
+    dispatch_atb<true,true>::ptrs[std::size(dispatch_atb<true,true>::ptrs)-1] = &MultAtBVar<ADD>;
+    dispatch_atb<false,false>::ptrs[std::size(dispatch_atb<false,false>::ptrs)-1] = &MultAtBVar<SETNEG>;
+    dispatch_atb<true,false>::ptrs[std::size(dispatch_atb<true,false>::ptrs)-1] = &MultAtBVar<SUB>;
     return 1;
   }();
   
