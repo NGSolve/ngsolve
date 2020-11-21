@@ -3170,6 +3170,13 @@ namespace ngcomp
             IterateElements 
               (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
+                 bool elem_has_integrator = false;
+                 for (auto & bfi : VB_parts[vb])
+                   if ((bfi->DefinedOn (el.GetIndex()))&&(bfi->DefinedOnElement (el.Nr())))
+                     elem_has_integrator = true;
+                 if (!elem_has_integrator)
+                   return;
+                 
                  const FiniteElement & fel = fespace->GetFE (el, lh);
                  ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                  
