@@ -3535,6 +3535,159 @@ namespace ngbla
     return timings;
   }
 
+
+#if defined __AVX512F__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,8> sum0 = 0.0;
+    SIMD<double,8> sum1 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i+16 <= n; i += 16, i0 += 2)
+      {
+	unsigned char mask0 = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask0));
+	unsigned char mask1 = bad[i0+1];
+	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask1));
+	sum0 = If (m0, sum0+SIMD<double,8>(pa+i)*SIMD<double,8> (pb + i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,8>(pa+i+8)*SIMD<double,8>(pb + i + 8), sum1);
+      } // n < i + 8
+    if (i + 8 <= n)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	sum0 = If (m0, sum0+SIMD<double,8>(pa + i)*SIMD<double,8> (pb + i), sum0);
+	i += 4;
+      } // n < i + 4
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i] * pb[i];
+	}
+      }
+    return HSum(sum0 + sum1);
+  }
+
+#elif defined __AVX__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,4> sum0 = 0.0;
+    SIMD<double,4> sum1 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i+8 <= n; i += 8, i0++)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask) / 16);
+	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb + i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,4>(pa+i+4)*SIMD<double,4>(pb + i + 4), sum1);
+      } // n < i + 8
+    if (i + 4 <= n)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb+i), sum0);
+	i += 4;
+      } // n < i + 4
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i] * pb[i];
+	}
+      }
+    return HSum(sum0 + sum1);
+  }
+
+#elif defined __SSE__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,2> sum0 = 0.0;
+    SIMD<double,2> sum1 = 0.0;
+    SIMD<double,2> sum2 = 0.0;
+    SIMD<double,2> sum3 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i + 8 <= n; i += 8, i0++)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64,2> m1 = GetMaskFromBits (unsigned(mask) / 4);   // shift by 2
+	SIMD<mask64,2> m2 = GetMaskFromBits (unsigned(mask) / 16);  // shift by 4
+	SIMD<mask64,2> m3 = GetMaskFromBits (unsigned(mask) / 64);  // shift by 6
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,2>(pa+i+2)*SIMD<double,2>(pb+i+2), sum1);
+	sum2 = If (m2, sum2+SIMD<double,2>(pa+i+4)*SIMD<double,2>(pb+i+4), sum2);
+	sum3 = If (m3, sum3+SIMD<double,2>(pa+i+6)*SIMD<double,2>(pb+i+6), sum3);
+      } // n < i+8
+    unsigned char mask = bad[i0];
+    int shift = 1;
+    if (i+4 <= n)
+      {
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64,2> m1 = GetMaskFromBits (unsigned(mask) / 4); // shift by 2
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,2>(pa+i+2)*SIMD<double,2>(pb+i+2), sum1);
+	i += 4;
+	shift = 16;
+      } // n < i+4
+    if (i+2 <= n)
+      {
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask) / shift);
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	i += 2;
+      } // n < i+2
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i]*pb[i];
+	}
+      }
+    sum0 += sum2;
+    sum1 += sum3;
+    return HSum(sum0 + sum1);
+  }
+
+#else // ifdef AVX512/AVX/SSE
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    double sum = 0;
+    double vhsum[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    int i(0);
+    for ( ; i+8 < fa.Size(); i += 8)
+      {
+	for (int j = 0; j < 8; j++)
+	  {
+	    double hprod = fa(i+j)*fb(i+j);
+	    if (ba.Test(i+j))
+	      vhsum[j] += hprod;
+	  }
+      }
+    for ( ; i < fa.Size(); i++)
+      if (ba.Test(i))
+	sum += fa(i)*fb(i);
+    for (int j = 1; j < 8; j++)
+      vhsum[0] += vhsum[j];
+    return vhsum[0];
+  }
+
+#endif  // ifdef AVX512/AVX/SSE
   
 }
 
