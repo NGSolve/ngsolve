@@ -542,6 +542,11 @@ namespace ngbla
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits);
 
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba);
 }
 
 
