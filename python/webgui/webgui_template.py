@@ -476,7 +476,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None):
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename=""):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -500,7 +500,8 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
             scene.Draw()
             return scene
     else:
-        scene.GenerateHTML(filename='output.html')
+        if filename:
+            scene.GenerateHTML(filename=filename)
         return scene
 
 
