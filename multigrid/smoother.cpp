@@ -804,7 +804,7 @@ namespace ngmg
 	  }
 	inv[level-1] = dynamic_cast<const BaseSparseMatrix&> 
 	  (biform.GetMatrix()).InverseMatrix (direct);
-        string name = "DirectInverseLevel" + ToString(level);
+        string name = "DictSolverClustersInverse-Level" + ToString(level);
         GetMemoryTracer().Track(*inv[level-1], name);
       }
   }
