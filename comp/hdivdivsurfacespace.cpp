@@ -46,6 +46,33 @@ namespace ngcomp
     }
   };
 
+  template<int D>
+  class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+    enum { DIM_STRESS = (D*(D+1))/2 };
+
+    static string Name() { return "div"; }
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      const HDivDivFiniteElement<D> & fel = dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> divshape(nd, D, lh);
+      fel.CalcMappedDivShape (sip, divshape);
+      for (int i=0; i<nd; i++)
+        for (int j=0; j<D; j++)
+          mat(j,i) = divshape(i,j);
+    }
+  };
   
 
   /// Identity operator, Piola transformation
@@ -258,11 +285,10 @@ namespace ngcomp
 
     // for the dimension ..
     evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
-    // flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
+    // for div(GridFunction)
+    flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
 
     evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivDivSurface<3>>>();
-    auto one = make_shared<ConstantCoefficientFunction>(1);
-    // integrator[BND] = make_shared<HDivDivSurfaceMassIntegrator<3>> (one);
     flux_evaluator[BND] =  make_shared<T_DifferentialOperator<DiffOpDivHDivDivSurface<3>>>();
   }
 
