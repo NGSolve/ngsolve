@@ -490,6 +490,7 @@ endif (NETGEN_USE_MPI)
 
 #######################################################################
 
+add_subdirectory(cmake/resources)
 add_subdirectory(include)
 add_subdirectory(ngstd)
 add_subdirectory(basiclinalg)
