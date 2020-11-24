@@ -1038,6 +1038,11 @@ namespace ngcomp
                                                          this->GetTrialSpace()->GetParallelDofs(),
                                                          this->GetTestSpace()->GetParallelDofs(), C2D);
           }
+        if(harmonicext)
+          GetMemoryTracer().Track(*harmonicext, "HarmonicExt",
+                                  *harmonicexttrans, "HarmonicExtTrans");
+        if(innermatrix)
+          GetMemoryTracer().Track(*innermatrix, "InnerMatrix");
       }
   }
 
