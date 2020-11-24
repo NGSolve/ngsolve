@@ -163,10 +163,9 @@ namespace ngbla
 
 
   
-  
+  /*  
   typedef void REGCALL (*pfunc_atb)(size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
   extern NGS_DLL_HEADER pfunc_atb dispatch_atb[13];
-
   extern NGS_DLL_HEADER void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
     
   inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
@@ -177,9 +176,55 @@ namespace ngbla
     else
       MultAtB_intern (a,b,c);
   }
+  */
 
 
+  /*
+  template <bool ADD, bool POS> extern NGS_DLL_HEADER pmultABW dispatch_atb[14];
+#ifdef  COMPILE_NGBLAS
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<false,true>[14];
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<false,false>[14];
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<true,true>[14];
+  template <> NGS_DLL_HEADER pmultABW dispatch_atb<true,false>[14];
+#endif //  COMPILE_NGBLAS
+  */
 
+  template <bool ADD, bool POS>
+  class  NGS_DLL_HEADER dispatch_atb {
+  public:
+    static pmultABW ptrs[14];
+  };
+  
+  template <bool ADD, bool POS>
+  inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    size_t wa = a.Width();
+    if (wa >= std::size(dispatch_atb<ADD,POS>::ptrs))
+      wa = std::size(dispatch_atb<ADD,POS>::ptrs)-1;
+    (*dispatch_atb<ADD,POS>::ptrs[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
+  
+  inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  { MatMat_AtB<false,true> (a, b, c); }
+  
+  /*
+  inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    size_t wa = a.Width();
+    if (wa >= std::size(dispatch_atb<false,true>))
+      wa = std::size(dispatch_atb<false,true>)-1;
+    (*dispatch_atb<false,true>[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
+
+  template <bool ADD, bool POS>
+  inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    size_t wa = a.Width();
+    if (wa >= std::size(dispatch_atb<ADD,POS>))
+      wa = std::size(dispatch_atb<ADD,POS>)-1;
+    (*dispatch_atb<ADD,POS>[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
+  */
   
   //extern NGS_DLL_HEADER void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
 
@@ -425,11 +470,20 @@ namespace ngbla
   
   template <> INLINE void NgGEMM<false,true> (SliceMatrix<double,ColMajor> a, SliceMatrix<> b, SliceMatrix<> c)
   {
-    // static Timer t("NgGEMM  MinusABt");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-    // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
-
-    MultAtB (Trans(a), b, c);
+    // MultAtB (Trans(a), b, c);
+    MatMat_AtB<false, true> (Trans(a), b, c);
+  }
+  template <> INLINE void NgGEMM<true,true> (SliceMatrix<double,ColMajor> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    MatMat_AtB<true, true> (Trans(a), b, c);
+  }
+  template <> INLINE void NgGEMM<true,false> (SliceMatrix<double,ColMajor> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    MatMat_AtB<true, false> (Trans(a), b, c);
+  }
+  template <> INLINE void NgGEMM<false,false> (SliceMatrix<double,ColMajor> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    MatMat_AtB<false, false> (Trans(a), b, c);
   }
 
   
@@ -509,6 +563,11 @@ namespace ngbla
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits);
 
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba);
 }
 
 

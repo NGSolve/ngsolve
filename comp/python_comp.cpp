@@ -2059,22 +2059,22 @@ space : ngsolve.FESpace
 
 )raw_string"));
   bf_class
-    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
+    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, const string& name, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
-                    auto biform = CreateBilinearForm (fespace, "biform_from_py", flags);
+                    auto biform = CreateBilinearForm (fespace, name, flags);
                     return biform;
                   }),
-         py::arg("space"))
-    .def(py::init([bf_class](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, 
+      py::arg("space"), "name"_a = "biform_from_py")
+    .def(py::init([bf_class](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, const string& name,
                              py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
-                    auto biform = CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
+                    auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
                     return biform;
                   }),
          py::arg("trialspace"),
-         py::arg("testspace"))
+         py::arg("testspace"), "name"_a = "biform_from_py")
 
     .def(py::init([bf_class](shared_ptr<SumOfIntegrals> igls, py::kwargs kwargs)
                   {
@@ -2572,7 +2572,7 @@ integrator : ngsolve.fem.LFI
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");
-           return creator->creatorbf(bfa, flags, "noname-pre");
+           return creator->creatorbf(bfa, flags, type);
          }),
          py::arg("bf"), py::arg("type"))
 
@@ -2598,11 +2598,11 @@ integrator : ngsolve.fem.LFI
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");
   prec_multigrid
-    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, py::kwargs kwargs)
+    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, prec_multigrid);
-                    return make_shared<MGPreconditioner>(bfa,flags);
-                  }), py::arg("bf"))
+                    return make_shared<MGPreconditioner>(bfa,flags, name);
+                  }), py::arg("bf"), "name"_a = "multigrid")
     .def_static("__flags_doc__", [prec_class] ()
                 {
                   auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());

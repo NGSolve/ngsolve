@@ -1,3 +1,5 @@
+#define COMPILE_NGBLAS
+
 #include <bla.hpp>
 
 
@@ -1164,29 +1166,26 @@ namespace ngbla
 
 
 
-  template <size_t WA>
-  void REGCALL MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+  template <size_t WA, OPERATION OP>
+  void REGCALL MultAtBSmallWA (size_t ha, size_t /* wa */, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                                BareSliceMatrix<double> c)
 
   {
-    if (WA <= 6)
+    if (WA <= 6 && OP == SET)
       {
         MultAtBSmallWA2<WA> (ha, wb, a, b, c);
         return;
       }
-    MatKernelAtB_SmallWA<WA,SET> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+    MatKernelAtB_SmallWA<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
   }
 
-  pfunc_atb dispatch_atb[13] =
-    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
-      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
-      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
-      &MultAtBSmallWA<12>
-    };
+  // template <> pmultABW dispatch_atb<false,true>[];
 
+  template <OPERATION OP>
   void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
+    // return;
     
     constexpr size_t bs = 8;
     size_t i = 0;
@@ -1196,11 +1195,55 @@ namespace ngbla
     BareSliceMatrix<> bare_a(a);
     BareSliceMatrix<> bare_b(b);
     for ( ; i+bs <= a.Width(); i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
-      MultAtBSmallWA<bs> (ha, wb, bare_a, bare_b, c);
-    dispatch_atb[a.Width()-i] (ha, wb, bare_a, bare_b, c);
+      MultAtBSmallWA<bs,OP> (ha, bs, wb, bare_a, bare_b, c);
+    
+    if constexpr (OP == SET)
+                   dispatch_atb<false,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == ADD)
+                   dispatch_atb<true,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == SETNEG)
+                   dispatch_atb<false,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == SUB)
+                   dispatch_atb<true,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+  }
+
+  template <OPERATION OP>
+  void REGCALL MultAtBVar (size_t ha, size_t wa, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                           BareSliceMatrix<double> c)
+  {
+    MultAtB_intern<OP> (SliceMatrix<> (ha, wa, a.Dist(), a.Data()),
+                        SliceMatrix<> (ha, wb, b.Dist(), b.Data()),
+                        SliceMatrix<> (wa, wb, c.Dist(), c.Data()));
   }
 
 
+  /*
+  pmultABW dispatch_atb[] =
+    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
+      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
+      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
+      &MultAtBSmallWA<12>, &MultAtBVar
+    };
+  */
+
+  template <bool ADD, bool POS>
+  pmultABW dispatch_atb<ADD,POS>::ptrs[14];
+
+  auto init_atb = [] ()
+  {
+    Iterate<std::size(dispatch_atb<false,true>::ptrs)-1> ([&] (auto i)
+    {
+      dispatch_atb<false,true>::ptrs[i] = &MultAtBSmallWA<i,SET>;
+      dispatch_atb<true,true>::ptrs[i] = &MultAtBSmallWA<i,ADD>;
+      dispatch_atb<false,false>::ptrs[i] = &MultAtBSmallWA<i,SETNEG>;
+      dispatch_atb<true,false>::ptrs[i] = &MultAtBSmallWA<i,SUB>;
+    });
+    dispatch_atb<false,true>::ptrs[std::size(dispatch_atb<false,true>::ptrs)-1] = &MultAtBVar<SET>;
+    dispatch_atb<true,true>::ptrs[std::size(dispatch_atb<true,true>::ptrs)-1] = &MultAtBVar<ADD>;
+    dispatch_atb<false,false>::ptrs[std::size(dispatch_atb<false,false>::ptrs)-1] = &MultAtBVar<SETNEG>;
+    dispatch_atb<true,false>::ptrs[std::size(dispatch_atb<true,false>::ptrs)-1] = &MultAtBVar<SUB>;
+    return 1;
+  }();
   
   /* ***************************** A * B^T *************************************** */
 
@@ -3539,6 +3582,159 @@ namespace ngbla
     return timings;
   }
 
+
+#if defined __AVX512F__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,8> sum0 = 0.0;
+    SIMD<double,8> sum1 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i+16 <= n; i += 16, i0 += 2)
+      {
+	unsigned char mask0 = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask0));
+	unsigned char mask1 = bad[i0+1];
+	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask1));
+	sum0 = If (m0, sum0+SIMD<double,8>(pa+i)*SIMD<double,8> (pb + i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,8>(pa+i+8)*SIMD<double,8>(pb + i + 8), sum1);
+      } // n < i + 8
+    if (i + 8 <= n)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	sum0 = If (m0, sum0+SIMD<double,8>(pa + i)*SIMD<double,8> (pb + i), sum0);
+	i += 4;
+      } // n < i + 4
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i] * pb[i];
+	}
+      }
+    return HSum(sum0 + sum1);
+  }
+
+#elif defined __AVX__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,4> sum0 = 0.0;
+    SIMD<double,4> sum1 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i+8 <= n; i += 8, i0++)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask) / 16);
+	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb + i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,4>(pa+i+4)*SIMD<double,4>(pb + i + 4), sum1);
+      } // n < i + 8
+    if (i + 4 <= n)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb+i), sum0);
+	i += 4;
+      } // n < i + 4
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i] * pb[i];
+	}
+      }
+    return HSum(sum0 + sum1);
+  }
+
+#elif defined __SSE__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,2> sum0 = 0.0;
+    SIMD<double,2> sum1 = 0.0;
+    SIMD<double,2> sum2 = 0.0;
+    SIMD<double,2> sum3 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i + 8 <= n; i += 8, i0++)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64,2> m1 = GetMaskFromBits (unsigned(mask) / 4);   // shift by 2
+	SIMD<mask64,2> m2 = GetMaskFromBits (unsigned(mask) / 16);  // shift by 4
+	SIMD<mask64,2> m3 = GetMaskFromBits (unsigned(mask) / 64);  // shift by 6
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,2>(pa+i+2)*SIMD<double,2>(pb+i+2), sum1);
+	sum2 = If (m2, sum2+SIMD<double,2>(pa+i+4)*SIMD<double,2>(pb+i+4), sum2);
+	sum3 = If (m3, sum3+SIMD<double,2>(pa+i+6)*SIMD<double,2>(pb+i+6), sum3);
+      } // n < i+8
+    unsigned char mask = bad[i0];
+    int shift = 1;
+    if (i+4 <= n)
+      {
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64,2> m1 = GetMaskFromBits (unsigned(mask) / 4); // shift by 2
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,2>(pa+i+2)*SIMD<double,2>(pb+i+2), sum1);
+	i += 4;
+	shift = 16;
+      } // n < i+4
+    if (i+2 <= n)
+      {
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask) / shift);
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	i += 2;
+      } // n < i+2
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i]*pb[i];
+	}
+      }
+    sum0 += sum2;
+    sum1 += sum3;
+    return HSum(sum0 + sum1);
+  }
+
+#else // ifdef AVX512/AVX/SSE
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    double sum = 0;
+    double vhsum[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    int i(0);
+    for ( ; i+8 < fa.Size(); i += 8)
+      {
+	for (int j = 0; j < 8; j++)
+	  {
+	    double hprod = fa(i+j)*fb(i+j);
+	    if (ba.Test(i+j))
+	      vhsum[j] += hprod;
+	  }
+      }
+    for ( ; i < fa.Size(); i++)
+      if (ba.Test(i))
+	sum += fa(i)*fb(i);
+    for (int j = 1; j < 8; j++)
+      vhsum[0] += vhsum[j];
+    return vhsum[0];
+  }
+
+#endif  // ifdef AVX512/AVX/SSE
   
 }
 

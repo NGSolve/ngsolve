@@ -33,8 +33,6 @@ namespace ngcomp
     double * testresult_min;
     double * testresult_max;
   
-    Flags flags; 
-
     // for calculation of eigenvalues
     bool uselapack;
 
