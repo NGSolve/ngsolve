@@ -299,7 +299,10 @@ namespace ngla
             FlatVector<> me = this->FVDouble();
             FlatVector<> you = parv2->FVDouble();
             const BitArray & ba = const_cast<BitArray&>(paralleldofs->MasterDofs());
-	    return ngbla::MatKernelMaskedScalAB(me.Size(), me.Data(), 0, you.Data(), 0, ba);
+	    SCAL localsum = MatKernelMaskedScalAB(me.Size(), me.Data(), 0, you.Data(), 0, ba);
+	    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+	      { return localsum; }
+	    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
             // double sum = 0;
             // for (size_t i = 0; i < me.Size(); i++)
             //   if (ba.Test(i))
