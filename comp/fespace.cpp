@@ -304,6 +304,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     for (auto & et : et_bonus_order) et = 0;
     et_bonus_order[ET_QUAD] = int (flags.GetNumFlag("quadbonus",0));
+
+    this->GetMemoryTracer().Track(
+        dirichlet_dofs, "dirichlet_dofs",
+        dirichlet_vertex, "dirichlet_vertex",
+        dirichlet_edge, "dirichlet_edge",
+        dirichlet_face, "dirichlet_face",
+        ctofdof, "ctofdof"
+    );
   }
 
   
