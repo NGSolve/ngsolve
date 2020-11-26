@@ -266,6 +266,52 @@ namespace ngbla
   }
 
 
+
+
+
+
+
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OX, ORDERING OY>
+  void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
+                                     SliceMatrix<double, OX> X,
+                                     SliceMatrix<double, OY> Y)
+  {
+    if constexpr (SIDE == LowerLeft) {
+        
+        auto [Y1,Y2] = Y.SplitRows(X.Height());
+        auto [T1,T2] = T.SplitRows(X.Height());
+        
+        Y1 = X;
+        TriangularMult<SIDE, NORM> (T1, Y1);
+        Y2 = T2 * X;
+      }
+    else {
+
+      auto [X1,X2] = X.SplitRows(T.Height());
+      auto [T1,T2] = T.SplitCols(T.Height());
+
+      Y = X1;
+      TriangularMult<SIDE, NORM> (T1, Y);
+      Y += T2 * X2;
+    }
+  }
+
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
+  void GeneralizedTriangularMult (const TT & T,
+                                  const TX & X,
+                                  const TY & Y)
+  {
+    GeneralizedTriangularMult_SM<SIDE,NORM> (make_SliceMatrix(T), make_SliceMatrix(X), make_SliceMatrix(Y));
+  }
+  
+
+
+
+
+
+
+  
+
   /*
   static Timer triginv_loops ("TriangularInvert loops");
   static Timer triginv_L1 ("TriangularInvert L1");

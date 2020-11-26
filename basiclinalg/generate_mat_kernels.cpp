@@ -1626,7 +1626,9 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
           << "pa[2*da+" << i*SW << "], "
           << "pa[3*da+" << i*SW << "]);" << endl;
     }
-  
+
+  if (op == ADD)
+    out << "vsum += SIMD<double,4> (y+i);" << endl;
   out << "vsum.Store(y+i);" << endl;
   out << "}" << endl;
 
@@ -1657,6 +1659,8 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
       out << "sum1 += SIMD<double," << SW << ">(pa+da+" << i*SW << ", mask) * x" << i << ";" << endl;
     }
   out << "SIMD<double,2> vsum = HSum(sum0,sum1);" << endl;
+  if (op == ADD)
+    out << "vsum += SIMD<double,2> (y+i);" << endl;  
   out << "vsum.Store(y+i);" << endl;
   out << "i += 2; pa += 2*da;" << endl;
   out << "}" << endl;
@@ -1680,7 +1684,10 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
     }
   else if (wa % SW)
     out << "sum += SIMD<double," << SW << ">(pa+" << i*SW << ", mask) * x" << i << ";" << endl;
-  out << "y[i] = HSum(sum);" << endl;
+  if (op == ADD)
+    out << "y[i] += HSum(sum);" << endl;
+  else
+    out << "y[i] = HSum(sum);" << endl;
 
   out << "} }" << endl;
 }
@@ -2309,8 +2316,10 @@ int main ()
       << "inline void KernelMatVec" << endl
       << "(size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
   for (int i = 0; i <= 24; i++)
-    GenerateMatVec (out, i, SET);
-
+    {
+      GenerateMatVec (out, i, SET);
+      GenerateMatVec (out, i, ADD);
+    }
 
   out << "// y += s * A * x,  with fix width" << endl;
   out << "template <size_t WA>" << endl
