@@ -1038,6 +1038,11 @@ namespace ngcomp
                                                          this->GetTrialSpace()->GetParallelDofs(),
                                                          this->GetTestSpace()->GetParallelDofs(), C2D);
           }
+        if(harmonicext)
+          GetMemoryTracer().Track(*harmonicext, "HarmonicExt",
+                                  *harmonicexttrans, "HarmonicExtTrans");
+        if(innermatrix)
+          GetMemoryTracer().Track(*innermatrix, "InnerMatrix");
       }
   }
 
@@ -5739,6 +5744,7 @@ namespace ngcomp
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
     auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (graph, 1);
+    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();
     
     if (this->spd) spmat->SetSPD();
@@ -5917,6 +5923,7 @@ namespace ngcomp
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (graph, 1);
     mymatrix = spmat; // .get();
+    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;

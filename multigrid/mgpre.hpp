@@ -121,6 +121,11 @@ namespace ngmg
     }
 
     virtual Array<MemoryUsage> GetMemoryUsage () const override;
+
+  private:
+    MemoryTracer mt = { "MultiGridPreconditioner" };
+  public:
+    const MemoryTracer& GetMemoryTracer() const { return mt; }
   };
 
 

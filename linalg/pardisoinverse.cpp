@@ -138,6 +138,10 @@ namespace ngla
   { 
     static Timer timer("Pardiso Inverse");
     RegionTimer reg (timer);
+    GetMemoryTracer().SetName("PardisoInverseTM<" + Demangle(typeid(TM).name()) + ">");
+    GetMemoryTracer().Track(rowstart, "rowstart",
+                            indices, "indices",
+                            matrix, "matrix");
 
 
     if (getenv ("PARDISOMSG"))
@@ -313,6 +317,9 @@ namespace ngla
 	  }
 	throw Exception("PardisoInverse: Setup and Factorization failed.");
       }
+
+    memory_allocated_in_pardiso_lib = 1024*params[15];
+    GetMemoryTracer().Alloc(memory_allocated_in_pardiso_lib);
 
     /*
     (*testout) << endl << "Direct Solver: PARDISO by Schenk/Gaertner." << endl;
@@ -637,6 +644,8 @@ namespace ngla
 #ifdef MKL_PARDISO
     mkl_free_buffers();
 #endif // MKL_PARDISO
+    GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
+    memory_allocated_in_pardiso_lib = 0;
     if (task_manager) task_manager -> StartWorkers();
     if (error != 0)
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;

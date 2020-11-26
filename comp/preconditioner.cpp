@@ -407,6 +407,7 @@ namespace ngcomp
 
     tlp = 0;
     inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
+    GetMemoryTracer().Track(*mgp, "MultiGridPreconditioner");
   }
 
 
@@ -433,6 +434,7 @@ namespace ngcomp
       {
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
+        GetMemoryTracer().Track(*fine_smoother, "FineSmoother");
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
                                            &*mgp,
                                            fine_smoother,
@@ -600,6 +602,7 @@ namespace ngcomp
                            e.what() + 
                            "\nneeds a sparse matrix (or has memory problems)");
 	}
+      GetMemoryTracer().Track(*inverse, "Inverse");
     }
 
     virtual void CleanUpLevel ()

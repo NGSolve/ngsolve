@@ -30,6 +30,7 @@ namespace ngstd
 
   BlockAllocator :: ~BlockAllocator ()
   {
+    mt.Free(bablocks.Size() * size * blocks);
     for (int i = 0; i < bablocks.Size(); i++)
       delete [] bablocks[i];
   }
@@ -53,6 +54,7 @@ namespace ngstd
     //    if (!freelist)
       {
 	char * hcp = new char [size * blocks];
+        mt.Alloc(size * blocks);
 	bablocks.Append (hcp);
 	bablocks.Last() = hcp;
 
