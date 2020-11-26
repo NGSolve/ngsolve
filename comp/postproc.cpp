@@ -408,7 +408,7 @@ namespace ngcomp
           { diffop = fes->GetAdditionalEvaluators()["dual"].get(); }
 	else if ( diffop != fes->GetAdditionalEvaluators()["dual"].get() )
 	  { throw Exception("diffop has to be nullptr or dual diffop!"); }
-        
+
 	/** Trial-Proxy **/
         if (!fes->GetEvaluator(vb))
           throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
@@ -420,7 +420,8 @@ namespace ngcomp
 
 	/** Test-Proxy (dual) **/
 	auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
-	for (VorB avb = VOL; avb < vb; avb++) {
+        
+        for (VorB avb = VOL; avb < vb; avb++) {
 	  dual_evaluator = dual_evaluator->GetTrace();
 	  if ( dual_evaluator == nullptr )
 	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + \
@@ -430,8 +431,7 @@ namespace ngcomp
           dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
 	auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
 					       nullptr, nullptr, nullptr, nullptr, nullptr);
-    
-	/** Set up integrators - may need integrators for multiple node-types **/
+        /** Set up integrators - may need integrators for multiple node-types **/
         Array<shared_ptr<BilinearFormIntegrator>> bli;
         Array<shared_ptr<BilinearFormIntegrator>> single_bli;
 	for (auto element_vb : fes->GetDualShapeNodes(vb)) {
@@ -455,7 +455,8 @@ namespace ngcomp
 	if ( !bli.Size() )
 	  { throw Exception("Error in SetValues: No dual shape Integrators!"); }
 
-	int dimflux = diffop ? diffop->Dim() : bli[0]->DimFlux(); 
+        int dimflux = dual_evaluator->Dim();
+        
         if (coef -> Dimension() != dimflux)
           throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
                           ", but coefficient-dim = " + ToString(coef->Dimension()));
@@ -494,9 +495,6 @@ namespace ngcomp
                {
                  try
                    {
-		     if ( !diffop )
-		       { throw ExceptionNOSIMD("need diffop"); }
-
 		     /** Calc RHS **/
 
 		     elflux = SCAL(0.0);
@@ -506,7 +504,7 @@ namespace ngcomp
 		       coef->Evaluate (mir, mfluxi);
 		       for (size_t j : Range(mir))
 			 { mfluxi.Col(j) *= mir[j].GetWeight(); }
-		       diffop -> AddTrans (fel, mir, mfluxi, elflux);
+		       dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
 		     };
 
 		     for (auto el_vb : fes->GetDualShapeNodes(vb)) {
@@ -566,27 +564,16 @@ namespace ngcomp
                } // ( use_simd )
              
 	     /** Calc RHS **/
-	     if ( !diffop )
-	       { throw Exception("SymbolicBFI has no ApplyBTrans"); }
-
-
+	   
 	     auto do_ir = [&](auto & mir) {
 	       FlatMatrix<SCAL> mfluxi(mir.IR().GetNIP(), dimflux, lh);
 	       coef->Evaluate (mir, mfluxi);
 	       for (int j : Range(mir))
 		 mfluxi.Row(j) *= mir[j].GetWeight();
 	       FlatVector<SCAL> elfluxadd(fel.GetNDof() * dim, lh); elfluxadd = 0;
-	       // if (diffop) {
-	       diffop -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
+               
+	       dual_evaluator -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
 	       elflux += elfluxadd;
-	     //   }
-	     //   else { // !! SymbolicBFI has no ApplyBTrans !!
-	     // 	 for (auto bfi : single_bli) {
-	     // 	   bfi->ApplyBTrans (fel, mir, mfluxi, elfluxadd, lh);
-	     // 	   cout << " flux add " << endl << elfluxadd << endl;
-	     // 	   elflux += elfluxadd;
-	     // 	 }
-	     //   }
 	     };
 	     
 	     elflux = SCAL(0.0);

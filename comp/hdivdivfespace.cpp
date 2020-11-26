@@ -672,6 +672,29 @@ namespace ngcomp
       integrator[VOL] = make_shared<HDivDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
     }
+
+
+    switch(ma->GetDimension())
+      {
+      case 2:
+        additional_evaluators.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ());
+        // additional.Set ("ddmapped",make_shared<T_DifferentialOperator<DiffOpIdDDMappedHDivDiv<2>>> ());
+        additional_evaluators.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<2>>> ());
+        additional_evaluators.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<2>>> ());
+        additional_evaluators.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<2>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDivDual<2>>> ());
+        break;
+      case 3:
+        additional_evaluators.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ());
+        additional_evaluators.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<3>>> ());
+        additional_evaluators.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<3>>> ());
+        additional_evaluators.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<3>>> ());
+        additional_evaluators.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDivDiv<3>>> ());
+        break;
+      default:
+        ;
+    }
+
   }
 
   DocInfo HDivDivFESpace :: GetDocu ()
@@ -1091,28 +1114,7 @@ namespace ngcomp
   SymbolTable<shared_ptr<DifferentialOperator>>
     HDivDivFESpace :: GetAdditionalEvaluators () const
   {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch(ma->GetDimension())
-    {
-    case 2:
-      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ());
-      // additional.Set ("ddmapped",make_shared<T_DifferentialOperator<DiffOpIdDDMappedHDivDiv<2>>> ());
-      additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<2>>> ());
-      additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<2>>> ());
-      additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<2>>> ());
-      additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDivDual<2>>> ());
-      break;
-    case 3:
-      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ());
-      additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_old<3>>> ());
-      additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<3>>> ());
-      additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<3>>> ());
-      additional.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDivDiv<3>>> ());
-      break;
-    default:
-      ;
-    }
-    return additional;
+    return additional_evaluators;
   }
   
 
