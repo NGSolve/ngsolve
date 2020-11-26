@@ -177,7 +177,9 @@ namespace ngcomp
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
-      mem_tracer.Track(
+      GetMemoryTracer().SetName("BDDCMatrix");
+      GetMemoryTracer().Track(
+          weight, "weight",
           *sparse_innersolve, "mat_innersolve",
           *sparse_harmonicext, "mat_harmonicext",
           *sparse_harmonicexttrans, "mat_harmonicexttrans"
@@ -533,16 +535,6 @@ namespace ngcomp
 
       y.Cumulate();
     }
-
-    const MemoryTracer & GetMemoryTracer() const
-    {
-      return mem_tracer;
-    }
-
-  private:
-    MemoryTracer mem_tracer = {"BDDC",
-      weight, "weight"
-    };
   };
 
 
@@ -611,6 +603,7 @@ namespace ngcomp
       freedofs = _freedofs;
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
+      GetMemoryTracer().Track(*pre, "pre");
     }
 
     virtual void FinalizeLevel (const BaseMatrix *)
