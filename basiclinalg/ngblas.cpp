@@ -1247,15 +1247,16 @@ namespace ngbla
   
   /* ***************************** A * B^T *************************************** */
 
-  template <int SX>
+  template <int SX, OPERATION OP>
   void REGCALL MultABtSmallWA (size_t ah, size_t bh, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
     double * pa = &a(0);
     double * pc = &c(0);
     for (size_t i = 0; i < ah; i++, pa += a.Dist(), pc += c.Dist())
-      KernelMatVec<SX,SET> (bh, &b(0), b.Dist(), pa, pc);
+      KernelMatVec<SX,OP> (bh, &b(0), b.Dist(), pa, pc);
   }
-  
+
+  /*
   pfunc_abt dispatch_abt[25] =
     { &MultABtSmallWA<0>, &MultABtSmallWA<1>, &MultABtSmallWA<2>, &MultABtSmallWA<3>,
       &MultABtSmallWA<4>, &MultABtSmallWA<5>, &MultABtSmallWA<6>, &MultABtSmallWA<7>,
@@ -1265,7 +1266,26 @@ namespace ngbla
       &MultABtSmallWA<20>, &MultABtSmallWA<21>, &MultABtSmallWA<22>, &MultABtSmallWA<23>,
       &MultABtSmallWA<24>
     };
+  */
 
+  pfunc_abt dispatch_abt[];
+  auto init_abt = [] ()
+  {
+    Iterate<std::size(dispatch_abt)> ([&] (auto i)
+    { dispatch_abt[i] = &MultABtSmallWA<i,SET>; });
+    // dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
+    return 1;
+  }();
+
+  pfunc_abt dispatch_addabt[];
+  auto init_addabt = [] ()
+  {
+    Iterate<std::size(dispatch_abt)> ([&] (auto i)
+    { dispatch_addabt[i] = &MultABtSmallWA<i,ADD>; });
+    // dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
+    return 1;
+  }();
+  
   
   template <typename TAB, typename FUNC>
   INLINE void TAddABt4 (size_t wa, size_t hc, size_t wc,
@@ -1397,7 +1417,7 @@ namespace ngbla
   }
 
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  void AddABt_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c += a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c+ab; });

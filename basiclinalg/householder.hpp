@@ -12,29 +12,46 @@ namespace ngbla
 
 
   // find Householder reflection vector v such that
-  // reflection matrix H_v = I - v v^T
+  // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0
+  // scaling such that v(0) = 1   
   extern NGS_DLL_HEADER void CalcHouseholderVector (SliceVector<> x, FlatVector<> v);
 
+  
+  // find Householder reflection vector v such that
+  // reflection matrix H_v = I - 2 v v^T / (v^T v)
+  // leads to H_v x = +/- e_0 ||x||
+  // scaling such that v(0) = 1   
+  // returns (H_v x)(0) = +/- ||x||
+  double CalcHouseholderVectorInPlace (SliceVector<> x);
+
+
+
+  
   class NGS_DLL_HEADER HouseholderReflection
   {
     FlatVector<> v;
+    double factor;   // 2 / (v^T v)
   public:
-    HouseholderReflection (FlatVector<> av) : v(av) { ; }
-  
-    void Mult (SliceMatrix<> m2) const;
-    void Mult (SliceMatrix<double,ColMajor> m2) const;
+    HouseholderReflection (FlatVector<> av);
+    template <ORDERING ORD>    
+    void TMult (SliceMatrix<double,ORD> m2) const; 
+    void Mult (SliceMatrix<double,RowMajor> m2) const { TMult(m2); }
+    void Mult (SliceMatrix<double,ColMajor> m2) const { TMult(m2); }
   };
 
   // H = H_{m-1} ... H_1 H_0 = I - V^T T V
+  template <ORDERING OMV>
   class MultiHouseholderReflection
   {
-    SliceMatrix<> mv;  // every row one reflection vector
+    SliceMatrix<double, OMV> mv;  // every row one reflection vector
     Matrix<> T;        // strict lower triangular
   public:
-    MultiHouseholderReflection (SliceMatrix<> amv);
-    void Mult (SliceMatrix<> m2) const;  // Hm-1 * ... * H1 * H0 * m2
-    void Mult (SliceMatrix<double,ColMajor> m2) const;   // Hm-1 * ... * H1 * H0 * m2
+    MultiHouseholderReflection (SliceMatrix<double, OMV> amv);
+    template <ORDERING ORD>
+    void TMult (SliceMatrix<double,ORD> m2) const;  // Hm-1 * ... * H1 * H0 * m2
+    void Mult (SliceMatrix<double, RowMajor> m2) const { TMult (m2); } 
+    void Mult (SliceMatrix<double, ColMajor> m2) const { TMult (m2); } 
   };
 
 
