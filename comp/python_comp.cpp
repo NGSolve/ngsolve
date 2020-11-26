@@ -2572,7 +2572,7 @@ integrator : ngsolve.fem.LFI
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");
-           return creator->creatorbf(bfa, flags, "noname-pre");
+           return creator->creatorbf(bfa, flags, type);
          }),
          py::arg("bf"), py::arg("type"))
 

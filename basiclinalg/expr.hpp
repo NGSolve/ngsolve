@@ -1444,7 +1444,39 @@ namespace ngbla
 
 
 
+  /* ************************* Truncate ************************* */
 
+  INLINE double Truncate (double v, double eps = 1e-12)
+  {
+    if (fabs(v) < eps)
+      return 0;
+    return v;
+  }
+  
+  template <class TA> class TruncateExpr : public Expr<TruncateExpr<TA> >
+  {
+    const TA & a;
+    double eps;
+  public:
+    INLINE TruncateExpr (const TA & aa, double aeps) : a(aa), eps(aeps) { ; }
+
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
+ 
+    INLINE auto operator() (size_t i, size_t j) const { return Truncate(a(i,j), eps); }
+    INLINE auto operator() (size_t i) const { return Truncate(a(i), eps); }
+
+    enum { IS_LINEAR = TA::IS_LINEAR };
+  };
+
+  /// Conjugate
+  template <typename TA>
+  INLINE TruncateExpr<TA>
+  Truncate (const Expr<TA> & a, double eps = 1e-12)
+  {
+    return TruncateExpr<TA> (a.Spec(), eps);
+  }
+  
 
   /* ************************* InnerProduct ********************** */
 
