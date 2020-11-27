@@ -368,7 +368,15 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 )raw_string") , py::dynamic_attr());
     
   mesh_access
-    .def(py::init<shared_ptr<netgen::Mesh>>(),
+    .def(py::init([](shared_ptr<netgen::Mesh> ngmesh)
+                  {
+                     auto mesh = make_shared<MeshAccess>(ngmesh);
+                     mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]
+                         {
+                           p->UpdateBuffers();
+                         });
+                     return mesh;
+                  }),
          py::arg("ngmesh"),
          "Make an NGSolve-mesh from a Netgen-mesh")
 
