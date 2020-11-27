@@ -384,7 +384,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   {
 		    // MPI_Comm comm = c ? c->comm : ngs_comm;
                     NGSOStream::SetGlobalActive (comm.Rank()==0);
-                    return make_shared<MeshAccess>(filename, comm);
+                    auto mesh = make_shared<MeshAccess>(filename, comm);
+                    mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]
+                        {
+                          p->UpdateBuffers();
+                        });
+                    return mesh;
                   }),
          py::arg("filename"), py::arg("comm")=NgMPI_Comm{},
          "Load a mesh from file.\n"
