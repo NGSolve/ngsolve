@@ -55,7 +55,7 @@ surfacespaces = {"h1ho" :          { "vorb" : [BND,BBND,BBBND], "order" : [3], "
 def test_2DGetFE(quads=False):
     mesh = Mesh(unit_square.GenerateMesh(quad=quads))
     for spacename in spaces2d.keys():
-        if quads and spaces2d[spacename]["quad"]:
+        if not quads or (quads and spaces2d[spacename]["quad"]):
             for order in spaces2d[spacename]["order"]:
                 space = FESpace(type=spacename,mesh=mesh,order=order)
                 for vb in spaces2d[spacename]["vorb"]:
@@ -91,7 +91,7 @@ def test_SurfaceGetFE(quads=False):
     mesh = Mesh(geo.GenerateMesh(perfstepsend=meshing.MeshingStep.MESHSURFACE,quad=quads))
     
     for spacename in surfacespaces.keys():
-        if quads and spaces2d[spacename]["quad"]:
+        if not quads or (quads and spaces2d[spacename]["quad"]):
             for order in surfacespaces[spacename]["order"]:
                 space = FESpace(type=spacename,mesh=mesh,order=order)
                 for vb in surfacespaces[spacename]["vorb"]:
