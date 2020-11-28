@@ -1304,6 +1304,11 @@ ANY                  1 1 1 1 | 15
       return "Vector"+ (*this)[0]->GetClassName();
     }
     
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
+    {
+      return spaces[0]->GetDualShapeNodes(vb);
+    }
+
   };
 
 
