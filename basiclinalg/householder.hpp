@@ -34,7 +34,8 @@ namespace ngbla
     double factor;   // 2 / (v^T v)
   public:
     HouseholderReflection (FlatVector<> av);
-    template <ORDERING ORD>    
+
+    template <ORDERING ORD>
     void TMult (SliceMatrix<double,ORD> m2) const; 
     void Mult (SliceMatrix<double,RowMajor> m2) const { TMult(m2); }
     void Mult (SliceMatrix<double,ColMajor> m2) const { TMult(m2); }
@@ -51,16 +52,24 @@ namespace ngbla
     template <ORDERING ORD>
     void TMult (SliceMatrix<double,ORD> m2) const;  // Hm-1 * ... * H1 * H0 * m2
     void Mult (SliceMatrix<double, RowMajor> m2) const { TMult (m2); } 
-    void Mult (SliceMatrix<double, ColMajor> m2) const { TMult (m2); } 
+    void Mult (SliceMatrix<double, ColMajor> m2) const { TMult (m2); }
+
+    template <ORDERING ORD>
+    void TMultTrans (SliceMatrix<double,ORD> m2) const; 
+    void MultTrans (SliceMatrix<double,RowMajor> m2) const { TMultTrans(m2); }
+    void MultTrans (SliceMatrix<double,ColMajor> m2) const { TMultTrans(m2); }
   };
 
 
   /*
     Factorize A = Q R
     A is m x n, overwritten by R
-    Q is either m x m      (TODO: or m x n)
+    Q is either m x m  or m x n
   */
   extern NGS_DLL_HEADER void QRFactorization (SliceMatrix<> A, SliceMatrix<> Q);
+
+  extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<> A);
+
 }
 
 #endif
