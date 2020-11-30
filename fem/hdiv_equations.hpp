@@ -139,7 +139,73 @@ public:
   }
 };
 
+template <int D, typename FEL = HDivFiniteElement<D-1> >
+class DiffOpIdHDivSurface : public DiffOp<DiffOpIdHDivSurface<D, FEL> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D-1 };
+  enum { DIM_DMAT = D };
+  enum { DIFFORDER = 0 };
+  
+  static const FEL & Cast(const FiniteElement & fel)
+  {
+    return static_cast<const FEL&> (fel);
+  }
+  
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                              MAT & mat, LocalHeap & lh)
+  {
+    mat = (1.0 / mip.GetJacobiDet()) *mip.GetJacobian () * 
+      Trans (Cast(fel).GetShape(mip.IP(),lh));
+  }
+  
+  /*
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			  const TVX & x, TVY & y,
+			  LocalHeap & lh) 
+  {
+    throw Exception("in DiffOpIdHDivSurface::ApplyTrans");
+    HeapReset hr(lh);
+    typedef typename TVX::TSCAL TSCAL;
+    
+    Vec<D,TSCAL> hv = Trans (mip.GetJacobian()) * x;
+    hv *= (1.0/mip.GetJacobiDet());
+    y = Cast(fel).GetShape(mip.IP(),lh) * hv;
+  }
+  */
 
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
+  {
+    Cast(fel).CalcMappedShape (mir, mat);
+  }
+  
+  using DiffOp<DiffOpIdHDivSurface<D,FEL>>::ApplySIMDIR;        
+  static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+  {
+    Cast(fel).Evaluate (mir, x, y);
+  }    
+  
+  using DiffOp<DiffOpIdHDivSurface<D,FEL>>::AddTransSIMDIR;          
+  static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                              BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+  {
+    Cast(fel).AddTrans (mir, y, x);
+  }
+  
+  static shared_ptr<CoefficientFunction>
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir)
+  {
+    return -TraceCF(dir->Operator("Gradboundary"))*proxy + dir->Operator("Gradboundary") * proxy;
+  }
+  
+};
 
 
 /// divergence Operator
