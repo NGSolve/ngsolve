@@ -368,7 +368,15 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 )raw_string") , py::dynamic_attr());
     
   mesh_access
-    .def(py::init<shared_ptr<netgen::Mesh>>(),
+    .def(py::init([](shared_ptr<netgen::Mesh> ngmesh)
+                  {
+                     auto mesh = make_shared<MeshAccess>(ngmesh);
+                     mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]
+                         {
+                           p->UpdateBuffers();
+                         });
+                     return mesh;
+                  }),
          py::arg("ngmesh"),
          "Make an NGSolve-mesh from a Netgen-mesh")
 
@@ -376,7 +384,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   {
 		    // MPI_Comm comm = c ? c->comm : ngs_comm;
                     NGSOStream::SetGlobalActive (comm.Rank()==0);
-                    return make_shared<MeshAccess>(filename, comm);
+                    auto mesh = make_shared<MeshAccess>(filename, comm);
+                    mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]
+                        {
+                          p->UpdateBuffers();
+                        });
+                    return mesh;
                   }),
          py::arg("filename"), py::arg("comm")=NgMPI_Comm{},
          "Load a mesh from file.\n"
