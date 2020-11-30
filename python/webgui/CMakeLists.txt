@@ -33,15 +33,15 @@ if(BUILD_JUPYTER_WIDGETS)
       js/src/version.ts
       js/src/widget.ts
       COMMAND ${NPM} run build
-      COMMAND cmake -E remove -f "*.tgz"
+      COMMAND ${CMAKE_COMMAND} -E remove -f "*.tgz"
       COMMAND ${NPM} pack
-      COMMAND cmake -E tar xvf "*.tgz"
-      COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
-      COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
-      COMMAND cmake -E touch_nocreate "${bdir}/nbextension/static/index.js.map"
-      COMMAND cmake -E touch_nocreate "${bdir}/nbextension/static/index.js"
-      COMMAND cmake -E touch_nocreate "${bdir}/labextension/plugin.js.map"
-      COMMAND cmake -E touch_nocreate "${bdir}/labextension/plugin.js"
+      COMMAND ${CMAKE_COMMAND} -E tar xvf "*.tgz"
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/standalone.js"
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/standalone.js"
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/nbextension/static/index.js.map"
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/nbextension/static/index.js"
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/labextension/plugin.js.map"
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/labextension/plugin.js"
 
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js
       )
@@ -67,9 +67,9 @@ if(BUILD_JUPYTER_WIDGETS)
       SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/js/package
       DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/external_dependencies/
       BUILD_IN_SOURCE 1
-      CONFIGURE_COMMAND cmake -E make_directory "${bdir}"
-      BUILD_COMMAND cmake -E touch_nocreate "${bdir}/standalone.js"
-      INSTALL_COMMAND cmake -E copy_directory . "${bdir}"
+      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory "${bdir}"
+      BUILD_COMMAND ${CMAKE_COMMAND} -E touch_nocreate "${bdir}/standalone.js"
+      INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . "${bdir}"
       UPDATE_COMMAND ""
       TEST_COMMAND ""
       )
