@@ -1486,6 +1486,16 @@ namespace ngbla
       return SliceMatrix (next-first, w, dist, data+first*dist);
     }
 
+    INLINE auto SplitRows (size_t split) const
+    {
+      return tuple(Rows(0,split), Rows(split, Height()));
+    }
+
+    INLINE auto SplitCols (size_t split) const
+    {
+      return tuple(Cols(0,split), Cols(split, Width()));
+    }
+    
     INLINE const FlatVector<T> Row (size_t i) const
     {
       return FlatVector<T> (w, &data[i*dist]);
@@ -1637,6 +1647,18 @@ namespace ngbla
     {
       return Cols (range.First(), range.Next());
     }
+
+    INLINE auto SplitRows (size_t split) const
+    {
+      return tuple(Rows(0,split), Rows(split, Height()));
+    }
+
+    INLINE auto SplitCols (size_t split) const
+    {
+      return tuple(Cols(0,split), Cols(split, Width()));
+    }
+
+    
   };
 
   
@@ -1894,7 +1916,7 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const BareSliceMatrix<T> Cols (IntRange range) const
+    INLINE const BareSliceMatrix Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }

@@ -896,7 +896,11 @@ namespace ngla
   template <typename TSCAL>
   S_BaseVectorPtr<TSCAL> :: ~S_BaseVectorPtr ()
   {
-    if (ownmem) delete [] pdata;
+    if (ownmem)
+      {
+        GetMemoryTracer().Free(sizeof(TSCAL) * this->entrysize * this->size);
+        delete [] pdata;
+      }
   }
 
   template <typename TSCAL>

@@ -33,8 +33,6 @@ namespace ngcomp
     double * testresult_min;
     double * testresult_max;
   
-    Flags flags; 
-
     // for calculation of eigenvalues
     bool uselapack;
 
@@ -123,6 +121,7 @@ namespace ngcomp
     const Flags & GetFlags() const { return flags; }
 
     using BaseMatrix::shared_from_this;
+    using NGS_Object::GetMemoryTracer;
   };
 
 

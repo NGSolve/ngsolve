@@ -193,13 +193,20 @@ namespace ngbla
 
   extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il)
   {
+    if (il == INVERSE_LIB::INV_CHOOSE)
+      il = inv.Height() >= 50 ? INVERSE_LIB::INV_NGBLA_LU : INVERSE_LIB::INV_NGBLA;
+    
+    if (il == INVERSE_LIB::INV_NGBLA_LU)
+      {
+        ArrayMem<int,100> p(inv.Height());
+        CalcLU (inv, p);
+        InverseFromLU (inv, p);
+      }
 #ifdef LAPACK
-    if (il == INVERSE_LIB::INV_LAPACK)
+    else if (il == INVERSE_LIB::INV_LAPACK)
       LapackInverse(inv);
-    else if (il == INVERSE_LIB::INV_CHOOSE && inv.Height() >= 50)
-      LapackInverse(inv);        
-    else
 #endif
+    else
       T_CalcInverse (inv);
   }
 

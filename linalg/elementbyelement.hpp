@@ -116,6 +116,9 @@ namespace ngla
     }
     
     size_t NZE () const override { return GetNZE(); }
+
+  private:
+    void InitMemoryTracing() const;
   };  
 
 

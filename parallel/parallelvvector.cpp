@@ -298,14 +298,17 @@ namespace ngla
             static Timer t("masked ip"); RegionTimer reg(t);
             FlatVector<> me = this->FVDouble();
             FlatVector<> you = parv2->FVDouble();
-            const BitArray & ba = paralleldofs->MasterDofs();
-            double sum = 0;
-            for (size_t i = 0; i < me.Size(); i++)
-              if (ba.Test(i))
-                sum += me(i) * you(i);
-            return paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM);            
+            const BitArray & ba = const_cast<BitArray&>(paralleldofs->MasterDofs());
+	    SCAL localsum = MatKernelMaskedScalAB(me.Size(), me.Data(), 0, you.Data(), 0, ba);
+	    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+	      { return localsum; }
+	    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
+            // double sum = 0;
+            // for (size_t i = 0; i < me.Size(); i++)
+            //   if (ba.Test(i))
+            //     sum += me(i) * you(i);
+            // return paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM);
           }
-
         Distribute();
       }
     

@@ -469,6 +469,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           else
             throw py::index_error("cannot assign complex values to real vector");
       }, py::arg("ind"), py::arg("vec") )
+    .def("__setitem__", [](BaseVector & self, shared_ptr<BitArray> mask, BaseVector & other)
+         {
+           Projector p(mask, true);
+           Projector pnot(mask, false);
+           pnot.Project (self);
+           self += p * other;
+         })
     .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;}, py::arg("vec"))
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;}, py::arg("vec"))
     .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))

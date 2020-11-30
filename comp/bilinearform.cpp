@@ -25,6 +25,32 @@ namespace ngcomp
     c += a*b | Lapack;
   }
 
+  template <typename T>
+  inline void AInvBt (ngbla::FlatMatrix<T> a, ngbla::FlatMatrix<T> b)
+  {
+    // static Timer t("LapackAinvBt");
+    // RegionTimer reg(t);
+    LapackAInvBt (a, b, 'N');
+  }
+
+  // b <-- b A^{-1} 
+  inline void AInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b)
+  {
+    /*
+    Matrix ha = a;
+    Matrix hb = b;
+    LapackAInvBt(ha, hb, 'N');
+    */
+    // static Timer t("AinvBt - new LU");
+    // RegionTimer reg(t);    
+
+    ArrayMem<int, 100> p(a.Height());
+    CalcLU (a, p);
+    SolveTransFromLU (a, p, Trans(b));
+    
+    // cout << "diff = " << L2Norm(hb-b) << endl;
+  }
+  
   template <typename SCAL>
   void CalcSchur (FlatMatrix<SCAL> a, 
                   FlatMatrix<SCAL> schur,
@@ -1012,6 +1038,11 @@ namespace ngcomp
                                                          this->GetTrialSpace()->GetParallelDofs(),
                                                          this->GetTestSpace()->GetParallelDofs(), C2D);
           }
+        if(harmonicext)
+          GetMemoryTracer().Track(*harmonicext, "HarmonicExt",
+                                  *harmonicexttrans, "HarmonicExtTrans");
+        if(innermatrix)
+          GetMemoryTracer().Track(*innermatrix, "InnerMatrix");
       }
   }
 
@@ -1449,7 +1480,7 @@ namespace ngcomp
                                  // new Versions, July 07
                                  if (elim_only_hidden || !keep_internal) 
                                    {
-                                     LapackAInvBt (d, b);    // b <--- b d^-1
+                                     AInvBt (d, b);    // b <--- b d^-1
                                      LapackMultAddABt (b, c, -1, a);                                 
                                    }
                                  else
@@ -1536,7 +1567,7 @@ namespace ngcomp
                                            if (IsRegularDof(dof))
                                              cidnums.AppendHaveMem(dof);
 
-                                         LapackAInvBt (dd, db);    // b <--- b d^-1
+                                         AInvBt (dd, db);    // b <--- b d^-1
                                          LapackMultAddABt (db, dc, -1, da);   
                              
                                          innermatrix_ptr->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
@@ -3285,6 +3316,13 @@ namespace ngcomp
             IterateElements 
               (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
+                 bool elem_has_integrator = false;
+                 for (auto & bfi : VB_parts[vb])
+                   if ((bfi->DefinedOn (el.GetIndex()))&&(bfi->DefinedOnElement (el.Nr())))
+                     elem_has_integrator = true;
+                 if (!elem_has_integrator)
+                   return;
+                 
                  const FiniteElement & fel = fespace->GetFE (el, lh);
                  ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                  
@@ -3479,7 +3517,7 @@ namespace ngcomp
                          // new Versions, July 07
                          if (elim_only_hidden || !keep_internal)
                            {
-                             LapackAInvBt (d, b);
+                             AInvBt (d, b);
                              LapackMultAddABt (b, c, -1, a);
                            }
                          else
@@ -5847,6 +5885,7 @@ namespace ngcomp
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
     auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (graph, 1);
+    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();
     
     if (this->spd) spmat->SetSPD();
@@ -6025,6 +6064,7 @@ namespace ngcomp
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (graph, 1);
     mymatrix = spmat; // .get();
+    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;

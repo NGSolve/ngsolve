@@ -1172,6 +1172,7 @@ component : int
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
   
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
+  ExportFESpace<NormalFacetSurfaceFESpace> (m, "NormalFacetSurface");
   
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
     .def("Average", &HDivHighOrderSurfaceFESpace::Average,
@@ -2059,22 +2060,22 @@ space : ngsolve.FESpace
 
 )raw_string"));
   bf_class
-    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
+    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, const string& name, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
-                    auto biform = CreateBilinearForm (fespace, "biform_from_py", flags);
+                    auto biform = CreateBilinearForm (fespace, name, flags);
                     return biform;
                   }),
-         py::arg("space"))
-    .def(py::init([bf_class](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, 
+      py::arg("space"), "name"_a = "biform_from_py")
+    .def(py::init([bf_class](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, const string& name,
                              py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
-                    auto biform = CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
+                    auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
                     return biform;
                   }),
          py::arg("trialspace"),
-         py::arg("testspace"))
+         py::arg("testspace"), "name"_a = "biform_from_py")
 
     .def(py::init([bf_class](shared_ptr<SumOfIntegrals> igls, py::kwargs kwargs)
                   {
@@ -2572,7 +2573,7 @@ integrator : ngsolve.fem.LFI
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");
-           return creator->creatorbf(bfa, flags, "noname-pre");
+           return creator->creatorbf(bfa, flags, type);
          }),
          py::arg("bf"), py::arg("type"))
 
@@ -2598,11 +2599,11 @@ integrator : ngsolve.fem.LFI
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");
   prec_multigrid
-    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, py::kwargs kwargs)
+    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, prec_multigrid);
-                    return make_shared<MGPreconditioner>(bfa,flags);
-                  }), py::arg("bf"))
+                    return make_shared<MGPreconditioner>(bfa,flags, name);
+                  }), py::arg("bf"), "name"_a = "multigrid")
     .def_static("__flags_doc__", [prec_class] ()
                 {
                   auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
@@ -3967,16 +3968,22 @@ geom_free:
 
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
-     .def(py::init<shared_ptr<FESpace>, Region, Region, bool,
-          shared_ptr<FESpace>>(),
+     .def(py::init([](shared_ptr<FESpace> fes, Region master, Region minion,
+                      bool draw_pairs)
+     {
+       cout << "WARNING: ContactBoundary constructor with FESpace is deprecated, fes will be set correctly in Update!" << endl;
+       return make_shared<ContactBoundary>(master, minion, draw_pairs);
+     }), "fes"_a, "master"_a, "minion"_a, "draw_pairs"_a = false)
+     .def(py::init<Region, Region, bool>(),
           R"delimiter(
 Class for managing contact interfaces.
 The created object must be kept alive in python as long as
 operations of it are used!
-)delimiter", "fes"_a, "master"_a, "minion"_a, "draw_pairs"_a=false,
-          "fes_displacement"_a=nullptr)
-     .def("AddEnergy", &ContactBoundary::AddEnergy)
-     .def("AddIntegrator", &ContactBoundary::AddIntegrator)
+)delimiter", "master"_a, "minion"_a, "draw_pairs"_a=false)
+     .def("AddEnergy", &ContactBoundary::AddEnergy,
+          "form"_a, "deformed"_a = false)
+     .def("AddIntegrator", &ContactBoundary::AddIntegrator,
+          "form"_a, "deformed"_a = false)
      .def("Update", &ContactBoundary::Update,
           py::arg("gf"), py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,

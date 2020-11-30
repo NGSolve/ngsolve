@@ -18,6 +18,7 @@ namespace ngla
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric) 
   {
+    InitMemoryTracing();
     clone.SetSize(ane);
     clone.Clear();
     symmetric=isymmetric;
@@ -46,6 +47,7 @@ namespace ngla
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int w, int ane, bool isymmetric) 
   {
+    InitMemoryTracing();
     clone.SetSize(ane);
     clone.Clear();
     symmetric=isymmetric;
@@ -74,6 +76,7 @@ namespace ngla
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int w, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols) 
   {
+    InitMemoryTracing();
     clone.SetSize(ane);
     clone.Clear();
     symmetric=isymmetric;
@@ -106,6 +109,7 @@ namespace ngla
                           bool isymmetric, bool adisjointrows, bool adisjointcols)
     : height(h), width(w), ne(nrowi.Size()), symmetric(isymmetric), disjointrows(adisjointrows), disjointcols(adisjointcols)
   {
+    InitMemoryTracing();
     clone.SetSize(ne);
     clone.Clear();
     
@@ -639,6 +643,15 @@ namespace ngla
     else
       throw Exception ("EBEMatrix::AddCloneElementMatrix, illegal elnr");
     
+  }
+
+  template<class SCAL>
+  void ElementByElementMatrix<SCAL>::InitMemoryTracing() const
+  {
+    GetMemoryTracer().Track(allrow, "allrow", allcol, "allcol",
+                            allvalues, "allvalues", elmats, "elmats",
+                            rowdnums, "rowdnums", coldnums, "coldnums",
+                            clone, "clone");
   }
 
   template <class SCAL>

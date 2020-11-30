@@ -1,8 +1,12 @@
+#define COMPILE_NGBLAS
+
 #include <bla.hpp>
 
 
 namespace ngbla
 {
+
+  
 
   int dgemm(char *transa, char *transb, integer *m, integer *
 		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
@@ -39,6 +43,8 @@ namespace ngbla
   }
 
 #include "matkernel.hpp"
+  // template <OPERATION OP>
+  constexpr OPERATION AddOp(OPERATION OP) { return (OP == ADD || OP == SET) ? ADD : SUB; }
 
 
   /* ***************************** Copy Matrix *********************** */
@@ -770,12 +776,24 @@ namespace ngbla
   REGCALL void MultMatMat_intern2_ShortSum (size_t ha, size_t wb,
                                            BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    if (WA <= 6 && OP==SET)
+    if (WA <= 6) //   && OP==SET)
       MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
     else
       MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
   }
 
+  template <size_t WA, OPERATION OP=SET> 
+  REGCALL void MultMatMat_intern2_ShortSumW (size_t ha, size_t wa, size_t wb,
+                                             BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    if (WA <= 6) //   && OP==SET)
+      MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+    else
+      MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+  }
+
+
+  
   pmultAB dispatch_multAB[13] =
     { &MultMatMat_intern2_ShortSum<0,SET>,
       &MultMatMat_intern2_ShortSum<1,SET>,
@@ -808,22 +826,33 @@ namespace ngbla
       &MultMatMat_intern2_ShortSum<12,ADD>
     };
 
-  pmultAB dispatch_subAB[13] =
-    { &MultMatMat_intern2_ShortSum<0,SUB>,
-      &MultMatMat_intern2_ShortSum<1,SUB>,
-      &MultMatMat_intern2_ShortSum<2,SUB>,
-      &MultMatMat_intern2_ShortSum<3,SUB>,
-      &MultMatMat_intern2_ShortSum<4,SUB>,
-      &MultMatMat_intern2_ShortSum<5,SUB>,
-      &MultMatMat_intern2_ShortSum<6,SUB>,
-      &MultMatMat_intern2_ShortSum<7,SUB>,
-      &MultMatMat_intern2_ShortSum<8,SUB>,
-      &MultMatMat_intern2_ShortSum<9,SUB>,
-      &MultMatMat_intern2_ShortSum<10,SUB>,
-      &MultMatMat_intern2_ShortSum<11,SUB>,
-      &MultMatMat_intern2_ShortSum<12,SUB>
+  /*
+  pmultABW dispatch_subAB[13] =
+    { &MultMatMat_intern2_ShortSumW<0,SUB>,
+      &MultMatMat_intern2_ShortSumW<1,SUB>,
+      &MultMatMat_intern2_ShortSumW<2,SUB>,
+      &MultMatMat_intern2_ShortSumW<3,SUB>,
+      &MultMatMat_intern2_ShortSumW<4,SUB>,
+      &MultMatMat_intern2_ShortSumW<5,SUB>,
+      &MultMatMat_intern2_ShortSumW<6,SUB>,
+      &MultMatMat_intern2_ShortSumW<7,SUB>,
+      &MultMatMat_intern2_ShortSumW<8,SUB>,
+      &MultMatMat_intern2_ShortSumW<9,SUB>,
+      &MultMatMat_intern2_ShortSumW<10,SUB>,
+      &MultMatMat_intern2_ShortSumW<11,SUB>,
+      // &MultMatMat_intern2_ShortSumW<12,SUB>
+      &SubAB_intern
     };
-
+  */
+  
+  pmultABW dispatch_subAB[];
+  auto init_subAB = [] ()
+  {
+    Iterate<std::size(dispatch_subAB)-1> ([&] (auto i)
+    { dispatch_subAB[i] = &MultMatMat_intern2_ShortSumW<i,SUB>; });
+    dispatch_subAB[std::size(dispatch_subAB)-1] = &SubAB_intern;
+    return 1;
+  }();
 
 
 
@@ -1141,55 +1170,149 @@ namespace ngbla
 
 
 
-  template <size_t WA>
-  void REGCALL MultAtBSmallWA (size_t ha, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+  template <size_t WA, OPERATION OP>
+  void REGCALL MultAtBSmallWA (size_t ha, size_t /* wa */, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                                BareSliceMatrix<double> c)
 
   {
-    if (WA <= 6)
+    if (WA <= 6 && OP == SET)
       {
         MultAtBSmallWA2<WA> (ha, wb, a, b, c);
         return;
       }
-    MatKernelAtB_SmallWA<WA,SET> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+    MatKernelAtB_SmallWA<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
   }
 
-  pfunc_atb dispatch_atb[13] =
-    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
-      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
-      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
-      &MultAtBSmallWA<12>
-    };
+  // template <> pmultABW dispatch_atb<false,true>[];
 
-  void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  template <OPERATION OP>
+  void MultAtB_intern2 (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
+    // extern int myvar2; myvar2++;
     // c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
+    // return;
     
     constexpr size_t bs = 8;
+    constexpr size_t maxha = 192;
+    
     size_t i = 0;
     size_t ha = a.Height();    
-    //size_t wa = a.Width();
+    size_t wa = a.Width();
     size_t wb = b.Width();
     BareSliceMatrix<> bare_a(a);
     BareSliceMatrix<> bare_b(b);
-    for ( ; i+bs <= a.Width(); i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
-      MultAtBSmallWA<bs> (ha, wb, bare_a, bare_b, c);
-    dispatch_atb[a.Width()-i] (ha, wb, bare_a, bare_b, c);
+
+    alignas(64) SIMD<double> mem[bs*maxha/SIMD<double>::Size()];
+    
+    for ( ; i+bs <= wa; i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
+      {
+        CopyMatrixIn (ha, bs, bare_a.Data(), bare_a.Dist(), &mem[0], bs/SIMD<double>::Size());
+        
+        MatKernelAtB_SmallWA<bs,OP> (ha, wb,
+                                     (double*)&mem[0], 8,
+                                     &bare_b(0), bare_b.Dist(),
+                                     &c(0), c.Dist());
+      }
+    // MultAtBSmallWA<bs,OP> (ha, bs, wb, bare_a, bare_b, c);
+
+    if (i == wa) return;
+    dispatch_atb<OP==ADD || OP==SUB, OP==SET || OP==ADD>::ptrs[wa-i] (ha, wa-i, wb, bare_a, bare_b, c);    
+    /*
+    if constexpr (OP == SET)
+                   dispatch_atb<false,true>::ptrs[wa-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == ADD)
+                   dispatch_atb<true,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == SETNEG)
+                   dispatch_atb<false,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    if constexpr (OP == SUB)
+                   dispatch_atb<true,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    */
+  }
+
+  
+  template <OPERATION OP>
+  void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    constexpr size_t BBW = 192;
+    constexpr size_t ABW = 192;
+    constexpr size_t ABH = 192;
+    size_t wb = b.Width();
+    size_t wa = a.Width();
+    size_t ha = a.Height();
+
+
+    alignas(64) SIMD<double> mem[ABH*ABW/SIMD<double>::Size()];
+
+    for (size_t j = 0; j < wb; j += BBW)
+      {
+        IntRange rj(j, j+min(wb-j, BBW));
+        
+        for (size_t i = 0; i < ha; i += ABH)
+          {
+            IntRange ri(i, i+min(ha-i, ABH));
+            
+            auto bij = b.Rows(ri).Cols(rj);
+            CopyMatrixIn (ri.Size(), rj.Size(), bij.Data(), bij.Dist(), &mem[0], BBW/SIMD<double>::Size());
+            SliceMatrix<> bbm(ri.Size(), rj.Size(), BBW, (double*)&mem);
+            
+            if (i == 0)
+              MultAtB_intern2<OP> (a.Rows(ri), bbm, c.Cols(rj));
+            else
+              MultAtB_intern2<AddOp(OP)> (a.Rows(ri), bbm, c.Cols(rj));
+          }
+      }
+  }
+  
+  template <OPERATION OP>
+  void REGCALL MultAtBVar (size_t ha, size_t wa, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                           BareSliceMatrix<double> c)
+  {
+    MultAtB_intern<OP> (SliceMatrix<> (ha, wa, a.Dist(), a.Data()),
+                        SliceMatrix<> (ha, wb, b.Dist(), b.Data()),
+                        SliceMatrix<> (wa, wb, c.Dist(), c.Data()));
   }
 
 
+  /*
+  pmultABW dispatch_atb[] =
+    { &MultAtBSmallWA<0>, &MultAtBSmallWA<1>, &MultAtBSmallWA<2>, &MultAtBSmallWA<3>,
+      &MultAtBSmallWA<4>, &MultAtBSmallWA<5>, &MultAtBSmallWA<6>, &MultAtBSmallWA<7>,
+      &MultAtBSmallWA<8>, &MultAtBSmallWA<9>, &MultAtBSmallWA<10>, &MultAtBSmallWA<11>,
+      &MultAtBSmallWA<12>, &MultAtBVar
+    };
+  */
+
+  template <bool ADD, bool POS>
+  pmultABW dispatch_atb<ADD,POS>::ptrs[14];
+
+  auto init_atb = [] ()
+  {
+    Iterate<std::size(dispatch_atb<false,true>::ptrs)-1> ([&] (auto i)
+    {
+      dispatch_atb<false,true>::ptrs[i] = &MultAtBSmallWA<i,SET>;
+      dispatch_atb<true,true>::ptrs[i] = &MultAtBSmallWA<i,ADD>;
+      dispatch_atb<false,false>::ptrs[i] = &MultAtBSmallWA<i,SETNEG>;
+      dispatch_atb<true,false>::ptrs[i] = &MultAtBSmallWA<i,SUB>;
+    });
+    dispatch_atb<false,true>::ptrs[std::size(dispatch_atb<false,true>::ptrs)-1] = &MultAtBVar<SET>;
+    dispatch_atb<true,true>::ptrs[std::size(dispatch_atb<true,true>::ptrs)-1] = &MultAtBVar<ADD>;
+    dispatch_atb<false,false>::ptrs[std::size(dispatch_atb<false,false>::ptrs)-1] = &MultAtBVar<SETNEG>;
+    dispatch_atb<true,false>::ptrs[std::size(dispatch_atb<true,false>::ptrs)-1] = &MultAtBVar<SUB>;
+    return 1;
+  }();
   
   /* ***************************** A * B^T *************************************** */
 
-  template <int SX>
+  template <int SX, OPERATION OP>
   void REGCALL MultABtSmallWA (size_t ah, size_t bh, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
     double * pa = &a(0);
     double * pc = &c(0);
     for (size_t i = 0; i < ah; i++, pa += a.Dist(), pc += c.Dist())
-      KernelMatVec<SX,SET> (bh, &b(0), b.Dist(), pa, pc);
+      KernelMatVec<SX,OP> (bh, &b(0), b.Dist(), pa, pc);
   }
-  
+
+  /*
   pfunc_abt dispatch_abt[25] =
     { &MultABtSmallWA<0>, &MultABtSmallWA<1>, &MultABtSmallWA<2>, &MultABtSmallWA<3>,
       &MultABtSmallWA<4>, &MultABtSmallWA<5>, &MultABtSmallWA<6>, &MultABtSmallWA<7>,
@@ -1199,7 +1322,26 @@ namespace ngbla
       &MultABtSmallWA<20>, &MultABtSmallWA<21>, &MultABtSmallWA<22>, &MultABtSmallWA<23>,
       &MultABtSmallWA<24>
     };
+  */
 
+  pfunc_abt dispatch_abt[];
+  auto init_abt = [] ()
+  {
+    Iterate<std::size(dispatch_abt)> ([&] (auto i)
+    { dispatch_abt[i] = &MultABtSmallWA<i,SET>; });
+    // dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
+    return 1;
+  }();
+
+  pfunc_abt dispatch_addabt[];
+  auto init_addabt = [] ()
+  {
+    Iterate<std::size(dispatch_abt)> ([&] (auto i)
+    { dispatch_addabt[i] = &MultABtSmallWA<i,ADD>; });
+    // dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
+    return 1;
+  }();
+  
   
   template <typename TAB, typename FUNC>
   INLINE void TAddABt4 (size_t wa, size_t hc, size_t wc,
@@ -1331,7 +1473,7 @@ namespace ngbla
   }
 
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  void AddABt_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c += a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c+ab; });
@@ -2630,8 +2772,9 @@ namespace ngbla
 
   /**************** timings *********************** */
 
+  extern void MultUL (SliceMatrix<> A);
   
-  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack)
+  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits)
   {
     if (what < 0)
       {
@@ -2647,6 +2790,9 @@ namespace ngbla
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           "11 .. C += A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
+          "20 .. X = T * X       T=n*n triangular, X=n*m "
+          "21 .. X = T^-1 * X     T=n*n triangular, X=n*m "
+          "22 .. T^-1             T=n*n triangular"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
           "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
           "52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m\n"
@@ -2660,6 +2806,7 @@ namespace ngbla
           "150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n"
           "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned\n"
           "200.. CalcInverse        A = nxn\n"
+          "201.. CalcInverse by LU  A = nxn\n"          
           "205.. LDL                A = nxn\n"
           "210.. CalcInverseLapack  A = nxn\n"
              << endl;
@@ -2682,11 +2829,11 @@ namespace ngbla
         FlatMatrix<SIMD<double>> a(n,WA/SIMD<double>::Size(),&mema[0]);
         b = 1;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Copy matrix, packed dest");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CopyMatrixIn(n,m, &b(0,0), m, &a(0,0), a.Width());
           t.Stop();
           cout << "Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2700,11 +2847,11 @@ namespace ngbla
         // A = 0
         Matrix<> a(n,m);
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Zero matrix, packed dest");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             a.Rows(0,n).Cols(0,m) = j;
           t.Stop();
           cout << "Zero matrix GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2718,11 +2865,11 @@ namespace ngbla
         Matrix<> a(n,m), b(m,n);
         b = 1;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Matrix Transpose");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             TransposeMatrix(b, a);
           t.Stop();
           cout << "Lapack GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -2739,14 +2886,14 @@ namespace ngbla
         Vector<> x(m), y(n);
         a = 1; x = 2;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           MultMatVec(a,x,y);
           if (L2Norm(a*x-y) > 1e-8)
             throw Exception("MultMatVec is faulty");
           Timer t("y = A*x");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultMatVec(a,x,y);
           t.Stop();
           cout << "MultMatVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2755,7 +2902,7 @@ namespace ngbla
         {
           Timer t("y = A*x, Lapack");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             LapackMultAx (a, x, y);
           t.Stop();
           cout << "MultMatVec Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2770,11 +2917,11 @@ namespace ngbla
         Vector<> x(n), y(m);
         a = 1; x = 2;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("y = A*x");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultMatTransVec(a,x,y);
           t.Stop();
           cout << "MultMatTransVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2792,11 +2939,11 @@ namespace ngbla
           index[i] = (17*i)%1000;
         a = 1; x = 2; y = 0;
         double tot = n*m;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("y = A*x");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultAddMatTransVecIndirect(1, a,x,y, index);
           t.Stop();
           cout << "MultAddMatTransVecIndirect GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
@@ -2818,7 +2965,7 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         // MultMatMat(a,b,c);
         c = a * b;
         double err = L2Norm(a*b-c);
@@ -2829,11 +2976,11 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           if (!lapack)
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               // MultMatMat(a,b,c);
               c = a*b;
           else
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c = a*b | Lapack;
           t.Stop();
           cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
@@ -2854,16 +3001,16 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("C += A*B");
           t.Start();
           if (!lapack)
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c += a*b;
           else
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c += a*b | Lapack;
           t.Stop();
           cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
@@ -2871,6 +3018,228 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 20)
+      {
+        Matrix<> a(n,n), b(n,m);
+        a = 1; b = 2;
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < n; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            b(i,j) = cos(i+3) * cos(j);
+        Matrix<> saveb = b;
+        
+        double tot = n*n*m/2;
+        size_t its = 1e9 / tot + 1;
+
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<LowerLeft> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<L> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<L>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<UpperRight> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<R> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<R>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<LowerLeft,Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<L,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<L,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<UpperRight,Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<R,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<R,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+      }
+    if (what == 0 || what == 21)
+      {
+        Matrix<> a(n,n), b(n,m);
+        a = 1; b = 2;
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < n; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            b(i,j) = cos(i+3) * cos(j);
+        Matrix<> saveb = b;
+        
+        double tot = n*n*m/2;
+        size_t its = 1e9 / tot + 1;
+        // MultMatMat(a,b,c);
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<LowerLeft> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<L> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<L>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<UpperRight> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<R> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<R>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<LowerLeft, Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<L,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<L,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = L * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularSolve<UpperRight, Normalized> (a, b);
+            }
+          t.Stop();
+          cout << "TriangularSolve<R,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularSolve<R,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+
+
+      }
+
+
+
+
+    if (what == 0 || what == 22)
+      {
+        // T^{-1}
+        Matrix<> a(n,n);
+        a = 1; 
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < n; j++)
+            a(i,j) = sin(i+1) * cos(j);
+        Matrix<> savea = a;
+        
+        double tot = n*n*n/6;
+        size_t its = 1e9 / tot + 1;
+        if (its > maxits) its = maxits;
+        {
+          Timer t("L^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              // a = savea;
+              TriangularInvert<LowerLeft> (a);
+              TriangularInvert<LowerLeft> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<L> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<L>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
+        }
+        {
+          Timer t("R^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              // a = savea;
+              TriangularInvert<UpperRight> (a);
+              TriangularInvert<UpperRight> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<R> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<R>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
+        }
+        {
+          Timer t("L^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              // a = savea;
+              TriangularInvert<LowerLeft, Normalized> (a);
+              TriangularInvert<LowerLeft, Normalized> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<LN> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<LN>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
+        }
+        {
+          Timer t("R^-1");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              // a = savea;
+              TriangularInvert<UpperRight, Normalized> (a);
+              TriangularInvert<UpperRight, Normalized> (a);
+            }
+          t.Stop();
+          cout << "TriangularInvert<RN> GFlops = " << 1e-9 * 2*n*n*n/6*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularInvert<RN>", 1e-9 * 2*n*n*n/6*its / t.GetTime()));
+        }
+
+        {
+          Timer t("UL");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = savea;
+              MultUL (a);
+            }
+          t.Stop();
+          cout << "MultUL GFlops = " << 1e-9 * n*n*n/3*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultUL", 1e-9 * n*n*n/3*its / t.GetTime()));
+        }
+      }
+
+
+
+
+
+    
     
     if (what == 0 || what == 50)
       {
@@ -2879,11 +3248,11 @@ namespace ngbla
         a = 1; b = 2;
         c = 0.0;        
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             // AddABt(a,b,c);
             c += a * Trans(b);
           t.Stop();
@@ -2903,11 +3272,11 @@ namespace ngbla
         a = SIMD<double>(1); b = SIMD<double>(2);
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), &a(0)[0]),
                    SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), &b(0)[0]),
                    // SliceMatrix<double> (AFlatMatrix<double>(b)),
@@ -2925,15 +3294,15 @@ namespace ngbla
         a = 1; b = 2;
         c = 0.0;        
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
           if (!lapack)
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c = a * Trans(b);
           else
-            for (int j = 0; j < its; j++)
+            for (size_t j = 0; j < its; j++)
               c = a * Trans(b) | Lapack;
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -2950,11 +3319,11 @@ namespace ngbla
         a = 1, b = 1, d = 2;
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C -= A^t*D*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             SubAtDB(a, d, b, c);
           t.Stop();
           cout << "AddAtDB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -2979,15 +3348,32 @@ namespace ngbla
         if (err > 1e-8)
           throw Exception("MultAtB is faulty");
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
-          Timer t("C -= A^t*D*B");
+          Timer t("C = A^t*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MultAtB(a, b, c);
           t.Stop();
           cout << "MultAtB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
+        }
+        {
+          Timer t("C = A^t*B, block block");
+          constexpr size_t BS = 96;
+          tot = BS*BS*BS;
+          its = 1e9 / tot+1;
+          auto ba = a.Rows(BS).Cols(BS);
+          // auto bb = b.Rows(BS).Cols(BS);
+          auto bc = c.Rows(BS).Cols(BS);
+          // Matrix ba(BS,BS);
+          Matrix bb(BS,BS);
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            MultAtB_intern2<SET> (ba, bb, bc);
+          t.Stop();
+          cout << "MultAtB - block GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
         }
       }
     
@@ -3002,11 +3388,11 @@ namespace ngbla
         a = SIMD<double>(1); b = SIMD<double>(2);
         c = 0.0;
         double tot = n*m*k;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C += A*Bt, sym");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             AddABtSym(a, b, c);
           t.Stop();
           cout << "AddABt, sym GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3021,11 +3407,11 @@ namespace ngbla
         Matrix<> a(4,n), b(n,3*SW), c(4,3*SW);
         a = 1; b = 2; c = 0;
         double tot = n*4*3*SW;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
           t.Stop();
           cout << "MatKernelAddAB 3x4 = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3040,11 +3426,11 @@ namespace ngbla
         Matrix<SIMD<double>> b(n, 3);
         a = 1; b = SIMD<double>(2); c = 0;
         double tot = n*4*3*SW;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
           t.Stop();
           cout << "MatKernelAddAB 3x4, algined GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3060,11 +3446,11 @@ namespace ngbla
         Matrix<> a(4,n), b(n,m), c(4,m);
         a = 1; b = 2; c = 0;
         double tot = n*4*m;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             for (size_t i = 0; i+3*SW <= m; i += 3*SW)
               MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i), b.Width(), &c(i), c.Width());
           t.Stop();
@@ -3082,11 +3468,11 @@ namespace ngbla
         Matrix<SIMD<double>> b(n, m/SW);
         a = 1; b = SIMD<double>(2); c = 0;
         double tot = n*4*m;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             for (size_t i = 0; i+3*SW <= m; i += 3*SW)            
               MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i/SW), b.Width(), &c(i), c.Width());
           t.Stop();
@@ -3104,12 +3490,12 @@ namespace ngbla
         Matrix<> a(4,n), b(4,n), c(3,4);
         a = 1; b = 2; c = 0;
         double tot = n*4*3;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         SIMD<double,4> sum(0);
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               auto res = MatKernelScalAB<3,4>(n,&a(0), a.Width(), &b(0), b.Width());
               sum += get<0>(res) + get<1>(res) + get<2>(res);
@@ -3129,12 +3515,12 @@ namespace ngbla
         Matrix<> c(3,4);
         a = SIMD<double>(1); b = SIMD<double>(2); c = 0;
         double tot = n*4*3*SW;
-        int its = 1e10 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         SIMD<double,4> sum(0);
         {
           Timer t("C = A*B");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             {
               auto res = MatKernelScalAB<3,4>(n,&a(0), a.Width(), &b(0), b.Width());
               sum += get<0>(res) + get<1>(res) + get<2>(res);
@@ -3155,11 +3541,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CalcInverse(a, INVERSE_LIB::INV_NGBLA);
           t.Stop();
           cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3167,6 +3553,65 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 201)
+      {
+        // CalcInverse
+        Matrix<> a(n,n);
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++)
+            a(i,j) = cos(i+j);
+        // a = 1;
+        // a.Diag() = 1.1;
+        double tot = n*n*n;
+        size_t its = 1e9 / tot + 1;
+        if (its > maxits) its = maxits;
+        {
+          Timer t("Inv(A)");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            CalcInverse(a, INVERSE_LIB::INV_NGBLA_LU);
+          t.Stop();
+          cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Inv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+
+        
+        {
+          Timer t("CalcLU");
+          Array<int> p(n);
+          Matrix<> ha = a;
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              ha = a;
+              CalcLU(ha, p);
+            }
+          t.Stop();
+          cout << "CalcLU GFlops = " << 1e-9 * tot/3*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("CalcLU", 1e-9 * tot/3 *its / t.GetTime()));
+        }
+
+        {
+          Timer t("InvFromLU");
+          Array<int> p(n);
+          CalcLU(a, p);          
+          Matrix<> ha = a;
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              ha = a;
+              InverseFromLU(ha, p);
+            }
+          t.Stop();
+          cout << "InvFromLU GFlops = " << 1e-9 * tot*2/3*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("InvFromLU", 1e-9 * tot*2/3 *its / t.GetTime()));
+        }
+
+
+
+      }
+
+    
 
     if (what == 0 || what == 205)
       {
@@ -3175,11 +3620,11 @@ namespace ngbla
         a = 1;
         Trans(a).Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             CalcLDL (SliceMatrix<double,ColMajor> (a));
           t.Stop();
           cout << "Inv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3195,11 +3640,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             LapackInverse(a);
           t.Stop();
           cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3214,11 +3659,11 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        int its = 1e9 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
-          for (int j = 0; j < its; j++)
+          for (size_t j = 0; j < its; j++)
             LapackInverseSPD(a);
           t.Stop();
           cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3230,6 +3675,159 @@ namespace ngbla
     return timings;
   }
 
+
+#if defined __AVX512F__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,8> sum0 = 0.0;
+    SIMD<double,8> sum1 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i+16 <= n; i += 16, i0 += 2)
+      {
+	unsigned char mask0 = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask0));
+	unsigned char mask1 = bad[i0+1];
+	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask1));
+	sum0 = If (m0, sum0+SIMD<double,8>(pa+i)*SIMD<double,8> (pb + i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,8>(pa+i+8)*SIMD<double,8>(pb + i + 8), sum1);
+      } // n < i + 16
+    if (i + 8 <= n)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	sum0 = If (m0, sum0+SIMD<double,8>(pa + i)*SIMD<double,8> (pb + i), sum0);
+	i += 8;
+      } // n < i + 8
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i] * pb[i];
+	}
+      }
+    return HSum(sum0 + sum1);
+  }
+
+#elif defined __AVX__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,4> sum0 = 0.0;
+    SIMD<double,4> sum1 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i+8 <= n; i += 8, i0++)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask) / 16);
+	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb + i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,4>(pa+i+4)*SIMD<double,4>(pb + i + 4), sum1);
+      } // n < i + 8
+    if (i + 4 <= n)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
+	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb+i), sum0);
+	i += 4;
+      } // n < i + 4
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i] * pb[i];
+	}
+      }
+    return HSum(sum0 + sum1);
+  }
+
+#elif defined __SSE__
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    SIMD<double,2> sum0 = 0.0;
+    SIMD<double,2> sum1 = 0.0;
+    SIMD<double,2> sum2 = 0.0;
+    SIMD<double,2> sum3 = 0.0;
+    int i(0), i0(0);
+    auto bad = ba.Data();
+    for ( ; i + 8 <= n; i += 8, i0++)
+      {
+	unsigned char mask = bad[i0];
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64,2> m1 = GetMaskFromBits (unsigned(mask) / 4);   // shift by 2
+	SIMD<mask64,2> m2 = GetMaskFromBits (unsigned(mask) / 16);  // shift by 4
+	SIMD<mask64,2> m3 = GetMaskFromBits (unsigned(mask) / 64);  // shift by 6
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,2>(pa+i+2)*SIMD<double,2>(pb+i+2), sum1);
+	sum2 = If (m2, sum2+SIMD<double,2>(pa+i+4)*SIMD<double,2>(pb+i+4), sum2);
+	sum3 = If (m3, sum3+SIMD<double,2>(pa+i+6)*SIMD<double,2>(pb+i+6), sum3);
+      } // n < i+8
+    unsigned char mask = bad[i0];
+    int shift = 1;
+    if (i+4 <= n)
+      {
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask));
+	SIMD<mask64,2> m1 = GetMaskFromBits (unsigned(mask) / 4); // shift by 2
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	sum1 = If (m1, sum1+SIMD<double,2>(pa+i+2)*SIMD<double,2>(pb+i+2), sum1);
+	i += 4;
+	shift = 16;
+      } // n < i+4
+    if (i+2 <= n)
+      {
+	SIMD<mask64,2> m0 = GetMaskFromBits (unsigned(mask) / shift);
+	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
+	i += 2;
+      } // n < i+2
+    for ( ; i < n; i++ )
+      {
+	if (ba.Test(i)) {
+	  sum0[0] += pa[i]*pb[i];
+	}
+      }
+    sum0 += sum2;
+    sum1 += sum3;
+    return HSum(sum0 + sum1);
+  }
+
+#else // ifdef AVX512/AVX/SSE
+
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba)
+  {
+    double sum = 0;
+    double vhsum[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    int i(0);
+    for ( ; i+8 < fa.Size(); i += 8)
+      {
+	for (int j = 0; j < 8; j++)
+	  {
+	    double hprod = fa(i+j)*fb(i+j);
+	    if (ba.Test(i+j))
+	      vhsum[j] += hprod;
+	  }
+      }
+    for ( ; i < fa.Size(); i++)
+      if (ba.Test(i))
+	sum += fa(i)*fb(i);
+    for (int j = 1; j < 8; j++)
+      vhsum[0] += vhsum[j];
+    return vhsum[0];
+  }
+
+#endif  // ifdef AVX512/AVX/SSE
   
 }
 

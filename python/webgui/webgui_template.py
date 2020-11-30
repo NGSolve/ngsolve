@@ -64,7 +64,7 @@ html_template = """
 
 
 class WebGLScene:
-    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function):
+    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
@@ -81,6 +81,7 @@ class WebGLScene:
         self.vectors = vectors
         self.on_init = on_init
         self.eval_function = eval_function
+        self.eval_ = eval_
 
         self.deformation = deformation
 
@@ -149,6 +150,19 @@ class WebGLScene:
 
         if self.eval_function:
             d['user_eval_function'] = self.eval_function
+
+        # see shaders/utils.h for value explanation (function_mode)
+        eval_ = self.eval_
+        if eval_ is not None:
+            if isinstance(eval_, int):
+                d['eval'] = eval_
+            elif eval_ == 'norm':
+                d['eval'] = 3
+            elif eval_ == 'real':
+                d['eval'] = 5
+            elif eval_ == 'imag':
+                d['eval'] = 6
+
         return d
 
     def GenerateHTML(self, filename=None):
@@ -462,7 +476,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None):
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename=""):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -475,7 +489,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval)
     if _IN_IPYTHON:
         if _IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
@@ -486,7 +500,8 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
             scene.Draw()
             return scene
     else:
-        scene.GenerateHTML(filename='output.html')
+        if filename:
+            scene.GenerateHTML(filename=filename)
         return scene
 
 

@@ -39,28 +39,36 @@ if (NETGEN_USE_GUI)
             ngsolve.cpp shapetester.cpp 
             )
 
-    target_link_libraries(ngsolve PUBLIC nglib gui ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
-    target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
-
-    target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
-    install( TARGETS ngsolve ${ngs_install_dir} )
+    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES})
 
     if(NOT APPLE)
         target_link_libraries( ngsolve PRIVATE ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY} )
     endif(NOT APPLE)
-    if(WIN32)
-        set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
+
+else (NETGEN_USE_GUI)
+    if(WIN32) # libngsolve.dll is the only ngsolve library on windows -> also build it without GUI
+        add_library( ngsolve SHARED ${ngsolve_object_libs})
     endif(WIN32)
 
-    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES})
 endif (NETGEN_USE_GUI)
 
+if (NETGEN_USE_GUI OR WIN32)
+    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
+    target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+    target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
+    install( TARGETS ngsolve ${ngs_install_dir} )
+endif()
 
-if(NOT WIN32)
+if(WIN32)
+    set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
+    enable_language(RC)
+    target_sources( ngsolve PRIVATE ../cmake/resources/ngsolve.rc )
+    set_target_properties( ngsolve PROPERTIES RULE_LAUNCH_COMPILE "" )
+else(WIN32)
     add_executable( ngs ngs.cpp)
     target_link_libraries(ngs PUBLIC solve netgen_python ${NETGEN_PYTHON_LIBRARIES})
     install( TARGETS ngs DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
-endif(NOT WIN32)
+endif(WIN32)
 
 install( FILES solve.hpp DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE} COMPONENT ngsolve_devel )

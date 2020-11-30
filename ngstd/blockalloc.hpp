@@ -64,8 +64,17 @@ public:
   int NumElements () { return nels; }
 
   NGS_DLL_HEADER void Print (ostream * ost) const;
+
+  const MemoryTracer& GetMemoryTracer() const { return mt; }
+
+  void StartMemoryTracing() const
+  {
+    mt.Alloc(bablocks.Size() * size * blocks);
+  }
+
 private:
   NGS_DLL_HEADER void * Alloc2 ();
+  MemoryTracer mt;
 };
 
 

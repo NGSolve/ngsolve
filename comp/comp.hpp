@@ -78,6 +78,7 @@ namespace ngcomp
 #include "reorderedfespace.hpp"
 
 #include "facetsurffespace.hpp"
+#include "normalfacetsurfacefespace.hpp"
 #include "fesconvert.hpp"
 
 // #include "bddc.hpp"

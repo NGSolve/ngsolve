@@ -113,7 +113,7 @@ namespace ngcomp
       throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
     }
 
-        static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
@@ -390,6 +390,19 @@ namespace ngcomp
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       Cast(bfel).AddTrans (mir, y, x);
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      int dim = dir->Dimension();
+      auto n = NormalVectorCF(dim);
+      n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+      auto Pn = n * TransposeCF(n);
+      
+      return 2*SymmetricCF((2*SymmetricCF(Pn * dir->Operator("Gradboundary"))
+                            -TransposeCF(dir->Operator("Gradboundary"))) * proxy);
     }
     
   };
@@ -754,6 +767,29 @@ namespace ngcomp
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurl<3>>>();
       //flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlHCurlCurlBoundary>>();
     }
+
+    switch (ma->GetDimension())
+      {
+      case 1:
+        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<1>>> ());
+	break;
+      case 2:
+        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
+        additional_evaluators.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
+        additional_evaluators.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<2>>> ());
+	break;
+      case 3:
+        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
+        additional_evaluators.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
+        additional_evaluators.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<3>>> ());
+        additional_evaluators.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDualBoundary<3>>> ());
+	break;
+      default:
+        ;
+      }
+
   }
 
   DocInfo HCurlCurlFESpace :: GetDocu ()
@@ -1226,30 +1262,7 @@ namespace ngcomp
   SymbolTable<shared_ptr<DifferentialOperator>>
   HCurlCurlFESpace :: GetAdditionalEvaluators () const
   {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch (ma->GetDimension())
-      {
-      case 1:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<1>>> ());
-	break;
-      case 2:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
-        additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
-        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<2>>> ());
-	break;
-      case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
-        additional.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
-        additional.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<3>>> ());
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<3>>> ());
-        additional.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDualBoundary<3>>> ());
-        
-	break;
-      default:
-        ;
-      }
-    return additional;
+    return additional_evaluators;
   }
 
   static RegisterFESpace<HCurlCurlFESpace> init ("hcurlcurl");

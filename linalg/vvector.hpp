@@ -32,15 +32,21 @@ namespace ngla
       es = aes;
       pdata = new TSCAL[as*aes];
       ownmem = true;
+      GetMemoryTracer().Alloc(sizeof(TSCAL) * as * aes);
       this->entrysize = es * sizeof(TSCAL) / sizeof(double);
     }
 
     void SetSize (size_t as)
     {
-      if (ownmem) delete [] pdata;
+      if (ownmem)
+        {
+          GetMemoryTracer().Free(sizeof(TSCAL) * this->size * es);
+          delete [] pdata;
+        }
       this->size = as;
       pdata = new TSCAL[as*es];
       ownmem = true;
+      GetMemoryTracer().Alloc(sizeof(TSCAL) * as * es);
     }
 
     void AssignMemory (size_t as, void * adata)
@@ -72,6 +78,7 @@ namespace ngla
     virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const override;
     
     virtual ostream & Print (ostream & ost) const override;
+    using BaseVector::GetMemoryTracer;
   };
 
 
