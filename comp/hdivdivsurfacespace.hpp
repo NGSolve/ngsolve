@@ -65,6 +65,7 @@ namespace ngcomp
     { GetDofNrs (elnr, dnums); }
     std::shared_ptr<ngmg::Prolongation> GetProlongation() const override
     { return 0; }
+
   };
 
 }
