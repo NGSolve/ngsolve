@@ -3622,14 +3622,14 @@ namespace ngbla
 	SIMD<mask64> m1 = GetMaskFromBits (unsigned(mask1));
 	sum0 = If (m0, sum0+SIMD<double,8>(pa+i)*SIMD<double,8> (pb + i), sum0);
 	sum1 = If (m1, sum1+SIMD<double,8>(pa+i+8)*SIMD<double,8>(pb + i + 8), sum1);
-      } // n < i + 8
+      } // n < i + 16
     if (i + 8 <= n)
       {
 	unsigned char mask = bad[i0];
 	SIMD<mask64> m0 = GetMaskFromBits (unsigned(mask));
 	sum0 = If (m0, sum0+SIMD<double,8>(pa + i)*SIMD<double,8> (pb + i), sum0);
-	i += 4;
-      } // n < i + 4
+	i += 8;
+      } // n < i + 8
     for ( ; i < n; i++ )
       {
 	if (ba.Test(i)) {
