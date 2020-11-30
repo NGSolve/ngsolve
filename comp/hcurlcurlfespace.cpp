@@ -113,7 +113,7 @@ namespace ngcomp
       throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
     }
 
-        static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
@@ -390,6 +390,19 @@ namespace ngcomp
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       Cast(bfel).AddTrans (mir, y, x);
+    }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir)
+    {
+      int dim = dir->Dimension();
+      auto n = NormalVectorCF(dim);
+      n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+      auto Pn = n * TransposeCF(n);
+      
+      return 2*SymmetricCF((2*SymmetricCF(Pn * dir->Operator("Gradboundary"))
+                            -TransposeCF(dir->Operator("Gradboundary"))) * proxy);
     }
     
   };
