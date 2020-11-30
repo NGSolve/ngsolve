@@ -3533,9 +3533,16 @@ namespace ngfem
                     FlatMatrix<TSCAL> elmat,
                     LocalHeap & lh) const
   {
+
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
+
     elmat = 0.0;
 
-    int maxorder = fel1.Order();
+    //int maxorder = fel1.Order();
+    int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
 
     auto etvol = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (etvol, LocalFacetNr1);
@@ -3595,14 +3602,14 @@ namespace ngfem
                 {
                   size_t ii = i+j;
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                  proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                  proxy1->Evaluator()->CalcMatrix(fel1_trial, mir1[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel1_test, mir1[ii], bmat2, lh);
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
                 }
 
-              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1);
-              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1);
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1_trial);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1_test);
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
             }
         }
