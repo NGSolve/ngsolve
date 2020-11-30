@@ -73,7 +73,10 @@ namespace ngfem
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const = 0;
 
-    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const = 0;
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const = 0;
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const = 0;
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const = 0;
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const = 0;
 
 
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
@@ -140,8 +143,19 @@ namespace ngfem
   {
     return Vec<6,T> { mat(0,0), mat(1,1), mat(2,2), mat(1,2)+mat(2,1), mat(0,2)+mat(2,0), mat(0,1)+mat(1,0) };
   }
+
   
-    
+  template <typename T>
+  Mat<2,2,T> DyadProd(Vec<2,T> a, Vec<2,T> b)
+  {
+    return Matrix<T>({{a(0)*b(0), a(0)*b(1)}, {a(1)*b(0), a(1)*b(1)}} );
+  }
+
+  template <typename T>
+  Mat<3,3,T> DyadProd(Vec<3,T> a, Vec<3,T> b)
+  {
+    return Matrix<T>( {{a(0)*b(0), a(0)*b(1), a(0)*b(2)}, {a(1)*b(0), a(1)*b(1), a(1)*b(2)}, {a(2)*b(0), a(2)*b(1), a(2)*b(2)}} );
+  }
 
   template <ELEMENT_TYPE ET> class HDivDivFE;
 
@@ -230,10 +244,78 @@ namespace ngfem
                                             }));
     }
 
-    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override
     {
       shape = 0.0;
-      Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t i, Vec<DIM+1> val) { VecToSymMat<DIM>(val, shape.Row(i)); }));
+      Switch<4-DIM>
+        (bmip.DimSpace()-DIM,[this, &bmip, shape](auto CODIM)
+         {
+           auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+
+           Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t nr, auto val)
+                                                   {
+                                                     shape.Row(nr) = val.AsVector();
+                                                   }));
+         });
+      
+    }
+
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this, &bmir, shapes](auto CODIM)
+         {
+           constexpr int DIMSPACE = DIM+CODIM.value;
+           auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+
+           shapes.AddSize(ndof*sqr(DIMSPACE), mir.Size()) = 0.0;
+           for (size_t i = 0; i < mir.Size(); i++)
+             {
+               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
+                                                          {
+                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
+                                                          }));
+             }
+         });
+    }
+    
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+                             {
+                               constexpr int DIMSPACE = DIM+CODIM.value;
+                               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+                               for (size_t i = 0; i < mir.Size(); i++)
+                                 {
+                                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> sum (SIMD<double>(0.0));
+                                   Cast() -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, auto val)
+                                                                              {
+                                                                                sum += coefs(j) * val;
+                                                                              }));
+                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                     values(k, i) = sum(k);
+                                 }});
+    }
+    
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+                             {
+                               constexpr int DIMSPACE = DIM+CODIM.value;
+                               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+                               for (size_t i = 0; i < mir.Size(); i++)
+                                 {
+                                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> value;
+                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                     value(k) = values(k, i);
+                                   
+                                   Cast()-> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
+                                                                             {
+                                                                               coefs(j) += HSum(InnerProduct(val,value));
+                                                                             }));
+                                 }});
     }
 
 
@@ -1292,21 +1374,21 @@ namespace ngfem
               int p = order_facet[i][0];
               
               if (i == facetnr)
-                {             
-                  int es = edges[i][0], ee = edges[i][1];
-                  if (vnums[es] < vnums[ee]) swap (es,ee);
+                {
+                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
                   
-                  T xi = lam[ee]-lam[es];
-                  Vec<2,T> tauref = pnts[ee] - pnts[es];
+                  T xi = lam[e[0]]-lam[e[1]];
+                  Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
                   
-                  Vec<2,T> nvref =Vec<2,T>(tauref[1],-tauref[0]);
-                  Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref;
+                  Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
+                  auto nv = Trans(mip.GetJacobianInverse())*nvref;
+                  auto nn = DyadProd(nv,nv);
+                  
                   LegendrePolynomial::Eval
                     (p, xi,
                      SBLambda([&] (size_t nr, T val)
                               {
-                                Vec<3,T> nn = mip.GetMeasure()*Vec<3,T>(nv[0]*nv[0],nv[1]*nv[1],nv[0]*nv[1]);
-                                shape[nr+ii] = val*nn;
+                                shape[nr+ii] = mip.GetMeasure()*val*nn;
                               }));
                 }
               ii += (p+1);
@@ -1325,9 +1407,9 @@ namespace ngfem
               DubinerBasis::Eval (p, lam[0], lam[1],
                                   SBLambda([&] (size_t nr, T val)
                                            {
-                                             shape[ii++] = val*Vec<3,T>(1,0,0);
-                                             shape[ii++] = val*Vec<3,T>(0,1,0);
-                                             shape[ii++] = val*Vec<3,T>(0,0,1);
+                                             shape[ii++] = val*mip.GetMeasure()*mip.GetJacobian()*Mat<2,2>({{1,0},{0,0}})*Trans(mip.GetJacobian());
+                                             shape[ii++] = val*mip.GetMeasure()*mip.GetJacobian()*Mat<2,2>({{0,0},{0,1}})*Trans(mip.GetJacobian());
+                                             shape[ii++] = val*mip.GetMeasure()*mip.GetJacobian()*Mat<2,2>({{0,1},{1,0}})*Trans(mip.GetJacobian());
                                            }));
             }
         }

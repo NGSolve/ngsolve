@@ -22,6 +22,9 @@ namespace ngla
     for (auto entry : *blocktable)
       if (entry.Size() > maxbs)
         maxbs = entry.Size();
+    GetMemoryTracer().Track(*blocktable, "BlockTable");
+    GetMemoryTracer().Track(block_coloring, "BlockColoring");
+    GetMemoryTracer().Track(color_balance, "ColorBalance");
   }
 
 
@@ -574,6 +577,7 @@ namespace ngla
 
       }
 
+    GetMemoryTracer().Track(bigmem, "InvDiag");
     cout << IM(3) << "\rBlockJacobi Preconditioner built" << endl;
   }
 

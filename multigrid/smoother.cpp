@@ -60,8 +60,12 @@ namespace ngmg
     for (i = 0; i < biform.GetNLevels(); i++)
       {
 	if (biform.GetMatrixPtr(i))
-	  jac[i] = dynamic_cast<const BaseSparseMatrix&> (*biform.GetMatrixPtr(i))
-	    .CreateJacobiPrecond(biform.GetFESpace()->GetFreeDofs());
+          {
+            jac[i] = dynamic_cast<const BaseSparseMatrix&> (*biform.GetMatrixPtr(i))
+              .CreateJacobiPrecond(biform.GetFESpace()->GetFreeDofs());
+            string name = "GSSmootherLevel" + ToString(i);
+            GetMemoryTracer().Track(*jac[i], name);
+          }
 	else
 	  jac[i] = NULL;
       }
@@ -190,6 +194,8 @@ namespace ngmg
       }
     jac.Append  (dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix()) . 
 		 CreateBlockJacobiPrecond(make_shared<Table<int>> (linecluster)));
+    string name = "AnisotropicSmootherLevel" + ToString(jac.Size()-1);
+    GetMemoryTracer().Track(*jac.Last(), name);
   }
 
 
@@ -734,6 +740,8 @@ namespace ngmg
             jac[lvl-1] = dynamic_cast<const BaseSparseMatrix&>
               (biform.GetMatrix(lvl-1)).CreateBlockJacobiPrecond(smoothing_blocks[lvl-1], &constraint->GetVector());
           }
+        string name = "BlockSmootherLevel" + ToString(lvl);
+        GetMemoryTracer().Track(*jac[lvl-1], name);
       }
 #else
 
@@ -786,6 +794,7 @@ namespace ngmg
 
     if (direct)
       {
+        GetMemoryTracer().Track(*direct, "DirectSolverClusters");
 	if (biform.UsesEliminateInternal())
 	  {
 	    const FESpace & fes = *biform.GetFESpace();
@@ -795,6 +804,8 @@ namespace ngmg
 	  }
 	inv[level-1] = dynamic_cast<const BaseSparseMatrix&> 
 	  (biform.GetMatrix()).InverseMatrix (direct);
+        string name = "DirectSolverClustersInverse-Level" + ToString(level);
+        GetMemoryTracer().Track(*inv[level-1], name);
       }
   }
 

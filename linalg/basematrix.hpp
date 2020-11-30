@@ -143,6 +143,10 @@ namespace ngla
     void PrintOperatorInfo (ostream & ost, int level = 0) const;
   private:
     BaseMatrix & operator= (const BaseMatrix & m2) { return *this; }
+
+    MemoryTracer mt = { "BaseMatrix" };
+  public:
+    const MemoryTracer& GetMemoryTracer() const { return mt; }
   };
 
 

@@ -45,6 +45,27 @@ namespace ngcomp
     {
       throw Exception(string("DiffOpHDivDivDual not available for mat ")+typeid(mat).name());
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(bfel).CalcDualShape (mir, mat);
+    }
+
+    using DiffOp<DiffOpHDivDivDual<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(bfel).EvaluateDual (mir, x, y);
+    }
+
+    using DiffOp<DiffOpHDivDivDual<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(bfel).AddDualTrans (mir, y, x);
+    }
    
   };
   

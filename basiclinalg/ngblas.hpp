@@ -104,6 +104,7 @@ namespace ngbla
   
   inline void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
+    if (a.Height() == 0 || b.Width() == 0) return;
     size_t wa = a.Width();
     if (wa <= 12)
       (*dispatch_multAB[wa])  (a.Height(), b.Width(), a, b, c);
@@ -161,43 +162,16 @@ namespace ngbla
   }
 
 
-
   
-  /*  
-  typedef void REGCALL (*pfunc_atb)(size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
-  extern NGS_DLL_HEADER pfunc_atb dispatch_atb[13];
-  extern NGS_DLL_HEADER void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
-    
-  inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  {
-    size_t wa = a.Width();
-    if (wa <= 12)
-      (*dispatch_atb[wa])  (a.Height(), b.Width(), a, b, c);
-    else
-      MultAtB_intern (a,b,c);
-  }
-  */
 
-
-  /*
-  template <bool ADD, bool POS> extern NGS_DLL_HEADER pmultABW dispatch_atb[14];
-#ifdef  COMPILE_NGBLAS
-  template <> NGS_DLL_HEADER pmultABW dispatch_atb<false,true>[14];
-  template <> NGS_DLL_HEADER pmultABW dispatch_atb<false,false>[14];
-  template <> NGS_DLL_HEADER pmultABW dispatch_atb<true,true>[14];
-  template <> NGS_DLL_HEADER pmultABW dispatch_atb<true,false>[14];
-#endif //  COMPILE_NGBLAS
-  */
 
   template <bool ADD, bool POS>
-  class  NGS_DLL_HEADER dispatch_atb {
-  public:
-    static pmultABW ptrs[14];
-  };
+  struct NGS_DLL_HEADER dispatch_atb { static pmultABW ptrs[14]; };
   
   template <bool ADD, bool POS>
   inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
+    if (a.Height() == 0 || b.Width() == 0) return;
     size_t wa = a.Width();
     if (wa >= std::size(dispatch_atb<ADD,POS>::ptrs))
       wa = std::size(dispatch_atb<ADD,POS>::ptrs)-1;
@@ -207,24 +181,9 @@ namespace ngbla
   inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   { MatMat_AtB<false,true> (a, b, c); }
   
-  /*
-  inline void MultAtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  {
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_atb<false,true>))
-      wa = std::size(dispatch_atb<false,true>)-1;
-    (*dispatch_atb<false,true>[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
-  }
 
-  template <bool ADD, bool POS>
-  inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  {
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_atb<ADD,POS>))
-      wa = std::size(dispatch_atb<ADD,POS>)-1;
-    (*dispatch_atb<ADD,POS>[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
-  }
-  */
+
+  
   
   //extern NGS_DLL_HEADER void MultABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
 
