@@ -2680,7 +2680,7 @@ integrator : ngsolve.fem.LFI
 
   m.def("RegisterPreconditioner", [] (string name, py::object makepre)
     {
-      cout << "register Python preconditioner " << name << endl;
+      // cout << "register Python preconditioner " << name << endl;
       
       auto creator_function = [makepre]
         (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
