@@ -1172,6 +1172,7 @@ component : int
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
   
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
+  ExportFESpace<NormalFacetSurfaceFESpace> (m, "NormalFacetSurface");
   
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
     .def("Average", &HDivHighOrderSurfaceFESpace::Average,
