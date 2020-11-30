@@ -177,6 +177,14 @@ namespace ngcomp
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
+      GetMemoryTracer().SetName("BDDCMatrix");
+      GetMemoryTracer().Track(
+          weight, "weight",
+          *sparse_innersolve, "mat_innersolve",
+          *sparse_harmonicext, "mat_harmonicext",
+          *sparse_harmonicexttrans, "mat_harmonicexttrans"
+          );
+
       if (coarse)
       {
         flags.SetFlag ("not_register_for_auto_update");
@@ -447,6 +455,10 @@ namespace ngcomp
 	      tmp = make_unique<VVector<TV>>(ndof);
 	    }
 	}
+      if(inv_coarse)
+        GetMemoryTracer().Track(*inv_coarse, "CoarseInverse");
+      if(inv)
+        GetMemoryTracer().Track(*inv, "Inverse");
     }
 
     ~BDDCMatrix()  { } 
@@ -591,6 +603,7 @@ namespace ngcomp
       freedofs = _freedofs;
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
+      GetMemoryTracer().Track(*pre, "pre");
     }
 
     virtual void FinalizeLevel (const BaseMatrix *)

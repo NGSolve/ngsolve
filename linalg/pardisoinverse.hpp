@@ -115,6 +115,7 @@ namespace ngla
 
     bool compressed;
     Array<int> compress;
+    size_t memory_allocated_in_pardiso_lib = 0;
   
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;

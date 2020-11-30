@@ -6,6 +6,8 @@
 namespace ngbla
 {
 
+  
+
   int dgemm(char *transa, char *transb, integer *m, integer *
 		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
 		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
@@ -41,6 +43,8 @@ namespace ngbla
   }
 
 #include "matkernel.hpp"
+  // template <OPERATION OP>
+  constexpr OPERATION AddOp(OPERATION OP) { return (OP == ADD || OP == SET) ? ADD : SUB; }
 
 
   /* ***************************** Copy Matrix *********************** */
@@ -1182,31 +1186,83 @@ namespace ngbla
   // template <> pmultABW dispatch_atb<false,true>[];
 
   template <OPERATION OP>
-  void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  void MultAtB_intern2 (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
+    // extern int myvar2; myvar2++;
     // c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
     // return;
     
     constexpr size_t bs = 8;
+    constexpr size_t maxha = 192;
+    
     size_t i = 0;
     size_t ha = a.Height();    
-    //size_t wa = a.Width();
+    size_t wa = a.Width();
     size_t wb = b.Width();
     BareSliceMatrix<> bare_a(a);
     BareSliceMatrix<> bare_b(b);
-    for ( ; i+bs <= a.Width(); i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
-      MultAtBSmallWA<bs,OP> (ha, bs, wb, bare_a, bare_b, c);
+
+    alignas(64) SIMD<double> mem[bs*maxha/SIMD<double>::Size()];
     
+    for ( ; i+bs <= wa; i += bs, bare_a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
+      {
+        CopyMatrixIn (ha, bs, bare_a.Data(), bare_a.Dist(), &mem[0], bs/SIMD<double>::Size());
+        
+        MatKernelAtB_SmallWA<bs,OP> (ha, wb,
+                                     (double*)&mem[0], 8,
+                                     &bare_b(0), bare_b.Dist(),
+                                     &c(0), c.Dist());
+      }
+    // MultAtBSmallWA<bs,OP> (ha, bs, wb, bare_a, bare_b, c);
+
+    if (i == wa) return;
+    dispatch_atb<OP==ADD || OP==SUB, OP==SET || OP==ADD>::ptrs[wa-i] (ha, wa-i, wb, bare_a, bare_b, c);    
+    /*
     if constexpr (OP == SET)
-                   dispatch_atb<false,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+                   dispatch_atb<false,true>::ptrs[wa-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
     if constexpr (OP == ADD)
                    dispatch_atb<true,true>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
     if constexpr (OP == SETNEG)
                    dispatch_atb<false,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
     if constexpr (OP == SUB)
                    dispatch_atb<true,false>::ptrs[a.Width()-i] (ha, a.Width()-i, wb, bare_a, bare_b, c);
+    */
   }
 
+  
+  template <OPERATION OP>
+  void MultAtB_intern (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  {
+    constexpr size_t BBW = 192;
+    constexpr size_t ABW = 192;
+    constexpr size_t ABH = 192;
+    size_t wb = b.Width();
+    size_t wa = a.Width();
+    size_t ha = a.Height();
+
+
+    alignas(64) SIMD<double> mem[ABH*ABW/SIMD<double>::Size()];
+
+    for (size_t j = 0; j < wb; j += BBW)
+      {
+        IntRange rj(j, j+min(wb-j, BBW));
+        
+        for (size_t i = 0; i < ha; i += ABH)
+          {
+            IntRange ri(i, i+min(ha-i, ABH));
+            
+            auto bij = b.Rows(ri).Cols(rj);
+            CopyMatrixIn (ri.Size(), rj.Size(), bij.Data(), bij.Dist(), &mem[0], BBW/SIMD<double>::Size());
+            SliceMatrix<> bbm(ri.Size(), rj.Size(), BBW, (double*)&mem);
+            
+            if (i == 0)
+              MultAtB_intern2<OP> (a.Rows(ri), bbm, c.Cols(rj));
+            else
+              MultAtB_intern2<AddOp(OP)> (a.Rows(ri), bbm, c.Cols(rj));
+          }
+      }
+  }
+  
   template <OPERATION OP>
   void REGCALL MultAtBVar (size_t ha, size_t wa, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                            BareSliceMatrix<double> c)
@@ -2909,7 +2965,7 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         
         double tot = n*m*k;
-        size_t its = 1e10 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         // MultMatMat(a,b,c);
         c = a * b;
         double err = L2Norm(a*b-c);
@@ -2945,7 +3001,7 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         c = 0.0;
         double tot = n*m*k;
-        size_t its = 1e10 / tot + 1;
+        size_t its = 1e9 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("C += A*B");
@@ -3294,13 +3350,30 @@ namespace ngbla
         double tot = n*m*k;
         size_t its = 1e10 / tot + 1;
         {
-          Timer t("C -= A^t*D*B");
+          Timer t("C = A^t*B");
           t.Start();
           for (size_t j = 0; j < its; j++)
             MultAtB(a, b, c);
           t.Stop();
           cout << "MultAtB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
+        }
+        {
+          Timer t("C = A^t*B, block block");
+          constexpr size_t BS = 96;
+          tot = BS*BS*BS;
+          its = 1e9 / tot+1;
+          auto ba = a.Rows(BS).Cols(BS);
+          // auto bb = b.Rows(BS).Cols(BS);
+          auto bc = c.Rows(BS).Cols(BS);
+          // Matrix ba(BS,BS);
+          Matrix bb(BS,BS);
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            MultAtB_intern2<SET> (ba, bb, bc);
+          t.Stop();
+          cout << "MultAtB - block GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
         }
       }
     

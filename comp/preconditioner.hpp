@@ -121,6 +121,7 @@ namespace ngcomp
     const Flags & GetFlags() const { return flags; }
 
     using BaseMatrix::shared_from_this;
+    using NGS_Object::GetMemoryTracer;
   };
 
 

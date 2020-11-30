@@ -1,12 +1,91 @@
 #include <comp.hpp>
-
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"
-// #include "astrid.hpp"
 
 
 namespace ngcomp
 {
+
+  template <int D>
+  class DiffOpHDivDivSurfaceDual : public DiffOp<DiffOpHDivDivSurfaceDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHDivDivSurfaceDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HDivDivFiniteElement<D-1>&> (fel); }
+    
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHDivDivSurfaceDual not available for mat ")+typeid(mat).name());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(bfel).CalcDualShape (mir, mat);
+    }
+
+    using DiffOp<DiffOpHDivDivSurfaceDual<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(bfel).EvaluateDual (mir, x, y);
+    }
+
+    using DiffOp<DiffOpHDivDivSurfaceDual<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(bfel).AddDualTrans (mir, y, x);
+    }
+  };
+
+  template <int D>
+  class DiffOpHDivDivDual : public DiffOp<DiffOpHDivDivDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHDivDivDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+
+    typedef DiffOpHDivDivSurfaceDual<D> DIFFOP_TRACE;
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHDivDivDual for Surface should not be called. Trace is missing."));
+    }
+   
+  };
+  
 
   template<int D>
   class DiffOpIdHDivDiv: public DiffOp<DiffOpIdHDivDiv<D> >
@@ -283,6 +362,9 @@ namespace ngcomp
 		
     noncontinuous = int(aflags.GetNumFlag("discontinuous", 0));
 
+    if (ma->GetDimension() != 3)
+      throw Exception("HDivDivSurface only supports 2D manifolds");
+    
     // for the dimension ..
     evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
     // for div(GridFunction)
@@ -290,6 +372,9 @@ namespace ngcomp
 
     evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivDivSurface<3>>>();
     flux_evaluator[BND] =  make_shared<T_DifferentialOperator<DiffOpDivHDivDivSurface<3>>>();
+
+    additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDivDual<3>>> ());
+    
   }
 
   HDivDivSurfaceSpace :: ~HDivDivSurfaceSpace()
@@ -538,7 +623,6 @@ namespace ngcomp
         break;
       }
   }
-
   
   static RegisterFESpace<HDivDivSurfaceSpace> init("hdivdivsurf");
 }
