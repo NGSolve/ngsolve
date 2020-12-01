@@ -72,8 +72,12 @@ def div(func):
         return func.Operator("div")
     except:
         pass
-    if func.derivname == "grad" and len(func.dims)==2:  # should check for square
+    try:
         return Trace(grad(func))
+    except:
+        pass
+    #if func.derivname == "grad" and len(func.dims)==2:  # should check for square
+    #   return Trace(grad(func))
     raise Exception("cannot form div")    
 
 
