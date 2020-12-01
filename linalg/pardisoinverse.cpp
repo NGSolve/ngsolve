@@ -253,10 +253,11 @@ namespace ngla
     mkl_set_num_threads(mkl_max_threads);
 #endif // USE_MKL
 
-    // retvalue = 
-    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
-			reinterpret_cast<double *>(&matrix[0]),
-			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
+    // retvalue =
+    if (matrix.Size() > 0)
+      F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
+			reinterpret_cast<double *>(matrix.Data()),
+			rowstart.Data(), indices.Data(), NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
 #ifdef USE_MKL
     mkl_set_num_threads(1);
@@ -476,7 +477,7 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error = 0;
     integer nrhs = fx.Size() / (height/entrysize);
     
     if (fx.Size() != fy.Size()) 
@@ -503,32 +504,35 @@ namespace ngla
     mkl_set_num_threads(mkl_max_threads);
 #endif // USE_MKL
 
-    if (compressed)
+    if (matrix.Size() > 0)
       {
-	Matrix<TVX> hx(nrhs, compress.Size());
-	Matrix<TVX> hy(nrhs, compress.Size());
-	hx = mx.Cols(compress);
-	F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
-			    const_cast<integer*>(&matrixtype),
-			    &phase, const_cast<integer*>(&compressed_height), 
-			    reinterpret_cast<double *>(&matrix[0]),
-			    &rowstart[0], &indices[0],
-			    NULL, &nrhs, params, &msglevel,
-			    reinterpret_cast<double *>(&hx(0,0)), 
-			    reinterpret_cast<double *>(&hy(0,0)), &error );
-	my = 0; 
-	my.Cols(compress) = hy;
-      }
-    else
-      {
-	F77_FUNC(pardiso) ( const_cast<integer *>(pt), &maxfct, &mnum, 
-			    const_cast<integer *>(&matrixtype),
-			    &phase, const_cast<integer *>(&compressed_height), 
-			    reinterpret_cast<double *>(&matrix[0]),
-			    &rowstart[0], &indices[0],
-			    NULL, &nrhs, params, &msglevel,
-			    static_cast<double *>((void*)fx.Data()), 
-			    static_cast<double *>((void*)fy.Data()), &error );
+        if (compressed)
+          {
+            Matrix<TVX> hx(nrhs, compress.Size());
+            Matrix<TVX> hy(nrhs, compress.Size());
+            hx = mx.Cols(compress);
+            F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
+                                const_cast<integer*>(&matrixtype),
+                                &phase, const_cast<integer*>(&compressed_height), 
+                                reinterpret_cast<double *>(matrix.Data()),
+                                rowstart.Data(), indices.Data(),
+                                NULL, &nrhs, params, &msglevel,
+                                reinterpret_cast<double *>(hx.Data()), 
+                                reinterpret_cast<double *>(hy.Data()), &error );
+            my = 0; 
+            my.Cols(compress) = hy;
+          }
+        else
+          {
+            F77_FUNC(pardiso) ( const_cast<integer *>(pt), &maxfct, &mnum, 
+                                const_cast<integer *>(&matrixtype),
+                                &phase, const_cast<integer *>(&compressed_height), 
+                                reinterpret_cast<double *>(matrix.Data()),
+                                rowstart.Data(), indices.Data(),
+                                NULL, &nrhs, params, &msglevel,
+                                static_cast<double *>((void*)fx.Data()), 
+                                static_cast<double *>((void*)fy.Data()), &error );
+          }
       }
 
 #ifdef USE_MKL
@@ -589,13 +593,14 @@ namespace ngla
     mkl_set_num_threads(mkl_max_threads);
 #endif // USE_MKL
 
-    F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
-			&maxfct, &mnum, const_cast<integer *>(&matrixtype),
-			&phase, const_cast<integer *>(&compressed_height), 
-			reinterpret_cast<double *>(&matrix[0]),
-			&rowstart[0], &indices[0],
-			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
-			&error );
+    if (matrix.Size() > 0)
+      F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
+                          &maxfct, &mnum, const_cast<integer *>(&matrixtype),
+                          &phase, const_cast<integer *>(&compressed_height), 
+                          reinterpret_cast<double *>(matrix.Data()),
+                          rowstart.Data(), indices.Data(),
+                          NULL, &nrhs, params, &msglevel, tx.Data(), ty.Data(),
+                          &error );
 #ifdef USE_MKL
       mkl_set_num_threads(1);
 #endif // USE_MKL
@@ -639,7 +644,7 @@ namespace ngla
     //    cout << "call pardiso (clean up) ..." << endl;
     if (task_manager) task_manager -> StopWorkers();
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
-			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
+			rowstart.Data(), indices.Data(), NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
 #ifdef MKL_PARDISO
     mkl_free_buffers();

@@ -117,34 +117,37 @@ namespace ngla
     double Control[UMFPACK_CONTROL], Info[UMFPACK_INFO];
     umfpack_dl_defaults(Control);
 
-    double *data = reinterpret_cast<double *>(&values[0]);
-    try
+    double *data = reinterpret_cast<double *>(values.Data());
+    if (values.Size() > 0)
       {
-        if(is_complex)
+        try
           {
-            status = umfpack_zl_symbolic ( compressed_height, compressed_height, &rowstart[0], &indices[0], data, nullptr, &Symbolic, Control, Info );
-            umfpack_zl_report_status( nullptr, status );
-            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
-
-            status = umfpack_zl_numeric (&rowstart[0], &indices[0], data, nullptr, Symbolic, &Numeric, nullptr, nullptr );
-            umfpack_zl_report_status( nullptr, status );
-            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+            if(is_complex)
+              {
+                status = umfpack_zl_symbolic ( compressed_height, compressed_height, rowstart.Data(), indices.Data(), data, nullptr, &Symbolic, Control, Info );
+                umfpack_zl_report_status( nullptr, status );
+                if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
+                
+                status = umfpack_zl_numeric (rowstart.Data(), indices.Data(), data, nullptr, Symbolic, &Numeric, nullptr, nullptr );
+                umfpack_zl_report_status( nullptr, status );
+                if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+              }
+            else
+              {
+                status = umfpack_dl_symbolic ( compressed_height, compressed_height, rowstart.Data(), indices.Data(), data, &Symbolic, Control, Info );
+                umfpack_dl_report_status( nullptr, status );
+                if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
+                
+                status = umfpack_dl_numeric (rowstart.Data(), indices.Data(), data, Symbolic, &Numeric, nullptr, nullptr );
+                umfpack_dl_report_status( nullptr, status );
+                if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+              }
           }
-        else
+        catch(Exception & e)
           {
-            status = umfpack_dl_symbolic ( compressed_height, compressed_height, &rowstart[0], &indices[0], data, &Symbolic, Control, Info );
-            umfpack_dl_report_status( nullptr, status );
-            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
-
-            status = umfpack_dl_numeric (&rowstart[0], &indices[0], data, Symbolic, &Numeric, nullptr, nullptr );
-            umfpack_dl_report_status( nullptr, status );
-            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+            if (task_manager) task_manager -> StartWorkers();
+            throw;
           }
-      }
-    catch(Exception & e)
-      {
-        if (task_manager) task_manager -> StartWorkers();
-        throw;
       }
 
     if (task_manager) task_manager -> StartWorkers();
@@ -334,8 +337,10 @@ namespace ngla
 	cout << "height = " << height/entrysize << endl;
       }
 
+    if (this->values.Size() == 0)
+      return;
 
-    double *data = reinterpret_cast<double *>(&this->values[0]);
+    double *data = reinterpret_cast<double *>(this->values.Data());
 
     if (is_complex)
       {
@@ -346,13 +351,13 @@ namespace ngla
         Vector<TSCAL> hx(compressed_height);
         Vector<TSCAL> hy(compressed_height);
 
-        double *data_x = reinterpret_cast<double *>(&hx[0]);
-        double *data_y = reinterpret_cast<double *>(&hy[0]);
+        double *data_x = reinterpret_cast<double *>(hx.Data());
+        double *data_y = reinterpret_cast<double *>(hy.Data());
 
         for (int i : Range(compress.Size()) )
            hx(i) = mx(compress[i]);
 
-        int status = umfpack_zl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
+        int status = umfpack_zl_solve ( UMFPACK_Aat, rowstart.Data(), indices.Data(), data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
         umfpack_zl_report_status( nullptr, status );
         if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
@@ -373,7 +378,7 @@ namespace ngla
           for (int j = 0; j < entrysize; j++)
             hx(i*entrysize+j) = GetReal(mx(compress[i]*entrysize+j));
 
-        int status = umfpack_dl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
+        int status = umfpack_dl_solve ( UMFPACK_Aat, rowstart.Data(), indices.Data(), data, hy.Data(), hx.Data(), this->Numeric, nullptr, nullptr );
         umfpack_dl_report_status( nullptr, status );
         if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
@@ -389,7 +394,7 @@ namespace ngla
               for (int j = 0; j < entrysize; j++)
                 hx(i*entrysize+j) = GetImag(mx(compress[i]*entrysize+j));
 
-            int status = umfpack_dl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
+            int status = umfpack_dl_solve ( UMFPACK_Aat, rowstart.Data(), indices.Data(), data, hy.Data(), hx.Data(), this->Numeric, nullptr, nullptr );
             umfpack_dl_report_status( nullptr, status );
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
@@ -433,7 +438,7 @@ namespace ngla
       }
 
 
-    double *data = reinterpret_cast<double *>(&this->values[0]);
+    double *data = reinterpret_cast<double *>(this->values.Data());
 
     if (is_complex)
       {
@@ -565,7 +570,7 @@ namespace ngla
     if (task_manager) task_manager -> StopWorkers();
 
     int status;
-    double *data = reinterpret_cast<double *>(&values[0]);
+    double *data = reinterpret_cast<double *>(values.Data());
     try
       {
         if(is_complex)
