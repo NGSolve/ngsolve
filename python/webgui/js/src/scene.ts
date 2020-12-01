@@ -365,6 +365,7 @@ export class Scene {
   gui_status_default: any;
   gui_status: any;
   gui_functions: any;
+  gui_container: any;
   uniforms: any;
 
   colormap_object: any;
@@ -412,6 +413,7 @@ export class Scene {
   element: any;
 
   funcdim: number;
+  mesh_only: boolean;
 
   version_object: any;
   c_autoscale: any;
@@ -420,44 +422,7 @@ export class Scene {
   colormap_texture: any;
 
   constructor() {
-    this.uniforms = {};
-    this.gui_status_default = {
-      eval: 0,
-      subdivision: 5,
-      edges: true,
-      mesh: true,
-      elements: true,
-      autoscale: true,
-      colormap_ncolors: 8,
-      colormap_min: -1.0,
-      colormap_max: 1.0,
-      deformation: 0.0,
-      Multidim: { t: 0.0, multidim: 0, animate: false, speed: 2 },
-      Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 2 },
-      Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
-      Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
-      Vectors: { show: false, grid_size: 10, offset: 0.0 },
-      Misc: { stats: "-1", reduce_subdivision: false, "version": true, "axes": true, "colormap": true },
-    };
-    this.gui_status = JSON.parse(JSON.stringify(this.gui_status_default)); // deep-copy settings
-    this.gui_functions = { };
-
-    this.colormap_object = null;
-
-
     this.have_webgl2 = false;
-
-    var buffer_scene;
-    var buffer_object;
-    var buffer_camera;
-
-    var mesh_center;
-    var mesh_radius;
-
-    var pivot;
-
-    var have_deformation;
-    var have_z_deformation;
 
     this.label_style  = '-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; onselectstart="return false;';
     this.label_style += 'onmousedown="return false; user-select:none;-o-user-select:none;unselectable="on";';
@@ -631,26 +596,9 @@ export class Scene {
     this.animate();
   }
 
-  init (element, render_data)
+  initCanvas (element)
   {
-    this.last_frame_time = new Date().getTime();
-    this.render_data = render_data;
-    this.funcdim = render_data.funcdim;
-    this.is_complex = render_data.is_complex;
     this.element = element;
-    console.log("THREE", THREE);
-    console.log("dat", dat);
-    // console.log("Stats", Stats);
-
-    CameraControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-    CameraControls.prototype.constructor = CameraControls;
-
-    this.have_deformation = render_data.mesh_dim == render_data.funcdim && !render_data.is_complex;
-    this.have_z_deformation = render_data.mesh_dim == 2 && render_data.funcdim>0;
-
-    this.mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
-    this.mesh_radius = render_data.mesh_radius;
-
     var canvas = document.createElement( 'canvas' );
 
     var gl2 = canvas.getContext('webgl2');
@@ -687,19 +635,78 @@ export class Scene {
 
     this.container.appendChild( this.renderer.domElement );
 
-    //   stats = new Stats();
-    //   stats.showPanel(-1); // Panel -1 = hidden, 0 = fps, 1 = ms per frame, 2 = memory usage
-    //   stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
-    //   container.appendChild( stats.domElement );
-
     // label with NGSolve version at right lower corner
     this.version_object = document.createElement("div");
     var style = 'bottom: 10px; right: 10px';
     this.version_object.setAttribute("style",this.label_style+style);
-    var version_text = document.createTextNode("NGSolve " + render_data.ngsolve_version);
-    this.version_object.appendChild(version_text)
     this.container.appendChild(this.version_object);
 
+    window.addEventListener( 'resize', ()=>this.onResize(), false );
+  }
+
+  initRenderData (render_data)
+  {
+    if(this.gui_container!=undefined)
+        this.container.removeChild(this.gui_container);
+
+    this.uniforms = {};
+    this.gui_status_default = {
+      eval: 0,
+      subdivision: 5,
+      edges: true,
+      mesh: true,
+      elements: true,
+      autoscale: true,
+      colormap_ncolors: 8,
+      colormap_min: -1.0,
+      colormap_max: 1.0,
+      deformation: 0.0,
+      Multidim: { t: 0.0, multidim: 0, animate: false, speed: 2 },
+      Complex: { phase: 0.0, deform: 0.0, animate: false, speed: 2 },
+      Clipping: { enable: false, function: true, x: 0.0, y: 0.0, z: 1.0, dist: 0.0 },
+      Light: { ambient: 0.3, diffuse: 0.7, shininess: 10, specularity: 0.3},
+      Vectors: { show: false, grid_size: 10, offset: 0.0 },
+      Misc: { stats: "-1", reduce_subdivision: false, "version": true, "axes": true, "colormap": true },
+    };
+    this.gui_status = JSON.parse(JSON.stringify(this.gui_status_default)); // deep-copy settings
+    this.gui_functions = { };
+
+    this.colormap_object = null;
+
+
+    this.colormap_object = null;
+    this.edges_object = null;
+    this.wireframe_object = null;
+    this.mesh_object = null;
+    this.clipping_function_object = null;
+    this.clipping_vectors_object = null;
+    this.axes_object = null;
+    this.buffer_scene = null;
+    this.buffer_object = null;
+    this.buffer_camera = null;
+    this.buffer_texture = null;
+
+    this.last_frame_time = new Date().getTime();
+    this.render_data = render_data;
+    this.funcdim = render_data.funcdim;
+    this.is_complex = render_data.is_complex;
+    console.log("THREE", THREE);
+    console.log("dat", dat);
+    // console.log("Stats", Stats);
+
+    CameraControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+    CameraControls.prototype.constructor = CameraControls;
+
+    this.have_deformation = render_data.mesh_dim == render_data.funcdim && !render_data.is_complex;
+    this.have_z_deformation = render_data.mesh_dim == 2 && render_data.funcdim>0;
+    this.mesh_only = render_data.funcdim==0;
+
+    this.mesh_center = new THREE.Vector3().fromArray(render_data.mesh_center);
+    this.mesh_radius = render_data.mesh_radius;
+
+    var version_text = document.createTextNode("NGSolve " + render_data.ngsolve_version);
+    this.version_object.innerHTML = '';
+    this.version_object.appendChild(version_text)
 
     this.scene = new THREE.Scene();
     this.axes_object = new THREE.AxesHelper(0.15);
@@ -718,8 +725,6 @@ export class Scene {
     );
 
     this.camera.position.set( 0.0, 0.0, 3 );
-
-    window.addEventListener( 'resize', ()=>this.onResize(), false );
 
     this.clipping_plane = new THREE.Vector4(0,0,1,0);
     let uniforms = this.uniforms;
@@ -750,6 +755,7 @@ export class Scene {
     gui_container.setAttribute("style", 'position: absolute; z-index: 2; display:block; right: 0px; top: 0px');
     gui_container.appendChild(gui.domElement);
     this.container.appendChild(gui_container);
+    this.gui_container = gui_container;
 
     this.gui = gui;
     console.log("GUI", gui);
@@ -944,11 +950,18 @@ export class Scene {
       if(cmax>cmin)
         this.setStepSize(cmin, cmax);
 
-      gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(()=>this.updateColormap());
+      gui.add(gui_status, "colormap_ncolors", 2, 32,1).onChange(()=>{this.updateColormap(); this.animate();});
+      this.updateColormap();
+    }
+
+    if(this.mesh_only)
+    {
+        gui_status.colormap_min = -0.5;
+        gui_status.colormap_max = render_data.mesh_regions_2d-0.5;
+        this.setSelectedFaces();
     }
     uniforms.colormap_min = new THREE.Uniform( gui_status.colormap_min );
     uniforms.colormap_max = new THREE.Uniform( gui_status.colormap_max );
-    this.updateColormap();
 
     if(render_data.multidim_data)
     {
@@ -1075,14 +1088,43 @@ export class Scene {
       var on_init = Function("scene", "render_data", render_data.on_init);
       on_init(this, render_data);
     }
-
     this.animate();
+  }
+
+  init(element, render_data)
+  {
+    this.initCanvas(element);
+    this.initRenderData(render_data);
+  }
+
+  setSelectedFaces( bnds = [], col_selected = [0,0.5,1.0], col_default = [0,1,0] )
+  {
+    var n_colors = this.render_data.mesh_regions_2d;
+    var colormap_data = new Float32Array(3*n_colors);
+
+    for (var i=0; i<n_colors; i++)
+    {
+      colormap_data[3*i+0] = col_default[0];
+      colormap_data[3*i+1] = col_default[1];
+      colormap_data[3*i+2] = col_default[0];
+    }
+    for (var i=0; i<bnds.length; i++)
+    {
+      colormap_data[3*bnds[i]+0] = col_selected[0];
+      colormap_data[3*bnds[i]+1] = col_selected[1];
+      colormap_data[3*bnds[i]+2] = col_selected[2];
+    }
+
+    this.colormap_texture = new THREE.DataTexture( colormap_data, n_colors, 1, THREE.RGBFormat, THREE.FloatType );
+    this.colormap_texture.magFilter = THREE.NearestFilter;
+    this.colormap_texture.needsUpdate = true;
+    this.uniforms.tex_colormap = { value: this.colormap_texture};
   }
 
   updateColormap( )
   {
     var n_colors = this.gui_status.colormap_ncolors;
-    var colormap_data = new Float32Array(4*n_colors);
+    var colormap_data = new Float32Array(3*n_colors);
 
     var col_blue = new THREE.Vector3(0,0,1);
     var col_cyan = new THREE.Vector3(0,1,1);
@@ -1172,8 +1214,6 @@ export class Scene {
           let material = <THREE.MeshBasicMaterial>this.colormap_object.material;
           material.map = this.colormap_texture;
         }
-
-        this.animate();
   }
 
 

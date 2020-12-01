@@ -247,7 +247,16 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         func1 = func
         d['funcdim'] = 1
     else:
-        func1 = ngs.CoefficientFunction(0.0)
+        # no function at all -> we are just drawing a mesh, eval mesh element index instead
+        mats = mesh.GetMaterials()
+        bnds = mesh.GetBoundaries()
+        nmats = len(mesh.GetMaterials())
+        nbnds = len(mesh.GetBoundaries())
+        n = max(nmats, nbnds)
+        func1 = ngs.CoefficientFunction(list(range(n)))
+        n_regions = [0, 0, nmats, nbnds]
+        d['mesh_regions_2d'] = n_regions[mesh.dim]
+        d['mesh_regions_3d'] = nmats if mesh.dim==3 else 0
         d['funcdim'] = 0
     func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
     func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
