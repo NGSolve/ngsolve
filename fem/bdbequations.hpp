@@ -1970,6 +1970,7 @@ namespace ngfem
   };
 
   
+  template <int DIM_SPC> class DiffOpDivBoundaryVectorH1;
 
   template <int DIM_SPC>  
   class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
@@ -1979,7 +1980,9 @@ namespace ngfem
     enum { DIM_SPACE = DIM_SPC };
     enum { DIM_ELEMENT = DIM_SPC };
     enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+    enum { DIFFORDER = 1 };
+
+    typedef DiffOpDivBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
 
     static string Name() { return "div"; }
     
@@ -1989,6 +1992,52 @@ namespace ngfem
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+      
+      mat = 0.0;
+      size_t n1 = feli.GetNDof();
+      HeapReset hr(lh);
+      FlatMatrix<> tmp(n1, DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, tmp);
+      
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Row(0).Range(i*n1, (i+1)*n1) = tmp.Col(i);
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      
+      auto mat = bmat.AddSize(bfel.GetNDof(), mir.Size());
+      ArrayMem<SIMD<double>,100> mem(DIM_SPC*feli.GetNDof()*mir.Size());
+      FlatMatrix<SIMD<double>> hmat(DIM_SPC*feli.GetNDof(), mir.Size(), &mem[0]);
+      feli.CalcMappedDShape (mir, hmat);
+      for (size_t i = 0; i < DIM_SPC; i++)
+        for (size_t j = 0; j < feli.GetNDof(); j++)
+          mat.Row(i*feli.GetNDof()+j) = hmat.Row(i+j*DIM_SPC);
+    }
+  };
+
+  template <int DIM_SPC>  
+  class DiffOpDivBoundaryVectorH1 : public DiffOp<DiffOpDivBoundaryVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-1 };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "divbnd"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
       
       mat = 0.0;
       size_t n1 = feli.GetNDof();
