@@ -572,7 +572,7 @@ template <typename MIP, typename TFA>
 	LegendrePolynomial leg;
 	JacobiPolynomialAlpha jac1(1);    
 	leg.EvalScaled1Assign 
-	  (order-2, lam[2]-lam[3], lam[2]+lam[3],
+	  (order_inner[0]-2, lam[2]-lam[3], lam[2]+lam[3],
 	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
 		     {
 		       // JacobiPolynomialAlpha jac(2*k+1);
@@ -596,19 +596,19 @@ template <typename MIP, typename TFA>
 		       jac1.IncAlpha2();
 		     }));
 
-	DubinerBasis::Eval(order-2, x, y,
+	DubinerBasis::Eval(order_inner[0]-2, x, y,
                            SBLambda([&] (size_t nr, auto val)
                                     {
                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
                                     }));
         
-	DubinerBasis::Eval(order-2, y, z,
+	DubinerBasis::Eval(order_inner[0]-2, y, z,
                            SBLambda([&] (size_t nr, auto val)
                                     {
                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
                                     }));
         
-	LegendrePolynomial::Eval(order-2,z,
+	LegendrePolynomial::Eval(order_inner[0]-2,z,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
 					    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,0,val);
