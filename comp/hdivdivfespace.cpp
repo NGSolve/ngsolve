@@ -670,7 +670,7 @@ namespace ngcomp
     plus = flags.GetDefineFlag ("plus");
     quadfullpol = flags.GetDefineFlag ("quadfullpol");
     algebraic_mapping = !flags.GetDefineFlagX ("algebraicmapping").IsFalse();
-    cout << "algebraicmapping = " << algebraic_mapping << endl;
+    // cout << "algebraicmapping = " << algebraic_mapping << endl;
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
