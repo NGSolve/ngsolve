@@ -171,7 +171,23 @@ namespace ngcomp
     }
     hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
 
+    switch (ma->GetDimension())
+      {
+      case 1:
+        break;
+      case 2:
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
+	break;
+      case 3:
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
+        additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpCurlNormalFacet<3>>> ());
+	break;
+      default:
+        break;
+      }
+
     // Update();
+    
   }
   
   DocInfo NormalFacetFESpace :: GetDocu()
@@ -699,28 +715,6 @@ namespace ngcomp
     for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
       dnums.Append(j);
   }
-
-  SymbolTable<shared_ptr<DifferentialOperator>>
-  NormalFacetFESpace :: GetAdditionalEvaluators () const
-  {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch (ma->GetDimension())
-      {
-      case 1:
-        break;
-      case 2:
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
-	break;
-      case 3:
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
-        additional.Set ("curl", make_shared<T_DifferentialOperator<DiffOpCurlNormalFacet<3>>> ());
-	break;
-      default:
-        break;
-      }
-    return additional;
-  }
-
 
   static RegisterFESpace<NormalFacetFESpace> init_vfacet ("normalfacet");
 
