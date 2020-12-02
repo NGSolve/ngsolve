@@ -181,7 +181,7 @@ public:
            
     auto one = make_shared<ConstantCoefficientFunction> (1);
     
-    if (ma->GetDimension() == 2)
+    if (ma->GetDimension() < 3)
       {
 	throw Exception ("only 2D manifolds supported");       
       }
@@ -193,6 +193,8 @@ public:
 
 	flux_evaluator[VOL] =  make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
 	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();
+
+        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDivSurface<3>>> ());
       }
     
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
@@ -599,24 +601,6 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     dnums = GetElementDofs (elnr);
   }
 
-  SymbolTable<shared_ptr<DifferentialOperator>>
-  HDivHighOrderSurfaceFESpace :: GetAdditionalEvaluators () const
-  {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    
-    switch (ma->GetDimension())
-      {
-      case 1:
-	throw Exception("wrong dimension"); 
-      case 2:
-	throw Exception("wrong dimension"); 
-      case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDivSurface<3>>> ()); break;
-      default:
-        ;
-	}
-    return additional;
-  }
 
   static RegisterFESpace<HDivHighOrderSurfaceFESpace> init ("hdivhosurface");
 }
