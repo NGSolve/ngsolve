@@ -23,6 +23,7 @@ namespace ngfem
   void VectorFacetVolumeFE<ET_TRIG>::
   T_CalcShape (Tx hx[DIM], int fanr, TFA & shape) const
   {
+    if (fanr == -1) throw Exception("vector-facet element evaluated not at BND");    
     Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };  
 
     int first = first_facet_dof[fanr];
@@ -43,6 +44,7 @@ namespace ngfem
   void VectorFacetVolumeFE<ET_TET> ::
   T_CalcShape (Tx hx[DIM], int fanr, TFA & shape ) const
   {
+    if (fanr == -1) throw Exception("vector-facet element evaluated not at BND");
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
