@@ -102,7 +102,21 @@ namespace ngcomp
       *testout << "highest_order_dc is active!" << endl;
     }
     hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
-
+    
+    switch (ma->GetDimension())
+      {
+      case 1:
+        break;
+      case 2:
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
+        break;
+      case 3:
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        break;
+      default:
+        break;
+      }
+    
     // Update();
   }
   
@@ -704,26 +718,6 @@ namespace ngcomp
     dnums.Append (2*felnr+1);
     for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
       dnums.Append(j);
-  }
-
-  SymbolTable<shared_ptr<DifferentialOperator>>
-  VectorFacetFESpace :: GetAdditionalEvaluators () const
-  {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch (ma->GetDimension())
-      {
-      case 1:
-        break;
-      case 2:
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
-        break;
-      case 3:
-        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
-        break;
-      default:
-        break;
-      }
-    return additional;
   }
 
   static RegisterFESpace<VectorFacetFESpace> init_vfacet ("vectorfacet");

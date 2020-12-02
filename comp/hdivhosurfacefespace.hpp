@@ -68,8 +68,6 @@ namespace ngcomp
     
     const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
 
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
-
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
        
     virtual void GetFacetDofNrs(int fanr, Array<DofId> & dnums) const;
