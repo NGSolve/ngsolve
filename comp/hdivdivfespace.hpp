@@ -59,7 +59,6 @@ namespace ngcomp
     
     virtual void UpdateCouplingDofArray() override;
 
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
   };
 
 }

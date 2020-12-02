@@ -1129,15 +1129,7 @@ namespace ngcomp
                          first_element_dof[ei.Nr()+1]);
 
 
-  }
-
-
-  SymbolTable<shared_ptr<DifferentialOperator>>
-    HDivDivFESpace :: GetAdditionalEvaluators () const
-  {
-    return additional_evaluators;
-  }
-  
+  }  
 
 
   static RegisterFESpace<HDivDivFESpace> init ("hdivdiv");

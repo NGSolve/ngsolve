@@ -125,9 +125,6 @@ namespace ngcomp
     } 
     ///
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override; 
-
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
-
     /// 
     void GetFacetOrder (Array<INT<2> > & of, Array<bool> & ff) const 
     {of = order_facet; ff = fine_facet;};

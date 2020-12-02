@@ -1259,11 +1259,5 @@ namespace ngcomp
   }
   
 
-  SymbolTable<shared_ptr<DifferentialOperator>>
-  HCurlCurlFESpace :: GetAdditionalEvaluators () const
-  {
-    return additional_evaluators;
-  }
-
   static RegisterFESpace<HCurlCurlFESpace> init ("hcurlcurl");
 }

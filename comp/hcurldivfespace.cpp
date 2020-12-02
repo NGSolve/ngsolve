@@ -384,6 +384,17 @@ namespace ngcomp
       integrator[VOL] = make_shared<HCurlDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<3>>>();
     }
+
+    switch(ma->GetDimension())
+    {
+    case 2:
+      additional_evaluators.Set ("curl",make_shared<T_DifferentialOperator<DiffOpCurlHCurlDiv<2>>> ());
+      additional_evaluators.Set ("grad",make_shared<T_DifferentialOperator<DiffOpGradientHCurlDiv<2>>> ());
+      break;
+    default:
+      ;
+    }
+
   }
 
     DocInfo HCurlDivFESpace :: GetDocu ()
@@ -860,24 +871,6 @@ namespace ngcomp
 
 
   }
-
-
-  SymbolTable<shared_ptr<DifferentialOperator>>
-    HCurlDivFESpace :: GetAdditionalEvaluators () const
-  {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch(ma->GetDimension())
-    {
-    case 2:
-      additional.Set ("curl",make_shared<T_DifferentialOperator<DiffOpCurlHCurlDiv<2>>> ());
-      additional.Set ("grad",make_shared<T_DifferentialOperator<DiffOpGradientHCurlDiv<2>>> ());
-      break;
-    default:
-      ;
-    }
-    return additional;
-  }
-  
 
 
   static RegisterFESpace<HCurlDivFESpace> init ("hcurldiv");
