@@ -1445,114 +1445,152 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
     out << "sum" << k << ".Store(pc2, mask); pc2 += dc;\n";
   
   out << "}\n";
+}
 
 
-  /*
 
-  // unroll B width 2
 
-  out << "template <> INLINE void MatKernelShortSum2<" << wa << ", " << ToString(op) << ">" << endl;
+
+
+void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
+{
+  out << "template <> INLINE void MatKernelAtB_SmallWA2<" << wa << ", " << ToString(op) << ">" << endl;
   out << "    (size_t ha, size_t wb," << endl
       << "     double * pa, size_t da," << endl
       << "     double * pb, size_t db," << endl
       << "     double * pc, size_t dc)" << endl
       << "{" << endl;
-  out << "constexpr int SW = SIMD<double>::Size();\n" 
-      << "for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)\n"
+  out << "constexpr int SW = SIMD<double>::Size();\n";
+  out << "size_t i = 0;\n";
+  
+  out << "for ( ; i+3*SW <= wb; i += 3*SW, pb += 3*SW, pc += 3*SW)\n"
       << "{\n"
       << "double * pb2 = pb;\n";
-  for (int k = 0; k < wa; k++)
-    out << "SIMD<double> b" << k << "0(pb2);\n"
-        << "SIMD<double> b" << k << "1(pb2+SW); pb2 += db;\n";
+        
   out << "double * pa2 = pa;\n"
-      << "double * pc2 = pc;\n"
+      << "[[maybe_unused]] double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
-  
-  // out << "#pragma unroll 2\n";  
-  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
-      << "{\n"
-      << "SIMD<double> sum0 = 0.0;\n"
-      << "SIMD<double> sum1 = 0.0;\n";
-  for (int k = 0; k < wa; k++)
-    out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
-        << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
-  out << "sum0.Store(pc2);\n"
-      << "sum1.Store(pc2+SW);\n"
-      << "} }\n";
-  
-  out << "size_t rest = wb % (2*SW); \n"
-      << "if (rest == 0) return; \n";
 
-  out << "if (rest >= SW) \n"
-      << "{\n"
-      << "if (rest > SW)\n"
+  for (int k = 0; k < wa; k++)
+    if (op == SET || op == SETNEG)
+      {
+        out << "SIMD<double> sum" << k << "0(0.0);\n";
+        out << "SIMD<double> sum" << k << "1(0.0);\n";
+        out << "SIMD<double> sum" << k << "2(0.0);\n";
+      }
+    else
+      {
+        out << "SIMD<double> sum" << k << "0(pc2);\n";
+        out << "SIMD<double> sum" << k << "1(pc2+SW);\n";
+        out << "SIMD<double> sum" << k << "2(pc2+2*SW); pc2 += dc;\n";
+      }
+  
+  out << "#pragma unroll 1\n";
+  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n";
-
-  out << "SIMD<mask64> mask(rest-SW); \n";    
-  out << "double * pb2 = pb;\n";
+  out << "SIMD<double> bjk0(pb2);\n";
+  out << "SIMD<double> bjk1(pb2+SW);\n";
+  out << "SIMD<double> bjk2(pb2+2*SW);\n";
   for (int k = 0; k < wa; k++)
-    out << "SIMD<double> b" << k << "0(pb2);\n"
-        << "SIMD<double> b" << k << "1(pb2+SW,mask); pb2 += db;\n";
-  out << "double * pa2 = pa;\n"
-      << "double * pc2 = pc;\n"
-      << "__assume(ha>0);\n";
+    if (op == ADD || op == SET)
+      {
+        out << "FMAasm (bjk0,SIMD<double>(pa2[" << k << "]), sum" << k <<"0);\n";
+        out << "FMAasm (bjk1,SIMD<double>(pa2[" << k << "]), sum" << k <<"1);\n";
+        out << "FMAasm (bjk2,SIMD<double>(pa2[" << k << "]), sum" << k <<"2);\n";
+      }
+    else
+      {
+        out << "sum" << k << "0 -= bjk0 * SIMD<double>(pa2[" << k << "]);\n";
+        out << "sum" << k << "1 -= bjk1 * SIMD<double>(pa2[" << k << "]);\n";
+        out << "sum" << k << "2 -= bjk2 * SIMD<double>(pa2[" << k << "]);\n";
+      }
+  out << "}\n";
+  out << "pc2 = pc;\n";
+  for (int k = 0; k < wa; k++)
+    {
+      out << "sum" << k << "0.Store(pc2);\n";
+      out << "sum" << k << "1.Store(pc2+SW);\n";
+      out << "sum" << k << "2.Store(pc2+2*SW); pc2 += dc;\n";
+    }      
+  out << "}\n";
 
-  out << "#pragma unroll 1\n";    
-  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
+
+  out << "for ( ; i+SW <= wb; i += SW, pb += SW, pc += SW)\n"
       << "{\n"
-      << "SIMD<double> sum0 = 0.0;\n"
-      << "SIMD<double> sum1 = 0.0;\n";
-  for (int k = 0; k < wa; k++)
-    out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
-        << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
-  out << "sum0.Store(pc2);\n"
-      << "sum1.Store(pc2+SW,mask);\n"
-      << "}\n";
-    
-  out << "return;\n"
-      << "}\n";
-    
-    // rest == SW
-    out << "double * pb2 = pb;\n";
-  for (int k = 0; k < wa; k++)
-    out << "SIMD<double> b" << k << "(pb2); pb2 += db;\n";
+      << "double * pb2 = pb;\n";
+        
   out << "double * pa2 = pa;\n"
-      << "double * pc2 = pc;\n"
+      << "[[maybe_unused]] double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
+
+  for (int k = 0; k < wa; k++)
+    if (op == SET || op == SETNEG)
+      out << "SIMD<double> sum" << k << "(0.0);\n";
+    else
+      out << "SIMD<double> sum" << k << "(pc2); pc2 += dc;\n";
+  
+  out << "#pragma unroll 1\n";
+  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
+      << "{\n";
+  out << "SIMD<double> bjk(pb2);\n";
+  for (int k = 0; k < wa; k++)
+    if (op == ADD || op == SET)    
+      out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    else
+      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
+  out << "}\n";
+  out << "pc2 = pc;\n";
+  for (int k = 0; k < wa; k++)
+    out << "sum" << k << ".Store(pc2); pc2 += dc;\n";
+  out << "}\n";
+
+
+
+
+
+
+
+  
+  out << "size_t rest = wb % SW; \n"
+      << "if (rest == 0) return; \n"
+      << "SIMD<mask64> mask(rest); \n";
+  
+  out << "double * pb2 = pb;\n";
+  // for (int k = 0; k < wa; k++)
+  // out << "SIMD<double> sum" << k << "(0.0);\n";    
+  out << "double * pa2 = pa;\n"
+      << "[[maybe_unused]] double * pc2 = pc;\n"
+      << "__assume(ha>0);\n";
+
+  for (int k = 0; k < wa; k++)
+    if (op == SET || op == SETNEG)
+      out << "SIMD<double> sum" << k << "(0.0);\n";
+    else
+      out << "SIMD<double> sum" << k << "(pc2,mask); pc2 += dc;\n";
   
   out << "#pragma unroll 1\n";  
-  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
+  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n"
-      << "SIMD<double> sum = 0.0;\n";
+      << "SIMD<double> bjk(pb2, mask);\n";    
   for (int k = 0; k < wa; k++)
-      out << "sum += SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
-  out << "sum.Store(pc2);\n"
-      << "}\n";
+    // out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    if (op == ADD || op == SET)    
+      out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    else
+      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
   
-  out << "return;\n"
-      << "}\n";
-  
-  
-  // rest < SW
-  out << "SIMD<mask64> mask(rest); \n";
-  out << "double * pb2 = pb;\n";
+  out << "}\n";
+  out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
-    out << "SIMD<double> b" << k << "(pb2, mask); pb2 += db;\n";
-  out << "double * pa2 = pa;\n"
-      << "double * pc2 = pc;\n"
-      << "__assume(ha>0);\n";
+    out << "sum" << k << ".Store(pc2, mask); pc2 += dc;\n";
   
-  out << "#pragma unroll 1\n";  
-  out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
-      << "{\n"
-      << "SIMD<double> sum = 0.0;\n";
-  for (int k = 0; k < wa; k++)
-      out << "sum += SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
-  out << "sum.Store(pc2, mask);\n"
-      << "} }\n";
-  */
-
+  out << "}\n";
 }
+
+
+
+
+
 
 
 
@@ -2300,17 +2338,17 @@ int main ()
 
   out << "// C = A^t * B,  with short inner loop, unroll width B\n"
       << "template <size_t WA, OPERATION OP>\n"
-      << "inline void MatKernelAtB_SmallWA\n"
+      << "inline void MatKernelAtB_SmallWA2\n"
       << "(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);\n";
 
   for (int i = 0; i <= 12; i++)
-    {
-      GenerateAtB_SmallWA (out, i, SET);
-      GenerateAtB_SmallWA (out, i, ADD);
-      GenerateAtB_SmallWA (out, i, SUB);
-      GenerateAtB_SmallWA (out, i, SETNEG);
-    }
-
+    for (OP op : { SET, ADD, SUB, SETNEG })
+      GenerateAtB_SmallWA (out, i, op);
+  
+  for (int i = 0; i <= 8; i++)    
+    for (OP op : { SET, ADD, SUB, SETNEG })
+      GenerateAtB_SmallWA2 (out, i, op);
+  
   out << "// y = A * x,  with fix width" << endl;
   out << "template <size_t WA, OPERATION OP>" << endl
       << "inline void KernelMatVec" << endl
