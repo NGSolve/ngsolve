@@ -445,7 +445,7 @@ namespace ngbla
     static Timer tub("tsmallUV");
     double upperbound = 0;
   
-    int n = B.Width();
+    size_t n = B.Width();
     Vector<> singvals(n);
 
     // int m = B.Height();
@@ -472,7 +472,7 @@ namespace ngbla
       }
     */
 
-    for (int64_t i = 0; i < n; i += SIMD<double>::Size())
+    for (size_t i = 0; i < n; i += SIMD<double>::Size())
       {
         SIMD<double> l = 0.0, u = upperbound;
         SIMD<int64_t> evnr = SIMD<int64_t>(n-i-1)-SIMD<int64_t>::FirstInt(); // start with the largest
