@@ -2394,7 +2394,9 @@ namespace ngcomp
 
             bool assembledspecialelements = false;
             
-            
+
+            static Timer tspecial("Special Elements");
+            tspecial.Start();
             int nspecel = 0;
             ParallelForRange( IntRange(specialelements.Size()), [&] ( IntRange r )
                               {
@@ -2408,7 +2410,7 @@ namespace ngcomp
                     gcnt++;
                     nspecel++;
                     if (i % 10 == 0)
-                      cout << "\rassemble special element " << nspecel << "/" << specialelements.Size() << flush;
+                      cout << IM(3) << "\rassemble special element " << nspecel << "/" << specialelements.Size() << flush;
                     ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                   }
                   
@@ -2435,6 +2437,7 @@ namespace ngcomp
             });
             if(assembledspecialelements) cout << "\rassemble special element " 
                                               << specialelements.Size() << "/" << specialelements.Size() << endl;
+            tspecial.Stop();
 
             
             
@@ -3057,6 +3060,7 @@ namespace ngcomp
     static Timer timervol ("Assemble Linearization - volume");
     static Timer timerbound ("Assemble Linearization - boundary");
     static Timer timerbbound ("Assemble Linearization - co dim 2");
+    static Timer timerspecial ("Assemble Linearization - SpecialElements");
     // static Timer timerVB[] = { timervol, timerbound, timerbbound };
 
     static mutex addelmatboundary1_mutex;
@@ -3608,24 +3612,32 @@ namespace ngcomp
         if (specialelements.Size())
           cout << IM(3) << "special elements: " << specialelements.Size() << endl;
 
-        for (int i = 0; i < specialelements.Size(); i++)
-          {
-            HeapReset hr(clh);
-            const SpecialElement & el = *specialelements[i];
-            el.GetDofNrs (dnums);
+        timerspecial.Start();
+        static mutex specel_mutex;
+        ParallelForRange(IntRange(specialelements.Size()), [&](IntRange r)
+        {
+          LocalHeap lh = clh.Split();
+          Array<DofId> dnums;
+          for(auto i : r)
+            {
+              HeapReset hr(lh);
+              const SpecialElement & el = *specialelements[i];
+              el.GetDofNrs(dnums);
+              FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), lh);
+              lin.GetIndirect (dnums, elvec);
+              FlatMatrix<SCAL> elmat(dnums.Size() * fespace->GetDimension(), lh);
+              el.CalcLinearizedElementMatrix(elvec, elmat, lh);
 
-            FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), clh);
-            lin.GetIndirect (dnums, elvec);
-          
-            for (int j = 0; j < dnums.Size(); j++)
-              if (IsRegularDof(dnums[j]))
-                useddof[dnums[j]] = true;
-          
-            FlatMatrix<SCAL> elmat(dnums.Size() * fespace->GetDimension(), clh);
-            el.CalcLinearizedElementMatrix(elvec, elmat, clh);
-          
-            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
-          }
+              {
+                lock_guard<mutex> guard(specel_mutex);
+                for (int j = 0; j < dnums.Size(); j++)
+                  if (IsRegularDof(dnums[j]))
+                    useddof[dnums[j]] = true;
+                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+              }
+            }
+        });
+        timerspecial.Stop();
       
       
         // add eps to avoid empty lines
