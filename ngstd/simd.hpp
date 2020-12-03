@@ -268,6 +268,10 @@ namespace ngstd
       : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
                                      _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
     { ; }
+    SIMD (int64_t i)
+      : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
+                                     _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
+    { ; }
     SIMD (__mmask8 _mask) : mask(_mask) { ; }        
     __mmask8 Data() const { return mask; }
     static constexpr int Size() { return 8; }    
