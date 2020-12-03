@@ -4222,6 +4222,7 @@ namespace ngcomp
     static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1", tlevel);
     static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2", tlevel);
     static Timer timerDGparallelfacets ("Apply Matrix - DG parallel facets");
+    static Timer timerspecial("Apply Matrix - Special Elements");
     RegionTimer reg (timer);
 
     //     static int lh_size = 5000000;
@@ -4715,32 +4716,31 @@ namespace ngcomp
 	    if(reqs.Size()) MyMPI_WaitAll(reqs);
 	  }
 #endif
-        
 
-
-        
+        static mutex specelmutex;
         if (specialelements.Size())
           {
-            // LocalHeap lh(lh_size, "biform-AddMatrix (c)");
-            Array<int> dnums;
-            // ElementTransformation * dummy_eltrans = NULL;
-            for (int i = 0; i < specialelements.Size(); i++)
-              {
-                HeapReset hr(clh);
-                const SpecialElement & el = *specialelements[i];
-                el.GetDofNrs (dnums);
-
-                FlatVector<SCAL> elvecx (dnums.Size() * fespace->GetDimension(), clh);
-                FlatVector<SCAL> elvecy (dnums.Size() * fespace->GetDimension(), clh);
-                
-                x.GetIndirect (dnums, elvecx);
-
-                el.Apply (elvecx, elvecy, clh);
-                elvecy *= val;
-                y.AddIndirect (dnums, elvecy);
-
-                // ApplyElementMatrix(x,y,val,dnums,*dummy_eltrans,i,2,cnt,lh,NULL,&el);
-              }
+            RegionTimer regt(timerspecial);
+            ParallelForRange(IntRange(specialelements.Size()), [&](IntRange r)
+            {
+              Array<int> dnums;
+              LocalHeap lh = clh.Split();
+              for(auto i : r)
+                {
+                  HeapReset hr(lh);
+                  const SpecialElement & el = *specialelements[i];
+                  el.GetDofNrs (dnums);
+                  FlatVector<SCAL> elvecx (dnums.Size() * fespace->GetDimension(), lh);
+                  FlatVector<SCAL> elvecy (dnums.Size() * fespace->GetDimension(), lh);
+                  x.GetIndirect (dnums, elvecx);
+                  el.Apply (elvecx, elvecy, lh);
+                  elvecy *= val;
+                  {
+                    lock_guard<mutex> lock(specelmutex);
+                    y.AddIndirect (dnums, elvecy);
+                  }
+                }
+            });
           }
         /*
               }
