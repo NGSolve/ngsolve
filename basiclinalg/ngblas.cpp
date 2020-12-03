@@ -2794,6 +2794,7 @@ namespace ngbla
           "201.. CalcInverse by LU  A = nxn\n"          
           "205.. LDL                A = nxn\n"
           "210.. CalcInverseLapack  A = nxn\n"
+          "300.. CalcSVD            A = nxn\n"
              << endl;
         return list<tuple<string,double>>();
       }
@@ -3656,6 +3657,30 @@ namespace ngbla
           t.Stop();
           cout << "LapackInv(A) GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("LapackInv(A)", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+     
+     if (what == 0 || what == 300)
+      {
+        // CalcSVD
+        Matrix<> a(n,n);
+        Matrix<double,ColMajor> U(n,n), V(n,n);
+        a = 1;
+        a.Diag() = 10000;
+        Matrix aorig = a;
+        double tot = 5 * n*n*n;
+        size_t its = 1e9 / tot + 1;
+        {
+          Timer t("CalcSVD");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = aorig;
+              CalcSVD(a, U, V);
+            }
+          t.Stop();
+          cout << "CalcSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("CalcSVD", 1e-9 * tot *its / t.GetTime()));
         }
       }
 

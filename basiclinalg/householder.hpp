@@ -69,7 +69,10 @@ namespace ngbla
   extern NGS_DLL_HEADER void QRFactorization (SliceMatrix<> A, SliceMatrix<> Q);
 
   extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<> A);
-
+  
+  extern NGS_DLL_HEADER void CalcSVD (SliceMatrix<> A, 
+                                      SliceMatrix<double, ColMajor> U,
+                                      SliceMatrix<double, ColMajor> V);
 }
 
 #endif
