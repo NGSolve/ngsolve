@@ -911,6 +911,8 @@ namespace ngbla
   void MinusMultAB_intern (size_t ha, size_t wa, size_t wb,
                            BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
+    if (ha == 0 || wb == 0) return;  // should be moved outside
+    
     constexpr size_t BBH = 128;
     if (wa <= BBH)
       {
@@ -2758,6 +2760,7 @@ namespace ngbla
   /**************** timings *********************** */
 
   extern void MultUL (SliceMatrix<> A);
+  extern void LapackSVD (SliceMatrix<> A);  
   
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits)
   {
@@ -3665,8 +3668,10 @@ namespace ngbla
         // CalcSVD
         Matrix<> a(n,n);
         Matrix<double,ColMajor> U(n,n), V(n,n);
-        a = 1;
-        a.Diag() = 10000;
+        for (int i = 0; i < a.Height(); i++)
+          for (int j = 0; j < a.Width(); j++)
+            a(i,j) = rand() / double(RAND_MAX);
+        
         Matrix aorig = a;
         double tot = 5 * n*n*n;
         size_t its = 1e9 / tot + 1;
@@ -3681,6 +3686,18 @@ namespace ngbla
           t.Stop();
           cout << "CalcSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("CalcSVD", 1e-9 * tot *its / t.GetTime()));
+        }
+        {
+          Timer t("LapackSVD");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              a = aorig;
+              LapackSVD(a); // , U, V);
+            }
+          t.Stop();
+          cout << "LapackSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("LapackSVD", 1e-9 * tot *its / t.GetTime()));
         }
       }
 
