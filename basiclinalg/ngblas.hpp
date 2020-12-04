@@ -137,6 +137,7 @@ namespace ngbla
 
   inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
+    if (a.Height() == 0 || b.Width() == 0) return;    
     size_t wa = a.Width();
     if (wa <= 12)
       (*dispatch_addAB[wa])  (a.Height(), b.Width(), a, b, c);
@@ -149,6 +150,7 @@ namespace ngbla
   extern NGS_DLL_HEADER pmultABW dispatch_subAB[13];
   inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
+    if (a.Height() == 0 || b.Width() == 0) return;
     size_t wa = a.Width();
     if (wa >= std::size(dispatch_subAB))
       wa = std::size(dispatch_subAB)-1;

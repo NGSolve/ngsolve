@@ -51,13 +51,34 @@ namespace ngbla
     // cout << "S = " << S << endl;
   }
 
+  template <ORDERING OH, ORDERING OM>
+  void ApplyHouseholderReflections (SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
+  {
+    size_t bs = 48;
+    size_t n = H.Width();
+    size_t m = H.Height();
+
+    if (n > m) throw Exception("ApplyHouseholderReflections, n > m");
+    if (n == 0) return;
+    
+    for (size_t i = 0; i < n; i += bs)
+      {
+        size_t bsi = min(n-i, bs);
+        MultiHouseholderReflection Hv(Trans(H.Cols(i,i+bsi).Rows(i, m)));
+        Hv.Mult (M.Rows(i,m));
+      }
+  }
+
+  
   void ReduceBiDiagonal (SliceMatrix<> A, 
                          SliceMatrix<double, ColMajor> U1, SliceMatrix<double, ColMajor> V1)
   {
     static Timer ttrig("householder-triangular"); RegionTimer reg(ttrig);
+    static Timer tuv("householder-triangular, transform uv"); 
   
     size_t m = A.Height();
     size_t n = A.Width();
+    size_t minnm = min(n,m);
 
     U1 = Identity(m);
     V1 = Identity(n);
@@ -66,25 +87,25 @@ namespace ngbla
     // no blocking at all
     Vector<> v2(max(n,m));
     for (int i = 0; i < n; i++)
-    {
-    auto Arest = A.Rows(i,m).Cols(i,n);
-    auto vrest = v2.Range(i,m);
-    CalcHouseholderVector(Arest.Col(0), vrest);
-    HouseholderReflection (vrest).Mult(Arest);
-    HouseholderReflection (vrest).Mult(Trans(U1).Rows(i,m));
-
-    if (i+1 < n)
-    {
-    auto Arest = A.Rows(i,m).Cols(i+1,n);
-    auto vrest = v2.Range(i+1,n);
-    CalcHouseholderVector(Arest.Row(0), vrest);
-    HouseholderReflection (vrest).Mult(Trans(Arest));
-    HouseholderReflection (vrest).Mult(Trans(V1).Rows(i+1,n));
-    }
-    }
+      {
+        auto Arest = A.Rows(i,m).Cols(i,n);
+        auto vrest = v2.Range(i,m);
+        CalcHouseholderVector(Arest.Col(0), vrest);
+        HouseholderReflection (vrest).Mult(Arest);
+        HouseholderReflection (vrest).Mult(Trans(U1).Rows(i,m));
+        
+        if (i+1 < n)
+          {
+            auto Arest = A.Rows(i,m).Cols(i+1,n);
+            auto vrest = v2.Range(i+1,n);
+            CalcHouseholderVector(Arest.Row(0), vrest);
+            HouseholderReflection (vrest).Mult(Trans(Arest));
+            HouseholderReflection (vrest).Mult(Trans(V1).Rows(i+1,n));
+          }
+      }
     */
 
-
+    /*
     // no blocking of A, but blocking of U and V
     constexpr size_t bs = 16;
     Matrix<> mvc(bs, m);
@@ -92,6 +113,7 @@ namespace ngbla
     for (int i1 = 0; i1 < min(n,m); i1 += bs)
       {
         int bs1 = min( min(n-i1, m-i1), bs);
+        int bs2 = 0;
         mvc = 0.0;
         mvr = 0.0;
       
@@ -104,6 +126,7 @@ namespace ngbla
           
             if (i+1 < n)
               {
+                bs2 = i2+1;
                 auto Arest = A.Rows(i,m).Cols(i+1,n);
                 CalcHouseholderVector (Arest.Row(0), mvr.Row(i2).Range(i+1,n));
                 HouseholderReflection (mvr.Row(i2).Range(i+1,n)).Mult(Trans(Arest));
@@ -111,8 +134,47 @@ namespace ngbla
           }
 
         MultiHouseholderReflection (mvc.Rows(0,bs1).Cols(i1,m)).Mult (Trans(U1).Rows(i1,m));
-        MultiHouseholderReflection (mvr.Rows(0,bs1).Cols(i1,n)).Mult (Trans(V1).Rows(i1,n));
+        if (bs2 > 0)
+          MultiHouseholderReflection (mvr.Rows(0,bs2).Cols(i1+1,n)).Mult (Trans(V1).Rows(i1+1,n));
       }
+    // cout << "A bidiag = " << endl << Truncate (A) << endl;
+    */
+
+    VectorMem<100> hv(max(n,m));
+    for (size_t i = 0; i < minnm; i++)
+      {
+        auto Acol = A.Cols(i,i+1).Rows(i,m);  // a matrix
+        double signed_norm = CalcHouseholderVectorInPlace (Acol.Col(0));
+        hv.Range(i,m) = Acol.Col(0);
+        Acol(0,0) = signed_norm;
+        
+        // MultiHouseholderReflection H(Trans(Acol));   
+        HouseholderReflection H(hv.Range(i,m));     // more efficient
+        H.Mult (A.Rows(i,m).Cols(i+1,n));
+        
+        if (i+1 < n)
+          {
+            auto Arow = A.Rows(i,i+1).Cols(i+1,n);  // a matrix
+            double signed_norm = CalcHouseholderVectorInPlace (Arow.Row(0));
+            hv.Range(i+1,n) = Arow.Row(0);            
+            Arow(0,0) = signed_norm;
+            
+            // MultiHouseholderReflection H(Arow);  
+            HouseholderReflection H(hv.Range(i+1,n));   // more efficient
+            H.Mult (Trans (A.Rows(i+1,m).Cols(i+1,n)));
+          }
+      }
+
+    RegionTimer ruv(tuv);    
+    
+    ApplyHouseholderReflections (A, Trans(U1));
+    if (n > 1)
+      ApplyHouseholderReflections (Trans(A.Cols(1,n).Rows(min(n-1,m))), Trans(V1).Rows(1,n));
+
+    for (size_t i = 0; i < minnm; i++)
+      A.Col(i).Range(i+1, m) = 0.0;
+    for (size_t i = 1; i < minnm; i++)
+      A.Col(i).Range(0, i-1) = 0.0;
   }
 
 
@@ -130,66 +192,101 @@ namespace ngbla
     
     // cout << "ReducedBiDiagnoalBlocked" << endl;
     static Timer ttrig("householder-block-triangular");
+    static Timer tUV("householder-block-triangular, transform U1,V1");    
     static Timer tbulgechasing("bulge chasing");
     ttrig.Start();
   
     size_t m = A.Height();
     size_t n = A.Width();
     Matrix A_orig = A; // for testint only
-    U1 = Identity(m);
-    V1 = Identity(n);
-
     constexpr size_t bs = 32;  // orig: 32
-    Matrix<> mvc(bs, m);
-    Matrix<> mvr(bs, n);
+
+    
     for (size_t i1 = 0; i1 < min(n,m); i1 += bs)
       {
         size_t bs1 = min( min(n-i1, m-i1), bs);
-        mvc = 0.0;
         for (size_t i2 = 0; i2 < bs1; i2++)
           {
             size_t i = i1+i2;
-            auto Arest = A.Rows(i,m).Cols(i,n);
-            CalcHouseholderVector(Arest.Col(0), mvc.Row(i2).Range(i,m));
-            // HouseholderReflection (mvc.Row(i2).Range(i,m)).Mult(Arest);
-            HouseholderReflection (mvc.Row(i2).Range(i,m)).Mult(A.Rows(i,m).Cols(i,i1+bs1));
+
+            auto Apanel = A.Rows(i,m).Cols(i,i1+bs1);            
+            double signed_norm = CalcHouseholderVectorInPlace (Apanel.Col(0));
+            Apanel(0,0) = signed_norm;
+            
+            MultiHouseholderReflection H(Trans(Apanel.Cols(0,1)));
+            H.Mult (Apanel.Cols(1, Apanel.Width()));
           }
 
         if (i1+bs1 < n)
-          MultiHouseholderReflection (mvc.Rows(0,bs1).Cols(i1,m)).Mult (A.Rows(i1,m).Cols(i1+bs1,n));
-        MultiHouseholderReflection (mvc.Rows(0,bs1).Cols(i1,m)).Mult (Trans(U1).Rows(i1,m));
-
-        mvr = 0.0;
+          {
+            MultiHouseholderReflection H(Trans(A.Cols(i1, i1+bs1).Rows(i1, m)));
+            H.Mult (A.Rows(i1,m).Cols(i1+bs1,n));
+          }
+        
         for (int i2 = 0; i2 < bs1; i2++)
           {
-            int i = i1 + i2;
-            int j = i + bs1;
-            if (j < n)
+            size_t i = i1 + i2;
+            if (i+bs1 < n)
               {
-                auto Arest = A.Rows(i,m).Cols(j,n);
-                CalcHouseholderVector (Arest.Row(0), mvr.Row(i2).Range(j,n));
-                // HouseholderReflection (mvr.Row(i2).Range(j,n)).Mult(Trans(Arest));
-                HouseholderReflection (mvr.Row(i2).Range(j,n)).Mult(Trans(A.Rows(i,i1+bs1).Cols(j,n)));
+                auto Apanel = A.Rows(i,i1+bs1).Cols(i+bs1, n);
+                double signed_norm = CalcHouseholderVectorInPlace (Apanel.Row(0));
+                Apanel(0,0) = signed_norm;
+                
+                MultiHouseholderReflection H(Apanel.Rows(0,1));
+                H.Mult (Trans(Apanel.Rows(1, Apanel.Height())));
               }
           }
-
+        
         size_t bs2 = min(bs1, n-i1-bs1);
         if (bs2 > 0)
-          {
-            if (i1+bs1 < m)
-              MultiHouseholderReflection (mvr.Rows(0,bs2).Cols(i1+bs1,n)).Mult(Trans(A.Rows(i1+bs1, m).Cols(i1+bs1,n)));      
-            MultiHouseholderReflection (mvr.Rows(0,bs2).Cols(i1+bs1,n)).Mult (Trans(V1).Rows(i1+bs1,n));
-          }
+          if (i1+bs1 < m)
+            {
+              MultiHouseholderReflection H(A.Rows(i1, i1+bs2).Cols(i1+bs1, n));
+              H.Mult (Trans(A.Rows(i1+bs1,m).Cols(i1+bs1,n)));
+            }
       }
+    
     ttrig.Stop();
 
+    tUV.Start();
+
+    U1 = Identity(m);
+    V1 = Identity(n);
+
+    ApplyHouseholderReflections (A, Trans(U1));
+    if (n > bs)
+      ApplyHouseholderReflections (Trans(A.Cols(bs,n).Rows(min(n-bs,m))), Trans(V1).Rows(bs,n));      
+
+    size_t minnm = min(n,m);
+
+    for (size_t i = 0; i < minnm; i++)
+      A.Col(i).Range(i+1, m) = 0.0;
+    for (size_t i = bs; i < minnm; i++)
+      A.Col(i).Range(0, i-bs) = 0.0;
+    
+    tUV.Stop();
+
+    
+    
     /*
-    if (n < 20)
+    Matrix<> Abandmem(minnm, minnm);
+    Abandmem = 0.0;
+    // simulate a band-matrix by reducing dist:
+    SliceMatrix<> Aband(minnm, minnm, min(3*bs, minnm), Abandmem.Data());
+    for (int i = 0; i < min(n, bs+1); i++)
+      Aband.Diag(i) = A.Rows(minnm).Cols(minnm).Diag(i);
+    */
+    auto Aband = A.Rows(minnm).Cols(minnm);
+    
+    
+    /*
+    if (n <= 20)
       {
         cout << "householder, blocked = " << endl << Truncate(A) << endl;
         cout << "U^T A V = " << endl << Truncate( Matrix (Matrix(Trans(U1)*A_orig) * V1)) << endl;
       }
     */
+
     
     // now do the bulge chasing
     tbulgechasing.Start();
@@ -234,6 +331,11 @@ namespace ngbla
 
 
 
+    /*
+      TODO: store the bulge-chasing reflections in triangular matrix
+      write banded - Multihouseholder
+     */
+    
 
     constexpr size_t bcbs = 16;   // bulge chasing block size
     Vector<> tmp(bs);
@@ -253,36 +355,36 @@ namespace ngbla
             int i = bi + ii;
             // first vector
             IntRange cols(i+1, min(n, i+bs+1));
-            auto x = A.Row(i).Range(cols);
+            auto x = Aband.Row(i).Range(cols);
             CalcHouseholderVector (x, tmp.Range(x.Size()));
             reflect_bcV.Row(0*bcbs+ii).Range(ii, ii+cols.Size()) = tmp.Range(x.Size());
                 
             IntRange rows(i, min(m,i+bs+1));
-            HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(A.Rows(rows).Cols(cols)));
+            HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
             // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(V1.Cols(cols)));      
             int nr = 0;
             for (int i1 = i+1; i1 < n; i1 += bs, nr++)
               {
                 {
                   IntRange rows(i1, min(n, i1+bs));
-                  auto x = A.Col(i1).Range(rows);
+                  auto x = Aband.Col(i1).Range(rows);
                   CalcHouseholderVector (x, tmp.Range(x.Size()));
                   reflect_bcU.Row(nr*bcbs+ii).Range(ii, ii+rows.Size()) = tmp.Range(x.Size());
                 
                   IntRange cols(i1, min(n, i1+2*bs));
-                  HouseholderReflection (tmp.Range(x.Size())).Mult (A.Rows(rows).Cols(cols));
+                  HouseholderReflection (tmp.Range(x.Size())).Mult (Aband.Rows(rows).Cols(cols));
                   // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(U1.Cols(rows)));
                 }
 
                 if (i1+bs < n)
                   {
                     IntRange cols(i1+bs, min(n, i1+2*bs));
-                    auto x = A.Row(i1).Range(cols);
+                    auto x = Aband.Row(i1).Range(cols);
                     CalcHouseholderVector (x, tmp.Range(x.Size()));
                     reflect_bcV.Row((nr+1)*bcbs+ii).Range(ii, ii+cols.Size()) = tmp.Range(x.Size());
                   
                     IntRange rows(i1, min(n, i1+2*bs));
-                    HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(A.Rows(rows).Cols(cols)));
+                    HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
                     // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(V1.Cols(cols)));                    
                   }
               }
@@ -305,6 +407,9 @@ namespace ngbla
       }
   
     tbulgechasing.Stop();
+
+    // A.Rows(minnm).Cols(minnm) = Aband;
+    
     // if (n < 20)
     // cout << "after bulge-chasing: " << endl << Truncate(A) << endl;
   }
@@ -612,8 +717,11 @@ namespace ngbla
   
     Matrix<double, ColMajor> U1(m);
     Matrix<double, ColMajor> V1(n);
-    ReduceBiDiagonalBlocked<ColMajor> (A, U1, V1);
-    // ReduceBiDiagonal (A, U1, V1);
+
+    if (min(n,m) < 100)
+      ReduceBiDiagonal (A, U1, V1);
+    else
+      ReduceBiDiagonalBlocked<ColMajor> (A, U1, V1);
 
     // testting
     /*

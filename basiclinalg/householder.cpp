@@ -132,12 +132,10 @@ namespace ngbla
           // static Timer t(timername+string("1")); RegionTimer reg(t);
           GeneralizedTriangularMult<UpperRight,Normalized> (mv, colsm2, tmp);
         }
-
         {
           // static Timer t(timername+string("2")); RegionTimer reg(t);        
           TriangularMult<LowerLeft,NonNormalized> (T, tmp);
         }
-        
         // colsm2 -= Trans(mv)*tmp;
         IntRange r1(0, mv.Height());
         IntRange r2(mv.Height(), colsm2.Height());
