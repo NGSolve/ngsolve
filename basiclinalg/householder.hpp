@@ -61,7 +61,8 @@ namespace ngbla
   };
 
 
-  
+  // H is a generalized, normalized, lower left triangular matrix
+  // its columns are the Householder vectors
   template <ORDERING OH, ORDERING OM>
   void ApplyHouseholderReflections (SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
   {
@@ -80,6 +81,30 @@ namespace ngbla
       }
   }
 
+  // H is a generalized, normalized, lower left triangular matrix
+  // its columns are the Householder vectors
+  // go backwards
+  template <ORDERING OH, ORDERING OM>
+  void ApplyHouseholderReflectionsTrans (SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
+  {
+    size_t bs = 48;
+    size_t n = H.Width();
+    size_t m = H.Height();
+
+    if (n > m) throw Exception("ApplyHouseholderReflections, n > m");
+    if (n == 0) return;
+    
+    // for (size_t i = 0; i < n; i += bs)
+    for (size_t i = n; i+bs > bs; i -= bs)
+      {
+        size_t first = max(bs, i)-bs;
+        size_t last = i;
+        MultiHouseholderReflection Hv(Trans(H.Cols(first, last).Rows(first, m)));
+        Hv.MultTrans (M.Rows(first,m));
+      }
+  }
+
+  
   
   /*
     Factorize A = Q R

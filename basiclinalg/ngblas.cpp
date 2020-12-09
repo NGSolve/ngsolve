@@ -3266,8 +3266,8 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (size_t j = 0; j < its; j++)
-            AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), &a(0)[0]),
-                   SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), &b(0)[0]),
+            AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), (double*)&a(0)),
+                   SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), (double*)&b(0)),
                    // SliceMatrix<double> (AFlatMatrix<double>(b)),
                    c);
           t.Stop();
@@ -3780,13 +3780,12 @@ namespace ngbla
 	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb+i), sum0);
 	i += 4;
       } // n < i + 4
+
+    double ssum = HSum(sum0 + sum1);
     for ( ; i < n; i++ )
-      {
-	if (ba.Test(i)) {
-	  sum0[0] += pa[i] * pb[i];
-	}
-      }
-    return HSum(sum0 + sum1);
+      if (ba.Test(i)) 
+        ssum += pa[i] * pb[i];
+    return ssum;
   }
 
 #elif defined __SSE__

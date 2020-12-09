@@ -5247,12 +5247,12 @@ namespace ngcomp
                                                        simd_ir.Size(), lh);
                         FlatMatrix<double> hbmatx(melx.Width(),
                                                   proxy->Dimension()*simd_ir.Size()*SIMD<double>::Size(),
-                                                  &bmatx(0)[0]);
+                                                  (double*)&bmatx(0));
                         
                         bmatx = SIMD<double> (0.0);
                         proxy->Evaluator()->CalcMatrix(felx, simd_mir, bmatx);
                         Matrix<SIMD<double>> hmelxi(myinds.Size(), proxy->Dimension()*simd_ir.Size());
-                        FlatMatrix<> hhmelxi(hmelxi.Height(), hmelxi.Width()*SIMD<double>::Size(), &hmelxi(0)[0]);
+                        FlatMatrix<> hhmelxi(hmelxi.Height(), hmelxi.Width()*SIMD<double>::Size(), (double*)&hmelxi(0));
 
                         hhmelxi = melx * hbmatx;
 
@@ -5278,12 +5278,12 @@ namespace ngcomp
                         FlatMatrix<double> hbmat(felgf.GetNDof()*fes->GetDimension(),
                                                  diffop->Dim()*    // right Dim ???
                                                  simd_ir.Size()*SIMD<double>::Size(),
-                                                 &bmat(0)[0]);
+                                                 (double*)&bmat(0));
                         bmat = SIMD<double> (0.0);
                         diffop->CalcMatrix(felgf, simd_mir, bmat);
                         
                         Matrix<SIMD<double>> hmgfxi(myinds.Size(), diffop->Dim()*simd_ir.Size());
-                        FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), &hmgfxi(0)[0]);                      
+                        FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), (double*)&hmgfxi(0));      
                         
                         hhmgfxi = mgfs[cntgf] * hbmat;
                         
@@ -5347,7 +5347,7 @@ namespace ngcomp
                                                        simd_ir.Size(), lh);
                         FlatMatrix<double> hbmaty(mely.Width(),
                                                   proxy->Dimension()*simd_ir.Size()*SIMD<double>::Size(),
-                                                  &bmaty(0)[0]);
+                                                  (double*)&bmaty(0));
 
                         bmaty = SIMD<double> (0.0);                      
                         proxy->Evaluator()->CalcMatrix(fely, simd_mir, bmaty);
@@ -5360,7 +5360,7 @@ namespace ngcomp
                         
                         FlatMatrix<> hmely(melyi[proxynr].Height(),
                                            melyi[proxynr].Width()*SIMD<double>::Size(),
-                                           &melyi[proxynr](0,0)[0]);
+                                           (double*)&melyi[proxynr](0,0));
                         
                         mely += hmely * Trans(hbmaty);
                       }
