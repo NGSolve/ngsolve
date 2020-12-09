@@ -2760,7 +2760,10 @@ namespace ngbla
   /**************** timings *********************** */
 
   extern void MultUL (SliceMatrix<> A);
-  extern void LapackSVD (SliceMatrix<> A);  
+  extern void LapackSVD (SliceMatrix<> A,
+                         SliceMatrix<double, ColMajor> U,
+                         SliceMatrix<double, ColMajor> V);
+
   
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits)
   {
@@ -3705,7 +3708,7 @@ namespace ngbla
           for (size_t j = 0; j < its; j++)
             {
               a = aorig;
-              LapackSVD(a); // , U, V);
+              LapackSVD(a, U, V);
             }
           t.Stop();
           cout << "LapackSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
