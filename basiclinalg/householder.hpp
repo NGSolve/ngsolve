@@ -61,6 +61,26 @@ namespace ngbla
   };
 
 
+  
+  template <ORDERING OH, ORDERING OM>
+  void ApplyHouseholderReflections (SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
+  {
+    size_t bs = 48;
+    size_t n = H.Width();
+    size_t m = H.Height();
+
+    if (n > m) throw Exception("ApplyHouseholderReflections, n > m");
+    if (n == 0) return;
+    
+    for (size_t i = 0; i < n; i += bs)
+      {
+        size_t bsi = min(n-i, bs);
+        MultiHouseholderReflection Hv(Trans(H.Cols(i,i+bsi).Rows(i, m)));
+        Hv.Mult (M.Rows(i,m));
+      }
+  }
+
+  
   /*
     Factorize A = Q R
     A is m x n, overwritten by R
@@ -68,7 +88,8 @@ namespace ngbla
   */
   extern NGS_DLL_HEADER void QRFactorization (SliceMatrix<> A, SliceMatrix<> Q);
 
-  extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<> A);
+  extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<double,RowMajor> A);
+  extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<double,ColMajor> A);
   
   extern NGS_DLL_HEADER void CalcSVD (SliceMatrix<> A, 
                                       SliceMatrix<double, ColMajor> U,

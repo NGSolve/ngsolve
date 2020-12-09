@@ -1272,7 +1272,7 @@ namespace ngbla
   
 
   template <bool ADD, bool POS>
-  pmultABW dispatch_atb<ADD,POS>::ptrs[14];
+  pmultABW dispatch_atb<ADD,POS>::ptrs[];
 
   auto init_atb = [] ()
   {
@@ -3322,7 +3322,7 @@ namespace ngbla
 
     if (what == 0 || what == 61)
       {
-        // C=A*B^t
+        // C=A^t*B
         Matrix<> a(n,k), b(n,m), c(k,m);
         for (size_t i = 0; i < a.Height(); i++)
           for (size_t j = 0; j < a.Width(); j++)
@@ -3351,21 +3351,33 @@ namespace ngbla
           timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
         }
         {
-          Timer t("C = A^t*B, block block");
-          constexpr size_t BS = 96;
-          tot = BS*BS*BS;
-          its = 5e9 / tot+1;
-          auto ba = a.Rows(BS).Cols(BS);
-          // auto bb = b.Rows(BS).Cols(BS);
-          auto bc = c.Rows(BS).Cols(BS);
-          // Matrix ba(BS,BS);
-          Matrix bb(BS,BS);
+          Timer t("C = A^t*B");
           t.Start();
           for (size_t j = 0; j < its; j++)
-            MultAtB_intern2<SET,BS> (ba.Height(), ba.Width(), bb.Width(), ba, bb, bc);
+            c = Trans(a)*b;
           t.Stop();
-          cout << "MultAtB - block GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
+          cout << "C=A^t*B GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("A^T*B", 1e-9 * tot *its / t.GetTime()));
+        }
+        {
+          Timer t("C = A^t*B, block block");
+          constexpr size_t BS = 96;
+          if (n >= BS && m >= BS && k >= BS)
+            {
+              tot = BS*BS*BS;
+              its = 5e9 / tot+1;
+              auto ba = a.Rows(BS).Cols(BS);
+              // auto bb = b.Rows(BS).Cols(BS);
+              auto bc = c.Rows(BS).Cols(BS);
+              // Matrix ba(BS,BS);
+              Matrix bb(BS,BS);
+              t.Start();
+              for (size_t j = 0; j < its; j++)
+                MultAtB_intern2<SET,BS> (ba.Height(), ba.Width(), bb.Width(), ba, bb, bc);
+              t.Stop();
+              cout << "MultAtB - block GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+              timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
+            }
         }
       }
     
