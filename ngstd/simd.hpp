@@ -1219,7 +1219,13 @@ namespace ngstd
   }
 
 
-  
+  template <int NUM, typename FUNC>
+  INLINE void Iterate2 (FUNC f)
+  {
+    if constexpr (NUM > 1) Iterate2<NUM-1> (f);
+    if constexpr (NUM >= 1) f(IC<NUM-1>());
+  }
+
   
   template <typename T, int N>
   ostream & operator<< (ostream & ost, SIMD<T,N> simd)
@@ -1229,7 +1235,7 @@ namespace ngstd
     for (int i = 1; i < simd.Size(); i++)
       ost << " " << simd[i];
     */
-    Iterate<simd.Size()> ([&] (auto I) {
+    Iterate2<simd.Size()> ([&] (auto I) {
         if (I.value != 0) ost << " ";
         ost << get<I.value>(simd);
       });
