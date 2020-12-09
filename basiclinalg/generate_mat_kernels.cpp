@@ -5,8 +5,6 @@
 
 using namespace std;
 
-#include "../ngstd/ngs_utils.hpp"
-#include "../ngstd/templates.hpp"
 #include "../ngstd/simd.hpp"
 using namespace ngstd;
 
