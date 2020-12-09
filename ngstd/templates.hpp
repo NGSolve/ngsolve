@@ -85,8 +85,7 @@ void LoadBin (istream & ist, T & val)
 
 
 
-
-
+  /*
 template <int NUM>
 class Cl_Iterate
 {
@@ -119,6 +118,15 @@ template <int NUM, typename FUNC>
 INLINE void Iterate (FUNC f)
 {
   Cl_Iterate<NUM-1>::Do(f);
+}
+  */
+
+
+template <int NUM, typename FUNC>
+INLINE void Iterate (FUNC f)
+{
+  if constexpr (NUM > 1) Iterate<NUM-1> (f);
+  if constexpr (NUM >= 1) f(IC<NUM-1>());
 }
 
 
