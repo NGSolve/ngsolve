@@ -99,7 +99,9 @@ namespace ngfem
                                   pcoefs += dist; }
                                 ));
         
-        std::tie(values(i), values(i+1)) = sum;
+        // std::tie(values(i), values(i+1)) = sum;
+        values(i) = sum.Lo();
+        values(i+1) = sum.Hi();
       }
 
     if (i < hir.Size())
