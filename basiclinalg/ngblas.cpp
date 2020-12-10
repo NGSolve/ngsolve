@@ -1272,7 +1272,7 @@ namespace ngbla
   
 
   template <bool ADD, bool POS>
-  pmultABW dispatch_atb<ADD,POS>::ptrs[14];
+  pmultABW dispatch_atb<ADD,POS>::ptrs[];
 
   auto init_atb = [] ()
   {
@@ -2760,7 +2760,10 @@ namespace ngbla
   /**************** timings *********************** */
 
   extern void MultUL (SliceMatrix<> A);
-  extern void LapackSVD (SliceMatrix<> A);  
+  extern void LapackSVD (SliceMatrix<> A,
+                         SliceMatrix<double, ColMajor> U,
+                         SliceMatrix<double, ColMajor> V);
+
   
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits)
   {
@@ -3266,8 +3269,8 @@ namespace ngbla
           Timer t("C = A*B");
           t.Start();
           for (size_t j = 0; j < its; j++)
-            AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), &a(0)[0]),
-                   SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), &b(0)[0]),
+            AddABt(SliceMatrix<double> (a.Height(), SW*a.Width(), SW*a.Width(), (double*)&a(0)),
+                   SliceMatrix<double> (b.Height(), SW*b.Width(), SW*b.Width(), (double*)&b(0)),
                    // SliceMatrix<double> (AFlatMatrix<double>(b)),
                    c);
           t.Stop();
@@ -3322,7 +3325,7 @@ namespace ngbla
 
     if (what == 0 || what == 61)
       {
-        // C=A*B^t
+        // C=A^t*B
         Matrix<> a(n,k), b(n,m), c(k,m);
         for (size_t i = 0; i < a.Height(); i++)
           for (size_t j = 0; j < a.Width(); j++)
@@ -3351,21 +3354,33 @@ namespace ngbla
           timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
         }
         {
-          Timer t("C = A^t*B, block block");
-          constexpr size_t BS = 96;
-          tot = BS*BS*BS;
-          its = 5e9 / tot+1;
-          auto ba = a.Rows(BS).Cols(BS);
-          // auto bb = b.Rows(BS).Cols(BS);
-          auto bc = c.Rows(BS).Cols(BS);
-          // Matrix ba(BS,BS);
-          Matrix bb(BS,BS);
+          Timer t("C = A^t*B");
           t.Start();
           for (size_t j = 0; j < its; j++)
-            MultAtB_intern2<SET,BS> (ba.Height(), ba.Width(), bb.Width(), ba, bb, bc);
+            c = Trans(a)*b;
           t.Stop();
-          cout << "MultAtB - block GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
+          cout << "C=A^t*B GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("A^T*B", 1e-9 * tot *its / t.GetTime()));
+        }
+        {
+          Timer t("C = A^t*B, block block");
+          constexpr size_t BS = 96;
+          if (n >= BS && m >= BS && k >= BS)
+            {
+              tot = BS*BS*BS;
+              its = 5e9 / tot+1;
+              auto ba = a.Rows(BS).Cols(BS);
+              // auto bb = b.Rows(BS).Cols(BS);
+              auto bc = c.Rows(BS).Cols(BS);
+              // Matrix ba(BS,BS);
+              Matrix bb(BS,BS);
+              t.Start();
+              for (size_t j = 0; j < its; j++)
+                MultAtB_intern2<SET,BS> (ba.Height(), ba.Width(), bb.Width(), ba, bb, bc);
+              t.Stop();
+              cout << "MultAtB - block GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+              timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
+            }
         }
       }
     
@@ -3693,7 +3708,7 @@ namespace ngbla
           for (size_t j = 0; j < its; j++)
             {
               a = aorig;
-              LapackSVD(a); // , U, V);
+              LapackSVD(a, U, V);
             }
           t.Stop();
           cout << "LapackSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
@@ -3768,13 +3783,12 @@ namespace ngbla
 	sum0 = If (m0, sum0+SIMD<double,4>(pa+i)*SIMD<double,4> (pb+i), sum0);
 	i += 4;
       } // n < i + 4
+
+    double ssum = HSum(sum0 + sum1);
     for ( ; i < n; i++ )
-      {
-	if (ba.Test(i)) {
-	  sum0[0] += pa[i] * pb[i];
-	}
-      }
-    return HSum(sum0 + sum1);
+      if (ba.Test(i)) 
+        ssum += pa[i] * pb[i];
+    return ssum;
   }
 
 #elif defined __SSE__

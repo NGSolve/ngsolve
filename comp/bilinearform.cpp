@@ -2818,7 +2818,148 @@ namespace ngcomp
             }
             
             
-            if (facetwise_skeleton_parts[BND].Size()) throw Exception ("mixed biforms don't support skeleton terms");
+            //if (facetwise_skeleton_parts[BND].Size()) throw Exception ("mixed biforms don't support skeleton terms");
+            if (facetwise_skeleton_parts[BND].Size())
+              {
+                // cout << "check bnd" << endl;
+                int cnt = 0;
+                int ne = ma->GetNE(BND);
+                ParallelForRange
+                  ( IntRange(ne), [&] ( IntRange r )
+                    {
+                      LocalHeap lh = clh.Split();
+                      Array<int> fnums, elnums, vnums, svnums, dnums_trial, dnums_test;
+
+                      for (int i : r)
+                        {
+                          //{
+                            //lock_guard<mutex> guard(printmatasstatus2_mutex);
+                            //cnt++;
+                            //gcnt++;
+                            //// if (cnt % 10 == 0)
+                              //// cout << "\rassemble facet surface element " << cnt << "/" << ne << flush;
+                            //ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+                          //}
+
+                          HeapReset hr(lh);
+                          ElementId sei(BND, i);
+
+                          // if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
+                          fnums = ma->GetElFacets(sei);
+                          int fac = fnums[0];
+                          ma->GetFacetElements(fac,elnums);
+                          int el = elnums[0];
+                          ElementId ei(VOL, el);
+                          fnums = ma->GetElFacets(ei);
+                          //const FiniteElement & fel = fespace->GetFE (ei, lh);
+
+                        const FiniteElement & fel_trial = fespace->GetFE (ei, lh);
+                        const FiniteElement & fel_test = fespace2->GetFE (ei, lh);
+                        MixedFiniteElement fel(fel_trial, fel_test);
+
+                          int facnr = 0;
+                          for (int k=0; k<fnums.Size(); k++)
+                            if(fac==fnums[k]) facnr = k;
+                          vnums = ma->GetElVertices (ei);
+                          svnums = ma->GetElVertices (sei);
+
+                          ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                          ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
+
+                          //fespace->GetDofNrs (ei, dnums);
+
+                        fespace->GetDofNrs (ei, dnums_trial);
+                        fespace2->GetDofNrs (ei, dnums_test);
+
+                        bool inconsistent_ndof = false;
+                        inconsistent_ndof |= fel_test.GetNDof() != dnums_test.Size();
+                        inconsistent_ndof |= fel_trial.GetNDof() != dnums_trial.Size();
+
+
+                          //if(fel.GetNDof() != dnums.Size())
+                          if(inconsistent_ndof)
+                            {
+                              (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
+                              (*testout) << "dnums_test.Size() = " << dnums_test.Size() << endl;
+                              (*testout) << "dnums test = " << endl << dnums_test << endl;
+                              (*testout) << "dnums_trial.Size() = " << dnums_trial.Size() << endl;
+                              (*testout) << "dnums trial = " << endl << dnums_trial << endl;
+                              throw Exception ( string("Inconsistent number of degrees of freedom Surface!") );
+                            }
+
+                          /*
+                            for (int j = 0; j < NumIntegrators(); j++)
+                            {
+                            const BilinearFormIntegrator & bfi = *parts[j];
+                          */
+                          for (auto & bfi : facetwise_skeleton_parts[BND])
+                            {
+                              // if (bfi.VB() != BND) continue;
+                              // if (!bfi.SkeletonForm()) continue;
+
+                              if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;
+                              if (!bfi->DefinedOnElement (i)) continue;
+
+                              //if (check_unused)
+                                //for (int k = 0; k < dnums.Size(); k++)
+                                  //if (IsRegularDof(dnums[k]))
+                                    //useddof[dnums[k]] = true;
+
+                              //int elmat_size = dnums.Size()*fespace->GetDimension();
+                              //FlatMatrix<SCAL> elmat(elmat_size, lh);
+                          FlatMatrix<SCAL> elmat(dnums_test.Size()*fespace->GetDimension(),
+                                                 dnums_trial.Size()*fespace->GetDimension(), lh);
+
+                              // original version did not compile on MacOS V
+                              const FacetBilinearFormIntegrator & fbfi =
+                                dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);
+                              fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, svnums, elmat, lh);
+
+                              fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+
+                              if (printelmat)
+                                {
+                                  testout->precision(8);
+
+                                  (*testout) << "surface-elnum= " << i << endl;
+                                  (*testout) << "integrator " << bfi->Name() << endl;
+                                  (*testout) << "dnums test = " << endl << dnums_test << endl;
+                                  (*testout) << "dnums trial = " << endl << dnums_trial << endl;
+                                  (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
+                                  (*testout) << "elmat = " << endl << elmat << endl;
+                                }
+
+
+                              if (elmat_ev)
+                                {
+                                  testout->precision(8);
+
+                                  (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+#ifdef LAPACK
+                                  LapackEigenSystem(elmat, lh);
+#else
+                                  Vector<SCAL> lami(elmat.Height());
+                                  Matrix<SCAL> evecs(elmat.Height());
+
+                                  CalcEigenSystem (elmat, lami, evecs);
+                                  (*testout) << "lami = " << endl << lami << endl;
+#endif
+                                  // << "evecs = " << endl << evecs << endl;
+                                }
+
+                              //                    for(int k=0; k<elmat.Height(); k++)
+                              //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
+                              //                        cout << "dnums " << dnums << " elmat " << elmat << endl;
+                              {
+                                lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                AddElementMatrix (dnums_test, dnums_trial, elmat, ElementId(BND,i), lh);
+                              }
+                            }//end for (numintegrators)
+                        }//end for nse
+                    });//end of parallel
+                // cout << "\rassemble facet surface element " << ne << "/" << ne << endl;
+              } // if facetwise_skeleton_parts[BND].size
+
             if (elementwise_skeleton_parts.Size()) throw Exception ("mixed biforms don't support elementwise skeleton terms");
             
             if (print) *testout << "mat = " << mat << endl;
@@ -5219,12 +5360,12 @@ namespace ngcomp
                                                        simd_ir.Size(), lh);
                         FlatMatrix<double> hbmatx(melx.Width(),
                                                   proxy->Dimension()*simd_ir.Size()*SIMD<double>::Size(),
-                                                  &bmatx(0)[0]);
+                                                  (double*)&bmatx(0));
                         
                         bmatx = SIMD<double> (0.0);
                         proxy->Evaluator()->CalcMatrix(felx, simd_mir, bmatx);
                         Matrix<SIMD<double>> hmelxi(myinds.Size(), proxy->Dimension()*simd_ir.Size());
-                        FlatMatrix<> hhmelxi(hmelxi.Height(), hmelxi.Width()*SIMD<double>::Size(), &hmelxi(0)[0]);
+                        FlatMatrix<> hhmelxi(hmelxi.Height(), hmelxi.Width()*SIMD<double>::Size(), (double*)&hmelxi(0));
 
                         hhmelxi = melx * hbmatx;
 
@@ -5250,12 +5391,12 @@ namespace ngcomp
                         FlatMatrix<double> hbmat(felgf.GetNDof()*fes->GetDimension(),
                                                  diffop->Dim()*    // right Dim ???
                                                  simd_ir.Size()*SIMD<double>::Size(),
-                                                 &bmat(0)[0]);
+                                                 (double*)&bmat(0));
                         bmat = SIMD<double> (0.0);
                         diffop->CalcMatrix(felgf, simd_mir, bmat);
                         
                         Matrix<SIMD<double>> hmgfxi(myinds.Size(), diffop->Dim()*simd_ir.Size());
-                        FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), &hmgfxi(0)[0]);                      
+                        FlatMatrix<> hhmgfxi(hmgfxi.Height(), hmgfxi.Width()*SIMD<double>::Size(), (double*)&hmgfxi(0));      
                         
                         hhmgfxi = mgfs[cntgf] * hbmat;
                         
@@ -5319,7 +5460,7 @@ namespace ngcomp
                                                        simd_ir.Size(), lh);
                         FlatMatrix<double> hbmaty(mely.Width(),
                                                   proxy->Dimension()*simd_ir.Size()*SIMD<double>::Size(),
-                                                  &bmaty(0)[0]);
+                                                  (double*)&bmaty(0));
 
                         bmaty = SIMD<double> (0.0);                      
                         proxy->Evaluator()->CalcMatrix(fely, simd_mir, bmaty);
@@ -5332,7 +5473,7 @@ namespace ngcomp
                         
                         FlatMatrix<> hmely(melyi[proxynr].Height(),
                                            melyi[proxynr].Width()*SIMD<double>::Size(),
-                                           &melyi[proxynr](0,0)[0]);
+                                           (double*)&melyi[proxynr](0,0));
                         
                         mely += hmely * Trans(hbmaty);
                       }

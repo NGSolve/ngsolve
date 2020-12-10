@@ -1132,7 +1132,7 @@ wait : bool
                                      
                                      FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
                                      SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
-                                                          &simdvals(0,0)[0]);
+                                                          (double*)&simdvals(0,0));
                                      fm = Trans(simdfm);
                                    }
                                }

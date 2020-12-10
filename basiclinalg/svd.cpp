@@ -29,13 +29,15 @@ namespace ngbla
     integer *info);
   */
 
-  void LapackSVD (SliceMatrix<> A)
+  void LapackSVD (SliceMatrix<> A,
+                  SliceMatrix<double, ColMajor> U,
+                  SliceMatrix<double, ColMajor> V)
   {
     static Timer t("LapackSVD"); RegionTimer reg(t);
     ngbla::integer m = A.Width(), n = A.Height();
-    Matrix<> U(m), V(n);
+    // Matrix<> U(m), V(n);
     Vector<> S(min(n,m));
-    Array<double> work(n*m);
+    Array<double> work(n*m+100);
     ngbla::integer info;
     char jobu = 'A', jobv = 'A';
     ngbla::integer lda = A.Dist(), ldu = U.Dist(), ldv = V.Dist();
@@ -46,26 +48,25 @@ namespace ngbla
               U.Data(), &ldu, V.Data(), &ldv,
               work.Data(), &lwork, 
               &info);
-    
+    // cout << "info = " << info << endl;
     // if (n <= 100)
     // cout << "S = " << S << endl;
+    A.Diag(0) = S;
   }
 
-  template <ORDERING OH, ORDERING OM>
-  void ApplyHouseholderReflections (SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
-  {
-    size_t bs = 48;
-    size_t n = H.Width();
-    size_t m = H.Height();
 
-    if (n > m) throw Exception("ApplyHouseholderReflections, n > m");
-    if (n == 0) return;
-    
-    for (size_t i = 0; i < n; i += bs)
+  template <ORDERING OH, ORDERING OM>  
+  void ApplyBandHouseholderReflections (int bs, SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
+  {
+    int n = H.Width();
+    for (int i = 0; i+bs < H.Width(); i++)
+      H.Col(i).Range(i+bs, H.Width()) = 0;
+
+    for (int i = 0; i < H.Width(); i += bs)
       {
-        size_t bsi = min(n-i, bs);
-        MultiHouseholderReflection Hv(Trans(H.Cols(i,i+bsi).Rows(i, m)));
-        Hv.Mult (M.Rows(i,m));
+        int next = min(i+bs, n);
+        MultiHouseholderReflection Hv(Trans(H.Cols(i,next).Rows(i,min(i+2*bs,n))));
+        Hv.Mult(M.Rows(i,min(i+2*bs,n)));
       }
   }
 
@@ -199,7 +200,7 @@ namespace ngbla
     size_t m = A.Height();
     size_t n = A.Width();
     Matrix A_orig = A; // for testint only
-    constexpr size_t bs = 32;  // orig: 32
+    constexpr size_t bs = 24;  // orig: 32
 
     
     for (size_t i1 = 0; i1 < min(n,m); i1 += bs)
@@ -276,7 +277,9 @@ namespace ngbla
     for (int i = 0; i < min(n, bs+1); i++)
       Aband.Diag(i) = A.Rows(minnm).Cols(minnm).Diag(i);
     */
-    auto Aband = A.Rows(minnm).Cols(minnm);
+    // auto Aband = A.Rows(minnm).Cols(minnm);
+    
+    Matrix Aband = A.Rows(minnm).Cols(minnm);
     
     
     /*
@@ -337,6 +340,7 @@ namespace ngbla
      */
     
 
+    /*
     constexpr size_t bcbs = 16;   // bulge chasing block size
     Vector<> tmp(bs);
     int maxblocks = n/bs+1;
@@ -405,10 +409,118 @@ namespace ngbla
             MultiHouseholderReflection (reflect_bcV.Rows(i*bcbs, i*bcbs+bcbsi).Cols(ranges[i].Size())).Mult (Trans(V1.Cols(ranges[i])));
           }
       }
-  
-    tbulgechasing.Stop();
+    */
 
-    // A.Rows(minnm).Cols(minnm) = Aband;
+
+
+    // constexpr size_t bcbs = 16;   // bulge chasing block size
+    Vector<> tmp(bs);
+    // int maxblocks = n/bs+1;
+    // Matrix<> reflect_bcU(bcbs * maxblocks, bs+bcbs-1);
+    // Matrix<> reflect_bcV(bcbs * maxblocks, bs+bcbs-1);
+    // Array<IntRange> ranges;
+
+    Array<tuple<int,int,int>> refu;
+    Array<tuple<int,int,int>> refv;
+
+    static Timer tb1 ("bulge chasing - transform band");
+    tb1.Start();
+
+    for (size_t i = 0; i+1 < n; i++)
+      {
+        // first vector
+        IntRange cols(i+1, min(n, i+bs+1));
+        auto x = Aband.Row(i).Range(cols);
+        
+        CalcHouseholderVector (x, tmp.Range(x.Size()));
+        refv.Append ( tuple(i,cols.First(),cols.Size() ));
+                  
+        IntRange rows(i, min(m,i+bs+1));
+        HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
+        Aband.Row(i).Range(cols.First()+1, cols.Next()) = tmp.Range(1,x.Size());
+            
+        int nr = 0;
+        for (int i1 = i+1; i1 < n; i1 += bs, nr++)
+          {
+            {
+              IntRange rows(i1, min(n, i1+bs));
+              auto x = Aband.Col(i1).Range(rows);
+              CalcHouseholderVector (x, tmp.Range(x.Size()));
+
+              Aband.Col(i).Range(rows) = tmp.Range(x.Size());
+              refu.Append ( tuple(i1,i,rows.Size() ));
+              IntRange cols(i1, min(n, i1+2*bs));
+              HouseholderReflection (tmp.Range(x.Size())).Mult (Aband.Rows(rows).Cols(cols));
+            }
+            
+            if (i1+bs < n)
+              {
+                IntRange cols(i1+bs, min(n, i1+2*bs));
+                auto x = Aband.Row(i1).Range(cols);
+                CalcHouseholderVector (x, tmp.Range(x.Size()));
+                
+                Aband.Row(i).Range(cols) = tmp.Range(x.Size());
+                refv.Append ( tuple(i,cols.First(),cols.Size() ));
+                
+                IntRange rows(i1, min(n, i1+2*bs));
+                HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
+              }
+          }
+      }
+    
+    tb1.Stop();
+    static Timer tb2 ("bulge chasing - mult U");
+    static Timer tb3 ("bulge chasing - mult V");
+    tb2.Start();
+    /*
+    for (auto [i,j,size] : refu)
+      {
+        tmp.Range(size) = Aband.Col(j).Range(i,i+size);
+        HouseholderReflection H(tmp.Range(size));
+        H.Mult (Trans(U1.Cols(i,i+size)));
+      }
+    */
+    
+    // for (auto [i,j,size] : refu)
+    // cout << "i,j = " << i << "," << j << ", size = " << size << endl;
+    
+    int startrow = 1;
+    while (startrow+bs < n) startrow += bs;
+    while (startrow > 0)
+      {
+        IntRange rest(startrow, n);
+        auto sub = Aband.Rows(rest).Cols(0, n-startrow);
+        ApplyBandHouseholderReflections (bs, sub, Trans(U1.Cols(rest)));
+        startrow -= bs;
+      }
+    
+    tb2.Stop();
+    tb3.Start();
+
+    /*
+    for (auto [i,j,size] : refv)
+      {
+        tmp.Range(size) = Aband.Row(i).Range(j,j+size);
+        tmp(0) = 1;
+        HouseholderReflection H(tmp.Range(size));
+        H.Mult (Trans(V1.Cols(j,j+size)));
+      }
+    */
+    startrow = 1;
+    while (startrow+bs < n) startrow += bs;
+    while (startrow > 0)
+      {
+        IntRange rest(startrow, n);
+        auto sub = Aband.Cols(rest).Rows(0, n-startrow);
+        ApplyBandHouseholderReflections (bs, Trans(sub), Trans(V1.Cols(rest)));
+        startrow -= bs;
+      }
+
+    
+    tb3.Stop();
+    tbulgechasing.Stop();
+    
+    A.Rows(minnm).Cols(minnm) = Aband;
     
     // if (n < 20)
     // cout << "after bulge-chasing: " << endl << Truncate(A) << endl;
@@ -708,6 +820,14 @@ namespace ngbla
   void CalcSVD (SliceMatrix<> A, 
                 SliceMatrix<double, ColMajor> U, SliceMatrix<double, ColMajor> V)
   {
+    Matrix Aorig = A;
+    Matrix<double,ColMajor> hU = U;
+    LapackSVD (A, V, hU);
+    U = Trans (hU);
+    // cout << "have svd, sigma = " << SliceMatrix(A).Diag(0) << endl;
+    // cout << "Trans(U) * A * V = " << Truncate(Trans(U) * Aorig * V) << endl;
+    return;
+    
     static Timer t("CalcSVD"); RegionTimer reg(t);
     size_t m = A.Height();
     size_t n = A.Width();

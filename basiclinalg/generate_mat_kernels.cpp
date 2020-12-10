@@ -5,7 +5,11 @@
 
 using namespace std;
 
+ 
+
 #include "../ngstd/simd.hpp"
+
+
 using namespace ngstd;
 
 enum OP { ADD, SUB, SET, SETNEG };
