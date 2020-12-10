@@ -37,7 +37,19 @@ namespace ngstd
     __m128i Data() const { return mask; }
     static constexpr int Size() { return 2; }    
     int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
+    static INLINE SIMD<mask64, 2> GetMaskFromBits (unsigned int i);
   };
+
+  static SIMD<mask64, 2> masks_from_2bits[4] = {
+    _mm_set_epi32 (0,0,0,0), _mm_set_epi32 (0,0,-1,0),
+    _mm_set_epi32 (-1,0,0,0), _mm_set_epi32 (-1,0,-1,0),
+  };
+
+  INLINE SIMD<mask64, 2> SIMD<mask64, 2> :: GetMaskFromBits (unsigned int i)
+  {
+    return masks_from_2bits[i & 3];
+  }
+
   
   template<>
   class SIMD<int64_t,2> 
@@ -67,6 +79,8 @@ namespace ngstd
     INLINE __m128i & Data() { return data; }
     static SIMD FirstInt() { return { 0, 1 }; }    
   };
+
+
 
 INLINE SIMD<int64_t,2> operator-(SIMD<int64_t,2> a) { return _mm_sub_epi64(_mm_setzero_si128(), a.Data()); }
 INLINE SIMD<int64_t,2> operator+ (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return _mm_add_epi64(a.Data(),b.Data()); }

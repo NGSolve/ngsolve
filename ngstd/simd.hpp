@@ -2,8 +2,18 @@
 #define NG_SIMD_HPP
 
 #include "simd_base.hpp"
+
+#if (defined(_M_AMD64) || defined(_M_X64) || defined(__AVX__))
 #include "simd_sse.hpp"
+#endif
+
+#ifdef __AVX__
 #include "simd_avx.hpp"
+#endif
+
+#ifdef __AVX512F__
+#include "simd_avx512.hpp"
+#endif
 
 namespace ngstd
 {
@@ -47,6 +57,23 @@ namespace ngstd
   {
     return SIMD<double,4>(HSum(s1), HSum(s2), HSum(s3), HSum(s4));
   }
+
+  INLINE auto GetMaskFromBits( unsigned int i )
+  {
+    return SIMD<mask64>::GetMaskFromBits(i);
+  }
+
+// For Netgen interface
+#if defined __AVX512F__
+    typedef __m512 tAVX;
+    typedef __m512d tAVXd;
+#elif defined __AVX__
+    typedef __m256 tAVX;
+    typedef __m256d tAVXd; 
+#elif defined __SSE__
+    typedef __m128 tAVX;
+    typedef __m128d tAVXd; 
+#endif
 
 }
 
