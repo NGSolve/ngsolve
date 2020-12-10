@@ -8,7 +8,7 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  UBUNTU_VERSION_LATEST: "19.10"
+  UBUNTU_VERSION_LATEST: "20.10"
   UBUNTU_VERSION_LTS: "20.04"
 
 ############################################
