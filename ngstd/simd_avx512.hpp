@@ -32,7 +32,6 @@ namespace ngstd
     SIMD (__mmask8 _mask) : mask(_mask) { ; }        
     __mmask8 Data() const { return mask; }
     static constexpr int Size() { return 8; }    
-    // mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
     static INLINE SIMD<mask64, 8> GetMaskFromBits (unsigned int i)
     {
       return SIMD<mask64, 8>(__mmask8(i));
@@ -62,7 +61,6 @@ namespace ngstd
     
 
     INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
-    INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
     INLINE __m512i Data() const { return data; }
     INLINE __m512i & Data() { return data; }
     static SIMD FirstInt() { return { 0, 1, 2, 3, 4, 5, 6, 7 }; }
@@ -128,13 +126,12 @@ namespace ngstd
     }
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
-    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
     INLINE __m512d Data() const { return data; }
     INLINE __m512d & Data() { return data; }
 
   };
 
-  INLINE SIMD<double,8> operator- (SIMD<double,8> a) { return _mm512_xor_pd(a.Data(), _mm512_set1_pd(-0.0)); }
+  // INLINE SIMD<double,8> operator- (SIMD<double,8> a) { return _mm512_xor_pd(a.Data(), _mm512_set1_pd(-0.0)); }
   INLINE SIMD<double,8> operator+ (SIMD<double,8> a, SIMD<double,8> b) { return _mm512_add_pd(a.Data(),b.Data()); }
   INLINE SIMD<double,8> operator- (SIMD<double,8> a, SIMD<double,8> b) { return _mm512_sub_pd(a.Data(),b.Data()); }
   INLINE SIMD<double,8> operator* (SIMD<double,8> a, SIMD<double,8> b) { return _mm512_mul_pd(a.Data(),b.Data()); }

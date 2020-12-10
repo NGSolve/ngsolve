@@ -41,7 +41,6 @@ namespace ngstd
     SIMD (__m256d _mask) : mask(_mm256_castpd_si256(_mask)) { ; }    
     __m256i Data() const { return mask; }
     static constexpr int Size() { return 4; }    
-    int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
     static SIMD<mask64, 4> GetMaskFromBits (unsigned int i);
   };
 
@@ -78,7 +77,6 @@ namespace ngstd
     SIMD (__m256i _data) { data = _data; }
 
     INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
-    INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
     INLINE __m256i Data() const { return data; }
     INLINE __m256i & Data() { return data; }
 

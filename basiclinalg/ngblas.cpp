@@ -3836,7 +3836,7 @@ namespace ngbla
     for ( ; i < n; i++ )
       {
 	if (ba.Test(i)) {
-	  sum0[0] += pa[i]*pb[i];
+	  sum0 += SIMD<double,2>{0.0, pa[i]*pb[i]};
 	}
       }
     sum0 += sum2;
