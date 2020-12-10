@@ -22,7 +22,7 @@ namespace ngstd
     return 8;
 #elif defined __AVX__
     return 4;
-#elif (defined(_M_AMD64) || defined(_M_X64) || defined(__AVX__))
+#elif (defined(_M_AMD64) || defined(_M_X64) || defined(__SSE__))
     return 2;
 #else
     return 1;
@@ -595,6 +595,22 @@ namespace ngstd
 
   template<int N, typename T>
   using MultiSIMD = SIMD<T, N*GetDefaultSIMDSize()>;
+
+  template<int N>
+  INLINE auto Unpack (SIMD<double,N> a, SIMD<double,N> b)
+  {
+    if constexpr(N==1)
+      {
+        return make_tuple(SIMD<double,N>{a.Data()}, SIMD<double,N>{b.Data()} );
+      }
+    else
+      {
+        auto [a1,b1] = Unpack(a.Lo(), b.Lo());
+        auto [a2,b2] = Unpack(a.Hi(), b.Hi());
+        return make_tuple(SIMD<double,N>{ a1, b2 },
+            SIMD<double,N>{ b1, a2 });
+      }
+  }
 
 
 
