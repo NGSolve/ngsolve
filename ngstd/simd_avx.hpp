@@ -11,8 +11,6 @@
 
 namespace ngstd
 {
-  typedef __m256 tAVX;
-  typedef __m256d tAVXd; 
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
   {
@@ -29,6 +27,7 @@ namespace ngstd
   }
 #endif
 
+
   template <> 
   class SIMD<mask64,4>
   {
@@ -43,7 +42,24 @@ namespace ngstd
     __m256i Data() const { return mask; }
     static constexpr int Size() { return 4; }    
     int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
+    static SIMD<mask64, 4> GetMaskFromBits (unsigned int i);
   };
+
+  static SIMD<mask64, 4> masks_from_4bits[16] = {
+    _mm256_set_epi64x (0,0,0,0), _mm256_set_epi64x (0,0,0,-1),
+    _mm256_set_epi64x (0,0,-1,0), _mm256_set_epi64x (0,0,-1,-1),
+    _mm256_set_epi64x (0,-1,0,0), _mm256_set_epi64x (0,-1,0,-1),
+    _mm256_set_epi64x (0,-1,-1,0), _mm256_set_epi64x (0,-1,-1,-1),
+    _mm256_set_epi64x (-1,0,0,0), _mm256_set_epi64x (-1,0,0,-1),
+    _mm256_set_epi64x (-1,0,-1,0), _mm256_set_epi64x (-1,0,-1,-1),
+    _mm256_set_epi64x (-1,-1,0,0), _mm256_set_epi64x (-1,-1,0,-1),
+    _mm256_set_epi64x (-1,-1,-1,0), _mm256_set_epi64x (-1,-1,-1,-1)
+  };
+
+  INLINE SIMD<mask64, 4> SIMD<mask64, 4> :: GetMaskFromBits (unsigned int i)
+  {
+    return masks_from_4bits[i & 15];
+  }
 
   template<>
   class SIMD<int64_t,4> 
@@ -70,6 +86,7 @@ namespace ngstd
     SIMD<int64_t,2> Hi() const { return _mm256_extractf128_si256(data, 1); }
     static SIMD FirstInt() { return { 0, 1, 2, 3 }; }
   };
+
 
   INLINE SIMD<int64_t,4> operator-(SIMD<int64_t,4> a) { return _mm256_sub_epi64(_mm256_setzero_si256(), a.Data()); }
 
@@ -236,21 +253,6 @@ namespace ngstd
   INLINE SIMD<int64_t,4> If (SIMD<mask64,4> a, SIMD<int64_t,4> b, SIMD<int64_t,4> c)
   { return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(c.Data()), _mm256_castsi256_pd(b.Data()),
                                                 _mm256_castsi256_pd(a.Data()))); }
-
-  static SIMD<mask64, 4> masks_from_4bits[16] = {
-    _mm256_set_epi64x (0,0,0,0), _mm256_set_epi64x (0,0,0,-1),
-    _mm256_set_epi64x (0,0,-1,0), _mm256_set_epi64x (0,0,-1,-1),
-    _mm256_set_epi64x (0,-1,0,0), _mm256_set_epi64x (0,-1,0,-1),
-    _mm256_set_epi64x (0,-1,-1,0), _mm256_set_epi64x (0,-1,-1,-1),
-    _mm256_set_epi64x (-1,0,0,0), _mm256_set_epi64x (-1,0,0,-1),
-    _mm256_set_epi64x (-1,0,-1,0), _mm256_set_epi64x (-1,0,-1,-1),
-    _mm256_set_epi64x (-1,-1,0,0), _mm256_set_epi64x (-1,-1,0,-1),
-    _mm256_set_epi64x (-1,-1,-1,0), _mm256_set_epi64x (-1,-1,-1,-1)
-  };
-  INLINE SIMD<mask64, 4> GetMaskFromBits (unsigned int i)
-  {
-    return masks_from_4bits[i & 15];
-  }
 
 }
 

@@ -18,7 +18,15 @@ namespace ngstd
   using namespace ngcore;
 
   constexpr int GetDefaultSIMDSize() {
-      return 4;
+#if defined __AVX512F__
+    return 8;
+#elif defined __AVX__
+    return 4;
+#elif (defined(_M_AMD64) || defined(_M_X64) || defined(__AVX__))
+    return 2;
+#else
+    return 1;
+#endif
   }
 
 
