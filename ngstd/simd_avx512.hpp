@@ -131,7 +131,7 @@ namespace ngstd
 
   };
 
-  // INLINE SIMD<double,8> operator- (SIMD<double,8> a) { return _mm512_xor_pd(a.Data(), _mm512_set1_pd(-0.0)); }
+  INLINE SIMD<double,8> operator- (SIMD<double,8> a) { return -a.Data(); }
   INLINE SIMD<double,8> operator+ (SIMD<double,8> a, SIMD<double,8> b) { return _mm512_add_pd(a.Data(),b.Data()); }
   INLINE SIMD<double,8> operator- (SIMD<double,8> a, SIMD<double,8> b) { return _mm512_sub_pd(a.Data(),b.Data()); }
   INLINE SIMD<double,8> operator* (SIMD<double,8> a, SIMD<double,8> b) { return _mm512_mul_pd(a.Data(),b.Data()); }
