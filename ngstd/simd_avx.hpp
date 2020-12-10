@@ -82,7 +82,7 @@ namespace ngstd
 
     SIMD<int64_t,2> Lo() const { return _mm256_extractf128_si256(data, 0); }
     SIMD<int64_t,2> Hi() const { return _mm256_extractf128_si256(data, 1); }
-    static SIMD FirstInt() { return { 0, 1, 2, 3 }; }
+    static SIMD FirstInt(int n0=0) { return { n0+0, n0+1, n0+2, n0+3 }; }
   };
 
 
