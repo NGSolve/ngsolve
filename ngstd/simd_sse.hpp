@@ -63,7 +63,7 @@ namespace ngstd
     INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
     INLINE __m128i Data() const { return data; }
     INLINE __m128i & Data() { return data; }
-    static SIMD FirstInt() { return { 0, 1 }; }    
+    static SIMD FirstInt(int n0=0) { return { n0, n0+1 }; }    
   };
 
 
