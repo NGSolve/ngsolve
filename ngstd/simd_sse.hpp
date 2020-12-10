@@ -172,7 +172,7 @@ INLINE SIMD<int64_t,2> operator- (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return
 
 
   INLINE SIMD<double,2> sqrt (SIMD<double,2> a) { return _mm_sqrt_pd(a.Data()); }
-  INLINE SIMD<double,2> fabs (SIMD<double,2> a) { return _mm_max_pd(a.Data(), -a.Data()); }
+  INLINE SIMD<double,2> fabs (SIMD<double,2> a) { return _mm_max_pd(a.Data(), (-a).Data()); }
   using std::floor;
   INLINE SIMD<double,2> floor (SIMD<double,2> a)
   { return ngstd::SIMD<double,2>([&](int i)->double { return floor(a[i]); } ); }
@@ -250,13 +250,6 @@ INLINE SIMD<int64_t,2> operator- (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return
                         _mm_andnot_si128(a.Data(),c.Data()),
                         _mm_and_si128(b.Data(),a.Data())
                         );
-  }
-
-  INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
-  {
-    SIMD<double,2> hsum1 = my_mm_hadd_pd (v1.Data(), v2.Data());
-    SIMD<double,2> hsum2 = my_mm_hadd_pd (v3.Data(), v4.Data());
-    return SIMD<double,4> (hsum1, hsum2);
   }
 
 }

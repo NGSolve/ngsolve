@@ -17,6 +17,13 @@
 
 namespace ngstd
 {
+  INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
+  {
+    SIMD<double,2> hsum1 = my_mm_hadd_pd (v1.Data(), v2.Data());
+    SIMD<double,2> hsum2 = my_mm_hadd_pd (v3.Data(), v4.Data());
+    return SIMD<double,4> (hsum1, hsum2);
+  }
+
 
   INLINE void SIMDTranspose (SIMD<double,4> a1, SIMD<double,4> a2, SIMD <double,4> a3, SIMD<double,4> a4,
                              SIMD<double,4> & b1, SIMD<double,4> & b2, SIMD<double,4> & b3, SIMD<double,4> & b4)
