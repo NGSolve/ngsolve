@@ -1223,7 +1223,7 @@ namespace ngstd
   INLINE void Iterate2 (FUNC f)
   {
     if constexpr (NUM > 1) Iterate2<NUM-1> (f);
-    if constexpr (NUM >= 1) f(IC<NUM-1>());
+    if constexpr (NUM >= 1) f(std::integral_constant<int,NUM-1>());
   }
 
   
