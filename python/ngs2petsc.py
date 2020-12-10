@@ -143,6 +143,7 @@ class SLEPcEigenProblem():
         self.ST.setType(opt);
         self.KSP = self.ST.getKSP();
     def setWhich(self,n):
+        self.N = n
         self.E.setDimensions(n,psc.DECIDE)
     def getPair(self,fes,s):
         xr, xi = self.A.createVecs()
@@ -152,6 +153,17 @@ class SLEPcEigenProblem():
         vecmap.P2N(xr, vr.vec)
         vi =  ngs.GridFunction(fes)
         vecmap.P2N(xi, vi.vec)
+        return lam,vr,vi
+    def getPairs(self,fes):
+        vr =  ngs.GridFunction(fes, multidim=self.N)
+        vi =  ngs.GridFunction(fes, multidim=self.N)
+        lam = [];
+        for s in range(self.N):
+            xr, xi = self.A.createVecs()
+            lam.append(self.E.getEigenpair(s, xr, xi))
+            vecmap = VectorMapping(fes.ParallelDofs(), fes.FreeDofs())
+            vecmap.P2N(xr, vr.vecs[s])
+            vecmap.P2N(xi, vi.vecs[s])
         return lam,vr,vi
     def Solve(self):
         self.E.setST(self.ST);
