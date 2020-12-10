@@ -259,7 +259,7 @@ void TestSIMD()
                 dst[i] = -dst[i-1];
             }
             SIMD<double,N> srcsimd(src);
-            SIMD<double,N> simd = IfPos(dst, srcsimd,-srcsimd);
+            SIMD<double,N> simd = IfPos(SIMD<double,N>(dst), srcsimd,-srcsimd);
             for (auto i : Range(N)) {
                 CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
             }
@@ -270,7 +270,7 @@ void TestSIMD()
                 dst[i] = i%2;
             }
             SIMD<double,N> srcsimd(src);
-            SIMD<double,N> simd = IfZero(dst, srcsimd,-srcsimd);
+            SIMD<double,N> simd = IfZero(SIMD<double,N>(dst), srcsimd,-srcsimd);
             for (auto i : Range(N)) {
                 CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
             }
