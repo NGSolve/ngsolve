@@ -12,18 +12,6 @@
 namespace ngstd
 {
 
-#ifndef __AVX__
-  INLINE __m128i my_mm_cmpgt_epi64(__m128i a, __m128i b) {
-    auto  res_lo = _mm_cvtsi128_si64(a)  > _mm_cvtsi128_si64(b) ? -1:0;
-    auto  res_hi = _mm_cvtsi128_si64(_mm_srli_si128(a,8)) > _mm_cvtsi128_si64(_mm_srli_si128(b,8)) ? -1 : 0;
-    return _mm_set_epi64x(res_hi,res_lo);
-  }
-#else
-  INLINE __m128i my_mm_cmpgt_epi64(__m128i a, __m128i b) {
-    return _mm_cmpgt_epi64(a,b);
-  }
-#endif
-
   template <> 
   class SIMD<mask64,2>
   {
@@ -86,9 +74,6 @@ INLINE SIMD<int64_t,2> operator-(SIMD<int64_t,2> a) { return _mm_sub_epi64(_mm_s
 INLINE SIMD<int64_t,2> operator+ (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return _mm_add_epi64(a.Data(),b.Data()); }
 INLINE SIMD<int64_t,2> operator- (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return _mm_sub_epi64(a.Data(),b.Data()); }
 
-INLINE SIMD<int64_t,2> operator+= (SIMD<int64_t,2> &a, SIMD<int64_t,2> b) { return a = a+b; }
-INLINE SIMD<int64_t,2> operator-= (SIMD<int64_t,2> &a, SIMD<int64_t,2> b) { return a = a-b; }
-
   
   template<>
   class alignas(16) SIMD<double,2> : public AlignedAlloc<SIMD<double,2>>
@@ -150,19 +135,15 @@ INLINE SIMD<int64_t,2> operator-= (SIMD<int64_t,2> &a, SIMD<int64_t,2> b) { retu
     { return tuple<double&,double&>((*this)[0], (*this)[1]); }
   };
 
-INLINE SIMD<double,2> operator- (SIMD<double,2> a) { return _mm_xor_pd(a.Data(), _mm_set1_pd(-0.0)); }
-INLINE SIMD<double,2> operator+ (SIMD<double,2> a, SIMD<double,2> b) { return _mm_add_pd(a.Data(),b.Data()); }
-INLINE SIMD<double,2> operator- (SIMD<double,2> a, SIMD<double,2> b) { return _mm_sub_pd(a.Data(),b.Data()); }
-INLINE SIMD<double,2> operator* (SIMD<double,2> a, SIMD<double,2> b) { return _mm_mul_pd(a.Data(),b.Data()); }
-INLINE SIMD<double,2> operator/ (SIMD<double,2> a, SIMD<double,2> b) { return _mm_div_pd(a.Data(),b.Data()); }
-INLINE SIMD<double,2> operator* (double a, SIMD<double,2> b) { return _mm_set1_pd(a)*b; }
-INLINE SIMD<double,2> operator* (SIMD<double,2> b, double a) { return _mm_set1_pd(a)*b; }
+  INLINE SIMD<double,2> operator- (SIMD<double,2> a) { return _mm_xor_pd(a.Data(), _mm_set1_pd(-0.0)); }
+  INLINE SIMD<double,2> operator+ (SIMD<double,2> a, SIMD<double,2> b) { return _mm_add_pd(a.Data(),b.Data()); }
+  INLINE SIMD<double,2> operator- (SIMD<double,2> a, SIMD<double,2> b) { return _mm_sub_pd(a.Data(),b.Data()); }
+  INLINE SIMD<double,2> operator* (SIMD<double,2> a, SIMD<double,2> b) { return _mm_mul_pd(a.Data(),b.Data()); }
+  INLINE SIMD<double,2> operator/ (SIMD<double,2> a, SIMD<double,2> b) { return _mm_div_pd(a.Data(),b.Data()); }
+  INLINE SIMD<double,2> operator* (double a, SIMD<double,2> b) { return _mm_set1_pd(a)*b; }
+  INLINE SIMD<double,2> operator* (SIMD<double,2> b, double a) { return _mm_set1_pd(a)*b; }
 
-INLINE SIMD<double,2> operator+= (SIMD<double,2> &a, SIMD<double,2> b) { return a = a+b; }
-INLINE SIMD<double,2> operator-= (SIMD<double,2> &a, SIMD<double,2> b) { return a = a-b; }
-INLINE SIMD<double,2> operator*= (SIMD<double,2> &a, SIMD<double,2> b) { return a = a*b; }
-INLINE SIMD<double,2> operator/= (SIMD<double,2> &a, SIMD<double,2> b) { return a = a/b; }
-
+  template<>
   INLINE auto Unpack (SIMD<double,2> a, SIMD<double,2> b)
   {
     return make_tuple(SIMD<double,2>(_mm_unpacklo_pd(a.Data(),b.Data())),
@@ -176,6 +157,19 @@ INLINE SIMD<double,2> operator/= (SIMD<double,2> &a, SIMD<double,2> b) { return 
     return _mm_add_pd( _mm_unpacklo_pd(a,b), _mm_unpackhi_pd(a,b) );
 #endif
   }
+
+#ifndef __AVX__
+  INLINE __m128i my_mm_cmpgt_epi64(__m128i a, __m128i b) {
+    auto  res_lo = _mm_cvtsi128_si64(a)  > _mm_cvtsi128_si64(b) ? -1:0;
+    auto  res_hi = _mm_cvtsi128_si64(_mm_srli_si128(a,8)) > _mm_cvtsi128_si64(_mm_srli_si128(b,8)) ? -1 : 0;
+    return _mm_set_epi64x(res_hi,res_lo);
+  }
+#else
+  INLINE __m128i my_mm_cmpgt_epi64(__m128i a, __m128i b) {
+    return _mm_cmpgt_epi64(a,b);
+  }
+#endif
+
 
   INLINE SIMD<double,2> sqrt (SIMD<double,2> a) { return _mm_sqrt_pd(a.Data()); }
   INLINE SIMD<double,2> fabs (SIMD<double,2> a) { return _mm_max_pd(a.Data(), -a.Data()); }
@@ -258,17 +252,12 @@ INLINE SIMD<double,2> operator/= (SIMD<double,2> &a, SIMD<double,2> b) { return 
                         );
   }
 
-  
-  
-//   static SIMD<mask64, 2> masks_from_2bits[4] = {
-//     _mm_set_epi32 (0,0,0,0), _mm_set_epi32 (0,0,-1,0),
-//     _mm_set_epi32 (-1,0,0,0), _mm_set_epi32 (-1,0,-1,0),
-//   };
-// 
-//   INLINE SIMD<mask64, 2> GetMaskFromBits (unsigned int i)
-//   {
-//     return masks_from_2bits[i & 3];
-//   }
+  INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
+  {
+    SIMD<double,2> hsum1 = my_mm_hadd_pd (v1.Data(), v2.Data());
+    SIMD<double,2> hsum2 = my_mm_hadd_pd (v3.Data(), v4.Data());
+    return SIMD<double,4> (hsum1, hsum2);
+  }
 
 }
 

@@ -3,7 +3,7 @@
 
 #include "simd_base.hpp"
 
-#if (defined(_M_AMD64) || defined(_M_X64) || defined(__AVX__))
+#if (defined(_M_AMD64) || defined(_M_X64) || defined(__SSE__))
 #include "simd_sse.hpp"
 #endif
 
@@ -17,22 +17,6 @@
 
 namespace ngstd
 {
-  INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
-  {
-    SIMD<double,2> hsum1 = my_mm_hadd_pd (v1.Data(), v2.Data());
-    SIMD<double,2> hsum2 = my_mm_hadd_pd (v3.Data(), v4.Data());
-    return SIMD<double,4> (hsum1, hsum2);
-  }
-
-
-  template<int N>
-  INLINE auto Unpack (SIMD<double,N> a, SIMD<double,N> b)
-  {
-    auto [a1,b1] = Unpack(a.Lo(), b.Lo());
-    auto [a2,b2] = Unpack(a.Hi(), b.Hi());
-    return make_tuple(SIMD<double,N>{ a1, b2 },
-                      SIMD<double,N>{ b2, b2 });
-  }
 
   INLINE void SIMDTranspose (SIMD<double,4> a1, SIMD<double,4> a2, SIMD <double,4> a3, SIMD<double,4> a4,
                              SIMD<double,4> & b1, SIMD<double,4> & b2, SIMD<double,4> & b3, SIMD<double,4> & b4)
@@ -70,7 +54,7 @@ namespace ngstd
 #elif defined __AVX__
     typedef __m256 tAVX;
     typedef __m256d tAVXd; 
-#elif defined __SSE__
+#elif (defined(_M_AMD64) || defined(_M_X64) || defined(__SSE__))
     typedef __m128 tAVX;
     typedef __m128d tAVXd; 
 #endif
