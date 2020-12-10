@@ -3748,13 +3748,14 @@ namespace ngbla
 	sum0 = If (m0, sum0+SIMD<double,8>(pa + i)*SIMD<double,8> (pb + i), sum0);
 	i += 8;
       } // n < i + 8
+    double hsum = HSum(sum0+sum1);
     for ( ; i < n; i++ )
       {
 	if (ba.Test(i)) {
-	  sum0[0] += pa[i] * pb[i];
+	  hsum += pa[i] * pb[i];
 	}
       }
-    return HSum(sum0 + sum1);
+    return hsum;
   }
 
 #elif defined __AVX__
