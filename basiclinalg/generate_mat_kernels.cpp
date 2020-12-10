@@ -5,7 +5,7 @@
 
 using namespace std;
 
-
+ 
 
 #include "../ngstd/simd.hpp"
 
