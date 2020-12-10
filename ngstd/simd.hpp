@@ -4,6 +4,9 @@
 #include "simd_base.hpp"
 
 #if (defined(_M_AMD64) || defined(_M_X64) || defined(__SSE__))
+#ifndef __SSE__
+#define __SSE__
+#endif
 #include "simd_sse.hpp"
 #endif
 
