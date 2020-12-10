@@ -90,9 +90,8 @@ namespace ngstd
     SIMD & operator= (const SIMD &) = default;
     SIMD (int64_t val) { data = val; }
 
-    int64_t & operator[] (int i) const { return ((int64_t*)(&data))[i]; }
+    int64_t operator[] (int i) const { return ((int64_t*)(&data))[i]; }
     auto Data() const { return data; }
-    auto & Data() { return data; }
     static SIMD FirstInt(int64_t n0=0) { return {n0}; }
   };
 
@@ -125,12 +124,9 @@ namespace ngstd
     }
     
     auto Lo() const { return lo; }
-    auto & Lo() { return lo; }
     auto Hi() const { return high; }
-    auto & Hi() { return high; }
     
     int64_t operator[] (int i) const { return ((int64_t*)(&lo))[i]; }
-    int64_t & operator[] (int i) { return ((int64_t*)(&lo))[i]; }
 
     /*
     operator tuple<int64_t&,int64_t&,int64_t&,int64_t&> ()
@@ -247,9 +243,7 @@ namespace ngstd
     void Store (double * p, SIMD<mask64,1> mask) { if (mask.Data()) *p = data; }
     
     double operator[] (int i) const { return ((double*)(&data))[i]; }
-    double & operator[] (int i) { return ((double*)(&data))[i]; }
     double Data() const { return data; }
-    double & Data() { return data; }
   };
   
   template<int N>
@@ -322,12 +316,9 @@ namespace ngstd
     }    
 
     auto Lo() const { return lo; }
-    auto & Lo() { return lo; }
     auto Hi() const { return high; }
-    auto & Hi() { return high; }
     
     double operator[] (int i) const { return ((double*)(&lo))[i]; }
-    double & operator[] (int i) { return ((double*)(&lo))[i]; }
 
     template<typename=std::enable_if<N==2>>
     operator tuple<double&,double&> ()

@@ -24,7 +24,6 @@ namespace ngstd
     SIMD (__m128i _mask) : mask(_mask) { ; }
     __m128i Data() const { return mask; }
     static constexpr int Size() { return 2; }    
-    int64_t operator[] (int i) const { return ((int64_t*)(&mask))[i]; }    
     static INLINE SIMD<mask64, 2> GetMaskFromBits (unsigned int i);
   };
 
@@ -62,7 +61,6 @@ namespace ngstd
     }
     
     INLINE auto operator[] (int i) const { return ((int64_t*)(&data))[i]; }
-    INLINE auto & operator[] (int i) { return ((int64_t*)(&data))[i]; }
     INLINE __m128i Data() const { return data; }
     INLINE __m128i & Data() { return data; }
     static SIMD FirstInt() { return { 0, 1 }; }    
@@ -101,7 +99,8 @@ INLINE SIMD<int64_t,2> operator- (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return
         // this versions segfaults if p points to the last allowed element
         // happened on Mac with the new SparseCholesky-factorization
         // data = _mm_and_pd(_mm_castsi128_pd(mask.Data()), _mm_loadu_pd(p));
-        data = _mm_set_pd (mask[1] ? p[1] : 0.0, mask[0] ? p[0] : 0.0);        
+        auto pmask = (int64_t*)&mask;
+        data = _mm_set_pd (pmask[1] ? p[1] : 0.0, pmask[0] ? p[0] : 0.0);        
 #endif
       }
     SIMD (__m128d _data) { data = _data; }
@@ -116,8 +115,9 @@ INLINE SIMD<int64_t,2> operator- (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return
       _mm_storeu_pd (p, _mm_or_pd (_mm_and_pd(_mm_castsi128_pd(mask.Data()), data),
                                    _mm_andnot_pd(_mm_castsi128_pd(mask.Data()), _mm_loadu_pd(p))));
       */
-      if (mask[0]) p[0] = (*this)[0];
-      if (mask[1]) p[1] = (*this)[1];
+      auto pmask = (int64_t*)&mask;
+      if (pmask[0]) p[0] = (*this)[0];
+      if (pmask[1]) p[1] = (*this)[1];
 #endif
     }    
     
@@ -127,12 +127,14 @@ INLINE SIMD<int64_t,2> operator- (SIMD<int64_t,2> a, SIMD<int64_t,2> b) { return
     }   
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
-    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
     INLINE __m128d Data() const { return data; }
     INLINE __m128d & Data() { return data; }
 
     operator tuple<double&,double&> ()
-    { return tuple<double&,double&>((*this)[0], (*this)[1]); }
+    {
+      auto pdata = (double*)&data;
+      return tuple<double&,double&>(pdata[0], pdata[1]);
+    }
   };
 
   INLINE SIMD<double,2> operator- (SIMD<double,2> a) { return _mm_xor_pd(a.Data(), _mm_set1_pd(-0.0)); }
