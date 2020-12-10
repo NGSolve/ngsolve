@@ -7,8 +7,12 @@
 /* Date:   25. Mar. 16                                                    */
 /**************************************************************************/
 
+#include <immintrin.h>
+
 namespace ngstd
 {
+  typedef __m256 tAVX;
+  typedef __m256d tAVXd; 
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
   {
@@ -142,6 +146,113 @@ namespace ngstd
   INLINE SIMD<double,4> operator/ (SIMD<double,4> a, SIMD<double,4> b) { return _mm256_div_pd(a.Data(),b.Data()); }
   INLINE SIMD<double,4> operator* (double a, SIMD<double,4> b) { return _mm256_set1_pd(a)*b.Data(); }
   INLINE SIMD<double,4> operator* (SIMD<double,4> b, double a) { return _mm256_set1_pd(a)*b.Data(); }
+
+  INLINE SIMD<double,4> sqrt (SIMD<double,4> a) { return _mm256_sqrt_pd(a.Data()); }
+  INLINE SIMD<double,4> floor (SIMD<double,4> a) { return _mm256_floor_pd(a.Data()); }
+  INLINE SIMD<double,4> ceil (SIMD<double,4> a) { return _mm256_ceil_pd(a.Data()); }
+  INLINE SIMD<double,4> fabs (SIMD<double,4> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
+
+  INLINE SIMD<mask64,4> operator<= (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_LE_OQ); }
+  INLINE SIMD<mask64,4> operator< (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_LT_OQ); }
+  INLINE SIMD<mask64,4> operator>= (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_GE_OQ); }
+  INLINE SIMD<mask64,4> operator> (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_GT_OQ); }
+  INLINE SIMD<mask64,4> operator== (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_EQ_OQ); }
+  INLINE SIMD<mask64,4> operator!= (SIMD<double,4> a , SIMD<double,4> b)
+  { return _mm256_cmp_pd (a.Data(), b.Data(), _CMP_NEQ_OQ); }
+
+  INLINE SIMD<mask64,4> operator<= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_xor_si256(_mm256_cmpgt_epi64(a.Data(),b.Data()),_mm256_set1_epi32(-1)); }
+  INLINE SIMD<mask64,4> operator< (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  my_mm256_cmpgt_epi64(b.Data(),a.Data()); }
+  INLINE SIMD<mask64,4> operator>= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_xor_si256(_mm256_cmpgt_epi64(b.Data(),a.Data()),_mm256_set1_epi32(-1)); }
+  INLINE SIMD<mask64,4> operator> (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  my_mm256_cmpgt_epi64(a.Data(),b.Data()); }
+  INLINE SIMD<mask64,4> operator== (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_cmpeq_epi64(a.Data(),b.Data()); }
+  INLINE SIMD<mask64,4> operator!= (SIMD<int64_t,4> a , SIMD<int64_t,4> b)
+  { return  _mm256_xor_si256(_mm256_cmpeq_epi64(a.Data(),b.Data()),_mm256_set1_epi32(-1)); }
+
+#ifdef __AVX2__
+  INLINE SIMD<mask64,4> operator&& (SIMD<mask64,4> a, SIMD<mask64,4> b)
+  { return _mm256_and_si256 (a.Data(), b.Data()); }
+  INLINE SIMD<mask64,4> operator|| (SIMD<mask64,4> a, SIMD<mask64,4> b)
+  { return _mm256_or_si256 (a.Data(), b.Data()); }
+  INLINE SIMD<mask64,4> operator! (SIMD<mask64,4> a)
+  { return _mm256_xor_si256 (a.Data(), _mm256_cmpeq_epi64(a.Data(),a.Data())); }
+#else //AVX2 is a superset of AVX. Without it, it is necessary to reinterpret the types
+  INLINE SIMD<mask64,4> operator&& (SIMD<mask64,4> a, SIMD<mask64,4> b)
+  { return _mm256_castpd_si256(_mm256_and_pd (_mm256_castsi256_pd(a.Data()),_mm256_castsi256_pd( b.Data()))); }
+  INLINE SIMD<mask64,4> operator|| (SIMD<mask64,4> a, SIMD<mask64,4> b)
+  { return _mm256_castpd_si256(_mm256_or_pd (_mm256_castsi256_pd(a.Data()), _mm256_castsi256_pd(b.Data()))); }
+  INLINE SIMD<mask64,4> operator! (SIMD<mask64,4> a)
+  { return _mm256_castpd_si256(_mm256_xor_pd (_mm256_castsi256_pd(a.Data()),_mm256_castsi256_pd( _mm256_cmpeq_epi64(a.Data(),a.Data())))); }
+#endif
+  INLINE SIMD<double,4> If (SIMD<mask64,4> a, SIMD<double,4> b, SIMD<double,4> c)
+  { return _mm256_blendv_pd(c.Data(), b.Data(), _mm256_castsi256_pd(a.Data())); }
+  
+  INLINE SIMD<double,4> IfPos (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
+  {
+    auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
+    return _mm256_blendv_pd(c.Data(), b.Data(), cp);
+  }
+
+  INLINE SIMD<double,4> IfZero (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> c)
+  {
+    auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_EQ_OS);
+    return _mm256_blendv_pd(c.Data(), b.Data(), cp);
+  }
+
+  INLINE double HSum (SIMD<double,4> sd)
+  {
+    // __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
+    __m128d hv = (sd.Lo()+sd.Hi()).Data();
+    return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
+  }
+
+  INLINE auto HSum (SIMD<double,4> sd1, SIMD<double,4> sd2)
+  {
+    __m256d hv = _mm256_hadd_pd(sd1.Data(), sd2.Data());
+    __m128d hv2 = _mm_add_pd (_mm256_extractf128_pd(hv,0), _mm256_extractf128_pd(hv,1));
+    return SIMD<double,2>(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
+  }
+
+  INLINE auto HSum (SIMD<double,4> v1, SIMD<double,4> v2, SIMD<double,4> v3, SIMD<double,4> v4)
+  {
+    __m256d hsum1 = _mm256_hadd_pd (v1.Data(), v2.Data());
+    __m256d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
+    SIMD<double,4> hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
+                                         _mm256_blend_pd (hsum1, hsum2, 12));
+    return hsum;
+    // return make_tuple(hsum[0], hsum[1], hsum[2], hsum[3]);
+  }
+
+  
+  INLINE SIMD<int64_t,4> If (SIMD<mask64,4> a, SIMD<int64_t,4> b, SIMD<int64_t,4> c)
+  { return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(c.Data()), _mm256_castsi256_pd(b.Data()),
+                                                _mm256_castsi256_pd(a.Data()))); }
+
+  static SIMD<mask64, 4> masks_from_4bits[16] = {
+    _mm256_set_epi64x (0,0,0,0), _mm256_set_epi64x (0,0,0,-1),
+    _mm256_set_epi64x (0,0,-1,0), _mm256_set_epi64x (0,0,-1,-1),
+    _mm256_set_epi64x (0,-1,0,0), _mm256_set_epi64x (0,-1,0,-1),
+    _mm256_set_epi64x (0,-1,-1,0), _mm256_set_epi64x (0,-1,-1,-1),
+    _mm256_set_epi64x (-1,0,0,0), _mm256_set_epi64x (-1,0,0,-1),
+    _mm256_set_epi64x (-1,0,-1,0), _mm256_set_epi64x (-1,0,-1,-1),
+    _mm256_set_epi64x (-1,-1,0,0), _mm256_set_epi64x (-1,-1,0,-1),
+    _mm256_set_epi64x (-1,-1,-1,0), _mm256_set_epi64x (-1,-1,-1,-1)
+  };
+  INLINE SIMD<mask64, 4> GetMaskFromBits (unsigned int i)
+  {
+    return masks_from_4bits[i & 15];
+  }
+
 }
+
 #endif // NG_SIMD_AVX_HPP
 

@@ -246,15 +246,15 @@ INLINE SIMD<double,2> operator/= (SIMD<double,2> &a, SIMD<double,2> b) { return 
 
   
   
-  static SIMD<mask64, 2> masks_from_2bits[4] = {
-    _mm_set_epi32 (0,0,0,0), _mm_set_epi32 (0,0,-1,0),
-    _mm_set_epi32 (-1,0,0,0), _mm_set_epi32 (-1,0,-1,0),
-  };
-
-  INLINE SIMD<mask64, 2> GetMaskFromBits (unsigned int i)
-  {
-    return masks_from_2bits[i & 3];
-  }
+//   static SIMD<mask64, 2> masks_from_2bits[4] = {
+//     _mm_set_epi32 (0,0,0,0), _mm_set_epi32 (0,0,-1,0),
+//     _mm_set_epi32 (-1,0,0,0), _mm_set_epi32 (-1,0,-1,0),
+//   };
+// 
+//   INLINE SIMD<mask64, 2> GetMaskFromBits (unsigned int i)
+//   {
+//     return masks_from_2bits[i & 3];
+//   }
 
 }
 
