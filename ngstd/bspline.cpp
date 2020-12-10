@@ -245,9 +245,14 @@ namespace ngstd
       }
     else
       {
+        /*
         SIMD<double> res;
         for(auto i = 0; i < simdSize; i++) res[i] = Evaluate(x[i]);
         return res;
+        */
+        double res[simdSize];
+        for(auto i = 0; i < simdSize; i++) res[i] = Evaluate(x[i]);
+        return SIMD<double>(&res[0]);
       }
     
   }
@@ -335,9 +340,12 @@ namespace ngstd
   SIMD<double> BSpline :: operator() (SIMD<double> x) const
   {
     constexpr int size = SIMD<double>::Size();
-    SIMD<double> res;
+    // SIMD<double> res;
+    // for(auto i = 0; i < size; i++) res[i] = Evaluate(x[i]);
+    // return res;
+    double res[size];
     for(auto i = 0; i < size; i++) res[i] = Evaluate(x[i]);
-    return res;
+    return SIMD<double>(&res[0]);
   }
 
   SIMD<Complex> BSpline :: operator() (SIMD<Complex> x) const

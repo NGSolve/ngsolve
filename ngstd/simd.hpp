@@ -500,15 +500,18 @@ namespace ngstd
     }   
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
-    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
+    // [[deprecated("don't write to individual elments of SIMD")]]                
+    // INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
+    template <int I>
+    double Get() const { return ((double*)(&data))[I]; }
     INLINE __m256d Data() const { return data; }
     INLINE __m256d & Data() { return data; }
 
     SIMD<double,2> Lo() const { return _mm256_extractf128_pd(data, 0); }
     SIMD<double,2> Hi() const { return _mm256_extractf128_pd(data, 1); }
 
-    operator tuple<double&,double&,double&,double&> ()
-    { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
+    // operator tuple<double&,double&,double&,double&> ()
+    // { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
   };
 
   INLINE auto Unpack (SIMD<double,4> a, SIMD<double,4> b)
@@ -1216,14 +1219,26 @@ namespace ngstd
   }
 
 
-  
+  template <int NUM, typename FUNC>
+  INLINE void Iterate2 (FUNC f)
+  {
+    if constexpr (NUM > 1) Iterate2<NUM-1> (f);
+    if constexpr (NUM >= 1) f(std::integral_constant<int,NUM-1>());
+  }
+
   
   template <typename T, int N>
   ostream & operator<< (ostream & ost, SIMD<T,N> simd)
   {
+    /*
     ost << simd[0];
     for (int i = 1; i < simd.Size(); i++)
       ost << " " << simd[i];
+    */
+    Iterate2<simd.Size()> ([&] (auto I) {
+        if (I.value != 0) ost << " ";
+        ost << get<I.value>(simd);
+      });
     return ost;
   }
 
@@ -1520,5 +1535,15 @@ namespace ngstd
   T get(SIMD<T,N> a) { return a[i]; }
   
 }
+
+namespace std
+{
+  // structured binding support
+  template <typename T, int N >
+  struct tuple_size<ngstd::SIMD<T,N>> : std::integral_constant<std::size_t, N> {};
+  template<size_t N, typename T, int M> struct tuple_element<N,ngstd::SIMD<T,M>> { using type = T; };
+}
+
+
 
 #endif

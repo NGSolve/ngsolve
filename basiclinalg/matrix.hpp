@@ -180,6 +180,14 @@ namespace ngbla
       return SliceVector<T,TIND> (h, w+1, &data[0]);
     }
 
+    const SliceVector<T> Diag (int offset) const
+    {
+      int dp = max(offset, 0);
+      int dm = min(offset, 0);
+      return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data+dp-dm*Dist());
+    }
+    
+
     using CMCPMatExpr<FlatMatrix>::Rows;
     using CMCPMatExpr<FlatMatrix>::Cols;
 
