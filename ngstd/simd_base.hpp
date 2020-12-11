@@ -598,8 +598,8 @@ namespace ngstd
       {
         auto [a1,b1] = Unpack(a.Lo(), b.Lo());
         auto [a2,b2] = Unpack(a.Hi(), b.Hi());
-        return make_tuple(SIMD<double,N>{ a1, b2 },
-            SIMD<double,N>{ b1, a2 });
+        return make_tuple(SIMD<double,N>{ a1, a2 },
+            SIMD<double,N>{ b1, b2 });
       }
   }
 

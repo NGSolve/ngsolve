@@ -3834,15 +3834,16 @@ namespace ngbla
 	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
 	i += 2;
       } // n < i+2
+    sum0 += sum2;
+    sum1 += sum3;
+    double sum = HSum(sum0+sum1);
     for ( ; i < n; i++ )
       {
 	if (ba.Test(i)) {
-	  sum0 += SIMD<double,2>{0.0, pa[i]*pb[i]};
+	  sum += pa[i]*pb[i];
 	}
       }
-    sum0 += sum2;
-    sum1 += sum3;
-    return HSum(sum0 + sum1);
+    return sum;
   }
 
 #else // ifdef AVX512/AVX/SSE
