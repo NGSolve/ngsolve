@@ -4075,7 +4075,7 @@ namespace ngfem
 }
 
 
-namespace ngstd
+namespace ngcore
 {
 
   FlatVector<SIMD<double>>
