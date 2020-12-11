@@ -602,29 +602,6 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
 
 
 
-
-  template <int D, typename SCAL, typename TB, typename TC>
-  auto IfPos (AutoDiffVec<D,SCAL> a, TB b, TC c) // -> decltype(IfPos (a.Value(), b, c))
-  {
-    return IfPos (a.Value(), b, c);
-  }
-
-  template <int D, typename SCAL>
-  INLINE AutoDiffVec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffVec<D,SCAL> b, AutoDiffVec<D,SCAL> c)
-  {
-    AutoDiffVec<D,SCAL> res;
-    res.Value() = IfPos (a, b.Value(), c.Value());
-    for (int j = 0; j < D; j++)
-      res.DValue(j) = IfPos (a, b.DValue(j), c.DValue(j));
-    return res;
-  }
-
-  template <int D, typename SCAL, typename TC>
-  INLINE AutoDiffVec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffVec<D,SCAL> b, TC c)
-  {
-    return IfPos (a, b, AutoDiffVec<D,SCAL> (c));
-  }
-
 //@}
 
 
@@ -1039,14 +1016,22 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
   }
 
 
+template <int D, typename SCAL = double>
+using AutoDiff = AutoDiffRec<D,SCAL>;
+
+}
+
+namespace ngcore
+{
+
   template <int D, typename SCAL, typename TB, typename TC>
-  auto IfPos (AutoDiffRec<D,SCAL> a, TB b, TC c) // -> decltype(IfPos (a.Value(), b, c))
+  auto IfPos (ngstd::AutoDiffRec<D,SCAL> a, TB b, TC c) // -> decltype(IfPos (a.Value(), b, c))
   {
     return IfPos (a.Value(), b, c);
   }
 
   template <int D, typename SCAL>
-  INLINE AutoDiffRec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffRec<D,SCAL> b, AutoDiffRec<D,SCAL> c)
+  INLINE ngstd::AutoDiffRec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, ngstd::AutoDiffRec<D,SCAL> b, ngstd::AutoDiffRec<D,SCAL> c)
   {
     /*
     AutoDiffRec<D,SCAL> res;
@@ -1055,21 +1040,38 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
       res.DValue(j) = IfPos (a, b.DValue(j), c.DValue(j));
     return res;
     */
-    return AutoDiffRec<D,SCAL> (IfPos(a, b.Rec(), c.Rec()), IfPos(a, b.Last(), c.Last()));
+    return ngstd::AutoDiffRec<D,SCAL> (IfPos(a, b.Rec(), c.Rec()), IfPos(a, b.Last(), c.Last()));
   }
 
   template <int D, typename SCAL, typename TC>
-  INLINE AutoDiffRec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffRec<D,SCAL> b, TC c)
+  INLINE ngstd::AutoDiffRec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, ngstd::AutoDiffRec<D,SCAL> b, TC c)
   {
-    return IfPos (a, b, AutoDiffRec<D,SCAL> (c));
+    return IfPos (a, b, ngstd::AutoDiffRec<D,SCAL> (c));
   }
 
+  template <int D, typename SCAL, typename TB, typename TC>
+  auto IfPos (ngstd::AutoDiffVec<D,SCAL> a, TB b, TC c) // -> decltype(IfPos (a.Value(), b, c))
+  {
+    return IfPos (a.Value(), b, c);
+  }
 
+  template <int D, typename SCAL>
+  INLINE ngstd::AutoDiffVec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, ngstd::AutoDiffVec<D,SCAL> b, ngstd::AutoDiffVec<D,SCAL> c)
+  {
+    ngstd::AutoDiffVec<D,SCAL> res;
+    res.Value() = IfPos (a, b.Value(), c.Value());
+    for (int j = 0; j < D; j++)
+      res.DValue(j) = IfPos (a, b.DValue(j), c.DValue(j));
+    return res;
+  }
 
-template <int D, typename SCAL = double>
-using AutoDiff = AutoDiffRec<D,SCAL>;
+  template <int D, typename SCAL, typename TC>
+  INLINE ngstd::AutoDiffVec<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, ngstd::AutoDiffVec<D,SCAL> b, TC c)
+  {
+    return IfPos (a, b, ngstd::AutoDiffVec<D,SCAL> (c));
+  }
 
-}
+} // namespace ngcore
 
 #endif
 

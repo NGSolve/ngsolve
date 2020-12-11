@@ -7,8 +7,12 @@
 /* Date:   06. Nov. 16                                                    */
 /**************************************************************************/
 
-namespace ngstd
+#include <core/simd.hpp>
+
+namespace ngcore
 {
+  using std::tie;
+
   typedef std::complex<double> Complex;
 
   INLINE SIMD<mask64> Mask128 (size_t nr)

@@ -15,7 +15,7 @@
 #include <core/python_ngcore.hpp> // for shallow archive
 #endif // NGS_PYTHON
 
-namespace ngstd
+namespace ngcore
 {
 
   INLINE Complex IfPos (Complex a, Complex b, Complex c)
@@ -5162,7 +5162,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       
       for (size_t i = 0; i < np; i++)
         for (size_t j = 0; j < dim; j++)
-          values(j,i) = ngstd::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
+          values(j,i) = ngcore::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
     template <typename MIR, typename T, ORDERING ORD>
@@ -5179,7 +5179,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       
       for (size_t i = 0; i < np; i++)
         for (size_t j = 0; j < dim; j++)
-          values(j,i) = ngstd::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
+          values(j,i) = ngcore::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
     /*

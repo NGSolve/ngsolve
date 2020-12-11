@@ -138,7 +138,6 @@ namespace ngstd
 #include "ngsstream.hpp"  
 #include "templates.hpp"
 
-#include "simd.hpp"
 #include "simd_complex.hpp"
 
 #include "blockalloc.hpp"

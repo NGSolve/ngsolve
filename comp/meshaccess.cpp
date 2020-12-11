@@ -148,9 +148,9 @@ namespace ngcomp
 
       mesh->mesh.MultiElementTransformation <DIMS,DIMR>
         (elnr, 4*DIMS,
-         &pnts(0,0).Data(), &pnts(1,0)-&pnts(0,0), 
-         &x(0,0).Data(), &x(1,0)-&x(0,0), 
-         &dx(0,0).Data(), &dx(1,0)-&dx(0,0));
+         &pnts(0,0), &pnts(1,0)-&pnts(0,0),
+         &x(0,0), &x(1,0)-&x(0,0),
+         &dx(0,0), &dx(1,0)-&dx(0,0));
       
       for (int i = 0; i < DIMR; i++)
         for (int j = 0; j < DIMS; j++)
@@ -210,9 +210,9 @@ namespace ngcomp
       
       mesh->mesh.MultiElementTransformation <DIMS,DIMR>
         (elnr, ir.Size(),
-         &ir[0](0).Data(), ir.Size()>1 ? &ir[1](0)-&ir[0](0) : 0,
-         &mir[0].Point()(0).Data(), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0, 
-         &mir[0].Jacobian()(0,0).Data(), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
+         &ir[0](0), ir.Size()>1 ? &ir[1](0)-&ir[0](0) : 0,
+         &mir[0].Point()(0), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0,
+         &mir[0].Jacobian()(0,0), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
       
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
