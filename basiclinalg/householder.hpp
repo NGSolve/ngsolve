@@ -116,7 +116,11 @@ namespace ngbla
   extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<double,RowMajor> A);
   extern NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<double,ColMajor> A);
   
-  extern NGS_DLL_HEADER void CalcSVD (SliceMatrix<> A, 
+  extern NGS_DLL_HEADER void CalcSVD (SliceMatrix<double, RowMajor> A, 
+                                      SliceMatrix<double, ColMajor> U,
+                                      SliceMatrix<double, ColMajor> V);
+  
+  extern NGS_DLL_HEADER void CalcSVD (SliceMatrix<double, ColMajor> A, 
                                       SliceMatrix<double, ColMajor> U,
                                       SliceMatrix<double, ColMajor> V);
 }
