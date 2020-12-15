@@ -27,11 +27,11 @@ namespace ngcore
     return my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nr),
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
-#elif (defined(_M_AMD64) || defined(_M_X64) || defined(__SSE__))
+#elif defined NETGEN_ARCH_AMD64
     return _mm_cmpgt_epi32(_mm_set1_epi32(nr),
                            _mm_set_epi32(0, 0, 0, 0));
 #else
-    return false;
+    return nr <= SIMD<mask64>::Size() ? 2*nr : 0;
 #endif
   }
 
