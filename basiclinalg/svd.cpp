@@ -174,9 +174,6 @@ namespace ngbla
           }
       }
 
-    RegionTimer ruv(tuv);    
-
-    
     RegionTimer ruv(tuv);        
     ApplyHouseholderReflections (A, Trans(U1));
     if (n > 1)
