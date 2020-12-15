@@ -456,12 +456,12 @@ inline AutoDiffDiff<D, SCAL> sqrt (const AutoDiffDiff<D, SCAL> & x)
   AutoDiffDiff<D, SCAL> res;
   res.Value() = sqrt(x.Value());
   for (int j = 0; j < D; j++)
-    res.DValue(j) = IfZero(x.DValue(j),0.,0.5 / res.Value() * x.DValue(j));
+    res.DValue(j) = IfZero(x.DValue(j),SCAL{0.},0.5 / res.Value() * x.DValue(j));
 
   
   for (int i = 0; i < D; i++)
     for (int j = 0; j < D; j++)
-      res.DDValue(i,j) = IfZero(x.DDValue(i,j)+x.DValue(i) * x.DValue(j),0.,0.5/res.Value() * x.DDValue(i,j) - 0.25 / (x.Value()*res.Value()) * x.DValue(i) * x.DValue(j));
+      res.DDValue(i,j) = IfZero(x.DDValue(i,j)+x.DValue(i) * x.DValue(j),SCAL{0.},0.5/res.Value() * x.DDValue(i,j) - 0.25 / (x.Value()*res.Value()) * x.DValue(i) * x.DValue(j));
 
   return res;
 }
