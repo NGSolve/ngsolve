@@ -38,7 +38,7 @@ namespace ngcore
 
   
   template <>
-  class SIMD<Complex> : public AlignedAlloc<SIMD<Complex>>
+  class SIMD<Complex>
   {
     SIMD<double> re, im;
   public:

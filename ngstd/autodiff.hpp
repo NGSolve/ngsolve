@@ -21,7 +21,7 @@ namespace ngstd
    operations are overloaded by using product-rule etc. etc. 
 **/
 template <int D, typename SCAL = double>
-class AutoDiffVec // : public AlignedAlloc<AutoDiff<D,SCAL>>
+class AutoDiffVec
 {
   SCAL val;
   SCAL dval[D?D:1];
@@ -607,7 +607,7 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
 
   
   template <int D, typename SCAL>
-  class AutoDiffRec //  : public AlignedAlloc<AutoDiffRec<D,SCAL>>
+  class AutoDiffRec
   {
     AutoDiffRec<D-1, SCAL> rec;
     SCAL last;
@@ -655,7 +655,7 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
   }
 
   template <typename SCAL>
-  class AutoDiffRec<0,SCAL> : public AlignedAlloc<AutoDiffRec<0,SCAL>>
+  class AutoDiffRec<0,SCAL>
   {
     SCAL val;
   public:
@@ -682,7 +682,7 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
 
 
   template <typename SCAL>
-  class AutoDiffRec<1,SCAL> : public AlignedAlloc<AutoDiffRec<1,SCAL>>
+  class AutoDiffRec<1,SCAL>
   {
     SCAL val;
     SCAL last;
