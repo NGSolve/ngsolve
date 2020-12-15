@@ -54,6 +54,14 @@ namespace ngbla
     A.Diag(0) = S;
   }
 
+  void LapackSVD (SliceMatrix<double,ColMajor> A,
+                  SliceMatrix<double, ColMajor> U,
+                  SliceMatrix<double, ColMajor> V)
+  {
+    return LapackSVD(Trans(A), V, U);
+  }
+
+  
 
   template <ORDERING OH, ORDERING OM>  
   void ApplyBandHouseholderReflections (int bs, SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
@@ -70,8 +78,8 @@ namespace ngbla
       }
   }
 
-  
-  void ReduceBiDiagonal (SliceMatrix<> A, 
+  template <ORDERING ORD>
+  void ReduceBiDiagonal (SliceMatrix<double,ORD> A, 
                          SliceMatrix<double, ColMajor> U1, SliceMatrix<double, ColMajor> V1)
   {
     static Timer ttrig("householder-triangular"); RegionTimer reg(ttrig);
@@ -88,22 +96,22 @@ namespace ngbla
     // no blocking at all
     Vector<> v2(max(n,m));
     for (int i = 0; i < n; i++)
-      {
-        auto Arest = A.Rows(i,m).Cols(i,n);
-        auto vrest = v2.Range(i,m);
-        CalcHouseholderVector(Arest.Col(0), vrest);
-        HouseholderReflection (vrest).Mult(Arest);
-        HouseholderReflection (vrest).Mult(Trans(U1).Rows(i,m));
+    {
+    auto Arest = A.Rows(i,m).Cols(i,n);
+    auto vrest = v2.Range(i,m);
+    CalcHouseholderVector(Arest.Col(0), vrest);
+    HouseholderReflection (vrest).Mult(Arest);
+    HouseholderReflection (vrest).Mult(Trans(U1).Rows(i,m));
         
-        if (i+1 < n)
-          {
-            auto Arest = A.Rows(i,m).Cols(i+1,n);
-            auto vrest = v2.Range(i+1,n);
-            CalcHouseholderVector(Arest.Row(0), vrest);
-            HouseholderReflection (vrest).Mult(Trans(Arest));
-            HouseholderReflection (vrest).Mult(Trans(V1).Rows(i+1,n));
-          }
-      }
+    if (i+1 < n)
+    {
+    auto Arest = A.Rows(i,m).Cols(i+1,n);
+    auto vrest = v2.Range(i+1,n);
+    CalcHouseholderVector(Arest.Row(0), vrest);
+    HouseholderReflection (vrest).Mult(Trans(Arest));
+    HouseholderReflection (vrest).Mult(Trans(V1).Rows(i+1,n));
+    }
+    }
     */
 
     /*
@@ -112,32 +120,32 @@ namespace ngbla
     Matrix<> mvc(bs, m);
     Matrix<> mvr(bs, n);
     for (int i1 = 0; i1 < min(n,m); i1 += bs)
-      {
-        int bs1 = min( min(n-i1, m-i1), bs);
-        int bs2 = 0;
-        mvc = 0.0;
-        mvr = 0.0;
+    {
+    int bs1 = min( min(n-i1, m-i1), bs);
+    int bs2 = 0;
+    mvc = 0.0;
+    mvr = 0.0;
       
-        for (int i2 = 0; i2 < bs1; i2++)
-          {
-            int i = i1+i2;
-            auto Arest = A.Rows(i,m).Cols(i,n);
-            CalcHouseholderVector(Arest.Col(0), mvc.Row(i2).Range(i,m));
-            HouseholderReflection (mvc.Row(i2).Range(i,m)).Mult(Arest);
+    for (int i2 = 0; i2 < bs1; i2++)
+    {
+    int i = i1+i2;
+    auto Arest = A.Rows(i,m).Cols(i,n);
+    CalcHouseholderVector(Arest.Col(0), mvc.Row(i2).Range(i,m));
+    HouseholderReflection (mvc.Row(i2).Range(i,m)).Mult(Arest);
           
-            if (i+1 < n)
-              {
-                bs2 = i2+1;
-                auto Arest = A.Rows(i,m).Cols(i+1,n);
-                CalcHouseholderVector (Arest.Row(0), mvr.Row(i2).Range(i+1,n));
-                HouseholderReflection (mvr.Row(i2).Range(i+1,n)).Mult(Trans(Arest));
-              }
-          }
+    if (i+1 < n)
+    {
+    bs2 = i2+1;
+    auto Arest = A.Rows(i,m).Cols(i+1,n);
+    CalcHouseholderVector (Arest.Row(0), mvr.Row(i2).Range(i+1,n));
+    HouseholderReflection (mvr.Row(i2).Range(i+1,n)).Mult(Trans(Arest));
+    }
+    }
 
-        MultiHouseholderReflection (mvc.Rows(0,bs1).Cols(i1,m)).Mult (Trans(U1).Rows(i1,m));
-        if (bs2 > 0)
-          MultiHouseholderReflection (mvr.Rows(0,bs2).Cols(i1+1,n)).Mult (Trans(V1).Rows(i1+1,n));
-      }
+    MultiHouseholderReflection (mvc.Rows(0,bs1).Cols(i1,m)).Mult (Trans(U1).Rows(i1,m));
+    if (bs2 > 0)
+    MultiHouseholderReflection (mvr.Rows(0,bs2).Cols(i1+1,n)).Mult (Trans(V1).Rows(i1+1,n));
+    }
     // cout << "A bidiag = " << endl << Truncate (A) << endl;
     */
 
@@ -167,7 +175,7 @@ namespace ngbla
       }
 
     RegionTimer ruv(tuv);    
-    
+
     ApplyHouseholderReflections (A, Trans(U1));
     if (n > 1)
       ApplyHouseholderReflections (Trans(A.Cols(1,n).Rows(min(n-1,m))), Trans(V1).Rows(1,n));
@@ -180,8 +188,8 @@ namespace ngbla
 
 
 
-  template <ORDERING ORD>
-  void ReduceBiDiagonalBlocked (SliceMatrix<> A, 
+  template <ORDERING OA, ORDERING ORD>
+  void ReduceBiDiagonalBlocked (SliceMatrix<double, OA> A, 
                                 SliceMatrix<double, ORD> U1, SliceMatrix<double, ORD> V1)
   {
     /*
@@ -247,9 +255,8 @@ namespace ngbla
             }
       }
     
-    ttrig.Stop();
-
-    tUV.Start();
+    // ttrig.Stop();
+    // tUV.Start();
 
     U1 = Identity(m);
     V1 = Identity(n);
@@ -265,16 +272,16 @@ namespace ngbla
     for (size_t i = bs; i < minnm; i++)
       A.Col(i).Range(0, i-bs) = 0.0;
     
-    tUV.Stop();
+    // tUV.Stop();
 
     
     
     /*
-    Matrix<> Abandmem(minnm, minnm);
-    Abandmem = 0.0;
-    // simulate a band-matrix by reducing dist:
-    SliceMatrix<> Aband(minnm, minnm, min(3*bs, minnm), Abandmem.Data());
-    for (int i = 0; i < min(n, bs+1); i++)
+      Matrix<> Abandmem(minnm, minnm);
+      Abandmem = 0.0;
+      // simulate a band-matrix by reducing dist:
+      SliceMatrix<> Aband(minnm, minnm, min(3*bs, minnm), Abandmem.Data());
+      for (int i = 0; i < min(n, bs+1); i++)
       Aband.Diag(i) = A.Rows(minnm).Cols(minnm).Diag(i);
     */
     // auto Aband = A.Rows(minnm).Cols(minnm);
@@ -283,10 +290,10 @@ namespace ngbla
     
     
     /*
-    if (n <= 20)
+      if (n <= 20)
       {
-        cout << "householder, blocked = " << endl << Truncate(A) << endl;
-        cout << "U^T A V = " << endl << Truncate( Matrix (Matrix(Trans(U1)*A_orig) * V1)) << endl;
+      cout << "householder, blocked = " << endl << Truncate(A) << endl;
+      cout << "U^T A V = " << endl << Truncate( Matrix (Matrix(Trans(U1)*A_orig) * V1)) << endl;
       }
     */
 
@@ -337,77 +344,77 @@ namespace ngbla
     /*
       TODO: store the bulge-chasing reflections in triangular matrix
       write banded - Multihouseholder
-     */
+    */
     
 
     /*
-    constexpr size_t bcbs = 16;   // bulge chasing block size
-    Vector<> tmp(bs);
-    int maxblocks = n/bs+1;
-    Matrix<> reflect_bcU(bcbs * maxblocks, bs+bcbs-1);
-    Matrix<> reflect_bcV(bcbs * maxblocks, bs+bcbs-1);
-    Array<IntRange> ranges;
+      constexpr size_t bcbs = 16;   // bulge chasing block size
+      Vector<> tmp(bs);
+      int maxblocks = n/bs+1;
+      Matrix<> reflect_bcU(bcbs * maxblocks, bs+bcbs-1);
+      Matrix<> reflect_bcV(bcbs * maxblocks, bs+bcbs-1);
+      Array<IntRange> ranges;
                                      
-    for (int bi = 0; bi < n-1; bi += bcbs)
+      for (int bi = 0; bi < n-1; bi += bcbs)
       {
-        int bsi = min(bcbs, n-1-bi);
-        reflect_bcU = 0.0;
-        reflect_bcV = 0.0;
+      int bsi = min(bcbs, n-1-bi);
+      reflect_bcU = 0.0;
+      reflect_bcV = 0.0;
       
-        for (int ii = 0; ii < bsi; ii++)
-          {
-            int i = bi + ii;
-            // first vector
-            IntRange cols(i+1, min(n, i+bs+1));
-            auto x = Aband.Row(i).Range(cols);
-            CalcHouseholderVector (x, tmp.Range(x.Size()));
-            reflect_bcV.Row(0*bcbs+ii).Range(ii, ii+cols.Size()) = tmp.Range(x.Size());
+      for (int ii = 0; ii < bsi; ii++)
+      {
+      int i = bi + ii;
+      // first vector
+      IntRange cols(i+1, min(n, i+bs+1));
+      auto x = Aband.Row(i).Range(cols);
+      CalcHouseholderVector (x, tmp.Range(x.Size()));
+      reflect_bcV.Row(0*bcbs+ii).Range(ii, ii+cols.Size()) = tmp.Range(x.Size());
                 
-            IntRange rows(i, min(m,i+bs+1));
-            HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
-            // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(V1.Cols(cols)));      
-            int nr = 0;
-            for (int i1 = i+1; i1 < n; i1 += bs, nr++)
-              {
-                {
-                  IntRange rows(i1, min(n, i1+bs));
-                  auto x = Aband.Col(i1).Range(rows);
-                  CalcHouseholderVector (x, tmp.Range(x.Size()));
-                  reflect_bcU.Row(nr*bcbs+ii).Range(ii, ii+rows.Size()) = tmp.Range(x.Size());
+      IntRange rows(i, min(m,i+bs+1));
+      HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
+      // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(V1.Cols(cols)));      
+      int nr = 0;
+      for (int i1 = i+1; i1 < n; i1 += bs, nr++)
+      {
+      {
+      IntRange rows(i1, min(n, i1+bs));
+      auto x = Aband.Col(i1).Range(rows);
+      CalcHouseholderVector (x, tmp.Range(x.Size()));
+      reflect_bcU.Row(nr*bcbs+ii).Range(ii, ii+rows.Size()) = tmp.Range(x.Size());
                 
-                  IntRange cols(i1, min(n, i1+2*bs));
-                  HouseholderReflection (tmp.Range(x.Size())).Mult (Aband.Rows(rows).Cols(cols));
-                  // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(U1.Cols(rows)));
-                }
+      IntRange cols(i1, min(n, i1+2*bs));
+      HouseholderReflection (tmp.Range(x.Size())).Mult (Aband.Rows(rows).Cols(cols));
+      // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(U1.Cols(rows)));
+      }
 
-                if (i1+bs < n)
-                  {
-                    IntRange cols(i1+bs, min(n, i1+2*bs));
-                    auto x = Aband.Row(i1).Range(cols);
-                    CalcHouseholderVector (x, tmp.Range(x.Size()));
-                    reflect_bcV.Row((nr+1)*bcbs+ii).Range(ii, ii+cols.Size()) = tmp.Range(x.Size());
+      if (i1+bs < n)
+      {
+      IntRange cols(i1+bs, min(n, i1+2*bs));
+      auto x = Aband.Row(i1).Range(cols);
+      CalcHouseholderVector (x, tmp.Range(x.Size()));
+      reflect_bcV.Row((nr+1)*bcbs+ii).Range(ii, ii+cols.Size()) = tmp.Range(x.Size());
                   
-                    IntRange rows(i1, min(n, i1+2*bs));
-                    HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
-                    // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(V1.Cols(cols)));                    
-                  }
-              }
-          }
+      IntRange rows(i1, min(n, i1+2*bs));
+      HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
+      // HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(V1.Cols(cols)));                    
+      }
+      }
+      }
 
-        ranges.SetSize(0);
-        for (int i1 = bi+1; i1 < n; i1 += bs)
-          ranges.Append (IntRange(i1, min(n,i1+bs+bcbs-1)));
-        for (int i = ranges.Size()-1; i >= 0; i--)
-          {
-            int bcbsi = min(bcbs, ranges[i].Size());
-            MultiHouseholderReflection H(reflect_bcU.Rows(i*bcbs, i*bcbs+bcbsi).Cols(ranges[i].Size()));
-            H.Mult (Trans(U1.Cols(ranges[i])));
-          }
-        for (int i = ranges.Size()-1; i >= 0; i--)
-          {
-            int bcbsi = min(bcbs, ranges[i].Size());          
-            MultiHouseholderReflection (reflect_bcV.Rows(i*bcbs, i*bcbs+bcbsi).Cols(ranges[i].Size())).Mult (Trans(V1.Cols(ranges[i])));
-          }
+      ranges.SetSize(0);
+      for (int i1 = bi+1; i1 < n; i1 += bs)
+      ranges.Append (IntRange(i1, min(n,i1+bs+bcbs-1)));
+      for (int i = ranges.Size()-1; i >= 0; i--)
+      {
+      int bcbsi = min(bcbs, ranges[i].Size());
+      MultiHouseholderReflection H(reflect_bcU.Rows(i*bcbs, i*bcbs+bcbsi).Cols(ranges[i].Size()));
+      H.Mult (Trans(U1.Cols(ranges[i])));
+      }
+      for (int i = ranges.Size()-1; i >= 0; i--)
+      {
+      int bcbsi = min(bcbs, ranges[i].Size());          
+      MultiHouseholderReflection (reflect_bcV.Rows(i*bcbs, i*bcbs+bcbsi).Cols(ranges[i].Size())).Mult (Trans(V1.Cols(ranges[i])));
+      }
       }
     */
 
@@ -473,11 +480,11 @@ namespace ngbla
     static Timer tb3 ("bulge chasing - mult V");
     tb2.Start();
     /*
-    for (auto [i,j,size] : refu)
+      for (auto [i,j,size] : refu)
       {
-        tmp.Range(size) = Aband.Col(j).Range(i,i+size);
-        HouseholderReflection H(tmp.Range(size));
-        H.Mult (Trans(U1.Cols(i,i+size)));
+      tmp.Range(size) = Aband.Col(j).Range(i,i+size);
+      HouseholderReflection H(tmp.Range(size));
+      H.Mult (Trans(U1.Cols(i,i+size)));
       }
     */
     
@@ -498,12 +505,12 @@ namespace ngbla
     tb3.Start();
 
     /*
-    for (auto [i,j,size] : refv)
+      for (auto [i,j,size] : refv)
       {
-        tmp.Range(size) = Aband.Row(i).Range(j,j+size);
-        tmp(0) = 1;
-        HouseholderReflection H(tmp.Range(size));
-        H.Mult (Trans(V1.Cols(j,j+size)));
+      tmp.Range(size) = Aband.Row(i).Range(j,j+size);
+      tmp(0) = 1;
+      HouseholderReflection H(tmp.Range(size));
+      H.Mult (Trans(V1.Cols(j,j+size)));
       }
     */
     startrow = 1;
@@ -530,9 +537,7 @@ namespace ngbla
 
 
 
-
-
-
+  /* ***************** Bi-diagonal SVD by bisection ************ */
 
   /*
     Othogonal eigenvectors and relative gaps
@@ -654,8 +659,8 @@ namespace ngbla
   }
 
 
-  void CalcSVDBiDiagonal (SliceMatrix<> B, 
-                          FlatMatrix<double,ColMajor> U, FlatMatrix<double,ColMajor> V)
+  void CalcSVDBiDiagonal1 (SliceMatrix<> B, 
+                           FlatMatrix<double,ColMajor> U, FlatMatrix<double,ColMajor> V)
   {
     static Timer tb("tbisect");
     static Timer tbi("tsolvebi");
@@ -813,13 +818,823 @@ namespace ngbla
   }
 
 
+  /* ***************** Bi-diagonal SVD by divide-and-conquer ************ */
 
+  /*
+    matrix is (n+1)*n
+    alpha = m.Diag(0)
+    beta = m.Diag(-1)
+  */
+
+
+  void CalcRecLapack (FlatVector<> alpha, FlatVector<> beta, FlatVector<> sigma,
+                      SliceMatrix<double,ColMajor> U, SliceMatrix<double,ColMajor> V)
+  {
+    size_t n = alpha.Size();
+    if (n == 0)
+      {
+        U(0,0) = 1;
+        return;
+      }
+    
+    if (U.Height() != n+1 || U.Width() != n+1) throw Exception ("U has wrong size");
+    if (V.Height() != n || V.Width() != n) throw Exception ("V has wrong size");
+    Matrix M(n+1, n);
+    M = 0;
+    M.Diag(0) = alpha;
+    M.Diag(-1) = beta;
+    Matrix Morig = M;
+    Matrix<double,ColMajor> hU = U;
+    cout << "lapack SVD of matrix " << endl << M << endl;
+    LapackSVD (M, V, hU);
+    U = Trans(hU);
+    sigma = M.Diag(0);
+
+    cout << "check lapack:" << endl;
+    cout << "alpha, beta = " << alpha << ", " << beta << endl;
+    cout << Truncate(Trans(U) * Morig * V) << endl;
+    cout << "U = " << endl << U << endl;
+    cout << "V = " << endl << V << endl;
+  }
+
+
+
+
+
+  class GivensRotation
+  {
+    double c, s;
+    int i1, i2;
+  public:
+    GivensRotation (double ac, double as, int ai1, int ai2)
+      : c(ac), s(as), i1(ai1), i2(ai2) { ; }
+  
+    void Apply (SliceVector<> v, bool trans = false)
+    {
+      double v1 = v(i1), v2 = v(i2);
+      if (trans)
+        {
+          v(i1) = c * v1 + s * v2;
+          v(i2) = -s * v1 + c * v2;
+        }
+      else
+        {
+          v(i1) = c * v1 - s * v2;
+          v(i2) = s * v1 + c * v2;
+        }
+    }
+
+    template <ORDERING OM>
+    void Apply (SliceMatrix<double,OM> mat, bool trans = false)
+    {
+      for (int i = 0; i < mat.Width(); i++)
+        Apply (mat.Col(i), trans);
+    }
+  };
+
+
+
+
+  
+  /*
+    find solution within (lower, upper) of
+    1 + \sum_i  vs(i)**2 / (lams(i)^2 - lam^2) = 0
+  */
+  // returns t-lower and upper-t
+  // the smaller one is more accurate !
+  tuple<double,double> SolveSecular (FlatVector<> lams,
+                                     FlatVector<> vs, double lower, double upper)
+  {
+    /*
+      cout << "solve sec1ular, lams = " << endl << lams << endl
+      << "vs = " << vs << endl
+      << "l/u = " << lower << "/" << upper << endl;
+    */
+    // static Timer timer("SolveSecular"); RegionTimer r(timer);
+    // static Timer tloop("SolveSecular loop ");
+    
+    /*
+      Rank-One Modification of the Symmetric Eigenproblem
+      Bunch, Nielsen, Sorensen
+      Numer Math 31, 31-48, 1978
+
+      with modifications by Gu + Eisenstat for SVD
+    */
+
+    // cout << "solvesecular called, lower = " << lower << ", upper = " << upper << endl;
+    ArrayMem<double,100> vpsi, vphi;
+    ArrayMem<double,100> lampsi_shift, lamphi_shift;
+    double lower2 = sqr(lower);
+    double upper2 = sqr(upper);
+    double mid = 0.5 * (upper2+lower2);
+  
+    for (int i = 0; i < lams.Size(); i++)
+      if (vs[i] != 0)        // only terms with non-zero vs count
+        {
+          if (sqr(lams[i]) < mid)
+            {
+              vpsi.Append(vs[i]);
+              lampsi_shift.Append (lams[i]-lower);
+            }
+          else
+            {
+              vphi.Append(vs[i]);
+              lamphi_shift.Append (lams[i]-upper);
+            }
+        }
+
+    /*
+      cout << "vpsi = " << vpsi << endl;
+      cout << "lampsi_shift = " << lampsi_shift << endl;
+      cout << "vphi = " << vphi << endl;
+      cout << "vphi_shift = " << lamphi_shift << endl;
+    */
+    // RegionTimer rloop(tloop);
+
+    double delta = upper-lower;
+    double t = delta/2;
+
+    // double delta2 = upper2-lower2;
+    double Delta = delta-t;
+
+    int maxits = 40;
+    for (int i = 0; i < maxits; i++)
+      {
+        // cout << "i = " << i << ", t = " << t << ", Delta = " << Delta << endl;
+      
+        double t2 = t*t+2*lower*t;  // sqr(t+lower)-sqr(lower);
+        double Delta2 = Delta*(2*upper-Delta);    // sqr(Delta)-sqr(upper-Delta)   
+        // double Delta2 = delta2-t2;
+        // cout << "Delta2 = " << Delta2 << " =?= " << delta2-t2 << endl;
+      
+        // Delta = delta - t;
+        // cout << "Delta = " << Delta << " =?= " << delta-t << " i = " << i << ", t = " << t << endl;
+        if (isnan(t2) || isinf(t2))
+          {
+            cout << "t = " << t2 << endl;
+            cout << "vpsi = " << vpsi << endl;
+            cout << "vphi = " << vphi << endl;
+            cout << "lampsi_shift = " << lampsi_shift << endl;
+            cout << "lamphi_shift = " << lamphi_shift << endl;
+            throw Exception ("secular failed");
+          }
+
+      
+        double phi = 0, psi=0, phiprime=0, psiprime=0;
+        double calt = 1;
+
+        for (int j = 0; j < vpsi.Size(); j++)
+          {
+            // double num = ( (lampsi[j]-lower-t) * (lampsi[j]+lower+t) );
+            double num = ( (lampsi_shift[j]-t) * (lampsi_shift[j]+2*lower+t) );
+            psi += sqr(vpsi[j]) / num;
+            psiprime += sqr(vpsi[j]) / sqr( num );
+          }
+      
+        for (int j = 0; j < vphi.Size(); j++)
+          {
+            // double num = (lamphi[j]-lower-t)*(lamphi[j]+lower+t);
+            double num = (lamphi_shift[j]+Delta)*(lamphi_shift[j]+2*upper-Delta);
+            phi += sqr(vphi[j]) / num;
+            phiprime += sqr(vphi[j]) / sqr(num);
+            calt += sqr(vphi[j])  * lamphi_shift[j]*(lamphi_shift[j]+2*upper) / sqr(num);
+          }
+      
+        double w = 1 + phi + psi;
+      
+        // cout << "i = " << i << ", psi = " << psi << ", phi = " << phi << ", w = " << w << endl;
+
+        if (i == 0 && w > 0)  // need a legal starting value with w < 0
+          {
+            t /= 2;
+            Delta = delta-t;
+            i--;
+            continue;
+          }
+
+        
+        if (vphi.Size() > 0)
+          {
+            // double c1 = 1 + phi - Delta2 * phiprime;
+            double c = calt;
+            double a = (Delta2*(1+phi)+sqr(psi)/psiprime)/c + psi/psiprime;
+            double b = (Delta2 * w * psi) / (psiprime * c);
+          
+            double disc = a*a-4*b;
+            if (disc < 0) disc = 0;
+            double incr = 2*b/(a+sqrt(disc));
+
+            if (Delta2-incr < 1e-6 * Delta2) incr *= 0.999999;
+            if (t2+incr < 1e-6 * Delta2) incr *= 0.999999;
+
+            t2 += incr;
+            Delta2 -= incr;
+
+            t = t2 / (sqrt(t2+lower2)+lower);
+          
+            double discu = upper2-Delta2;
+            if (discu < 0) discu = 0;
+            Delta = Delta2 / (sqrt(discu)+upper);
+
+            /*
+            if (fabs (incr) < 1e-15 * min(t2, Delta2))
+              {
+                // cout << "break due to small inc" << endl;
+                // chosen, but not necessary ..
+                if (i < maxits-3) i = maxits-3;
+              }
+            */
+          }
+        else
+          {
+            double incr = (1+psi)/psiprime*psi;
+            t2 += incr;
+            t = t2 / (sqrt(t2+lower2)+lower);
+            Delta = delta-t;
+          }
+      
+        if (fabs (w) < 1e-14 * (1.0+fabs(phi)+fabs(psi)))
+          if (i < maxits-2) i = maxits-2;
+        
+        // if (i > 20 && i < 20)
+        // cout << "many its, i = " << i << endl;
+        
+        if (t < Delta)
+          Delta = delta - t;
+        else
+          t = delta - Delta;
+      }
+
+    return { t, Delta };
+  }
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+  
+  /*
+    Matrix is (n+1) * n
+    alpha diagonal, beta .. sub-diagonal
+    sigma(n) singular values
+    U   (n+1) * (n+1)  .... first n cols are singular vectors
+    V   n * n
+
+
+    first n columns form the reduced SVD
+    if alpha(0) == 0, then first row of first cols is 0
+    i.e. U(1:n+1, 0:n) is U-factor of reduced matrix
+  */
+  
+  void CalcSVDBiDiagonalRec (FlatVector<> alpha, FlatVector<> beta, FlatVector<> sigma,
+                             SliceMatrix<double,ColMajor> U, SliceMatrix<double,ColMajor> V)
+  {
+    /*
+    static Timer t("CalcSVDBiDiagonalRec"); RegionTimer r(t);
+    static Timer t1("CalcSVDBiDiagonalRec 1"); 
+    static Timer t2("CalcSVDBiDiagonalRec 2");
+    static Timer t2b("CalcSVDBiDiagonalRec 2b");
+    static Timer tWQ("CalcSVDBiDiagonalRec Build WQ");
+    static Timer tzD("CalcSVDBiDiagonalRec Build zD");
+    static Timer tdef("deflation");
+    static Timer tMUV("MU,MV");
+    static Timer tsort("sort");
+    */
+
+    
+    /*
+      CalcRecLapack (alpha, beta, sigma, U, V);
+      cout << "lapack sigma = " << sigma << endl;
+      return;
+    */
+
+    // cout << "CalcSVDBiDiagonalRec called, n = " << alpha.Size() << endl;
+    // cout << "CalcSVDBiDiagonalRec, alpha " << endl << alpha << endl << "beta = " << endl << beta << endl;
+
+    size_t n = alpha.Size();
+    if (n == 0)
+      {
+        U(0,0) = 1;
+        return;
+      }
+
+    // t1.Start();
+
+    double normmat = L2Norm(alpha) + L2Norm(beta) + 1e-40;
+
+    /*
+    Matrix<> B(n+1, n);  // for testing
+    B = 0;
+    B.Diag(0) = alpha;
+    B.Diag(-1) = beta;
+    */
+    
+    size_t k = n/2;
+    double alphak = alpha(k);
+    double betak = beta(k);
+
+    // borrow memory ...
+    auto U1 = U.Rows(k+1).Cols(k+1);
+    auto U2 = U.Rows(k+1,n+1).Cols(k+1,n+1);
+    auto W1 = V.Rows(k).Cols(k);
+    auto W2 = V.Rows(k,n-1).Cols(k,n-1);
+    
+    VectorMem<100> D(n);
+    D(0) = 0;
+
+    // t1.Stop();
+    CalcSVDBiDiagonalRec (alpha.Range(0,k), beta.Range(0,k), D.Range(1,k+1), U1, W1);
+    CalcSVDBiDiagonalRec (alpha.Range(k+1,n), beta.Range(k+1,n), D.Range(k+1,n), U2, W2);
+
+    // tWQ.Start();
+
+    /*
+    if (isnan(L2Norm(D)) || isinf(L2Norm(D)))
+      {
+        cout << "D has nans" << endl;
+        cout << "alpha = " << alpha << endl;
+        cout << "beta = " << beta << endl;
+        cout << "D = " << D << endl;
+        cout << "U1 = " << U1 << endl;
+        cout << "W1 = " << W1 << endl;
+        cout << "U2 = " << U2 << endl;
+        cout << "W2 = " << W2 << endl;
+        throw Exception("D has nans");
+      }
+    */
+    
+    /*
+      cout << "own recursive: D = " << D << endl;
+      cout << "U1,V1 = " << endl << U1 << endl << W1 << endl;
+      cout << "U2,V2 = " << endl << U2 << endl << W2 << endl;
+    */
+    // CalcRecLapack (alpha.Range(0,k), beta.Range(0,k), D.Range(1,k+1), U1, W1);
+    // CalcRecLapack (alpha.Range(k+1,n), beta.Range(k+1,n), D.Range(k+1,n), U2, W2);
+    /*
+    cout << "Lapack recursive: D = " << D << endl;
+    cout << "U1,V1 = " << endl << U1 << endl << W1 << endl;
+    cout << "U2,V2 = " << endl << U2 << endl << W2 << endl;
+    */
+    
+    
+    auto Q1 = U1.Cols(0,k);
+    auto q1 = U1.Col(k);
+    auto Q2 = U2.Cols(0,n-k-1);
+    auto q2 = U2.Col(n-k-1);
+
+    double lam1 = q1(k);
+    auto l1 = Q1.Row(k);
+    double phi2 = q2(0);
+    auto f2 = Q2.Row(0);
+
+    double r0 = hypot(alphak*lam1, betak*phi2);
+
+    double c0, s0;
+    if (r0 != 0)
+      { c0 = alphak*lam1/r0; s0 = betak*phi2/r0; }
+    else
+      { c0 = 0; s0 = 1; }
+
+      
+    // Matrix<> Q(n+1,n), W(n,n);
+    ArrayMem<double,512> memQW((2*n+1)*n);
+    FlatMatrix<> Q(n+1, n, memQW.Data());
+    FlatMatrix<> W(n, n, memQW.Data()+(n+1)*n);
+    
+    Q = 0.0;
+    auto [Qtop,Qbot] = Q.SplitRows(k+1);
+    Qtop.Col(0) = c0*q1;
+    Qbot.Col(0) = s0*q2;
+    Qtop.Cols(1,1+k) = Q1;
+    Qbot.Cols(1+k,n) = Q2;
+    W = 0.0;
+    W.Rows(0,k).Cols(1,k+1) = W1;
+    W(k,0) = 1;
+    W.Rows(k+1,n).Cols(k+1,n) = W2;
+    VectorMem<100> q(n+1);
+    q.Range(0,k+1) = -s0*q1;
+    q.Range(k+1,n+1) = c0*q2;
+    
+    // now, B = Q * M * Trans(W)
+    // with M = diag + first col
+    /*
+      cout << "arrow head before deflation" << endl;
+      Matrix M = Matrix(Trans(Q)*B) * W;
+      cout << "Q^T B W = " << Truncate(M) << endl;
+      cout << "q^T B = " << Truncate( Trans(B)*q ) << endl;
+    */
+
+    // tWQ.Stop();
+    // tzD.Start();
+    
+    VectorMem<100> z(n);
+    z(0) = r0;
+    z.Range(1,k+1) = alphak*l1;
+    z.Range(k+1,n) = betak*f2;
+    
+    // cout << "z = " << endl << z << endl;
+    // cout << "D = " << endl << D << endl;
+    
+    ArrayMem<int,100> index(n);
+    for (int i : Range(n)) index[i] = i;
+    QuickSortI (FlatArray(D.Size(), D.Data()), index.Range(1,n));
+
+    VectorMem<100> zs(n), Ds(n), Ds2(n);
+    for (size_t i = 0; i < n; i++)
+      {
+        zs(i) = z[index[i]];
+        Ds(i) = D[index[i]];
+        Ds2(i) = sqr(Ds(i));
+      }
+
+    /*
+      cout << "before deflation: " << endl;
+      cout << "zs = " << endl << zs << endl;
+      cout << "Ds = " << endl << Ds << endl;
+    */
+
+    // tzD.Stop();
+    // tdef.Start();
+    
+    // deflation  (Gu + Eisenstat, Chap 4.1)
+    // if Ds are the same, rotate up
+    // BitArray sameDs(n);
+    // sameDs.Clear();
+    ArrayMem<bool,100> sameDs(n);
+    sameDs = false;
+    for (int i = n-2; i >= 0; i--)
+      {
+        if ( (Ds(i+1) - Ds(i)) < 1e-14*normmat)
+          {
+            sameDs[i+1] = true; // .SetBit(i+1);
+            double c = zs(i), s = -zs(i+1);
+            double r = hypot (c, s);
+            if (r > 1e-20 * normmat)
+              {
+                c /= r; s /= r;
+                GivensRotation G(c, s, index[i], index[i+1]);
+                zs(i) = r;
+                zs(i+1) = 0;
+                G.Apply (SliceMatrix(Trans(Q)));
+                if (i > 0)
+                  G.Apply (SliceMatrix(Trans(W))); 
+              }
+            else
+              {
+                zs(i) = 0;
+                zs(i+1) = 0;
+              }
+          }
+      }
+    for (size_t i = 1; i < n; i++)
+      if (sameDs[i])
+        Ds(i) = Ds(i-1);
+
+    ArrayMem<bool,100> deflated(n);
+    deflated = false;
+    if (fabs(zs(0)) < 1e-14 * normmat) zs(0) = 1e-14 * normmat; 
+    for (int i = 1; i < n; i++)
+      if (fabs(zs(i)) < 1e-14 * normmat)
+        {
+          zs(i) = 0;
+          deflated[i] = true;
+        }
+
+    /*
+      cout << "arrowhead, after deflation:" << endl;
+      Matrix M2 = Matrix(Trans(Q)*B) * W;
+      cout << "Q^T B W = " << Truncate(M2) << endl;
+      cout << "q^T B = " << Truncate( Trans(B)*q ) << endl;
+    */
+
+    
+    VectorMem<100> Ds_next(n);
+    double dsn = Ds(n-1)+L2Norm(zs);
+    for (int i = n-1; i >= 0; i--)
+      {
+        Ds_next(i) = dsn;
+        if (!deflated[i])
+          dsn = Ds(i);
+      }
+
+    // tdef.Stop();
+    // RegionTimer r2b(t2b);
+    
+    /*
+      cout << "before Secular:" << endl;
+      cout << "deflated: " << endl << deflated << endl;
+      cout << "zs = " << endl << zs << endl;
+      cout << "Ds = " << endl << Ds << endl;
+      cout << "Ds_next = " << endl << Ds_next << endl;
+    */
+
+
+    // static Timer tsec("Solve all secular");
+    // tsec.Start();
+    
+    VectorMem<100> omega(n), omega2diff(n), omega2ref(n);
+
+    omega2diff = 0;
+    omega2ref = -1;
+    // Vector<> uvec(n), vvec(n);
+    // cout << "Ds = " << Ds << endl;
+    // cout << "deflated = " << deflated << endl;
+
+
+    for (int i = 0; i < n; i++)
+      {
+        if (!deflated[i])
+          {
+            double l = Ds(i);
+            double u = Ds_next(i);
+
+            auto [t,Delta] = SolveSecular (Ds, zs, l, u);
+
+            double t2 = t*(t+2*l);
+            double Delta2 = Delta*(2*u-Delta);
+          
+            if (t < Delta)
+              {
+                omega2ref(i) = Ds2(i);
+                omega2diff(i) = t2;
+                omega(i) = Ds(i)+t;
+              }
+            else
+              {
+                omega2ref(i) = sqr(Ds_next(i));
+                omega2diff(i) = -Delta2;
+                omega(i) = Ds_next(i)-Delta;  
+              }
+          
+            // omega(i) = sqrt(omega2ref(i)+omega2diff(i));
+          }
+        else
+          {
+            omega(i) = Ds(i);
+          }
+      }
+
+    // tsec.Stop();
+
+
+    // static Timer tzmod("modified z");
+    // tzmod.Start();
+    
+    VectorMem<100> zsmod(n);
+    zsmod = 0;
+    size_t last_nondeflated = 0;
+    for (size_t i = 0; i < n; i++)
+      if (!deflated[i]) last_nondeflated = i;
+    for (size_t i = 0; i < n; i++)
+      if (!deflated[i])
+        {
+          double prod = 1;
+          for (size_t j = 0; j < i; j++)
+            if (!deflated[j] && (j != last_nondeflated))
+              prod *= (omega2ref(j)-Ds2(i)+omega2diff(j)) / (Ds2(j)-Ds2(i));
+          for (size_t j = i; j < n-1; j++)
+            if (!deflated[j] && (j != last_nondeflated))
+              prod *= (omega2ref(j)-Ds2(i)+omega2diff(j)) / (sqr(Ds_next(j))-Ds2(i));
+          prod *= omega2ref(last_nondeflated)-Ds2(i)+omega2diff(last_nondeflated);
+          zsmod(i) = sqrt(prod);
+        }
+
+    for (size_t i = 0; i < n; i++)
+      if (zs(i) < 0) zsmod(i)*=-1;
+    
+    // tzmod.Stop();
+    // tMUV.Start();
+
+    
+    // Matrix<double,ColMajor> MU(n,n), MV(n,n);   // M = MU * Msigma * MV
+    ArrayMem<double,512> memMUV(2*n*n);
+    FlatMatrix<double,ColMajor> MU(n,n,memMUV.Data());
+    FlatMatrix<double,ColMajor> MV(n,n,memMUV.Data()+n*n);
+    
+    MU = 0.0;
+    MV = 0.0;
+
+    for (size_t i = 0; i < n; i++)
+      {
+        auto colu = MU.Col(n-i-1);
+        auto colv = MV.Col(n-i-1);
+        
+        if (zs(i) != 0)
+          {
+            for (size_t j = 0; j < n; j++)
+              if (zs(j) != 0)
+                {
+                  double ui = zsmod(j) / (Ds2(j)-omega2ref(i)-omega2diff(i));
+                  colu(index[j]) = ui;
+                  colv(index[j]) = Ds(j)*ui;
+                }
+            colv(index[0]) = -1;           
+            colu /= L2Norm(colu);
+            colv /= L2Norm(colv);
+          }
+        else
+          {
+            colu = 0;
+            colu(index[i]) = 1;
+            colv = 0;
+            colv(index[i]) = 1;
+          }
+      }
+
+    
+    /*
+      // testing
+    if (double erru = L2Norm(Matrix(Trans(MU)*MU)-Identity(n)); erru > 1e-12)
+      cout << "Secular, orthogonal U error = " << erru << endl;
+    if (double errv = L2Norm(Matrix(Trans(MV)*MV)-Identity(n)); errv > 1e-12)
+      cout << "Secular, orthogonal V error = " << errv << endl;
+    */
+    
+    
+    // cout << "Ds2 = " << Ds2 << endl;
+    // cout << "omega = " << omega << endl;
+    /*
+    if (isnan(L2Norm(omega)) || isinf(L2Norm(omega)))
+      {
+        cout << "omega is illegal" << endl;
+        cout << "normmat = " << normmat << endl;
+        cout << "omega = " << endl << omega;
+        cout << "zs = " << endl << zs << endl;
+        cout << "D^2s = " << endl << Ds2 << endl;
+        cout << "D_next = " << endl << Ds_next << endl;
+        cout << "deflated = " << endl << deflated << endl;
+      }
+    */
+    
+    for (size_t i = 0; i < n; i++)
+      sigma(n-i-1) = omega(i);
+
+    // tMUV.Stop();
+    // tsort.Start();
+    
+    // we still need sorting, deflated and non-deflated may overlap
+    for (int i : Range(n)) index[i] = i;    
+    QuickSortI (FlatArray(sigma.Size(), sigma.Data()), index, [](double x, double y) { return y < x; });
+    
+    VectorMem<100> tmp_sigma(n);
+    tmp_sigma = sigma;
+    auto tmp_MU = U.Rows(n).Cols(n);  // borrow mem
+    auto tmp_MV = V.Rows(n).Cols(n);
+    tmp_MU = MU;
+    tmp_MV = MV;
+    for (int i = 0; i < n; i++)
+      {
+        sigma(i) = tmp_sigma(index[i]);
+        MU.Col(i) = tmp_MU.Col(index[i]);
+        MV.Col(i) = tmp_MV.Col(index[i]);
+      }
+    // tsort.Stop();
+    /*
+      Matrix Sigma(n);
+      Sigma = 0.0; Sigma.Diag() = sigma;
+      cout << "shold be same arrow-head:" << endl
+      << Truncate( Matrix ( Matrix(MU*Sigma) * Trans(MV) ) ) << endl;
+    */
+
+    // static Timer tmatmult("matmult");
+    // tmatmult.Start();
+    U.Cols(n) = Q * MU;
+    U.Col(n) = q; 
+    V = W * MV;
+    // tmatmult.Stop();
+
+    /*
+    if (isnan (L2Norm(sigma)))
+      throw Exception ("sigma is none");
+    */
+    
+      // testing
+
+    /*
+    double errMU = L2Norm(Trans(MU)*MU-Identity(n));
+    double errMV = L2Norm(Trans(MV)*MV-Identity(n));
+    
+    if (max(errMU, errMV) > 1e-10)
+      {
+        cout << "MU orthogonality err = " << errMU << endl;
+        cout << "MV orthogonality err = " << errMV << endl;
+
+        if (max(errMU, errMV) > 1e-8)
+          {
+            cout << "MU = " << endl << MU << endl;
+            cout << "MV = " << endl << MV << endl;
+            cout << "Trans(MU)*MU-I = " << endl << Truncate(Trans(MU)*MU-Identity(n)) << endl;
+            cout << "Trans(MV)*MV-I = " << endl << Truncate(Trans(MV)*MV-Identity(n)) << endl;
+            cout << "alpha = " << endl << alpha << endl;
+            cout << "beta = " << endl << beta << endl;
+            // cout << "omega2 = " << omega2 << endl;
+            // cout << "omega2ref = " << omega2ref << endl;
+            // cout << "omega2diff = " << omega2diff << endl;
+            cout << "Ds = " << Ds << endl;
+            cout << "zs = " << zs << endl;
+            cout << "omega = " << omega << endl;
+            cout << "degen = " << deflated << endl;
+            if (max(errMU,errMV) > 1e-3)
+              throw Exception ("bad orthogonality");
+          }
+      }
+    */
+
+
+    
+    /*
+      // testing 
+    Matrix Sigma = Matrix(Trans(U)*B)*V;
+    Sigma.Diag(0) = 0.0;
+    if (double errsigma = L2Norm(Sigma); errsigma > 1e-4)
+      {
+        cout << "in DnC, bidiag, sigma err = " << errsigma << endl;
+        if (Sigma.Height() <= 6)
+          {
+            cout << "Sigma clear diag = " << endl << Sigma << endl;
+            cout << "Sigma clear diag = " << endl << Truncate(Sigma, 1e-10) << endl;
+            Sigma = Matrix(Trans(U)*B)*V;
+            cout << "bidiag, Sigma = " << endl << Truncate(Sigma) << endl;
+            cout << "alpha = " << endl << alpha << endl;
+            cout << "beta = " << endl << beta << endl;
+            cout << "deflation = " << endl << deflated << endl;
+            cout << "zs = " << endl << zs << endl;
+            cout << "zsmod = " << endl << zsmod << endl;
+            cout << "Ds = " << endl << Ds << endl;
+          }
+        // throw Exception("wrong");
+      }
+    */
+  }
+
+
+  
+  /*
+    B ... n*n,   uppper bi-diagonal
+    Compute   B = U Sigma V^T
+    with Sigma stored as diag B
+  */
+  template <ORDERING ORD>
+  void CalcSVDBiDiagonal (SliceMatrix<double,ORD> B, 
+                          SliceMatrix<double,ColMajor> U, SliceMatrix<double,ColMajor> V)
+  {
+    static Timer t("CalcSVDBiDiagonal"); RegionTimer r(t);
+
+    // Matrix<> Borig = B; // for testing
+    size_t n = B.Height();
+    Vector<> alpha(n), beta(n), sigma(n);
+
+    alpha(0) = 0;
+    alpha.Range(1,n) = B.Diag(1);
+    beta = B.Diag(0);
+
+    Matrix<double,ColMajor> U1(n+1, n+1);
+    CalcSVDBiDiagonalRec (alpha, beta, sigma, U1, V);
+    U = U1.Rows(1,n+1).Cols(0,n);
+    B = 0.0;
+    B.Diag(0) = sigma;
+
+
+    /*
+      // testing 
+    Matrix Sigma = Matrix(Trans(U)*Borig)*V;
+    Sigma.Diag(0) = 0.0;
+    if (double errsigma = L2Norm(Sigma); errsigma > 1e-4)
+      {
+        cout << "bidiag, sigma err = " << errsigma << endl;
+        if (Sigma.Height() <= 6)
+          {
+            cout << "Sigma clear diag = " << endl << Sigma << endl;
+            cout << "Sigma clear diag = " << endl << Truncate(Sigma, 1e-10) << endl;
+            Sigma = Matrix(Trans(U)*Borig)*V;
+            cout << "bidiag, Sigma = " << endl << Truncate(Sigma) << endl;
+            cout << "alpha = " << endl << alpha << endl;
+            cout << "beta = " << endl << beta << endl;
+          }
+        // throw Exception("wrong");
+      }
+    */
+  }
+    
 
 
   // A = U * Sigma * V^T
-  void CalcSVD (SliceMatrix<> A, 
-                SliceMatrix<double, ColMajor> U, SliceMatrix<double, ColMajor> V)
+  template <ORDERING ORD>
+  void TCalcSVD (SliceMatrix<double,ORD> A, 
+                 SliceMatrix<double, ColMajor> U, SliceMatrix<double, ColMajor> V)
   {
+    /*
     Matrix Aorig = A;
     Matrix<double,ColMajor> hU = U;
     LapackSVD (A, V, hU);
@@ -827,13 +1642,27 @@ namespace ngbla
     // cout << "have svd, sigma = " << SliceMatrix(A).Diag(0) << endl;
     // cout << "Trans(U) * A * V = " << Truncate(Trans(U) * Aorig * V) << endl;
     return;
+    */
     
+    if (A.Width() > A.Height())
+      {
+        TCalcSVD (Trans(A), V, U);
+        return;
+      }
+    
+    // cout << "CalcSVD, h = " << A.Height() << ", w = " << A.Width() << endl;
+    if (double norm = L2Norm(A); isnan(norm) || isinf(norm))
+      {
+        cout << "input matrix norm = " << norm << endl;
+        cout << "mat = " << A << endl;
+        throw Exception ("called SVD with nan-matrix");
+      }
+        
     static Timer t("CalcSVD"); RegionTimer reg(t);
     size_t m = A.Height();
     size_t n = A.Width();
 
-    Matrix<> a_orig = A;   // for testing 
-
+    // Matrix<> A_orig = A;   // for testing 
   
     Matrix<double, ColMajor> U1(m);
     Matrix<double, ColMajor> V1(n);
@@ -841,70 +1670,83 @@ namespace ngbla
     if (min(n,m) < 100)
       ReduceBiDiagonal (A, U1, V1);
     else
-      ReduceBiDiagonalBlocked<ColMajor> (A, U1, V1);
+      ReduceBiDiagonalBlocked<ORD,ColMajor> (A, U1, V1);
 
     // testting
     /*
-    if (m < 50)  
+      if (m < 50)  
       {  
-        Matrix B = Matrix(Trans(U1) * a_orig) * V1;   // bi-diagonal
-        cout << "U^T * A V" << endl << Truncate(B) << endl;
+      Matrix B = Matrix(Trans(U1) * A_orig) * V1;   // bi-diagonal
+      cout << "U^T * A V" << endl << Truncate(B) << endl;
       }
     */
     
     Matrix<double,ColMajor> UB(m), VB(n);
-    CalcSVDBiDiagonal (A, UB, VB);
+    UB = Identity(m);
+    // cout << "diag A = " << endl << A.Diag(0) << endl;
+    // cout << "super-diag A = " << endl << A.Diag(1) << endl;
 
+    CalcSVDBiDiagonal (A.Rows(n), UB.Rows(n).Cols(n), VB);
+    
     static Timer tmultUV("CalcSVD, mult U1*UB, V1*VB"); RegionTimer regUV(tmultUV);
     tmultUV.AddFlops (n*n*n+m*m*m);
     U = U1*UB;
     V = V1*VB;
+
+
+    /* 
+       // testing ... 
+    double errU = L2Norm (U * Trans(U) - Identity(U.Height()));
+    double errV = L2Norm (V * Trans(V) - Identity(V.Height()));
+    if (errU + errV > 1e-2)
+      {
+        cout << "orthogonaliry error = " << errU + errV << endl;
+        // cout << "Aorig = " << A_orig << endl;
+        // cout << "diag = " << A.Diag(0) << endl;
+        // cout << "superd = " << A.Diag(1) << endl;
+        cout << "err ortho U: " << errU << endl;
+        cout << "err ortho V: " << errV << endl;
+        cout << "err ortho U1: " << L2Norm (U1 * Trans(U1) - Identity(U1.Height())) << endl;
+        cout << "err ortho V1: " << L2Norm (V1 * Trans(V1) - Identity(V1.Height())) << endl;
+        cout << "err ortho UB: " << L2Norm (UB * Trans(UB) - Identity(UB.Height())) << endl;
+        cout << "err ortho VB: " << L2Norm (VB * Trans(VB) - Identity(VB.Height())) << endl;
+        // cout << "UB = " << endl << UB << endl;
+        // cout << "VB = " << endl << VB << endl;
+        if (errU+errV > 1e-4)
+          throw Exception ("got a bad SVD");
+      }
+    */
+
+    /*
+    // testing ...
+    Matrix Sigma = Matrix(Trans(U)*A_orig)*V;
+    Sigma.Diag(0) = 0.0;
+    if (double errsigma = L2Norm(Sigma); errsigma > 1e-2)
+      {
+        cout << "sigma err = " << errsigma << endl;
+        Sigma = Matrix(Trans(U)*A_orig)*V;
+        cout << "Sigma = " << endl << Truncate(Sigma) << endl;
+        cout << "A_orig = " << endl << A_orig << endl;
+        cout << "diag = " << endl << A.Diag(0) << endl;
+        cout << "super-diag = " << endl << A.Diag(1) << endl;
+        if (errsigma > 1e-2)
+          throw Exception("Sigma not diagonal");
+      }
+    */
+    // cout << "sigma = " << A.Diag(0) << endl;
   }
 
 
-
-
-#ifdef NONE
-
-  int main()
+  void CalcSVD (SliceMatrix<double,RowMajor> A, 
+                SliceMatrix<double, ColMajor> U, SliceMatrix<double, ColMajor> V)
   {
-    cout.precision(15);
-    // size_t n = 5, m = 8;    // for now:  n <= m
-    size_t n = 1000, m = 1000;    // for now:  n <= m 
-    Matrix<> a(m,n);
-    for (int i = 0; i < a.Height(); i++)
-      for (int j = 0; j < a.Width(); j++)
-        a(i,j) = rand() / double(RAND_MAX);
-    Matrix a_orig = a;
-
-    if (n <= 1000)
-      {
-        Matrix alapack = a;
-        LapackSVD (alapack);
-      }
-  
-    if (n <= 200)
-      {
-        Matrix aTa = Trans(a)*a;
-        Vector lams(n);
-        Matrix evecs(n,n);
-        CalcEigenSystem (aTa, lams, evecs);
-        for (auto & lami : lams)
-          lami = sqrt(lami);
-        cout << "sing vals = " << lams;
-      }
-  
-    Matrix<double, ColMajor> U(m,m);
-    Matrix<double, ColMajor> V(n,n);
-    CalcSVD (a, U, V);
-  
-    Matrix Sigma = Matrix(Trans(U) * a_orig) * V;   // diagonal
-
-    if (m < 50)
-      cout << "u^T * a v" << endl << Truncate(Sigma) << endl;
-
-    NgProfiler::Print(stdout);
+    TCalcSVD (A, U, V);
   }
-#endif
+  void CalcSVD (SliceMatrix<double,ColMajor> A, 
+                SliceMatrix<double, ColMajor> U, SliceMatrix<double, ColMajor> V)
+  {
+    TCalcSVD (A, U, V);
+  }
 
+  
 }

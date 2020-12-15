@@ -216,6 +216,17 @@ namespace ngbla
       return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( Height()/adist, w));
     }
 
+    INLINE auto SplitRows (size_t split) const
+    {
+      return tuple(Rows(0,split), Rows(split, Height()));
+    }
+
+    INLINE auto SplitCols (size_t split) const
+    {
+      return tuple(Cols(0,split), Cols(split, Width()));
+    }
+
+    
     /*
     INLINE operator SliceMatrix<T> () const
     {
@@ -394,6 +405,17 @@ namespace ngbla
       return SliceMatrix<T,ColMajor> (range.Size(), w, h, data+range.First());
     }
 
+    INLINE auto SplitRows (size_t split) const
+    {
+      return tuple(Rows(0,split), Rows(split, Height()));
+    }
+
+    INLINE auto SplitCols (size_t split) const
+    {
+      return tuple(Cols(0,split), Cols(split, Width()));
+    }
+
+    
     
     /*
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
