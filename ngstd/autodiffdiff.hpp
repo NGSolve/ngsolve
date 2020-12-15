@@ -9,6 +9,7 @@
 
 namespace ngstd
 {
+  using ngcore::IfPos;
 
 // Automatic second differentiation datatype
 
@@ -19,7 +20,7 @@ namespace ngstd
    overloaded by using product-rule etc. etc.
 **/
 template <int D, typename SCAL = double>
-class AutoDiffDiff : public AlignedAlloc<AutoDiffDiff<D,SCAL>>
+class AutoDiffDiff
 {
   SCAL val;
   SCAL dval[D?D:1];

@@ -3748,13 +3748,14 @@ namespace ngbla
 	sum0 = If (m0, sum0+SIMD<double,8>(pa + i)*SIMD<double,8> (pb + i), sum0);
 	i += 8;
       } // n < i + 8
+    double hsum = HSum(sum0+sum1);
     for ( ; i < n; i++ )
       {
 	if (ba.Test(i)) {
-	  sum0[0] += pa[i] * pb[i];
+	  hsum += pa[i] * pb[i];
 	}
       }
-    return HSum(sum0 + sum1);
+    return hsum;
   }
 
 #elif defined __AVX__
@@ -3833,15 +3834,16 @@ namespace ngbla
 	sum0 = If (m0, sum0+SIMD<double,2>(pa+i)*SIMD<double,2> (pb+i), sum0);
 	i += 2;
       } // n < i+2
+    sum0 += sum2;
+    sum1 += sum3;
+    double sum = HSum(sum0+sum1);
     for ( ; i < n; i++ )
       {
 	if (ba.Test(i)) {
-	  sum0[0] += pa[i]*pb[i];
+	  sum += pa[i]*pb[i];
 	}
       }
-    sum0 += sum2;
-    sum1 += sum3;
-    return HSum(sum0 + sum1);
+    return sum;
   }
 
 #else // ifdef AVX512/AVX/SSE

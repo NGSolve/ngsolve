@@ -7,10 +7,10 @@ using namespace std;
 
  
 
-#include "../ngstd/simd.hpp"
+#include "../ngstd/simd_complex.hpp"
 
 
-using namespace ngstd;
+using namespace ngcore;
 
 enum OP { ADD, SUB, SET, SETNEG };
 

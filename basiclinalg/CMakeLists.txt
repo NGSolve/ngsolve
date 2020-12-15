@@ -2,9 +2,11 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kernel_generator generate_mat_kernels.cpp)
 
+target_link_libraries(kernel_generator ngcore)
+
 target_compile_definitions(kernel_generator PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(kernel_generator PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options})
+target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
   COMMAND kernel_generator
