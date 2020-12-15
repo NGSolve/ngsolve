@@ -440,13 +440,11 @@ namespace ngcomp
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
 
-#ifdef __AVX__
     virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                                    const tAVXd * xref, 
-                                    const tAVXd * x, 
-                                    const tAVXd * dxdxref, 
-                                    tAVXd * values);
-#endif
+                                    const SIMD<double> * xref,
+                                    const SIMD<double> * x,
+                                    const SIMD<double> * dxdxref,
+                                    SIMD<double> * values);
 
     virtual bool GetSegmentValue (int segnr, double xref, double * values);
 
@@ -513,13 +511,11 @@ namespace ngcomp
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
 
-#ifdef __AVX__
     virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                                    const tAVXd * xref, 
-                                    const tAVXd * x, 
-                                    const tAVXd * dxdxref, 
-                                    tAVXd * values);
-#endif
+                                    const SIMD<double> * xref,
+                                    const SIMD<double> * x,
+                                    const SIMD<double> * dxdxref,
+                                    SIMD<double> * values);
 
     virtual bool GetSegmentValue (int segnr, double xref, double * values);
 

@@ -15,25 +15,10 @@
 #include <core/python_ngcore.hpp> // for shallow archive
 #endif // NGS_PYTHON
 
-namespace ngstd
-{
-
-  INLINE Complex IfPos (Complex a, Complex b, Complex c)
-  {
-    return Complex (IfPos (a.real(), b.real(), c.real()),
-                    IfPos (a.real(), b.imag(), c.imag()));
-  }
-  
-  INLINE SIMD<Complex> IfPos (SIMD<Complex> a, SIMD<Complex> b, SIMD<Complex> c)
-  {
-    return SIMD<Complex> (IfPos (a.real(), b.real(), c.real()),
-                          IfPos (a.real(), b.imag(), c.imag()));
-  }
-}
-
 
 namespace ngfem
 {
+  using ngstd::IfPos;
   
   CoefficientFunction :: ~CoefficientFunction ()
   { ; }
@@ -5162,7 +5147,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       
       for (size_t i = 0; i < np; i++)
         for (size_t j = 0; j < dim; j++)
-          values(j,i) = ngstd::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
+          values(j,i) = IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
     template <typename MIR, typename T, ORDERING ORD>
@@ -5179,7 +5164,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       
       for (size_t i = 0; i < np; i++)
         for (size_t j = 0; j < dim; j++)
-          values(j,i) = ngstd::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
+          values(j,i) = IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
     /*

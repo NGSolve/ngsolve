@@ -7,8 +7,12 @@
 /* Date:   06. Nov. 16                                                    */
 /**************************************************************************/
 
-namespace ngstd
+#include <core/simd.hpp>
+
+namespace ngcore
 {
+  using std::tie;
+
   typedef std::complex<double> Complex;
 
   INLINE SIMD<mask64> Mask128 (size_t nr)
@@ -23,7 +27,7 @@ namespace ngstd
     return my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nr),
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
-#elif defined(__SSE__)
+#elif (defined(_M_AMD64) || defined(_M_X64) || defined(__SSE__))
     return _mm_cmpgt_epi32(_mm_set1_epi32(nr),
                            _mm_set_epi32(0, 0, 0, 0));
 #else
@@ -34,7 +38,7 @@ namespace ngstd
 
   
   template <>
-  class SIMD<Complex> : public AlignedAlloc<SIMD<Complex>>
+  class SIMD<Complex>
   {
     SIMD<double> re, im;
   public:
@@ -187,6 +191,17 @@ namespace ngstd
   inline SIMD<Complex> Conj (SIMD<Complex> x)
   { return SIMD<Complex> (x.real(), -x.imag()); } 
 
+  INLINE Complex IfPos (Complex a, Complex b, Complex c)
+  {
+    return Complex (IfPos (a.real(), b.real(), c.real()),
+                    IfPos (a.real(), b.imag(), c.imag()));
+  }
+
+  INLINE SIMD<Complex> IfPos (SIMD<Complex> a, SIMD<Complex> b, SIMD<Complex> c)
+  {
+    return SIMD<Complex> (IfPos (a.real(), b.real(), c.real()),
+                          IfPos (a.real(), b.imag(), c.imag()));
+  }
 }
 
 
