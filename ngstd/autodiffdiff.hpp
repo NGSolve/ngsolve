@@ -661,12 +661,6 @@ INLINE AutoDiffDiff<D,SCAL> ceil (const AutoDiffDiff<D,SCAL> & x)
   return ceil(x.Value());  
 }
 
-}
-
-namespace ngcore
-{
-
-  using ngstd::AutoDiffDiff;
 
 template <int D, typename SCAL, typename TB, typename TC>
 auto IfPos (AutoDiffDiff<D,SCAL> a, TB b, TC c) -> decltype(IfPos (a.Value(), b, c))
@@ -694,10 +688,11 @@ INLINE AutoDiffDiff<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffDiff<D,SCA
 }
 
 
-}
 
 
 //@}
+
+}
 
 
 #endif
