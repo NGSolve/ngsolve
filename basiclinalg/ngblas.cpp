@@ -3792,7 +3792,7 @@ namespace ngbla
     return ssum;
   }
 
-#elif defined __SSE__
+#elif defined NETGEN_ARCH_AMD64
 
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
@@ -3853,21 +3853,20 @@ namespace ngbla
 				double * pb, size_t db,
 				const BitArray & ba)
   {
-    double sum = 0;
     double vhsum[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int i(0);
-    for ( ; i+8 < fa.Size(); i += 8)
+    for ( ; i+8 <= n; i += 8)
       {
 	for (int j = 0; j < 8; j++)
 	  {
-	    double hprod = fa(i+j)*fb(i+j);
+	    double hprod = pa[i+j]*pb[i+j];
 	    if (ba.Test(i+j))
 	      vhsum[j] += hprod;
 	  }
       }
-    for ( ; i < fa.Size(); i++)
+    for ( ; i < n; i++)
       if (ba.Test(i))
-	sum += fa(i)*fb(i);
+	vhsum[0] += pa[i]*pb[i];
     for (int j = 1; j < 8; j++)
       vhsum[0] += vhsum[j];
     return vhsum[0];
