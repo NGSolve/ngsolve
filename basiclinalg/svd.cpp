@@ -176,6 +176,8 @@ namespace ngbla
 
     RegionTimer ruv(tuv);    
 
+    
+    RegionTimer ruv(tuv);        
     ApplyHouseholderReflections (A, Trans(U1));
     if (n > 1)
       ApplyHouseholderReflections (Trans(A.Cols(1,n).Rows(min(n-1,m))), Trans(V1).Rows(1,n));
