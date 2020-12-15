@@ -9,6 +9,7 @@
 
 namespace ngstd
 {
+  using ngcore::IfPos;
 
 // Automatic second differentiation datatype
 

@@ -191,6 +191,17 @@ namespace ngcore
   inline SIMD<Complex> Conj (SIMD<Complex> x)
   { return SIMD<Complex> (x.real(), -x.imag()); } 
 
+  INLINE Complex IfPos (Complex a, Complex b, Complex c)
+  {
+    return Complex (IfPos (a.real(), b.real(), c.real()),
+                    IfPos (a.real(), b.imag(), c.imag()));
+  }
+
+  INLINE SIMD<Complex> IfPos (SIMD<Complex> a, SIMD<Complex> b, SIMD<Complex> c)
+  {
+    return SIMD<Complex> (IfPos (a.real(), b.real(), c.real()),
+                          IfPos (a.real(), b.imag(), c.imag()));
+  }
 }
 
 
