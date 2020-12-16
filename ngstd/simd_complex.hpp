@@ -15,7 +15,7 @@ namespace ngcore
 
   typedef std::complex<double> Complex;
 
-  INLINE SIMD<mask64> Mask128 (size_t nr)
+  INLINE SIMD<mask64> Mask128 (int64_t nr)
   {
 #ifdef __AVX512F__  
 
@@ -31,7 +31,7 @@ namespace ngcore
     return _mm_cmpgt_epi32(_mm_set1_epi32(nr),
                            _mm_set_epi32(0, 0, 0, 0));
 #else
-    return nr <= SIMD<mask64>::Size() ? 2*nr : 0;
+    return 2*nr;
 #endif
   }
 
