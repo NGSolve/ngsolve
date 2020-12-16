@@ -11,11 +11,6 @@ namespace ngbla
 {
 
 
-  // find Householder reflection vector v such that
-  // reflection matrix H_v = I - 2 v v^T / (v^T v)
-  // leads to H_v x = +/- e_0
-  // scaling such that v(0) = 1   
-  extern NGS_DLL_HEADER void CalcHouseholderVector (SliceVector<> x, FlatVector<> v);
 
   
   // find Householder reflection vector v such that
@@ -23,8 +18,18 @@ namespace ngbla
   // leads to H_v x = +/- e_0 ||x||
   // scaling such that v(0) = 1   
   // returns (H_v x)(0) = +/- ||x||
-  double CalcHouseholderVectorInPlace (SliceVector<> x);
+  extern NGS_DLL_HEADER double CalcHouseholderVectorInPlace (SliceVector<> x);
 
+  
+  // find Householder reflection vector v such that
+  // reflection matrix H_v = I - 2 v v^T / (v^T v)
+  // leads to H_v x = +/- e_0
+  // scaling such that v(0) = 1   
+  inline void CalcHouseholderVector (SliceVector<> x, FlatVector<> v)
+  {
+    v = x;
+    CalcHouseholderVectorInPlace (v);
+  }
 
 
   
