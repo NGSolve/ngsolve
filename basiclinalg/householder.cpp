@@ -3,21 +3,23 @@
 namespace ngbla
 {
 
-  
+
+  /*
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
   void CalcHouseholderVector (SliceVector<> x, FlatVector<> v)
   {
-    v = x;
     double norm = L2Norm(x);
     v(0) += (v(0) < 0) ? -norm : norm;
     double v0 = v(0);
     if (v0 != 0)
       v *= 1/v0;
   }
+  */
 
 
+  
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
@@ -26,8 +28,19 @@ namespace ngbla
   double CalcHouseholderVectorInPlace (SliceVector<> x)
   {
     double signed_norm = L2Norm(x);
+
+    // have to treat this case,
+    // since norm can be zero for very-small nonzero x
+    if (signed_norm == 0)  
+      { 
+        x(0) = 1;
+        return 0;
+      }
+    
     if (x(0) > 0) signed_norm *= -1;
+    
     double v0 = x(0) - signed_norm;
+    
     if (v0 != 0)
       x.Range(1,x.Size()) *= 1/v0;
     x(0) = 1;
@@ -46,10 +59,10 @@ namespace ngbla
   template <ORDERING ORD>
   void HouseholderReflection :: TMult (SliceMatrix<double,ORD> m2) const  
   {
-    const char * timername = (ORD == ColMajor)
-      ? "Householder, colmajor" : "Householder, rowmajor";    
-    static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
-    tcolmajor.AddFlops (2*v.Size()*m2.Width());
+    // const char * timername = (ORD == ColMajor)
+    // ? "Householder, colmajor" : "Householder, rowmajor";    
+    // static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
+    // tcolmajor.AddFlops (2*v.Size()*m2.Width());
     
     constexpr size_t bs = 96;
     double mem[bs];
@@ -108,10 +121,10 @@ namespace ngbla
   template <ORDERING OMV> template <ORDERING ORD>
   void MultiHouseholderReflection<OMV> :: TMult (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
-    const char * timername = (ORD == ColMajor)
-      ? "multiHouseholder, colmajor" : "multiHouseholder, rowmajor";
-    static Timer t(timername); RegionTimer reg(t);
-    t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
+    // const char * timername = (ORD == ColMajor)
+    // ? "multiHouseholder, colmajor" : "multiHouseholder, rowmajor";
+    // static Timer t(timername); RegionTimer reg(t);
+    // t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
 
     /*
     // naive version
@@ -158,10 +171,10 @@ namespace ngbla
   template <ORDERING OMV> template <ORDERING ORD>
   void MultiHouseholderReflection<OMV> :: TMultTrans (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
-    const char * timername = (ORD == ColMajor)
-      ? "multiHouseholder trans, colmajor" : "multiHouseholder trans, rowmajor";
-    static Timer t(timername); RegionTimer reg(t);
-    t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
+    // const char * timername = (ORD == ColMajor)
+    // ? "multiHouseholder trans, colmajor" : "multiHouseholder trans, rowmajor";
+    // static Timer t(timername); RegionTimer reg(t);
+    // t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
 
     constexpr size_t bs = 96;
     for (size_t i = 0; i < m2.Width(); i += bs)
