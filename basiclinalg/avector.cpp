@@ -25,6 +25,7 @@ namespace ngstd
 }
   
 
+#ifdef WIN32
 #ifndef AVX_OPERATORS_DEFINED
 #define AVX_OPERATORS_DEFINED
 INLINE __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
@@ -53,6 +54,7 @@ INLINE __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
 INLINE __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
 INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
 #endif // AVX_OPERATORS_DEFINED
+#endif // WIN32
 
 
 
