@@ -1899,6 +1899,18 @@ export class Scene {
       this.animate();
     }
     this.last_frame_time = now;
-    this.handleEvent('beforerender', [this, frame_time]);
+    this.handleEvent('afterrender', [this, frame_time]);
+  }
+
+  renderToImage()
+    {
+        var img = new Image();
+        var toimage =  () => {
+            img.src = this.renderer.domElement.toDataURL("image/png");
+        };
+        this.on("afterrender", toimage);
+        this.render();
+        this.event_handlers["afterrender"].pop(toimage);
+        return img;
   }
 }
