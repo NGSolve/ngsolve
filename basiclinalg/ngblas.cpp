@@ -85,7 +85,7 @@ namespace ngbla
         auto ps2 = ps;
         auto pd2 = pd;
         
-        size_t js = 0, jd = 0;
+        size_t js = 0; 
         for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
           *pd2 = SIMD<double>(ps2);
         SIMD<double>(ps2, mask).Store((double*) (pd2), mask);

@@ -3,21 +3,23 @@
 namespace ngbla
 {
 
-  
+
+  /*
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
   void CalcHouseholderVector (SliceVector<> x, FlatVector<> v)
   {
-    v = x;
     double norm = L2Norm(x);
     v(0) += (v(0) < 0) ? -norm : norm;
     double v0 = v(0);
     if (v0 != 0)
       v *= 1/v0;
   }
+  */
 
 
+  
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
@@ -26,17 +28,21 @@ namespace ngbla
   double CalcHouseholderVectorInPlace (SliceVector<> x)
   {
     double signed_norm = L2Norm(x);
+
+    // have to treat this case,
+    // since norm can be zero for very-small nonzero x
+    if (signed_norm == 0)  
+      { 
+        x(0) = 1;
+        return 0;
+      }
+    
     if (x(0) > 0) signed_norm *= -1;
+    
     double v0 = x(0) - signed_norm;
-    // cout << "refection in place, norm = " << signed_norm << ", v0 = " << v0 << endl;
-    // if (fabs(v0) > 1e-100)
+    
     if (v0 != 0)
       x.Range(1,x.Size()) *= 1/v0;
-    else
-      {  // with very small numbers it can be Norm(x)=0, but x != 0
-        x = 0.0;
-        signed_norm = 0.0;
-      }
     x(0) = 1;
     return signed_norm;
   }
