@@ -1603,7 +1603,7 @@ namespace ngcore
   using ngbla::FlatVector;
   
   template<>
-  class SIMD<ngfem::IntegrationPoint>
+  class alignas(sizeof(SIMD<double>)) SIMD<ngfem::IntegrationPoint>
   {
     SIMD<double> x[3], weight;
     int facetnr = -1;
