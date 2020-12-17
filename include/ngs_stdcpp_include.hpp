@@ -137,7 +137,6 @@
 #endif
 
 
-#include <immintrin.h>
 
 
 #ifndef __assume

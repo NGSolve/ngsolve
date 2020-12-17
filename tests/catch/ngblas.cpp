@@ -274,12 +274,21 @@ void TestSIMD()
         }
     }
 
-    double a[N], b[N];
+    double a[N], b[N], c[N], d[N];
+    double sum_a=0.0, sum_b=0.0, sum_c=0.0, sum_d=0.0;
     for (auto i : Range(N))
       {
         a[i] = i;
         b[i] = i+1;
+        c[i] = 10+i;
+        d[i] = 100+i+1;
+        sum_a += a[i];
+        sum_b += b[i];
+        sum_c += c[i];
+        sum_d += d[i];
       }
+    SIMD<double,N> sa{a}, sb{b}, sc{c}, sd{d};
+
     SECTION ("+") {
         SIMD<double,N> simd = SIMD<double,N>(a) + SIMD<double,N>(b);
         for (auto i : Range(N))
@@ -299,6 +308,24 @@ void TestSIMD()
         SIMD<double,N> simd = SIMD<double,N>(a) / SIMD<double,N>(b);
         for (auto i : Range(N))
             CHECK(simd[i] == a[i]/b[i]);
+    }
+
+    SECTION ("HSum1") {
+        CHECK(HSum(sa) == Approx(sum_a));
+    }
+
+    SECTION ("HSum2") {
+        auto sum2 = HSum(sa, sb);
+        CHECK(sum2[0] == Approx(sum_a));
+        CHECK(sum2[1] == Approx(sum_b));
+    }
+
+    SECTION ("HSum4") {
+        auto sum4 = HSum(sa, sb, sc, sd);
+        CHECK(sum4[0] == Approx(sum_a));
+        CHECK(sum4[1] == Approx(sum_b));
+        CHECK(sum4[2] == Approx(sum_c));
+        CHECK(sum4[3] == Approx(sum_d));
     }
 
 }

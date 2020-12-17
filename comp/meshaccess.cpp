@@ -2497,13 +2497,13 @@ namespace ngcomp
   atomic<size_t> ProgressOutput :: cnt;
   thread_local size_t ProgressOutput :: thd_cnt = 0;
   // thread_local double ProgressOutput :: thd_prev_time = WallTime();
-  thread_local size_t ProgressOutput :: thd_prev_time = __rdtsc();
-  size_t tsc_wait = 0.05*2.7e9; // rough 
+  thread_local size_t ProgressOutput :: thd_prev_time = GetTimeCounter();
+  size_t tsc_wait = 0.05*(1.0/seconds_per_tick);
   void ProgressOutput :: Update ()
   {
     thd_cnt++;
     // double time = WallTime();
-    size_t time = __rdtsc();
+    size_t time = GetTimeCounter();
     // if (time > thd_prev_time+0.05)
     if (time > thd_prev_time+tsc_wait)
       {
