@@ -3,7 +3,7 @@
 
 // optimized matrix kernels
 
-#ifdef __clang__
+#if defined(__clang__ ) && defined(NETGEN_ARCH_AMD64)
 #define REGCALL __regcall
 #else
 #define REGCALL
