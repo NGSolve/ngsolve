@@ -31,8 +31,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(ngbla PUBLIC -Wno-undefined-var-template)
 endif()
 
-target_link_libraries(ngbla PUBLIC ngstd ${MPI_CXX_LIBRARIES} PRIVATE netgen_python)
-target_link_libraries(ngbla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries(ngbla PUBLIC ngstd ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>")
+target_link_libraries(ngbla ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
 install( TARGETS ngbla ${ngs_install_dir} )
 
