@@ -2283,13 +2283,7 @@ namespace ngfem
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ()
     {
-#ifdef NETGEN_ARCH_AMD64
-      if (mem_to_delete)
-          _mm_free(mem_to_delete);
-#else // NETGEN_ARCH_AMD64
-      if (mem_to_delete)
-          free(mem_to_delete);
-#endif // NETGEN_ARCH_AMD64
+      delete [] mem_to_delete;
       mem_to_delete = nullptr;
     }
 

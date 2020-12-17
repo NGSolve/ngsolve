@@ -3276,15 +3276,7 @@ namespace ngfem
   {
     nip = ir.GetNIP();
     this->size = (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size();
-    
-#ifdef NETGEN_ARCH_AMD64
-    this -> mem_to_delete = (SIMD<IntegrationPoint>*)
-      _mm_malloc(this->size*sizeof(SIMD<IntegrationPoint>), SIMD<double>::Size()*sizeof(double));
-#else // NETGEN_ARCH_AMD64
-    this -> mem_to_delete = (SIMD<IntegrationPoint>*)
-      malloc(this->size*sizeof(SIMD<IntegrationPoint>));
-#endif // NETGEN_ARCH_AMD64
-
+    this -> mem_to_delete = new SIMD<IntegrationPoint>[this->size];
     this->data = this->mem_to_delete;
     
     dimension = ir.Dim();
