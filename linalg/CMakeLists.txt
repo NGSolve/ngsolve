@@ -21,9 +21,9 @@ else(UMFPACK_STATIC)
     target_link_libraries(ngla PRIVATE ${UMFPACK_LIBRARIES})
 endif()
 
-target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
-target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE netgen_python
+target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>"
 ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
 install( TARGETS ngla ${ngs_install_dir} )
 if(USE_MUMPS)

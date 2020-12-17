@@ -202,10 +202,13 @@ if (NETGEN_USE_MPI)
 endif (NETGEN_USE_MPI)
 
 #######################################################################
+add_library(ngs_lapack INTERFACE )
+install( TARGETS ngs_lapack ${ngs_install_dir} )
 if (USE_LAPACK)
     if(NOT LAPACK_LIBRARIES)
       find_package(LAPACK REQUIRED)
     endif()
+    target_link_libraries(ngs_lapack INTERFACE "${LAPACK_LIBRARIES}")
 endif (USE_LAPACK)
 
 #######################################################################
@@ -228,10 +231,9 @@ list (APPEND NGSOLVE_COMPILE_OPTIONS -DMAX_SYS_DIM=${MAX_SYS_DIM})
 #######################################################################
 if (USE_MKL)
     find_package(MKL REQUIRED)
-    include_directories(${MKL_INCLUDE_DIRS})
+    target_include_directories(ngs_lapack INTERFACE "${MKL_INCLUDE_DIRS}")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE USE_MKL)
-
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
       list(APPEND NGSOLVE_COMPILE_DEFINITIONS MKL_ILP64)
@@ -239,7 +241,6 @@ if (USE_MKL)
     if(MKL_STATIC AND WIN32)
       install(FILES ${MKL_RTL_LIBRARY_BIN} DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
     endif()
-
 endif (USE_MKL)
 
 if(MKL_STATIC)
