@@ -12,8 +12,8 @@ add_library( ngslib SHARED ngspy.cpp )
 
 set_target_properties(ngslib PROPERTIES SUFFIX ".so")
 set_target_properties(ngslib PROPERTIES PREFIX "")
-target_link_libraries(ngslib PRIVATE netgen_python)
-target_link_libraries(ngslib ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries(ngslib PRIVATE "$<BUILD_INTERFACE:netgen_python>")
+target_link_libraries(ngslib ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
 if(NETGEN_USE_GUI AND WIN32)
     target_link_libraries(ngslib PUBLIC ngsolve)
@@ -29,8 +29,8 @@ set_target_properties(ngslib PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../
 install(TARGETS ngslib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
-target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${VTUNE_LIB} ${PARDISO_LIBS})
-target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${VTUNE_LIB} ${PARDISO_LIBS})
+target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS solve ${ngs_install_dir} )
 
 if (NETGEN_USE_GUI)
@@ -54,8 +54,8 @@ else (NETGEN_USE_GUI)
 endif (NETGEN_USE_GUI)
 
 if (NETGEN_USE_GUI OR WIN32)
-    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE netgen_python ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
-    target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+  target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
+    target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
     target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
     install( TARGETS ngsolve ${ngs_install_dir} )
 endif()
