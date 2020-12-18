@@ -183,6 +183,11 @@ if(APPLE)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS MSG_NOSIGNAL=0)
 endif(APPLE)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -Wno-undefined-var-template)
+endif()
+
+
 #######################################################################
 if (NETGEN_USE_GUI)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS TCL)
