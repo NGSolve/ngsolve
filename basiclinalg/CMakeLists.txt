@@ -2,11 +2,14 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kernel_generator generate_mat_kernels.cpp)
 
-target_link_libraries(kernel_generator ngcore)
+target_link_libraries(kernel_generator PUBLIC ngcore)
 
 target_compile_definitions(kernel_generator PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(kernel_generator PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+if(NETGEN_BUILD_FOR_CONDA)
+  target_link_libraries(kernel_generator PUBLIC ${NETGEN_PYTHON_LIBRARIES})
+endif()
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
   COMMAND kernel_generator
