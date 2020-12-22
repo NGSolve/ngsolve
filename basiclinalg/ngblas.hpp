@@ -99,19 +99,47 @@ namespace ngbla
                                                         BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
 
   typedef void REGCALL (*pmultAB)(size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
-  typedef void REGCALL (*pmultABW)(size_t, size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);  
-  extern NGS_DLL_HEADER pmultAB dispatch_multAB[13];
+  typedef void REGCALL (*pmultABW)(size_t, size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
   
+  extern NGS_DLL_HEADER pmultABW dispatch_multAB[14];
   inline void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
     size_t wa = a.Width();
-    if (wa <= 12)
-      (*dispatch_multAB[wa])  (a.Height(), b.Width(), a, b, c);
-    else
-      MultMatMat_intern (a.Height(), a.Width(), b.Width(), a, b, c);    
+    if (wa >= std::size(dispatch_multAB))
+      wa = std::size(dispatch_multAB)-1;
+    (*dispatch_multAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
+  
+  extern NGS_DLL_HEADER pmultABW dispatch_minusmultAB[14];
+  inline void MinusMultAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    if (a.Height() == 0 || b.Width() == 0) return;
+    size_t wa = a.Width();
+    if (wa >= std::size(dispatch_minusmultAB))
+      wa = std::size(dispatch_minusmultAB)-1;
+    (*dispatch_minusmultAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
+  
+  extern NGS_DLL_HEADER pmultABW dispatch_addAB[14];
+  inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    if (a.Height() == 0 || b.Width() == 0) return;
+    size_t wa = a.Width();
+    if (wa >= std::size(dispatch_addAB))
+      wa = std::size(dispatch_addAB)-1;
+    (*dispatch_addAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
+  extern NGS_DLL_HEADER pmultABW dispatch_subAB[14];
+  inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    if (a.Height() == 0 || b.Width() == 0) return;
+    size_t wa = a.Width();
+    if (wa >= std::size(dispatch_subAB))
+      wa = std::size(dispatch_subAB)-1;
+    (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
 
   
   extern NGS_DLL_HEADER void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
@@ -123,49 +151,8 @@ namespace ngbla
   }
 
 
-  extern NGS_DLL_HEADER void REGCALL MinusMultAB_intern (size_t ha, size_t wa, size_t wb,
-                                                         BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
-  inline void MinusMultAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-  {
-    MinusMultAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
-  }
 
   
-  extern NGS_DLL_HEADER void REGCALL AddAB_intern (size_t ha, size_t wa, size_t wb,
-                                    BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
-  extern NGS_DLL_HEADER pmultAB dispatch_addAB[13];
-
-  inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-  {
-    if (a.Height() == 0 || b.Width() == 0) return;    
-    size_t wa = a.Width();
-    if (wa <= 12)
-      (*dispatch_addAB[wa])  (a.Height(), b.Width(), a, b, c);
-    else
-      AddAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
-  }
-
-  extern NGS_DLL_HEADER void REGCALL SubAB_intern (size_t ha, size_t wa, size_t wb,
-                                                   BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
-  extern NGS_DLL_HEADER pmultABW dispatch_subAB[13];
-  inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-  {
-    if (a.Height() == 0 || b.Width() == 0) return;
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_subAB))
-      wa = std::size(dispatch_subAB)-1;
-    (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
-    /*
-    if (wa <= 12)
-      (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
-    else
-      SubAB_intern (a.Height(), a.Width(), b.Width(), a, b, c);
-    */
-  }
-
-
-  
-
 
   template <bool ADD, bool POS>
   struct NGS_DLL_HEADER dispatch_atb { static pmultABW ptrs[14]; };

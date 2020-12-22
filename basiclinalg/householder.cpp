@@ -82,6 +82,49 @@ namespace ngbla
   template void HouseholderReflection :: TMult (SliceMatrix<double,RowMajor> m2) const;
   template void HouseholderReflection :: TMult (SliceMatrix<double,ColMajor> m2) const;
 
+
+
+
+  HouseholderReflection1 :: HouseholderReflection1 (SliceVector<> av)
+    : v(av)
+  {
+    factor = 1+L2Norm2(v.Range(1, v.Size()));
+    factor = 2/factor;
+  }
+
+  
+  template <ORDERING ORD>
+  void HouseholderReflection1 :: TMult (SliceMatrix<double,ORD> m2) const  
+  {
+    // const char * timername = (ORD == ColMajor)
+    // ? "Householder, colmajor" : "Householder, rowmajor";    
+    // static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
+    // tcolmajor.AddFlops (2*v.Size()*m2.Width());
+    
+    constexpr size_t bs = 96;
+    double mem[bs];
+    size_t m = v.Size();
+    
+    for (size_t i = 0; i < m2.Width(); i += bs)
+      {
+        size_t bsi = min(bs, m2.Width()-i);
+        FlatVector<> hv(bsi, &mem[0]);
+        auto colsm2 = m2.Cols(i, i+bsi);
+
+        hv = colsm2.Row(0);
+        hv = Trans(colsm2).Cols(1,m) * v.Range(1,m);
+        hv *= factor;
+        // colsm2 -= v * Trans(hv);
+        colsm2.Row(0) -= hv;
+        colsm2.Rows(1,m) -= v.Range(1,m) * Trans(hv);
+      }
+  }
+
+  template void HouseholderReflection1 :: TMult (SliceMatrix<double,RowMajor> m2) const;
+  template void HouseholderReflection1 :: TMult (SliceMatrix<double,ColMajor> m2) const;
+
+
+
   
 
   // H = H_{m-1} ... H_1 H_0 = I - V^T T V
@@ -91,7 +134,7 @@ namespace ngbla
   MultiHouseholderReflection<OMV> :: MultiHouseholderReflection (SliceMatrix<double,OMV> amv)
     : mv(amv), T(amv.Height())
   {
-    // static Timer t("multiHouseholder, ctor"); RegionTimer reg(t);
+    static Timer t("multiHouseholder, ctor"); RegionTimer reg(t);
     size_t m = mv.Height();
 
     //
@@ -121,10 +164,11 @@ namespace ngbla
   template <ORDERING OMV> template <ORDERING ORD>
   void MultiHouseholderReflection<OMV> :: TMult (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
-    // const char * timername = (ORD == ColMajor)
-    // ? "multiHouseholder, colmajor" : "multiHouseholder, rowmajor";
-    // static Timer t(timername); RegionTimer reg(t);
-    // t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
+    const char * timername = (OMV == ColMajor)
+      ? ((ORD == ColMajor) ? "multiHouseholder, H..colmajor, M..colmajor" : "multiHouseholder, H..colmajor, M..rowmajor") 
+      : ((ORD == ColMajor) ? "multiHouseholder, H..rowmajor, M..colmajor" : "multiHouseholder, H..rowmajor, M..rowmajor");
+    static Timer t(timername); RegionTimer reg(t);
+    t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
 
     /*
     // naive version
@@ -134,30 +178,31 @@ namespace ngbla
     */
 
     constexpr size_t bs = 96;
+    ArrayMem<double,48*96> mem(bs*mv.Height());
     for (size_t i = 0; i < m2.Width(); i += bs)
       {
         size_t bsi = min(bs, m2.Width()-i);
         auto colsm2 = m2.Cols(i, i+bsi);
         
-        // Matrix<> tmp = mv * colsm2;
-        Matrix<double,ORD> tmp(mv.Height(), bsi);
+        FlatMatrix<double,ORD> tmp(mv.Height(), bsi, &mem[0]);
         {
-          // static Timer t(timername+string("1")); RegionTimer reg(t);
+          static Timer t(timername+string("1")); RegionTimer reg(t);
           GeneralizedTriangularMult<UpperRight,Normalized> (mv, colsm2, tmp);
         }
         {
-          // static Timer t(timername+string("2")); RegionTimer reg(t);        
+          static Timer t(timername+string("2")); RegionTimer reg(t);        
           TriangularMult<LowerLeft,NonNormalized> (T, tmp);
         }
         // colsm2 -= Trans(mv)*tmp;
         IntRange r1(0, mv.Height());
         IntRange r2(mv.Height(), colsm2.Height());
         {
-          // static Timer t(timername+string("3")); RegionTimer reg(t);        
+          static Timer t(timername+string("3")); RegionTimer reg(t);
+          t.AddFlops(r2.Size()*colsm2.Width()*tmp.Height());
           colsm2.Rows(r2) -= Trans(mv.Cols(r2)) * tmp;
         }
         {
-          // static Timer t(timername+string("4")); RegionTimer reg(t);        
+          static Timer t(timername+string("4")); RegionTimer reg(t);        
           TriangularMult<LowerLeft,Normalized> (Trans(mv.Cols(r1)), tmp);
         }
         colsm2.Rows(r1) -= tmp;

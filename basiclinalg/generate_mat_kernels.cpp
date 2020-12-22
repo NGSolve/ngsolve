@@ -26,6 +26,11 @@ string ToString (OP op)
   return "none";  // make the compile happy
 }
 
+string FMAOp (OP op)
+{
+  return (op == SET || op == ADD) ? "FMAasm" : "FNMAasm";
+}
+
 /*
   C = A * B
   C += A * B
@@ -77,7 +82,8 @@ void GenerateMultAB (ostream & out, int h, int w, OP op, bool aligned_b)
         if (op == ADD || op == SET)
           out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
         else
-          out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;
+          out << "FNMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;          
+      // out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;
     }
   out << "}" << endl;
 
@@ -155,7 +161,8 @@ void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
         if (op == ADD || op == SET)
           out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
         else
-          out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;          
+          out << "FNMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;          
+      // out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;          
     }
   out << "}" << endl;
 
@@ -209,7 +216,8 @@ void GenerateMultABMask (ostream & out, int h, OP op, bool aligned_b)
       if (op == SET || op == ADD)
         out << "FMAasm(a"<<i<<",b,sum" << i << ");" << endl;
       else
-        out << "sum" << i << " -= a" << i << "*b;" << endl;
+        out << "FNMAasm(a"<<i<<",b,sum" << i << ");" << endl;        
+      // out << "sum" << i << " -= a" << i << "*b;" << endl;
     }
   out << "}" << endl;
 
@@ -1142,9 +1150,11 @@ void GenerateShortSum (ostream & out, int wa, OP op)
     
   for (int k = 0; k < wa; k++)
     if (op == SET || op == ADD)
-      out << "sum += SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+      // out << "sum += SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+      out << "FMAasm (b" << k << ",SIMD<double>(pa2[" << k << "]), sum" <<");\n";      
     else
-      out << "sum -= SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+      // out << "sum -= SIMD<double>(pa2[" << k << "]) * b"<< k << ";\n";
+      out << "FNMAasm (b" << k << ",SIMD<double>(pa2[" << k << "]), sum" <<");\n";        
   out << "sum.Store(pc2);\n"
       << "} }\n";
 
@@ -1214,12 +1224,16 @@ void GenerateShortSum (ostream & out, int wa, OP op)
     }
   for (int k = 0; k < wa; k++)
     if (op == SET || op == ADD)
+      out << FMAOp(op) << "(SIMD<double>(pa2[" << k << "])," << "b" << k << "0, sum0);\n"
+          << FMAOp(op) << "(SIMD<double>(pa2[" << k << "])," << "b" << k << "1, sum1);\n";
+
+      /*
       out << "sum0 += SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
           << "sum1 += SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
     else
       out << "sum0 -= SIMD<double>(pa2[" << k << "]) * b"<< k << "0;\n"
           << "sum1 -= SIMD<double>(pa2[" << k << "]) * b"<< k << "1;\n";
-
+      */
   out << "sum0.Store(pc2);\n"
       << "sum1.Store(pc2+SW);\n"
       << "} }\n";
@@ -1405,10 +1419,10 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
       << "{\n";
   out << "SIMD<double> bjk(pb2);\n";
   for (int k = 0; k < wa; k++)
-    if (op == ADD || op == SET)    
-      out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
-    else
-      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
+    out << FMAOp(op) << "(bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+    // else
+      // out << "FNMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";      
+  // out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
   out << "}\n";
   out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
@@ -1437,12 +1451,14 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
       << "{\n"
       << "SIMD<double> bjk(pb2, mask);\n";    
   for (int k = 0; k < wa; k++)
+    out << FMAOp(op) << "(bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";    
     // out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
+/*
     if (op == ADD || op == SET)    
       out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
     else
-      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
-  
+      out << "FNMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";      
+  */
   out << "}\n";
   out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
@@ -1504,9 +1520,9 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
       }
     else
       {
-        out << "sum" << k << "0 -= bjk0 * SIMD<double>(pa2[" << k << "]);\n";
-        out << "sum" << k << "1 -= bjk1 * SIMD<double>(pa2[" << k << "]);\n";
-        out << "sum" << k << "2 -= bjk2 * SIMD<double>(pa2[" << k << "]);\n";
+        out << "FNMAasm (bjk0,SIMD<double>(pa2[" << k << "]), sum" << k <<"0);\n";
+        out << "FNMAasm (bjk1,SIMD<double>(pa2[" << k << "]), sum" << k <<"1);\n";
+        out << "FNMAasm (bjk2,SIMD<double>(pa2[" << k << "]), sum" << k <<"2);\n";
       }
   out << "}\n";
   out << "pc2 = pc;\n";
@@ -1541,7 +1557,7 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
     if (op == ADD || op == SET)    
       out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
     else
-      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
+      out << "FNMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
   out << "}\n";
   out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
@@ -1581,7 +1597,7 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
     if (op == ADD || op == SET)    
       out << "FMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";
     else
-      out << "sum" << k << " -= bjk * SIMD<double>(pa2[" << k << "]);\n";
+      out << "FNMAasm (bjk,SIMD<double>(pa2[" << k << "]), sum" << k <<");\n";      
   
   out << "}\n";
   out << "pc2 = pc;\n";
@@ -2326,13 +2342,8 @@ int main ()
       << "(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);\n";
 
   for (int i = 0; i <= 12; i++)
-    {
-      GenerateShortSum (out, i, SET);  
-      GenerateShortSum (out, i, ADD);  
-      GenerateShortSum (out, i, SUB);  
-    }
-
-
+    for (auto op : { SET, SETNEG, ADD, SUB })
+      GenerateShortSum (out, i, op);  
 
 
   out << "// C = A^t * B,  with short inner loop\n"

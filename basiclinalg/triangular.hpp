@@ -291,7 +291,10 @@ namespace ngbla
       auto [T1,T2] = T.SplitCols(T.Height());
 
       Y = X1;
+      static Timer t("generalizedtrig, trig part");
+      t.Start();
       TriangularMult<SIDE, NORM> (T1, Y);
+      t.Stop();
       Y += T2 * X2;
     }
   }
