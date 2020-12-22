@@ -1170,7 +1170,7 @@ namespace ngbla
         MultAtBSmallWA2<WA> (ha, wb, a, b, c);
         return;
       }
-    MatKernelAtB_SmallWA<WA,OP> (ha, wb, &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+    MatKernelAtB_SmallWA<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
   }
 
   // template <> pmultABW dispatch_atb<false,true>[];
@@ -1258,10 +1258,10 @@ namespace ngbla
   template <int SX, OPERATION OP>
   void REGCALL MultABtSmallWA (size_t ah, size_t bh, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    double * pa = &a(0);
-    double * pc = &c(0);
+    double * pa = a.Data();
+    double * pc = c.Data();
     for (size_t i = 0; i < ah; i++, pa += a.Dist(), pc += c.Dist())
-      KernelMatVec<SX,OP> (bh, &b(0), b.Dist(), pa, pc);
+      KernelMatVec<SX,OP> (bh, b.Data(), b.Dist(), pa, pc);
   }
 
   /*
