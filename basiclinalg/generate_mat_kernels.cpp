@@ -1223,7 +1223,6 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       out << "SIMD<double> sum1(pc2+SW);\n";      
     }
   for (int k = 0; k < wa; k++)
-    if (op == SET || op == ADD)
       out << FMAOp(op) << "(SIMD<double>(pa2[" << k << "])," << "b" << k << "0, sum0);\n"
           << FMAOp(op) << "(SIMD<double>(pa2[" << k << "])," << "b" << k << "1, sum1);\n";
 
