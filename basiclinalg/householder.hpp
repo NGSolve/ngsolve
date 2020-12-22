@@ -46,6 +46,21 @@ namespace ngbla
     void Mult (SliceMatrix<double,ColMajor> m2) const { TMult(m2); }
   };
 
+  // vector v is scaled such that v(0) = 1, but this value is not stores
+  class NGS_DLL_HEADER HouseholderReflection1
+  {
+    SliceVector<> v;
+    double factor;   // 2 / (v^T v)
+  public:
+    HouseholderReflection1 (SliceVector<> av);
+
+    template <ORDERING ORD>
+    void TMult (SliceMatrix<double,ORD> m2) const; 
+    void Mult (SliceMatrix<double,RowMajor> m2) const { TMult(m2); }
+    void Mult (SliceMatrix<double,ColMajor> m2) const { TMult(m2); }
+  };
+
+  
   // H = H_{m-1} ... H_1 H_0 = I - V^T T V
   template <ORDERING OMV>
   class MultiHouseholderReflection

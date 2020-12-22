@@ -801,7 +801,7 @@ namespace ngbla
   REGCALL void MultMatMat_intern2_ShortSum (size_t ha, size_t wb,
                                            BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    if (WA <= 6) //   && OP==SET)
+    if (WA <= 6) 
       MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
     else
       MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
@@ -811,73 +811,11 @@ namespace ngbla
   REGCALL void MultMatMat_intern2_ShortSumW (size_t ha, size_t wa, size_t wb,
                                              BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    if (WA <= 6) //   && OP==SET)
+    if (WA <= 6) 
       MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
     else
       MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
   }
-
-
-  
-  pmultAB dispatch_multAB[13] =
-    { &MultMatMat_intern2_ShortSum<0,SET>,
-      &MultMatMat_intern2_ShortSum<1,SET>,
-      &MultMatMat_intern2_ShortSum<2,SET>,
-      &MultMatMat_intern2_ShortSum<3,SET>,
-      &MultMatMat_intern2_ShortSum<4,SET>,
-      &MultMatMat_intern2_ShortSum<5,SET>,
-      &MultMatMat_intern2_ShortSum<6,SET>,
-      &MultMatMat_intern2_ShortSum<7,SET>,
-      &MultMatMat_intern2_ShortSum<8,SET>,
-      &MultMatMat_intern2_ShortSum<9,SET>,
-      &MultMatMat_intern2_ShortSum<10,SET>,
-      &MultMatMat_intern2_ShortSum<11,SET>,
-      &MultMatMat_intern2_ShortSum<12,SET>
-    };
-
-  pmultAB dispatch_addAB[13] =
-    { &MultMatMat_intern2_ShortSum<0,ADD>,
-      &MultMatMat_intern2_ShortSum<1,ADD>,
-      &MultMatMat_intern2_ShortSum<2,ADD>,
-      &MultMatMat_intern2_ShortSum<3,ADD>,
-      &MultMatMat_intern2_ShortSum<4,ADD>,
-      &MultMatMat_intern2_ShortSum<5,ADD>,
-      &MultMatMat_intern2_ShortSum<6,ADD>,
-      &MultMatMat_intern2_ShortSum<7,ADD>,
-      &MultMatMat_intern2_ShortSum<8,ADD>,
-      &MultMatMat_intern2_ShortSum<9,ADD>,
-      &MultMatMat_intern2_ShortSum<10,ADD>,
-      &MultMatMat_intern2_ShortSum<11,ADD>,
-      &MultMatMat_intern2_ShortSum<12,ADD>
-    };
-
-  /*
-  pmultABW dispatch_subAB[13] =
-    { &MultMatMat_intern2_ShortSumW<0,SUB>,
-      &MultMatMat_intern2_ShortSumW<1,SUB>,
-      &MultMatMat_intern2_ShortSumW<2,SUB>,
-      &MultMatMat_intern2_ShortSumW<3,SUB>,
-      &MultMatMat_intern2_ShortSumW<4,SUB>,
-      &MultMatMat_intern2_ShortSumW<5,SUB>,
-      &MultMatMat_intern2_ShortSumW<6,SUB>,
-      &MultMatMat_intern2_ShortSumW<7,SUB>,
-      &MultMatMat_intern2_ShortSumW<8,SUB>,
-      &MultMatMat_intern2_ShortSumW<9,SUB>,
-      &MultMatMat_intern2_ShortSumW<10,SUB>,
-      &MultMatMat_intern2_ShortSumW<11,SUB>,
-      // &MultMatMat_intern2_ShortSumW<12,SUB>
-      &SubAB_intern
-    };
-  */
-  
-  pmultABW dispatch_subAB[];
-  auto init_subAB = [] ()
-  {
-    Iterate<std::size(dispatch_subAB)-1> ([&] (auto i)
-    { dispatch_subAB[i] = &MultMatMat_intern2_ShortSumW<i,SUB>; });
-    dispatch_subAB[std::size(dispatch_subAB)-1] = &SubAB_intern;
-    return 1;
-  }();
 
 
 
@@ -908,11 +846,9 @@ namespace ngbla
       }
   }
 
-  void MinusMultAB_intern (size_t ha, size_t wa, size_t wb,
-                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  void REGCALL MinusMultAB_intern (size_t ha, size_t wa, size_t wb,
+                                   BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    if (ha == 0 || wb == 0) return;  // should be moved outside
-    
     constexpr size_t BBH = 128;
     if (wa <= BBH)
       {
@@ -957,22 +893,9 @@ namespace ngbla
   }
   */
   
-  void AddAB_intern (size_t ha, size_t wa, size_t wb,
-                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  void REGCALL AddAB_intern (size_t ha, size_t wa, size_t wb,
+                             BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    switch (wa)
-      {
-      case 0: return;
-      case 1: MultMatMat_intern2_ShortSum<1,ADD> (ha, wb, a, b, c); return;
-      case 2: MultMatMat_intern2_ShortSum<2,ADD> (ha, wb, a, b, c); return;
-      case 3: MultMatMat_intern2_ShortSum<3,ADD> (ha, wb, a, b, c); return;
-      case 4: MultMatMat_intern2_ShortSum<4,ADD> (ha, wb, a, b, c); return;
-      case 5: MultMatMat_intern2_ShortSum<5,ADD> (ha, wb, a, b, c); return;
-      case 6: MultMatMat_intern2_ShortSum<6,ADD> (ha, wb, a, b, c); return;
-      default:
-        ;
-      }
-    
     constexpr size_t BBH = 128;
     if (wa <= BBH && wb < 3*SIMD<double>::Size())
       MultMatMat_intern2_SlimB<BBH,ADD> (ha, wa, wb, a, b, c);
@@ -984,8 +907,8 @@ namespace ngbla
         }
   }
 
-  void SubAB_intern (size_t ha, size_t wa, size_t wb,
-                     BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  void REGCALL SubAB_intern (size_t ha, size_t wa, size_t wb,
+                             BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
     constexpr size_t BBH = 128;
     if (wa <= BBH && wb < 3*SIMD<double>::Size())
@@ -999,6 +922,46 @@ namespace ngbla
   }
 
 
+  pmultABW dispatch_multAB[];
+  auto init_multAB = [] ()
+  {
+    Iterate<std::size(dispatch_multAB)-1> ([&] (auto i)
+    { dispatch_multAB[i] = &MultMatMat_intern2_ShortSumW<i,SET>; });
+    // Iterate<std::size(dispatch_multAB)-1> ([&] (auto i)
+    // { dispatch_multAB[i] = &MultMatMat_intern; });
+    dispatch_multAB[std::size(dispatch_multAB)-1] = &MultMatMat_intern;
+    return 1;
+  }();
+
+  pmultABW dispatch_minusmultAB[];
+  auto init_minusmultAB = [] ()
+  {
+    Iterate<std::size(dispatch_minusmultAB)-1> ([&] (auto i)
+    { dispatch_minusmultAB[i] = &MultMatMat_intern2_ShortSumW<i,SETNEG>; });
+    dispatch_minusmultAB[std::size(dispatch_minusmultAB)-1] = &MinusMultAB_intern;
+    return 1;
+  }();
+
+  pmultABW dispatch_addAB[];
+  auto init_addAB = [] ()
+  {
+    Iterate<std::size(dispatch_addAB)-1> ([&] (auto i)
+    { dispatch_addAB[i] = &MultMatMat_intern2_ShortSumW<i,ADD>; });
+    dispatch_addAB[std::size(dispatch_addAB)-1] = &AddAB_intern;
+    return 1;
+  }();
+
+  pmultABW dispatch_subAB[];
+  auto init_subAB = [] ()
+  {
+    Iterate<std::size(dispatch_subAB)-1> ([&] (auto i)
+    { dispatch_subAB[i] = &MultMatMat_intern2_ShortSumW<i,SUB>; });
+    dispatch_subAB[std::size(dispatch_subAB)-1] = &SubAB_intern;
+    return 1;
+  }();
+
+
+  
 
 
   /*
@@ -1224,10 +1187,10 @@ namespace ngbla
     alignas(64) SIMD<double> mem[MAXHA];
     
     size_t i = 0;
+    
     for ( ; i+bs <= wa; i += bs, a.IncPtr(bs), c.IncPtr(bs*c.Dist()))
       {
         CopyMatrixIn (ha, bs, a.Data(), a.Dist(), &mem[0], 1);
-        
         MatKernelAtB_SmallWA2<bs,OP> (ha, wb,
                                       (double*)&mem[0], bs,
                                       &b(0), b.Dist(),
@@ -3690,30 +3653,32 @@ namespace ngbla
         Matrix aorig = a;
         double tot = 5 * n*n*n;
         size_t its = 1e9 / tot + 1;
-        {
-          Timer t("CalcSVD");
-          t.Start();
-          for (size_t j = 0; j < its; j++)
-            {
-              a = aorig;
-              CalcSVD(a, U, V);
+        if (!lapack)
+          {
+            Timer t("CalcSVD");
+            t.Start();
+            for (size_t j = 0; j < its; j++)
+              {
+                a = aorig;
+                CalcSVD(a, U, V);
             }
-          t.Stop();
-          cout << "CalcSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("CalcSVD", 1e-9 * tot *its / t.GetTime()));
-        }
-        {
-          Timer t("LapackSVD");
-          t.Start();
-          for (size_t j = 0; j < its; j++)
-            {
-              a = aorig;
-              LapackSVD(a, U, V);
-            }
-          t.Stop();
-          cout << "LapackSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("LapackSVD", 1e-9 * tot *its / t.GetTime()));
-        }
+            t.Stop();
+            cout << "CalcSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+            timings.push_back(make_tuple("CalcSVD", 1e-9 * tot *its / t.GetTime()));
+          }
+        else
+          {
+            Timer t("LapackSVD");
+            t.Start();
+            for (size_t j = 0; j < its; j++)
+              {
+                a = aorig;
+                LapackSVD(a, U, V);
+              }
+            t.Stop();
+            cout << "LapackSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+            timings.push_back(make_tuple("LapackSVD", 1e-9 * tot *its / t.GetTime()));
+          }
       }
 
     
