@@ -105,7 +105,10 @@ namespace ngcomp
       if (DefinedOn(ei))
         return *new (lh) NumberFiniteElement(ma->GetElType(ei));
       else
-        return *new (lh) DummyFE<ET_POINT>();
+        return SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+        {
+          return *new (lh) DummyFE<et.ElementType()> ();
+        });
     }
 
   void NumberFESpace::GetDofNrs (ElementId ei, Array<int> & dnums) const
