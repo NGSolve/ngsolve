@@ -26,9 +26,16 @@ string ToString (OP op)
   return "none";  // make the compile happy
 }
 
-string FMAOp (OP op)
+/*
+  callasm: 
+  enforce the update fma instruction, important for 12 register version
+ */
+string FMAOp (OP op, bool callasm = true)
 {
-  return (op == SET || op == ADD) ? "FMAasm" : "FNMAasm";
+  if (callasm)
+    return (op == SET || op == ADD) ? "FMAasm" : "FNMAasm";
+  else
+    return (op == SET || op == ADD) ? "FMAnonasm" : "FNMAnonasm";
 }
 
 /*
@@ -79,10 +86,13 @@ void GenerateMultAB (ostream & out, int h, int w, OP op, bool aligned_b)
     {
       out << "SIMD<double> a" << i << "(pa["<< i << "*da]);" << endl;
       for (int j = 0; j < w; j++)
+        out << FMAOp(op, true) << "(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;        
+        /*
         if (op == ADD || op == SET)
           out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
         else
           out << "FNMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;          
+        */
       // out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;
     }
   out << "}" << endl;
@@ -158,10 +168,13 @@ void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
     {
       out << "SIMD<double> a" << i << "(pa["<< i << "*da]);" << endl;
       for (int j = 0; j < w; j++)
+        out << FMAOp(op, true) << "(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;        
+        /*
         if (op == ADD || op == SET)
           out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
         else
           out << "FNMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;          
+        */
       // out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;          
     }
   out << "}" << endl;
@@ -1051,10 +1064,13 @@ void GenerateDaxpy (ostream & out, int h, int w, OP op, bool aligned_b)
     {
       out << "SIMD<double> b" << j << "(pb" << j << "+i);" << endl;
       for (int i = 0; i < h; i++)
+        out << FMAOp(op, false) << "(a" << i << j << ", b" << j << ", c" << i << ");\n";
+        /*
         if (op == ADD || op == SET)
           out << "c" << i << " += a" << i  << j << " * b" << j << ";" << endl;
         else
           out << "c" << i << " -= a" << i  << j << " * b" << j << ";" << endl;
+        */
     }
 
   for (int i = 0; i < h; i++)
@@ -1511,6 +1527,12 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
   out << "SIMD<double> bjk1(pb2+SW);\n";
   out << "SIMD<double> bjk2(pb2+2*SW);\n";
   for (int k = 0; k < wa; k++)
+    {
+      out << FMAOp(op, false) << "(bjk0,SIMD<double>(pa2[" << k << "]), sum" << k <<"0);\n";
+      out << FMAOp(op, false) << "(bjk1,SIMD<double>(pa2[" << k << "]), sum" << k <<"1);\n";
+      out << FMAOp(op, false) << "(bjk2,SIMD<double>(pa2[" << k << "]), sum" << k <<"2);\n";
+    }
+    /*
     if (op == ADD || op == SET)
       {
         out << "FMAasm (bjk0,SIMD<double>(pa2[" << k << "]), sum" << k <<"0);\n";
@@ -1523,6 +1545,7 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
         out << "FNMAasm (bjk1,SIMD<double>(pa2[" << k << "]), sum" << k <<"1);\n";
         out << "FNMAasm (bjk2,SIMD<double>(pa2[" << k << "]), sum" << k <<"2);\n";
       }
+    */
   out << "}\n";
   out << "pc2 = pc;\n";
   for (int k = 0; k < wa; k++)
@@ -2133,6 +2156,14 @@ int main ()
 {
   ofstream out("matkernel.hpp");
 
+  out << "template <int N>\n"
+    "void FMAnonasm (SIMD<double,N> a, SIMD<double,N> b, SIMD<double,N> & sum)\n"
+    "{ sum = FMA(a,b,sum); } ";
+  out << "template <int N>\n"
+    "void FNMAnonasm (SIMD<double,N> a, SIMD<double,N> b, SIMD<double,N> & sum)\n"
+    "{ sum = FNMA(a,b,sum); }";
+
+  
   out << "static_assert(SIMD<double>::Size() == " << SIMD<double>::Size() << ", \"inconsistent compile flags for generate_mat_kernels.cpp and matkernel.hpp\");" << endl;
   out << "enum OPERATION { ADD, SUB, SET, SETNEG };" << endl;
 

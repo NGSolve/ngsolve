@@ -1714,9 +1714,9 @@ namespace ngbla
                SliceMatrix<SIMD<Complex>> b,
                SliceMatrix<Complex> c)
   {
-    ThreadRegionTimer reg(timer_addabtdc, TaskManager::GetThreadId());
-    NgProfiler::AddThreadFlops(timer_addabtdc, TaskManager::GetThreadId(),
-                               a.Height()*b.Height()*a.Width()*2*SIMD<double>::Size());
+    // ThreadRegionTimer reg(timer_addabtdc, TaskManager::GetThreadId());
+    // NgProfiler::AddThreadFlops(timer_addabtdc, TaskManager::GetThreadId(),
+    // a.Height()*b.Height()*a.Width()*2*SIMD<double>::Size());
     constexpr size_t bs = 64;
     for (size_t k = 0; k < a.Width(); k+=bs)
       {
@@ -2922,10 +2922,13 @@ namespace ngbla
         double tot = n*m*k;
         size_t its = 1e9 / tot + 1;
         // MultMatMat(a,b,c);
-        c = a * b;
-        double err = L2Norm(a*b-c);
-        if (err > 1e-8)
-          throw Exception("MultMatMat is faulty");
+        if (tot < 1e6)
+          {
+            c = a * b;
+            double err = L2Norm(a*b-c);
+            if (err > 1e-8)
+              throw Exception("MultMatMat is faulty");
+          }
         
         {
           Timer t("C = A*B");
@@ -2968,7 +2971,7 @@ namespace ngbla
             for (size_t j = 0; j < its; j++)
               c += a*b | Lapack;
           t.Stop();
-          cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
+          cout << "Add AB GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
         }
       }
@@ -3260,8 +3263,8 @@ namespace ngbla
             for (size_t j = 0; j < its; j++)
               c = a * Trans(b) | Lapack;
           t.Stop();
-          cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
+          cout << "MultABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultABt", 1e-9 * tot *its / t.GetTime()));
         }
       }
 

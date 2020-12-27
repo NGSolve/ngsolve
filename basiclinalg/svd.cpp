@@ -947,12 +947,16 @@ namespace ngbla
         if (sqr(lams[i]) < mid)
           {
             vpsi.Append(sqr(vs[i]));
-            lampsi_shift.Append (sqr(lams[i])-lower2);
+            lampsi_shift.Append ((lams[i]-lower)*(lams[i]+lower));  // for roundoff !!
+            // lampsi_shift.Append (sqr(lams[i])-lower2);
+            // if (lampsi_shift.Last() > 0) lampsi_shift.Last() = 0;  // rou
           }
         else
           {
             vphi.Append(sqr(vs[i]));
-            lamphi_shift.Append (sqr(lams[i])-upper2);
+            // lamphi_shift.Append (sqr(lams[i])-upper2);
+            lamphi_shift.Append ((lams[i]-upper)*(lams[i]+upper)); // for roundoff !!
+            // if (lamphi_shift.Last() < 0) lamphi_shift.Last() = 0;            
           }
       }
 
@@ -974,6 +978,7 @@ namespace ngbla
     double t2 = 0;
     for (int j = 0; j < vpsi.Size(); j++)
       t2 = max(t2, lampsi_shift[j] + vpsi[j]*phip1_inv);
+    // cout << "t2 start = " << t2 << endl;
     t2 = min(delta2/2, 0.99*t2);
     Delta2 = delta2 - t2;
 
@@ -1090,6 +1095,8 @@ namespace ngbla
         else
           {
             double incr = (1+psi)/psiprime*psi;
+            // cout << "i = " << i << "t2 = " << t2 << ", incr = " << incr
+            // << ", w = " << w << ", phi = " << phi << ", psi = " << psi << endl;
             t2 += incr;
             Delta2 -= incr;
           }
@@ -1132,8 +1139,15 @@ namespace ngbla
 
     if (t2 < 0)
       {
+        cout << "lower/upper = " << lower << "/" << upper << endl;
+        cout << "t2/Delta2 = " << t2 << "/" << Delta2 << endl;
+        cout << "phip1_inv = " << phip1_inv << endl;
         cout << "lams = " << lams << endl;
         cout << "vs = " << vs << endl;
+        cout << "vpsi = " << vpsi << endl;
+        cout << "lampsi_shift = " << lampsi_shift << endl;
+        cout << "vphi = " << vphi << endl;
+        cout << "lamphi_shift = " << lamphi_shift << endl;
         throw Exception ("t2 negative");
       }
     if (Delta2 < 0 && vphi.Size() > 0)
@@ -1289,6 +1303,14 @@ namespace ngbla
     for (size_t i = 0; i < ncomp; i++)
       compress_Ds2(i) = sqr(compress_Ds(i));
 
+    /*
+      // for cancelation: shift Ds, and then add difference
+    Matrix<> shifted(ncomp, ncomp);
+    for (int i = 0; i < ncomp; i++)
+      for (int j = 0; j < ncomp; j++)
+        shifted(i,j) = compress_Ds2(i)-compress_omega2ref(j);
+    */
+    
     // static Timer tzmod("zmod");
     // tzmod.Start();
     VectorMem<100> compress_zsmod(ncomp);
@@ -1297,9 +1319,12 @@ namespace ngbla
         double prod = 1;
         for (size_t j = 0; j < i; j++)
           prod *= (compress_omega2ref(j)-compress_Ds2(i)+compress_omega2diff(j)) / (compress_Ds2(j)-compress_Ds2(i));
+        // prod *= (-shifted(i,j)+compress_omega2diff(j)) / (compress_Ds2(j)-compress_Ds2(i));
         for (size_t j = i; j < ncomp-1; j++)
           prod *= (compress_omega2ref(j)-compress_Ds2(i)+compress_omega2diff(j)) / (compress_Ds2(j+1)-compress_Ds2(i));
+        // prod *= (-shifted(i,j)+compress_omega2diff(j)) / (compress_Ds2(j+1)-compress_Ds2(i));
         prod *= compress_omega2ref(ncomp-1)-compress_Ds2(i)+compress_omega2diff(ncomp-1);
+        // prod *= -shifted(i,ncomp-1)+compress_omega2diff(ncomp-1);
         compress_zsmod(i) = sqrt(prod);
       }
     // tzmod.Stop();
@@ -1334,6 +1359,7 @@ namespace ngbla
         for (size_t j = 0; j < ncomp; j++)
           {
             double ui = compress_zsmod(j) / (compress_Ds2(j)-compress_omega2ref(i)-compress_omega2diff(i));
+            // double ui = compress_zsmod(j) / (shifted(j,i)-compress_omega2diff(i));
             colu(j) = ui;
             colv(j) = compress_Ds(j)*ui;
           }
