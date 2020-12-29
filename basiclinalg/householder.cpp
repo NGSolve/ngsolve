@@ -55,6 +55,11 @@ namespace ngbla
     if (factor != 0) factor = 2/factor;
   }
 
+  void HouseholderReflection :: Mult (FlatVector<double> v2) const
+  {
+    double ip = InnerProduct(v, v2);
+    v2 -= (factor*ip) * v;
+  }
   
   template <ORDERING ORD>
   void HouseholderReflection :: TMult (SliceMatrix<double,ORD> m2) const  
