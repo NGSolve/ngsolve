@@ -78,17 +78,30 @@ namespace ngbla
                             double * ps, size_t dists,
                             SIMD<double,SW> * pd, size_t distd)
   {
-    SIMD<mask64> mask(w % SW);
-    
-    for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
+    if (w % SW == 0)
       {
-        auto ps2 = ps;
-        auto pd2 = pd;
-        
-        size_t js = 0; 
-        for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
-          *pd2 = SIMD<double>(ps2);
-        SIMD<double>(ps2, mask).Store((double*) (pd2), mask);
+        for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
+          {
+            auto ps2 = ps;
+            auto pd2 = pd;
+            size_t js = 0; 
+            for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
+              *pd2 = SIMD<double>(ps2);
+          }
+      }
+    else
+      {
+        SIMD<mask64> mask(w % SW);
+        for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
+          {
+            auto ps2 = ps;
+            auto pd2 = pd;
+            
+            size_t js = 0; 
+            for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
+              *pd2 = SIMD<double>(ps2);
+            SIMD<double>(ps2, mask).Store((double*) (pd2), mask);
+          }
       }
   }
   
@@ -597,6 +610,8 @@ namespace ngbla
   template <size_t H, OPERATION OP, typename TB>
   INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, TB * pb, size_t db, double * pc, size_t dc)
   {
+    // static Timer t("matkernel2addab"+ToString(H)+ToString(OP)); RegionTimer reg(t);
+    // t.AddFlops (H*hb*wb);
     constexpr size_t SW = SIMD<double>::Size();
     constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
     size_t l = 0, lb = 0;
@@ -742,6 +757,8 @@ namespace ngbla
   void  REGCALL MultMatMat_intern2 (size_t ha, size_t wa, size_t wb,
                                      BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
+    // static Timer t("multmatmat_intern2"); RegionTimer reg(t);
+    
     if (wb < 3*SIMD<double>::Size())
       {
         MultMatMat_intern2_SlimB<BBH,OP> (ha, wa, wb, a, b, c);
@@ -2987,11 +3004,19 @@ namespace ngbla
           for (size_t j = 0; j < m; j++)
             b(i,j) = cos(i+3) * cos(j);
         Matrix<> saveb = b;
-        
+        Matrix<double,ColMajor> at = a;
         double tot = n*n*m/2;
         size_t its = 1e9 / tot + 1;
 
         {
+          b = saveb;
+          TriangularMult<LowerLeft> (a, b);
+          TriangularSolve<LowerLeft> (a, b);
+          if (double err = L2Norm(b-saveb); err > 1e-7)
+            {
+              cout << "diff = " << Truncate(b-saveb) << endl;
+              throw Exception("TriangularMult/Solve<LowerLeft> is buggy, err = "+ToString(err));
+            }
           Timer t("X = L * X");
           t.Start();
           for (size_t j = 0; j < its; j++)
@@ -3004,6 +3029,12 @@ namespace ngbla
           timings.push_back(make_tuple("TriangularMult<L>", 1e-9 * n*n*m/2*its / t.GetTime()));
         }
         {
+          b = saveb;
+          TriangularMult<UpperRight> (a, b);
+          TriangularSolve<UpperRight> (a, b);
+          if (double err = L2Norm(b-saveb); err > 1e-7)
+            throw Exception("TriangularMult/Solve<UpperRight> is buggy, err = " + ToString(err));
+
           Timer t("X = L * X");
           t.Start();
           for (size_t j = 0; j < its; j++)
@@ -3017,6 +3048,12 @@ namespace ngbla
         }
 
         {
+          b = saveb;          
+          TriangularMult<LowerLeft,Normalized> (a, b);
+          TriangularSolve<LowerLeft,Normalized> (a, b);
+          if (double err = L2Norm(b-saveb); err > 1e-7)
+            throw Exception("TriangularMult/Solve<LowerLeft,Normalized> is buggy, err = "+ToString(err));
+
           Timer t("X = L * X");
           t.Start();
           for (size_t j = 0; j < its; j++)
@@ -3029,6 +3066,12 @@ namespace ngbla
           timings.push_back(make_tuple("TriangularMult<L,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
         }
         {
+          b = saveb;          
+          TriangularMult<UpperRight,Normalized> (a, b);
+          TriangularSolve<UpperRight,Normalized> (a, b);
+          if (double err = L2Norm(b-saveb); err > 1e-7)
+            throw Exception("TriangularMult/Solve<UpperRight,Normalized> is buggy, err = "+ToString(err));
+
           Timer t("X = L * X");
           t.Start();
           for (size_t j = 0; j < its; j++)
@@ -3039,6 +3082,30 @@ namespace ngbla
           t.Stop();
           cout << "TriangularMult<R,N> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
           timings.push_back(make_tuple("TriangularMult<R,N>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = Lt * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<LowerLeft> (at, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<Lt> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<Lt>", 1e-9 * n*n*m/2*its / t.GetTime()));
+        }
+        {
+          Timer t("X = Rt * X");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            {
+              b = saveb;
+              TriangularMult<UpperRight> (at, b);
+            }
+          t.Stop();
+          cout << "TriangularMult<Rt> GFlops = " << 1e-9 * n*n*m/2*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("TriangularMult<Rt>", 1e-9 * n*n*m/2*its / t.GetTime()));
         }
 
       }

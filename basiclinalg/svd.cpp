@@ -64,15 +64,14 @@ namespace ngbla
   
 
   template <ORDERING OH, ORDERING OM>  
-  void ApplyBandHouseholderReflections (int bs, SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
+  void ApplyBandHouseholderReflections (size_t bs, SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
   {
-    int n = H.Width();
-    for (int i = 0; i+bs < H.Width(); i++)
-      H.Col(i).Range(i+bs, H.Width()) = 0;
-
-    for (int i = 0; i < H.Width(); i += bs)
+    size_t n = H.Width();
+    for (size_t i = 0; i+bs < n; i++)
+      H.Col(i).Range(i+bs, min(n, i+2*bs)) = 0;
+    for (size_t i = 0; i < H.Width(); i += bs)
       {
-        int next = min(i+bs, n);
+        size_t next = min(i+bs, n);
         MultiHouseholderReflection Hv(Trans(H.Cols(i,next).Rows(i,min(i+2*bs,n))));
         Hv.Mult(M.Rows(i,min(i+2*bs,n)));
       }
@@ -274,13 +273,7 @@ namespace ngbla
     if (n > bs)
       ApplyHouseholderReflections (Trans(A.Cols(bs,n).Rows(min(n-bs,m))), Trans(V1).Rows(bs,n));
     tV.Stop();
-    tV.AddFlops(n*n*n);
-    size_t minnm = min(n,m);
-
-    for (size_t i = 0; i < minnm; i++)
-      A.Col(i).Range(i+1, m) = 0.0;
-    for (size_t i = bs; i < minnm; i++)
-      A.Col(i).Range(0, i-bs) = 0.0;
+    tV.AddFlops (sqr(n-bs)*n);        
     
     tUV.Stop();
 
@@ -296,7 +289,14 @@ namespace ngbla
     */
     // auto Aband = A.Rows(minnm).Cols(minnm);
     
+    size_t minnm = min(n,m);
+
     Matrix Aband = A.Rows(minnm).Cols(minnm);
+
+    for (size_t i = 0; i < minnm; i++)
+      Aband.Col(i).Range(i+1, minnm) = 0.0;
+    for (size_t i = bs; i < minnm; i++)
+      Aband.Col(i).Range(0, i-bs) = 0.0;
     
     
     /*
@@ -488,6 +488,8 @@ namespace ngbla
     tb1.Stop();
     static Timer tb2 ("bulge chasing - mult U");
     static Timer tb3 ("bulge chasing - mult V");
+    tb2.AddFlops (n*n*n);
+    tb3.AddFlops (n*n*n);
     tb2.Start();
     /*
       for (auto [i,j,size] : refu)
@@ -537,7 +539,9 @@ namespace ngbla
     tb3.Stop();
     // tbulgechasing.Stop();
     
-    A.Rows(minnm).Cols(minnm) = Aband;
+    // A.Rows(minnm).Cols(minnm) = Aband;
+    A.Diag(0) = Aband.Diag(0);
+    A.Diag(1) = Aband.Diag(1);
     
     // if (n < 20)
     // cout << "after bulge-chasing: " << endl << Truncate(A) << endl;
@@ -1267,8 +1271,8 @@ namespace ngbla
       compress_omega2diff(n-num_deflated),
       compress_omega2ref(n-num_deflated);    
 
-    // static Timer tsec("Solve Secular");
-    // tsec.Start();
+    static Timer tsec("Solve Secular");
+    tsec.Start();
     
     for (size_t i = 0; i < ncomp; i++)
       {
@@ -1297,7 +1301,7 @@ namespace ngbla
           }
         compress_omega(i) = sqrt (compress_omega2ref(i)+compress_omega2diff(i));
       }
-    // tsec.Stop();
+    tsec.Stop();
     
     VectorMem<100,double> compress_Ds2(ncomp);
     for (size_t i = 0; i < ncomp; i++)
@@ -1370,11 +1374,12 @@ namespace ngbla
       }
     // tuv.Stop();
 
-    // static Timer tmult("multQU");
-    // tmult.Start();
+    static Timer tmult("multQU");
+    tmult.AddFlops(2*Q.Height()*ncomp*ncomp);
+    tmult.Start();
     U.Cols(ncomp) = Q.Cols(ncomp) * MU.Cols(ncomp).Rows(ncomp);
     V.Cols(ncomp) = W.Cols(ncomp) * MV.Cols(ncomp).Rows(ncomp);
-    // tmult.Stop();
+    tmult.Stop();
     /*
       // testing
     if (double erru = L2Norm(Matrix(Trans(MU)*MU)-Identity(n)); erru > 1e-12)
@@ -1837,12 +1842,13 @@ namespace ngbla
     // cout << "diag A = " << endl << A.Diag(0) << endl;
     // cout << "super-diag A = " << endl << A.Diag(1) << endl;
     CalcSVDBiDiagonal (A.Rows(n), UB.Rows(n).Cols(n), VB);
-    
-    // static Timer tmultUV("CalcSVD, mult U1*UB, V1*VB"); RegionTimer regUV(tmultUV);
-    // tmultUV.AddFlops (n*n*n+m*m*m);
-    U = U1*UB;
-    V = V1*VB;
 
+    {
+      static Timer tmultUV("CalcSVD, mult U1*UB, V1*VB"); RegionTimer regUV(tmultUV);
+      tmultUV.AddFlops (n*n*n+m*m*m);
+      U = U1*UB;
+      V = V1*VB;
+    }
 
     /* 
        // testing ... 

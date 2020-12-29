@@ -13,18 +13,25 @@ namespace ngbla
   // not so nice: T * X  ... X colwise    needed ???
   
 
-  template <size_t H, OPERATION OP, typename TB>
+  template <size_t H, OPERATION OP, ORDERING ORD, typename TB>
   INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, TB * pb, size_t db, double * pc, size_t dc)
   {
-    constexpr size_t SW = SIMD<double>::Size();
-    constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
-    size_t l = 0, lb = 0;
-    for ( ; l+3*SW <= wb; l += 3*SW, lb += 3*SWdTB)
-      MatKernelMultAB<H,3,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
-    for ( ; l+SW <= wb; l += SW, lb += SWdTB)
-      MatKernelMultAB<H,1,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
-    if (l < wb)
-      MatKernelMultABMask<H,OP>(hb, SIMD<mask64>(wb-l), pa, da, pb+lb, db, pc+l, dc);
+    if constexpr (ORD == RowMajor)
+      {
+        constexpr size_t SW = SIMD<double>::Size();
+        constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
+        size_t l = 0, lb = 0;
+        for ( ; l+3*SW <= wb; l += 3*SW, lb += 3*SWdTB)
+          MatKernelMultAB<H,3,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
+        for ( ; l+SW <= wb; l += SW, lb += SWdTB)
+          MatKernelMultAB<H,1,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
+        if (l < wb)
+          MatKernelMultABMask<H,OP>(hb, SIMD<mask64>(wb-l), pa, da, pb+lb, db, pc+l, dc);
+      }
+    else
+      {
+        MatKernelAtB_SmallWA2<H,OP>(hb, wb, pa, da, pb, db, pc, dc);
+      }
   }
 
 
@@ -34,8 +41,8 @@ namespace ngbla
   /* ***************************  TriangularMult - Normalized **************************** */
 
 
-  template <TRIG_NORMAL NORM>
-  void TriangularMultLL3 (BareSliceMatrix<double> bL, SliceMatrix<double> X)
+  template <TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultLL3 (BareSliceMatrix<double,ORD> bL, SliceMatrix<double> X)
   {
     size_t n = X.Height();
     size_t i = n;
@@ -49,62 +56,27 @@ namespace ngbla
         Switch<HA> (remainder, [L,X,i] (auto r)
                     {
                       if constexpr (r.value > 0)
-                                     KernelTriangularMult<LowerLeft,NORM,r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
+                                     KernelTriangularMult<LowerLeft,NORM,ORD,r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
                       if (i > r)
                         if constexpr (r.value > 0)
-                                       MatKernel2AddAB<r.value,ADD> (i-r.value, X.Width(),
-                                                                     &L(i-r.value,0), L.Dist(),
-                                                                     &X(0,0), X.Dist(),
-                                                                     &X(i-r.value,0), X.Dist());
+                                       MatKernel2AddAB<r.value,ADD,ORD> (i-r.value, X.Width(),
+                                                                         &L(i-r.value,0), L.Dist(),
+                                                                         &X(0,0), X.Dist(),
+                                                                         &X(i-r.value,0), X.Dist());
                     });
       }
     
     i -= remainder;
     for ( ; i >= HA; i -= HA)
       {
-        KernelTriangularMult<LowerLeft,NORM,4> (X.Width(), &L(i-HA,i-HA), L.Dist(), &X(i-HA,0), X.Dist());
+        KernelTriangularMult<LowerLeft,NORM,ORD,4> (X.Width(), &L(i-HA,i-HA), L.Dist(), &X(i-HA,0), X.Dist());
         if (i > HA)
-          MatKernel2AddAB<HA,ADD> (i-HA, X.Width(), &L(i-HA,0), L.Dist(), &X(0,0), X.Dist(), &X(i-HA,0), X.Dist());
+          MatKernel2AddAB<HA,ADD,ORD> (i-HA, X.Width(), &L(i-HA,0), L.Dist(), &X(0,0), X.Dist(), &X(i-HA,0), X.Dist());
       }
   }
 
-
-  
-  /*
-  void TriangularMultLL2N (BareSliceMatrix<double> T, SliceMatrix<double> X)
-  {
-    size_t n = X.Height();
-    if (n < 128)
-      {
-        TriangularMultLL3N (T,X);
-        return;
-      }
-    IntRange r1(0,n/2), r2(n/2,n);
-    auto T11 = T.Rows(r1).Cols(r1);
-    // auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
-    auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
-    auto T22 = T.Rows(r2).Cols(r2);
-    auto X1 = X.Rows(r1);
-    auto X2 = X.Rows(r2);
-
-    TriangularMultLL2N (T22, X2);
-    X2 += T21 * X1;
-    TriangularMultLL2N (T11, X1);
-  }
-  
-  void TriangularMultLLN (BareSliceMatrix<double> L, SliceMatrix<double> X)  
-  {
-    size_t i = 0;
-    constexpr size_t bw = 256;
-    for ( ; i+bw <= X.Width(); i += bw)
-      TriangularMultLL2N (L, X.Cols(i,i+bw));
-    if (i < X.Width())
-      TriangularMultLL2N (L, X.Cols(i,X.Width()));      
-  }
-  */
-
-  template <TRIG_NORMAL NORM>
-  void TriangularMultLL2 (BareSliceMatrix<double> L, SliceMatrix<double> X)  
+  template <TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultLL2 (BareSliceMatrix<double,ORD> L, SliceMatrix<double> X)  
   {
     size_t i = 0;
     constexpr size_t bw = 256;
@@ -114,8 +86,8 @@ namespace ngbla
       TriangularMultLL3<NORM> (L, X.Cols(i,X.Width()));      
   }
 
-  template <TRIG_NORMAL NORM>  
-  void TriangularMultLL1 (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  template <TRIG_NORMAL NORM, ORDERING ORD>  
+  void TriangularMultLL1 (BareSliceMatrix<double,ORD> T, SliceMatrix<double> X)
   {
     size_t n = X.Height();
     if (n < 128)
@@ -144,11 +116,19 @@ namespace ngbla
   {
     TriangularMultLL1<Normalized> (T,X);
   }
+  void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultLL1<NonNormalized> (T,X);
+  }
+  void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultLL1<Normalized> (T,X);
+  }
 
   
   
-  template <TRIG_NORMAL NORM>
-  void TriangularMultUR3 (BareSliceMatrix<double> bU, SliceMatrix<double> X)  
+  template <TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultUR3 (BareSliceMatrix<double,ORD> bU, SliceMatrix<double> X)  
   {
     size_t n = X.Height();
     auto U = bU.AddSize(n,n);
@@ -168,9 +148,9 @@ namespace ngbla
     size_t i = 0;
     for ( ; i+HA <= n; i += HA)
       {
-        KernelTriangularMult<UpperRight,NORM,4> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
+        KernelTriangularMult<UpperRight,NORM,ORD,4> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
         if (i+HA < n)
-          MatKernel2AddAB<HA,ADD> (n-i-HA, X.Width(), &U(i,i+HA), U.Dist(), &X(i+HA,0), X.Dist(), &X(i,0), X.Dist());
+          MatKernel2AddAB<HA,ADD,ORD> (n-i-HA, X.Width(), &U(i,i+HA), U.Dist(), &X(i+HA,0), X.Dist(), &X(i,0), X.Dist());
       }
 
     size_t remainder = n % HA;
@@ -179,13 +159,18 @@ namespace ngbla
         Switch<HA> (remainder, [U,X,i] (auto r)
                     {
                       if constexpr (r.value > 0)
-                                     KernelTriangularMult<UpperRight,NORM,r.value> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
+                                     KernelTriangularMult<UpperRight,NORM,ORD,r.value> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
                     });
       }
   }
 
-  template <TRIG_NORMAL NORM>
-  void TriangularMultUR2 (BareSliceMatrix<double> L, SliceMatrix<double> X)  
+
+
+
+
+  
+  template <TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultUR2 (BareSliceMatrix<double,ORD> L, SliceMatrix<double> X)  
   {
     size_t i = 0;
     constexpr size_t bw = 192;
@@ -195,8 +180,8 @@ namespace ngbla
       TriangularMultUR3<NORM> (L, X.Cols(i,X.Width()));      
   }
 
-  template <TRIG_NORMAL NORM>  
-  void TriangularMultUR1 (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  template <TRIG_NORMAL NORM, ORDERING ORD>  
+  void TriangularMultUR1 (BareSliceMatrix<double,ORD> T, SliceMatrix<double> X)
   {
     size_t n = X.Height();
     if (n < 128)
@@ -229,6 +214,15 @@ namespace ngbla
     TriangularMultUR1<Normalized> (T,X);
   }
 
+  void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultUR1<NonNormalized> (T,X);
+  }
+  void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultUR1<Normalized> (T,X);
+  }
+
 
 
 
@@ -247,8 +241,8 @@ namespace ngbla
     for ( ; i+HA <= n; i += HA)
       {
         if (i > 0)
-          MatKernel2AddAB<HA,SUB> (i, X.Width(), &L(i,0), L.Dist(), &X(0,0), X.Dist(), &X(i,0), X.Dist());
-        KernelTriangularSolve<LowerLeft,NORM,4> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+          MatKernel2AddAB<HA,SUB,RowMajor> (i, X.Width(), &L(i,0), L.Dist(), &X(0,0), X.Dist(), &X(i,0), X.Dist());
+        KernelTriangularSolve<LowerLeft,NORM,RowMajor,4> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
       }
     
     size_t remainder = n % HA;
@@ -258,12 +252,12 @@ namespace ngbla
                     {
                       if constexpr (r.value > 0) {
                           if (i > 0)
-                            MatKernel2AddAB<r.value,SUB> (i, X.Width(),
-                                                          &L(i,0), L.Dist(),
-                                                          &X(0,0), X.Dist(),
-                                                          &X(i,0), X.Dist());
+                            MatKernel2AddAB<r.value,SUB,RowMajor> (i, X.Width(),
+                                                                   &L(i,0), L.Dist(),
+                                                                   &X(0,0), X.Dist(),
+                                                                   &X(i,0), X.Dist());
                           
-                          KernelTriangularSolve<LowerLeft,NORM,r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
+                          KernelTriangularSolve<LowerLeft,NORM,RowMajor,r.value> (X.Width(), &L(i,i), L.Dist(), &X(i,0), X.Dist());
                         }
                     });
       }
@@ -330,8 +324,8 @@ namespace ngbla
     for ( ; i >= HA; i -= HA)
       {
         if (i < n)
-          MatKernel2AddAB<HA,SUB> (n-i, X.Width(), &U(i-HA,i), U.Dist(), &X(i,0), X.Dist(), &X(i-HA,0), X.Dist());
-        KernelTriangularSolve<UpperRight,NORM,4> (X.Width(), &U(i-HA,i-HA), U.Dist(), &X(i-HA,0), X.Dist());
+          MatKernel2AddAB<HA,SUB,RowMajor> (n-i, X.Width(), &U(i-HA,i), U.Dist(), &X(i,0), X.Dist(), &X(i-HA,0), X.Dist());
+        KernelTriangularSolve<UpperRight,NORM,RowMajor,4> (X.Width(), &U(i-HA,i-HA), U.Dist(), &X(i-HA,0), X.Dist());
       }
     
     size_t remainder = i;
@@ -341,12 +335,12 @@ namespace ngbla
                     {
                       if constexpr (r.value > 0) {
                           if (i < n)
-                            MatKernel2AddAB<r.value,SUB> (n-i, X.Width(),
-                                                          &U(0,i), U.Dist(),
-                                                          &X(i,0), X.Dist(),
-                                                          &X(0,0), X.Dist());
+                            MatKernel2AddAB<r.value,SUB,RowMajor> (n-i, X.Width(),
+                                                                   &U(0,i), U.Dist(),
+                                                                   &X(i,0), X.Dist(),
+                                                                   &X(0,0), X.Dist());
                           
-                          KernelTriangularSolve<UpperRight,NORM,r.value> (X.Width(), &U(0,0), U.Dist(), &X(0,0), X.Dist());
+                          KernelTriangularSolve<UpperRight,NORM,RowMajor,r.value> (X.Width(), &U(0,0), U.Dist(), &X(0,0), X.Dist());
                         }
                     });
       }
@@ -393,7 +387,6 @@ namespace ngbla
   {
     TriangularSolveUR1<Normalized> (U,X);
   }
-
 
 
 

@@ -198,7 +198,7 @@ namespace ngbla
         IntRange r2(mv.Height(), colsm2.Height());
         {
           static Timer t(timername+string("3")); RegionTimer reg(t);
-          t.AddFlops(r2.Size()*colsm2.Width()*tmp.Height());
+          // t.AddFlops(r2.Size()*colsm2.Width()*tmp.Height());
           colsm2.Rows(r2) -= Trans(mv.Cols(r2)) * tmp;
         }
         {
