@@ -1,6 +1,6 @@
 import pytest
 from ngsolve import *
-from netgen.geom2d import unit_square
+from netgen.geom2d import *
 from netgen.csg import unit_cube
 
 ngsglobals.msg_level=0
@@ -53,6 +53,41 @@ def test_component_keeps_alive():
     gf1.Set(0)
     for val in gf1.vec:
         assert val == 0.0
+
+# test partially definedon number spaces
+def test_number_definedon():
+    geo = CSG2d()
+
+    inner = Rectangle((0.3, 0.3), (0.4, 0.4)).Mat("inner")
+    outer = Rectangle((0, 0), (1, 1))
+    geo.Add((outer-inner).Mat("outer"))
+    geo.Add(inner)
+
+    mesh = Mesh(geo.GenerateMesh())
+
+    Draw(mesh)
+
+    h1 = H1(mesh)
+    number = NumberSpace(mesh) * NumberSpace(mesh)
+    number2 = NumberSpace(mesh, definedon="inner") * NumberSpace(mesh, definedon="outer")
+    u = h1.TestFunction()
+    t11, t12 = number.TrialFunction()
+    t21, t22 = number2.TrialFunction()
+
+    a1 = BilinearForm(testspace=h1, trialspace=number)
+    a1 += u * t11 * dx("inner")
+    a1 += u * t12 * dx("outer")
+
+    a2 = BilinearForm(testspace=h1, trialspace=number2)
+    a2 += u * t21 * dx("inner")
+    a2 += u * t22 * dx("outer")
+
+    a1.Assemble()
+    a2.Assemble()
+
+    for i in range(a1.mat.height):
+        for j in range(a1.mat.width):
+            assert a1.mat[i,j] == pytest.approx(a2.mat[i,j])
 
 if __name__ == "__main__":
     test_component_keeps_alive()
