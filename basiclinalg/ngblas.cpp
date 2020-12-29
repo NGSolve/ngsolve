@@ -825,13 +825,19 @@ namespace ngbla
   }
 
   template <size_t WA, OPERATION OP=SET> 
-  REGCALL void MultMatMat_intern2_ShortSumW (size_t ha, size_t wa, size_t wb,
+  REGCALL void MultMatMat_intern2_ShortSumW (size_t ha, size_t /* wa */, size_t wb,
                                              BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
-    if (WA <= 6) 
+    if (WA <= 7) 
       MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
     else
-      MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+      {
+        MatKernelShortSum2<6,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+        MatKernelShortSum2<WA-6,AddOp(OP)> (ha, wb, a.Data()+6, a.Dist(), b.Data()+6*b.Dist(), b.Dist(), c.Data(), c.Dist());
+      }
+        
+    // else
+    // MatKernelShortSum<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
   }
 
 
