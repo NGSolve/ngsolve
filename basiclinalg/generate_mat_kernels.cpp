@@ -13,6 +13,7 @@ using namespace std;
 using namespace ngcore;
 
 enum OP { ADD, SUB, SET, SETNEG };
+enum ORDERING { ColMajor, RowMajor };
 
 string ToString (OP op)
 {
@@ -1528,9 +1529,9 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
   out << "SIMD<double> bjk2(pb2+2*SW);\n";
   for (int k = 0; k < wa; k++)
     {
-      out << FMAOp(op, false) << "(bjk0,SIMD<double>(pa2[" << k << "]), sum" << k <<"0);\n";
-      out << FMAOp(op, false) << "(bjk1,SIMD<double>(pa2[" << k << "]), sum" << k <<"1);\n";
-      out << FMAOp(op, false) << "(bjk2,SIMD<double>(pa2[" << k << "]), sum" << k <<"2);\n";
+      out << FMAOp(op, true) << "(bjk0,SIMD<double>(pa2[" << k << "]), sum" << k <<"0);\n";
+      out << FMAOp(op, true) << "(bjk1,SIMD<double>(pa2[" << k << "]), sum" << k <<"1);\n";
+      out << FMAOp(op, true) << "(bjk2,SIMD<double>(pa2[" << k << "]), sum" << k <<"2);\n";
     }
     /*
     if (op == ADD || op == SET)
@@ -2034,25 +2035,33 @@ void GenerateAddMatTransVecI (ostream & out, int wa)
 
 /* ********************* Triangular kernels ********************************** */
 
-void GenerateTriangular (ofstream & out, bool solve, bool lowerleft, bool normalized, int dim)
+void GenerateTriangular (ofstream & out, bool solve, bool lowerleft, bool normalized, ORDERING order, int dim)
 {
   out << "template <> " << endl
       << "inline void " << (solve ? "KernelTriangularSolve" : "KernelTriangularMult")
       << "<" << (lowerleft ? "LowerLeft" : "UpperRight") << ","
-      << (normalized ? "Normalized" : "NonNormalized") << "," << dim << ">" 
+      << (normalized ? "Normalized" : "NonNormalized") << ","
+      << (order == RowMajor ? "RowMajor" : "ColMajor") << ","
+      << dim << ">" 
       << "(size_t wx, double * pt, size_t dt, double * px, size_t dx) { " << endl;
 
   if (lowerleft)
     {
       for (int i = 0; i < dim; i++)
         for (int j = 0; j < (normalized ? i : i+1); j++)
-          out << "SIMD<double> L" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+          if (order == RowMajor)
+            out << "SIMD<double> L" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+          else
+            out << "SIMD<double> L" << i << j << " = pt[" << i << "+dt*" << j << "];" << endl;
     }
   else
     {
       for (int i = 0; i < dim; i++)
         for (int j = (normalized ? i+1 : i); j < dim; j++)
-          out << "SIMD<double> U" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+          if (order == RowMajor)          
+            out << "SIMD<double> U" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+          else
+            out << "SIMD<double> U" << i << j << " = pt[" << i << "+dt*" << j << "];" << endl;
     }
 
   if (solve && !normalized)
@@ -2423,22 +2432,26 @@ int main ()
 
 
   /* *********************** MatKernelTriangularMult ***************** */
-  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, int DIM>" << endl
+  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>" << endl
       << "inline void KernelTriangularMult (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
-  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, int DIM>" << endl
+  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>" << endl
       << "inline void KernelTriangularSolve (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
 
 
   for (int i = 0; i <= 4; i++)
     {
-      // bool solve, bool lowerleft, bool normalized, int dim
-      GenerateTriangular (out, false, true, false, i);
-      GenerateTriangular (out, false, true, true, i);
-      GenerateTriangular (out, false, false, false, i);
-      GenerateTriangular (out, false, false, true, i);
-      GenerateTriangular (out, true, true, false, i);
-      GenerateTriangular (out, true, true, true, i);
-      GenerateTriangular (out, true, false, false, i);
-      GenerateTriangular (out, true, false, true, i);
+      // bool solve, bool lowerleft, bool normalized, bool trans, int dim
+      GenerateTriangular (out, false, true, false, RowMajor, i);
+      GenerateTriangular (out, false, true, true, RowMajor, i);
+      GenerateTriangular (out, false, false, false, RowMajor, i);
+      GenerateTriangular (out, false, false, true, RowMajor, i);
+      GenerateTriangular (out, false, true, false, ColMajor, i);
+      GenerateTriangular (out, false, true, true, ColMajor, i);
+      GenerateTriangular (out, false, false, false, ColMajor, i);
+      GenerateTriangular (out, false, false, true, ColMajor, i);
+      GenerateTriangular (out, true, true, false, RowMajor, i);
+      GenerateTriangular (out, true, true, true, RowMajor, i);
+      GenerateTriangular (out, true, false, false, RowMajor, i);
+      GenerateTriangular (out, true, false, true, RowMajor, i);
     }
 }
