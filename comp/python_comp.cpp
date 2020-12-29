@@ -112,7 +112,14 @@ public:
   void SetMsgLevel(int msg_level) 
   {
     // cout << "set printmessage_importance to " << msg_level << endl;
-    ngcore::Logger::SetGlobalLoggingLevel(ngcore::level::level_enum(ngcore::level::off-msg_level));
+    if(msg_level == 0)
+      Logger::SetGlobalLoggingLevel(level::off);
+    else if(msg_level > 0)
+      Logger::SetGlobalLoggingLevel(level::err);
+    else if(msg_level > 3)
+      Logger::SetGlobalLoggingLevel(level::info);
+    else if(msg_level > 6)
+      Logger::SetGlobalLoggingLevel(level::debug);
     printmessage_importance = msg_level; 
     netgen::printmessage_importance = msg_level; 
   }
