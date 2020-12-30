@@ -73,7 +73,7 @@ void ExportSparseMatrix(py::module m)
          {
            size_t row = t[0].cast<size_t>();
            size_t col = t[1].cast<size_t>();
-           if(row < 0 || row > self.Height() || col < 0 || col > self.Width())
+           if(row >= self.Height() || col >= self.Width())
              throw py::index_error("Access (" + ToString(row) + "," + ToString(col) + ") in " + ToString(self.Height()) + "x" + ToString(self.Width()) + " matrix!");
            return self(row,col);
          }, py::arg("pos"), "Return value at given position")
