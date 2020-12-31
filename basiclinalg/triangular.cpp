@@ -642,19 +642,19 @@ namespace ngbla
                                     SliceMatrix<double, OXY> X,
                                     SliceMatrix<double, OXY> Y)
   {
-    static Timer t ("TriangularMultUR"+ToString(OT)); 
+    // static Timer t ("TriangularMultUR"+ToString(OT)); 
     // static Timer tcopy ("TriangularMultUR, copy");
     
     if constexpr (OXY == RowMajor) {
         if (T.Width() <= 96)   
           {
-            RegionTimer reg(t);
+            // RegionTimer reg(t);
             constexpr size_t WX = 96;
             alignas (64) double memx[96*96];
             
             size_t m = T.Height();
             size_t n = T.Width();
-            t.AddFlops ( (n*m-m*m/2) * X.Width());
+            // t.AddFlops ( (n*m-m*m/2) * X.Width());
             
             if (n < m) throw Exception ("generictrig UR should be wide");
             for (size_t j = 0; j < X.Width(); j += WX)
@@ -810,8 +810,8 @@ namespace ngbla
                                    SliceMatrix<double, OXY> X,
                                    SliceMatrix<double, OXY> Y)
   {
-    static Timer t("GeneraliedTrigSubLL,OT = " + ToString(OT) + " OXY = " + ToString(OXY)); RegionTimer reg(t);
-    static Timer trect("rect");
+    // static Timer t("GeneraliedTrigSubLL,OT = " + ToString(OT) + " OXY = " + ToString(OXY)); RegionTimer reg(t);
+    // static Timer trect("rect");
     auto [T1,T2] = T.SplitRows(T.Width());
     auto [Y1,Y2] = Y.SplitRows(T.Width());
 
@@ -824,8 +824,8 @@ namespace ngbla
                    }
     else
       {
-        static Timer ttrig("trig,LL"); RegionTimer reg(ttrig);
-        ttrig.AddFlops(sqr(X.Height())/2 * X.Width());
+        // static Timer ttrig("trig,LL"); RegionTimer reg(ttrig);
+        // ttrig.AddFlops(sqr(X.Height())/2 * X.Width());
         /*
         Matrix<double,OXY> tmpX = X;
         TriangularMult<LowerLeft,NORM> (T1, tmpX);
@@ -860,8 +860,8 @@ namespace ngbla
       }
 
     {
-      RegionTimer regrect(trect);
-      trect.AddFlops(T2.Height()*T2.Width()*X.Width());
+      // RegionTimer regrect(trect);
+      // trect.AddFlops(T2.Height()*T2.Width()*X.Width());
       Y2 -= T2 * X;
     }
   }
