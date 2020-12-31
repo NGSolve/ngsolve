@@ -77,9 +77,9 @@ namespace ngbla
         Hv.Mult(M.Rows(i,min(i+2*bs,n)));
       }
     */
-    if (bs > 96) throw Exception("BandMatrix: band to big");
-
-    double mem[96*192];
+    // if (bs > 96) throw Exception("BandMatrix: band to big");
+    // double mem[96*192];
+    ArrayMem<double,48*96> mem(2*bs*bs);
     size_t n = H.Width();
 
     for (size_t i = 0; i < H.Width(); i += bs)
@@ -491,23 +491,19 @@ namespace ngbla
 
     tUV.Start();
 
-    U1 = Identity(m);
-    V1 = Identity(n);
+    // U1 = Identity(m);
+    // V1 = Identity(n);
+    U1 = 0.0; U1.Diag() = 1;
+    V1 = 0.0; V1.Diag() = 1;
 
     tU.Start();
-    ApplyHouseholderReflections (A, Trans(U1));
+    // ApplyHouseholderReflections (A, Trans(U1));
+    // ApplyHouseholderReflectionsTrans (A, U1);
     tU.Stop();
     // sum i=1..n : 2(m-i)*m  = 2 (n*m*m-n*n/2*m) = nm(2m-n)
     tU.AddFlops(n*m*(2*m-n));
-    tV.Start();
-    if (n > bs)
-      ApplyHouseholderReflections (Trans(A.Cols(bs,n).Rows(min(n-bs,m))), Trans(V1).Rows(bs,n));
-    tV.Stop();
-    tV.AddFlops (sqr(n-bs)*n);        
     
     tUV.Stop();
-
-
 
     
     static Timer tb2 ("bulge chasing - mult U");
@@ -515,18 +511,7 @@ namespace ngbla
     tb2.AddFlops (n*n*n);
     tb3.AddFlops (n*n*n);
     tb2.Start();
-    /*
-      for (auto [i,j,size] : refu)
-      {
-      tmp.Range(size) = Aband.Col(j).Range(i,i+size);
-      HouseholderReflection H(tmp.Range(size));
-      H.Mult (Trans(U1.Cols(i,i+size)));
-      }
-    */
     
-    // for (auto [i,j,size] : refu)
-    // cout << "i,j = " << i << "," << j << ", size = " << size << endl;
-
     // startrow is   1 + k bs,  maximal n-1
     // int startrow = 1;
     // while (startrow+bs < n) startrow += bs;
@@ -537,34 +522,41 @@ namespace ngbla
       {
         IntRange rest(startrow, n);
         auto sub = Aband.Rows(rest).Cols(0, n-startrow);
-        ApplyBandHouseholderReflections (bs, sub, Trans(U1.Cols(rest)));
+        ApplyBandHouseholderReflections (bs, sub, Trans(U1.Cols(rest)).Cols(startrow,m));
+
+        ApplyHouseholderReflectionsTrans (A.Cols(startrow, min(startrow+bs,n)).Rows(startrow,m), U1.Rows(startrow,m).Cols(startrow,m));        
         startrow -= bs;
       }
+    // ApplyHouseholderReflectionsTrans (A.Cols(0, min(startrow+bs,n)), U1);
+    ApplyHouseholderReflectionsTrans (A.Cols(0, 1), U1);            
     
     tb2.Stop();
+    
     tb3.Start();
 
-    /*
-      for (auto [i,j,size] : refv)
-      {
-      tmp.Range(size) = Aband.Row(i).Range(j,j+size);
-      tmp(0) = 1;
-      HouseholderReflection H(tmp.Range(size));
-      H.Mult (Trans(V1.Cols(j,j+size)));
-      }
-    */
     startrow = 1;
     while (startrow+bs < n) startrow += bs;
     while (startrow > 0)
       {
         IntRange rest(startrow, n);
         auto sub = Aband.Cols(rest).Rows(0, n-startrow);
-        ApplyBandHouseholderReflections (bs, Trans(sub), Trans(V1.Cols(rest)));
+        ApplyBandHouseholderReflections (bs, Trans(sub), Trans(V1.Cols(rest)).Cols(rest) );
+
+        if (startrow+bs<n)
+          ApplyHouseholderReflectionsTrans (Trans(A.Rows(startrow, min(startrow+bs, n-bs)).Cols(startrow+bs, n)), V1.Rows(startrow+bs,n).Cols(rest));        
+        
         startrow -= bs;
       }
-
-    
+    // ApplyHouseholderReflectionsTrans (A.Cols(0, min(startrow+bs,n)), U1);
+    ApplyHouseholderReflectionsTrans (Trans(A.Rows(0, 1).Cols(bs, n)), V1.Rows(bs,n));            
     tb3.Stop();
+
+    tV.Start();
+    // if (n > bs)
+    // ApplyHouseholderReflectionsTrans (Trans(A.Cols(bs,n).Rows(min(n-bs,m))), V1.Rows(bs,n));
+    tV.Stop();
+    tV.AddFlops (sqr(n-bs)*n);        
+    
     // tbulgechasing.Stop();
     
     // A.Rows(minnm).Cols(minnm) = Aband;
