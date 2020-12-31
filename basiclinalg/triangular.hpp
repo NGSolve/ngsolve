@@ -312,41 +312,11 @@ namespace ngbla
 
 
 
-
-
-
-
-  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OX, ORDERING OY>
-  void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
-                                     SliceMatrix<double, OX> X,
-                                     SliceMatrix<double, OY> Y)
-  {
-    if constexpr (SIDE == LowerLeft) {
-        
-        auto [Y1,Y2] = Y.SplitRows(X.Height());
-        auto [T1,T2] = T.SplitRows(X.Height());
-        
-        Y1 = X;
-        TriangularMult<SIDE, NORM> (T1, Y1);
-        Y2 = T2 * X;
-      }
-    else {
-
-      auto [X1,X2] = X.SplitRows(T.Height());
-      auto [T1,T2] = T.SplitCols(T.Height());
-
-      static Timer tc("generalizedtrig, copy trig, OX="+ToString(OX)+" OY="+ToString(OY));
-      tc.Start();
-      Y = X1;
-      tc.Stop();
-      static Timer t("generalizedtrig, trig part, SIDE = "+ToString(SIDE)+" normalized = "+ToString(NORM)+" OT = "+ToString(OT));
-      t.Start();
-      TriangularMult<SIDE, NORM> (T1, Y);
-      t.Stop();
-      Y += T2 * X2;
-    }
-  }
-
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
+  extern NGS_DLL_HEADER void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
+                                                           SliceMatrix<double, OXY> X,
+                                                           SliceMatrix<double, OXY> Y);
+    
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
   void GeneralizedTriangularMult (const TT & T,
                                   const TX & X,
@@ -357,8 +327,22 @@ namespace ngbla
   
 
 
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
+  extern NGS_DLL_HEADER void GeneralizedTriangularSub_SM (SliceMatrix<double, OT> T,
+                                                           SliceMatrix<double, OXY> X,
+                                                           SliceMatrix<double, OXY> Y);
 
+    
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
+  void GeneralizedTriangularSub (const TT & T,
+                                 const TX & X,
+                                 const TY & Y)
+  {
+    GeneralizedTriangularSub_SM<SIDE,NORM> (make_SliceMatrix(T), make_SliceMatrix(X), make_SliceMatrix(Y));
+  }
+  
 
+  
 
 
   

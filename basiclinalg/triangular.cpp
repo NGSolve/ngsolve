@@ -13,27 +13,76 @@ namespace ngbla
   // not so nice: T * X  ... X colwise    needed ???
   
 
-  template <size_t H, OPERATION OP, ORDERING ORD, typename TB>
-  INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, TB * pb, size_t db, double * pc, size_t dc)
+  template <size_t H, OPERATION OP, ORDERING ORD> 
+  INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
   {
+    // static Timer t("matkernel2addab"+ToString(H)+"x"+ToString(hb)+"x"+ToString(wb));
+    // t.AddFlops(H*hb*wb);
+    
+    // cout << "addab, ORD = " << ToString(ORD) << ", hb = " << hb << ", wb = " << wb << ", distb = " << db << endl;
     if constexpr (ORD == RowMajor)
       {
+        // RegionTimer r(t);
         constexpr size_t SW = SIMD<double>::Size();
-        constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
         size_t l = 0, lb = 0;
-        for ( ; l+3*SW <= wb; l += 3*SW, lb += 3*SWdTB)
+        for ( ; l+3*SW <= wb; l += 3*SW, lb += 3*SW)
           MatKernelMultAB<H,3,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
-        for ( ; l+SW <= wb; l += SW, lb += SWdTB)
+        for ( ; l+SW <= wb; l += SW, lb += SW)
           MatKernelMultAB<H,1,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
         if (l < wb)
           MatKernelMultABMask<H,OP>(hb, SIMD<mask64>(wb-l), pa, da, pb+lb, db, pc+l, dc);
       }
     else
       {
+        // static Timer tcopy("copya");
+        // tcopy.Start();
+        alignas (64) double mema[96][H];
+        if (hb <= 96)
+          {
+            for (int i = 0; i < hb; i++)
+              for (int j = 0; j < H; j++)
+                mema[i][j] = pa[i*da+j];
+            pa = &mema[0][0];
+            da = H;
+          }
+        // tcopy.Stop();
+        // RegionTimer r(t);        
         MatKernelAtB_SmallWA2<H,OP>(hb, wb, pa, da, pb, db, pc, dc);
       }
   }
 
+  
+  template <int SW>
+  inline void CopyMatrixIn (size_t h, size_t w,
+                            double * ps, size_t dists,
+                            SIMD<double,SW> * pd, size_t distd)
+  {
+    if (w % SW == 0)
+      {
+        for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
+          {
+            auto ps2 = ps;
+            auto pd2 = pd;
+            size_t js = 0; 
+            for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
+              *pd2 = SIMD<double>(ps2);
+          }
+      }
+    else
+      {
+        SIMD<mask64> mask(w % SW);
+        for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
+          {
+            auto ps2 = ps;
+            auto pd2 = pd;
+            
+            size_t js = 0; 
+            for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
+              *pd2 = SIMD<double>(ps2);
+            SIMD<double>(ps2, mask).Store((double*) (pd2), mask);
+          }
+      }
+  }
 
 
 
@@ -573,7 +622,273 @@ namespace ngbla
 
 
 
+  /* **************************** Generalized Triangular ************************** */
+
+  template <TRIG_NORMAL NORM, ORDERING OT, ORDERING OXY>
+  void GeneralizedTriangularMultLL (SliceMatrix<double, OT> T,
+                                    SliceMatrix<double, OXY> X,
+                                    SliceMatrix<double, OXY> Y)
+  {
+    auto [Y1,Y2] = Y.SplitRows(X.Height());
+    auto [T1,T2] = T.SplitRows(X.Height());
+    
+    Y1 = X;
+    TriangularMult<LowerLeft, NORM> (T1, Y1);
+    Y2 = T2 * X;
+  }
+
+  template <TRIG_NORMAL NORM, ORDERING OT, ORDERING OXY>
+  void GeneralizedTriangularMultUR (SliceMatrix<double, OT> T,
+                                    SliceMatrix<double, OXY> X,
+                                    SliceMatrix<double, OXY> Y)
+  {
+    static Timer t ("TriangularMultUR"+ToString(OT)); 
+    // static Timer tcopy ("TriangularMultUR, copy");
+    
+    if constexpr (OXY == RowMajor) {
+        if (T.Width() <= 96)   
+          {
+            RegionTimer reg(t);
+            constexpr size_t WX = 96;
+            alignas (64) double memx[96*96];
+            
+            size_t m = T.Height();
+            size_t n = T.Width();
+            t.AddFlops ( (n*m-m*m/2) * X.Width());
+            
+            if (n < m) throw Exception ("generictrig UR should be wide");
+            for (size_t j = 0; j < X.Width(); j += WX)
+              {
+                IntRange cols(j, min(j+WX, X.Width()));
+                size_t roundup = cols.Size() + SIMD<double>::Size()-1;
+                roundup -= roundup & (SIMD<double>::Size()-1);
+                SliceMatrix<double,OXY> hx(X.Height(), cols.Size(), roundup, &memx[0]);
+                bool copyx = X.Dist() >= 256;
+                // tcopy.Start();
+                if (copyx)
+                  CopyMatrixIn (X.Height(), cols.Size(), &X(cols.First(),0), X.Dist(),
+                                (SIMD<double>*) hx.Data(), hx.Dist() / SIMD<double>::Size());
+                  // hx = X.Cols(cols);
+                // tcopy.Stop();
+
+                auto Xc = copyx ? hx : X.Cols(cols);
+                auto Yc = Y.Cols(cols);
+
+                constexpr size_t HA = 4;
+
+                size_t i = 0;
+                for ( ; i + HA <= m; i += HA)
+                  {
+                    KernelTriangularMultXY<UpperRight,NORM,OT,SET,HA> (Xc.Width(), &T(i,i), T.Dist(), &Xc(i,0), Xc.Dist(), &Yc(i,0), Yc.Dist());
+                    if (i+HA < n)
+                      MatKernel2AddAB<HA,ADD,OT> (n-i-HA, Xc.Width(), &T(i,i+HA), T.Dist(), &Xc(i+HA,0), Xc.Dist(), &Yc(i,0), Yc.Dist());
+                  }
+
+                size_t remainder = m % HA;
+                Switch<HA> (remainder, [i,n,T,Xc,Yc] (auto r)
+                            {
+                              if constexpr (r.value > 0) {
+                                  KernelTriangularMultXY<UpperRight,NORM,OT,SET,r.value> (Xc.Width(), &T(i,i), T.Dist(), &Xc(i,0), Xc.Dist(), &Yc(i,0), Yc.Dist());
+                                  if (i+r.value < n)
+                                    MatKernel2AddAB<r.value,ADD,OT> (n-i-r.value, Xc.Width(), &T(i,i+r.value), T.Dist(), &Xc(i+r.value,0), Xc.Dist(), &Yc(i,0), Yc.Dist());
+                                }
+                            });
+              }
+            return;
+          }
+      }
+    
+    
+    auto [X1,X2] = X.SplitRows(T.Height());
+    auto [T1,T2] = T.SplitCols(T.Height());
+    
+    // static Timer tc("generalizedtrig, copy trig, OXY="+ToString(OXY));
+    // tc.Start();
+    Y = X1;
+    // tc.Stop();
+    // static Timer t("generalizedtrig, trig part, side = UpperRight, normalized = "+ToString(NORM)+" OT = "+ToString(OT));
+    // t.Start();
+    TriangularMult<UpperRight, NORM> (T1, Y);
+    // t.Stop();
+    Y += T2 * X2;
+  }
+
+  template <>
+  void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
+                                                          SliceMatrix<double,RowMajor> X,
+                                                          SliceMatrix<double,RowMajor> Y)
+  { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
+                                                          SliceMatrix<double,RowMajor> X,
+                                                          SliceMatrix<double,RowMajor> Y)
+  { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
+                                                          SliceMatrix<double,ColMajor> X,
+                                                          SliceMatrix<double,ColMajor> Y)
+  { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
+                                                          SliceMatrix<double,ColMajor> X,
+                                                          SliceMatrix<double,ColMajor> Y)
+  { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,ColMajor> T,
+                                                          SliceMatrix<double,RowMajor> X,
+                                                          SliceMatrix<double,RowMajor> Y)
+  { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,RowMajor> T,
+                                                          SliceMatrix<double,RowMajor> X,
+                                                          SliceMatrix<double,RowMajor> Y)
+  { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,ColMajor> T,
+                                                          SliceMatrix<double,ColMajor> X,
+                                                          SliceMatrix<double,ColMajor> Y)
+  { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,RowMajor> T,
+                                                          SliceMatrix<double,ColMajor> X,
+                                                          SliceMatrix<double,ColMajor> Y)
+  { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
+
+
   
+
+  /*
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
+  void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
+                                     SliceMatrix<double, OXY> X,
+                                     SliceMatrix<double, OYY> Y)
+  {
+    if constexpr (SIDE == LowerLeft) {
+        
+        auto [Y1,Y2] = Y.SplitRows(X.Height());
+        auto [T1,T2] = T.SplitRows(X.Height());
+        
+        Y1 = X;
+        TriangularMult<SIDE, NORM> (T1, Y1);
+        Y2 = T2 * X;
+      }
+    else {
+
+      auto [X1,X2] = X.SplitRows(T.Height());
+      auto [T1,T2] = T.SplitCols(T.Height());
+
+      static Timer tc("generalizedtrig, copy trig, OX="+ToString(OX)+" OY="+ToString(OY));
+      tc.Start();
+      Y = X1;
+      tc.Stop();
+      static Timer t("generalizedtrig, trig part, SIDE = "+ToString(SIDE)+" normalized = "+ToString(NORM)+" OT = "+ToString(OT));
+      t.Start();
+      TriangularMult<SIDE, NORM> (T1, Y);
+      t.Stop();
+      Y += T2 * X2;
+    }
+  }
+  */
+
+
+
+
+
+
+  
+  // T  .... lower left
+  // Y -= T * X
+  template <TRIG_NORMAL NORM, ORDERING OT, ORDERING OXY>
+  void GeneralizedTriangularSubLL (SliceMatrix<double, OT> T,
+                                   SliceMatrix<double, OXY> X,
+                                   SliceMatrix<double, OXY> Y)
+  {
+    static Timer t("GeneraliedTrigSubLL,OT = " + ToString(OT) + " OXY = " + ToString(OXY)); RegionTimer reg(t);
+    static Timer trect("rect");
+    auto [T1,T2] = T.SplitRows(T.Width());
+    auto [Y1,Y2] = Y.SplitRows(T.Width());
+
+    if constexpr (OXY == ColMajor)
+                   {
+                     static Timer ttrig("trig,LL,generic"); RegionTimer reg(ttrig);
+                     Matrix<double,OXY> tmpX = X;
+                     TriangularMult<LowerLeft,NORM> (T1, tmpX);
+                     Y1 -= tmpX;
+                   }
+    else
+      {
+        static Timer ttrig("trig,LL"); RegionTimer reg(ttrig);
+        ttrig.AddFlops(sqr(X.Height())/2 * X.Width());
+        /*
+        Matrix<double,OXY> tmpX = X;
+        TriangularMult<LowerLeft,NORM> (T1, tmpX);
+        Y1 -= tmpX;
+        */
+        constexpr size_t WX = 96;
+
+        for (size_t j = 0; j < X.Width(); j += WX)
+          {
+            IntRange cols(j, min(j+WX, X.Width()));
+
+            auto Xc = X.Cols(cols);
+            auto Yc = Y.Cols(cols);
+            
+            size_t n = T.Width();
+            constexpr size_t HA = 4;
+            size_t remainder = n % HA;
+        
+            Switch<HA> (remainder, [T,Xc,Yc] (auto r)
+                        {
+                          KernelTriangularMultXY<LowerLeft,NORM,OT,SUB,r.value> (Xc.Width(), &T(0,0), T.Dist(),
+                                                                                 &Xc(0,0), Xc.Dist(), &Yc(0,0), Yc.Dist());
+                        });
+            
+            for (size_t i = remainder; i < n; i += HA)
+              {
+                KernelTriangularMultXY<LowerLeft,NORM,OT,SUB,HA> (Xc.Width(), &T(i,i), T.Dist(), &Xc(i,0), Xc.Dist(), &Yc(i,0), Yc.Dist());
+                if (i > 0)
+                  MatKernel2AddAB<HA,SUB,OT> (i, Xc.Width(), &T(i,0), T.Dist(), &Xc(0,0), Xc.Dist(), &Yc(i,0), Yc.Dist());
+              }
+          }
+      }
+
+    {
+      RegionTimer regrect(trect);
+      trect.AddFlops(T2.Height()*T2.Width()*X.Width());
+      Y2 -= T2 * X;
+    }
+  }
+  
+  template <>
+  void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
+                                                          SliceMatrix<double,RowMajor> X,
+                                                          SliceMatrix<double,RowMajor> Y)
+  { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
+                                                          SliceMatrix<double,RowMajor> X,
+                                                          SliceMatrix<double,RowMajor> Y)
+  { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
+                                                          SliceMatrix<double,ColMajor> X,
+                                                          SliceMatrix<double,ColMajor> Y)
+  { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
+
+  template <>
+  void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
+                                                          SliceMatrix<double,ColMajor> X,
+                                                          SliceMatrix<double,ColMajor> Y)
+  { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
   
   
 }

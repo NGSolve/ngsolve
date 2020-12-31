@@ -2160,6 +2160,152 @@ void GenerateTriangular (ofstream & out, bool solve, bool lowerleft, bool normal
 
 
 
+void GenerateTriangularXY (ofstream & out, bool solve, bool lowerleft, bool normalized, ORDERING order,
+                           OP op, int dim)
+{
+  out << "template <> " << endl
+      << "inline void " << (solve ? "KernelTriangularSolveXY" : "KernelTriangularMultXY")
+      << "<" << (lowerleft ? "LowerLeft" : "UpperRight") << ","
+      << (normalized ? "Normalized" : "NonNormalized") << ","
+      << (order == RowMajor ? "RowMajor" : "ColMajor") << ","
+      << ToString(op) << ", "
+      << dim << ">" 
+      << "(size_t wx, double * pt, size_t dt, double * px, size_t dx, double * py, size_t dy) { " << endl;
+
+  if (lowerleft)
+    {
+      for (int i = 0; i < dim; i++)
+        for (int j = 0; j < (normalized ? i : i+1); j++)
+          if (order == RowMajor)
+            out << "SIMD<double> L" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+          else
+            out << "SIMD<double> L" << i << j << " = pt[" << i << "+dt*" << j << "];" << endl;
+      if (normalized)
+        for (int i = 0; i < dim; i++)
+          out << "SIMD<double> L" << i << i << "(1.0);\n";
+    }
+  else
+    {
+      for (int i = 0; i < dim; i++)
+        for (int j = (normalized ? i+1 : i); j < dim; j++)
+          if (order == RowMajor)          
+            out << "SIMD<double> U" << i << j << " = pt[" << i << "*dt+" << j << "];" << endl;
+          else
+            out << "SIMD<double> U" << i << j << " = pt[" << i << "+dt*" << j << "];" << endl;
+      if (normalized)
+        for (int i = 0; i < dim; i++)
+          out << "SIMD<double> U" << i << i << "(1.0);\n";
+    }
+
+  if (solve && !normalized)
+    {
+      if (lowerleft)
+        for (int i = 0; i < dim; i++)
+          out << "SIMD<double> Linv" << i << i << " = 1.0 / L" << i << i << ";\n";
+      else
+        for (int i = 0; i < dim; i++)
+          out << "SIMD<double> Uinv" << i << i << " = 1.0 / U" << i << i << ";\n";
+    }
+  
+
+  stringstream operation;
+  string addop = (op == SET || op == ADD) ? "+=" : "-=";
+  if (!solve)
+    { // mult
+      if (lowerleft)
+        { //  lowerleft mult
+          for (int i = dim-1; i >= 0; i--)
+            {
+              for (int j = 0; j <= i; j++)
+                operation << FMAOp (op, false) << "(L" << i << j << ", x" << j << ", y" << i << ");\n";
+                // operation << "y" << i << addop << "L" << i << j << " * x" << j << ";\n";
+            }
+        }
+      else
+        {  // upperright mult
+          for (int i = 0; i < dim; i++)
+            {
+              for (int j = i; j < dim; j++)
+                operation << FMAOp (op, false) << "(U" << i << j << ", x" << j << ", y" << i << ");\n";                
+              // operation << "y" << i << addop << "U" << i << j << "*" << "x" << j << ";\n";
+            }
+        }
+    }
+  else
+    {
+      throw Exception ("solvetrig, xy not implemented");
+      // solve
+      if (lowerleft)
+        { //  lowerleft solve
+          for (int i = 0; i < dim; i++)
+            {
+              for (int j = 0; j < i; j++)
+                operation << "x" << i << " -= L" << i << j << "*x" << j << ";\n";
+              if (!normalized)
+                operation << "x" << i << " *= " << "Linv" << i << i << ";\n";
+            }
+        }
+      else
+        { //  upperright solve
+          for (int i = dim-1; i >= 0; i--)
+            {
+              for (int j = i+1; j < dim; j++)
+                operation << "x" << i << " -= U" << i << j << "*x" << j << ";\n";
+              if (!normalized)
+                operation << "x" << i << " *= " << "Uinv" << i << i << ";\n";
+            }
+        }
+    }
+
+  out << "constexpr size_t SW = SIMD<double>::Size(); \n"
+      << "size_t i = 0; \n"
+      << "for ( ; i+SW <= wx; i+=SW) { \n";
+  
+  for (int i = 0; i < dim; i++)
+    {
+      out << "SIMD<double> x" << i << "(px+" << i << "*dx+i); \n";
+      if (op == SET || op == SETNEG)
+        out << "SIMD<double> y" << i << "(0);\n";
+      else
+        out << "SIMD<double> y" << i << "(py+" << i << "*dy+i); \n";
+    }
+
+  out << operation.str();
+
+  for (int i = 0; i < dim; i++)
+    out << "y" << i << ".Store(py+" << i << "*dy+i); \n";
+  
+  out << "}\n";
+
+  // remainder
+
+  // mask = ...
+  out << "size_t rest = wx % SW; \n"
+      << "if (rest == 0) return; \n"
+      << "SIMD<mask64> mask(rest);" << endl;
+  
+  for (int i = 0; i < dim; i++)
+    {
+      out << "SIMD<double> x" << i << "(px+" << i << "*dx+i, mask); \n";
+      if (op == SET || op == SETNEG)
+        out << "SIMD<double> y" << i << "(0);\n";
+      else
+        out << "SIMD<double> y" << i << "(py+" << i << "*dy+i, mask); \n";
+    }
+  out << operation.str();
+
+  for (int i = 0; i < dim; i++)    
+    out << "y" << i << ".Store(py+" << i << "*dy+i, mask); \n";
+
+  out << "}\n";
+}
+
+
+
+
+
+
+
 
 int main ()
 {
@@ -2434,24 +2580,44 @@ int main ()
   /* *********************** MatKernelTriangularMult ***************** */
   out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>" << endl
       << "inline void KernelTriangularMult (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
+  out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>" << endl
+      << "inline void KernelTriangularMultXY (size_t wx, double * pt, size_t dt, "
+      << "double * px, size_t dx, double * py, size_t dy) { " << endl
+      << "cerr << \"missing implementation, side = \" << SIDE << \" norm = \" << NORM" << endl
+      << "<< \" ORD = \" << ORD << \", OP = \" << OP << \", DIM = \" << DIM << endl; }" << endl;
   out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>" << endl
       << "inline void KernelTriangularSolve (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
 
 
   for (int i = 0; i <= 4; i++)
-    {
-      // bool solve, bool lowerleft, bool normalized, bool trans, int dim
-      GenerateTriangular (out, false, true, false, RowMajor, i);
-      GenerateTriangular (out, false, true, true, RowMajor, i);
-      GenerateTriangular (out, false, false, false, RowMajor, i);
-      GenerateTriangular (out, false, false, true, RowMajor, i);
-      GenerateTriangular (out, false, true, false, ColMajor, i);
-      GenerateTriangular (out, false, true, true, ColMajor, i);
-      GenerateTriangular (out, false, false, false, ColMajor, i);
-      GenerateTriangular (out, false, false, true, ColMajor, i);
-      GenerateTriangular (out, true, true, false, RowMajor, i);
-      GenerateTriangular (out, true, true, true, RowMajor, i);
-      GenerateTriangular (out, true, false, false, RowMajor, i);
-      GenerateTriangular (out, true, false, true, RowMajor, i);
-    }
+    for (bool lowerleft : { false, true })
+      for (bool normalized : { false, true })
+        {
+          // bool solve, bool lowerleft, bool normalized, bool trans, int dim
+          
+          GenerateTriangular (out, false, lowerleft, normalized, RowMajor, i);
+          GenerateTriangular (out, false, lowerleft, normalized, ColMajor, i);
+          GenerateTriangular (out, true, lowerleft, normalized, RowMajor, i);
+
+          GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SET, i);
+          GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SET, i);
+          GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, ADD, i);
+          GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, ADD, i);
+          GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SUB, i);
+          GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SUB, i);
+          
+          /*
+          GenerateTriangular (out, false, true, true, RowMajor, i);
+          GenerateTriangular (out, false, false, false, RowMajor, i);
+          GenerateTriangular (out, false, false, true, RowMajor, i);
+          GenerateTriangular (out, false, true, false, ColMajor, i);
+          GenerateTriangular (out, false, true, true, ColMajor, i);
+          GenerateTriangular (out, false, false, false, ColMajor, i);
+          GenerateTriangular (out, false, false, true, ColMajor, i);
+          GenerateTriangular (out, true, true, false, RowMajor, i);
+          GenerateTriangular (out, true, true, true, RowMajor, i);
+          GenerateTriangular (out, true, false, false, RowMajor, i);
+          GenerateTriangular (out, true, false, true, RowMajor, i);
+          */
+        }
 }
