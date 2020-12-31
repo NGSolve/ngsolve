@@ -16,6 +16,7 @@ namespace ngbla
   template <size_t H, OPERATION OP, ORDERING ORD> 
   INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
   {
+    if constexpr (H == 0) return;
     // static Timer t("matkernel2addab"+ToString(H)+"x"+ToString(hb)+"x"+ToString(wb));
     // t.AddFlops(H*hb*wb);
     
@@ -101,19 +102,15 @@ namespace ngbla
     
     size_t remainder = n % HA;
     if (remainder > 0)
-      {
-        Switch<HA> (remainder, [L,X,i] (auto r)
-                    {
-                      if constexpr (r.value > 0)
-                                     KernelTriangularMult<LowerLeft,NORM,ORD,r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
-                      if (i > r)
-                        if constexpr (r.value > 0)
-                                       MatKernel2AddAB<r.value,ADD,ORD> (i-r.value, X.Width(),
-                                                                         &L(i-r.value,0), L.Dist(),
-                                                                         &X(0,0), X.Dist(),
-                                                                         &X(i-r.value,0), X.Dist());
-                    });
-      }
+      Switch<HA> (remainder, [L,X,i] (auto r)
+                  {
+                    KernelTriangularMult<LowerLeft,NORM,ORD,r.value> (X.Width(), &L(i-r.value,i-r.value), L.Dist(), &X(i-r.value,0), X.Dist());
+                    if (i > r)
+                      MatKernel2AddAB<r.value,ADD,ORD> (i-r.value, X.Width(),
+                                                        &L(i-r.value,0), L.Dist(),
+                                                        &X(0,0), X.Dist(),
+                                                        &X(i-r.value,0), X.Dist());
+                  });
     
     i -= remainder;
     for ( ; i >= HA; i -= HA)
@@ -144,9 +141,11 @@ namespace ngbla
         TriangularMultLL2<NORM> (T,X);
         return;
       }
-    IntRange r1(0,n/2), r2(n/2,n);
+    size_t n2 = n/2;
+    n2 -= n2 % (3*SIMD<double>::Size());
+    // IntRange r1(0,n/2), r2(n/2,n);
+    IntRange r1(0,n2), r2(n2,n);
     auto T11 = T.Rows(r1).Cols(r1);
-    // auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
     auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
     auto T22 = T.Rows(r2).Cols(r2);
     auto X1 = X.Rows(r1);
@@ -158,21 +157,13 @@ namespace ngbla
   }
 
   void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X)
-  {
-    TriangularMultLL1<NonNormalized> (T,X);
-  }
+  { TriangularMultLL1<NonNormalized> (T,X); }
   void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X)
-  {
-    TriangularMultLL1<Normalized> (T,X);
-  }
+  { TriangularMultLL1<Normalized> (T,X); }
   void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
-  {
-    TriangularMultLL1<NonNormalized> (T,X);
-  }
+  { TriangularMultLL1<NonNormalized> (T,X); }
   void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
-  {
-    TriangularMultLL1<Normalized> (T,X);
-  }
+  { TriangularMultLL1<Normalized> (T,X); }
 
   
   
@@ -204,13 +195,10 @@ namespace ngbla
 
     size_t remainder = n % HA;
     if (remainder > 0)
-      {
-        Switch<HA> (remainder, [U,X,i] (auto r)
-                    {
-                      if constexpr (r.value > 0)
-                                     KernelTriangularMult<UpperRight,NORM,ORD,r.value> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
-                    });
-      }
+      Switch<HA> (remainder, [U,X,i] (auto r)
+                  {
+                    KernelTriangularMult<UpperRight,NORM,ORD,r.value> (X.Width(), &U(i,i), U.Dist(), &X(i,0), X.Dist());
+                  });
   }
 
 
@@ -240,11 +228,10 @@ namespace ngbla
       }
 
     size_t n2 = n/2;
-    n2 = n2 - (n2 % 4);
+    n2 -= n2 % (3*SIMD<double>::Size());    
     IntRange r1(0,n2), r2(n2,n);
     auto T11 = T.Rows(r1).Cols(r1);
     auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
-    // auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
     auto T22 = T.Rows(r2).Cols(r2);
     auto X1 = X.Rows(r1);
     auto X2 = X.Rows(r2);
@@ -255,22 +242,13 @@ namespace ngbla
   }
   
   void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X)
-  {
-    TriangularMultUR1<NonNormalized> (T,X);
-  }
+  { TriangularMultUR1<NonNormalized> (T,X); }
   void TriangularMultURN (BareSliceMatrix<double> T, SliceMatrix<double> X)
-  {
-    TriangularMultUR1<Normalized> (T,X);
-  }
-
+  { TriangularMultUR1<Normalized> (T,X); }
   void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
-  {
-    TriangularMultUR1<NonNormalized> (T,X);
-  }
+  { TriangularMultUR1<NonNormalized> (T,X); }
   void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
-  {
-    TriangularMultUR1<Normalized> (T,X);
-  }
+  { TriangularMultUR1<Normalized> (T,X); }
 
 
 
