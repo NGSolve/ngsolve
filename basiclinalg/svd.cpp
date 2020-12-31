@@ -1327,31 +1327,32 @@ namespace ngbla
     for (size_t i = 0; i < ncomp; i++)
       compress_Ds2(i) = sqr(compress_Ds(i));
 
-    /*
-      // for cancelation: shift Ds, and then add difference
-    Matrix<> shifted(ncomp, ncomp);
-    for (int i = 0; i < ncomp; i++)
-      for (int j = 0; j < ncomp; j++)
-        shifted(i,j) = compress_Ds2(i)-compress_omega2ref(j);
-    */
     
-    // static Timer tzmod("zmod");
-    // tzmod.Start();
     VectorMem<100> compress_zsmod(ncomp);
-    for (size_t i = 0; i < ncomp; i++)
+    static Timer tzmod("zmod");
+    tzmod.Start();
+    
+    VectorMem<100> shifted(ncomp);
+    compress_zsmod = 1;
+    for (size_t j = 0; j < ncomp-1; j++)
       {
-        double prod = 1;
-        for (size_t j = 0; j < i; j++)
-          prod *= (compress_omega2ref(j)-compress_Ds2(i)+compress_omega2diff(j)) / (compress_Ds2(j)-compress_Ds2(i));
-        // prod *= (-shifted(i,j)+compress_omega2diff(j)) / (compress_Ds2(j)-compress_Ds2(i));
-        for (size_t j = i; j < ncomp-1; j++)
-          prod *= (compress_omega2ref(j)-compress_Ds2(i)+compress_omega2diff(j)) / (compress_Ds2(j+1)-compress_Ds2(i));
-        // prod *= (-shifted(i,j)+compress_omega2diff(j)) / (compress_Ds2(j+1)-compress_Ds2(i));
-        prod *= compress_omega2ref(ncomp-1)-compress_Ds2(i)+compress_omega2diff(ncomp-1);
-        // prod *= -shifted(i,ncomp-1)+compress_omega2diff(ncomp-1);
-        compress_zsmod(i) = sqrt(prod);
+        for (size_t i = 0; i < ncomp; i++)
+          shifted(i) = compress_omega2ref(j)-compress_Ds2(i);   // roundoff is here critical !
+        for (size_t i = 0; i <= j; i++)
+          compress_zsmod(i) *= (shifted(i)+compress_omega2diff(j)) / (compress_Ds2(j+1)-compress_Ds2(i));
+        for (size_t i = j+1; i < ncomp; i++)
+          compress_zsmod(i) *= (shifted(i)+compress_omega2diff(j)) / (compress_Ds2(j)-compress_Ds2(i));          
       }
-    // tzmod.Stop();
+    
+    for (size_t i = 0; i < ncomp; i++)
+      shifted(i) = compress_omega2ref(ncomp-1)-compress_Ds2(i);
+    for (size_t i = 0; i < ncomp; i++)
+      compress_zsmod(i) *= shifted(i)+compress_omega2diff(ncomp-1);
+    
+    for (auto & zsmod : compress_zsmod)
+      zsmod = sqrt(zsmod);
+
+    tzmod.Stop();
     
     for (size_t i = 0; i < compress_zs.Size(); i++)
       if (compress_zs(i) < 0) compress_zsmod(i)*=-1;
@@ -1372,18 +1373,20 @@ namespace ngbla
     Q.Cols(ncomp) = U.Cols(ncomp);
     W.Cols(ncomp) = V.Cols(ncomp);
 
-    // static Timer tuv("tuv");
-    // tuv.Start();
+    static Timer tuv("tuv");
+    tuv.Start();
     for (size_t i = 0; i < ncomp; i++)
       {
         auto colu = MU.Col(i).Range(ncomp);
         auto colv = MV.Col(i).Range(ncomp);
         sigma(i) = compress_omega(i);
+
+        for (size_t j = 0; j < ncomp; j++)
+          shifted(j) = compress_Ds2(j)-compress_omega2ref(i); // critical for roundoff
         
         for (size_t j = 0; j < ncomp; j++)
           {
-            double ui = compress_zsmod(j) / (compress_Ds2(j)-compress_omega2ref(i)-compress_omega2diff(i));
-            // double ui = compress_zsmod(j) / (shifted(j,i)-compress_omega2diff(i));
+            double ui = compress_zsmod(j) / (shifted(j)-compress_omega2diff(i));
             colu(j) = ui;
             colv(j) = compress_Ds(j)*ui;
           }
@@ -1392,8 +1395,9 @@ namespace ngbla
         colu /= L2Norm(colu);
         colv /= L2Norm(colv);
       }
-    // tuv.Stop();
+    tuv.Stop();
 
+    
     static Timer tmult("multQU");
     tmult.AddFlops(2*Q.Height()*ncomp*ncomp);
     tmult.Start();

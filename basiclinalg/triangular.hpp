@@ -212,8 +212,12 @@ namespace ngbla
       TriangularMult2<SIDE,NORM> (T, X.Cols(i,X.Width()));      
   }
 
+  
   extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X);
   extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+
   template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularMultLL(T,X);
@@ -224,8 +228,6 @@ namespace ngbla
     TriangularMultLLN(T,X);
   }
 
-  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
   template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
   {
     TriangularMultLL(T,X);
@@ -235,8 +237,6 @@ namespace ngbla
   {
     TriangularMultLLN(T,X);
   }
-
-
 
 
   
