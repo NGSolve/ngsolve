@@ -198,6 +198,9 @@ namespace ngbla
           static Timer t(timername+string("2")); RegionTimer reg(t);        
           TriangularMult<LowerLeft,NonNormalized> (T, tmp);
         }
+
+        GeneralizedTriangularSub<LowerLeft,Normalized> (Trans(mv), tmp, colsm2);
+        /*
         // colsm2 -= Trans(mv)*tmp;
         IntRange r1(0, mv.Height());
         IntRange r2(mv.Height(), colsm2.Height());
@@ -211,6 +214,7 @@ namespace ngbla
           TriangularMult<LowerLeft,Normalized> (Trans(mv.Cols(r1)), tmp);
         }
         colsm2.Rows(r1) -= tmp;
+        */
       }
   }
 

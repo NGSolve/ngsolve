@@ -66,6 +66,7 @@ namespace ngbla
   template <ORDERING OH, ORDERING OM>  
   void ApplyBandHouseholderReflections (size_t bs, SliceMatrix<double,OH> H, SliceMatrix<double,OM> M)
   {
+    /*
     size_t n = H.Width();
     for (size_t i = 0; i+bs < n; i++)
       H.Col(i).Range(i+bs, min(n, i+2*bs)) = 0;
@@ -74,6 +75,23 @@ namespace ngbla
         size_t next = min(i+bs, n);
         MultiHouseholderReflection Hv(Trans(H.Cols(i,next).Rows(i,min(i+2*bs,n))));
         Hv.Mult(M.Rows(i,min(i+2*bs,n)));
+      }
+    */
+    if (bs > 96) throw Exception("BandMatrix: band to big");
+
+    double mem[96*192];
+    size_t n = H.Width();
+
+    for (size_t i = 0; i < H.Width(); i += bs)
+      {
+        IntRange cols(i, min(i+bs,n));
+        IntRange rows(i, min(i+2*bs,n));
+        FlatMatrix<double,OH> tmp (rows.Size(), cols.Size(),&mem[0]);
+        tmp = H.Cols(cols).Rows(rows);
+        for (size_t i = 0; i+bs < tmp.Height(); i++)
+          tmp.Col(i).Range(i+bs, tmp.Height()) = 0;
+        MultiHouseholderReflection Hv(SliceMatrix(Trans(tmp))); 
+        Hv.Mult(M.Rows(rows));
       }
   }
 
@@ -208,7 +226,7 @@ namespace ngbla
     size_t m = A.Height();
     size_t n = A.Width();
     Matrix A_orig = A; // for testint only
-    constexpr size_t bs = 24;  // orig: 32
+    constexpr size_t bs = 36;  // orig: 32
 
     
     for (size_t i1 = 0; i1 < min(n,m); i1 += bs)
@@ -259,24 +277,6 @@ namespace ngbla
       }
     
     ttrig.Stop();
-    tUV.Start();
-
-    U1 = Identity(m);
-    V1 = Identity(n);
-
-    tU.Start();
-    ApplyHouseholderReflections (A, Trans(U1));
-    tU.Stop();
-    // sum i=1..n : 2(m-i)*m  = 2 (n*m*m-n*n/2*m) = nm(2m-n)
-    tU.AddFlops(n*m*(2*m-n));
-    tV.Start();
-    if (n > bs)
-      ApplyHouseholderReflections (Trans(A.Cols(bs,n).Rows(min(n-bs,m))), Trans(V1).Rows(bs,n));
-    tV.Stop();
-    tV.AddFlops (sqr(n-bs)*n);        
-    
-    tUV.Stop();
-
     
     
     /*
@@ -437,8 +437,8 @@ namespace ngbla
     // Matrix<> reflect_bcV(bcbs * maxblocks, bs+bcbs-1);
     // Array<IntRange> ranges;
 
-    Array<tuple<int,int,int>> refu;
-    Array<tuple<int,int,int>> refv;
+    // Array<tuple<int,int,int>> refu;
+    // Array<tuple<int,int,int>> refv;
 
     static Timer tb1 ("bulge chasing - transform band");
     tb1.Start();
@@ -450,7 +450,7 @@ namespace ngbla
         auto x = Aband.Row(i).Range(cols);
         
         CalcHouseholderVector (x, tmp.Range(x.Size()));
-        refv.Append ( tuple(i,cols.First(),cols.Size() ));
+        // refv.Append ( tuple(i,cols.First(),cols.Size() ));
                   
         IntRange rows(i, min(m,i+bs+1));
         HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
@@ -465,7 +465,7 @@ namespace ngbla
               CalcHouseholderVector (x, tmp.Range(x.Size()));
 
               Aband.Col(i).Range(rows) = tmp.Range(x.Size());
-              refu.Append ( tuple(i1,i,rows.Size() ));
+              // refu.Append ( tuple(i1,i,rows.Size() ));
               IntRange cols(i1, min(n, i1+2*bs));
               HouseholderReflection (tmp.Range(x.Size())).Mult (Aband.Rows(rows).Cols(cols));
             }
@@ -477,7 +477,7 @@ namespace ngbla
                 CalcHouseholderVector (x, tmp.Range(x.Size()));
                 
                 Aband.Row(i).Range(cols) = tmp.Range(x.Size());
-                refv.Append ( tuple(i,cols.First(),cols.Size() ));
+                // refv.Append ( tuple(i,cols.First(),cols.Size() ));
                 
                 IntRange rows(i1, min(n, i1+2*bs));
                 HouseholderReflection (tmp.Range(x.Size())).Mult (Trans(Aband.Rows(rows).Cols(cols)));
@@ -486,6 +486,30 @@ namespace ngbla
       }
     
     tb1.Stop();
+
+
+
+    tUV.Start();
+
+    U1 = Identity(m);
+    V1 = Identity(n);
+
+    tU.Start();
+    ApplyHouseholderReflections (A, Trans(U1));
+    tU.Stop();
+    // sum i=1..n : 2(m-i)*m  = 2 (n*m*m-n*n/2*m) = nm(2m-n)
+    tU.AddFlops(n*m*(2*m-n));
+    tV.Start();
+    if (n > bs)
+      ApplyHouseholderReflections (Trans(A.Cols(bs,n).Rows(min(n-bs,m))), Trans(V1).Rows(bs,n));
+    tV.Stop();
+    tV.AddFlops (sqr(n-bs)*n);        
+    
+    tUV.Stop();
+
+
+
+    
     static Timer tb2 ("bulge chasing - mult U");
     static Timer tb3 ("bulge chasing - mult V");
     tb2.AddFlops (n*n*n);
@@ -502,9 +526,13 @@ namespace ngbla
     
     // for (auto [i,j,size] : refu)
     // cout << "i,j = " << i << "," << j << ", size = " << size << endl;
-    
-    int startrow = 1;
-    while (startrow+bs < n) startrow += bs;
+
+    // startrow is   1 + k bs,  maximal n-1
+    // int startrow = 1;
+    // while (startrow+bs < n) startrow += bs;
+    int startrow = n-2;
+    startrow -= startrow % bs;
+    startrow++;
     while (startrow > 0)
       {
         IntRange rest(startrow, n);
