@@ -197,8 +197,10 @@ namespace ngcomp
               return fe;
             });
         }
-      case BBND: case BBBND: default:
-        throw Exception ("NormalFacetSurfaceFESpace::GetFE does not support BBND or BBBND");
+      case BBND:
+        return * new (lh) DummyFE<ET_SEGM>();
+      case BBBND: default:
+        return * new (lh) DummyFE<ET_POINT>();
       }
   }
 
