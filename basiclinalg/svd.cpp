@@ -80,17 +80,18 @@ namespace ngbla
     // if (bs > 96) throw Exception("BandMatrix: band to big");
     // double mem[96*192];
     ArrayMem<double,48*96> mem(2*bs*bs);
+    ArrayMem<double,48*48> memh(bs*bs);
     size_t n = H.Width();
 
     for (size_t i = 0; i < H.Width(); i += bs)
       {
         IntRange cols(i, min(i+bs,n));
         IntRange rows(i, min(i+2*bs,n));
-        FlatMatrix<double,OH> tmp (rows.Size(), cols.Size(),&mem[0]);
+        FlatMatrix<double,OH> tmp (rows.Size(), cols.Size(),mem.Data());
         tmp = H.Cols(cols).Rows(rows);
         for (size_t i = 0; i+bs < tmp.Height(); i++)
           tmp.Col(i).Range(i+bs, tmp.Height()) = 0;
-        MultiHouseholderReflection Hv(SliceMatrix(Trans(tmp))); 
+        MultiHouseholderReflectionMem Hv(SliceMatrix(Trans(tmp)), memh.Data()); 
         Hv.Mult(M.Rows(rows));
       }
   }
@@ -99,15 +100,13 @@ namespace ngbla
   void ReduceBiDiagonal (SliceMatrix<double,ORD> A, 
                          SliceMatrix<double, ColMajor> U1, SliceMatrix<double, ColMajor> V1)
   {
-    // static Timer ttrig("householder-triangular"); RegionTimer reg(ttrig);
+    static Timer ttrig("householder-triangular"); RegionTimer reg(ttrig);
     // static Timer tuv("householder-triangular, transform uv"); 
   
     size_t m = A.Height();
     size_t n = A.Width();
     size_t minnm = min(n,m);
 
-    U1 = Identity(m);
-    V1 = Identity(n);
 
     /*
     // no blocking at all
@@ -191,8 +190,14 @@ namespace ngbla
           }
       }
 
-    // RegionTimer ruv(tuv);        
+    // RegionTimer ruv(tuv);
+    static Timer tid("setid"); 
+    U1 = Identity(m);
     ApplyHouseholderReflections (A, Trans(U1));
+
+    tid.Start();
+    V1 = Identity(n);
+    tid.Stop();
     if (n > 1)
       ApplyHouseholderReflections (Trans(A.Cols(1,n).Rows(min(n-1,m))), Trans(V1).Rows(1,n));
 
@@ -202,6 +207,17 @@ namespace ngbla
       A.Col(i).Range(0, i-1) = 0.0;
   }
 
+  /*
+    n = 1000, bs 36:
+    band:   114
+    bulge:   39
+    mat U/V  171/163
+
+    n = 1000, bs 12:
+    band: 226
+    bulge: 22
+    mat U/V: 241/235
+   */
 
 
   template <ORDERING OA, ORDERING ORD>
@@ -940,11 +956,6 @@ namespace ngbla
                                      FlatVector<> vs, double lower, double upper)
   {
     // static Timer t("secular"); RegionTimer r(t);
-    /*
-      cout << "solve sec1ular, lams = " << endl << lams << endl
-      << "vs = " << vs << endl
-      << "l/u = " << lower << "/" << upper << endl;
-    */
 
     /*
       Rank-One Modification of the Symmetric Eigenproblem
@@ -953,8 +964,9 @@ namespace ngbla
 
       with modifications by Gu + Eisenstat for SVD
 
-
-      TODO: change to middle-way by R.C. Li
+      "Solving Secular Equations Stably and Efficiently"
+      Ren-Chang Li
+      TR Report UCB/CSD-94-851, Berkeley, 1994
     */
 
     // cout << "solvesecular called, lower = " << lower << ", upper = " << upper << endl;
@@ -963,24 +975,21 @@ namespace ngbla
 
     double lower2 = sqr(lower);
     double upper2 = sqr(upper);
-    double mid = 0.5 * (upper2+lower2);
-
+    double mid2 = 0.5 * (upper2+lower2);
     
-    for (int i = 0; i < lams.Size(); i++)
+    for (size_t i = 0; i < lams.Size(); i++)
       {
-        if (sqr(lams[i]) < mid)
+        if (sqr(lams[i]) < mid2)
           {
             vpsi.Append(sqr(vs[i]));
             lampsi_shift.Append ((lams[i]-lower)*(lams[i]+lower));  // for roundoff !!
             // lampsi_shift.Append (sqr(lams[i])-lower2);
-            // if (lampsi_shift.Last() > 0) lampsi_shift.Last() = 0;  // rou
           }
         else
           {
             vphi.Append(sqr(vs[i]));
             // lamphi_shift.Append (sqr(lams[i])-upper2);
             lamphi_shift.Append ((lams[i]-upper)*(lams[i]+upper)); // for roundoff !!
-            // if (lamphi_shift.Last() < 0) lamphi_shift.Last() = 0;            
           }
       }
 
@@ -988,139 +997,68 @@ namespace ngbla
     
     double delta2 = upper2-lower2;
 
+
     int maxits = 100;
 
-    double Delta2 = delta2/2;
+    double t2, Delta2;
     // starting value
-    double phip1 = 1;
-    for (int j = 0; j < vphi.Size(); j++)
+    if (vphi.Size() == 0)
       {
-        double num = 1.0 / (lamphi_shift[j]+Delta2);
-        phip1 += vphi[j] * num;
+        t2 = 0;
+        for (int j = 0; j < vpsi.Size(); j++)
+          t2 = max(t2, lampsi_shift[j] + vpsi[j]);
+        t2 = min(delta2/2, 0.99*t2);
+        Delta2 = delta2 - t2;
       }
-    double phip1_inv = 1.0/phip1;
-    double t2 = 0;
-    for (int j = 0; j < vpsi.Size(); j++)
-      t2 = max(t2, lampsi_shift[j] + vpsi[j]*phip1_inv);
-    // cout << "t2 start = " << t2 << endl;
-    t2 = min(delta2/2, 0.99*t2);
-    Delta2 = delta2 - t2;
-
-    // only for the middle-way
-    if (vphi.Size() > 0)
+    else
+      // only for the middle-way
       t2 = Delta2 = delta2/2;
 
     
     for (int i = 0; i < maxits; i++)
       {
         double phi = 0, psi = 0, phiprime = 0, psiprime = 0;
-        double calt = 1;
-        double ralt = 0, Ralt = 0;
-        
-        for (int j = 0; j < vpsi.Size(); j++)
+
+        for (size_t j = 0; j < vpsi.Size(); j++)
           {
             double num = 1.0 / (lampsi_shift[j]-t2);
             psi += vpsi[j] * num;
             psiprime += vpsi[j] * sqr(num);
-            ralt += vpsi[j] * num * (1+t2*num);
           }
         
-        for (int j = 0; j < vphi.Size(); j++)
+        for (size_t j = 0; j < vphi.Size(); j++)
           {
             double num = 1.0 / (lamphi_shift[j]+Delta2);
             phi += vphi[j] * num;
             phiprime += vphi[j] * sqr(num);
-            calt += vphi[j] * lamphi_shift[j] * sqr(num);
-            Ralt += vphi[j] * num * (1-Delta2*num);
           }
+
         
         double w = 1 + phi + psi;
-
-        /*
-        if (i == 0 && w > 0)  // need a legal starting value with w < 0
-          {
-            cout << "w still pos" << endl;
-            cout << "t2 = " << t2 << ", Delta2 = " << Delta2 << ", phi = " << phi << ", psi = " << psi << endl;
-            t2 /= 2;
-            Delta2 = delta2-t2;
-            i--;
-            continue;
-          }
-        */
-
+        // cout << "it = " << i << ", w = " << w << " npsi = " << vpsi.Size() << ", nphi = " << vphi.Size() << " t2 = " << t2 << " Detela2 = " << Delta2 << endl;
         
         if (vphi.Size() > 0)
           {
-            double eta;
-            {
-              double s = t2*t2*psiprime;
-              double r = psi+t2*psiprime;
-              // r = ralt;
-              double S = Delta2*Delta2*phiprime;
-              double R = phi-Delta2*phiprime;
-              // R = Ralt;
-              
-              double a = (Delta2-t2) * w + Delta2*t2*(phiprime+psiprime);
-              double b = -Delta2*t2*w;
-              double c = w+t2*psiprime-Delta2*phiprime;
-              // double discr = a*a-4*b*c;
-              // cout << "discr = " << discr << endl;
-              // double discr = sqr(delta2*w) + 2 * w * Delta2*t2*delta2*(psiprime-phiprime) + sqr (Delta2*t2*(phiprime+psiprime));
+            double a = (Delta2-t2) * w + Delta2*t2*(phiprime+psiprime);
+            double b = -Delta2*t2*w;
+            double c = w+t2*psiprime-Delta2*phiprime;
+            // double discr = a*a-4*b*c;
+            // cout << "discr = " << discr << endl;
+            // double discr = sqr(delta2*w) + 2 * w * Delta2*t2*delta2*(psiprime-phiprime) + sqr (Delta2*t2*(phiprime+psiprime));
+            
+            double discr = sqr ( delta2*w+Delta2*t2*(psiprime-phiprime) ) + 4*sqr(t2*Delta2)*psiprime*phiprime;
+            if (discr < 0) discr = 0;
+            double incr = (a > 0) ? 2*b/(a+sqrt(discr)) : (a-sqrt(discr)) / (2*c);
 
-              double discr = sqr ( delta2*w+Delta2*t2*(psiprime-phiprime) ) + 4*sqr(t2*Delta2)*psiprime*phiprime;
-              if (discr < 0) discr = 0;
-              double eta1a = 2*b/(a+sqrt(discr));
-              double eta1b = (a-sqrt(discr)) / (2*c);
-              eta = (a > 0) ? eta1a : eta1b;
-            }
-
-            /*
-            cout << "psi = " << psi << " =?= " << rpsi + spsi/t2 << endl;
-            cout << "phi = " << phi << " =?= " << rphi + sphi/Delta2 << endl;
-            cout << "psiprime = " << psiprime << " =?= " << -spsi/(t2*t2) << endl;
-            cout << "phiprime = " << phiprime << " =?= " << sphi/(Delta2*Delta2) << endl;
-            cout << "t = " << t2 << ", Delta2 = " << Delta2 << "mu1 = " << mu1 << ", mu2 = " << mu2 << "  =?=   ";
-            */
-            
-            // double c1 = 1 + phi - Delta2 * phiprime;
-            double c = calt;
-            double a = (Delta2*(1+phi)+sqr(psi)/psiprime)/c + psi/psiprime;
-            double b = (Delta2 * w * psi) / (psiprime * c);
-            double disc = a*a-4*b;
-            if (disc < 0) disc = 0;
-            double incr = 2*b/(a+sqrt(disc));
-            // cout << incr << " = incr" << endl;
-            
-            /*
-            if (t2 + mu2 < 1e-6 * t2   ||  Delta2-mu2 < 1e-6 * Delta2)
-              {
-                cout << "t2 = " << t2 << ", Delta2 = " << Delta2 << endl;
-                cout << "                   mu1 = " << mu1 << ", mu2 = " << mu2 << ", incr = " << incr << endl;
-              }
-            */
-            // cout << "incr orig = " << incr << " =?= " << eta << endl;
-            incr = eta; // for the middle way
-            
             if (Delta2-incr < 1e-6 * Delta2) incr *= 0.999999;
             if (t2+incr < 1e-6 * t2) incr *= 0.999999;
 
             t2 += incr;
             Delta2 -= incr;
-
-            /*
-            if (fabs (incr) < 1e-15 * min(t2, Delta2))
-              {
-                // cout << "break due to small inc" << endl;
-                // chosen, but not necessary ..
-                if (i < maxits-3) i = maxits-3;
-              }
-            */
           }
         else
           {
             double incr = (1+psi)/psiprime*psi;
-            // cout << "i = " << i << "t2 = " << t2 << ", incr = " << incr
-            // << ", w = " << w << ", phi = " << phi << ", psi = " << psi << endl;
             t2 += incr;
             Delta2 -= incr;
           }
@@ -1165,7 +1103,7 @@ namespace ngbla
       {
         cout << "lower/upper = " << lower << "/" << upper << endl;
         cout << "t2/Delta2 = " << t2 << "/" << Delta2 << endl;
-        cout << "phip1_inv = " << phip1_inv << endl;
+        // cout << "phip1_inv = " << phip1_inv << endl;
         cout << "lams = " << lams << endl;
         cout << "vs = " << vs << endl;
         cout << "vpsi = " << vpsi << endl;
@@ -1202,6 +1140,7 @@ namespace ngbla
                          FlatMatrix<double,ColMajor> Q, FlatMatrix<double,ColMajor> W,
                          SliceMatrix<double,ColMajor> U, SliceMatrix<double,ColMajor> V)
   {
+    static Timer t("SVD - ArrowHead"); RegionTimer reg(t);
     size_t n = z.Size();
     double normmat = L2Norm(z) + L2Norm(D) + 1e-40;
 
@@ -1291,21 +1230,13 @@ namespace ngbla
       compress_omega2diff(n-num_deflated),
       compress_omega2ref(n-num_deflated);    
 
-    static Timer tsec("Solve Secular");
-    tsec.Start();
+    // static Timer tsec("Solve Secular");
+    // tsec.Start();
     
     for (size_t i = 0; i < ncomp; i++)
       {
         double l = compress_Ds(i);
         double u = compress_Ds(i+1);
-        if (u-l < 1e-40)
-          {
-            cout << "Z = " << z << endl;
-            cout << "D = " << D << endl;
-            cout << "zs = " << zs << endl;
-            cout << "Ds = " << Ds << endl;            
-            cout << "normmat = " << normmat << endl;
-          }
         
         auto [t2,Delta2] = SolveSecular (compress_Ds.Range(ncomp), compress_zs, l, u);
         
@@ -1321,7 +1252,7 @@ namespace ngbla
           }
         compress_omega(i) = sqrt (compress_omega2ref(i)+compress_omega2diff(i));
       }
-    tsec.Stop();
+    // tsec.Stop();
     
     VectorMem<100,double> compress_Ds2(ncomp);
     for (size_t i = 0; i < ncomp; i++)
@@ -1529,7 +1460,7 @@ namespace ngbla
     beta_scaled = scale * beta;
 
     
-    double normmat = L2Norm(alpha_scaled) + L2Norm(beta_scaled) + 1e-40;
+    // double normmat = L2Norm(alpha_scaled) + L2Norm(beta_scaled) + 1e-40;
 
     /*
     Matrix<> B(n+1, n);  // for testing
@@ -1666,15 +1597,22 @@ namespace ngbla
     tmp_sigma = sigma;
     auto tmp_MU = Q.Cols(n);  // reuse memory
     auto tmp_MV = W.Cols(n);
+
+    static Timer tcopyuv("svd - copyuv");
+    static Timer tsortuv("svd - sortuv");
+
+    tcopyuv.Start();
     tmp_MU = U.Cols(n);
     tmp_MV = V.Cols(n);
-    for (int i = 0; i < n; i++)
+    tcopyuv.Stop();
+    tsortuv.Start();
+    for (size_t i = 0; i < n; i++)
       {
         sigma(i) = tmp_sigma(index[i]);
         U.Col(i) = tmp_MU.Col(index[i]);
         V.Col(i) = tmp_MV.Col(index[i]);
       }
-
+    tsortuv.Stop();
 
     sigma *= maxval;
 
