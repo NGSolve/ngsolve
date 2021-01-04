@@ -3749,6 +3749,7 @@ namespace ngbla
         Matrix aorig = a;
         double tot = 5 * n*n*n;
         size_t its = 1e9 / tot + 1;
+        its = min(maxits, its);
         if (!lapack)
           {
             Timer t("CalcSVD");

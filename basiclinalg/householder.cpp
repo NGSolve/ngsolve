@@ -69,7 +69,7 @@ namespace ngbla
     // static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
     // tcolmajor.AddFlops (2*v.Size()*m2.Width());
     
-    constexpr size_t bs = 96;
+    constexpr size_t bs = 24;
     double mem[bs];
 
     for (size_t i = 0; i < m2.Width(); i += bs)
@@ -77,10 +77,11 @@ namespace ngbla
         size_t bsi = min(bs, m2.Width()-i);
         FlatVector<> hv(bsi, &mem[0]);
         auto colsm2 = m2.Cols(i, i+bsi);
-        
         hv = Trans(colsm2) * v;
         hv *= factor;
-        colsm2 -= v * Trans(hv);
+        // colsm2 -= v * Trans(hv);
+        colsm2 -= FlatMatrix<double, ORD> (v.Size(), 1, v.Data()) *
+          FlatMatrix<double,ORD> (1, hv.Size(), hv.Data());
       }
   }
 
@@ -135,9 +136,9 @@ namespace ngbla
   // H = H_{m-1} ... H_1 H_0 = I - V^T T V
   // SliceMatrix<> mv;  // every row one reflection vector
   // Matrix<> T;        // strict lower triangular
+
   template <ORDERING OMV>
-  MultiHouseholderReflection<OMV> :: MultiHouseholderReflection (SliceMatrix<double,OMV> amv)
-    : mv(amv), T(amv.Height())
+  void BaseMultiHouseholderReflection<OMV> :: CalcT()
   {
     static Timer t("multiHouseholder, ctor"); RegionTimer reg(t);
     size_t m = mv.Height();
@@ -167,7 +168,7 @@ namespace ngbla
 
   
   template <ORDERING OMV> template <ORDERING ORD>
-  void MultiHouseholderReflection<OMV> :: TMult (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
+  void BaseMultiHouseholderReflection<OMV> :: TMult (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
     const char * timername = (OMV == ColMajor)
       ? ((ORD == ColMajor) ? "multiHouseholder, H..colmajor, M..colmajor" : "multiHouseholder, H..colmajor, M..rowmajor") 
@@ -208,7 +209,7 @@ namespace ngbla
 
 
   template <ORDERING OMV> template <ORDERING ORD>
-  void MultiHouseholderReflection<OMV> :: TMultTrans (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
+  void BaseMultiHouseholderReflection<OMV> :: TMultTrans (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
     const char * timername = (ORD == ColMajor)
       ? "multiHouseholder trans, colmajor" : "multiHouseholder trans, rowmajor";
