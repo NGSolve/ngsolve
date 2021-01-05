@@ -16,7 +16,8 @@ namespace ngbla
   template <size_t H, OPERATION OP, ORDERING ORD> 
   INLINE void MatKernel2AddAB (size_t hb, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
   {
-    if constexpr (H == 0) return;
+    if constexpr (H != 0)
+      {
     // static Timer t("matkernel2addab"+ToString(H)+"x"+ToString(hb)+"x"+ToString(wb));
     // t.AddFlops(H*hb*wb);
     
@@ -49,6 +50,7 @@ namespace ngbla
         // tcopy.Stop();
         // RegionTimer r(t);        
         MatKernelAtB_SmallWA2<H,OP>(hb, wb, pa, da, pb, db, pc, dc);
+      }
       }
   }
 
