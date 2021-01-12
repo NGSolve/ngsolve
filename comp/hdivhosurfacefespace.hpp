@@ -33,6 +33,8 @@ namespace ngcomp
     bool ho_div_free;       
     bool highest_order_dc;
 
+    bool RT = false; 
+
     Array<INT<2>> dc_pairs;
     
   public:

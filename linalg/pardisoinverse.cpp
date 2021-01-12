@@ -269,7 +269,7 @@ namespace ngla
 
     if ( error != 0 )
       {
-	cout << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
+	cout << IM(1) << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
 	
 	string errmsg;
 	switch (error)
