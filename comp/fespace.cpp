@@ -1528,7 +1528,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     auto freedofs = GetFreeDofs(eliminate_internal);
 
-    FilteredTableCreator creator(GetFreeDofs().get());
+    FilteredTableCreator creator(freedofs.get());
 
     /*
     for ( ; !creator.Done(); creator++)
@@ -1572,6 +1572,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 for (int k = 0; k < face.vertices.Size(); k++)
                   creator.Add (face.vertices[k], d);
           }
+
+        if(ma->GetDimension() == 3)
+           for(size_t i : Range(ma->GetNE()))
+             {
+               GetDofNrs(NodeId(NT_CELL, i), dofs);
+               auto elverts = ma->GetElVertices(ElementId(VOL, i));
+               for(auto d : dofs)
+                 if(IsRegularDof(d))
+                   for(auto v : elverts)
+                     creator.Add(v, d);
+             }
       }
     /*
                  
