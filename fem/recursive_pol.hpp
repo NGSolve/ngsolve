@@ -2649,8 +2649,76 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
   };
 
-  // using DubinerBasis3 = DubinerBasis;
-  
+
+  // orthogonal w.r.t. cubic bubble
+  class DubinerBasis11
+  {
+  public:
+    template <typename TI, class S, class T>
+    INLINE static void Eval (TI n, S x, S y, T && values)
+    {
+      EvalMult (n, x, y, 1, values);
+    }
+
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalMult (TI n, S x, S y, Sc c, T && values)
+    {
+      JacobiPolynomialFix<1,1> leg;
+      TI ii = 0;
+      leg.EvalScaledMult1Assign (n, y-(1-x-y), 1-x, c,
+            SBLambda ([&] (TI i, S val) LAMBDA_INLINE 
+                   {
+                     IntegratedJacobiPolynomialAlpha jac(4+2*i);                     
+                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
+                     ii += n-i+1;
+                   }));
+    }
+
+    template <class S, class Sc, class T>
+    INLINE static void EvalScaled (int n, S x, S y, Sc t, T && values)
+    {
+      EvalScaledMult (n, x, y, t, 1, values);
+    }
+
+    template <class S, class St, class Sc, class T>
+    INLINE static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
+    {
+      JacobiPolynomialFix<1,1> leg;
+      int ii = 0;
+      leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
+          SBLambda ([&] (int i, S val) LAMBDA_INLINE  // clang
+                   {
+                     IntegratedJacobiPolynomialAlpha jac(4+2*i);
+                     jac.EvalScaledMult1Assign (n-i, 2*x-1, t, val, values+ii);
+                     ii += n-i+1;
+                   }));
+    }
+
+
+    /*
+    // evaluate basis functions of hightest order only
+    template <typename TI, class S, class T>
+    INLINE static void EvalHighestOrder (TI n, S x, S y, T && values)
+    {
+      EvalHighestOrderMult (n, x, y, 1, values);
+    }
+
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalHighestOrderMult (TI n, S x, S y, Sc c, T && values)
+    {
+      LegendrePolynomial leg;
+      TI ii = 0;
+      JacobiPolynomialAlpha jac(1);      
+      leg.EvalScaledMult1Assign (n, y-(1-x-y), 1-x, c,
+            SBLambda ([&] (TI i, S val) LAMBDA_INLINE 
+                   {
+                     values[ii++] = jac.CalcHighestOrderMult(n-i, 2*x-1, val);
+                     jac.IncAlpha2();
+                   }));
+    }
+    */
+  };
+
 
 
   class DubinerBasis3D
