@@ -128,7 +128,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 	     return timers;
 	   }, "Returns list of timers"
 	   );
+  m.def("ResetTimers", &NgProfiler::Reset);
 
+  
   py::class_<Archive, shared_ptr<Archive>> (m, "Archive")
       /*
     .def("__init__", [](const string & filename, bool write,
