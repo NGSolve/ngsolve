@@ -239,6 +239,7 @@ namespace ngbla
   
   template class MultiHouseholderReflection<RowMajor>;
   template class MultiHouseholderReflection<ColMajor>;
+  /*
   template void MultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
   template void MultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,ColMajor> m2) const;
   template void MultiHouseholderReflection<ColMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
@@ -247,7 +248,7 @@ namespace ngbla
   template void MultiHouseholderReflection<RowMajor> :: TMultTrans (SliceMatrix<double,ColMajor> m2) const;
   template void MultiHouseholderReflection<ColMajor> :: TMultTrans (SliceMatrix<double,RowMajor> m2) const;
   template void MultiHouseholderReflection<ColMajor> :: TMultTrans (SliceMatrix<double,ColMajor> m2) const;
-
+  */
 
 
   template <ORDERING ORDER>
