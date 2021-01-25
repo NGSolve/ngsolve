@@ -110,7 +110,7 @@ namespace ngfem
 	    Vec<D> normal_ref = normals[k];
 
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
-	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+	    const IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
 
 	    Array<int> facetdofs;
 	    facetdofs = l2_dofs;
@@ -625,7 +625,7 @@ namespace ngfem
 
             // IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
             const IntegrationRule & ir_facet = ir_vol.GetFacetIntegrationRule (k);
-	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+	    const IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
 
 	    Array<int> facetdofs;
 	    facetdofs = l2_dofs;
@@ -799,7 +799,7 @@ namespace ngfem
 	    Vec<D> normal_ref = normals[k];
 
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
-	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+	    const IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
 	    
 	    Array<int> comp_facetdofs;
 	    comp_facetdofs += l2_dofs;
@@ -1003,7 +1003,7 @@ namespace ngfem
 	    Vec<D> normal_ref = normals[k];
 
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
-	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+	    const IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
 	    
 	    for (int i = 0; i < ir_facet_vol.Size(); i++)
 	      ir_facet_vol[i].SetFacetNr(k);

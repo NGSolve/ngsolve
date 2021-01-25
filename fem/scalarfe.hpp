@@ -118,6 +118,8 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
     HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+    virtual bool GetDiagDualityMass (FlatVector<> diag) const { return false; }
+    virtual bool DualityMassDiagonal () const { return false; }
   };
 
   /**
@@ -201,6 +203,7 @@ namespace ngfem
 
   public:
     NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;
+    virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lhr) const override;
   };
 
 

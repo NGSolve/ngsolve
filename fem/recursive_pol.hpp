@@ -2651,7 +2651,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
   // orthogonal w.r.t. cubic bubble
-  class DubinerBasis11
+  class DubinerBasisOrthoBub
   {
   public:
     template <typename TI, class S, class T>

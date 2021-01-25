@@ -131,7 +131,13 @@ namespace ngfem
       order = ho;
     }
 
-
+    virtual bool GetDiagDualityMass (FlatVector<> diag) const { return false; }
+    virtual bool DualityMassDiagonal () const
+    {
+      return (ET == ET_SEGM) || (ET == ET_TRIG) || (ET == ET_QUAD)
+        || (ET == ET_HEX); 
+    }
+    
   };
 
 }  

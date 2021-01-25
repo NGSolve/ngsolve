@@ -595,23 +595,37 @@ namespace ngcomp
 		 }
 	       }
 	     }
-             
-	     /** Calc Element Matrix **/
-	     FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
-             bool symmetric_so_far = true;             
-	     for (auto sbfi : single_bli)
-	       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+             svmassapply.Stop();	                
 
-
-	     /** Invert Element Matrix and Solve for RHS **/
-	     CalcInverse(elmat); // Not Symmetric !
-
-	     if (dim > 1) {
-	       for (int j = 0; j < dim; j++)
-		 { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
-	     }
-	     else
-	       { elfluxi = elmat * elflux; }
+             bool solvedual = false;
+             svmass.Start();             
+             if constexpr (is_same<SCAL,double>())
+                            solvedual = fel.SolveDuality (elflux, elfluxi, lh);
+             svmass.Stop();
+             if (!solvedual)
+               {
+                 /** Calc Element Matrix **/
+                 FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                 bool symmetric_so_far = true;
+                 svmass.Start();
+                 for (auto sbfi : single_bli)
+                   { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+                 svmass.Stop();
+                 
+                 
+                 /** Invert Element Matrix and Solve for RHS **/
+                 {
+                   RegionTimer r(svsolve);             
+                   CalcInverse(elmat); // Not Symmetric !
+                 }
+                 
+                 if (dim > 1) {
+                   for (int j = 0; j < dim; j++)
+                     { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+                 }
+                 else
+                   { elfluxi = elmat * elflux; }
+               }
              
 	     /** Write into large vector **/
              fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
