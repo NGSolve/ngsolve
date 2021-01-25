@@ -47,7 +47,7 @@ namespace ngfem
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     { throw Exception ("dual shape not implemented, H1Ho"); }
 
-    bool GetDiagDualityMassInverse (FlatVector<> diag) const override { return false; }
+    bool GetDiagDualityMassInverse (FlatVector<> diag) const { return false; }
   };
 
 

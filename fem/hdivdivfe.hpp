@@ -1365,7 +1365,7 @@ namespace ngfem
 
       int ii = 0;
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
+      // const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
       if (ip.VB() == BND)
         { // facet shapes
