@@ -471,7 +471,7 @@ namespace ngfem
               }
           }
         for (auto & d : diag) d = 1.0/d;
-        cout << "diag, by integration = " << diag << endl;
+        // cout << "diag, by integration = " << diag << endl;
       }
     
     td.Stop();

@@ -358,8 +358,12 @@ namespace ngfem
   }
 
 
-
-
+  template <class FEL, ELEMENT_TYPE ET, class BASE>  
+  bool T_ScalarFiniteElement<FEL,ET,BASE> :: GetDiagDualityMassInverse (FlatVector<> diag) const 
+  {
+    return static_cast<const FEL*>(this)->GetDiagDualityMassInverse2(diag);
+  }
+  
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 

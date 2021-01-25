@@ -142,6 +142,8 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void AddDualTrans (const IntegrationRule & ir, BareVector<double> values, BareSliceVector<> coefs) const override;        
     NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override;    
+
+    virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override;
     
   protected:
     /*
@@ -164,6 +166,8 @@ namespace ngfem
       throw Exception (string("T_CalcDualShape not implemented for element ")+typeid(*this).name());       
       // static_cast<const FEL*> (this) -> T_CalcDualShape (ip, shape);
     }
+
+    bool GetDiagDualityMassInverse2 (FlatVector<> diag) const { return false; }
     
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     {

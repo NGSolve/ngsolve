@@ -47,7 +47,7 @@ namespace ngfem
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     { throw Exception ("dual shape not implemented, H1Ho"); }
 
-    bool GetDiagDualityMassInverse (FlatVector<> diag) const { return false; }
+    bool GetDiagDualityMassInverse2 (FlatVector<> diag) const { return false; }
   };
 
 
@@ -286,22 +286,25 @@ namespace ngfem
       }
   }
 
-  template<> template<typename Tx, typename TFA>  
-  bool H1HighOrderFE_Shape<ET_QUAD> :: GetDiagDualityMassInverse (FlatVector<> diag) const 
+
+#ifdef FILE_H1HOFE_CPP
+  template <>
+  bool H1HighOrderFE_Shape<ET_QUAD> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
   {
     diag.Range(0,4) = 1.0;
     int ii = 4;
     for (int i = 0; i < N_EDGE; i++)
       for (int j = 2; j <= order_edge[i]; j++)
-        diag(ii++) = j;
+        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
     INT<2> p = order_face[0];
     for (int i = 2; i <= p[0]; i++)
       for (int j = 2; j <= p[1]; j++)
-        diag(ii++) = i*j;
+        diag(ii++) = (2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2);
 
-    cout << "quad duality diag = " << diag << endl;
-    return false;
-  }  
+    // cout << "quad duality diag = " << diag << endl;
+    return true;
+  }
+#endif
 
   template<>
   inline void H1HighOrderFE_Shape<ET_QUAD> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
