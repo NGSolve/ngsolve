@@ -139,6 +139,9 @@ namespace ngfem
 
     HD NGS_DLL_HEADER 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const override;
+
+    NGS_DLL_HEADER virtual void AddDualTrans (const IntegrationRule & ir, BareVector<double> values, BareSliceVector<> coefs) const override;        
+    NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override;    
     
   protected:
     /*
@@ -155,6 +158,12 @@ namespace ngfem
       static_cast<const FEL*> (this) -> T_CalcShape (ip, shape);
     }
 
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcDualShape (const TIP<DIM,Tx> & ip, TFA & shape) const
+    {
+      static_cast<const FEL*> (this) -> T_CalcDualShape (ip, shape);
+    }
+    
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     {
       throw Exception (string("dual shape not implemented for element ")+typeid(*this).name()); 

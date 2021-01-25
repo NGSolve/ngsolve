@@ -327,7 +327,38 @@ namespace ngfem
     */
   }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values,
+            BareSliceVector<> coefs) const
+  {
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
+      {
+        TIP<DIM,SIMD<double>> tip = hir[i].TIp<DIM>();
+        SIMD<double> val = values(i);
+        T_CalcDualShape (tip, SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
+      }
+  }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddDualTrans (const IntegrationRule & ir, BareVector<double> values,
+            BareSliceVector<> coefs) const
+  {
+    FlatArray<IntegrationPoint> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
+      {
+        TIP<DIM,double> tip = hir[i].TIp<DIM>();
+        double val = values(i);
+        T_CalcDualShape (tip, SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
+      }
+  }
+
+
+
+
+  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddTrans (const SIMD_IntegrationRule & ir,

@@ -478,6 +478,8 @@ namespace ngfem
               {
                 IntegrationRule irfacet(f2el.FacetType(nr), 2*order);          
                 auto & volir = f2el(nr, irfacet, lh);
+
+                /*
                 auto & mir = trafo(volir, lh);
                 
                 FlatVector pointvals(volir.Size(), lh);
@@ -489,6 +491,12 @@ namespace ngfem
                     CalcDualShape (mip, dualshape);
                     res -= pointvals(i) * mip.GetWeight() * dualshape;
                   }
+                */
+                FlatVector<> pointvals(volir.Size(), lh);
+                Evaluate (volir, u, pointvals);
+                for (int i = 0; i < volir.Size(); i++)
+                  pointvals(i) *= -irfacet[i].Weight();
+                AddDualTrans (volir, pointvals, res);
               }
           }
         u += pw_mult(diag, res);
