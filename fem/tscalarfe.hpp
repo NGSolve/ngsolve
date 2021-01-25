@@ -161,7 +161,8 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcDualShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
-      static_cast<const FEL*> (this) -> T_CalcDualShape (ip, shape);
+      throw Exception (string("T_CalcDualShape not implemented for element ")+typeid(*this).name());       
+      // static_cast<const FEL*> (this) -> T_CalcDualShape (ip, shape);
     }
     
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const

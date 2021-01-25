@@ -437,6 +437,8 @@ namespace ngfem
   bool ScalarFiniteElement<D> :: SolveDuality (SliceVector<> rhs, SliceVector<> u,
                                                LocalHeap & lh) const
   {
+    if (!DualityMassDiagonal()) return false;
+
     static Timer td("solve duality - diag");
     static Timer ts("solve duality - solve");
     
@@ -445,10 +447,8 @@ namespace ngfem
     FlatVector<> shape(ndof, lh), dualshape(ndof, lh);
     FE_ElementTransformation<D,D> trafo(ElementType());
 
-    if (!DualityMassDiagonal()) return false;
-
     td.Start();
-    if (!GetDiagDualityMass (diag))
+    if (!GetDiagDualityMassInverse (diag))
       {
         // calc duality mass by integration
         diag = 0.0;
@@ -470,9 +470,10 @@ namespace ngfem
                   }
               }
           }
+        for (auto & d : diag) d = 1.0/d;
+        cout << "diag, by integration = " << diag << endl;
       }
     
-    for (auto & d : diag) d = 1.0/d;
     td.Stop();
 
     ts.Start();
@@ -486,10 +487,10 @@ namespace ngfem
             Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
             for (int nr = 0; nr < f2el.GetNFacets(); nr++)
               {
+                /*
                 IntegrationRule irfacet(f2el.FacetType(nr), 2*order);          
                 auto & volir = f2el(nr, irfacet, lh);
 
-                /*
                 auto & mir = trafo(volir, lh);
                 
                 FlatVector pointvals(volir.Size(), lh);
@@ -503,7 +504,19 @@ namespace ngfem
                   }
                 */
 
+                /*
+                IntegrationRule irfacet(f2el.FacetType(nr), 2*order);          
+                auto & volir = f2el(nr, irfacet, lh);
                 FlatVector<> pointvals(volir.Size(), lh);
+                Evaluate (volir, u, pointvals);
+                for (int i = 0; i < volir.Size(); i++)
+                  pointvals(i) *= -irfacet[i].Weight();
+                AddDualTrans (volir, pointvals, res);
+                */
+                IntegrationRule irfacet1(f2el.FacetType(nr), 2*order);
+                SIMD_IntegrationRule irfacet(irfacet1);
+                auto & volir = f2el(nr, irfacet, lh);
+                FlatVector<SIMD<double>> pointvals(volir.Size(), lh);
                 Evaluate (volir, u, pointvals);
                 for (int i = 0; i < volir.Size(); i++)
                   pointvals(i) *= -irfacet[i].Weight();

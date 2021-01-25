@@ -121,7 +121,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const;
     
     HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
-    virtual bool GetDiagDualityMass (FlatVector<> diag) const { return false; }
+    virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const { return false; }
     virtual bool DualityMassDiagonal () const { return false; }
   };
 
