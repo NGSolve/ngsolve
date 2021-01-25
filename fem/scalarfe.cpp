@@ -289,6 +289,16 @@ namespace ngfem
   {
     throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
   }
+  
+  void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareVector<double> values, BareSliceVector<> coefs) const
+  {
+    throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
+  }
+  
+  void BaseScalarFiniteElement :: AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
+  {
+    throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());        
+  }
 
   
   template<int D>
@@ -492,6 +502,7 @@ namespace ngfem
                     res -= pointvals(i) * mip.GetWeight() * dualshape;
                   }
                 */
+
                 FlatVector<> pointvals(volir.Size(), lh);
                 Evaluate (volir, u, pointvals);
                 for (int i = 0; i < volir.Size(); i++)
