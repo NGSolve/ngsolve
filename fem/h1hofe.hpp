@@ -131,13 +131,16 @@ namespace ngfem
       order = ho;
     }
 
-    virtual bool GetDiagDualityMass (FlatVector<> diag) const { return false; }
-    virtual bool DualityMassDiagonal () const
+    virtual bool DualityMassDiagonal () const override
     {
       return (ET == ET_SEGM) || (ET == ET_TRIG) || (ET == ET_QUAD)
         || (ET == ET_HEX); 
     }
-    
+
+    virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
+    {
+      return static_cast<const H1HighOrderFE_Shape<ET>*>(this)->GetDiagDualityMassInverse(diag);
+    }
   };
 
 }  

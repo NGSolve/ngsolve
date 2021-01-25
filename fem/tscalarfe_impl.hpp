@@ -337,7 +337,8 @@ namespace ngfem
       {
         TIP<DIM,SIMD<double>> tip = hir[i].TIp<DIM>();
         SIMD<double> val = values(i);
-        T_CalcDualShape (tip, SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
+        static_cast<const FEL*> (this)->        
+          T_CalcDualShape (tip, SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
       }
   }
 
@@ -351,7 +352,8 @@ namespace ngfem
       {
         TIP<DIM,double> tip = hir[i].TIp<DIM>();
         double val = values(i);
-        T_CalcDualShape (tip, SBLambda ( [&](int j, double shape) { coefs(j) += val*shape; } ));
+        static_cast<const FEL*> (this)->                
+          T_CalcDualShape (tip, SBLambda ( [&](int j, double shape) { coefs(j) += val*shape; } ));
       }
   }
 
