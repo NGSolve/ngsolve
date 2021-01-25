@@ -465,7 +465,6 @@ namespace ngcomp
         u.GetVector(mdcomp) = 0.0;
         
         ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
-        
         IterateElements 
           (*fes, vb, clh, 
            [&] (FESpace::Element ei, LocalHeap & lh)
@@ -496,7 +495,6 @@ namespace ngcomp
                  try
                    {
 		     /** Calc RHS **/
-
 		     elflux = SCAL(0.0);
 
 		     auto do_ir = [&](auto & mir) {
