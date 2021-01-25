@@ -121,8 +121,8 @@ namespace ngfem
     NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const;
     
     HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
-    virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const { return false; }
-    virtual bool DualityMassDiagonal () const { return false; }
+    NGS_DLL_HEADER virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const { return false; }
+    NGS_DLL_HEADER virtual bool DualityMassDiagonal () const { return false; }
   };
 
   /**
@@ -206,7 +206,7 @@ namespace ngfem
 
   public:
     NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;
-    virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lhr) const override;
+    NGS_DLL_HEADER virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lhr) const override;
   };
 
 
