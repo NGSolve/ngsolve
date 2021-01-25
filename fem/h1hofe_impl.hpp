@@ -28,8 +28,13 @@ namespace ngfem
 
     // typedef LegendrePolynomial EdgeOrthoPol;
     typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
-    // typedef ChebyPolynomial EdgeOrthoPol; 
-    typedef ChebyPolynomial QuadOrthoPol; 
+    // typedef ChebyPolynomial EdgeOrthoPol;
+    
+    // typedef ChebyPolynomial QuadOrthoPol;
+    typedef IntLegNoBubble QuadOrthoPol;
+
+    // typedef DubinerBasis TrigOrthoPol;
+    typedef DubinerBasisOrthoBub TrigOrthoPol;   // for bi-orthogonal dual shapes
 
   public:
     template<typename Tx, typename TFA>  
@@ -130,7 +135,7 @@ namespace ngfem
       {
         // INT<4> f = GetFaceSort (0, vnums);
         INT<4> f = GetVertexOrientedFace (0);
-	DubinerBasis::EvalMult (order_face[0][0]-3, 
+	TrigOrthoPol::EvalMult (order_face[0][0]-3, 
                                 lam[f[0]], lam[f[1]], 
                                 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
       }
@@ -171,7 +176,7 @@ namespace ngfem
     if (ip.VB() == VOL && order_face[0][0] >= 3)
       {
 	INT<4> f = GetVertexOrientedFace (0);
-	DubinerBasis::EvalMult(order_face[0][0]-3, 
+	TrigOrthoPol::EvalMult(order_face[0][0]-3, 
                                lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
       }
   }
@@ -328,7 +333,7 @@ namespace ngfem
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
 	  int p = order_face[i][0];
-	  DubinerBasis::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+	  TrigOrthoPol::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
                                         lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
@@ -382,8 +387,8 @@ namespace ngfem
 	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
 	  {
 	    INT<4> f = GetVertexOrientedFace (i);
-	    DubinerBasis::EvalMult (order_face[i][0]-3, 
-				     lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
+	    TrigOrthoPol::EvalMult (order_face[i][0]-3, 
+                                    lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
 	  }
 	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
       }
@@ -454,7 +459,7 @@ namespace ngfem
 	  
 	  Tx bub = lam[0]*lam[1]*lam[2]*muz[f[2]];
 	  
-	  DubinerBasis::
+	  TrigOrthoPol::
 	    EvalMult (p-3, lam[f[0]], lam[f[1]], bub, shape+ii);
 
 	  ii += (p-2)*(p-1)/2; 
@@ -676,7 +681,7 @@ namespace ngfem
           
 	  Tx bub = lam_face * bary[f[0]]*bary[f[1]]*bary[f[2]];
 
-	  DubinerBasis::
+	  TrigOrthoPol::
 	    EvalMult (p-3, bary[f[0]], bary[f[1]], bub, shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}

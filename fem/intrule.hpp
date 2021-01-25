@@ -994,6 +994,8 @@ namespace ngfem
 
     ELEMENT_TYPE FacetType (int fnr) const
     {
+      if (vb == VOL)
+        return eltype;
       if (vb == BND)
         return ElementTopology::GetFacetType(eltype, fnr);
       else
@@ -1022,6 +1024,12 @@ namespace ngfem
     
     void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
     {
+      if (vb == VOL)
+        {
+          ipvol = ipfac;
+          return;
+        }
+      
       switch (FacetType(fnr))
 	{
 	case ET_POINT:
@@ -1116,6 +1124,8 @@ namespace ngfem
 
     IntegrationRule & operator() (int fnr, const IntegrationRule & irfacet, LocalHeap & lh)
     {
+      if (vb == VOL) return const_cast<IntegrationRule&> (irfacet);
+      
       IntegrationRule & irvol = *new (lh) IntegrationRule (irfacet.GetNIP(), lh);
 
       // switch (ElementTopology::GetFacetType(eltype, fnr))

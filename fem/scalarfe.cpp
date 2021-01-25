@@ -423,6 +423,79 @@ namespace ngfem
 
   
 
+  template <int D>
+  bool ScalarFiniteElement<D> :: SolveDuality (SliceVector<> rhs, SliceVector<> u,
+                                               LocalHeap & lh) const
+  {
+    static Timer td("solve duality - diag");
+    static Timer ts("solve duality - solve");
+    
+    HeapReset hr(lh);
+    FlatVector<> diag(ndof, lh), res(ndof, lh);
+    FlatVector<> shape(ndof, lh), dualshape(ndof, lh);
+    FE_ElementTransformation<D,D> trafo(ElementType());
+
+    if (!DualityMassDiagonal()) return false;
+
+    td.Start();
+    if (!GetDiagDualityMass (diag))
+      {
+        // calc duality mass by integration
+        diag = 0.0;
+        for (int el_vb = 0; el_vb <= D; el_vb++)
+          {
+            Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
+            
+            for (int i = 0; i < f2el.GetNFacets(); i++)
+              {
+                IntegrationRule irfacet(f2el.FacetType(i), 2*order);
+                const IntegrationRule & irvol = f2el(i, irfacet, lh);
+                auto & mir = trafo(irvol, lh);
+                for (int j = 0; j < mir.Size(); j++)
+                  {
+                    CalcShape (mir[j].IP(), shape);
+                    CalcDualShape (mir[j], dualshape);
+                    shape *= mir[j].GetWeight();
+                    diag += pw_mult (shape, dualshape);
+                  }
+              }
+          }
+      }
+    
+    for (auto & d : diag) d = 1.0/d;
+    td.Stop();
+
+    ts.Start();
+    u = pw_mult(diag, rhs);
+
+    for (int loop = 0; loop < D; loop++)
+      {
+        res = rhs;
+        for (int el_vb = D; el_vb >= 0; el_vb--)
+          {
+            Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
+            for (int nr = 0; nr < f2el.GetNFacets(); nr++)
+              {
+                IntegrationRule irfacet(f2el.FacetType(nr), 2*order);          
+                auto & volir = f2el(nr, irfacet, lh);
+                auto & mir = trafo(volir, lh);
+                
+                FlatVector pointvals(volir.Size(), lh);
+                Evaluate (volir, u, pointvals);
+                
+                for (int i = 0; i < mir.Size(); i++)
+                  {
+                    auto & mip = mir[i];
+                    CalcDualShape (mip, dualshape);
+                    res -= pointvals(i) * mip.GetWeight() * dualshape;
+                  }
+              }
+          }
+        u += pw_mult(diag, res);
+      }
+    ts.Stop();
+    return true;
+  }
 
 
 
