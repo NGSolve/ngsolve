@@ -356,6 +356,30 @@ namespace ngfem
     // cout << "quad duality diag = " << diag << endl;
     return true;
   }
+  
+  template <>
+  bool H1HighOrderFE_Shape<ET_HEX> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
+  {
+    diag.Range(0,8) = 1.0;
+    int ii = 8;
+    for (int i = 0; i < N_EDGE; i++)
+      for (int j = 2; j <= order_edge[i]; j++)
+        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
+    for (int f = 0; f < N_FACE; f++)
+      {
+        INT<2> p = order_face[f];
+        for (int i = 2; i <= p[0]; i++)
+          for (int j = 2; j <= p[1]; j++)
+            diag(ii++) = 1.0*(2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2);
+      }
+    INT<3> p = order_cell[0];    
+    for (int i = 2; i <= p[0]; i++)
+      for (int j = 2; j <= p[1]; j++)
+        for (int k = 2; k <= p[2]; k++)
+          diag(ii++) = 1.0*(2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2) * (2*k-1)*(2*k)*(2*k-2);
+    
+    return true;
+  }
 #endif
 
   template<>
@@ -720,6 +744,87 @@ namespace ngfem
       }
   }
 
+
+  template<> template<typename Tx, typename TFA>  
+  void H1HighOrderFE_Shape<ET_HEX> :: T_CalcDualShape (TIP<3,Tx> ip, TFA & shape) const
+  {
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    Tx hx[3] = { x, y, z };
+    Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
+
+    
+    size_t ii = 8;
+    
+    if (ip.vb == BBBND)
+      {
+        shape[ip.facetnr] = 1.0;
+        return;
+      }
+    
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      if (order_edge[i] >= 2)
+	{
+          if (ip.vb == BBND && ip.facetnr == i)
+            {
+              // auto xi = ET_trait<ET_HEX>::XiEdge(i, hx, this->vnums);
+              INT<2> e = GetVertexOrientedEdge (i);          
+              Tx xi = sigma[e[1]]-sigma[e[0]]; 
+              
+              EdgeOrthoPol::Eval (order_edge[i]-2, xi, shape+ii);
+            }
+          ii += order_edge[i]-1;
+	}
+
+    ArrayMem<Tx,30> polx(order+1), poly(order+1), polz(order+1);
+    
+
+    for (int i = 0; i < N_FACE; i++)
+      {
+        INT<2> p = order_face[0];
+        if (p[0] >= 2 && p[1] >= 2)
+          {
+            if (ip.vb == BND && ip.facetnr == i)
+              {
+                // auto xi = ET_trait<ET_HEX>::XiFace(0, hx, this->vnums);
+                INT<4> f = GetVertexOrientedFace (i);
+                Tx xi  = sigma[f[0]] - sigma[f[1]]; 
+                Tx eta = sigma[f[0]] - sigma[f[3]];
+                QuadOrthoPol::Eval(p[0]-2, xi, polx);
+                QuadOrthoPol::Eval(p[1]-2, eta, poly);
+                
+                for (int k = 0; k < p[0]-1; k++) 
+                  for (int j = 0; j < p[1]-1; j++) 
+                    shape[ii++]= polx[k] * poly[j];
+              }
+            else
+              ii += (p[0]-1)*(p[1]-1);
+          }
+      }
+
+
+
+    // volume dofs:
+    INT<3> p = order_cell[0];
+    if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)
+      {
+	QuadOrthoPol::Eval (p[0]-2, 2*x-1, polx);
+	QuadOrthoPol::Eval (p[1]-2, 2*y-1, poly);
+	QuadOrthoPol::Eval (p[2]-2, 2*z-1, polz);
+
+	for (int i = 0; i < p[0]-1; i++)
+	  for (int j = 0; j < p[1]-1; j++)
+	    {
+	      Tx pxy = polx[i] * poly[j];
+	      for (int k = 0; k < p[2]-1; k++)
+		shape[ii++] = pxy * polz[k];
+	    }
+      }
+  }
+
+
+  
   /* ******************************** Pyramid  ************************************ */
 
   template<> template<typename Tx, typename TFA>  
