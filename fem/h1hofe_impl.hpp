@@ -147,6 +147,40 @@ namespace ngfem
   }
 
 
+  template<> template<typename Tx, typename TFA>  
+  void H1HighOrderFE_Shape<ET_TRIG> :: T_CalcDualShape (TIP<2,Tx> ip, TFA & shape) const
+  {
+    Tx lam[3] = { ip.x, ip.y, 1.0-ip.x-ip.y };
+    
+    size_t ii = 3;
+    
+    if (ip.vb == BBND)
+      {
+        shape[ip.facetnr] = 1.0;
+        return;
+      }
+
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      if (order_edge[i] >= 2)
+	{
+          if (ip.vb == BND && ip.facetnr == i)
+            {
+              INT<2> e = GetVertexOrientedEdge(i);
+              EdgeOrthoPol::Eval (order_edge[i]-2, lam[e[1]]-lam[e[0]], shape+ii);
+            }
+          ii += order_edge[i]-1;
+	}
+
+    // inner shapes
+    if (ip.vb == VOL && order_face[0][0] >= 3)
+      {
+	INT<4> f = GetVertexOrientedFace (0);
+	TrigOrthoPol::Eval(order_face[0][0]-3, 
+                           lam[f[0]], lam[f[1]], shape+ii);
+      }
+  }
+
   template<>
   inline void H1HighOrderFE_Shape<ET_TRIG> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
@@ -285,9 +319,27 @@ namespace ngfem
                     }));
       }
   }
-
-
+  
+#ifdef FILE_H1HOFE_TRIG_CPP
+  template <>
+  bool H1HighOrderFE_Shape<ET_TRIG> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
+  {
+    diag.Range(0,3) = 1.0;
+    int ii = 3;
+    for (int i = 0; i < N_EDGE; i++)
+      for (int j = 2; j <= order_edge[i]; j++)
+        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
+    INT<2> p = order_face[0];
+    for (int i = 0; i <= p[0]-3; i++)
+      for (int j = 0; j <= p[0]-i-3; j++)
+        diag(ii++) = 0.5*(5+2*i+2*j)*(4+2*i+j)*(j+1) * (2*i+3)*(2*i+4) / (i+1);
+    // cout << "trig duality diag = " << diag << endl;
+    return true;
+  }
+#endif
+  
 #ifdef FILE_H1HOFE_CPP
+  
   template <>
   bool H1HighOrderFE_Shape<ET_QUAD> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
   {
@@ -299,7 +351,7 @@ namespace ngfem
     INT<2> p = order_face[0];
     for (int i = 2; i <= p[0]; i++)
       for (int j = 2; j <= p[1]; j++)
-        diag(ii++) = (2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2);
+        diag(ii++) = 1.0*(2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2);
 
     // cout << "quad duality diag = " << diag << endl;
     return true;
