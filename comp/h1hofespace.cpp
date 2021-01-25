@@ -100,6 +100,18 @@ namespace ngcomp
       // fel.CalcDualShape (mip, mat);
       throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
     }
+
+    using DiffOp<DiffOpDual<D>>::AddTransSIMDIR;
+    template <typename FEL, class MIR, class TVY>
+    static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
+                                BareSliceMatrix<SIMD<double>> x, TVY & y)
+    {
+      STACK_ARRAY(SIMD<double>, memx, mir.Size());
+      FlatVector<SIMD<double>> hx(mir.Size(), &memx[0]);
+      for (size_t i = 0; i < mir.Size(); i++)
+        hx(i) = x(0,i) / mir[i].GetMeasure();
+      static_cast<const ScalarFiniteElement<D>&>(fel).AddDualTrans (mir.IR(), hx, y);
+    }    
   };
 
 
