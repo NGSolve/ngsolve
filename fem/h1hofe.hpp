@@ -136,11 +136,6 @@ namespace ngfem
       return (ET == ET_SEGM) || (ET == ET_TRIG) || (ET == ET_QUAD)
         || (ET == ET_HEX); 
     }
-
-    virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
-    {
-      return static_cast<const H1HighOrderFE_Shape<ET>*>(this)->GetDiagDualityMassInverse(diag);
-    }
   };
 
 }  
