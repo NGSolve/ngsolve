@@ -596,10 +596,7 @@ namespace ngcomp
 	       }
 	     }
 
-             bool solvedual = false;
-             if constexpr (is_same<SCAL,double>())
-                            solvedual = fel.SolveDuality (elflux, elfluxi, lh);
-             if (!solvedual)
+             if (!fel.SolveDuality (elflux, elfluxi, lh))
                {
                  /** Calc Element Matrix **/
                  FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
