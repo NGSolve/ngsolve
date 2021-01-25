@@ -39,6 +39,10 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
       INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcDualShape (const TIP<DIM,Tx> ip, TFA & shape) const
+    { throw Exception ("T_dual shape not implemented, H1Ho"); }      
     
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     { throw Exception ("dual shape not implemented, H1Ho"); }
@@ -236,6 +240,52 @@ namespace ngfem
                     }));
       }
   }
+
+  template<> template<typename Tx, typename TFA>  
+  void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcDualShape (TIP<2,Tx> ip, TFA & shape) const
+  {
+    Tx x = ip.x, y = ip.y;
+    Tx hx[2] = { x, y };
+    size_t ii = 4;
+    /*
+    auto & ip = mip.IP();
+    shape = 0.0;
+    double hx[2] = { ip(0), ip(1) };
+    */
+    
+    if (ip.vb == BBND)
+      {
+        shape[ip.facetnr] = 1.0;
+        return;
+      }
+    
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      if (order_edge[i] >= 2)
+	{
+          if (ip.vb == BND && ip.facetnr == i)
+            {
+              auto xi = ET_trait<ET_QUAD>::XiEdge(i, hx, this->vnums);
+              EdgeOrthoPol::Eval (order_edge[i]-2, xi, shape+ii);
+            }
+          ii += order_edge[i]-1;
+	}
+
+    INT<2> p = order_face[0];
+    if (ip.vb == VOL && p[0] >= 2 && p[1] >= 2)
+      {
+        auto xi = ET_trait<ET_QUAD>::XiFace(0, hx, this->vnums);
+
+        QuadOrthoPol::Eval1Assign(p[0]-2, xi(0), 
+          SBLambda ([&](int i, auto val) LAMBDA_INLINE 
+                    {  
+                      QuadOrthoPol::EvalMult (p[1]-2, xi(1), val, shape+ii);
+                      ii += p[1]-1;
+                    }));
+      }
+  }
+
+  
 
   template<>
   inline void H1HighOrderFE_Shape<ET_QUAD> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
