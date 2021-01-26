@@ -2822,7 +2822,7 @@ namespace ngcomp
             if (facetwise_skeleton_parts[BND].Size())
               {
                 // cout << "check bnd" << endl;
-                int cnt = 0;
+                // int cnt = 0;
                 int ne = ma->GetNE(BND);
                 ParallelForRange
                   ( IntRange(ne), [&] ( IntRange r )
@@ -3425,7 +3425,7 @@ namespace ngcomp
 				   if (IsRegularDof(dnums[k]))
 				     useddof[dnums[k]] = true;
                           
-				 int elmat_size = dnums.Size()*fespace->GetDimension();
+				 // int elmat_size = dnums.Size()*fespace->GetDimension();
 				 
 				 elmat = 0.0;
 				 // original version did not compile on MacOS V

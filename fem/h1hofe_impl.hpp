@@ -749,7 +749,6 @@ namespace ngfem
   void H1HighOrderFE_Shape<ET_HEX> :: T_CalcDualShape (TIP<3,Tx> ip, TFA & shape) const
   {
     Tx x = ip.x, y = ip.y, z = ip.z;
-    Tx hx[3] = { x, y, z };
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
@@ -806,20 +805,23 @@ namespace ngfem
 
 
     // volume dofs:
-    INT<3> p = order_cell[0];
-    if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)
+    if (ip.vb == VOL)
       {
-	QuadOrthoPol::Eval (p[0]-2, 2*x-1, polx);
-	QuadOrthoPol::Eval (p[1]-2, 2*y-1, poly);
-	QuadOrthoPol::Eval (p[2]-2, 2*z-1, polz);
-
-	for (int i = 0; i < p[0]-1; i++)
-	  for (int j = 0; j < p[1]-1; j++)
-	    {
-	      Tx pxy = polx[i] * poly[j];
-	      for (int k = 0; k < p[2]-1; k++)
-		shape[ii++] = pxy * polz[k];
-	    }
+        INT<3> p = order_cell[0];
+        if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)
+          {
+            QuadOrthoPol::Eval (p[0]-2, 2*x-1, polx);
+            QuadOrthoPol::Eval (p[1]-2, 2*y-1, poly);
+            QuadOrthoPol::Eval (p[2]-2, 2*z-1, polz);
+            
+            for (int i = 0; i < p[0]-1; i++)
+              for (int j = 0; j < p[1]-1; j++)
+                {
+                  Tx pxy = polx[i] * poly[j];
+                  for (int k = 0; k < p[2]-1; k++)
+                    shape[ii++] = pxy * polz[k];
+                }
+          }
       }
   }
 

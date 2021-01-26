@@ -476,7 +476,46 @@ namespace ngfem
     
     td.Stop();
 
+    auto [nv,ne,nf,nc] = GetNDofVEFC();
+    
     ts.Start();
+    u = 0.0;
+    bool first_time = true;
+    for (int el_vb = D; el_vb >= 0; el_vb--)
+      {
+        IntRange r;
+        switch (D-el_vb)
+          {
+          case 0: r = IntRange(0, nv); break;
+          case 1: r = IntRange(nv, nv+ne); break;
+          case 2: r = IntRange(nv+ne, nv+ne+nf); break;
+          case 3: r = IntRange(nv+ne+nf, nv+ne+nf+nc); break;
+          default:
+            ;
+          }
+        if (r.Size() == 0) continue;
+        
+        Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
+        res = rhs;
+        if (!first_time)
+          for (int nr = 0; nr < f2el.GetNFacets(); nr++)
+            {
+              IntegrationRule irfacet1(f2el.FacetType(nr), 2*order);
+              SIMD_IntegrationRule irfacet(irfacet1);
+              auto & volir = f2el(nr, irfacet, lh);
+              FlatVector<SIMD<double>> pointvals(volir.Size(), lh);
+              Evaluate (volir, u, pointvals);
+              for (int i = 0; i < volir.Size(); i++)
+                pointvals(i) *= -irfacet[i].Weight();
+              AddDualTrans (volir, pointvals, res);
+            }
+        first_time = false;
+        
+        u.Range(r) += pw_mult(diag.Range(r), res.Range(r));
+      }
+
+    
+#ifdef OLD    
     u = pw_mult(diag, rhs);
 
     for (int loop = 0; loop < D; loop++)
@@ -525,6 +564,7 @@ namespace ngfem
           }
         u += pw_mult(diag, res);
       }
+#endif
     ts.Stop();
     return true;
   }

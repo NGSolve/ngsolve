@@ -131,6 +131,23 @@ namespace ngfem
       order = ho;
     }
 
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    {
+      int nv = N_VERTEX;
+      int ne = 0, nf = 0, nc = 0;
+      
+      for (int i = 0; i < N_EDGE; i++)
+        ne += order_edge[i] - 1;
+      
+      for (int i = 0; i < N_FACE; i++)
+        nf += ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
+      
+      if (DIM == 3)
+        nc += PolBubbleDimension (order_cell[0]);
+      return { nv, ne, nf, nc };
+    }
+      
+    
     virtual bool DualityMassDiagonal () const override
     {
       return (ET == ET_SEGM) || (ET == ET_TRIG) || (ET == ET_QUAD)
