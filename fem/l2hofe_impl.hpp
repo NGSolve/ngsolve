@@ -317,6 +317,13 @@ namespace ngfem
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const;
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcDualShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const
+    {
+      T_CalcShape (ip, shape);
+    }
+    
     /*
     {
       throw Exception (string("TIP not implemented, fe = ")+typeid(*this).name());
