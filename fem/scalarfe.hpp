@@ -123,6 +123,7 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
     NGS_DLL_HEADER virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const { return false; }
     NGS_DLL_HEADER virtual bool DualityMassDiagonal () const { return false; }
+    NGS_DLL_HEADER virtual tuple<int,int,int,int> GetNDofVEFC () const { return { 0, 0, 0, 0 }; }
   };
 
   /**

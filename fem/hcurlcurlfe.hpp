@@ -1658,9 +1658,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T; 
 
       T x = ip(0), y = ip(1), z = ip(2);
-      T lx[4] = { 1-x, x, x, 1-x };
-      T ly[4] = { 1-y, 1-y, y, y };
-      T lz[4] = { 1-z, 1-z, z, z };
+      // T lx[4] = { 1-x, x, x, 1-x };
+      // T ly[4] = { 1-y, 1-y, y, y };
+      // T lz[4] = { 1-z, 1-z, z, z };
       // T lam[4] = { 1-x-y+x*y, x*(1-y), x*y, y*(1-x) };
       T sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
                    (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
