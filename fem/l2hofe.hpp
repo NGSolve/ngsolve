@@ -95,9 +95,9 @@ namespace ngfem
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
 
     /// different orders in different directions
-    virtual void SetOrder (INT<DIM> p)  { order_inner = p; }
+    virtual void SetOrder (INT<DIM> p) override { order_inner = p; }
 
-    virtual void ComputeNDof()
+    virtual void ComputeNDof() override
     {
       ndof = PolDimension (order_inner);
       order = 0;
@@ -105,27 +105,45 @@ namespace ngfem
         order = max2(order, order_inner[i]);
     }
 
-    NGS_DLL_HEADER virtual void PrecomputeTrace ();
-    NGS_DLL_HEADER virtual void PrecomputeGrad ();
-    NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir);
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    {
+      switch (DIM)
+        {
+        case 0: return { 1, 0, 0, 0 };
+        case 1: return { 0, ndof, 0, 0 };
+        case 2: return { 0, 0, ndof, 0 };
+        case 3: return { 0, 0, 0, ndof };
+        }
+    }
+
+    NGS_DLL_HEADER virtual void PrecomputeTrace () override;
+    NGS_DLL_HEADER virtual void PrecomputeGrad () override;
+    NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir) override;
 
     using BASE::Evaluate;
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const;
-    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, BareSliceVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, BareSliceVector<> coefs) const override;
 
     using BASE::EvaluateGrad;    
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
 
     using BASE::EvaluateGradTrans;
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, BareSliceVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, BareSliceVector<> coefs) const override;
 
-    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const;
-    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const override;
+    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const override;
 
-    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
-    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const override;
+    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
+    NGS_DLL_HEADER virtual bool DualityMassDiagonal () const override { return true; }
+    NGS_DLL_HEADER virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
+    {
+      GetDiagMassMatrix(diag);
+      for (auto & d : diag) d = 1.0/d;
+      return true;
+    }
   };
 
 }
