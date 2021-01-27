@@ -2903,7 +2903,7 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override
   {
-    Vec<3> va, vb;
+    Vec<3,Complex> va, vb;
     c1->Evaluate (ip, va);
     c2->Evaluate (ip, vb);
     result = Cross(va, vb);
