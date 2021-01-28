@@ -62,6 +62,9 @@ cd ngsolve
 if [ "$IMAGE_NAME" == "avx" ]
 then
   ## build and upload docu to server
+  apt install -y software-properties-common
+  add-apt-repository -y ppa:saiarcot895/chromium-beta
+  apt update
   apt-get install -y rsync chromium-browser chromium-chromedriver
   ln -s /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver
 
