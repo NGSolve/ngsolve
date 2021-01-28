@@ -34,30 +34,35 @@ export class NGSolveView extends DOMWidgetView {
 
 export class NGSolveDocuView extends DOMWidgetView {
   scene: Scene;
+  container: any;
 
   render() {
-    console.log("Render NGSDocuView");
+    // show preview image, a text message on hover
+    // load real render data on click and start webgui
     let files = this.model.get("value");
-    console.log("data", files);
-    let container = document.createElement( 'div' );
-    container.setAttribute("style", "height: 50vw;");
-    let img = document.createElement('img');
-    img.setAttribute("src", files['preview']);
-    img.setAttribute("style", "width: 100%");
-    img.onclick = (el) => this.onClickImage(el);
-    container.appendChild(img);
-    this.el.appendChild(container);
+    const image = files['preview'];
+    this.container = $(`
+      <div class="webgui_container" style="width:100%">
+          <img src="${image}" class="image">
+          <div class="webgui_overlay webgui_tooltip">
+              <span class="webgui_tooltiptext"> Click to load interactive WebGUI </span>
+          </div>
+      </div>`);
+    let div = document.createElement( 'div' );
+    this.container.click( el=> this.onClickImage(el) )
+    this.container.appendTo(div);
+    this.el.appendChild(div);
     this.model.on('change:value', this.data_changed, this);
   }
   onClickImage(el) {
-      console.log("clicked image", el);
       document.body.style.cursor = "wait";
           let files = this.model.get("value");
           $.get(files['render_data'], (render_data) => {
+              this.container.remove();
+              this.container = null;
               document.body.style.cursor = "";
               let pel = this.el.children[0];
               pel.innerHTML = "";
-              console.log("got render data", render_data);
               let scene = new Scene();
               scene.init(pel, render_data);
           });
@@ -65,7 +70,6 @@ export class NGSolveDocuView extends DOMWidgetView {
 
   data_changed() {
     let render_data = this.model.get("value");
-    console.log("got new render data", render_data);
     this.scene.updateRenderData(render_data);
   }
 }
