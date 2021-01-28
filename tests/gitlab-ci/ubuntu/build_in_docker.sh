@@ -62,11 +62,11 @@ cd ngsolve
 if [ "$IMAGE_NAME" == "avx" ]
 then
   ## build and upload docu to server
-  apt-get install -y rsync
+  apt-get install -y rsync chromium-browser chromium-chromedriver
 
   export NGS_NUM_THREADS=4
   echo "build docu"
-  pip3 install --upgrade jupyter widgetsnbextension ipyparallel
+  pip3 install --upgrade jupyter widgetsnbextension ipyparallel selenium
   ipython profile create --parallel --profile=mpi
   echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_mpi/ipcluster_config.py
   jupyter nbextension install --py widgetsnbextension
