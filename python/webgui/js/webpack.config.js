@@ -48,7 +48,7 @@ module.exports = function(env, argv)
   },
 
   /**
-   * Embeddable ngoslve_jupyter_widgets bundle
+   * Embeddable ngsolve_jupyter_widgets bundle
    *
    * This bundle is almost identical to the notebook extension bundle. The only
    * difference is in the configuration of the webpack public path for the
