@@ -55,12 +55,13 @@ html_template = """
             require(["ngsolve_jupyter_widgets"], ngs=>
             {
                 let scene = new ngs.Scene();
-                scene.init(document.body, render_data);
+                scene.init(document.body, render_data, {preserveDrawingBuffer: false});
             });
           </script>
     </body>
 </html>
 """
+screenshot_html_template = html_template.replace("preserveDrawingBuffer: false", "preserveDrawingBuffer: true")
 
 
 class WebGLScene:
@@ -165,19 +166,44 @@ class WebGLScene:
 
         return d
 
-    def GenerateHTML(self, filename=None):
+    def GenerateHTML(self, filename=None, template=html_template):
         import json
         d = self.GetData()
 
         data = json.dumps(d)
 
-        html = html_template.replace('{data}', data )
+        html = template.replace('{data}', data )
         jscode = "var render_data = {}\n".format(data) + render_js_code
         html = html.replace('{render}', jscode )
 
         if filename is not None:
             open(filename,'w').write( html )
         return html
+
+    def MakeScreenshot(self, filename, width=1200, height=600):
+        html_file = filename+".html"
+        self.GenerateHTML(html_file, screenshot_html_template)
+
+        # start headless browser to render html
+        from selenium import webdriver
+        from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+        options = webdriver.ChromeOptions()
+        options.add_argument('headless')
+
+        options.add_argument('window-size=1200x600')
+
+
+        driver = webdriver.Chrome(options=options)
+        fpath = 'file://'+os.path.join(os.path.abspath('.'), html_file)
+        driver.get(fpath)
+        driver.implicitly_wait(10)
+
+        import time
+        time.sleep(2)
+        driver.get_screenshot_as_file(filename)
+        os.remove(html_file)
+
 
     def Draw(self):
         self.widget = NGSWebGuiWidget()
@@ -543,3 +569,82 @@ def howtoInstallJupyterLabextension():
     print("""# To install jupyter lab extension:
 jupyter labextension install --clean {labdir}
 """.format(labdir=_jupyter_lab_extension_path))
+
+@register
+class NGSDocuWebGuiWidget(DOMWidget):
+    from traitlets import Dict, Unicode
+    _view_name = Unicode('NGSolveDocuView').tag(sync=True)
+    _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
+    _view_module_version = Unicode(widgets_version).tag(sync=True)
+    value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
+
+# counter for each directory to name preview.png and render_data.json files
+# __docu_file_counter = -1
+
+def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename=""):
+    if isinstance(mesh_or_func, ngs.Mesh):
+        mesh = mesh_or_func
+        func = None
+
+    if isinstance(mesh_or_func, ngs.CoefficientFunction):
+        func = mesh_or_func
+        mesh = mesh_or_none
+
+    if isinstance(mesh_or_func, ngs.GridFunction):
+        func = mesh_or_func
+        mesh = mesh_or_none or func.space.mesh
+        
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval)
+    import json
+
+    docu_path = os.environ['NETGEN_DOCUMENTATION_OUT_DIR']
+    src_path = os.environ['NETGEN_DOCUMENTATION_SRC_DIR']
+    cwd_path = os.path.abspath('.')
+    rel_path = os.path.relpath('.', src_path)
+    path = os.path.join(docu_path, rel_path)
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    counter_file = os.path.join(docu_path, '.counter')
+    if os.path.exists(counter_file):
+        file_counter = int(open(counter_file,'r').read())+1
+    else:
+        file_counter = 0
+
+    open(counter_file,'w').write(str(file_counter))
+
+#     file_counter = __docu_file_counter[path]
+#     __docu_file_counter[path] += 1
+
+    data_file = 'render_data_{}.json'.format(file_counter)
+    data_file_abs = os.path.join(path, data_file)
+    preview_file = 'preview_{}.png'.format(file_counter)
+    preview_file_abs = os.path.join(path, preview_file)
+
+
+    widget = NGSDocuWebGuiWidget()
+    widget.value = {'render_data' : data_file, 'preview' : preview_file }
+    scene.widget = widget
+    data = scene.GetData()
+    json.dump(data, open(data_file_abs, "w"))
+    scene.MakeScreenshot(preview_file_abs, 1200, 600)
+    scene.Redraw = lambda : None
+    display(widget)
+    return scene
+
+if 'NETGEN_DOCUMENTATION_SRC_DIR' in os.environ:
+    # we are buiding the documentation, some things are handled differently:
+    # 1) Draw() is generating a .png (using headless chromium via selenium) and a render_data.json
+    #    to show a preview image and load the render_data only when requested by user
+    # 2) return a NGSDocuWebGuiWidget instead of NGSWebGuiWidget implementing the preview/load on demand of webgui
+
+    _Draw = Draw
+    Draw = _DrawDocu
+
+
+
+
+
+
+
+
