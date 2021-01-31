@@ -1371,8 +1371,8 @@ namespace ngbla
 #endif
     */
     
-    constexpr size_t HA = reg32 ? 6 : 4;
-    constexpr size_t BSB = reg32 ? 4 : 3;
+    constexpr size_t HA = reg32 ? 6 : 3;
+    constexpr size_t BSB = 4;
     
     TAB * pb0 = pb;
     size_t i = 0;
