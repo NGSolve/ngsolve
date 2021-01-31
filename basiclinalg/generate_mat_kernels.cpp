@@ -2340,7 +2340,8 @@ int main ()
       << "inline void MatKernelAlignedMultAB" << endl
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
-  for (int i = 1; i <= 3; i++)
+  
+  for (int i = 1; i <= 4; i++)
     {
       GenerateMultAB (out, 1, i);  
       GenerateMultAB (out, 2, i);
