@@ -624,7 +624,7 @@ namespace ngbla
     constexpr size_t BSB = reg32 ? 4 : 3;
     size_t l = 0, lb = 0;
     for ( ; l+BSB*SW <= wb; l += BSB*SW, lb += BSB*SWdTB)
-      MatKernelMultAB<H,4,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
+      MatKernelMultAB<H,BSB,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
     for ( ; l+SW <= wb; l += SW, lb += SWdTB)
       MatKernelMultAB<H,1,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
     if (l < wb)
@@ -809,7 +809,7 @@ namespace ngbla
         for ( ; k+HA <= ha; k += HA, pa += HA*dista, pc += HA * c.Dist())
           MatKernel2AddAB<HA,OP> (hbi, wbi, pa, dista,  &bb[0], BBW/SW, pc, c.Dist());
 
-	Switch<HA> (ha-k, [&] (auto H)
+	Switch<HA> (ha-k, [&,hbi,wbi,pa,dista,pc] (auto H)
 	  {
 	    if constexpr (H.value > 0)
 			   MatKernel2AddAB<H.value,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist()); 
