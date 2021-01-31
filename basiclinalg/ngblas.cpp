@@ -1372,6 +1372,7 @@ namespace ngbla
     */
     
     constexpr size_t HA = reg32 ? 6 : 4;
+    constexpr size_t BSB = reg32 ? 4 : 3;
     
     TAB * pb0 = pb;
     size_t i = 0;
@@ -1379,9 +1380,9 @@ namespace ngbla
       {
         TAB * pb = pb0;
         size_t j = 0;
-        for ( ; j+4 <= wc; j += 4, pb += 4*db)
+        for ( ; j+BSB <= wc; j += BSB, pb += BSB*db)
           {
-            auto scal = MatKernelScalAB<HA,4>(wa, pa, da, pb, db);
+            auto scal = MatKernelScalAB<HA,BSB>(wa, pa, da, pb, db);
             Iterate<HA> ([&] (auto i) {
                 double * pci = pc+i.value*dc+j;
                 auto si = func (SIMD<double,4>(pci), get<i.value>(scal));
