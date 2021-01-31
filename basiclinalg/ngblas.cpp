@@ -3,9 +3,16 @@
 #include <bla.hpp>
 
 
+// do we have 32 vector-registers ?
+#if defined(__AVX512F__) || defined(__arm64__)
+constexpr bool reg32 = true;
+#else
+constexpr bool reg32 = false;
+#endif
+
+
 namespace ngbla
 {
-
   
 
   int dgemm(char *transa, char *transb, integer *m, integer *
@@ -614,9 +621,10 @@ namespace ngbla
     // t.AddFlops (H*hb*wb);
     constexpr size_t SW = SIMD<double>::Size();
     constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
+    constexpr size_t BSB = reg32 ? 4 : 3;
     size_t l = 0, lb = 0;
-    for ( ; l+3*SW <= wb; l += 3*SW, lb += 3*SWdTB)
-      MatKernelMultAB<H,3,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
+    for ( ; l+BSB*SW <= wb; l += BSB*SW, lb += BSB*SWdTB)
+      MatKernelMultAB<H,4,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
     for ( ; l+SW <= wb; l += SW, lb += SWdTB)
       MatKernelMultAB<H,1,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
     if (l < wb)
@@ -713,12 +721,15 @@ namespace ngbla
     
     constexpr size_t SW = SIMD<double>::Size();
     alignas(64) SIMD<double> bb[BBH];
+    /*
 #ifdef __AVX512F__
     constexpr size_t HA = 6;
 #else
     constexpr size_t HA = 4;
 #endif
-
+    */
+    constexpr size_t HA = reg32 ? 6 : 4;
+    
     double * pc = &c(0,0);
     for (size_t j = 0; j+SW <= wb; j+=SW, pb += SW, pc += SW)
       {
@@ -769,12 +780,15 @@ namespace ngbla
     size_t dista = a.Dist();
     double * pb = &b(0);
     size_t distb = b.Dist();
-    
+
+    constexpr size_t HA = reg32 ? 6 : 4;
+    /*
 #ifdef __AVX512F__
     constexpr size_t HA = 6;
 #else
     constexpr size_t HA = 4;
 #endif
+    */
     
     // blockwise B, fits into L2 cache
     // constexpr size_t BBH = 128;
@@ -794,6 +808,13 @@ namespace ngbla
         size_t k = 0;
         for ( ; k+HA <= ha; k += HA, pa += HA*dista, pc += HA * c.Dist())
           MatKernel2AddAB<HA,OP> (hbi, wbi, pa, dista,  &bb[0], BBW/SW, pc, c.Dist());
+
+	Switch<HA> (ha-k, [&] (auto H)
+	  {
+	    if constexpr (H.value > 0)
+			   MatKernel2AddAB<H.value,OP> (hbi, wbi, pa, dista, &bb[0], BBW/SW, pc, c.Dist()); 
+	  });
+	/*
         switch (ha-k)
           {
           case 0: break;
@@ -810,6 +831,7 @@ namespace ngbla
             break;
           default: ; 
           }
+	*/
       }
   }
  
@@ -1341,11 +1363,15 @@ namespace ngbla
                         TAB * pa, size_t da, TAB * pb, size_t db, double * pc, size_t dc,
                         FUNC func)
   {
+    /*
 #ifdef __AVX512F__
     constexpr size_t HA = 6;
 #else
     constexpr size_t HA = 3;
 #endif
+    */
+    
+    constexpr size_t HA = reg32 ? 6 : 4;
     
     TAB * pb0 = pb;
     size_t i = 0;
@@ -2794,6 +2820,7 @@ namespace ngbla
           "60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag\n"
           "61 .. C = A^t B,  A=n*k, B=n*m, C = k*m\n"
           "70 .. C += A B^t,  A=n*k, B=m*k, C = n*m, A,B SIMD\n"
+	  "80 .. (x,y)        inner product, size n\n"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
@@ -3463,6 +3490,25 @@ namespace ngbla
           t.Stop();
           cout << "AddABt, sym GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+    
+    if (what == 0 || what == 80)
+      {
+	Vector x(n), y(n);
+        double tot = n;
+        size_t its = 1e8 / tot + 1;
+	x = 1; y = 1;
+        {
+          Timer t("InnerProduct");
+	  double sum = 0.0;
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            sum += InnerProduct(x,y);
+          t.Stop();
+	  if (sum == 0) cout << "xx" << endl; // print only in exceptional case
+          cout << "InnerProduct GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("InnerProduct", 1e-9 * tot *its / t.GetTime()));
         }
       }
 
