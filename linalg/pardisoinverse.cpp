@@ -187,7 +187,7 @@ namespace ngla
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
-    integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
+    integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error = 0;
     integer * params = const_cast <integer*> (&hparams[0]);
 
     for (int i = 0; i < 64; i++)
@@ -581,7 +581,7 @@ namespace ngla
     Matrix<> ty(2, compressed_height);
 
       
-    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error = 0;
     integer nrhs = 2;
 
     integer * params = const_cast <integer*> (&hparams[0]);

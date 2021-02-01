@@ -60,6 +60,7 @@ namespace ngla {
     shared_ptr<BaseVector> RefVec() const { return refvec; }
 
     virtual unique_ptr<MultiVector> Range(IntRange r) const;
+    virtual unique_ptr<MultiVector> VectorRange(IntRange r) const; // range of each component vector
     virtual unique_ptr<MultiVector> SubSet(const Array<int> & indices) const;
     
     void Extend (size_t nr = 1) {
@@ -394,12 +395,22 @@ namespace ngla {
   }
 
   inline shared_ptr<MultiVectorExpr> operator- (shared_ptr<MultiVectorExpr> e1,
-                                         shared_ptr<MultiVectorExpr> e2)
+						shared_ptr<MultiVectorExpr> e2)
   {
     return e1 + (-e2);
   }
                                          
+  inline shared_ptr<MultiVectorExpr> operator* (double s, shared_ptr<MultiVectorExpr> e1)
+  {
+    Vector<double> scale(e1->Size()); scale = s;
+    return make_shared<ScaledMultiVectorExpr<double>> (e1, scale);
+  }
   
+  inline shared_ptr<MultiVectorExpr> operator* (Complex s, shared_ptr<MultiVectorExpr> e1)
+  {
+    Vector<Complex> scale(e1->Size()); scale = s;
+    return make_shared<ScaledMultiVectorExpr<Complex>> (e1, scale);
+  }
 
   
 }
