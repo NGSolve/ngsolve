@@ -124,6 +124,15 @@ namespace ngla {
     return mv2;
   }
 
+  unique_ptr<MultiVector> MultiVector :: VectorRange(IntRange r) const
+  {
+    auto mv2 = make_unique<MultiVector>(refvec->Range(r), 0);
+    for (auto v : vecs)
+      mv2->vecs.Append (v->Range(r));
+    return mv2;
+  }
+
+  
   unique_ptr<MultiVector> MultiVector :: SubSet(const Array<int> & indices) const
   {
     auto mv2 = make_unique<MultiVector>(refvec, 0);

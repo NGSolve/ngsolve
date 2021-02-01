@@ -568,9 +568,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
 
   py::class_<MultiVectorExpr, shared_ptr<MultiVectorExpr> >(m, "MultiVectorExpr")
+    .def("__rmul__", [] (shared_ptr<MultiVectorExpr> a, double scal) { return scal*a; })
+    .def("__rmul__", [] (shared_ptr<MultiVectorExpr> a, Complex scal) { return scal*a; })
     .def("Scale", [](shared_ptr<MultiVectorExpr> e, Vector<double> v)
          -> shared_ptr<MultiVectorExpr>
          { return make_shared<ScaledMultiVectorExpr<double>> (e, v); })
+    .def("Scale", [](shared_ptr<MultiVectorExpr> e, Vector<Complex> v)
+         -> shared_ptr<MultiVectorExpr>
+         { return make_shared<ScaledMultiVectorExpr<Complex>> (e, v); })
     .def("__add__", [](shared_ptr<MultiVectorExpr> e1, shared_ptr<MultiVectorExpr> e2)
          { return e1+e2; })
     .def("__neg__", [](shared_ptr<MultiVectorExpr> e1)
@@ -646,7 +651,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__setitem__", [](MultiVector & self, std::vector<int> inds, const MultiVectorExpr & v2) {
         auto selfr = self.SubSet(ArrayFromVector(inds));
         *selfr = v2; })
-
+    .def("__getitem__", [](MultiVector & self, std::tuple<py::slice,py::slice> ind) -> shared_ptr<MultiVector>
+	 {
+	   auto vecs = get<0>(ind);
+	   auto subvecs = get<1>(ind);
+	   size_t start1, step1, n1;
+	   InitSlice( vecs, self.Size(), start1, step1, n1 );
+	   if (step1 != 1)
+	     throw Exception ("slices with non-unit distance not allowed");
+	   size_t start2, step2, n2;
+	   InitSlice( subvecs, self.Size(), start2, step2, n2 );
+	   if (step2 != 1)
+	     throw Exception ("slices with non-unit distance not allowed");
+	   return self.Range(IntRange(start1,start1+n1))->VectorRange(IntRange(start2, start2+n2));
+	 })
     
     .def_property("data",
                   [](shared_ptr<MultiVector> self)
