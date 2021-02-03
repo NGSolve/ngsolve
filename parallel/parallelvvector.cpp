@@ -28,6 +28,9 @@ namespace ngla
     void * Memory () const override
     { return orig->GetLocalVector()->Range(range).Memory(); }
 
+    virtual int EntrySizeScal() const throw () override
+    { return orig->EntrySizeScal(); }
+
     virtual bool IsComplex() const override
     { return orig->IsComplex(); } 
     
@@ -489,7 +492,8 @@ namespace ngla
       sub_pardofs = paralleldofs->Range(range);
     
     AutoVector locvec = S_BaseVectorPtr<SCAL>::Range (range);
-    auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(), this->EntrySize(),
+    auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(),
+							   this->EntrySizeScal(),
                                                            locvec.Memory(), 
                                                            sub_pardofs,
                                                            this->GetParallelStatus());
@@ -510,7 +514,8 @@ namespace ngla
   AutoVector S_ParallelBaseVectorPtr<SCAL> :: Range (DofRange range) const
   {
     AutoVector locvec = S_BaseVectorPtr<SCAL>::Range (range);
-    auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(), this->EntrySize(),
+    auto vec = make_unique<S_ParallelBaseVectorPtr<SCAL>> (range.Size(),
+							   this->EntrySizeScal(),
                                                            locvec.Memory(), 
                                                            range.GetParallelDofs(),
                                                            this->GetParallelStatus());
