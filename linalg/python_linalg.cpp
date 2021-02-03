@@ -660,7 +660,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	   if (step1 != 1)
 	     throw Exception ("slices with non-unit distance not allowed");
 	   size_t start2, step2, n2;
-	   InitSlice( subvecs, self.Size(), start2, step2, n2 );
+	   InitSlice( subvecs, self.RefVec()->Size(), start2, step2, n2 );
 	   if (step2 != 1)
 	     throw Exception ("slices with non-unit distance not allowed");
 	   return self.Range(IntRange(start1,start1+n1))->VectorRange(IntRange(start2, start2+n2));
