@@ -478,6 +478,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            pnot.Project (self);
            self += p * other;
          })
+    .def("__setitem__", [](BaseVector & self, shared_ptr<BitArray> mask, double value)
+         {
+           Projector p(mask, true);
+           p.SetValues (self, value);
+         })
     .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;}, py::arg("vec"))
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;}, py::arg("vec"))
     .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))

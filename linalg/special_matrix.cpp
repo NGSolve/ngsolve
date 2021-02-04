@@ -135,6 +135,35 @@ namespace ngla
   }
   
 
+  void Projector :: SetValues (BaseVector & x, double value) const
+  {
+    auto setval = [this, value] (BitArray & bits, auto sx)
+      {
+        ParallelForRange
+        (bits.Size(),
+         [&bits, sx, this,value] (IntRange myrange)
+            {
+              if (keep_values)
+                {
+                  for (size_t i : myrange) 
+                    if (bits[i])
+                      sx(i) = value;
+                }
+              else
+                {
+                  for (size_t i : myrange) 
+                    if (!bits[i])
+                      sx(i) = value;
+                }
+            });
+      };
+
+    if (x.EntrySize() == 1)
+      setval (*bits, x.FV<double>());
+    else
+      setval (*bits, x.SV<double>());
+  }
+  
 
 
   template <typename TM>
