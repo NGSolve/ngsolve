@@ -1023,6 +1023,36 @@ namespace ngbla
   }
 
 
+  /* *************************** PW_Inv_Expr **************************** */
+
+  template <class TA>
+  class PW_Inv_Expr : public Expr<PW_Inv_Expr<TA> >
+  {
+    const TA & a;
+  public:
+
+    enum { IS_LINEAR = TA::IS_LINEAR };
+
+    INLINE PW_Inv_Expr (const TA & aa) : a(aa) { ; }
+
+    INLINE auto operator() (size_t i) const { return 1.0/a(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return 1.0/a(i,j); }
+
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
+
+    void Dump (ostream & ost) const
+    { ost << "1/("; a.Dump(ost); ost << ")"; }
+  };
+
+  template <typename TA>
+  INLINE PW_Inv_Expr<TA>
+  pw_inv (const Expr<TA> & a)
+  {
+    return PW_Inv_Expr<TA> (a.Spec());
+  }
+
+
 
   /* *************************** ScaleExpr **************************** */
 
