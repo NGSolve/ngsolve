@@ -1548,11 +1548,15 @@ namespace ngbla
                            TAB * pa, size_t da, TAB * pb, size_t db, double * pc, size_t dc,
                            FUNC func)
   {
+    /*
 #ifdef __AVX512F__
     constexpr size_t HA = 6;
 #else
     constexpr size_t HA = 3;
 #endif
+    */
+    constexpr size_t HA = reg32 ? 6 : 3;
+    
     
     TAB * pb0 = pb;
     size_t i = 0;
