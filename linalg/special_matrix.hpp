@@ -30,6 +30,7 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void Project (BaseVector & x) const;
+    virtual void SetValues (BaseVector & x, double val) const;
 
     AutoVector CreateRowVector() const override
     { throw Exception("CreateRowVector not implemented for Projector!"); }
