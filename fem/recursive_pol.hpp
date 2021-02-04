@@ -2793,6 +2793,89 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
 
+  class DubinerBasis3DOrthoBub
+  {
+  public:
+    template <typename TI, class S, class T>
+    INLINE static void Eval (TI n, S x, S y, S z, T && values)
+    {
+      EvalMult (n, x, y, z, 1, values);
+    }
+
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalMult (TI n, S x, S y, S z, Sc c, T && values)
+    {
+    size_t ii = 0;
+    S lam4 = 1.0 - x-y-z;
+    // JacobiPolynomialAlpha jac1(1);
+    JacobiPolynomialFix<1,1> leg;
+    leg.EvalScaledMult1Assign 
+      (n, z-lam4, z+lam4, c,
+       SBLambda ([&](size_t k, S polz) LAMBDA_INLINE
+                 {
+                   // JacobiPolynomialAlpha jac(2*k+1);
+                   // JacobiPolynomialAlpha jac2(2*k+2);
+		   
+		   IntegratedJacobiPolynomialAlpha jac1(4+2*k);                     
+                   jac1.EvalScaledMult1Assign
+                     (n-k, y-z-lam4, 1-x, polz, 
+                      SBLambda ([&] (size_t j, S polsy) LAMBDA_INLINE
+                                {
+				  IntegratedJacobiPolynomialAlpha jac2(6+2*k+2*j);                     
+                                  jac2.EvalMult1Assign(n-k-j, 2*x - 1, polsy, values+ii);
+                                  ii += n-k-j+1;
+                                }));
+                 }));
+    }
+
+    template <class T>
+    static size_t CalcNormInv (size_t n, T && norminv)
+    {
+      size_t ii = 0;
+      for (size_t i = 0; i <= n; i++)
+	for (size_t j = 0; j <= n-i; j++)
+	  for (size_t k = 0; k <= n-i-j; k++)
+	    norminv[ii++] =
+	      0.5 * (7+2*i+2*j+2*k)*(6+2*i+2*j+k)*(k+1) *
+	      (5+2*i+2*j)*(4+2*i+j)*(j+1) *
+	      (2*i+3)*(2*i+4) / (i+1);
+      return ii;
+    }
+    /*
+    // evaluate basis functions of hightest order only
+    template <typename TI, class S, class T>
+    INLINE static void EvalHighestOrder (TI n, S x, S y, S z, T && values)
+    {
+      EvalHighestOrderMult (n, x, y, z, 1, values);
+    }
+
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalHighestOrderMult (TI n, S x, S y, S z, Sc c, T && values)
+    {
+    size_t ii = 0;
+    S lam4 = 1.0 - x-y-z;
+    LegendrePolynomial leg;
+    JacobiPolynomialAlpha jac1(1);    
+    leg.EvalScaledMult1Assign 
+      (n, z-lam4, z+lam4, c,
+       SBLambda ([&](size_t k, S polz) LAMBDA_INLINE
+                 {
+                   JacobiPolynomialAlpha jac2(2*k+2);
+ 
+                   jac1.EvalScaledMult1Assign
+                     (n-k, y-z-lam4, 1-x, polz, 
+                      SBLambda ([&] (size_t j, S polsy) LAMBDA_INLINE
+                                {
+                                  values[ii++] =
+                                    jac2.CalcHighestOrderMult(n-k-j, 2*x - 1, polsy);
+                                  jac2.IncAlpha2();
+                                }));
+                   jac1.IncAlpha2();
+                 }));
+    }
+    */
+  };
+
 
 
 

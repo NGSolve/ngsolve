@@ -337,6 +337,7 @@ namespace ngfem
     return true;
   }
 #endif
+
   
 #ifdef FILE_H1HOFE_CPP
   
@@ -356,6 +357,31 @@ namespace ngfem
     // cout << "quad duality diag = " << diag << endl;
     return true;
   }
+
+
+  template <>
+  bool H1HighOrderFE_Shape<ET_TET> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
+  {
+    diag.Range(0,4) = 1.0;
+    int ii = 4;
+    for (int i = 0; i < N_EDGE; i++)
+      for (int j = 2; j <= order_edge[i]; j++)
+        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
+    for (int f = 0; f < N_FACE; f++)
+      {
+	INT<2> p = order_face[f];
+	for (int i = 0; i <= p[0]-3; i++)
+	  for (int j = 0; j <= p[0]-i-3; j++)
+	    diag(ii++) = 0.5*(5+2*i+2*j)*(4+2*i+j)*(j+1) * (2*i+3)*(2*i+4) / (i+1);
+      }
+
+    auto p = order_cell[0][0];
+    if (p >= 4)
+      DubinerBasis3DOrthoBub::CalcNormInv(p-4, diag+ii);
+    return true;
+  }
+
+
   
   template <>
   bool H1HighOrderFE_Shape<ET_HEX> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
@@ -486,7 +512,7 @@ namespace ngfem
     // interior shapes 
     if (order_cell[0][0] >= 4)
 
-      DubinerBasis3D::EvalMult
+      DubinerBasis3DOrthoBub::EvalMult
 	(order_cell[0][0]-4, lam[0], lam[1], lam[2],
 	 lam[0]*lam[1]*lam[2]*lam[3], shape+ii);
 	 
@@ -539,8 +565,55 @@ namespace ngfem
       }
     //inner shapes
     if (ip.VB() == VOL && order_cell[0][0] >= 4)
-      DubinerBasis3D::EvalMult (order_cell[0][0]-4, lam[0], lam[1], lam[2], 1.0/mip.GetMeasure(), shape+ii);
+      DubinerBasis3DOrthoBub::EvalMult (order_cell[0][0]-4, lam[0], lam[1], lam[2], 1.0/mip.GetMeasure(), shape+ii);
   }
+
+  
+
+  template<> template<typename Tx, typename TFA>  
+  void H1HighOrderFE_Shape<ET_TET> :: T_CalcDualShape (TIP<3,Tx> ip, TFA & shape) const
+  {
+    Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+    size_t ii = 4;
+
+    if (ip.vb == BBBND)
+      {
+	shape[ip.facetnr] = 1;
+	return;
+      }
+    
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      if (order_edge[i] >= 2)
+	{
+	  if (ip.facetnr == i && ip.vb == BBND)
+	    {
+	      INT<2> e = GetVertexOrientedEdge(i);
+	      EdgeOrthoPol::
+		EvalScaled (order_edge[i]-2, 
+			    lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			    shape+ii);
+	    }
+	  ii += order_edge[i]-1;
+	}
+    // face shapes
+    for (int i = 0; i < N_FACE; i++)
+      {
+	if (order_face[i][0] >= 3 && ip.facetnr == i && ip.vb == BND)
+	  {
+	    INT<4> f = GetVertexOrientedFace (i);
+	    TrigOrthoPol::Eval (order_face[i][0]-3, 
+				lam[f[0]], lam[f[1]], shape+ii);
+	  }
+	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
+      }
+    
+    //inner shapes
+    if (ip.vb == VOL && order_cell[0][0] >= 4)
+      DubinerBasis3DOrthoBub::Eval (order_cell[0][0]-4, lam[0], lam[1], lam[2], shape+ii);
+  }
+
+  
 
 
   /* *********************** Prism  **********************/
