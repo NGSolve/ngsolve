@@ -2694,6 +2694,18 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
                    }));
     }
 
+    
+    template <class T>
+    static size_t CalcNormInv (size_t n, T && norminv)
+    {
+      size_t ii = 0;
+      for (size_t i = 0; i <= n; i++)
+	for (size_t j = 0; j <= n-i; j++)
+	  norminv[ii++] =
+	    0.5 * (5+2*i+2*j)*(4+2*i+j)*(j+1) * (2*i+3)*(2*i+4) / (i+1);
+      return ii;
+    }
+
 
     /*
     // evaluate basis functions of hightest order only
