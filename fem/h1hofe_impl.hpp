@@ -368,15 +368,9 @@ namespace ngfem
       for (int j = 2; j <= order_edge[i]; j++)
         diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
     for (int f = 0; f < N_FACE; f++)
-      {
-	INT<2> p = order_face[f];
-	for (int i = 0; i <= p[0]-3; i++)
-	  for (int j = 0; j <= p[0]-i-3; j++)
-	    diag(ii++) = 0.5*(5+2*i+2*j)*(4+2*i+j)*(j+1) * (2*i+3)*(2*i+4) / (i+1);
-      }
-
-    auto p = order_cell[0][0];
-    if (p >= 4)
+      if (int p = order_face[f][0]; p >= 3)
+	ii += DubinerBasisOrthoBub::CalcNormInv (p-3, diag+ii);
+    if (int p = order_cell[0][0]; p >= 4)
       DubinerBasis3DOrthoBub::CalcNormInv(p-4, diag+ii);
     return true;
   }
@@ -584,29 +578,32 @@ namespace ngfem
     
     // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
-      if (order_edge[i] >= 2)
+      if (int p = order_edge[i]; p >= 2)
 	{
 	  if (ip.facetnr == i && ip.vb == BBND)
 	    {
 	      INT<2> e = GetVertexOrientedEdge(i);
 	      EdgeOrthoPol::
-		EvalScaled (order_edge[i]-2, 
+		EvalScaled (p-2, 
 			    lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
 			    shape+ii);
+	      return;
 	    }
-	  ii += order_edge[i]-1;
+	  ii += p-1;
 	}
+    
     // face shapes
     for (int i = 0; i < N_FACE; i++)
-      {
-	if (order_face[i][0] >= 3 && ip.facetnr == i && ip.vb == BND)
-	  {
-	    INT<4> f = GetVertexOrientedFace (i);
-	    TrigOrthoPol::Eval (order_face[i][0]-3, 
-				lam[f[0]], lam[f[1]], shape+ii);
-	  }
-	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
-      }
+      if (int p = order_face[i][0]; p >= 3)
+	{
+	  if (ip.facetnr == i && ip.vb == BND)
+	    {
+	      INT<4> f = GetVertexOrientedFace (i);
+	      TrigOrthoPol::Eval (p-3, lam[f[0]], lam[f[1]], shape+ii);
+	      return;
+	    }
+	  ii += (p-2)*(p-1)/2;
+	}
     
     //inner shapes
     if (ip.vb == VOL && order_cell[0][0] >= 4)
