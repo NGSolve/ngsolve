@@ -868,6 +868,18 @@ into the wirebasket.
     return mu;
   }
 
+  FlatArray<VorB> H1HighOrderFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL, BND, BBND, BBBND };
+
+    if (first_edge_dof[0] == GetNDof())
+      return FlatArray<VorB> (1, &nodes[ma->GetDimension()]); 
+    if (first_face_dof[0] == GetNDof())
+      return FlatArray<VorB> (2, &nodes[ma->GetDimension()-1]); 
+    
+    return FlatArray<VorB> (ma->GetDimension()-int(vb)+1, &nodes[0]); 
+  }
+
   
   Timer tgetfe("H1FESpace::GetFE");
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const

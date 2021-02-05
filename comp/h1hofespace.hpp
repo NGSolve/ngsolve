@@ -109,6 +109,7 @@ namespace ngcomp
     /// get relative (to mesh) order of finite elements
     virtual int GetRelOrder() const override { return rel_order; }
     virtual bool VarOrder() const override { return var_order; }
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 
     auto GetEdgeDofs (size_t nr) const
     {
