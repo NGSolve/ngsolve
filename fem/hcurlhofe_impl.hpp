@@ -493,7 +493,7 @@ namespace ngfem
 	
     if (usegrad_cell && pg >= 3)
 
-      DubinerBasis3D::EvalMult
+      DubinerBasis3DOrthoBub::EvalMult
 	(pg-3, lam[0], lam[1], lam[2], lam[0]*lam[1]*lam[2]*lam[3], 
 	 SBLambda
 	 ([&](int nr, Tx val)
