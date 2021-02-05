@@ -496,35 +496,22 @@ namespace ngcomp
                    {
 		     /** Calc RHS **/
 		     elflux = SCAL(0.0);
-
-		     auto do_ir = [&](auto & mir) {
-		       FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, mir.IR().Size(), lh);
-		       coef->Evaluate (mir, mfluxi);
-		       for (size_t j : Range(mir))
-			 { mfluxi.Col(j) *= mir[j].GetWeight(); }
-		       dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
-		     };
-
-		     for (auto el_vb : fes->GetDualShapeNodes(vb)) {
-                       /*
-		        if ( el_vb == VOL )
-                         {
-			 SIMD_IntegrationRule ir(fel.ElementType(), 2 * fel.Order());
-			 auto & mir = eltrans(ir, lh);
-			 do_ir(mir);
-		       }
-		       else {
-                       */
+		     for (auto el_vb : fes->GetDualShapeNodes(vb))
+		       {
 			 Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
-			 for (int locfnr : Range(f2el.GetNFacets())) {
-			   SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
-			   auto & irvol = f2el(locfnr, irfacet, lh);
-			   auto & mir = eltrans(irvol, lh);
-			   // mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
-			   do_ir(mir);
-			 }
-                         // }
-		     }
+			 for (int locfnr : Range(f2el.GetNFacets()))
+			   {
+			     SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+			     auto & irvol = f2el(locfnr, irfacet, lh);
+			     auto & mir = eltrans(irvol, lh);
+
+			     FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, mir.IR().Size(), lh);
+			     coef->Evaluate (mir, mfluxi);
+			     for (size_t j : Range(mir))
+			       mfluxi.Col(j) *= mir[j].GetWeight(); 
+			     dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+			   }
+		       }
 
                      if (!fel.SolveDuality (elflux, elfluxi, lh))
                        {
