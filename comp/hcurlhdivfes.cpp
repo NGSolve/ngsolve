@@ -19,8 +19,6 @@ using namespace ngmg;
 
 namespace ngcomp
 {
-  using namespace ngcomp;
-
 
   // Nedelec FE Space
   NedelecFESpace :: NedelecFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
@@ -122,6 +120,28 @@ namespace ngcomp
              finelevelofedge[el.Edges()] = level-1;         
          });
 
+
+    
+
+    if (ma->HasParentEdges())
+      {
+        parentedges.SetSize(ned);
+        for (int i = 0; i < ned; i++)
+          {
+            auto [info,nrs] = ma->GetParentEdges(i);
+            // cout << "parent of " << i << " : info = " << info
+            // << " nrs = " << nrs[0] << "," << nrs[1] << "," << nrs[2] << endl;
+            if (nrs[0] > i || nrs[1] > i) cout << "parent is larger" << endl;
+            parentedges[i][0] = (nrs[0]==-1) ? -1 : 2*nrs[0]+(info&1);
+            parentedges[i][1] = (nrs[1]==-1) ? -1 : 2*nrs[1]+ ( (info&2) / 2);
+          }
+      }
+
+    // cout << "parentedges, ng: " << parentedges << endl;
+
+
+
+    
     // generate edge points, and temporary hash table
     ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
 
@@ -136,13 +156,17 @@ namespace ngcomp
 	edgepoints.Append (edge);
       }
 
-    
+
+    // if (!ma->HasParentEdges())
+      {
+		    static Timer t("build_hierarchy"); RegionTimer reg(t);
     // build edge hierarchy:
     parentedges.SetSize (ned);
     parentedges = INT<2> (-1,-1);
 
     for (size_t i = 0; i < ned; i++)
       {
+	// cout << "edge " << i << "/" << ned << endl;
 	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
 	ma->GetParentNodes (i2[0], pa1);
@@ -204,11 +228,14 @@ namespace ngcomp
 
 		if (node2edge.Used (paedge1) && node2edge.Used (paedge2))
 		  {
+		    // cout << "paedge1 = " << paedge1 << ", i2 = " << i2 << endl;		    
+		    // cout << "paedge2 = " << paedge2 << ", i2 = " << i2 << endl;		    
 		    paedgenr1 = node2edge.Get (paedge1);
 		    orient1 = (paedge1[0] == i2[0] || paedge1[1] == i2[1]) ? 1 : 0;
 		    paedgenr2 = node2edge.Get (paedge2);
 		    orient2 = (paedge2[0] == i2[0] || paedge2[1] == i2[1]) ? 1 : 0;
-		    
+		    // cout << "orient1 = " << orient1 << endl;
+		    // cout << "orient2 = " << orient2 << endl;		    		    
 		    parentedges[i][0] = 2 * paedgenr1 + orient1;	      
 		    parentedges[i][1] = 2 * paedgenr2 + orient2;	      
 		  }
@@ -293,8 +320,10 @@ namespace ngcomp
 		 << endl;
 	  }
       }
-    
-    
+      }
+
+    // cout << "parentedges = " << endl << parentedges << endl;
+
     prol->Update(*this);
     UpdateCouplingDofArray();
   }

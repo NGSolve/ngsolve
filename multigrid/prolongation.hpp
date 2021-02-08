@@ -179,7 +179,7 @@ namespace ngmg
 
 
   /// Prolongation for edge-elements.
-				     // template <class TV>
+  // template <class TV>
   class EdgeProlongation : public Prolongation
   {
     ///
@@ -201,93 +201,8 @@ namespace ngmg
     { return NULL; }
 
     ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const
-    {
-      int nc = space.GetNDofLevel (finelevel-1);
-      int nf = space.GetNDofLevel (finelevel);
-      /*    
-	    FlatVector<TV> & fv = 
-	    dynamic_cast<VFlatVector<TV> &> (v).FV();
-      */
-      //    FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();
-      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-
-      int i, k;
-
-      for (i = nf; i < fv.Size(); i++)
-	fv(i) = 0;
-
-      for (k = 1; k <= 10; k++)
-	for (i = nc; i < nf; i++)
-	  {
-	    int pa1 = space.ParentEdge1 (i);
-	    int pa2 = space.ParentEdge2 (i);
-	  
-	    fv(i) = 0;
-	    if (pa1 != -1)
-	      {
-		if (pa1 & 1)
-		  fv(i) += 0.5 * fv(pa1/2);
-		else
-		  fv(i) -= 0.5 * fv(pa1/2);
-	      }
-	    if (pa2 != -1)
-	      {
-		if (pa2 & 1)
-		  fv(i) += 0.5 * fv(pa2/2);
-		else
-		  fv(i) -= 0.5 * fv(pa2/2);
-	      }
-	  }
-
-      for (i = 0; i < nf; i++)
-	if (space.FineLevelOfEdge(i) < finelevel)
-	  fv(i) = 0;
-    }
-
-
-    ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const
-    {
-      int nc = space.GetNDofLevel (finelevel-1);
-      int nf = space.GetNDofLevel (finelevel);
-
-      //    FlatVector<TV> & fv = 
-      //      dynamic_cast<VFlatVector<TV> &> (v).FV();
-      //    FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();
-
-      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-
-      for (int i = 0; i < nf; i++)
-	if (space.FineLevelOfEdge(i) < finelevel)
-	  fv(i) = 0;
-	
-      for (int k = 1; k <= 10; k++)
-	for (int i = nf-1; i >= nc; i--)
-	  {
-	    int pa1 = space.ParentEdge1 (i);
-	    int pa2 = space.ParentEdge2 (i);
-	  
-	    if (pa1 != -1)
-	      {
-		if (pa1 & 1)
-		  fv(pa1/2) += 0.5 * fv(i);
-		else
-		  fv(pa1/2) -= 0.5 * fv(i);
-	      }
-	    if (pa2 != -1)
-	      {
-		if (pa2 & 1)
-		  fv(pa2/2) += 0.5 * fv(i);
-		else
-		  fv(pa2/2) -= 0.5 * fv(i);
-	      }
-	    fv(i) = 0;
-	  }
-
-      for (int i = nf; i < fv.Size(); i++)
-	fv(i) = 0;  
-    }
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const;
+    virtual void RestrictInline (int finelevel, BaseVector & v) const;
 
     ///
     void ApplyGradient (int level, const BaseVector & pot, BaseVector & grad) const
