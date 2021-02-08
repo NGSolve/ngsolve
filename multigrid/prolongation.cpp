@@ -29,7 +29,7 @@ namespace ngmg
   void LinearProlongation :: Update (const FESpace & fes)
   {
     /*
-    if (ma->GetNLevels() > nvlevel.Size())
+      if (ma->GetNLevels() > nvlevel.Size())
       nvlevel.Append (ma->GetNV());
     */
     nvlevel.SetSize(ma->GetNLevels());
@@ -95,40 +95,40 @@ namespace ngmg
 
 
   void LinearProlongation :: RestrictInline (int finelevel, BaseVector & v) const 
-    {
-      static Timer t("Restrict"); RegionTimer r(t);
+  {
+    static Timer t("Restrict"); RegionTimer r(t);
       
-      size_t nc = nvlevel[finelevel-1];
-      size_t nf = nvlevel[finelevel];
+    size_t nc = nvlevel[finelevel-1];
+    size_t nf = nvlevel[finelevel];
 
 
-      if (v.EntrySize() == 1)
-        {
-          FlatVector<> fv = v.FV<double>();
-          for (size_t i = nf; i-- > nc; )
-            {
-              auto parents = ma->GetParentNodes (i);
-              fv(parents[0]) += 0.5 * fv(i);
-              fv(parents[1]) += 0.5 * fv(i);
-            }
-          fv.Range(nc, fv.Size()) = 0;          
-        }
-      else
-        {
-          FlatSysVector<> fv = v.SV<double>();
-          for (size_t i = nf; i-- > nc; )
-            {
-              auto parents = ma->GetParentNodes (i);
-              fv(parents[0]) += 0.5 * fv(i);
-              fv(parents[1]) += 0.5 * fv(i);
-            }
-          fv.Range(nc, fv.Size()) = 0;
-        }
-      /*
+    if (v.EntrySize() == 1)
+      {
+	FlatVector<> fv = v.FV<double>();
+	for (size_t i = nf; i-- > nc; )
+	  {
+	    auto parents = ma->GetParentNodes (i);
+	    fv(parents[0]) += 0.5 * fv(i);
+	    fv(parents[1]) += 0.5 * fv(i);
+	  }
+	fv.Range(nc, fv.Size()) = 0;          
+      }
+    else
+      {
+	FlatSysVector<> fv = v.SV<double>();
+	for (size_t i = nf; i-- > nc; )
+	  {
+	    auto parents = ma->GetParentNodes (i);
+	    fv(parents[0]) += 0.5 * fv(i);
+	    fv(parents[1]) += 0.5 * fv(i);
+	  }
+	fv.Range(nc, fv.Size()) = 0;
+      }
+    /*
       for (size_t i = nf; i < fv.Size(); i++)
-	fv(i) = 0;  
-      */
-    }
+      fv(i) = 0;  
+    */
+  }
 
 
   SparseMatrix< double >* LinearProlongation :: CreateProlongationMatrix( int finelevel ) const
@@ -142,15 +142,15 @@ namespace ngmg
     Array< int > indicesPerRow(nf);
 
     /*
-    if (space.LowOrderFESpacePtr())
+      if (space.LowOrderFESpacePtr())
       {
-        nf = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel );
-        nc = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel-1 );
+      nf = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel );
+      nc = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel-1 );
       }
-    else
+      else
       {
-        nf = space.GetNDofLevel( finelevel );
-        nc = space.GetNDofLevel( finelevel-1 );
+      nf = space.GetNDofLevel( finelevel );
+      nc = space.GetNDofLevel( finelevel-1 );
       }
     */
     
@@ -458,10 +458,10 @@ namespace ngmg
     }
   */
 
-    ElementProlongation :: ~ElementProlongation()
-    {
-      ;
-    }
+  ElementProlongation :: ~ElementProlongation()
+  {
+    ;
+  }
 
   /*
     void ElementProlongation :: Update ()
@@ -618,6 +618,169 @@ namespace ngmg
   }
 
 
+
+  void EdgeProlongation :: ProlongateInline (int finelevel, BaseVector & v) const
+  {
+    size_t nc = space.GetNDofLevel (finelevel-1);
+    size_t nf = space.GetNDofLevel (finelevel);
+    
+    if (v.EntrySize() == 1)
+      {
+	auto fv = v.FV<double>();
+	
+	for (size_t i = nf; i < fv.Size(); i++)
+	  fv(i) = 0;
+	
+	for (int k = 1; k <= 4; k++) // should not be necessary if new edges are always after old edges
+	  for (size_t i = nc; i < nf; i++)
+	    {
+	      int pa1 = space.ParentEdge1 (i);
+	      int pa2 = space.ParentEdge2 (i);
+	      
+	      fv(i) = 0;
+	      if (pa1 != -1)
+		{
+		  if (pa1 & 1)
+		    fv(i) += 0.5 * fv(pa1/2);
+		  else
+		    fv(i) -= 0.5 * fv(pa1/2);
+		}
+	      if (pa2 != -1)
+		{
+		  if (pa2 & 1)
+		    fv(i) += 0.5 * fv(pa2/2);
+		  else
+		    fv(i) -= 0.5 * fv(pa2/2);
+		}
+	    }
+
+	for (size_t i = 0; i < nf; i++)
+	  if (space.FineLevelOfEdge(i) < finelevel)
+	    fv(i) = 0;
+
+	return;
+      }
+	
+
+    
+    FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
+
+    int i, k;
+
+    for (i = nf; i < fv.Size(); i++)
+      fv(i) = 0;
+
+    for (k = 1; k <= 10; k++)
+      for (i = nc; i < nf; i++)
+	{
+	  int pa1 = space.ParentEdge1 (i);
+	  int pa2 = space.ParentEdge2 (i);
+	  
+	  fv(i) = 0;
+	  if (pa1 != -1)
+	    {
+	      if (pa1 & 1)
+		fv(i) += 0.5 * fv(pa1/2);
+	      else
+		fv(i) -= 0.5 * fv(pa1/2);
+	    }
+	  if (pa2 != -1)
+	    {
+	      if (pa2 & 1)
+		fv(i) += 0.5 * fv(pa2/2);
+	      else
+		fv(i) -= 0.5 * fv(pa2/2);
+	    }
+	}
+
+    for (i = 0; i < nf; i++)
+      if (space.FineLevelOfEdge(i) < finelevel)
+	fv(i) = 0;
+  }
+
+
+  ///
+  void EdgeProlongation :: RestrictInline (int finelevel, BaseVector & v) const
+  {
+    size_t nc = space.GetNDofLevel (finelevel-1);
+    size_t nf = space.GetNDofLevel (finelevel);
+
+
+    if (v.EntrySize() == 1)
+      {
+	auto fv = v.FV<double>();
+
+	for (int i = 0; i < nf; i++)
+	  if (space.FineLevelOfEdge(i) < finelevel)
+	    fv(i) = 0;
+	
+	for (int k = 1; k <= 5; k++)
+	  for (int i = nf-1; i >= nc; i--)
+	    {
+	      int pa1 = space.ParentEdge1 (i);
+	      int pa2 = space.ParentEdge2 (i);
+	      
+	      if (pa1 != -1)
+		{
+		  if (pa1 & 1)
+		    fv(pa1/2) += 0.5 * fv(i);
+		  else
+		    fv(pa1/2) -= 0.5 * fv(i);
+		}
+	      if (pa2 != -1)
+		{
+		  if (pa2 & 1)
+		    fv(pa2/2) += 0.5 * fv(i);
+		  else
+		    fv(pa2/2) -= 0.5 * fv(i);
+		}
+	      fv(i) = 0;
+	    }
+	
+	for (int i = nf; i < fv.Size(); i++)
+	  fv(i) = 0;
+	return;
+      }
+    
+
+    FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
+
+    for (int i = 0; i < nf; i++)
+      if (space.FineLevelOfEdge(i) < finelevel)
+	fv(i) = 0;
+	
+    for (int k = 1; k <= 10; k++)
+      for (int i = nf-1; i >= nc; i--)
+	{
+	  int pa1 = space.ParentEdge1 (i);
+	  int pa2 = space.ParentEdge2 (i);
+	  
+	  if (pa1 != -1)
+	    {
+	      if (pa1 & 1)
+		fv(pa1/2) += 0.5 * fv(i);
+	      else
+		fv(pa1/2) -= 0.5 * fv(i);
+	    }
+	  if (pa2 != -1)
+	    {
+	      if (pa2 & 1)
+		fv(pa2/2) += 0.5 * fv(i);
+	      else
+		fv(pa2/2) -= 0.5 * fv(i);
+	    }
+	  fv(i) = 0;
+	}
+
+    for (int i = nf; i < fv.Size(); i++)
+      fv(i) = 0;  
+  }
+
+
+
+
+
+  
 
   CompoundProlongation :: 
   CompoundProlongation(const CompoundFESpace * aspace)
