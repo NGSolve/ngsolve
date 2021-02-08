@@ -535,7 +535,13 @@ kwargs : kwargs
                                            makeCArray<double>(py::list(dirichlet)));
                             return;
                           }
-                        if (py::isinstance<py::str>(dirichlet))
+                        else if(py::isinstance<Region>(dirichlet))
+                          {
+                            Array<double> dir_indices;
+                            auto dir_region = py::cast<Region>(dirichlet);
+                            flags->SetFlag("dirichlet", dir_region);
+                          }
+                        else if (py::isinstance<py::str>(dirichlet))
                           {
                             std::regex pattern(dirichlet.cast<string>());
                             Array<double> dirlist;
@@ -546,7 +552,29 @@ kwargs : kwargs
                                 }
                             flags->SetFlag("dirichlet", dirlist);
                           }
+                        else
+                          throw py::type_error("dirichlet parameter has wrong type!");
                       }),
+                     py::arg("dirichlet_bbnd") = py::cpp_function
+                     ([](py::object dirichlet_bbnd, Flags* flags, py::list info)
+                     {
+                       if(py::isinstance<py::str>(dirichlet_bbnd))
+                         flags->SetFlag("dirichlet_bbnd", py::cast<std::string>(dirichlet_bbnd));
+                       else if(py::isinstance<Region>(dirichlet_bbnd))
+                         flags->SetFlag("dirichlet_bbnd", py::cast<Region>(dirichlet_bbnd));
+                       else
+                         throw py::type_error("dirichlet_bbnd has wrong type!");
+                     }),
+                     py::arg("dirichlet_bbbnd") = py::cpp_function
+                     ([](py::object dirichlet_bbbnd, Flags* flags, py::list info)
+                     {
+                       if(py::isinstance<py::str>(dirichlet_bbbnd))
+                         flags->SetFlag("dirichlet_bbbnd", py::cast<std::string>(dirichlet_bbbnd));
+                       else if(py::isinstance<Region>(dirichlet_bbbnd))
+                         flags->SetFlag("dirichlet_bbbnd", py::cast<Region>(dirichlet_bbbnd));
+                       else
+                         throw py::type_error("dirichlet_bbbnd has wrong type!");
+                     }),
                      py::arg("definedon") = py::cpp_function
                      ([] (py::object definedon, Flags* flags, py::list info)
                       {

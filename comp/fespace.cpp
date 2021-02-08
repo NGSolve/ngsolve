@@ -120,6 +120,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (std::regex_match (ma->GetMaterial(BND, i), pattern))
             dirichlet_constraints[BND].SetBit(i);
       }
+    if(flags.AnyFlagDefined("dirichlet"))
+      {
+	dirichlet_constraints[BND].SetSize (ma->GetNRegions(BBND));
+        dirichlet_constraints[BND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet")).Mask();
+      }
 
     
     if (flags.StringFlagDefined("dirichlet_bbnd"))
@@ -132,6 +137,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (std::regex_match (ma->GetMaterial(BBND, i), pattern))
             dirichlet_constraints[BBND].SetBit(i);
       }
+    if(flags.AnyFlagDefined("dirichlet_bbnd"))
+      {
+	dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
+        dirichlet_constraints[BBND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")).Mask();
+      }
 
     if (flags.StringFlagDefined("dirichlet_bbbnd"))
       {
@@ -143,6 +153,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (std::regex_match (ma->GetMaterial(BBBND, i), pattern))
             
             dirichlet_constraints[BBBND].SetBit(i);
+      }
+    if(flags.AnyFlagDefined("dirichlet_bbbnd"))
+      {
+	dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
+        dirichlet_constraints[BBBND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")).Mask();
       }
 
     
