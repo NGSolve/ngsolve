@@ -788,20 +788,32 @@ namespace ngcomp
                 fv(2*i) = 0.5 * fv(2*pa1);
               else
                 fv(2*i) = -0.5 * fv(2*pa1);
-              fv(2*i+1) = fv(2*pa1+1);
+              
+              fv(2*i+1) = 0.25 * fv(2*pa1+1);
+              fv(2*i)  += 0.25 * fv(2*pa1+1);
             }
           else
             {
               fv(2*i) = 0;
               fv(2*i+1) = 0;
+              
+              // ho -> ho
+              fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1))
+                -0.25*fv(2*pa3+1);
+              
+              // lo -> lo  
               if (info & 1)
                 fv(2*i) += 0.5 * fv(2*pa1);
               else
                 fv(2*i) -= 0.5 * fv(2*pa1);
+              
               if (info & 2)
                 fv(2*i) += 0.5 * fv(2*pa2);
               else
                 fv(2*i) -= 0.5 * fv(2*pa2);
+
+              double fac3 = (info&4) ? -0.25 : 0.25;
+              fv(2*i) += fac3 * fv(2*pa3+1);
             }
         }
 
