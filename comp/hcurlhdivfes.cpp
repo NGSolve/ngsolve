@@ -747,6 +747,242 @@ namespace ngcomp
 
 
 
+  
+  
+  class EdgeP1Prolongation : public Prolongation
+  {
+    shared_ptr<MeshAccess> ma;
+    const FESpace & space;
+  public:
+    EdgeP1Prolongation(const FESpace & aspace)
+      : ma(aspace.GetMeshAccess()), space(aspace) { ; }
+    virtual ~EdgeP1Prolongation() { }
+  
+    virtual void Update (const FESpace & fes) { ; }
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    { return nullptr; }
+
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const
+    {
+      cout << "P1-edge prolongation" << endl;
+      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
+      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      cout << "nc = " << nc << ", nf = " << nf << endl;
+
+      
+      auto fv = v.FV<double>();
+      cout << "fv.size = " << fv.Size() << endl;
+      for (size_t i = 2*nf; i < fv.Size(); i++)
+        fv(i) = 0;
+
+      for (size_t i = nc; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+	  int pa1 = nrs[0];
+	  int pa2 = nrs[1];
+	  int pa3 = nrs[2];
+
+          if (pa2 == -1)
+            {
+              if (info & 1)
+                fv(2*i) = 0.5 * fv(2*pa1);
+              else
+                fv(2*i) = -0.5 * fv(2*pa1);
+              fv(2*i+1) = fv(2*pa1+1);
+            }
+          else
+            {
+              fv(2*i) = 0;
+              fv(2*i+1) = 0;
+              if (info & 1)
+                fv(2*i) += 0.5 * fv(2*pa1);
+              else
+                fv(2*i) -= 0.5 * fv(2*pa1);
+              if (info & 2)
+                fv(2*i) += 0.5 * fv(2*pa2);
+              else
+                fv(2*i) -= 0.5 * fv(2*pa2);
+            }
+        }
+
+      /*
+      for (size_t i = 0; i < nf; i++)
+        if (space.FineLevelOfEdge(i) < finelevel)
+          fv(i) = 0;
+      */
+    }
+    
+    virtual void RestrictInline (int finelevel, BaseVector & v) const { ; }
+  };
+
+
+  
+  class NGS_DLL_HEADER NedelecP1FESpace : public FESpace
+  {
+  public:
+    NedelecP1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false)
+      : FESpace(ama, flags)
+      {
+        name="NedelecP1FESpace";
+        
+        if (ma->GetDimension() == 2)
+          {
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();        
+          }
+        else if(ma->GetDimension() == 3) 
+          {
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
+            flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+            evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();	
+          }
+        prol = make_shared<EdgeP1Prolongation> (*this);
+      }
+    
+    virtual ~NedelecP1FESpace () { }
+    virtual const char * GetType()  { return "NedelecP1"; }
+    
+    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags)
+    {
+      return make_shared<NedelecFESpace2> (ma, flags, true);
+    }
+    
+    void Update() override
+    {
+      SetNDof (2*ma->GetNEdges());
+    }
+    
+    // virtual void DoArchive (Archive & archive) override;
+    // virtual void UpdateCouplingDofArray() override;
+    
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override
+    {
+      switch (ma->GetElType(ei))
+        {
+        case ET_TET:     return * new (lh) FE_NedelecTet2;
+        case ET_TRIG:    return * new (lh) FE_NedelecTrig2;
+        default:
+          throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+        }
+    }
+    
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override
+    {
+      auto edges = ma->GetElEdges (ei);
+      dnums.SetSize(2*edges.Size());
+      for (int i : Range(edges))
+        {
+          dnums[i] = 2*edges[i];
+          dnums[i+edges.Size()] = 2*edges[i]+1;
+        }
+    }
+
+    // virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+
+    template <class T>
+      NGS_DLL_HEADER void T_TransformMat (ElementId ei, 
+                                          SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
+    {
+      Ngs_Element ngel = ma->GetElement(ei);
+      ELEMENT_TYPE eltype = ngel.GetType();
+      
+      int ned = ElementTopology::GetNEdges (eltype);
+      const EDGE * edges = ElementTopology::GetEdges (eltype);
+      ArrayMem<int,12> eorient(ned);
+      for (int i = 0; i < ned; i++)
+        eorient[i] = 
+          ngel.vertices[edges[i][0]] < ngel.vertices[edges[i][1]]  
+                                       ? 1 : -1;
+      
+      if (tt & TRANSFORM_MAT_LEFT)
+        for (int i = 0; i < ned; i++)
+          for (int k = 0; k < dimension; k++)
+            mat.Row(k+i*dimension) *= eorient[i];
+      
+      if (tt & TRANSFORM_MAT_RIGHT)
+        for (int j = 0; j < ned; j++)
+          for (int l = 0; l < dimension; l++)
+            mat.Col(l+j*dimension) *= eorient[j];
+    }
+    
+    template <class T>
+      NGS_DLL_HEADER void T_TransformVec (ElementId ei, 
+                                          SliceVector<T> vec, TRANSFORM_TYPE tt) const
+    {
+      Ngs_Element ngel = ma->GetElement(ei);
+      ELEMENT_TYPE eltype = ngel.GetType();
+      
+      int ned = ElementTopology::GetNEdges (eltype);
+      const EDGE * edges = ElementTopology::GetEdges (eltype);
+      ArrayMem<int,12> eorient(ned);
+      for (int i = 0; i < ned; i++)
+        eorient[i] = 
+          ngel.vertices[edges[i][0]] < ngel.vertices[edges[i][1]]  
+        ? 1 : -1;
+      
+      
+      if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL) || (tt & TRANSFORM_SOL_INVERSE))
+        {
+          for (int k = 0; k < dimension; k++)
+            for (int i = 0; i < ned; i++)
+              vec(k+i*dimension) *= eorient[i];
+        }
+    }
+    
+    
+    virtual void VTransformMR (ElementId ei, 
+                               SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformMat (ei, mat, tt);
+    }
+    
+    virtual void VTransformMC (ElementId ei, 
+                               SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformMat (ei, mat, tt);
+    }
+    
+    virtual void VTransformVR (ElementId ei, 
+                               SliceVector<double> vec, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformVec (ei, vec, tt);
+    }
+    
+    virtual void VTransformVC (ElementId ei, 
+                               SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformVec (ei, vec, tt);
+    }
+    
+    virtual string GetClassName () const override
+    {
+      return "NedelecP1FESpace";
+    }
+    
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override
+    { dnums.SetSize0(); }
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
+    {
+      dnums.SetSize(2);
+      dnums[0] = 2*ednr;
+      dnums[1] = 2*ednr+1;
+    }
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
+    { dnums.SetSize0(); }    
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
+    { dnums.SetSize0(); }    
+  };
+
+  static RegisterFESpace<NedelecP1FESpace> initnedelec ("HCurlP1");
+
+
+
+
+  
+
   NedelecFESpace2 :: NedelecFESpace2 (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
