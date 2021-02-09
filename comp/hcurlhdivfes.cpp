@@ -812,7 +812,7 @@ namespace ngcomp
               else
                 fv(2*i) -= 0.5 * fv(2*pa2);
 
-              double fac3 = (info&4) ? -0.25 : 0.25;
+              double fac3 = (info&4) ? 0.25 : -0.25;
               fv(2*i) += fac3 * fv(2*pa3+1);
             }
         }
