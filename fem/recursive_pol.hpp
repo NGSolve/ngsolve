@@ -2616,11 +2616,11 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     {
       LegendrePolynomial leg;
       int ii = 0;
-      leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
+      leg.EvalScaledMult1Assign (n, y-(t-x-y), t-x, c,
           SBLambda ([&] (int i, S val) LAMBDA_INLINE  // clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
-                     jac.EvalScaledMult1Assign (n-i, 2*x-1, t, val, values+ii);
+                     jac.EvalScaledMult1Assign (n-i, 2*x-t, t, val, values+ii);
                      ii += n-i+1;
                    }));
     }
@@ -2685,11 +2685,11 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     {
       JacobiPolynomialFix<1,1> leg;
       int ii = 0;
-      leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
+      leg.EvalScaledMult1Assign (n, y-(t-x-y), t-x, c,
           SBLambda ([&] (int i, S val) LAMBDA_INLINE  // clang
                    {
                      IntegratedJacobiPolynomialAlpha jac(4+2*i);
-                     jac.EvalScaledMult1Assign (n-i, 2*x-1, t, val, values+ii);
+                     jac.EvalScaledMult1Assign (n-i, 2*x-t, t, val, values+ii);
                      ii += n-i+1;
                    }));
     }
