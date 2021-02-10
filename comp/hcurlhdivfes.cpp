@@ -764,16 +764,11 @@ namespace ngcomp
 
     virtual void ProlongateInline (int finelevel, BaseVector & v) const
     {
-      cout << "P1-edge prolongation" << endl;
       size_t nc = space.GetNDofLevel (finelevel-1) / 2;
       size_t nf = space.GetNDofLevel (finelevel) / 2;
-      cout << "nc = " << nc << ", nf = " << nf << endl;
-
       
       auto fv = v.FV<double>();
-      cout << "fv.size = " << fv.Size() << endl;
-      for (size_t i = 2*nf; i < fv.Size(); i++)
-        fv(i) = 0;
+      fv.Range(2*nf, fv.Size()) = 0;
 
       for (size_t i = nc; i < nf; i++)
         {
@@ -784,53 +779,86 @@ namespace ngcomp
 
           if (pa2 == -1)
             {
-              if (info & 1)
-                fv(2*i) = 0.5 * fv(2*pa1);
-              else
-                fv(2*i) = -0.5 * fv(2*pa1);
-              
+              double fac0 = (info & 1) ? 0.5 : -0.5;
+              fv(2*i)   = fac0 * fv(2*pa1) + 0.25 * fv(2*pa1+1);
               fv(2*i+1) = 0.25 * fv(2*pa1+1);
-              fv(2*i)  += 0.25 * fv(2*pa1+1);
             }
           else
             {
-              fv(2*i) = 0;
-              fv(2*i+1) = 0;
-              
-              // ho -> ho
-              fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1))
-                -0.25*fv(2*pa3+1);
-              
-              // lo -> lo  
-              if (info & 1)
-                fv(2*i) += 0.5 * fv(2*pa1);
-              else
-                fv(2*i) -= 0.5 * fv(2*pa1);
-              
-              if (info & 2)
-                fv(2*i) += 0.5 * fv(2*pa2);
-              else
-                fv(2*i) -= 0.5 * fv(2*pa2);
-
+              double fac1 = (info&1) ? 0.5 : -0.5;
+              double fac2 = (info&2) ? 0.5 : -0.5;
               double fac3 = (info&4) ? 0.25 : -0.25;
-              fv(2*i) += fac3 * fv(2*pa3+1);
+              fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3+1);
+              fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1)) - 0.25*fv(2*pa3+1);
             }
         }
 
-      /*
+      // every edge from coarse level got split
       for (size_t i = 0; i < nf; i++)
-        if (space.FineLevelOfEdge(i) < finelevel)
-          fv(i) = 0;
-      */
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          if (nrs[0] != -1 && nrs[1] == -1)
+            {
+              fv(2*nrs[0]) = 0;
+              fv(2*nrs[0]+1) = 0;
+            }
+        }
     }
     
-    virtual void RestrictInline (int finelevel, BaseVector & v) const { ; }
+    virtual void RestrictInline (int finelevel, BaseVector & v) const
+    {
+      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
+      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      
+      auto fv = v.FV<double>();
+      fv.Range(2*nf, fv.Size()) = 0;
+
+      // every edge from coarse level got split
+      for (size_t i = 0; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          if (nrs[0] != -1 && nrs[1] == -1)
+            {
+              fv(2*nrs[0]) = 0;
+              fv(2*nrs[0]+1) = 0;
+            }
+        }
+
+      
+      for (size_t i = nf; i-- > nc; )
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+	  int pa1 = nrs[0];
+	  int pa2 = nrs[1];
+	  int pa3 = nrs[2];
+
+          if (pa2 == -1)
+            {
+              double fac0 = (info & 1) ? 0.5 : -0.5;
+              fv(2*pa1) += fac0 * fv(2*i);
+              fv(2*pa1+1) += 0.25 * fv(2*i) + 0.25 * fv(2*i+1);
+            }
+          else
+            {
+              double fac1 = (info&1) ? 0.5 : -0.5;
+              double fac2 = (info&2) ? 0.5 : -0.5;
+              double fac3 = (info&4) ? 0.25 : -0.25;
+              fv(2*pa1)   += fac1 * fv(2*i);
+              fv(2*pa1+1) += 0.5 * fv(2*i+1);
+              fv(2*pa2)   += fac2 * fv(2*i);
+              fv(2*pa2+1) += 0.5 * fv(2*i+1);
+              fv(2*pa3+1) += fac3 * fv(2*i) - 0.25 * fv(2*i+1);
+            }
+        }
+      
+    }
   };
 
 
   
   class NGS_DLL_HEADER NedelecP1FESpace : public FESpace
   {
+    BitArray active_edges;
   public:
     NedelecP1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false)
       : FESpace(ama, flags)
@@ -864,7 +892,20 @@ namespace ngcomp
     
     void Update() override
     {
-      SetNDof (2*ma->GetNEdges());
+      size_t ned = ma->GetNEdges();
+      SetNDof (2*ned);
+      active_edges = BitArray(ned);
+      active_edges.Clear();
+      for (auto el : ma->Elements(VOL))
+        for (auto ed : el.Edges())
+          active_edges.SetBit(ed);
+      
+      ctofdof.SetSize(GetNDof());
+      ctofdof = WIREBASKET_DOF;
+      for (size_t i = 0; i < ned; i++)
+        if (!active_edges.Test(i))
+          ctofdof[2*i] = ctofdof[2*i+1] = UNUSED_DOF;
+      // cout << "active edges = " << endl << active_edges << endl;
     }
     
     // virtual void DoArchive (Archive & archive) override;
@@ -978,9 +1019,14 @@ namespace ngcomp
     { dnums.SetSize0(); }
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
     {
-      dnums.SetSize(2);
-      dnums[0] = 2*ednr;
-      dnums[1] = 2*ednr+1;
+      if (active_edges.Test(ednr))
+        {
+          dnums.SetSize(2);
+          dnums[0] = 2*ednr;
+          dnums[1] = 2*ednr+1;
+        }
+      else
+        dnums.SetSize0();
     }
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
     { dnums.SetSize0(); }    
