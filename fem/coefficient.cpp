@@ -4219,6 +4219,8 @@ cl_BinaryOpCF<GenericMult>::Operator(const string & name) const
 shared_ptr<CoefficientFunction> CWMult (shared_ptr<CoefficientFunction> cf1,
                                         shared_ptr<CoefficientFunction> cf2)
 {
+  if (cf1->GetDescription() == "ZeroCF" || cf2->GetDescription() == "ZeroCF")
+    return ZeroCF( cf1->Dimensions() );
   return BinaryOpCF (cf1, cf2, gen_mult, "*");
 }
 
@@ -4241,9 +4243,11 @@ cl_BinaryOpCF<GenericDiv>::Diff(const CoefficientFunction * var,
 {
   if (var == this) return dir;
   // return (c1->Diff(var,dir)*c2 - c1*c2->Diff(var,dir)) / (c2*c2);
-  return (BinaryOpCF (c1->Diff(var,dir), c2, gen_mult, "*") -
-          BinaryOpCF (c1, c2->Diff(var,dir), gen_mult, "*")) /
-          BinaryOpCF (c2, c2, gen_mult, "*");
+  /*return (BinaryOpCF (c1->Diff(var,dir), c2, gen_mult, "*") -
+    BinaryOpCF (c1, c2->Diff(var,dir), gen_mult, "*")) /
+    BinaryOpCF (c2, c2, gen_mult, "*");
+    BinaryOpCF (c2, c2, gen_mult, "*");*/
+  return (CWMult (c1->Diff(var,dir), c2) - CWMult (c1, c2->Diff(var,dir))) / CWMult (c2, c2);
 }
 
 
