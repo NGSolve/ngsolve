@@ -14,6 +14,7 @@
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
+#include "irspace.hpp"
 #include "compressedfespace.hpp"
 #include "../fem/integratorcf.hpp"
 #include "contact.hpp"
@@ -1189,6 +1190,10 @@ component : int
   ExportFESpace<TangentialSurfaceL2FESpace> (m, "TangentialSurfaceL2");
 
   ExportFESpace<NumberFESpace> (m, "NumberSpace");
+  ExportFESpace<IntegrationRuleSpace> (m, "IntegrationRuleSpace")
+    .def("GetIntegrationRules", &IntegrationRuleSpace::GetIntegrationRules)
+    ;
+    
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
@@ -1221,6 +1226,10 @@ component : int
 
   ExportFESpace<NodalFESpace> (m, "NodalFESpace");  
   ExportFESpace<VectorFESpace<NodalFESpace>> (m, "VectorNodalFESpace");
+
+  
+
+
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
