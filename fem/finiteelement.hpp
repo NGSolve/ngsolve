@@ -67,6 +67,11 @@ namespace ngfem
     ///
     virtual void Print (ostream & ost) const;
 
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                              LocalHeap & lh) const
+    { throw Exception("Element does not support interpolation"); }
+      
     virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
     virtual bool SolveDuality (SliceVector<Complex> rhs, SliceVector<Complex> u, LocalHeap & lh) const { return false; }
     

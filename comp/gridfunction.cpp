@@ -226,6 +226,69 @@ namespace ngcomp
   }
 
 
+  void GridFunction :: Interpolate (const CoefficientFunction & cf,
+                                    const Region * reg, int mdcomp, LocalHeap & clh)
+  {
+    shared_ptr<FESpace> fes = GetFESpace();
+    shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
+    int dim   = fes->GetDimension();
+
+    Array<int> cnti(fes->GetNDof());
+    cnti = 0;
+
+    auto vb = reg ? reg->VB() : VOL;
+    IterateElements 
+      (*fes, vb, clh, 
+       [&] (FESpace::Element el, LocalHeap & lh)
+       {
+         if (reg)
+           if (!reg->Mask().Test(el.GetIndex())) return;
+
+         const FiniteElement & fel = fes->GetFE (el, lh);
+         int ndof = fel.GetNDof();
+         int dimcf = cf.Dimension();
+         const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
+         
+         FlatVector<> elvec(ndof, lh), elvec1(ndof, lh);
+         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof/dimcf, dimcf), lh);
+         
+         fes->TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
+
+         GetElementVector (mdcomp, el.GetDofs(), elvec1);
+         elvec1 += elvec;
+         SetElementVector (mdcomp, el.GetDofs(), elvec);
+
+         for (auto d : el.GetDofs())
+           if (IsRegularDof(d)) cnti[d]++;
+       });
+
+#ifdef PARALLEL
+    AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
+    u.GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+    u.GetVector(mdcomp).Cumulate(); 	 
+#endif
+
+    ParallelForRange
+      (cnti.Size(), [&] (IntRange r)
+       {
+         VectorMem<10> fluxi(dim);
+         ArrayMem<int,1> dnums(1);
+         // for (int i = 0; i < cnti.Size(); i++)
+         for (auto i : r)
+           if (cnti[i])
+             {
+               dnums[0] = i;
+               GetElementVector (mdcomp, dnums, fluxi);
+               fluxi /= double (cnti[i]);
+               SetElementVector (mdcomp, dnums, fluxi);
+             }
+       });
+  }
+  
+  
+
+  
+
   // void GridFunction :: Visualize(const string & given_name)
   void Visualize(shared_ptr<GridFunction> gf, const string & given_name)
   {
