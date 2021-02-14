@@ -175,7 +175,9 @@ namespace ngcomp
     {
       return name;
     }
-    
+
+    virtual void Interpolate (const CoefficientFunction & cf,
+                              const Region * reg, int mdcomp, LocalHeap & lh);
 
     ///
     virtual void PrintReport (ostream & ost) const override;

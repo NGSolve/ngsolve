@@ -1783,6 +1783,22 @@ use_simd : bool
   If set to false does not use SIMD (for debugging).
 
 )raw_string"))
+
+    .def("Interpolate", 
+         [](shared_ptr<GF> self, spCF cf,
+            py::object definedon, int mdcomp)
+         {
+           Region * reg = nullptr;
+           if (py::extract<Region&> (definedon).check())
+             reg = &py::extract<Region&>(definedon)();
+           
+           py::gil_scoped_release release;
+           self->Interpolate (*cf, reg, mdcomp, glh);
+         },
+         py::arg("coefficient"),
+         py::arg("definedon")=DummyArgument(),
+         py::arg("mdcomp")=0)
+    
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 
     .def_property_readonly("components",
