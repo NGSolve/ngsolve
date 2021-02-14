@@ -12,6 +12,7 @@
 #include <multigrid.hpp>
 
 #include <../fem/hcurllofe.hpp>
+#include <../fem/thcurlfe_impl.hpp>
 
 
 using namespace ngmg; 
@@ -780,14 +781,14 @@ namespace ngcomp
           if (pa2 == -1)
             {
               double fac0 = (info & 1) ? 0.5 : -0.5;
-              fv(2*i)   = fac0 * fv(2*pa1) + 0.25 * fv(2*pa1+1);
+              fv(2*i)   = fac0 * fv(2*pa1) - 0.125 * fv(2*pa1+1);
               fv(2*i+1) = 0.25 * fv(2*pa1+1);
             }
           else
             {
               double fac1 = (info&1) ? 0.5 : -0.5;
               double fac2 = (info&2) ? 0.5 : -0.5;
-              double fac3 = (info&4) ? 0.25 : -0.25;
+              double fac3 = (info&4) ? -0.125 : 0.125;
               fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3+1);
               fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1)) - 0.25*fv(2*pa3+1);
             }
@@ -836,13 +837,13 @@ namespace ngcomp
             {
               double fac0 = (info & 1) ? 0.5 : -0.5;
               fv(2*pa1) += fac0 * fv(2*i);
-              fv(2*pa1+1) += 0.25 * fv(2*i) + 0.25 * fv(2*i+1);
+              fv(2*pa1+1) += -0.125 * fv(2*i) + 0.25 * fv(2*i+1);
             }
           else
             {
               double fac1 = (info&1) ? 0.5 : -0.5;
               double fac2 = (info&2) ? 0.5 : -0.5;
-              double fac3 = (info&4) ? 0.25 : -0.25;
+              double fac3 = (info&4) ? -0.125 : 0.125;
               fv(2*pa1)   += fac1 * fv(2*i);
               fv(2*pa1+1) += 0.5 * fv(2*i+1);
               fv(2*pa2)   += fac2 * fv(2*i);
@@ -854,7 +855,50 @@ namespace ngcomp
     }
   };
 
+}
 
+namespace ngfem {
+  class NedelecP1Trig : public T_HCurlFiniteElementFO<NedelecP1Trig,ET_TRIG,6,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
+    {
+      // Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
+      Tx lami[3] = { x, y, 1-x-y };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      for (int i = 0; i < 3; i++)
+        {
+          shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+3] = Du (-0.5*lami[edges[i][0]]*lami[edges[i][1]]);
+        }
+    }
+  };
+
+  class NedelecP1Tet : public T_HCurlFiniteElementFO<NedelecP1Tet,ET_TET,12,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
+    {
+      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      for (int i = 0; i < 6; i++)
+        {
+          shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+6] = Du (-0.5*lami[edges[i][0]]*lami[edges[i][1]]);
+        }
+    }
+  };
+  
+  // template class T_HCurlHighOrderFiniteElement<ET_TRIG,NedelecP1Trig>;
+  // template class T_HCurlHighOrderFiniteElement<ET_TET,NedelecP1Tet>;
+}
+
+namespace ngcomp {
   
   class NGS_DLL_HEADER NedelecP1FESpace : public FESpace
   {
@@ -870,6 +914,8 @@ namespace ngcomp
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();        
+
+            additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<2>>> ());
           }
         else if(ma->GetDimension() == 3) 
           {
@@ -877,7 +923,9 @@ namespace ngcomp
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
-            evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();	
+            evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();
+
+            additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());            
           }
         prol = make_shared<EdgeP1Prolongation> (*this);
       }
@@ -915,8 +963,8 @@ namespace ngcomp
     {
       switch (ma->GetElType(ei))
         {
-        case ET_TET:     return * new (lh) FE_NedelecTet2;
-        case ET_TRIG:    return * new (lh) FE_NedelecTrig2;
+        case ET_TET:     return * new (lh) NedelecP1Tet;
+        case ET_TRIG:    return * new (lh) NedelecP1Trig;
         default:
           throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
         }
