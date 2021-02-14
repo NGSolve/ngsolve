@@ -264,8 +264,8 @@ namespace ngcomp
 
 #ifdef PARALLEL
     AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
-    u.GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
-    u.GetVector(mdcomp).Cumulate(); 	 
+    GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+    GetVector(mdcomp).Cumulate(); 	 
 #endif
 
     ParallelForRange
