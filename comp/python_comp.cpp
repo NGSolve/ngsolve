@@ -2287,6 +2287,8 @@ integrator : ngsolve.fem.BFI
                  }
                bfi->SetDeformation(dx.deformation);               
                bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               for (auto both : dx.userdefined_intrules)
+                 bfi->SetIntegrationRule(both.first, *both.second);
                self += bfi;
              }
            return self;
