@@ -31,6 +31,15 @@ namespace ngfem
     ost << ClassName() << ", tpye = " << ElementType() << ", order = " << Order() << ", ndof = " << ndof << endl;
   }
 
+  void FiniteElement :: Interpolate (const ElementTransformation & trafo, 
+                                     const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                                     LocalHeap & lh) const
+  {
+    throw Exception(string("Element ") + typeid(*this).name() + " does not support interpolation");
+  }
+  
+
+  
   ostream & operator<< (ostream & ost, const FiniteElement & fel)
   {
     fel.Print (ost);
@@ -78,5 +87,25 @@ namespace ngfem
     for (int i = 0; i < GetNComponents(); i++)
       (*this)[i].Print (ost);
   }
+
+
+
+  void CompoundFiniteElement :: Interpolate (const ElementTransformation & trafo, 
+                                             const CoefficientFunction & func, BareSliceMatrix<> coefs,
+                                             LocalHeap & lh) const
+  {
+    // assume all elements are the same, and match with dim func
+    size_t ndof = fea[0]->GetNDof();
+    size_t dim = fea.Size();
+    STACK_ARRAY(double, mem, ndof*dim); 
+    FlatMatrix temp(ndof, dim, &mem[0]);
+    fea[0] -> Interpolate (trafo, func, temp, lh);
+
+    // now we need to transpose, not sure if we stay with that 
+    for (int i = 0, ii=0; i < temp.Width(); i++)
+      for (int j = 0; j < temp.Height(); j++, ii++)
+        coefs(ii,0) = temp(j,i);
+  }
+  
 }
 

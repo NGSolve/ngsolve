@@ -246,11 +246,12 @@ namespace ngcomp
 
          const FiniteElement & fel = fes->GetFE (el, lh);
          int ndof = fel.GetNDof();
-         int dimcf = cf.Dimension();
+         // int dimcf = cf.Dimension();
          const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
          
          FlatVector<> elvec(ndof, lh), elvec1(ndof, lh);
-         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof/dimcf, dimcf), lh);
+         // fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof/dimcf, dimcf), lh);
+         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, 1), lh);
          
          fes->TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
 
