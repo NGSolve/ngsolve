@@ -35,7 +35,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = 0 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-    
+
+    static INT<0> GetDimensions() { return INT<0>(); };
     static bool SupportsVB (VorB checkvb) { return true; }
 
     template <typename MIP, typename MAT>
