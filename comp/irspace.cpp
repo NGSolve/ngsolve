@@ -80,7 +80,7 @@ namespace ngcomp
   
   FiniteElement & IntegrationRuleSpace::GetFE (ElementId ei, Allocator & lh) const
   {
-    if (DefinedOn(ei))
+    if (ei.VB() == VOL && DefinedOn(ei))
       return *new (lh) IRFiniteElement(ma->GetElType(ei), order);
     else
       return SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
@@ -91,7 +91,10 @@ namespace ngcomp
   
   void IntegrationRuleSpace::GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
+    if (ei.VB() == VOL)
+      dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
+    else
+      dnums.SetSize0();
   }
 
   std::map<ELEMENT_TYPE, IntegrationRule> IntegrationRuleSpace::GetIntegrationRules() const
