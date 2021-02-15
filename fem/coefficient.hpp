@@ -1702,7 +1702,11 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf);
-  
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  CreateMinimizationCF (shared_ptr<CoefficientFunction> expression,
+                        shared_ptr<CoefficientFunction> startingpoint);
+
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
 

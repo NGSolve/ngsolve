@@ -69,8 +69,7 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, BareSliceMatrix<> coefs,
-                              LocalHeap & lh) const
-    { throw Exception("Element does not support interpolation"); }
+                              LocalHeap & lh) const;
       
     virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
     virtual bool SolveDuality (SliceVector<Complex> rhs, SliceVector<Complex> u, LocalHeap & lh) const { return false; }
@@ -96,7 +95,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (FlatArray<const FiniteElement*> afea);
 
-    HD virtual ELEMENT_TYPE ElementType() const { return fea[0]->ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return fea[0]->ElementType(); }
     /// number of components
     int GetNComponents() const { return fea.Size(); }
 
@@ -113,9 +112,13 @@ namespace ngfem
     }
 
     /// the name of the element family
-    virtual string ClassName() const { return "CompoundFiniteElement"; }
+    virtual string ClassName() const override { return "CompoundFiniteElement"; }
 
-    virtual void Print (ostream & ost) const;
+    virtual void Print (ostream & ost) const override;
+
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                              LocalHeap & lh) const override; 
   };
 
   // a pair of 2 elements

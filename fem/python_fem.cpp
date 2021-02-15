@@ -1081,6 +1081,8 @@ wait : bool
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
+  m.def("MinimizationCF", &CreateMinimizationCF);
+  
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
   py::implicitly_convertible<int, CoefficientFunction>();
