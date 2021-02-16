@@ -284,15 +284,16 @@ namespace ngcomp
         MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
         MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
+        netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
         for (auto & mip : mir2_def)
           {
             netgen::Point<DIM> p;
             for (int j = 0; j < DIM; j++)
               p(j) = mip.GetPoint()(j);
-            bbox.Add(p);
+            elbox.Add(p);
           }
 
-        searchtree->Insert(bbox, el2.Nr());
+        searchtree->Insert(elbox, el2.Nr());
       }
   }
 
