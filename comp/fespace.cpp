@@ -3392,8 +3392,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         HeapReset hr(lh);
         size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-	spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+        if (tt & TRANSFORM_MAT_LEFT)
+          spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+        if (tt & TRANSFORM_MAT_RIGHT)
+          spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
