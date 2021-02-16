@@ -117,3 +117,4 @@ def test_gapfunction():
 
     error = Norm(-cb.gap + center - (x,y,z)) - r
     assert Integrate(error, mesh, definedon=master, order=1) < 1e-8
+
