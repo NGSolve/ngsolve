@@ -92,9 +92,6 @@ namespace ngcomp
       T2<DIMS> t2{mip, pmaster};
       bool is_front = InnerProduct(n, mip.GetNV()) < 0;
 
-      if(min_dist == 1e99)
-        min_dist = L2Norm2(mip.GetPoint() - pmaster);
-
       if constexpr (DIMS==1)
       {
         // check end points
@@ -142,14 +139,14 @@ namespace ngcomp
           dist.Append(t2(lam.Last()));
         }
 
-        lam.Append(t2.CalcMinimumOnSegment( {0,0}, {1,0} ));
-        dist.Append(t2(lam.Last()));
-
-        lam.Append(t2.CalcMinimumOnSegment( {1,0}, {0,1} ));
-        dist.Append(t2(lam.Last()));
-
-        lam.Append(t2.CalcMinimumOnSegment( {0,1}, {0,0} ));
-        dist.Append(t2(lam.Last()));
+//         lam.Append(t2.CalcMinimumOnSegment( {0,0}, {1,0} ));
+//         dist.Append(t2(lam.Last()));
+// 
+//         lam.Append(t2.CalcMinimumOnSegment( {1,0}, {0,1} ));
+//         dist.Append(t2(lam.Last()));
+// 
+//         lam.Append(t2.CalcMinimumOnSegment( {0,1}, {0,0} ));
+//         dist.Append(t2(lam.Last()));
 
         for(auto i : Range(lam.Size()))
         {
@@ -161,7 +158,6 @@ namespace ngcomp
         }
       }
     }
-    min_dist = sqrt(min_dist);
 
     if(min_dist > h)
       return min_dist;
@@ -334,7 +330,8 @@ namespace ngcomp
     auto & mip = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip);
 
     auto hcurrent = h/(1024.*1024.);
-    while(hcurrent<=h)
+    int found = 2;
+    while(found>0 && hcurrent<=h)
     {
      netgen::Box<DIM> box(ngp1, ngp1);
      box.Increase(hcurrent);
@@ -366,8 +363,9 @@ namespace ngcomp
          }
          return false;
        });
+
     if(mindist < h)
-      return;
+      found--;
 
     hcurrent *= 2;
     }
