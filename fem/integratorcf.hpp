@@ -120,6 +120,12 @@ namespace ngfem
         compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait), icf->dx);
       return compiled;
     }
+
+    void SetDefinedOnElements(shared_ptr<BitArray> defon)
+    {
+      for(auto& icf : icfs)
+        icf->dx.definedonelements = defon;
+    }
   };
 
   inline auto operator+ (const SumOfIntegrals & c1, const SumOfIntegrals & c2)
