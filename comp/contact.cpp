@@ -30,6 +30,7 @@ namespace ngcomp
     Mat<DIM> a;
     Vec<DIM> b;
     Vec<DIM> x0;
+    double d0;
 
     template<int DIMR>
     T2( MappedIntegrationPoint<DIM, DIMR> & mip, Vec<DIMR> pmaster ) : x0(mip.IP().Point())
@@ -47,6 +48,7 @@ namespace ngcomp
       a = 2*Trans(jac)*jac;
       for (int d : Range(DIMR))
         a += dist[d] * hesse[d];
+      d0 = L2Norm2(dist);
     }
 
     Vec<DIM> CalcMinimumOnSegment( Vec<DIM> x1, Vec<DIM> x2 )
@@ -68,7 +70,7 @@ namespace ngcomp
     double operator() (Vec<DIM> x)
     {
       x -= x0;
-      return InnerProduct(x, a*x) + InnerProduct(b,x);
+      return d0 + 0.5*InnerProduct(x, a*x) + InnerProduct(b,x);
     }
   };
 
@@ -89,6 +91,9 @@ namespace ngcomp
       MappedIntegrationPoint<DIMS, DIMR> mip{ip, trafo};
       T2<DIMS> t2{mip, pmaster};
       bool is_front = InnerProduct(n, mip.GetNV()) < 0;
+
+      if(min_dist == 1e99)
+        min_dist = L2Norm2(mip.GetPoint() - pmaster);
 
       if constexpr (DIMS==1)
       {
@@ -156,6 +161,7 @@ namespace ngcomp
         }
       }
     }
+    min_dist = sqrt(min_dist);
 
     if(min_dist > h)
       return min_dist;
