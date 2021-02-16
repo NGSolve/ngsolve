@@ -330,10 +330,14 @@ namespace ngcomp
     netgen::Point<DIM> ngp1;
     for (int j = 0; j < DIM; j++)
       ngp1(j) = p1(j);
-    netgen::Box<DIM> box(ngp1, ngp1);
-    box.Increase(h);
 
     auto & mip = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip);
+
+    auto hcurrent = h/(1024.*1024.);
+    while(hcurrent<=h)
+    {
+     netgen::Box<DIM> box(ngp1, ngp1);
+     box.Increase(hcurrent);
 
     searchtree->GetFirstIntersecting
       (box.PMin(), box.PMax(),
@@ -362,6 +366,11 @@ namespace ngcomp
          }
          return false;
        });
+    if(mindist < h)
+      return;
+
+    hcurrent *= 2;
+    }
   }
 
   template<int DIM>
