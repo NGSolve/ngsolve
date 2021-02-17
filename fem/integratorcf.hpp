@@ -30,10 +30,12 @@ namespace ngfem
     Integral (shared_ptr<CoefficientFunction> _cf,
               DifferentialSymbol _dx)
       : cf(_cf), dx(_dx) { ; }
-
+    virtual ~Integral() { }
     template <typename TSCAL>
     TSCAL Integrate (const ngcomp::MeshAccess & ma,
                      FlatVector<TSCAL> element_wise);
+
+    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
   };
   
   inline Integral operator* (double fac, const Integral & cf)

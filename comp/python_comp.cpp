@@ -2230,6 +2230,7 @@ integrator : ngsolve.fem.BFI
          {
            for (auto icf : sum->icfs)
              {
+               /*
                auto & dx = icf->dx;
 
                // check for DG terms
@@ -2264,6 +2265,20 @@ integrator : ngsolve.fem.BFI
                  bfi->SetDefinedOnElements(dx.definedonelements);
                for (auto both : dx.userdefined_intrules)
                  bfi->SetIntegrationRule(both.first, *both.second);
+               */
+
+               
+               shared_ptr<BilinearFormIntegrator> bfi = icf->MakeBilinearFormIntegrator();
+               auto & dx = icf->dx;
+               if (dx.definedon)
+                 {
+                   if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+                     {
+                       Region reg(self.GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+                       bfi->SetDefinedOn(reg.Mask());
+                     }
+                 }
+               
                self += bfi;
              }
            return self;
