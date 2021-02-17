@@ -273,52 +273,57 @@ namespace ngcomp
     shared_ptr<MeshAccess> ma;
     const FESpace & space;
 
-    array<Mat<3,3>, 8> boundaryprol;
+    array<Mat<3,3>, 16> boundaryprol;
+    array<Mat<3,12>, 6+3+1> innerprol;
     
   public:
     BDM1Prolongation(const FESpace & aspace)
       : ma(aspace.GetMeshAccess()), space(aspace)
     {
-      // calc prolongation matrices here;
-      Matrix<> pointc = { { 0, 0 }, { 1, 0 }, { 0, 1 } };
-      FE_ElementTransformation<2,2> trafoc(ET_TRIG, pointc);
+      // v0,v1 .. .split edge, v0 in new triangle
+      // v2 ... third vertex of coasrse trig
+      // v3 ... subdivision vertex
 
-      Matrix<> pointf = { { 0, 0 }, { 0.5, 0 }, { 0, 1 } };
-      FE_ElementTransformation<2,2> trafof(ET_TRIG, pointf);
-
-      for (int classnr = 0; classnr < 8; classnr++)
+      ma->EnableTable("parentfaces");
+      
+      for (int classnr = 0; classnr < 16; classnr++)
         {
-          int vertsc[3] = { 1, 2, 3 };
-          if (classnr & 1) Swap(vertsc[0], vertsc[1]);
-          if (classnr & 2) Swap(vertsc[1], vertsc[2]);
-          if (classnr & 4) Swap(vertsc[0], vertsc[1]);
+          int verts[4] = { 1, 2, 3, 4 };
+          if (classnr & 8) Swap(verts[0], verts[1]);
+          if (classnr & 4) Swap(verts[1], verts[2]);
+          if (classnr & 2) Swap(verts[0], verts[1]);
+          if (classnr & 1) Swap(verts[2], verts[3]);
 
+          int vertsc[3] = { verts[1], verts[2], verts[0] };
+          int vertsf[3] = { verts[3], verts[2], verts[0] };
+          cout << "coarse: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << endl;
+          cout << "fine:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
+          
           HDivHighOrderNormalTrig<TrigExtensionMonomial> felc(1);
           felc.SetVertexNumbers (vertsc);
 
-          int vertsf[3] = { vertsc[0], vertsc[1], 4 };
           HDivHighOrderNormalTrig<TrigExtensionMonomial> felf(1);
           felf.SetVertexNumbers (vertsf);
-
+          
           IntegrationRule ir(ET_TRIG, 2);
           Matrix<> massf(3,3), massfc(3,3);
-          Matrix<> shapef(3,1), shapec(3,1);
+          Vector<> shapef(3), shapec(3);
           massf = 0; massfc = 0;
           
           for (IntegrationPoint ip : ir)
             {
               IntegrationPoint ipc(0.5*ip(0), ip(1));
-              MappedIntegrationPoint<2,2> mipc(ipc, trafoc);
-              MappedIntegrationPoint<2,2> mipf(ip, trafof);
+              // MappedIntegrationPoint<2,2> mipc(ipc, trafoc);
+              // MappedIntegrationPoint<2,2> mipf(ip, trafof);
 
-              felc.CalcMappedShape (mipc, shapec);
-              felf.CalcMappedShape (mipf, shapef);
+              felc.CalcShape (ipc, shapec);
+              felf.CalcShape (ip, shapef);
 
               massf += ip.Weight() * shapef * Trans(shapef);
               massfc += ip.Weight() * shapef * Trans(shapec);
             }
           CalcInverse (massf);
-          boundaryprol[classnr] = massf * massfc;
+          boundaryprol[classnr] = 0.5 * massf * massfc;
           cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
         }
       
@@ -333,6 +338,7 @@ namespace ngcomp
 
     virtual void ProlongateInline (int finelevel, BaseVector & v) const
     {
+      cout << "prolongate Hdiv" << endl;
       size_t nc = space.GetNDofLevel (finelevel-1) / 3;
       size_t nf = space.GetNDofLevel (finelevel) / 3;
       
@@ -345,18 +351,27 @@ namespace ngcomp
 	  int pa1 = nrs[0];
 	  int pa2 = nrs[1];
 	  int pa3 = nrs[2];
-          int pa4 = nrs[2];
+          int pa4 = nrs[3];
 
           if (pa2 == -1)
             {
               Vec<3> fvecc = fv.Range(3*pa1, 3*pa1+3);
-              Vec<3> fvecf = boundaryprol[info%8] * fvecc;
+              Vec<3> fvecf = boundaryprol[info%16] * fvecc;
               fv.Range(3*i, 3*i+3) = fvecf;
             }
           else
             {
-              // missing ...
               fv.Range(3*i, 3*i+3) = 0.0;
+              /*
+              // missing ...
+              Vec<12> fvecc;
+              fvecc.Range(0,3) = fv.Range(3*pa1, 3*pa1+3);
+              fvecc.Range(3,6) = fv.Range(3*pa2, 3*pa2+3);
+              fvecc.Range(6,9) = fv.Range(3*pa3, 3*pa3+3);
+              fvecc.Range(9,12) = fv.Range(3*pa4, 3*pa4+3);
+              Vec<3> fvecf = innerprol[info%16] * fvecc;
+              fv.Range(3*i, 3*i+3) = fvecf;
+              */
             }
         }
 
@@ -478,7 +493,8 @@ namespace ngcomp
           for (size_t i = 0; i < nfa; i++)
             if (!active_facets.Test(i))
               ctofdof[3*i] = ctofdof[3*i+1] = ctofdof[3*i+2] = UNUSED_DOF;
-          // cout << "active edges = " << endl << active_edges << endl;
+          
+          cout << "active faces = " << endl << active_facets << endl;
         }
     }
     
@@ -537,6 +553,7 @@ namespace ngcomp
               dnums[2*i+1+faces.Size()] = 3*faces[i]+2;
             }
         }
+      // cout << "Ei = " << ei << "dnums = " << dnums << endl;
     }
 
     

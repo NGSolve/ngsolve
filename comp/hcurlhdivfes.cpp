@@ -756,7 +756,11 @@ namespace ngcomp
     const FESpace & space;
   public:
     EdgeP1Prolongation(const FESpace & aspace)
-      : ma(aspace.GetMeshAccess()), space(aspace) { ; }
+      : ma(aspace.GetMeshAccess()), space(aspace)
+    {
+      ma->EnableTable("parentedges");
+    }
+    
     virtual ~EdgeP1Prolongation() { }
   
     virtual void Update (const FESpace & fes) { ; }
