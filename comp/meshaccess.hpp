@@ -665,6 +665,11 @@ namespace ngcomp
     void Curve (int order);
     int GetCurveOrder ();
 
+    void EnableTable (string name, bool set = true)
+    {
+      mesh.EnableTable(name, set);
+    }
+    
     void HPRefinement (int levels, double factor = 0.125)
     {
       mesh.HPRefinement(levels, factor);
