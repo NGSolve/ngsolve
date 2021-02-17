@@ -2095,6 +2095,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def("__radd__", [](shared_ptr<SumOfIntegrals> igls, int i) {
         if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
         return igls; })
+    .def("SetDefinedOnElements", &SumOfIntegrals::SetDefinedOnElements)
     ;
 
   py::class_<Variation> (m, "Variation")
