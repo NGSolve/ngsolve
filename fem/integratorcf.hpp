@@ -2,7 +2,7 @@
 
 namespace ngfem
 {
-  
+  class Integral;
   class DifferentialSymbol
   {
   public:
@@ -19,6 +19,12 @@ namespace ngfem
     DifferentialSymbol (VorB _vb, VorB _element_vb, bool _skeleton, // const BitArray & _definedon,
                         int _bonus_intorder)
       : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), /* definedon(_definedon), */ bonus_intorder(_bonus_intorder) { ; }
+
+    virtual ~DifferentialSymbol() { }
+    virtual shared_ptr<Integral> MakeIntegral(shared_ptr<CoefficientFunction> cf) const
+    {
+      return make_shared<Integral> (cf, *this);
+    }
   };
   
 

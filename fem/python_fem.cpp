@@ -989,9 +989,10 @@ cf : ngsolve.CoefficientFunction
                return val * coef;
            }, py::arg("value"))
 
-    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol dx)
+    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol & dx)
          {
-           return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
+           // return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
+           return make_shared<SumOfIntegrals> (dx.MakeIntegral (cf));  // overloaded in ngsxfem
          })
     
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
