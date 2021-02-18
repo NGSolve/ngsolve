@@ -44,7 +44,7 @@ install( FILES
         facethofe.hpp fastmat.hpp fem.hpp finiteelement.hpp generic_recpol.hpp	
         h1hofefo.hpp h1hofefo_impl.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp
         hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp
-        integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp
+        integrator.hpp integratorcf.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp
         recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	
         specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp normalfacetfe.hpp
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
