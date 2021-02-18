@@ -2578,33 +2578,25 @@ integrator : ngsolve.fem.LFI
 
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
+
+
            for (auto icf : (*sum))
              {
+               shared_ptr<LinearFormIntegrator> lfi = icf->MakeLinearFormIntegrator();
                auto & dx = icf->dx;
-               shared_ptr<LinearFormIntegrator> lfi;
-               if (!dx.skeleton)
-                 lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
-               else
-                 lfi = make_shared<SymbolicFacetLinearFormIntegrator> (icf->cf, dx.vb);
                if (dx.definedon)
                  {
-                   if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
-                     lfi->SetDefinedOn(*definedon_bitarray);
                    if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
                      {
                        Region reg(self->GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
                        lfi->SetDefinedOn(reg.Mask());
                      }
                  }
-               lfi->SetDeformation(dx.deformation);
-               lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
-               if(dx.definedonelements)
-                 lfi->SetDefinedOnElements(dx.definedonelements);
-               for (auto both : dx.userdefined_intrules)
-                 lfi->SetIntegrationRule(both.first, *both.second);
+               
                *self += lfi;
              }
            return self;
+
          })
 
     .def_property_readonly("integrators", [](shared_ptr<LF> self)

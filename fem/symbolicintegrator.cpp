@@ -5284,5 +5284,35 @@ namespace ngfem
 
     return bfi;
   }
-  
+
+  shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator()
+  {
+    shared_ptr<LinearFormIntegrator> lfi;
+    if (!dx.skeleton)
+      lfi =  make_shared<SymbolicLinearFormIntegrator> (cf, dx.vb, dx.element_vb);
+    else
+      lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, dx.vb);
+    if (dx.definedon)
+      {
+        if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
+          lfi->SetDefinedOn(*definedon_bitarray);
+        /*
+        // can't do that withouyt mesh
+        if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+        {
+          Region reg(self->GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+          lfi->SetDefinedOn(reg.Mask());
+        }
+        */
+      }
+    lfi->SetDeformation(dx.deformation);
+    lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+    if(dx.definedonelements)
+      lfi->SetDefinedOnElements(dx.definedonelements);
+    for (auto both : dx.userdefined_intrules)
+      lfi->SetIntegrationRule(both.first, *both.second);
+    return lfi;
+  }
+
+
 }
