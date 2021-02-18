@@ -1722,6 +1722,14 @@ namespace ngfem
     throw Exception ("only vol and bnd integrals are supported");
   }
   
+  double Integral::Integrate (const ngcomp::MeshAccess & ma,
+                              FlatVector<double> element_wise)
+  { return T_Integrate(ma, element_wise);}
+
+  Complex Integral::Integrate (const ngcomp::MeshAccess & ma,
+                               FlatVector<Complex> element_wise)
+  { return T_Integrate(ma, element_wise);}
+
 
   template double Integral :: T_Integrate<double> (const ngcomp::MeshAccess & ma,
                                                    FlatVector<double> element_wise);
