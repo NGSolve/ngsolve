@@ -92,7 +92,7 @@ void SampleSortI(FlatArray<T> data, FlatArray<TI> index)
   T4.Stop();
 
   size_t start = 0;
-  for (int bucket = 0; bucket < table.Size(); ++bucket) {
+  for (size_t bucket = 0; bucket < table.Size(); ++bucket) {
     size_t end = start+table[bucket].Size();
     index.Range(start, end) = table[bucket];
     start = end;

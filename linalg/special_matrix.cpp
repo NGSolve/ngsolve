@@ -916,7 +916,8 @@ namespace ngla
   void LoggingMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     if (comm.has_value()) comm->Barrier();
-    *out << "matrix '" << label << "' Mult: " << typeid(*mat).name() << " "
+    const BaseMatrix & rmat = *mat;
+    *out << "matrix '" << label << "' Mult: " << typeid(rmat).name() << " "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
     if (comm.has_value()) comm->Barrier();

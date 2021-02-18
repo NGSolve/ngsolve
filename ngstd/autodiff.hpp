@@ -694,7 +694,7 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
     INLINE AutoDiffRec & operator= (SCAL aval) { val = aval; return *this; }
 
     INLINE SCAL Value() const { return val; }
-    INLINE SCAL DValue(int i) const { return SCAL(0); }
+    INLINE SCAL DValue(int /* i */) const { return SCAL(0); }
     INLINE SCAL & Value() { return val; }
     // SCAL & DValue(int i) { return val; }
     INLINE auto Rec() const { return val; }
@@ -729,9 +729,9 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
     INLINE AutoDiffRec & operator= (SCAL aval) { val = aval; last = 0.0; return *this; }
 
     INLINE SCAL Value() const { return val; }
-    INLINE SCAL DValue(int i) const { return last; }
+    INLINE SCAL DValue(int /* i */) const { return last; }
     INLINE SCAL & Value() { return val; }
-    INLINE SCAL & DValue(int i) { return last; }
+    INLINE SCAL & DValue(int /* i */) { return last; }
     INLINE auto Rec() const { return val; }
     INLINE auto Last() const { return last; }
     INLINE auto & Rec() { return val; }

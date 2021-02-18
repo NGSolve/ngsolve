@@ -44,6 +44,7 @@ namespace ngcomp
 
     const netgen::BoxTree<DIM, int>& GetSearchTree() { return *searchtree; }
 
+    using GapFunction::Evaluate;
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       throw Exception("Scalar evaluate of GapFunction called");

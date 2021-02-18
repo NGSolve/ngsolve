@@ -586,9 +586,8 @@ namespace ngcomp
               return *fe;
             }
 
-          case ET_TRIG:   
-          default:
-            throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+          case ET_TRIG:
+            ;
           }
       
       else if (ei.VB() == BND)
@@ -608,6 +607,7 @@ namespace ngcomp
             throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
           }
       
+      throw Exception ("Element not available in BDM1 space");
     }
     
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override
