@@ -498,6 +498,10 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);}, "Unset the deformation")
 
+    .def_property("deformation", 
+                  &MeshAccess::GetDeformation,
+                  &MeshAccess::SetDeformation, "mesh deformation")
+
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
           {
