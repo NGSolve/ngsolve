@@ -30,13 +30,13 @@ namespace ngstd
     */
   public:
     PolOrder (INT<DIM> ao) : order(ao) { ; }
-    PolOrder (double d) : order(0) { ; }
-    PolOrder (int d) : order(0) { ; }
+    PolOrder (double /* d */) : order(0) { ; }
+    PolOrder (int /* d */) : order(0) { ; }
     PolOrder () : order(0) { ; }
 
     PolOrder & operator= (INT<DIM> ao) { order = ao; return *this; }
-    PolOrder & operator= (int i) { order = 0; return *this; }
-    PolOrder & operator= (double d) { order = 0; return *this; }
+    PolOrder & operator= (int /* i */) { order = 0; return *this; }
+    PolOrder & operator= (double /* d */) { order = 0; return *this; }
 
     int operator() (int i) const { return order[i]; }
     int & operator() (int i) { return order[i]; }
@@ -71,20 +71,20 @@ namespace ngstd
 
 
   template <int DIM>  
-  inline PolOrder<DIM> operator- (double a, PolOrder<DIM> b)  { return b; }
+  inline PolOrder<DIM> operator- (double /* a */, PolOrder<DIM> b)  { return b; }
   template <int DIM>  
-  inline PolOrder<DIM> operator+ (double a, PolOrder<DIM> b)  { return b; }
+  inline PolOrder<DIM> operator+ (double /* a */, PolOrder<DIM> b)  { return b; }
   template <int DIM>  
-  inline PolOrder<DIM> operator* (double a, PolOrder<DIM> b)  { return b; }
+  inline PolOrder<DIM> operator* (double /* a */, PolOrder<DIM> b)  { return b; }
 
   template <int DIM>  
-  inline PolOrder<DIM> operator- (PolOrder<DIM> b, double a)  { return b; }
+  inline PolOrder<DIM> operator- (PolOrder<DIM> b, double /* a */)  { return b; }
   template <int DIM>  
-  inline PolOrder<DIM> operator+ (PolOrder<DIM> b, double a)  { return b; }
+  inline PolOrder<DIM> operator+ (PolOrder<DIM> b, double /* a */)  { return b; }
   template <int DIM>  
-  inline PolOrder<DIM> operator* (PolOrder<DIM> b, double a)  { return b; }
+  inline PolOrder<DIM> operator* (PolOrder<DIM> b, double /* a */)  { return b; }
   template <int DIM>  
-  inline PolOrder<DIM> operator/ (PolOrder<DIM> b, double a)  { return b; }
+  inline PolOrder<DIM> operator/ (PolOrder<DIM> b, double /* a */)  { return b; }
 
 
 
@@ -98,7 +98,7 @@ namespace ngstd
   inline PolOrder<DIM> operator/= (PolOrder<DIM> & a, const T & b)  { a = a / b; return a; }
 
   template <int DIM>
-  inline bool operator== (PolOrder<DIM> a, double b) { return false; }
+  inline bool operator== (PolOrder<DIM> /* a */, double /* b */) { return false; }
 
   template<int DIM>
   inline ostream & operator<< (ostream & ost, const PolOrder<DIM> & x)

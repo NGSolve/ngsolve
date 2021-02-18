@@ -2567,6 +2567,7 @@ namespace ngbla
 
   
   constexpr size_t NA = 128;
+  [[maybe_unused]]
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   

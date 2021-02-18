@@ -837,7 +837,7 @@ namespace ngcomp
       Vec<D*D,TSCAL> hv = Trans(bmat) * x;
       Mat<D,D,TSCAL> defmat;
       defmat.AsVector() = hv;
-      Mat<D,D,TSCAL> invmat = Inv(defmat);
+      // Mat<D,D,TSCAL> invmat = Inv(defmat);
 
       FlatMatrix<double> shape_ul(nd_u,D*D*D, lh);
       FlatMatrix<double> shape_ur(nd_u,D*D*D, lh);
