@@ -1488,7 +1488,7 @@ namespace ngfem
   using namespace ngcomp;
   
   template <typename TSCAL>
-  TSCAL Integral :: Integrate (const ngcomp::MeshAccess & ma,
+  TSCAL Integral :: T_Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<TSCAL> element_wise)
   {
     LocalHeap glh(10000000, "integrate-lh");
@@ -1723,9 +1723,9 @@ namespace ngfem
   }
   
 
-  template double Integral :: Integrate<double> (const ngcomp::MeshAccess & ma,
-                                                 FlatVector<double> element_wise);
-  template Complex Integral :: Integrate<Complex> (const ngcomp::MeshAccess & ma,
-                                                   FlatVector<Complex> element_wise);                                                   
+  template double Integral :: T_Integrate<double> (const ngcomp::MeshAccess & ma,
+                                                   FlatVector<double> element_wise);
+  template Complex Integral :: T_Integrate<Complex> (const ngcomp::MeshAccess & ma,
+                                                     FlatVector<Complex> element_wise);
 }
 

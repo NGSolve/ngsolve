@@ -37,10 +37,19 @@ namespace ngfem
               DifferentialSymbol _dx)
       : cf(_cf), dx(_dx) { ; }
     virtual ~Integral() { }
-    template <typename TSCAL>
-    TSCAL Integrate (const ngcomp::MeshAccess & ma,
-                     FlatVector<TSCAL> element_wise);
 
+    template <typename TSCAL>
+    TSCAL T_Integrate (const ngcomp::MeshAccess & ma,
+                       FlatVector<TSCAL> element_wise);
+
+    virtual double Integrate (const ngcomp::MeshAccess & ma,
+                              FlatVector<double> element_wise)
+    { return T_Integrate(ma, element_wise);}
+
+    virtual Complex Integrate (const ngcomp::MeshAccess & ma,
+                               FlatVector<Complex> element_wise)
+    { return T_Integrate(ma, element_wise);}
+    
     virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
     virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator();
   };
