@@ -285,7 +285,7 @@ namespace ngcomp
       // v3 ... subdivision vertex
 
       ma->EnableTable("parentfaces");
-      
+      // boundary prol (only 8 cases are actually used) 
       for (int classnr = 0; classnr < 16; classnr++)
         {
           int verts[4] = { 1, 2, 3, 4 };
@@ -327,6 +327,78 @@ namespace ngcomp
           cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
         }
       
+      // inner prol 
+      for (int classnr = 0; classnr < 10; classnr++)
+        {
+          vector<int> verts={1,2,3,4,5};// v0, v1, v2, v3, vb
+          if (classnr==0){
+            verts={1,2,3,4,5};
+          }else if (classnr==1){
+            verts={1,3,2,4,5};
+          }else if (classnr==2){
+            verts={1,4,2,3,5};
+          }else if (classnr==3){
+            verts={2,3,1,4,5};
+          }else if (classnr==4){
+            verts={2,4,1,3,5};
+          }else if (classnr==5){
+            verts={3,4,1,2,5};
+          }else if (classnr==6){
+            verts={1,2,5,3,4};
+          }else if (classnr==7){
+            verts={1,3,5,2,4};
+          }else if (classnr==8){
+            verts={2,3,5,1,4};
+          }else if (classnr==9){
+            verts={1,2,4,5,3};
+          }
+          // ORIENTATION??
+          // Coarse TET
+          int vertsc[4] = { verts[0], verts[1], verts[2], verts[3] };
+          // Fine TRIG
+          int vertsf[3] = { verts[4], verts[2], verts[3] };
+          cout << "coarse TET: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << 
+            " " << vertsc[3] << endl;
+          cout << "bisect TRIG:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
+          HDivHighOrderFE<ET_TET> felc(1) ;
+          felc.SetVertexNumbers (vertsc);
+          HDivHighOrderNormalTrig<TrigExtensionMonomial> felf(1);
+          felf.SetVertexNumbers (vertsf);
+          //cout << felc.GetNDof() << " " << felf.GetNDof() << endl;
+          IntegrationRule ir(ET_TRIG, 2);
+          Matrix<> massf(3,3), massfc(3,12);
+          Matrix<> shapef(3,3), shapec(12,3);
+          massf = 0; massfc = 0;
+          
+          // vertex coordinates of inner face within tet
+          // points are images of ref-pnts  (1,0), (0,1), (0,0)
+          Matrix<> points = { { 0.5, 0.5, 0 }, { 0, 0, 1 }, { 0, 0, 0 } };
+          FE_ElementTransformation<2,3> trig2tet(ET_TRIG, points);
+          
+          for (IntegrationPoint ip : ir)
+            {
+              // map ip on trig back to tet
+              MappedIntegrationPoint<2,3> mip(ip, trig2tet);
+              IntegrationPoint iptet = mip.GetPoint();
+              cout << "iptrig = " << ip << ", iptet = " << iptet << endl;
+              felc.CalcShape (iptet, shapec);
+              felf.CalcMappedShape (mip, shapef);
+
+              massf += ip.Weight() * shapef * Trans(shapef);
+              massfc += ip.Weight() * shapef * Trans(shapec);
+            }
+          CalcInverse (massf);
+          Mat<3,12> prolmat = massf * massfc;
+          // reorder, since tet-shapes are enumerated all lowest order first
+          for (int i = 0; i < 4; i++)
+            {
+              innerprol[classnr].Col(3*i  ) = prolmat.Col(i);
+              innerprol[classnr].Col(3*i+1) = prolmat.Col(4+2*i);
+              innerprol[classnr].Col(3*i+2) = prolmat.Col(4+2*i+1);
+            }
+          cout << "innerpol[" << classnr << "] = " << endl << FlatMatrix(innerprol[classnr]) << endl;
+        }
+      
     }
 
     
@@ -361,17 +433,15 @@ namespace ngcomp
             }
           else
             {
-              fv.Range(3*i, 3*i+3) = 0.0;
-              /*
-              // missing ...
+              // fv.Range(3*i, 3*i+3) = 0.0;
+
               Vec<12> fvecc;
               fvecc.Range(0,3) = fv.Range(3*pa1, 3*pa1+3);
               fvecc.Range(3,6) = fv.Range(3*pa2, 3*pa2+3);
               fvecc.Range(6,9) = fv.Range(3*pa3, 3*pa3+3);
               fvecc.Range(9,12) = fv.Range(3*pa4, 3*pa4+3);
-              Vec<3> fvecf = innerprol[info%16] * fvecc;
+              Vec<3> fvecf = innerprol[info] * fvecc;
               fv.Range(3*i, 3*i+3) = fvecf;
-              */
             }
         }
 
