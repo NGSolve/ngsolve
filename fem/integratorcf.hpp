@@ -43,12 +43,10 @@ namespace ngfem
                        FlatVector<TSCAL> element_wise);
 
     virtual double Integrate (const ngcomp::MeshAccess & ma,
-                              FlatVector<double> element_wise)
-    { return T_Integrate(ma, element_wise);}
+                              FlatVector<double> element_wise);
 
     virtual Complex Integrate (const ngcomp::MeshAccess & ma,
-                               FlatVector<Complex> element_wise)
-    { return T_Integrate(ma, element_wise);}
+                               FlatVector<Complex> element_wise);
     
     virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
     virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator();
