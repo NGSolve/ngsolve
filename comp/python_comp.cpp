@@ -3287,7 +3287,7 @@ element_wise: bool = False
              elvals = TSCAL(0.0);
              
              for (auto & ci : igls)
-               sum += ci->Integrate<TSCAL>(ma, elvals);
+               sum += ci->Integrate(ma, elvals);
              if (element_wise) return py::cast(elvals);
              return py::cast(sum);
            };
