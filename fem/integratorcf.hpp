@@ -42,6 +42,7 @@ namespace ngfem
                      FlatVector<TSCAL> element_wise);
 
     virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
+    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator();
   };
   
   inline Integral operator* (double fac, const Integral & cf)
