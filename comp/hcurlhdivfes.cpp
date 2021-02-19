@@ -936,12 +936,13 @@ namespace ngcomp {
     
     virtual ~NedelecP1FESpace () { }
     virtual const char * GetType()  { return "NedelecP1"; }
-    
+
+    /*
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags)
     {
       return make_shared<NedelecFESpace2> (ma, flags, true);
     }
-    
+    */
     void Update() override
     {
       size_t ned = ma->GetNEdges();

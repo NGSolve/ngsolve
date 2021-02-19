@@ -415,8 +415,9 @@ namespace ngcomp
       size_t nf = space.GetNDofLevel (finelevel) / 3;
       
       auto fv = v.FV<double>();
-      fv.Range(3*nf, fv.Size()) = 0;
+      fv.Range(3*nc, fv.Size()) = 0;
 
+      for (int loop = 0; loop < 5; loop++)
       for (size_t i = nc; i < nf; i++)
         {
           auto [info, nrs] = ma->GetParentFaces(i);
@@ -564,7 +565,7 @@ namespace ngcomp
             if (!active_facets.Test(i))
               ctofdof[3*i] = ctofdof[3*i+1] = ctofdof[3*i+2] = UNUSED_DOF;
           
-          cout << "active faces = " << endl << active_facets << endl;
+          // cout << "active faces = " << endl << active_facets << endl;
         }
     }
     
