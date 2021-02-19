@@ -696,7 +696,7 @@ namespace ngfem
     void SetDim (int dim) { dimension = dim; }
   };
 
-  DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);
 
   /*
     DG Integration rule:
@@ -716,7 +716,7 @@ namespace ngfem
     double BoundaryVolumeFactor () const { return boundary_volume_factor; }
   };
   
-  DLL_HEADER ostream & operator<< (ostream & ost, const DGIntegrationRule & ir);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const DGIntegrationRule & ir);
 
   template <int D>
   class IntegrationRuleTP : public IntegrationRule
