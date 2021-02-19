@@ -2086,11 +2086,11 @@ namespace ngcomp
   }
   
   
-  void MeshAccess :: Refine ()
+  void MeshAccess :: Refine (bool onlyonce)
   {
     static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
     nlevels = std::numeric_limits<int>::max();
-    mesh.Refine(NG_REFINE_H, &NGSolveTaskManager, &NGSolveTracer);
+    mesh.Refine(NG_REFINE_H, onlyonce, &NGSolveTaskManager, &NGSolveTracer);
     UpdateBuffers();
     updateSignal.Emit();
   }

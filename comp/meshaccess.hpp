@@ -661,7 +661,7 @@ namespace ngcomp
       */
     }
 
-    void Refine ();
+    void Refine (bool onlyonce);
     void Curve (int order);
     int GetCurveOrder ();
 
