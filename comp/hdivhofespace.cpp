@@ -154,8 +154,10 @@ namespace ngcomp
     if (discont) loflags.SetFlag ("discontinuous"); // supported ?
 
     // low_order_space = new RaviartThomasFESpace (ma, loflags);
-    low_order_space = 0; 
-
+    low_order_space = nullptr;
+    if (flags.GetDefineFlag("loworderp1"))
+      low_order_space = CreateFESpace ("BDM1", ma, loflags);
+    
 
 
     // Variable order space: 
@@ -476,6 +478,34 @@ namespace ngcomp
     
     UpdateDofTables(); 
     UpdateCouplingDofArray();
+
+    if (low_order_space)
+      {
+        if (low_order_space->GetClassName()=="BDM11FESpace")
+          {
+            cout << "make p1 embedding" << endl;
+            Array<int> ia, ja;
+            Array<double> va;
+            for (auto f : Range(ma->GetNFacets()))
+              {
+                ia.Append(f);
+                ja.Append(3*f);
+                va.Append(1);
+
+                auto fd = GetFacetDofs(f);
+                ia.Append(fd[0]);
+                ja.Append(3*f+1);
+                va.Append(1);
+                
+                ia.Append(fd[0]+order);
+                ja.Append(3*f+2);
+                va.Append(1);
+              }
+            low_order_embedding = SparseMatrix<double>::CreateFromCOO (ia, ja, va,
+                                                                       GetNDof(), low_order_space->GetNDof());
+            // cout << "low_order_embeddingn = " << *low_order_embedding << endl;
+          }
+      }
   }
 
   void HDivHighOrderFESpace :: UpdateDofTables()
@@ -1519,6 +1549,8 @@ namespace ngcomp
 		  table[offset + i ] [cnt[offset+i]++] = l;
 	      }
 
+            offset += nfa;
+            
 	    for (int i = 0; i < nel; i++ )
 	      {
 		first = first_inner_dof[i];
@@ -1577,7 +1609,8 @@ namespace ngcomp
     auto spclusters = make_shared<Array<int>> (GetNDof());
     Array<int> & clusters = *spclusters;
 
-    int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
+    int default_ds = low_order_space ? 0 : 1;
+    int clustertype = int(precflags.GetNumFlag("ds_cluster",default_ds)); 
     cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
   
     Array<int> vnums,elnums; 
@@ -1594,7 +1627,8 @@ namespace ngcomp
         // 0) none
       case 0:
         clusters = 0;
-
+        break;
+        
         // 1) low-order dofs
       case 1: 
         clusters = 0;
