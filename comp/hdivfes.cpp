@@ -297,8 +297,8 @@ namespace ngcomp
 
           int vertsc[3] = { verts[1], verts[2], verts[0] };
           int vertsf[3] = { verts[3], verts[2], verts[0] };
-          cout << "coarse: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << endl;
-          cout << "fine:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
+          // cout << "coarse: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << endl;
+          // cout << "fine:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
           
           HDivHighOrderNormalTrig<TrigExtensionMonomial> felc(1);
           felc.SetVertexNumbers (vertsc);
@@ -325,7 +325,7 @@ namespace ngcomp
             }
           CalcInverse (massf);
           boundaryprol[classnr] = 0.5 * massf * massfc;
-          cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
+          // cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
         }
 
 
