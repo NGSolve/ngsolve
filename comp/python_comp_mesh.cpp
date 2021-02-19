@@ -708,16 +708,16 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
 
     // TODO: explain how to mark elements
     .def("Refine",
-         [](MeshAccess & ma, bool mark_surface_elements)
+         [](MeshAccess & ma, bool mark_surface_elements, bool onlyonce)
           {
             if (!mark_surface_elements)
               {
                 for (ElementId ei : ma.Elements(BND))
                   ma.SetRefinementFlag(ei, false);
               }
-            ma.Refine();
+            ma.Refine(onlyonce);
           },py::call_guard<py::gil_scoped_release>(),
-         py::arg("mark_surface_elements")=false,
+         py::arg("mark_surface_elements")=false, py::arg("onlyonce")=false,
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP",
