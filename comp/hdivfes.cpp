@@ -488,7 +488,7 @@ namespace ngcomp
 
     virtual void ProlongateInline (int finelevel, BaseVector & v) const
     {
-      cout << "prolongate Hdiv" << endl;
+      // cout << "prolongate Hdiv" << endl;
       size_t nc = space.GetNDofLevel (finelevel-1) / 3;
       size_t nf = space.GetNDofLevel (finelevel) / 3;
       
@@ -524,68 +524,68 @@ namespace ngcomp
             }
         }
 
-      /*
-        // todo
-      // every edge from coarse level got split
+      // every face from coarse level got split
       for (size_t i = 0; i < nf; i++)
         {
-          auto [info, nrs] = ma->GetParentEdges(i);
+          auto [info, nrs] = ma->GetParentFaces(i);
           if (nrs[0] != -1 && nrs[1] == -1)
             {
-              fv(2*nrs[0]) = 0;
-              fv(2*nrs[0]+1) = 0;
+              fv(3*nrs[0]) = 0;
+              fv(3*nrs[0]+1) = 0;
+              fv(3*nrs[0]+2) = 0;
             }
         }
-      */
     }
     
     virtual void RestrictInline (int finelevel, BaseVector & v) const
     {
-      /*
-      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
-      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      size_t nc = space.GetNDofLevel (finelevel-1) / 3;
+      size_t nf = space.GetNDofLevel (finelevel) / 3;
       
       auto fv = v.FV<double>();
-      fv.Range(2*nf, fv.Size()) = 0;
+      fv.Range(3*nf, fv.Size()) = 0;
 
-      // every edge from coarse level got split
+      // every face from coarse level got split
       for (size_t i = 0; i < nf; i++)
         {
-          auto [info, nrs] = ma->GetParentEdges(i);
+          auto [info, nrs] = ma->GetParentFaces(i);
           if (nrs[0] != -1 && nrs[1] == -1)
             {
-              fv(2*nrs[0]) = 0;
-              fv(2*nrs[0]+1) = 0;
+              fv(3*nrs[0]) = 0;
+              fv(3*nrs[0]+1) = 0;
+              fv(3*nrs[0]+2) = 0;
             }
         }
 
-      
+      for (int loop = 0; loop < 5; loop++)      
       for (size_t i = nf; i-- > nc; )
         {
-          auto [info, nrs] = ma->GetParentEdges(i);
+          auto [info, nrs] = ma->GetParentFaces(i);
 	  int pa1 = nrs[0];
 	  int pa2 = nrs[1];
 	  int pa3 = nrs[2];
+	  int pa4 = nrs[3];
 
           if (pa2 == -1)
             {
-              double fac0 = (info & 1) ? 0.5 : -0.5;
-              fv(2*pa1) += fac0 * fv(2*i);
-              fv(2*pa1+1) += -0.125 * fv(2*i) + 0.25 * fv(2*i+1);
+              Vec<3> fvecf = fv.Range(3*i, 3*i+3);
+              Vec<3> fvecc = Trans(boundaryprol[info%16]) * fvecf;
+              fv.Range(3*pa1, 3*pa1+3) += fvecc;
+              fv.Range(3*i, 3*i+3) = 0.0;              
             }
           else
             {
-              double fac1 = (info&1) ? 0.5 : -0.5;
-              double fac2 = (info&2) ? 0.5 : -0.5;
-              double fac3 = (info&4) ? -0.125 : 0.125;
-              fv(2*pa1)   += fac1 * fv(2*i);
-              fv(2*pa1+1) += 0.5 * fv(2*i+1);
-              fv(2*pa2)   += fac2 * fv(2*i);
-              fv(2*pa2+1) += 0.5 * fv(2*i+1);
-              fv(2*pa3+1) += fac3 * fv(2*i) - 0.25 * fv(2*i+1);
+              Vec<3> fvecf = fv.Range(3*i, 3*i+3);
+              Vec<12> fvecc = Trans(innerprol[info]) * fvecf;
+              
+              fv.Range(3*pa1, 3*pa1+3) += fvecc.Range(0,3);
+              fv.Range(3*pa2, 3*pa2+3) += fvecc.Range(3,6);
+              fv.Range(3*pa3, 3*pa3+3) += fvecc.Range(6,9);
+              fv.Range(3*pa4, 3*pa4+3) += fvecc.Range(9,12);
+              
+              fv.Range(3*i, 3*i+3) = 0.0;
             }
         }
-      */
     }
   };
 
@@ -605,14 +605,15 @@ namespace ngcomp
           {
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
-            // additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
+            additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
           }
         else if(ma->GetDimension() == 3) 
           {
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
-
-            // additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());            
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
+            additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
           }
         prol = make_shared<BDM1Prolongation> (*this);
       }
@@ -666,6 +667,7 @@ namespace ngcomp
             }
 
           case ET_TRIG:
+          default:
             ;
           }
       
@@ -683,7 +685,7 @@ namespace ngcomp
               return *fe;
             }
           default:
-            throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+            ;
           }
       
       throw Exception ("Element not available in BDM1 space");
