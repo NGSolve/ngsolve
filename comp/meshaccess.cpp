@@ -1202,7 +1202,7 @@ namespace ngcomp
           {
             const auto& el = GetElement(ei);
             auto index = el.GetIndex();
-            for(const auto& edge : el.Edges())
+            for (auto edge : el.Edges())
               {
                 if(auto eindex = edgemap[edge]; eindex != -1)
                   {
