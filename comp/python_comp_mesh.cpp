@@ -747,12 +747,24 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          "Return parent element id on refined mesh")
 
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
-          {
+         {
             auto parents = ma.GetParentNodes (vnum);
             return py::make_tuple(parents[0], parents[1]);
           },
          py::arg("vnum"),
          "Return parent vertex numbers on refined mesh")
+    
+    .def("GetParentFaces", [](MeshAccess & ma, int fnum)
+         {
+           auto [info,nrs] = ma.GetParentFaces (fnum);
+           if (nrs[1] == -1)
+             return py::make_tuple(nrs[0]);
+           else
+             return py::make_tuple(nrs);
+         },
+         py::arg("fnum"),
+         "Return parent faces")
+    
     .def("GetHPElementLevel", &MeshAccess::GetHPElementLevel,
          py::arg("ei"),
          "THIS FUNCTION IS WIP!\n Return HP-refinement level of element")
