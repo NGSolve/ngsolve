@@ -274,7 +274,8 @@ namespace ngcomp
     const FESpace & space;
 
     array<Mat<3,3>, 16> boundaryprol;
-    array<Mat<3,12>, 6+3+1> innerprol;
+    // array<Mat<3,12>, 6+3+1> innerprol;
+    array<Mat<3,12>, 120> innerprol;
     
   public:
     BDM1Prolongation(const FESpace & aspace)
@@ -326,7 +327,9 @@ namespace ngcomp
           boundaryprol[classnr] = 0.5 * massf * massfc;
           cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
         }
-      
+
+
+      /*
       // inner prol 
       for (int classnr = 0; classnr < 10; classnr++)
         {
@@ -398,7 +401,82 @@ namespace ngcomp
             }
           cout << "innerpol[" << classnr << "] = " << endl << FlatMatrix(innerprol[classnr]) << endl;
         }
-      
+      */
+
+
+      // inner prol 
+      for (int classnr = 0; classnr < 120; classnr++)
+        {
+          // find a realiztion of permuation classnr
+
+          int hv = classnr;
+          int verts[5] = { -1, -1, -1, -1, -1 };
+          for (int j = 0; j < 5; j++)
+            {
+              int nth_el = hv % (j+1);
+              hv = hv/(j+1);
+
+              for (int k = 5; k > nth_el; k--)
+                verts[k] = verts[k-1];
+              verts[nth_el] = j;
+            }
+
+          /*
+          cout << "realization of class " << classnr << " is ";
+          for (int k = 0; k < 5; k++)
+            cout << verts[k] << " ";
+          cout << endl;
+          */
+          
+          // Coarse TET
+          int vertsc[4] = { verts[0], verts[1], verts[2], verts[3] };
+          // Fine TRIG
+          int vertsf[3] = { verts[4], verts[2], verts[3] };
+
+          /*
+          cout << "coarse TET: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << 
+            " " << vertsc[3] << endl;
+          cout << "bisect TRIG:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
+          */
+          
+          HDivHighOrderFE<ET_TET> felc(1) ;
+          felc.SetVertexNumbers (vertsc);
+          HDivHighOrderNormalTrig<TrigExtensionMonomial> felf(1);
+          felf.SetVertexNumbers (vertsf);
+          //cout << felc.GetNDof() << " " << felf.GetNDof() << endl;
+          IntegrationRule ir(ET_TRIG, 2);
+          Matrix<> massf(3,3), massfc(3,12);
+          Matrix<> shapef(3,3), shapec(12,3);
+          massf = 0; massfc = 0;
+          
+          // vertex coordinates of inner face within tet
+          // points are images of ref-pnts  (1,0), (0,1), (0,0)
+          Matrix<> points = { { 0.5, 0.5, 0 }, { 0, 0, 1 }, { 0, 0, 0 } };
+          FE_ElementTransformation<2,3> trig2tet(ET_TRIG, points);
+          
+          for (IntegrationPoint ip : ir)
+            {
+              // map ip on trig back to tet
+              MappedIntegrationPoint<2,3> mip(ip, trig2tet);
+              IntegrationPoint iptet = mip.GetPoint();
+              // cout << "iptrig = " << ip << ", iptet = " << iptet << endl;
+              felc.CalcShape (iptet, shapec);
+              felf.CalcMappedShape (mip, shapef);
+
+              massf += ip.Weight() * shapef * Trans(shapef);
+              massfc += ip.Weight() * shapef * Trans(shapec);
+            }
+          CalcInverse (massf);
+          Mat<3,12> prolmat = massf * massfc;
+          // reorder, since tet-shapes are enumerated all lowest order first
+          for (int i = 0; i < 4; i++)
+            {
+              innerprol[classnr].Col(3*i  ) = prolmat.Col(i);
+              innerprol[classnr].Col(3*i+1) = prolmat.Col(4+2*i);
+              innerprol[classnr].Col(3*i+2) = prolmat.Col(4+2*i+1);
+            }
+          // cout << "innerpol[" << classnr << "] = " << endl << FlatMatrix(innerprol[classnr]) << endl;
+        }
     }
 
     
