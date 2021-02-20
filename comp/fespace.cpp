@@ -1554,69 +1554,131 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     */
 
-    Array<DofId> dofs;
-    for ( ; !creator.Done(); creator++)
+    if (flags.GetStringFlag("blocktype") == "edgepatch")
       {
-        // VEFI
-
-        for (size_t i : Range(ma->GetNV()))
-          {
-            GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-            for (auto d : dofs)
-              if (IsRegularDof(d))              
-                creator.Add (i, d);
-          }
-        for (size_t i : Range(ma->GetNEdges()))        
-          {
-            Ng_Node<1> edge = ma->GetNode<1> (i);
-            
-            GetDofNrs (NodeId(NT_EDGE, i), dofs);
-            for (auto d : dofs)
-              if (IsRegularDof(d))
-                for (int k = 0; k < 2; k++)
-                  creator.Add (edge.vertices[k], d);
-          }
-
-        for (size_t i : Range(ma->GetNFaces()))        
-          {
-            Ng_Node<2> face = ma->GetNode<2> (i);
-            
-            GetDofNrs (NodeId(NT_FACE, i), dofs);
-            for (auto d : dofs)
-              if (IsRegularDof(d))
-                for (int k = 0; k < face.vertices.Size(); k++)
-                  creator.Add (face.vertices[k], d);
-          }
-
-        if(ma->GetDimension() == 3)
-           for(size_t i : Range(ma->GetNE()))
-             {
-               GetDofNrs(NodeId(NT_CELL, i), dofs);
-               auto elverts = ma->GetElVertices(ElementId(VOL, i));
-               for(auto d : dofs)
-                 if(IsRegularDof(d))
-                   for(auto v : elverts)
-                     creator.Add(v, d);
-             }
-      }
-    /*
-                 
-                 for (int i = 0; i < nfa; i++)
-                 {
-                 Ng_Node<2> face = ma->GetNode<2> (i);
-                 for (int k = 0; k < face.vertices.Size(); k++)
-                 creator.Add (face.vertices[k], GetFaceDofs(i));
-                 }
-                 
-                 for (int i = 0; i < ni; i++)
-                 for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
-                 creator.Add (v, GetElementDofs(i));
-                 
-                 break; 
-               */
-               
         
-    return make_shared<Table<int>> (creator.MoveTable());
+        Array<DofId> dofs;
+        for ( ; !creator.Done(); creator++)
+          {
+            // EFI
+
+            /*
+            for (size_t i : Range(ma->GetNV()))
+              {
+                GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))              
+                    creator.Add (i, d);
+              }
+            */
+            
+            for (size_t i : Range(ma->GetNEdges()))        
+              {
+                // Ng_Node<1> edge = ma->GetNode<1> (i);
+                
+                GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    creator.Add (i, d);
+              }
+            
+            for (size_t i : Range(ma->GetNFaces()))        
+              {
+                // Ng_Node<2> face = ma->GetNode<2> (i);
+                
+                GetDofNrs (NodeId(NT_FACE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    for (auto e : ma->GetFaceEdges(i))
+                      creator.Add (e, d);
+              }
+            
+            if(ma->GetDimension() == 3)
+              for(size_t i : Range(ma->GetNE()))
+                {
+                  GetDofNrs(NodeId(NT_CELL, i), dofs);
+                  auto eledges = ma->GetElEdges(ElementId(VOL, i));
+                  for(auto d : dofs)
+                    if(IsRegularDof(d))
+                      for(auto v : eledges)
+                        creator.Add(v, d);
+                }
+        
+          }
+      }
+    
+    else
+      
+      { // default is vertexpatch
+        Array<DofId> dofs;
+        for ( ; !creator.Done(); creator++)
+          {
+            // VEFI
+
+            for (size_t i : Range(ma->GetNV()))
+              {
+                GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))              
+                    creator.Add (i, d);
+              }
+            for (size_t i : Range(ma->GetNEdges()))        
+              {
+                Ng_Node<1> edge = ma->GetNode<1> (i);
+                
+                GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    for (int k = 0; k < 2; k++)
+                      creator.Add (edge.vertices[k], d);
+              }
+            
+            for (size_t i : Range(ma->GetNFaces()))        
+              {
+                Ng_Node<2> face = ma->GetNode<2> (i);
+                
+                GetDofNrs (NodeId(NT_FACE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    for (int k = 0; k < face.vertices.Size(); k++)
+                      creator.Add (face.vertices[k], d);
+              }
+            
+            if(ma->GetDimension() == 3)
+              for(size_t i : Range(ma->GetNE()))
+                {
+                  GetDofNrs(NodeId(NT_CELL, i), dofs);
+                  auto elverts = ma->GetElVertices(ElementId(VOL, i));
+                  for(auto d : dofs)
+                    if(IsRegularDof(d))
+                      for(auto v : elverts)
+                        creator.Add(v, d);
+                }
+          }
+        /*
+          
+          for (int i = 0; i < nfa; i++)
+          {
+          Ng_Node<2> face = ma->GetNode<2> (i);
+          for (int k = 0; k < face.vertices.Size(); k++)
+          creator.Add (face.vertices[k], GetFaceDofs(i));
+          }
+          
+          for (int i = 0; i < ni; i++)
+          for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
+          creator.Add (v, GetElementDofs(i));
+          
+          break; 
+        */
+      }
+
+    
+        
+    // return make_shared<Table<int>> (creator.MoveTable());
+    Table<int> table = creator.MoveTable();
+    if (print)
+      *testout << "smoothing blocks = " << endl << table << endl;
+    return make_shared<Table<int>> (move(table));
   }
 
     
