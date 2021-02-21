@@ -1420,6 +1420,30 @@ BND : boolean or None
     */
     ;
 
+
+
+  auto hiddenfes_class = py::class_<HiddenFESpace, shared_ptr<HiddenFESpace>, FESpace, NGS_Object>(m, "Hidden",
+	docu_string(R"delimiter(Hidden Finite Element Spaces.
+FESpace has elements, but no gobally enumerated dofs, i.e. all dofs are hidden.
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+)delimiter"), py::dynamic_attr());
+  hiddenfes_class
+    .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
+                    auto hiddenfes = make_shared<HiddenFESpace>(fes, flags);
+                    hiddenfes->Update();
+                    hiddenfes->FinalizeUpdate();
+                    return hiddenfes;
+                  }), py::arg("fespace"))
+    ;
+
+
+  
   py::class_<ReorderedFESpace, shared_ptr<ReorderedFESpace>, FESpace>(m, "Reorder",
 	docu_string(R"delimiter(Reordered Finite Element Spaces.
 ...

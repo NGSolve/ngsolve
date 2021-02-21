@@ -19,7 +19,9 @@ namespace ngcomp
 
   void CompressedFESpace::Update()
   { 
-    //space->Update(lh); // removed as it may override changed doftypes
+    // space->Update(); // removed as it may override changed doftypes
+    // we need it to update the space after refinement.
+    // space should set dofs only in first update on level
 
     const int ndofall = space->GetNDof();
     all2comp.SetSize(ndofall);

@@ -5942,15 +5942,30 @@ namespace ngcomp
   template <class TM, class TV>
   void T_BilinearForm<TM,TV>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
   {
-    Vector<Complex> lami(elmat.Height());
-    Matrix<TSCAL> evecs(elmat.Height());
-    FlatMatrix<TSCAL> elmat_save(elmat.Height(), elmat.Width(), lh);
-    elmat_save = elmat;
+    if (!this->symmetric || this->fespace->IsComplex())
+      {
+        Vector<Complex> lami(elmat.Height());
+        Matrix<TSCAL> evecs(elmat.Height());
+        FlatMatrix<TSCAL> elmat_save(elmat.Height(), elmat.Width(), lh);
+        elmat_save = elmat;
 #ifdef LAPACK
-    LapackEigenValues (elmat_save, lami, evecs);
-    (*testout) << "lami = " 
-               << endl << lami << endl << "evecs: " << endl << evecs << endl;
+        LapackEigenValues (elmat_save, lami, evecs);
+        (*testout) << "lami = " 
+                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
 #endif
+      }
+    else
+      {
+        Vector<TSCAL> lami(elmat.Height());
+        Matrix<TSCAL> evecs(elmat.Height());
+#ifdef LAPACK
+        LapackEigenValuesSymmetric (elmat, lami, evecs);
+#else
+        CalcEigenSystem (elmat, lami, evecs);
+#endif
+        (*testout) << "lami = " 
+                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
+      }
   }
 
 
