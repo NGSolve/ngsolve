@@ -499,7 +499,7 @@ namespace ngbla
     constexpr size_t bw = 128;
     for ( ; i+bw <= X.Height(); i += bw)
       MultTriangularLLN2 (X.Rows(i,i+bw), L);
-    if (i < X.Width())
+    if (i < X.Height())
       MultTriangularLLN2 (X.Rows(i,X.Height()), L);      
   }
 
@@ -593,7 +593,7 @@ namespace ngbla
     constexpr size_t bw = 128;
     for ( ; i+bw <= X.Height(); i += bw)
       MultTriangularUR2 (X.Rows(i,i+bw), U);
-    if (i < X.Width())
+    if (i < X.Height())
       MultTriangularUR2 (X.Rows(i,X.Height()), U);      
   }
 
