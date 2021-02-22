@@ -24,6 +24,17 @@ cmake $SRC_DIR \
       -DOCC_LINK_FREETYPE=ON
 
 make -j5 install
-osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
+
+# eject all mounted .dmg volumes
+disks=`diskutil list external | sed -n '/[Ss]cheme/s/.*B *//p'`
+
+if [ "$disks" ]
+then
+echo "$disks" | while read line ; do
+    diskutil unmountDisk /dev/$line
+    diskutil eject /dev/$line
+  done
+fi
+
 make bundle
 
