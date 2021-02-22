@@ -494,9 +494,9 @@ namespace ngfem
         for (int j = 0; j < 2; j++)
           if (order_inner[j] > order) 
             order = order_inner[0];
-        order++;       // ????
-	if(RT)
-	  order ++;
+
+        if (ET != ET_TRIG) order++;
+        if(RT) order ++;
       }
     else
       {
