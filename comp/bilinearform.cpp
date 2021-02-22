@@ -1161,18 +1161,21 @@ namespace ngcomp
                               
               int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
               FlatMatrix<SCAL> elmat(elmat_size, lh);
-                              
+
+              auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+              auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
+
               if (lin)
               {
                 // bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
                 //                       fel2,facnr2,eltrans2,vnums2, elmat, lh);
-                bfi->CalcLinearizedFacetMatrix (fel1,facnr1,eltrans1,vnums1, 
-                                      fel2,facnr2,eltrans2,vnums2, elveclin, elmat, lh);
+                bfi->CalcLinearizedFacetMatrix (fel1,facnr1,mapped_trafo1,vnums1, 
+                                                fel2,facnr2,mapped_trafo2,vnums2, elveclin, elmat, lh);
               }
               else                
               {
-                bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                      fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                bfi->CalcFacetMatrix (fel1,facnr1,mapped_trafo1,vnums1,
+                                      fel2,facnr2,mapped_trafo2,vnums2, elmat, lh);
               }
                               
               fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
@@ -2027,7 +2030,10 @@ namespace ngcomp
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
                                      
                                      // dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).  
-                                     bfi->CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elmat, lh);
+                                     auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                                     auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+
+                                     bfi->CalcFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elmat, lh);
                                      
                                      fespace->TransformMat (ei1, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                                      
@@ -2111,10 +2117,12 @@ namespace ngcomp
                                  // shared_ptr<FacetBilinearFormIntegrator> fbfi = 
                                  // dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
                                  
+                                 auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+                                 auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
                                  // if (fbfi)
                                    {
-                                     bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                                           fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                                     bfi->CalcFacetMatrix (fel1,facnr1,mapped_trafo1,vnums1,
+                                                           fel2,facnr2,mapped_trafo2,vnums2, elmat, lh);
                                    }
                                    /*
                                      // currently CompoundBFI(FactBFI) not possible .... do we need it ? 
@@ -2300,7 +2308,9 @@ namespace ngcomp
                               // original version did not compile on MacOS V
                               const FacetBilinearFormIntegrator & fbfi = 
                                 dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);  
-                              fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, svnums, elmat, lh);
+                              auto & mapped_trafo = eltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
+                              auto & mapped_strafo = seltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
+                              fbfi.CalcFacetMatrix (fel,facnr,mapped_trafo,vnums, mapped_strafo, svnums, elmat, lh);
 				  
                               fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 				  
@@ -2703,8 +2713,10 @@ namespace ngcomp
                                                  dnums_trial.Size()*fespace->GetDimension(), lh);
                               
                           {
-                            bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                                  fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                            auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+                            auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
+                            bfi->CalcFacetMatrix (fel1,facnr1,mapped_trafo1,vnums1,
+                                                  fel2,facnr2,mapped_trafo2,vnums2, elmat, lh);
                           }
                               
                           fespace->TransformMat (ei1, elmat.Rows(0,dnums1_test.Size()), TRANSFORM_MAT_LEFT);
@@ -2913,7 +2925,9 @@ namespace ngcomp
                               // original version did not compile on MacOS V
                               const FacetBilinearFormIntegrator & fbfi =
                                 dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);
-                              fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, svnums, elmat, lh);
+                              auto & mapped_trafo = eltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
+                              auto & mapped_strafo = seltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
+                              fbfi.CalcFacetMatrix (fel,facnr,mapped_trafo,vnums, mapped_strafo, svnums, elmat, lh);
 
                               fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -3432,7 +3446,9 @@ namespace ngcomp
 				 const FacetBilinearFormIntegrator & fbfi = 
 				   dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);				 
 				 
-				 fbfi.CalcLinearizedFacetMatrix (fel,facnr,eltrans,vnums, seltrans, svnums, elveclin, elmat, lh);
+         auto & mapped_trafo = eltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
+         auto & mapped_strafo = seltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
+				 fbfi.CalcLinearizedFacetMatrix (fel,facnr,mapped_trafo,vnums, mapped_strafo, svnums, elveclin, elmat, lh);
 				 fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 				 if (printelmat)
 				   {
@@ -4432,7 +4448,9 @@ namespace ngcomp
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
                                
-                               bfi->ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                               auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                               auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                               bfi->ApplyFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elx, ely, lh);
                                y.AddIndirect(dnums, ely, fespace->HasAtomicDofs());
                              } //end for (numintegrators)
                            
@@ -4481,8 +4499,10 @@ namespace ngcomp
                            if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; 
                            if (!bfi->DefinedOnElement (facet) ) continue;
                            
-                           bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
-                                                  fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+                           auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+                           auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
+                           bfi->ApplyFacetMatrix (fel1, facnr1, mapped_trafo1, vnums1,
+                                                  fel2, facnr2, mapped_trafo2, vnums2, elx, ely, lh);
 
                            y.AddIndirect(dnums, ely);
                          }
@@ -4560,7 +4580,9 @@ namespace ngcomp
                                x.GetIndirect(dnums, elx);
                                
                                // dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).
-                               bfi->ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                               auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                               auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                               bfi->ApplyFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elx, ely, lh);
                                
                                y.AddIndirect(dnums, ely);
                                
@@ -4623,8 +4645,11 @@ namespace ngcomp
                            // FacetBilinearFormIntegrator * fbfi = 
                            // dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
                            
-                           bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
-                                                  fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+                           
+                           auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+                           auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
+                           bfi->ApplyFacetMatrix (fel1, facnr1, mapped_trafo1, vnums1,
+                                                  fel2, facnr2, mapped_trafo2, vnums2, elx, ely, lh);
                            
                            /*
                              if (neighbor_testfunction)
@@ -4645,8 +4670,10 @@ namespace ngcomp
                                FlatVector<SCAL> swap_elx(elx.Size(), lh);
                                swap_elx.Range(0, dim*dnums2.Size()) = elx.Range(dim*dnums1.Size(), dim*dnums.Size());
                                swap_elx.Range(dim*dnums2.Size(), dim*dnums.Size()) = elx.Range(0, dim*dnums1.Size());
-                               bfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
-                                                      fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
+                               auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+                               auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
+                               bfi->ApplyFacetMatrix (fel2, facnr2, mapped_trafo2, vnums2,
+                                                      fel1, facnr1, mapped_trafo1, vnums1, swap_elx, ely, lh);
                                y.AddIndirect(dnums1, ely.Range(dim*dnums2.Size(), dim*dnums.Size()));
                              }
                          }
