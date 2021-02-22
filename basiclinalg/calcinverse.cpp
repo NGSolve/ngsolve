@@ -194,13 +194,40 @@ namespace ngbla
   extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il)
   {
     if (il == INVERSE_LIB::INV_CHOOSE)
-      il = inv.Height() >= 50 ? INVERSE_LIB::INV_NGBLA_LU : INVERSE_LIB::INV_NGBLA;
-    
-    if (il == INVERSE_LIB::INV_NGBLA_LU)
+      il = inv.Height() >= 100 ? INVERSE_LIB::INV_LAPACK : INVERSE_LIB::INV_NGBLA;
+
+    if (il == INVERSE_LIB::INV_NGBLA_QR)
       {
+        QRFactorizationInPlace (inv);
+        InverseFromQR (inv);
+      }
+    
+    else if (il == INVERSE_LIB::INV_NGBLA_LU)
+      {
+        // Matrix save = inv;
         ArrayMem<int,100> p(inv.Height());
         CalcLU (inv, p);
-        InverseFromLU (inv, p);
+        InverseFromLU (inv, p); // has issues with numerical stability
+
+        /*
+          // stable as lapack degetri (but not as stable as old CalcInverse)
+        Matrix<double,ColMajor> X = Identity(inv.Height());
+        SolveFromLU (inv, p, X);
+        inv = X;
+        */
+        
+        /*
+        double err = L2Norm(inv*save-Identity(inv.Height()));
+        if (err > 0.1)
+          {
+            cout << "inverse, err = " << err << endl;
+
+            inv = save;
+            T_CalcInverse (inv);
+            double err2 = L2Norm(inv*save-Identity(inv.Height()));
+            cout << "old inverse, err = " << err2 << endl;
+          }
+        */
       }
 #ifdef LAPACK
     else if (il == INVERSE_LIB::INV_LAPACK)
