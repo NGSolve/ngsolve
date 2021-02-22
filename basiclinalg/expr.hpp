@@ -1691,7 +1691,7 @@ namespace ngbla
   /* **************************** Inverse *************************** */
 
 
-  enum class INVERSE_LIB { INV_NGBLA, INV_NGBLA_LU, INV_LAPACK, INV_CHOOSE };
+  enum class INVERSE_LIB { INV_NGBLA, INV_NGBLA_LU, INV_LAPACK, INV_NGBLA_QR, INV_CHOOSE };
 
   /// Calculate inverse. Gauss elimination with row pivoting
   template <class T2>

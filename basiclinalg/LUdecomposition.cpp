@@ -391,7 +391,28 @@ namespace ngbla
 
   void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p)
   {
-    size_t n = A.Height();    
+    size_t n = A.Height();
+
+    /*
+    // testing: lapack-version
+    Matrix tmp = Trans(A);
+    ArrayMem<integer,100> ipiv(A.Height());
+    for (int i = 0; i < n; i++)
+      ipiv[i] = i+1;
+    integer lda = tmp.Dist();
+
+    integer lwork = 32 * A.Height();
+    Array<double> work(lwork);
+    
+    integer info;
+    integer ni = A.Height();
+    dgetri(&ni, &tmp(0,0), &lda, &ipiv[0], work.Data(), &lwork, &info);
+
+    A = Trans(tmp);
+    if (info != 0)
+      cout << "info = " << info << endl;
+    */
+
     // static Timer t("InverseFromLU"); RegionTimer reg(t);
     // t.AddFlops (2*n*n*n/3);
 

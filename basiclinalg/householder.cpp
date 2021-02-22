@@ -237,6 +237,8 @@ namespace ngbla
 
 
   
+  template class BaseMultiHouseholderReflection<RowMajor>;
+  template class BaseMultiHouseholderReflection<ColMajor>;
   template class MultiHouseholderReflection<RowMajor>;
   template class MultiHouseholderReflection<ColMajor>;
   template void BaseMultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
@@ -342,5 +344,19 @@ namespace ngbla
     if (m > n)
       A.Rows(n,m) = 0.0;
   }
+  
+  void InverseFromQR (SliceMatrix<> ainv)
+  {
+    size_t n = ainv.Height();
+    ArrayMem<double, 2500> mem(n*n);
+    FlatMatrix X(n,n,mem.Data());
+    X = Identity(n);
+    TriangularSolve<UpperRight,NonNormalized> (ainv, X);
+    // ApplyHouseholderReflectionsTrans (ainv.Cols(0,n-1), Trans(SliceMatrix(X)));
+    MultiHouseholderReflection H(Trans(ainv.Cols(0,n-1)));
+    H.MultTrans(Trans(SliceMatrix(X)));
+    ainv = Trans(X);
+  }
 
+  
 }
