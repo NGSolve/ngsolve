@@ -283,14 +283,13 @@ namespace ngcomp
       throw Exception ("smoother could not be allocated"); 
 
     auto prol = lo_fes->GetProlongation();
-
     mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
     mgp->SetCoarseSmoothingSteps (int(flags.GetNumFlag ("coarsesmoothingsteps", 1)));
     mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
-
+    mgp->SetHarmonicExtensionProlongation (flags.GetDefineFlag("he_prolongation"));
     MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
     const string & coarse = flags.GetStringFlag ("coarsetype", "direct");
     if (coarse == "smoothing")
@@ -389,6 +388,7 @@ namespace ngcomp
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
     mgp->SetCoarseSmoothingSteps (int(flags.GetNumFlag ("coarsesmoothingsteps", 1)));
     mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
+    mgp->SetHarmonicExtensionProlongation (flags.GetDefineFlag("he_prolongation"));    
     mgp->SetUpdateAlways(flags.GetDefineFlag("updatealways"));
 
     MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
