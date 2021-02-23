@@ -2524,8 +2524,9 @@ namespace ngcomp
                          if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
                          if (!bfi->DefinedOnElement (ei.Nr())) continue;
                          
+                         auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
                          MixedFiniteElement fel(fel1, fel2);
-                         bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
+                         bfi->CalcElementMatrix (fel, mapped_trafo, elmat, lh);
                          fespace->TransformMat(ei, elmat, TRANSFORM_MAT_RIGHT);
                          fespace2->TransformMat(ei, elmat, TRANSFORM_MAT_LEFT);
                          AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
