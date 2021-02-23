@@ -272,7 +272,7 @@ namespace ngcomp
   {
     shared_ptr<MeshAccess> ma;
     const FESpace & space;
-
+    
     array<Mat<3,3>, 16> boundaryprol;
     // array<Mat<3,12>, 6+3+1> innerprol;
     array<Mat<3,12>, 120> innerprol;
@@ -284,7 +284,7 @@ namespace ngcomp
       // v0,v1 .. .split edge, v0 in new triangle
       // v2 ... third vertex of coasrse trig
       // v3 ... subdivision vertex
-
+      
       ma->EnableTable("parentfaces");
       // boundary prol (only 8 cases are actually used) 
       for (int classnr = 0; classnr < 16; classnr++)
@@ -611,9 +611,119 @@ namespace ngcomp
         }
     }
   };
-
   
-
+// BDM1 prol in TRIG
+  class BDM1ProlongationTRIG : public Prolongation
+  {
+    shared_ptr<MeshAccess> ma;
+    const FESpace & space;
+  public:
+    BDM1ProlongationTRIG(const FESpace & aspace)
+      : ma(aspace.GetMeshAccess()), space(aspace)
+    {
+      ma->EnableTable("parentedges");
+    }
+    
+    virtual ~BDM1ProlongationTRIG() { }
+    
+    virtual void Update (const FESpace & fes) { ; }
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    { return nullptr; }
+    
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const
+    {
+      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
+      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      
+      auto fv = v.FV<double>();
+      fv.Range(2*nf, fv.Size()) = 0;
+      
+      for (size_t i = nc; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          int pa1 = nrs[0];
+          int pa2 = nrs[1];
+          int pa3 = nrs[2];
+          
+          if (pa2 == -1)
+            {
+              double fac0 = (info & 1) ? 0.5 : -0.5;
+              fv(2*i)   = fac0 * fv(2*pa1) + 0.125 * fv(2*pa1+1);
+              fv(2*i+1) = 0.25 * fv(2*pa1+1);
+            }
+          else
+            {
+              double fac1 = (info&1) ? 0.5 : -0.5;
+              double fac2 = (info&2) ? 0.5 : -0.5;
+              double fac3 = (info&4) ? 0.125 : -0.125;
+              fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3+1);
+              fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1)) - 0.25*fv(2*pa3+1);
+            }
+        }
+      
+      // every edge from coarse level got split
+      for (size_t i = 0; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          if (nrs[0] != -1 && nrs[1] == -1)
+            {
+              fv(2*nrs[0]) = 0;
+              fv(2*nrs[0]+1) = 0;
+            }
+        }
+    }
+    
+    virtual void RestrictInline (int finelevel, BaseVector & v) const
+    {
+      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
+      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      
+      auto fv = v.FV<double>();
+      fv.Range(2*nf, fv.Size()) = 0;
+      
+      // every edge from coarse level got split
+      for (size_t i = 0; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          if (nrs[0] != -1 && nrs[1] == -1)
+            {
+              fv(2*nrs[0]) = 0;
+              fv(2*nrs[0]+1) = 0;
+            }
+        }
+      
+      
+      for (size_t i = nf; i-- > nc; )
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          int pa1 = nrs[0];
+          int pa2 = nrs[1];
+          int pa3 = nrs[2];
+          
+          if (pa2 == -1)
+            {
+              double fac0 = (info & 1) ? 0.5 : -0.5;
+              fv(2*pa1) += fac0 * fv(2*i);
+              fv(2*pa1+1) += 0.125 * fv(2*i) + 0.25 * fv(2*i+1);
+            }
+          else
+            {
+              double fac1 = (info&1) ? 0.5 : -0.5;
+              double fac2 = (info&2) ? 0.5 : -0.5;
+              double fac3 = (info&4) ? 0.125 : -0.125;
+              fv(2*pa1)   += fac1 * fv(2*i);
+              fv(2*pa1+1) += 0.5 * fv(2*i+1);
+              fv(2*pa2)   += fac2 * fv(2*i);
+              fv(2*pa2+1) += 0.5 * fv(2*i+1);
+              fv(2*pa3+1) += fac3 * fv(2*i) - 0.25 * fv(2*i+1);
+            }
+        }
+      
+    }
+  };
+  
+  
+  
   class NGS_DLL_HEADER BDM1FESpace : public FESpace
   {
     BitArray active_facets;
@@ -630,6 +740,7 @@ namespace ngcomp
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
             additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
+            prol = make_shared<BDM1ProlongationTRIG> (*this);
           }
         else if(ma->GetDimension() == 3) 
           {
@@ -637,8 +748,8 @@ namespace ngcomp
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
             additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
+            prol = make_shared<BDM1Prolongation> (*this);
           }
-        prol = make_shared<BDM1Prolongation> (*this);
       }
     
     virtual ~BDM1FESpace () { }
@@ -669,6 +780,22 @@ namespace ngcomp
           
           // cout << "active faces = " << endl << active_facets << endl;
         }
+      else if (ma->GetDimension()==2)
+      {
+        size_t ned = ma->GetNEdges();
+        SetNDof (2*ned);
+        active_facets = BitArray(ned);
+        active_facets.Clear();
+        for (auto el : ma->Elements(VOL))
+          for (auto fa : el.Edges())
+            active_facets.SetBit(fa);
+
+        ctofdof.SetSize(GetNDof());
+        ctofdof = WIREBASKET_DOF;
+        for (size_t i = 0; i < ned; i++)
+          if (!active_facets.Test(i))
+            ctofdof[2*i] = ctofdof[2*i+1] = UNUSED_DOF;
+      }
     }
     
     // virtual void DoArchive (Archive & archive) override;
@@ -689,7 +816,15 @@ namespace ngcomp
               return *fe;
             }
 
-          case ET_TRIG:
+          case ET_TRIG: 
+            {
+              Ngs_Element ngel = ma->GetElement<2,VOL> (ei.Nr());
+              if (!DefinedOn(ngel)) return * new (lh) HDivDummyFE<ET_TRIG>();
+              
+              auto * fe =  new (lh) HDivHighOrderFE<ET_TRIG> (1);
+              fe -> SetVertexNumbers (ngel.Vertices());
+              return *fe;
+            }
           default:
             ;
           }
@@ -704,6 +839,15 @@ namespace ngcomp
               if (!DefinedOn(ngel)) return * new (lh) HDivNormalDummyFE<ET_TRIG>();
     
               auto fe = new (lh) HDivHighOrderNormalTrig<TrigExtensionMonomial> (1);
+              fe -> SetVertexNumbers (ngel.Vertices());
+              return *fe;
+            }
+          case ET_SEGM:
+            {
+              Ngs_Element ngel = ma->GetElement<1,BND> (ei.Nr());
+              if (!DefinedOn(ngel)) return * new (lh) HDivNormalDummyFE<ET_SEGM>();
+    
+              auto fe = new (lh) HDivHighOrderNormalSegm<TrigExtensionMonomial> (1);
               fe -> SetVertexNumbers (ngel.Vertices());
               return *fe;
             }
@@ -727,6 +871,17 @@ namespace ngcomp
               dnums[2*i+1+faces.Size()] = 3*faces[i]+2;
             }
         }
+      else if (ma->GetDimension()==2)
+      {
+          auto edges = ma->GetElEdges (ei);
+          dnums.SetSize(2*edges.Size());
+          for (int i : Range(edges))
+            {
+              dnums[i] = 2*edges[i];
+              dnums[i+edges.Size()] = 2*edges[i]+1;
+            }
+
+      }
       // cout << "Ei = " << ei << "dnums = " << dnums << endl;
     }
 
@@ -741,29 +896,27 @@ namespace ngcomp
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
     {
       dnums.SetSize0();
-      /*
-        // for 2D ...
-      if (active_edges.Test(ednr))
-        {
-          dnums.SetSize(2);
-          dnums[0] = 2*ednr;
-          dnums[1] = 2*ednr+1;
-        }
-      else
-        dnums.SetSize0();
-      */
+      // for 2D ...
+      if (ma->GetDimension()==2)
+        if (active_facets.Test(ednr))
+          {
+            dnums.SetSize(2);
+            dnums[0] = 2*ednr;
+            dnums[1] = 2*ednr+1;
+          }
     }
+    
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
     {
-      if (active_facets.Test(fanr))
-        {
-          dnums.SetSize(3);
-          dnums[0] = 3*fanr;
-          dnums[1] = 3*fanr+1;
-          dnums[2] = 3*fanr+2;
-        }
-      else
-        dnums.SetSize0();
+      dnums.SetSize0();
+      if (ma->GetDimension()==3)      
+        if (active_facets.Test(fanr))
+          {
+            dnums.SetSize(3);
+            dnums[0] = 3*fanr;
+            dnums[1] = 3*fanr+1;
+            dnums[2] = 3*fanr+2;
+          }
     }    
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     { dnums.SetSize0(); }    
