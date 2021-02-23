@@ -27,12 +27,12 @@ namespace ngla
 			 shared_ptr<BitArray> ainner,
 			 shared_ptr<const Array<int>> acluster);
 
-    virtual bool IsComplex() const { return matrix.lock()->IsComplex(); }
+    virtual bool IsComplex() const override { return matrix.lock()->IsComplex(); }
 
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
-    int VHeight() const { return matrix.lock()->VWidth();}
-    int VWidth() const { return matrix.lock()->VHeight();}
+    int VHeight() const override { return matrix.lock()->VWidth();}
+    int VWidth() const override { return matrix.lock()->VHeight();}
 
     bool SmoothIsProjection () const { return smooth_is_projection; }
     

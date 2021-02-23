@@ -31,7 +31,7 @@ namespace ngmg
     ///
     virtual void RestrictInline (int finelevel, BaseVector & v) const = 0;
 
-    virtual BitArray * GetInnerDofs () const { return 0; }
+    virtual shared_ptr<BitArray> GetInnerDofs (int finelevel) const { return nullptr; }
   };
 
 
@@ -102,15 +102,15 @@ namespace ngmg
     virtual ~ElementProlongation();
   
     ///
-    virtual void Update (const FESpace & fes)
+    virtual void Update (const FESpace & fes) override
     { ; }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
     ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
     {
       // FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();    
 
@@ -130,7 +130,7 @@ namespace ngmg
     }
 
     ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
     {
       //    FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();    
 
@@ -165,15 +165,15 @@ namespace ngmg
     virtual ~SurfaceElementProlongation();
   
     ///
-    virtual void Update (const FESpace & fes);
+    virtual void Update (const FESpace & fes) override;
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
     ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const;
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const;
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
 
 
@@ -194,18 +194,18 @@ namespace ngmg
     virtual ~EdgeProlongation() { ; }
   
     ///
-    virtual void Update (const FESpace & fes) { ; }
+    virtual void Update (const FESpace & fes) override { ; }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
     ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const;
-    virtual void RestrictInline (int finelevel, BaseVector & v) const;
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override;
 
     ///
-    void ApplyGradient (int level, const BaseVector & pot, BaseVector & grad) const
+    void ApplyGradient (int level, const BaseVector & pot, BaseVector & grad) const 
     {
       cout << "apply grad" << endl;
     }
@@ -227,18 +227,18 @@ namespace ngmg
     virtual ~L2HoProlongation()
     { ; }
     ///
-    virtual void Update (const FESpace & fes)
+    virtual void Update (const FESpace & fes) override
 	{ ; }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
     ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const;
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
 
     ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
     {
 		cout << "RestrictInline not implemented for L2HoProlongation" << endl;
     }
@@ -265,7 +265,8 @@ namespace ngmg
     // { ; }
   
     ///
-    virtual void Update (const FESpace & fes);
+    virtual void Update (const FESpace & fes) override;
+    virtual shared_ptr<BitArray> GetInnerDofs (int finelevel) const override;
 
     void AddProlongation (shared_ptr<Prolongation> prol)
     {
@@ -273,15 +274,15 @@ namespace ngmg
     }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
 
     ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const;
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
 
     ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const;
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
 }
 

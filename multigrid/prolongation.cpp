@@ -802,6 +802,35 @@ namespace ngmg
 	prols[i] -> Update(*cfes[i]);
   }
 
+  shared_ptr<BitArray> CompoundProlongation :: GetInnerDofs (int finelevel) const
+  {
+    Array<shared_ptr<BitArray>> comp_inner;
+    bool has_inner = false;
+    for (auto prol : prols)
+      {
+        if (prol)
+          comp_inner.Append (prol->GetInnerDofs(finelevel));
+        else
+          comp_inner.Append (nullptr);
+        if (comp_inner.Last()) has_inner = true;
+      }
+    if (!has_inner) return nullptr;
+    
+    BitArray inner(space->GetNDofLevel(finelevel));
+    inner.Clear();
+    for (int i : Range(prols))
+      {
+        IntRange r = space->GetRange(i);
+        if (comp_inner[i])
+          for (int j : Range(r))
+            if (comp_inner[i]->Test(j))
+              inner.SetBit(r.First()+j);
+      }
+    return make_shared<BitArray>(inner);
+  }
+
+  
+
   void CompoundProlongation :: 
   ProlongateInline (int finelevel, BaseVector & v) const
   {

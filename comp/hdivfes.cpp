@@ -475,6 +475,7 @@ namespace ngcomp
               innerprol[classnr].Col(3*i+1) = prolmat.Col(4+2*i);
               innerprol[classnr].Col(3*i+2) = prolmat.Col(4+2*i+1);
             }
+          // innerprol[classnr] = 0.0;
           // cout << "innerpol[" << classnr << "] = " << endl << FlatMatrix(innerprol[classnr]) << endl;
         }
     }
@@ -485,6 +486,30 @@ namespace ngcomp
     virtual void Update (const FESpace & fes) { ; }
     virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
     { return nullptr; }
+
+    virtual shared_ptr<BitArray> GetInnerDofs (int finelevel) const
+    {
+      size_t nc = space.GetNDofLevel (finelevel-1) / 3;
+      size_t nf = space.GetNDofLevel (finelevel) / 3;
+
+      BitArray inner(3*nf);
+      inner.Clear();
+      auto freedofs = space.GetFreeDofs(true);
+      
+      for (size_t i = nc; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentFaces(i);
+          if (nrs[1] != -1)
+            for (int j = 0; j < 3; j++)
+              if (freedofs->Test(3*i+j))
+                inner.SetBit(3*i+j);
+        }
+      
+      cout << IM(5) << "prolongation level " << finelevel
+           << " #innerdofs: " << endl << inner.NumSet() << "/" << inner.Size() << endl;
+        
+      return make_shared<BitArray> (inner);
+    }
 
     virtual void ProlongateInline (int finelevel, BaseVector & v) const
     {
@@ -512,8 +537,6 @@ namespace ngcomp
             }
           else
             {
-              // fv.Range(3*i, 3*i+3) = 0.0;
-
               Vec<12> fvecc;
               fvecc.Range(0,3) = fv.Range(3*pa1, 3*pa1+3);
               fvecc.Range(3,6) = fv.Range(3*pa2, 3*pa2+3);

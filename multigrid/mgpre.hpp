@@ -55,7 +55,8 @@ namespace ngmg
     /// creates a new smoother for each update
     bool update_always; 
     /// for robust prolongation
-    // Array<BaseMatrix*> prol_projection;
+    bool harmonic_extension_prolongation = false;
+    Array<shared_ptr<BaseMatrix>> he_prolongation;
   public:
     ///
     MultigridPreconditioner (const MeshAccess & ama,
@@ -84,6 +85,10 @@ namespace ngmg
     void SetUpdateAll (int ua = 1);
     ///
     void SetUpdateAlways (bool ua = 1) { update_always = ua; }
+    ///
+    void SetHarmonicExtensionProlongation (bool he = true)
+    { harmonic_extension_prolongation = he; }
+    
     ///
     virtual void Update () override;
 
