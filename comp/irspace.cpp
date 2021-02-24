@@ -64,7 +64,7 @@ namespace ngcomp
 
   void IntegrationRuleSpace::Update()
   {
-    cout << "update irspace" << endl;
+    //cout << "update irspace" << endl;
     firsteldof.SetSize(ma->GetNE()+1);
     size_t ndof = 0;
     for (auto i : Range(ma->GetNE()))
@@ -74,7 +74,7 @@ namespace ngcomp
         ndof += ir.Size();
       }
     firsteldof.Last() = ndof;
-    cout << "firstel = " << firsteldof << endl;
+    //cout << "firstel = " << firsteldof << endl;
     SetNDof(ndof);
   }
   
@@ -102,6 +102,11 @@ namespace ngcomp
   {
     std::map<ELEMENT_TYPE, IntegrationRule> irs;
     irs[ET_TRIG] = IntegrationRule(ET_TRIG, 2*order);
+    irs[ET_QUAD] = IntegrationRule(ET_QUAD, 2*order);
+    irs[ET_HEX] = IntegrationRule(ET_HEX, 2*order);
+    irs[ET_TET] = IntegrationRule(ET_TET, 2*order);
+    irs[ET_PRISM] = IntegrationRule(ET_PRISM, 2*order);
+    irs[ET_PYRAMID] = IntegrationRule(ET_PYRAMID, 2*order);
     return irs;
   }
 
