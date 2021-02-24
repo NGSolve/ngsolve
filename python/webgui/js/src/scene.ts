@@ -709,8 +709,8 @@ export class Scene {
     this.version_object.appendChild(version_text)
 
     this.scene = new THREE.Scene();
-    if(window.matchMedia('(prefers-color-scheme: dark)').matches)
-      this.scene.background = new THREE.Color(0x292c2e);
+    // if(window.matchMedia('(prefers-color-scheme: dark)').matches)
+    //   this.scene.background = new THREE.Color(0x292c2e);
     this.axes_object = new THREE.AxesHelper(0.15);
     this.axes_object.matrixAutoUpdate = false;
 
