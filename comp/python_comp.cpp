@@ -1741,6 +1741,8 @@ parallel : bool
     .def("Load", [](GF& self, string filename, bool parallel)
          {
            ifstream in(filename, ios::binary);
+           if(in.fail())
+             throw Exception("File " + filename + " does not exist!");
            if (parallel)
              self.Load(in);
            else
