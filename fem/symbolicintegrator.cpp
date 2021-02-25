@@ -565,7 +565,7 @@ namespace ngfem
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
 
     assert (ud);
-    assert (ud->fel);
+    // assert (ud->fel);
 
     size_t np = mir.Size();
     size_t dim = Dimension();
@@ -596,7 +596,7 @@ namespace ngfem
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
 
     assert (ud);
-    assert (ud->fel);
+    // assert (ud->fel);
 
     size_t np = mir.Size();
     size_t dim = Dimension();
