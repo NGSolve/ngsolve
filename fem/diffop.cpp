@@ -970,6 +970,57 @@ namespace ngfem
 
 
 
+
+
+
+  MatrixDifferentialOperator :: ~MatrixDifferentialOperator ()  { ; }
+
+
+  void MatrixDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const 
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+
+    size_t ndi = fel.GetNDof();
+    size_t dimi = 1;  // diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
+    for (int i = 1; i < sqr(vdim); i++)
+      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
+  }
+
+
+
+  SymMatrixDifferentialOperator :: ~SymMatrixDifferentialOperator ()  { ; }
+  
+
+  void SymMatrixDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const 
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+
+    size_t ndi = fel.GetNDof();
+    size_t dimi = 1;  // diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        if (ii != 0)
+          {
+            mat.Row(i*vdim+j).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
+            mat.Row(j*vdim+i).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
+          }
+  }
+  
+
   
 
 

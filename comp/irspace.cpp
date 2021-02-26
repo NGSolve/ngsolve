@@ -55,7 +55,7 @@ namespace ngcomp
   IntegrationRuleSpace::IntegrationRuleSpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
       : FESpace (ama, flags)
     {
-      type = "number";
+      type = "irspace";
       evaluator[VOL] = make_shared<T_DifferentialOperator<IRDiffOp>>();
       
       if (dimension > 1)

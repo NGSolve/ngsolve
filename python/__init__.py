@@ -35,7 +35,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NormalFacetFESpace, NormalFacetSurface, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
     NodalFESpace, VectorNodalFESpace, \
-    NumberSpace, Periodic, Discontinuous, Hidden, Compress, \
+    NumberSpace, Periodic, Discontinuous, Hidden, MatrixValued, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \

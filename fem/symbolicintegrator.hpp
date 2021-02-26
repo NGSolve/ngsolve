@@ -385,7 +385,8 @@ public:
                            adiffop->VB(), adiffop->DiffOrder()),
       diffop(adiffop), comp(acomp)
   {
-    dimensions = adiffop->Dimensions();
+    // dimensions = adiffop->Dimensions();
+    SetDimensions ( adiffop->Dimensions() );
   }
   
   virtual ~CompoundDifferentialOperator () = default;

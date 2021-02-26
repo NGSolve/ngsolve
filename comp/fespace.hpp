@@ -1261,6 +1261,15 @@ ANY                  1 1 1 1 | 15
     virtual string GetClassName () const override;
   };
 
+  class NGS_DLL_HEADER MatrixFESpace : public CompoundFESpace
+  {
+    bool symmetric;
+  public:
+    MatrixFESpace (shared_ptr<FESpace> space, int vdim, const Flags & flags,
+                   bool checkflags = false);
+    virtual string GetClassName () const override;
+  };
+
 
   
   template <typename BASESPACE>
