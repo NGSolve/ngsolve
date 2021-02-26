@@ -3556,6 +3556,50 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  MatrixFESpace ::
+  MatrixFESpace (shared_ptr<FESpace> space, int vdim, const Flags & flags,
+                 bool checkflags)
+    : CompoundFESpace (space->GetMeshAccess(), flags)
+  {
+    symmetric = flags.GetDefineFlag("symmetric");
+
+    int dim = symmetric ? vdim*(vdim+1)/2 : sqr(vdim);
+    for (int i = 0; i < dim; i++)
+      AddSpace (space);
+    
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      {
+        if (auto eval = spaces[0] -> GetEvaluator(vb))
+          {
+            if (symmetric)
+              evaluator[vb] = make_shared<SymMatrixDifferentialOperator> (eval, vdim);
+            else
+              evaluator[vb] = make_shared<MatrixDifferentialOperator> (eval, vdim);
+          }
+        // if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
+        // flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, dim);
+      }
+
+    /*
+    auto additional = spaces[0]->GetAdditionalEvaluators();
+    for (int i = 0; i < additional.Size(); i++)
+      additional_evaluators.Set (additional.GetName(i),
+                                 make_shared<VectorDifferentialOperator>(additional[i], dim));
+    */
+    if (symmetric)
+      type = "SymMatrix"+(*this)[0]->type;
+    else
+      type = "Matrix"+(*this)[0]->type;
+  }
+  
+  string MatrixFESpace :: GetClassName () const
+  {
+    return ( symmetric ? "SymMatrix" : "Matrix" ) + (*this)[0]->GetClassName();
+  }
+
+
+
+
   
 
 

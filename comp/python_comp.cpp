@@ -1165,6 +1165,31 @@ component : int
     (m,"ProductSpaceAllSame")
     ;
 
+  py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
+    (m,"MatrixValued")
+    .def(py::init([] (shared_ptr<FESpace> space, int dim, bool symmetric) {
+          Flags flags;
+          if (symmetric) flags.SetFlag("symmetric");
+          auto matspace = make_shared<MatrixFESpace> (space, dim, flags);
+          matspace->Update();
+          matspace->FinalizeUpdate();
+          return matspace;
+          /*
+          flags.SetFlag ("dim", dim);
+          bool is_complex = spaces[0]->IsComplex();
+          for (auto space : spaces)
+            if (space->IsComplex() != is_complex)
+              throw Exception("Product space of spaces with complex and real spaces is not allowed");
+          if (is_complex)
+            flags.SetFlag ("complex");
+
+          auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+          fes->Update();
+          fes->FinalizeUpdate();
+          return fes;
+          */
+        }),py::arg("space"), py::arg("dim"), py::arg("symmetric"))
+    ;
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
