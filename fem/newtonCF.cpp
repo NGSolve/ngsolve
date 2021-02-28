@@ -128,15 +128,37 @@ namespace ngfem
           // cout << "gradients = " << dWdB << endl;
           
           // newton step
-          for (int i = 0; i < mir.Size(); i++)
+
+          if (auto vsemb = proxy->Evaluator()->GetVSEmbedding(); vsemb)
             {
-              Matrix mat = proxyvalues(i, STAR,STAR);
-              Vector rhs = dWdB.Row(i);
-              Vector sol(rhs.Size());
-              CalcInverse (mat);
-              w.Row(i) = mat * rhs;
-              // cout << "sol = " << sol << endl;
+              for (int i = 0; i < mir.Size(); i++)
+                {
+                  Matrix mat = proxyvalues(i, STAR,STAR);
+                  Vector rhs = dWdB.Row(i);
+
+                  Vector proj_rhs = Trans(*vsemb) * rhs;
+                  Matrix proj_mat = Trans(*vsemb) * mat * *vsemb;
+                  Vector proj_sol(proj_rhs.Size());
+
+                  // cout << "mat = " << mat << ", projmat = " << proj_mat << endl;
+                  CalcInverse (proj_mat);
+                  proj_sol = proj_mat * proj_rhs;
+                  w.Row(i) = *vsemb * proj_sol;
+                  // cout << "sol = " << proj_sol << endl;
+                }
             }
+          
+          else
+            
+            for (int i = 0; i < mir.Size(); i++)
+              {
+                Matrix mat = proxyvalues(i, STAR,STAR);
+                Vector rhs = dWdB.Row(i);
+                Vector sol(rhs.Size());
+                CalcInverse (mat);
+                w.Row(i) = mat * rhs;
+                // cout << "sol = " << sol << endl;
+              }
 
           xold = xk;
           double alpha = 1;
