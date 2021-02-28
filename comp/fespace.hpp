@@ -1264,10 +1264,12 @@ ANY                  1 1 1 1 | 15
   class NGS_DLL_HEADER MatrixFESpace : public CompoundFESpace
   {
     bool symmetric;
+    int vdim;
   public:
-    MatrixFESpace (shared_ptr<FESpace> space, int vdim, const Flags & flags,
+    MatrixFESpace (shared_ptr<FESpace> space, int avdim, const Flags & flags,
                    bool checkflags = false);
     virtual string GetClassName () const override;
+    FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;    
   };
 
 

@@ -1050,7 +1050,7 @@ namespace ngfem
               SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();    
 
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();
@@ -1072,8 +1072,7 @@ namespace ngfem
                 SliceMatrix<double,ColMajor> mat, 
                 LocalHeap & lh) const 
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
-
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();
 

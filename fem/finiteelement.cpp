@@ -106,6 +106,39 @@ namespace ngfem
       for (int j = 0; j < temp.Height(); j++, ii++)
         coefs(ii,0) = temp(j,i);
   }
-  
+
+
+
+  SymMatrixFiniteElement :: SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim)
+    : vdim(avdim), dim(avdim*(avdim+1)/2), scalfe(ascalfe)
+  {
+    ndof = dim*scalfe.GetNDof();
+    order = scalfe.Order();
+  } 
+
+
+  void SymMatrixFiniteElement :: Print (ostream & ost) const
+  {
+    ost << "SymMatrixFiniteElement" << endl;
+    scalfe.Print (ost);
+  }
+
+
+  void SymMatrixFiniteElement :: Interpolate (const ElementTransformation & trafo, 
+                                              const CoefficientFunction & func, BareSliceMatrix<> coefs,
+                                              LocalHeap & lh) const
+  {
+    size_t scalndof = scalfe.GetNDof();
+    size_t dim = vdim*vdim;
+    STACK_ARRAY(double, mem, ndof*dim); 
+    FlatMatrix temp(scalndof, dim, &mem[0]);
+    scalfe.Interpolate (trafo, func, temp, lh);
+    
+    // now we need to transpose, not sure if we stay with that
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        for (int k = 0; k < scalndof; k++)
+          coefs(ii*scalndof+k, 0) = 0.5 * (temp(k,i*vdim+j)+temp(k,j*vdim+i));
+  }
 }
 

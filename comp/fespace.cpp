@@ -3557,12 +3557,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   MatrixFESpace ::
-  MatrixFESpace (shared_ptr<FESpace> space, int vdim, const Flags & flags,
+  MatrixFESpace (shared_ptr<FESpace> space, int avdim, const Flags & flags,
                  bool checkflags)
-    : CompoundFESpace (space->GetMeshAccess(), flags)
+    : CompoundFESpace (space->GetMeshAccess(), flags), vdim(avdim)
   {
     symmetric = flags.GetDefineFlag("symmetric");
-
+    
     int dim = symmetric ? vdim*(vdim+1)/2 : sqr(vdim);
     for (int i = 0; i < dim; i++)
       AddSpace (space);
@@ -3598,6 +3598,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  FiniteElement & MatrixFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    if (!symmetric)
+      return CompoundFESpace :: GetFE(ei, alloc);
+    else
+      {
+        const FiniteElement & fe0 = spaces[0]->GetFE(ei, alloc);
+        return *new (alloc) SymMatrixFiniteElement(fe0, vdim);
+      }
+  }
 
 
   
