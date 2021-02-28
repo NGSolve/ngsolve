@@ -1311,16 +1311,6 @@ namespace ngcomp
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
     if (diffop[ei.VB()])
       diffop[ei.VB()] -> Apply(fel, ip, elu, result, lh2);
-    /*
-    if (diffop && ei.VB()==VOL)
-      diffop->Apply (fel, ip, elu, result, lh2);
-    else if (trace_diffop && ei.VB()==BND)
-      trace_diffop->Apply (fel, ip, elu, result, lh2);
-    else if (bfi)
-      bfi->CalcFlux (fel, ip, elu, result, true, lh2);
-    else if (fes->GetEvaluator(ei.VB()))
-      fes->GetEvaluator(ei.VB()) -> Apply (fel, ip, elu, result, lh2);
-    */
     else
       result = 0.0;
   }
@@ -1379,16 +1369,6 @@ namespace ngcomp
       diffop[vb]->Apply (fel, ip, elu, result, lh2);
     else
       result = 0.0;
-    /*
-    if (diffop && vb==VOL)
-      diffop->Apply (fel, ip, elu, result, lh2);
-    else if (trace_diffop && vb==BND)
-      trace_diffop->Apply (fel, ip, elu, result, lh2);
-    else if (bfi)
-      bfi->CalcFlux (fel, ip, elu, result, true, lh2);
-    else
-      fes->GetIntegrator(vb) -> CalcFlux (fel, ip, elu, result, false, lh2);
-    */
   }
 
 
@@ -1437,18 +1417,6 @@ namespace ngcomp
 
     if (diffop[vb])
       diffop[vb]->Apply (fel, ir, elu, values, lh2);
-    /*
-    if (diffop && vb==VOL)
-      diffop->Apply (fel, ir, elu, values, lh2);
-    else if (trace_diffop && vb==BND)
-      trace_diffop->Apply (fel, ir, elu, values, lh2);
-    else if (bfi)
-      bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb))
-      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb))
-      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
-    */
     else
       throw Exception ("don't know how I shall evaluate, vb = "+ToString(vb));
   }
