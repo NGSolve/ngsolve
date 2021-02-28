@@ -251,6 +251,7 @@ class ProxyUserData
   FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
 
   FlatArray<const CoefficientFunction*> remember_cf_first;
+  FlatArray<FlatMatrix<double>> remember_cf_second;  
   FlatArray<FlatMatrix<SIMD<double>>> remember_cf_asecond;
   FlatArray<bool> remember_cf_computed;
 public:
@@ -268,12 +269,13 @@ public:
   
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
-      remember_cf_first(0, nullptr), remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
+      remember_cf_first(0, nullptr), remember_cf_second(0,nullptr),remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
   { ; }
   ProxyUserData (size_t ntrial, size_t ncf, LocalHeap & lh)
     : remember_first(ntrial, lh), remember_second(ntrial, lh),
       remember_asecond(ntrial, lh),
-      remember_cf_first(ncf, lh), remember_cf_asecond(ncf, lh),
+      remember_cf_first(ncf, lh), remember_cf_second(ncf, lh),
+      remember_cf_asecond(ncf, lh),      
       remember_cf_computed(ncf, lh)
   { remember_first = nullptr; remember_cf_first = nullptr; }
 
@@ -317,6 +319,7 @@ public:
         if (remember_cf_first[i] == nullptr)
           {
             remember_cf_first[i] = cf;
+            new (&remember_cf_second[i]) FlatMatrix<double> (h, w, lh);            
             new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
             remember_cf_computed[i] = false;
             return;
@@ -358,6 +361,10 @@ public:
   {
     return remember_asecond[remember_first.PosSure(proxy)];
   }
+  FlatMatrix<double> GetMemory (const CoefficientFunction * cf) const
+  {
+    return remember_cf_second[remember_cf_first.PosSure(cf)];
+  }
   FlatMatrix<SIMD<double>> GetAMemory (const CoefficientFunction * cf) const
   {
     return remember_cf_asecond[remember_cf_first.PosSure(cf)];
@@ -387,6 +394,8 @@ public:
   {
     // dimensions = adiffop->Dimensions();
     SetDimensions ( adiffop->Dimensions() );
+    if (auto vsemb = diffop->GetVSEmbedding(); vsemb)
+      SetVectorSpaceEmbedding (*vsemb);
   }
   
   virtual ~CompoundDifferentialOperator () = default;
@@ -432,6 +441,18 @@ public:
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
+  }
+  
+  NGS_DLL_HEADER virtual void
+  CalcMatrixVS (const FiniteElement & bfel,
+                const BaseMappedIntegrationPoint & mip,
+                SliceMatrix<double,ColMajor> mat, 
+                LocalHeap & lh) const override
+  {
+    mat = 0;
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->CalcMatrixVS (fel[comp], mip, mat.Cols(r), lh);
   }
 
   NGS_DLL_HEADER virtual void
