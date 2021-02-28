@@ -1082,9 +1082,86 @@ namespace ngfem
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
   }
   
+  void SymMatrixDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              BareSliceMatrix<SIMD<double>> bmat) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel);
+    auto & feli = fel.ScalFE();
+
+    size_t ndi = feli.GetNDof();
+    // size_t dimi = diffop->Dim();
+
+    auto mat = bmat.AddSize(sqr(vdim)*bfel.GetNDof(), mir.Size());
+    mat = 0.0;
+
+    STACK_ARRAY(SIMD<double>, mem, ndi*mir.Size());
+    FlatMatrix<SIMD<double>> smat(ndi, mir.Size(), &mem[0]);
+    
+    diffop->CalcMatrix (feli, mir, smat);
+    FlatTensor<4,SIMD<double>> tens(vdim*(vdim+1)/2, ndi, sqr(vdim), mir.Size(), bmat.Data());
+    
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          tens(ii,STAR,vdim*i+j,STAR) = smat;
+          tens(ii,STAR,vdim*j+i,STAR) = smat;
+        }
+    //    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
+  }
 
   
+  void SymMatrixDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & mir,
+         BareSliceVector<double> x, 
+         BareSliceMatrix<SIMD<double>> flux) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
 
+    STACK_ARRAY(SIMD<double>, mem, vdim*(vdim+1)/2*mir.Size());
+    FlatMatrix<SIMD<double>> hflux(vdim*(vdim+1)/2, mir.Size(), &mem[0]);
+    
+    for (int k = 0; k < hflux.Height(); k++)
+      diffop->Apply(fel, mir, x.Range(k*ndi, (k+1)*ndi), hflux.Rows(k,k+1));
+
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          flux.Row(i*vdim+j).Range(0, mir.Size()) = hflux.Row(ii);
+          flux.Row(j*vdim+i).Range(0, mir.Size()) = hflux.Row(ii);
+        }
+    
+  }
+
+
+
+  void SymMatrixDifferentialOperator ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<SIMD<double>> flux,
+            BareSliceVector<double> y) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+
+    STACK_ARRAY(SIMD<double>, mem, vdim*(vdim+1)/2*mir.Size());
+    FlatMatrix<SIMD<double>> hflux(vdim*(vdim+1)/2, mir.Size(), &mem[0]);
+    
+    hflux = SIMD<double> (0.0);
+    
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          hflux.Row(ii) += flux.Row(i*vdim+j).Range(0, mir.Size());
+          hflux.Row(ii) += flux.Row(j*vdim+i).Range(0, mir.Size());
+        }
+
+    for (int k = 0; k < hflux.Height(); k++)
+      diffop->AddTrans(fel, mir, hflux.Rows(k,k+1), y.Range(k*ndi, (k+1)*ndi));
+  }
 
 
 

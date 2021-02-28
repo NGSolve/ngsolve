@@ -46,6 +46,48 @@ namespace ngcomp
       mat.Row(0).Range(0, fel.GetNDof()) = 0;
       mat(0, mip.IP().Nr()) = 1;
     }
+
+    template <typename FEL, typename MIR>
+    static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      int ndof = fel.GetNDof();
+      mat.AddSize(ndof, mir.Size()) = SIMD<double> (0.0);
+      SliceMatrix<double> hmat(ndof, ndof, SIMD<double>::Size()*mat.Dist(), (double*)mat.Data());
+      hmat.Diag() = 1;
+      // cout << "diffopir, genmat:" << endl << mat.AddSize(ndof, mir.Size()) << endl;
+    }
+    
+    using DiffOp<IRDiffOp> :: ApplySIMDIR;
+    template <typename FEL, class MIR, class TVX>
+    static void ApplySIMDIR (const FEL & fel, const MIR & mir,
+                             const TVX & x, BareSliceMatrix<SIMD<double>> y)
+    {
+      int i = 0;
+      constexpr int SW = SIMD<double>::Size();
+      int ndof = fel.GetNDof();
+      for ( ; (i+1)*SW <= ndof; i++)
+        y(0,i) = SIMD<double>(&x(SW*i), ndof-SW*i);
+      /*
+      cout << "ApplySIMDIR: " << endl
+           << "x = " << x.Range(fel.GetNDof()) << endl
+           << "y = " << y.AddSize(1,mir.Size()) << endl;
+      */
+    }
+
+    using DiffOp<IRDiffOp> :: AddTransSIMDIR;    
+    template <typename FEL, class MIR, class TVY>
+    static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
+                                BareSliceMatrix<SIMD<double>> x, TVY & y)
+    // LocalHeap & lh)
+    {
+      int i = 0;
+      constexpr int SW = SIMD<double>::Size();
+      int ndof = fel.GetNDof();
+      for ( ; (i+1)*SW <= ndof; i++)
+        x(0,i).Store(&y(SW*i), ndof-SW*i);
+    }
+    
+    
   };
 
 

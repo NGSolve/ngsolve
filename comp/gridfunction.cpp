@@ -229,6 +229,7 @@ namespace ngcomp
   void GridFunction :: Interpolate (const CoefficientFunction & cf,
                                     const Region * reg, int mdcomp, LocalHeap & clh)
   {
+    static Timer t("GridFunction::Interpolate"); RegionTimer r(t);
     shared_ptr<FESpace> fes = GetFESpace();
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
     int dim   = fes->GetDimension();
@@ -1381,6 +1382,18 @@ namespace ngcomp
         values = 0.0;
         return;
       }
+
+    ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
+    if (ud)
+      {
+        if (ud->HasMemory(this) && ud->Computed(this))
+          {
+            hvalues.AddSize(ir.Size(), Dimension()) = ud->GetMemory(this);
+            return;
+          }
+      }
+
+    
     
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
@@ -1419,6 +1432,16 @@ namespace ngcomp
       diffop[vb]->Apply (fel, ir, elu, values, lh2);
     else
       throw Exception ("don't know how I shall evaluate, vb = "+ToString(vb));
+
+
+    if (ud)
+      {
+        if (ud->HasMemory(this))
+          {
+            ud->GetMemory(this) = values;
+            ud->SetComputed(this);
+          }
+      }    
   }
 
   void GridFunctionCoefficientFunction :: 

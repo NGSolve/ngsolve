@@ -15,7 +15,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> startingpoint;
 
     ProxyFunction * proxy = nullptr;
-    
+    Array<CoefficientFunction*> cachecf;
   public:
     MinimizationCF (shared_ptr<CoefficientFunction> aexpression,
                     shared_ptr<CoefficientFunction> astartingpoint)
@@ -35,6 +35,8 @@ namespace ngfem
                     proxy = nodeproxy;
                   }
               }
+            else if (nodecf.StoreUserData() && !cachecf.Contains(&nodecf))
+              cachecf.Append (&nodecf);
           });
       if (!proxy) throw Exception("MinimizedCF: don't have a proxy");
     }
@@ -49,6 +51,12 @@ namespace ngfem
     void Evaluate (const BaseMappedIntegrationRule & mir,
                    BareSliceMatrix<double> values) const override
     {
+      // static Timer t("MinimizationCF::Eval", 2);
+      // static Timer t1("MinimizationCF::Eval get Jac", 2);            
+      // static Timer t2("MinimizationCF::Eval solve", 2);      
+      // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+      // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+        
       // cout << "eval minimizatin" << endl;
       LocalHeap lh(1000000);
       
@@ -57,7 +65,10 @@ namespace ngfem
 
       const ElementTransformation & trafo = mir.GetTransformation();
       
-      ProxyUserData ud(1, lh);
+      ProxyUserData ud(1, cachecf.Size(), lh);
+      for (CoefficientFunction * cf : cachecf)
+        ud.AssignMemory (cf, mir.Size(), cf->Dimension(), lh);
+      
       const_cast<ElementTransformation&>(trafo).userdata = &ud;
       // ud.fel = &fel;   // how do I get that ? looks like we don't need it anymore ???
       ud.AssignMemory (proxy, mir.Size(), proxy->Dimension(), lh);
@@ -80,6 +91,14 @@ namespace ngfem
       for (int step = 0; step < 5; step++)
         {
           double energy = 0;
+
+          auto proxy1 = proxy;
+          auto proxy2 = proxy;
+          FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+
+          
+          {
+            // RegionTracer regtr1(TaskManager::GetThreadId(), t1); 
           for (int k = 0; k < proxy->Dimension(); k++)
             {
               ud.trialfunction = proxy;
@@ -97,10 +116,6 @@ namespace ngfem
                   energy += ddval(i,0).Value();
             }
           
-          auto proxy1 = proxy;
-          auto proxy2 = proxy;
-          
-          FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
               {
@@ -123,12 +138,13 @@ namespace ngfem
                     proxyvalues(STAR,l,k) *= 0.5;
                   }
               }
-          
+          }
           // cout << "hessions = " << proxyvalues << endl;
           // cout << "gradients = " << dWdB << endl;
           
           // newton step
-
+          // RegionTracer regtr2(TaskManager::GetThreadId(), t2);    
+          // cout << "proxy diffop = " <<  typeid(* (proxy->Evaluator())).name() << endl;
           if (auto vsemb = proxy->Evaluator()->GetVSEmbedding(); vsemb)
             {
               for (int i = 0; i < mir.Size(); i++)
