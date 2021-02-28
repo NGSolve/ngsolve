@@ -77,6 +77,18 @@ namespace ngfem
     
   }
 
+
+  void DifferentialOperator ::
+  CalcMatrixVS (const FiniteElement & fel,
+              const BaseMappedIntegrationPoint & mip,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const 
+  {
+    CalcMatrix (fel, mip, mat, lh);
+  }
+
+
+  
   void DifferentialOperator ::
   CalcLinearizedMatrix (const FiniteElement & fel,
                         const BaseMappedIntegrationRule & mir,
@@ -104,9 +116,19 @@ namespace ngfem
       }
 #endif
     HeapReset hr(lh);
-    FlatMatrix<double,ColMajor> mat(Dim(), fel.GetNDof(), lh);
-    CalcMatrix (fel, mip, mat, lh);
-    flux = mat * x;
+    FlatMatrix<double,ColMajor> mat(VSDim(), fel.GetNDof(), lh);
+    if (auto vsemb = GetVSEmbedding(); vsemb)
+      {
+        CalcMatrixVS (fel, mip, mat, lh);
+        FlatVector<double> flux1(VSDim(), lh);
+        flux1 = mat * x;
+        flux = *vsemb * flux1;
+      }
+    else
+      {
+        CalcMatrix (fel, mip, mat, lh);        
+        flux = mat * x;
+      }
   }
   
   void DifferentialOperator ::
@@ -994,6 +1016,30 @@ namespace ngfem
   }
 
 
+  SymMatrixDifferentialOperator ::
+  SymMatrixDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
+                                 int avdim)
+  : DifferentialOperator(sqr(avdim)*adiffop->Dim(), adiffop->BlockDim(),
+                         adiffop->VB(), adiffop->DiffOrder()),
+      diffop(adiffop), vdim(avdim)
+  {
+    if (adiffop->Dimensions().Size() == 0)
+      {
+        SetDimensions ( { avdim, avdim } );
+        Matrix<> vsembedding(sqr(vdim), vdim*(vdim+1)/2);
+        vsembedding = 0.0;
+        for (int i = 0, ii = 0; i < vdim; i++)
+          for (int j = 0; j <= i; j++, ii++)
+            {
+              vsembedding(i*vdim+j, ii) = 1;
+              vsembedding(j*vdim+i, ii) = 1;
+            }
+        SetVectorSpaceEmbedding(vsembedding);
+      }
+    else
+      throw Exception("no matrix-valued of vector-valued possible");
+  }
+
 
   SymMatrixDifferentialOperator :: ~SymMatrixDifferentialOperator ()  { ; }
   
@@ -1018,6 +1064,23 @@ namespace ngfem
             mat.Row(i*vdim+j).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
             mat.Row(j*vdim+i).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
           }
+  }
+  
+  void SymMatrixDifferentialOperator ::
+  CalcMatrixVS (const FiniteElement & bfel,
+                const BaseMappedIntegrationPoint & mip,
+                SliceMatrix<double,ColMajor> mat, 
+                LocalHeap & lh) const 
+  {
+    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+
+    size_t ndi = fel.GetNDof();
+    size_t dimi = 1;  // diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
+    for (int i = 1; i < VSDim(); i++)
+      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
   }
   
 
