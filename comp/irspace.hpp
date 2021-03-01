@@ -18,6 +18,8 @@ namespace ngcomp
     IntegrationRuleSpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
     void Update() override;
 
+    virtual void UpdateCouplingDofArray() override;    
+
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
