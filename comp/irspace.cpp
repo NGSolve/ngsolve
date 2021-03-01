@@ -65,7 +65,7 @@ namespace ngcomp
       int i = 0;
       constexpr int SW = SIMD<double>::Size();
       int ndof = fel.GetNDof();
-      for ( ; (i+1)*SW <= ndof; i++)
+      for ( ; i*SW < ndof; i++)
         y(0,i) = SIMD<double>(&x(SW*i), ndof-SW*i);
       /*
       cout << "ApplySIMDIR: " << endl
@@ -83,7 +83,7 @@ namespace ngcomp
       int i = 0;
       constexpr int SW = SIMD<double>::Size();
       int ndof = fel.GetNDof();
-      for ( ; (i+1)*SW <= ndof; i++)
+      for ( ; i*SW < ndof; i++)
         x(0,i).Store(&y(SW*i), ndof-SW*i);
     }
     
@@ -118,6 +118,15 @@ namespace ngcomp
     firsteldof.Last() = ndof;
     //cout << "firstel = " << firsteldof << endl;
     SetNDof(ndof);
+
+    UpdateCouplingDofArray();
+  }
+
+  void IntegrationRuleSpace::UpdateCouplingDofArray()
+  {
+    // all dofs are local dofs
+    ctofdof.SetSize(ndof);
+    ctofdof = LOCAL_DOF;
   }
   
   
