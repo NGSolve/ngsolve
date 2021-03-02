@@ -510,7 +510,7 @@ namespace ngfem
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
-
+      HeapReset hr(lh);
       Vec<D-1,TSCAL> hx;
       hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(),lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
@@ -522,7 +522,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
-
+      HeapReset hr(lh);
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
       y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
