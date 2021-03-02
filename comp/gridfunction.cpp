@@ -1395,7 +1395,7 @@ namespace ngcomp
 
     
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3a");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     const ElementTransformation & trafo = ir.GetTransformation();
@@ -1455,7 +1455,7 @@ namespace ngcomp
       }
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3b");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
 
@@ -1529,7 +1529,7 @@ namespace ngcomp
     
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3c");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     auto values = bvalues.AddSize(Dimension(), ir.Size());
@@ -1597,7 +1597,7 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<Complex>> bvalues) const
   {
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3d");
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
 

@@ -86,7 +86,10 @@ namespace ngfem
 			 LocalHeap & lh)
     {
       for (size_t i = 0; i < mir.Size(); i++)
-        DOP::Apply (fel, mir[i], x, y.Row(i), lh);
+        {
+          HeapReset hr(lh);
+          DOP::Apply (fel, mir[i], x, y.Row(i), lh);
+        }
     }
 
     /// Computes B-matrix times element vector in many points
@@ -139,7 +142,10 @@ namespace ngfem
     {
       y.Range(0,DOP::DIM*fel.GetNDof()) = 0.0;
       for (size_t i = 0; i < mir.Size(); i++)
-        ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
+        {
+          HeapReset hr(lh);        
+          ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
+        }
     }
 
     /// Computes Transpose (B-matrix) times point value    
