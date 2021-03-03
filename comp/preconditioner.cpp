@@ -526,9 +526,17 @@ namespace ngcomp
 
   }
 
-
-
-
+  void MGPreconditioner :: SetDirectSolverCluster(shared_ptr<Array<int>> cluster)
+  {
+    if(tlp)
+      {
+        if(auto blocksmoother = dynamic_cast<BlockSmoother*>(&tlp->GetSmoother()))
+          blocksmoother->SetDirectSolverCluster(cluster);
+      }
+    else
+      if(auto blocksmoother = dynamic_cast<BlockSmoother*>(&mgp->GetSmoother()))
+        blocksmoother->SetDirectSolverCluster(cluster);
+  }
 
   
   // ****************************** DirectPreconditioner **************************
