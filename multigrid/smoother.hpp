@@ -180,6 +180,7 @@ namespace ngmg
     Array<shared_ptr<BaseMatrix>> inv;
     ///
     shared_ptr<Array<int>> direct;
+    shared_ptr<Array<int>> userdefined_direct;
 
     Array<shared_ptr<Table<int>>> smoothing_blocks;
 
@@ -217,6 +218,9 @@ namespace ngmg
     virtual AutoVector CreateVector(int level) const;
 
     virtual Array<MemoryUsage> GetMemoryUsage () const;
+
+    void SetDirectSolverCluster(shared_ptr<Array<int>> cluster)
+    {  userdefined_direct = cluster; }
   };
 
 

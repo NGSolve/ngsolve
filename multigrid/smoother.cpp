@@ -789,8 +789,11 @@ namespace ngmg
     //     }
     //   else
     //     {
-  
-    direct = biform.GetFESpace()->CreateDirectSolverClusters(flags);
+
+    if(userdefined_direct)
+      direct = userdefined_direct;
+    else
+      direct = biform.GetFESpace()->CreateDirectSolverClusters(flags);
 
     if (direct)
       {
