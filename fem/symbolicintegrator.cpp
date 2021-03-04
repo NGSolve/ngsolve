@@ -131,12 +131,17 @@ namespace ngfem
 
   shared_ptr<ProxyFunction> ProxyFunction :: GetAdditionalProxy (string name) const
   {
+    if (additional_proxies.Used(name))
+      if (auto sp = additional_proxies[name].lock())
+        return sp;
+    
     if (additional_diffops.Used(name))
       {
         auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
         if (is_other)
           adddiffop->is_other = true;
         adddiffop -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
+        additional_proxies.Set(name, adddiffop);
         return adddiffop;
       }
     return shared_ptr<ProxyFunction>();
