@@ -34,6 +34,7 @@ protected:
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
 
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
+  mutable SymbolTable<weak_ptr<ProxyFunction>> additional_proxies;  
   // int dim;
 public:
   NGS_DLL_HEADER ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
