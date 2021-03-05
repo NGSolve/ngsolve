@@ -1158,7 +1158,18 @@ component : int
                            },
                   "Return a list of the components of a product space")
 
-    
+    // not working because shared_ptr<Array<int>> cannot be pybind return type?
+    // TODO CL: Find out why...
+    // .def("CreateDirectSolverCluster", &FESpace::CreateDirectSolverClusters)
+    .def("CreateDirectSolverCluster", [](FESpace& self, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      auto cluster = self.CreateDirectSolverClusters(flags);
+      py::list pycluster(cluster->Size());
+      for(auto i : Range(*cluster))
+        pycluster[i] = (*cluster)[i];
+      return pycluster;
+    })
     ;
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
@@ -2742,6 +2753,15 @@ integrator : ngsolve.fem.LFI
                   mg_flags["updatealways"] = "bool = False\n";
                   return mg_flags;
                 })
+
+    // not working because shared_ptr<Array<int>> cannot be pybind arg type?
+    // TODO CL: Find out why...
+    // .def("SetDirectSolverCluster", &MGPreconditioner::SetDirectSolverCluster)
+    .def("SetDirectSolverCluster", [](MGPreconditioner& self, py::list pycluster)
+    {
+      auto cluster = make_shared<Array<int>>(makeCArray<int>(pycluster));
+      self.SetDirectSolverCluster(cluster);
+    })
     ;
 
 
