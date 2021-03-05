@@ -300,6 +300,8 @@ namespace ngcomp
     virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     void MgTest () const;
+
+    void SetDirectSolverCluster(shared_ptr<Array<int>> cluster);
   };
 
   class CommutingAMGPreconditioner : public Preconditioner
