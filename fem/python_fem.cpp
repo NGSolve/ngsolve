@@ -625,9 +625,9 @@ direction : int
       return NormalVectorCF(dim);
     }
 
-    shared_ptr<CF> GetTangentialVectorCF (int dim)
+    shared_ptr<CF> GetTangentialVectorCF (int dim, bool consistent)
     {
-      return TangentialVectorCF(dim);
+      return TangentialVectorCF(dim, consistent);
     }
 
     shared_ptr<CF> GetJacobianMatrixCF (int dims, int dimr)
@@ -669,7 +669,7 @@ direction : int
     .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
          "depending on contents: normal-vector to geometry or element\n"
          "space-dimension must be provided")
-    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
+    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"), py::arg("consistent")=false,
          "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
     .def("JacobianMatrix", [] (SpecialCoefficientFunctions& self, int dim)

@@ -82,10 +82,13 @@ namespace ngfem
     virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
                                      BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override;
     
+    virtual void CalcFacetDShapeVolIP (int fnr, const IntegrationPoint & ip, 
+                                       BareSliceMatrix<> shape) const override;
 
   private:
     template<typename Tx, typename TFA>  
-    void T_CalcShapeFNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const;
+    //void T_CalcShapeFNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const;
+    void T_CalcShapeFNr (int fnr, TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const;
   };
 
 #ifdef FILE_FACETHOFE_CPP
