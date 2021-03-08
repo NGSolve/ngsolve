@@ -1732,7 +1732,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormalVectorCF (int dim);
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim);
+  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim, bool consistent);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> JacobianMatrixCF (int dims, int dimr);
   NGS_DLL_HEADER

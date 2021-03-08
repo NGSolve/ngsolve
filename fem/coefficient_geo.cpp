@@ -190,8 +190,10 @@ namespace ngfem
   template <int D>
   class cl_TangentialVectorCF : public CoefficientFunctionNoDerivative
   {
+    bool consistent;
   public:
-    cl_TangentialVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
+    cl_TangentialVectorCF (bool aconsistent)
+      : CoefficientFunctionNoDerivative(D,false), consistent(aconsistent) { ; }
     // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -202,8 +204,23 @@ namespace ngfem
     {
       if (ip.DimSpace() != D)
         throw Exception("illegal dim of tangential vector");
+      
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
+
+      if (consistent)
+        {
+          auto & trafo = ip.GetTransformation();
+          int fnr = ip.IP().FacetNr();
+          ELEMENT_TYPE et = trafo.GetElementType();
+          auto e = ElementTopology::GetEdges(et)[fnr];
+          int iavnums[] = { 0, 1, 2, 3 };
+          FlatArray<int> vnums(4, &iavnums[0]);
+          trafo.GetSort(vnums);
+          if (vnums[e[0]] > vnums[e[1]])
+            res *= -1;
+        }
     }
+    
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
         string miptype;
         if(code.is_simd)
@@ -220,6 +237,9 @@ namespace ngfem
       using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     {
+      if (consistent)
+        throw ExceptionNOSIMD("consistent tangent doest not support SIMD");
+      
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
@@ -236,16 +256,16 @@ namespace ngfem
   };
 
   
-  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim)
+  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim, bool consistent)
   {
     switch(dim)
       {
       case 1:
-        return make_shared<cl_TangentialVectorCF<1>>();
+        return make_shared<cl_TangentialVectorCF<1>>(consistent);
       case 2:
-        return make_shared<cl_TangentialVectorCF<2>>();
+        return make_shared<cl_TangentialVectorCF<2>>(consistent);
       default:
-        return make_shared<cl_TangentialVectorCF<3>>();
+        return make_shared<cl_TangentialVectorCF<3>>(consistent);
       }
   }
 

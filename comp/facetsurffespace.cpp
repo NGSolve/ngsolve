@@ -181,6 +181,53 @@ namespace ngcomp
 
 
 
+
+  template <int D>
+  class DiffOpGradFacetSurface : public DiffOp<DiffOpGradFacetSurface<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "grad"; }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      int facetnr = mip.IP().FacetNr();
+      if (facetnr >= 0)
+        {
+          HeapReset hr(lh);
+          
+          const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (bfel);
+          auto r = fel_facet.GetFacetDofs(facetnr);
+          
+          FlatMatrix<> dshaperef(r.Size(), DIM_ELEMENT, lh);
+          mat = 0.0;
+          /*
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), 
+                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+          */
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), dshaperef);
+          mat.Cols(r) = Trans(mip.GetJacobianInverse()) * Trans(dshaperef);
+        }
+      else
+        {
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
+    }
+  };
+
+
+
+
+
+  
+
   FacetSurfaceFESpace ::  FacetSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : FESpace(ama, flags)
   {
@@ -261,7 +308,8 @@ namespace ngcomp
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
       	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
       	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
-	
+
+      	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradFacetSurface<3>>>();
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
     else

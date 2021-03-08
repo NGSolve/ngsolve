@@ -1958,9 +1958,15 @@ VOL_or_BND : ngsolve.comp.VorB
     .def_property_readonly("derivname", 
                            [](shared_ptr<GF> self) -> string
                    {
+                     /*
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
                      return deriv->Name();
+                     */
+                     for (auto vb : { VOL, BND, BBND })
+                       if (auto deriv = self->GetFESpace()->GetFluxEvaluator(vb))
+                         return deriv->Name();
+                     return "";
                    }, "Name of canonical derivative of the space behind the GridFunction.")
 
     .def("__call__", 
