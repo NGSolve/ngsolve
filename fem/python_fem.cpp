@@ -2054,8 +2054,92 @@ complex : bool
   input complex
 
 )raw_string"))
-    ;
+    .def("CalcLinearizedElementMatrix",
+         [] (shared_ptr<BFI> self,
+             const FiniteElement & fe, FlatVector<double> vec, 
+             const ElementTransformation &trafo,
+             size_t heapsize)
+                         {
+                           while (true)
+                             {
+                               LocalHeap lh(heapsize);
+                               try
+                                 {
+                                  const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                                  const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
+                                  const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
+                                  
+                                  Matrix<> mat(fe_test.GetNDof() * self->GetDimension(),
+                                              fe_trial.GetNDof() * self->GetDimension());
+                                  self->CalcLinearizedElementMatrix (fe, trafo, vec, mat, lh);
+                                  return py::cast(mat);
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             }
+                         },
+         py::arg("fel"),py::arg("vec"),py::arg("trafo"),py::arg("heapsize")=10000, docu_string(R"raw_string( 
+Calculate (linearized) element matrix of a specific element.
 
+Parameters:
+
+fel : ngsolve.fem.FiniteElement
+  input finite element
+
+vec : Vector
+  linearization argument
+
+trafo : ngsolve.fem.ElementTransformation
+  input element transformation
+
+heapsize : int
+  input heapsize
+)raw_string"))
+    .def("ApplyElementMatrix",
+         [] (shared_ptr<BFI> self,
+             const FiniteElement & fe, FlatVector<double> vec, 
+             const ElementTransformation &trafo,
+             size_t heapsize)
+                         {
+                           while (true)
+                             {
+                               LocalHeap lh(heapsize);
+                               try
+                                 {
+                                  const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                                  const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
+                                  const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
+                                  Vector<> vecy(fe_test.GetNDof() * self->GetDimension());
+                                  self->ApplyElementMatrix (fe, trafo, vec, vecy, 0, lh);
+                                  return py::cast(vecy);
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             }
+                         },
+         py::arg("fel"),py::arg("vec"),py::arg("trafo"),py::arg("heapsize")=10000, docu_string(R"raw_string( 
+Apply element matrix of a specific element.
+
+Parameters:
+
+fel : ngsolve.fem.FiniteElement
+  input finite element
+
+vec : Vector
+  evaluation argument
+
+trafo : ngsolve.fem.ElementTransformation
+  input element transformation
+
+heapsize : int
+  input heapsize
+
+)raw_string"))
+    ;
 
   m.def("CompoundBFI", 
           []( shared_ptr<BFI> bfi, int comp )
