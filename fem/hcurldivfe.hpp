@@ -1274,7 +1274,7 @@ namespace ngfem
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
-      for (int i=0; i<DIM+1; i++)
+      for (int i=0; i<DIM; i++)
       {
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
