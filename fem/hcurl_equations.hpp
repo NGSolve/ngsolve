@@ -1083,6 +1083,8 @@ public:
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
 
+    static string Name() { return "grad"; }
+
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
     
     static constexpr double eps() { return 1e-4; }
@@ -1165,6 +1167,8 @@ public:
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
+
+    static string Name() { return "gradboundary"; }
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
     
