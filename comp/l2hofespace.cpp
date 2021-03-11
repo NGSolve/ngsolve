@@ -258,6 +258,7 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
           break;
         }
       case 2:
@@ -265,6 +266,7 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
           break;
         }
       case 3:
@@ -272,6 +274,7 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
           break;
         }
       }
@@ -285,8 +288,8 @@ namespace ngcomp
 	boundary_flux_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
         */
+        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
       }
-
 
 
 
@@ -1420,6 +1423,7 @@ global system.
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
           }
         else
           {
@@ -1429,6 +1433,7 @@ global system.
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>(); // to avoid exception "grad does not exist"
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
           }
       }
     else
