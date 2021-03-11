@@ -9,6 +9,9 @@
 namespace ngcomp
 { 
 
+  template <int D>
+  class DiffOpIdFacetSurface;
+
   /// Identity
   template <int D>
   class DiffOpIdFacet_ : public DiffOp<DiffOpIdFacet_<D> >
@@ -21,6 +24,8 @@ namespace ngcomp
     enum { DIFFORDER = 0 };
 
     static bool SupportsVB (VorB checkvb) { return true; }
+
+    typedef DiffOpIdFacetSurface<D> DIFFOP_TRACE;
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -317,8 +322,8 @@ namespace ngcomp
       throw Exception("FacetSurfaceFESpace only implemented for 2d and 3d");
     }
 
-    additional_evaluators.Set ("dual", evaluator[BND]);
-
+    additional_evaluators.Set ("dual", evaluator[VOL]);
+    //additional_evaluators.Set ("dual", evaluator[BND]);
   }
   
 

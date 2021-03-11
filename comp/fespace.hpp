@@ -1259,6 +1259,12 @@ ANY                  1 1 1 1 | 15
     CompoundFESpaceAllSame (shared_ptr<FESpace> space, int dim, const Flags & flags,
                             bool checkflags = false);
     virtual string GetClassName () const override;
+
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
+    {
+      return spaces[0]->GetDualShapeNodes(vb);
+    }
+
   };
 
   class NGS_DLL_HEADER MatrixFESpace : public CompoundFESpace
