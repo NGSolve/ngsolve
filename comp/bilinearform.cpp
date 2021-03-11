@@ -2020,6 +2020,7 @@ namespace ngcomp
                                      // if (bfi.VB()!=VOL) continue;
                                      // if (!bfi.SkeletonForm()) continue;
                                      // if (!bfi.GetDGFormulation().element_boundary) continue;
+				     if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
                                      if (!bfi->DefinedOnElement (el1)) continue;
                                      
                                      if (check_unused)
