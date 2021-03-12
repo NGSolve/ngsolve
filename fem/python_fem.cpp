@@ -1241,6 +1241,13 @@ value : complex
           "return parameter value")
     ;
 
+  py::class_<PlaceholderCoefficientFunction,
+             shared_ptr<PlaceholderCoefficientFunction>,
+             CoefficientFunction>
+    (m, "PlaceholderCF")
+    .def(py::init<shared_ptr<CF>>())
+    .def("Set", &PlaceholderCoefficientFunction::Set)
+    ;
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
 BSpline of arbitrary order

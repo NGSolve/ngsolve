@@ -418,6 +418,23 @@ namespace ngfem
   template class ParameterCoefficientFunction<double>;
   template class ParameterCoefficientFunction<Complex>;
 
+  void PlaceholderCoefficientFunction::DoArchive(Archive& ar)
+  {
+    ar.Shallow(cf);
+  }
+
+  void PlaceholderCoefficientFunction::Set(shared_ptr<CoefficientFunction> _cf)
+  {
+    if(Dimensions().Size() != _cf->Dimensions().Size())
+      throw Exception("Dimensions of function in PlaceholderCF must not change!");
+    for(auto i : Range(Dimensions()))
+      if(Dimensions()[i] != _cf->Dimensions()[i])
+        throw Exception("Dimensions of function in PlaceholderCF must not change!");
+    cf = _cf;
+    is_complex = cf->IsComplex();
+  }
+
+
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
     : BASE(1, false), val(aval) { ; }
@@ -7450,6 +7467,7 @@ static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction>
 static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;
 static RegisterClassForArchive<ParameterCoefficientFunction<double>, CoefficientFunction> regpard;
 static RegisterClassForArchive<ParameterCoefficientFunction<Complex>, CoefficientFunction> regparc;
+static RegisterClassForArchive<PlaceholderCoefficientFunction, CoefficientFunction> regplacholdercf;
 static RegisterClassForArchive<DomainConstantCoefficientFunction, CoefficientFunction> regdccf;
 static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
 static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;
