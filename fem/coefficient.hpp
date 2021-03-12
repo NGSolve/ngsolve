@@ -702,6 +702,92 @@ namespace ngfem
     void GenerateCode (Code &code, FlatArray<int> inputs, int index) const override;
   };
 
+  class NGS_DLL_HEADER PlaceholderCoefficientFunction : public CoefficientFunction
+  {
+    shared_ptr<CoefficientFunction> cf;
+  public:
+    PlaceholderCoefficientFunction() = default;
+    PlaceholderCoefficientFunction(shared_ptr<CoefficientFunction> _cf)
+      : CoefficientFunction(_cf->Dimension(), _cf->IsComplex()), cf(_cf)
+      { SetDimensions(cf->Dimensions()); }
+
+    void DoArchive(Archive& ar) override;
+
+    void Set(shared_ptr<CoefficientFunction> _cf);
+
+    double Evaluate(const BaseMappedIntegrationPoint& ip) const override
+    { return cf->Evaluate(ip); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<double> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<SIMD<double>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<SIMD<Complex>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<Complex> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  FlatArray<BareSliceMatrix<SIMD<double>>> input,
+                  BareSliceMatrix<SIMD<double>> values) const override
+    { cf->Evaluate (ir, values); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiff<1,double>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
+                  BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate (ir, values); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiffDiff<1,double>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
+                  BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate(ir, input, values); }
+
+    Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override
+    { return cf->EvaluateComplex(ip); }
+
+    double EvaluateConst () const override
+    { return cf->EvaluateConst(); }
+
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<> result) const override
+    { cf->Evaluate(ip, result); }
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<Complex> result) const override
+    { cf->Evaluate(ip, result); }
+    void EvaluateDeriv(const BaseMappedIntegrationRule & ir,
+                       FlatMatrix<Complex> result,
+                       FlatMatrix<Complex> deriv) const override
+    { cf->EvaluateDeriv(ir, result, deriv); }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+    { cf->NonZeroPattern(ud, nonzero); }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                         FlatVector<AutoDiffDiff<1,bool>> values) const override
+    { cf->NonZeroPattern(ud, input, values); }
+
+    void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree(func);
+      func(*this);
+    }
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { cf }; }
+  };
   
 
   /// The coefficient is constant in every sub-domain
