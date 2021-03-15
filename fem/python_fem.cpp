@@ -639,6 +639,11 @@ direction : int
     {
       return WeingartenCF(dim);
     }
+
+    shared_ptr<CF> GetVertexTangentialVectorsCF (int dim)
+    {
+      return VertexTangentialVectorsCF(dim);
+    }
   };
 
   
@@ -690,6 +695,9 @@ direction : int
          "space-dimensions dimr >= dims must be provided")
     .def("Weingarten", &SpecialCoefficientFunctions::GetWeingartenCF, py::arg("dim"),
          "Weingarten tensor \n"
+         "space-dimension must be provided")
+    .def("VertexTangentialVectors", &SpecialCoefficientFunctions::GetVertexTangentialVectorsCF, py::arg("dim"),
+         "VertexTangentialVectors \n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;
