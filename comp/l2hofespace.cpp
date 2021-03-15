@@ -282,13 +282,13 @@ namespace ngcomp
       {
         evaluator[VOL] = make_shared<BlockDifferentialOperatorId> (evaluator[VOL], dimension);
         // evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
 	// evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
         /*
 	boundary_flux_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
         */
-        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
       }
 
 
