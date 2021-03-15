@@ -483,7 +483,77 @@ namespace ngfem
       }
   }
 
-  
+
+  template <int D>
+  class cl_VertexTangentialVectorsCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    cl_VertexTangentialVectorsCF () : CoefficientFunctionNoDerivative(2*D,false)
+    {
+      SetDimensions(Array<int> ( { D, 2 } ));
+    }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      return 0;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
+    {
+      if (ip.DimSpace() != D)
+        throw Exception("illegal dim of VertexTangentialVector");
+
+      //cout << "in VertexTangentialVectorsCF, VB = " << ip.IP().VB() << endl;
+
+      if (ip.IP().VB() == BBND)
+        {
+          auto F = ip.GetJacobian();
+          auto & trafo = ip.GetTransformation();
+          int vnr = ip.IP().FacetNr();
+          auto pnt = ip.IP().Point();
+          //ELEMENT_TYPE et = trafo.GetElementType();
+          //int iavnums[] = { 0, 1, 2, 3 };
+          //FlatArray<int> vnums(4, &iavnums[0]);
+          //trafo.GetSort(vnums);
+
+	  //cout << "vnr = " << vnr << endl << "pnt = " << pnt << endl << endl;
+	  //cout << "F = " << F << endl;
+	  
+          Vec<2> tv_ref[] = { Vec<2>(1,0), Vec<2>(0,1), Vec<2>(-1,1) };
+          //Vec<2> tv_ref_v0[] = { -tv_ref[0], tv_ref[2] };
+          //Vec<2> tv_ref_v1[] = { -tv_ref[2], -tv_ref[1] };
+          //Vec<2> tv_ref_v2[] = { tv_ref[1], tv_ref[0] };
+          Vec<2> tv_ref_v [] = { -tv_ref[0], tv_ref[2], -tv_ref[2], -tv_ref[1], tv_ref[1], tv_ref[0] };
+
+	  FlatMatrix<double> phys_tv(D,2,&res[0]);
+	  Vec<3> tmp = F*tv_ref_v[2*vnr+0];
+          phys_tv.Col(0) = 1/L2Norm(tmp)*tmp;
+	  tmp = F*tv_ref_v[2*vnr+1];
+          phys_tv.Col(1) = 1/L2Norm(tmp)*tmp;
+
+	  //cout << "reft = " << tv_ref_v[2*vnr+0] << " | " << tv_ref_v[2*vnr+1] << endl;
+	  //cout << "physt = " << phys_tv << endl;
+        }
+      else //throw Exception();
+        res = 0.0;
+      
+    }
+    
+  };
+
+
+  shared_ptr<CoefficientFunction> VertexTangentialVectorsCF (int dim)
+  {
+    switch(dim)
+      {
+      case 1:
+        throw Exception ("no VertexTangentialVectors in 1D");
+      case 2:
+        return make_shared<cl_VertexTangentialVectorsCF<2>>();
+      default:
+        return make_shared<cl_VertexTangentialVectorsCF<3>>();
+      }
+  }
 }
 
 
