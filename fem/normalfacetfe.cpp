@@ -1129,10 +1129,15 @@ namespace ngfem
   }
 
   template<ELEMENT_TYPE ET>
-  void NormalFacetVolumeFE<ET> :: CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  void NormalFacetVolumeFE<ET> :: CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
     {
       shape = 0.0;
-      this -> CalcDualShape2 (mip, mip.IP().FacetNr(), SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
+      Switch<4-DIM>
+      (bmip.DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
+       {
+         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+         this -> CalcDualShape2 (mip, mip.IP().FacetNr(), SBLambda([shape] (size_t i, auto val) { shape.Row(i) = val; }));
+       });
     }
 
   

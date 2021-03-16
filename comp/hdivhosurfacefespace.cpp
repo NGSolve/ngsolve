@@ -199,6 +199,7 @@ public:
 	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();
 
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDivSurface<3>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDualSurface<3>>> ());
       }
     
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
