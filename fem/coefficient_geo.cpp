@@ -554,6 +554,124 @@ namespace ngfem
         return make_shared<cl_VertexTangentialVectorsCF<3>>();
       }
   }
+
+
+  
+  template <int D>
+  class cl_EdgeCurvatureCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    cl_EdgeCurvatureCF () : CoefficientFunctionNoDerivative(D,false) { ; }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      return 0;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & bmip, FlatVector<> res) const override
+    {
+      if (bmip.DimSpace() != D)
+        throw Exception("illegal dim of EdgeCurvatureCF");
+
+
+      // (nabla_t t)circ\phi = Ptau\circ\phi*nabla(t\circ\phi) F^-1 t\circ\phi
+      //                     = Ptau\circ\phi*nabla(t\circ\phi) F^-1 1/|F t_ref| F t_ref
+      //                     = 1/|F t_ref| * Ptau\circ\phi*nabla(t\circ\phi) t_ref
+      //                     = 1/|F t_ref| * F(F^TF)^-1F^T * nabla(t\circ\phi) t_ref
+
+
+      if (bmip.IP().VB() == BND)
+        {
+	  const IntegrationPoint& ip = bmip.IP();
+	  const ElementTransformation & eltrans = bmip.GetTransformation();
+
+	  double eps = 1e-4;
+	  
+	  Vec<D> dshape;
+          auto mip = static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip);
+          
+          auto F = bmip.GetJacobian();
+          auto & trafo = bmip.GetTransformation();
+	  ELEMENT_TYPE et = trafo.GetElementType();
+          auto e = ElementTopology::GetEdges(et)[bmip.IP().FacetNr()];
+	  
+
+	  Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+          Vec<2> tv_ref = pnts[e[1]] - pnts[e[0]];
+	  tv_ref /= L2Norm(tv_ref);
+
+          // compute |F t_ref|
+          Vec<3> tv_phys = F*tv_ref;
+          double measure = L2Norm(tv_phys);
+
+          // compute nabla(t\circ\phi) t_ref numerically
+          // This is the directional derivative in direction t_ref
+
+          IntegrationPoint ipl(ip);
+          ipl(0) -= tv_ref[0]*eps;
+          ipl(1) -= tv_ref[1]*eps;
+          IntegrationPoint ipr(ip);
+          ipr(0) += tv_ref[0]*eps;
+          ipr(1) += tv_ref[1]*eps;
+          IntegrationPoint ipll(ip);
+          ipll(0) -= 2*tv_ref[0]*eps;
+          ipll(1) -= 2*tv_ref[1]*eps;
+          IntegrationPoint iprr(ip);
+          iprr(0) += 2*tv_ref[0]*eps;
+          iprr(1) += 2*tv_ref[1]*eps;
+
+          MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
+          MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
+          MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
+          MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
+
+          // Need unit tangent vectors at the stencil points, not directly computed in MappedIntegrationPoint
+	  Mat<3,2> Ft = sipr.GetJacobian();
+	  Vec<D> tangr = Ft*tv_ref;
+	  tangr /= L2Norm(tangr);
+	  Ft = sipl.GetJacobian();
+	  Vec<D> tangl = Ft*tv_ref;
+	  tangl /= L2Norm(tangl);
+	  Ft = siprr.GetJacobian();
+	  Vec<D> tangrr = Ft*tv_ref;
+	  tangrr /= L2Norm(tangrr);
+	  Ft = sipll.GetJacobian();
+	  Vec<D> tangll = Ft*tv_ref;
+	  tangll /= L2Norm(tangll);
+
+          // nabla(t\circ\phi) t_ref
+          dshape = (1.0/(12.0*eps)) * (8.0*tangr-8.0*tangl-tangrr+tangll);
+
+          // Ptau\circ\phi =  F(F^TF)^-1F^T = (I - nsurf\circ\phi \otimes nsurf\circ\phi)
+          Mat<D> Ptau=0;
+	  for (int i=0; i < D; i++)
+	    {
+	      Ptau(i,i) = 1.0;
+	      Ptau.Col(i) -= mip.GetNV()[i]*mip.GetNV();
+	    }
+
+          res = 1/measure*Ptau*dshape;
+        }
+      else //throw Exception();
+        res = 0.0;
+      
+    }
+    
+  };
+
+
+  shared_ptr<CoefficientFunction> EdgeCurvatureCF (int dim)
+  {
+    switch(dim)
+      {
+      case 1:
+        throw Exception ("no EdgeCurvature in 1D");
+      case 2:
+        return make_shared<cl_EdgeCurvatureCF<2>>();
+      default:
+        return make_shared<cl_EdgeCurvatureCF<3>>();
+      }
+  }
 }
 
 
