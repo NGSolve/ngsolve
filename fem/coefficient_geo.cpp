@@ -216,7 +216,10 @@ namespace ngfem
           int iavnums[] = { 0, 1, 2, 3 };
           FlatArray<int> vnums(4, &iavnums[0]);
           trafo.GetSort(vnums);
-          if (vnums[e[0]] > vnums[e[1]])
+          int invnums[4];
+          for (int i = 0; i < 4; i++)
+            invnums[iavnums[i]] = i;
+          if (invnums[e[0]] > invnums[e[1]])
             res *= -1;
         }
     }
