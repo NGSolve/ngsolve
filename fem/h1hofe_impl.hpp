@@ -86,6 +86,25 @@ namespace ngfem
       }
   }
 
+  template<> template<typename Tx, typename TFA>
+  void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcDualShape(TIP<1,Tx> ip, TFA& shape) const
+  {
+    Tx lam[2] = { ip.x, 1. - ip.x };
+
+    if (ip.vb == BND)
+      {
+	for (size_t i = 0; i < 2; i++)
+	  shape[i] = (i == ip.facetnr) ? 1 : 0;
+      }
+
+    // edge-based shapes
+    if ( (ip.vb == VOL) && (order_edge[0] >= 2) )
+      {
+	INT<2> e = GetVertexOrientedEdge(0);
+	EdgeOrthoPol::Eval (order_edge[0]-2, lam[e[1]]-lam[e[0]], shape+2);
+      }
+  }
+
 
   template<>
   inline void H1HighOrderFE_Shape<ET_SEGM> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
