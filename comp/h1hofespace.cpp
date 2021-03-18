@@ -873,10 +873,10 @@ into the wirebasket.
     static VorB nodes[] = { VOL, BND, BBND, BBBND };
 
     if (first_edge_dof[0] == GetNDof())
-      return FlatArray<VorB> (1, &nodes[ma->GetDimension()]); 
+      return FlatArray<VorB> (1, &nodes[ma->GetDimension() - int(vb)]);
     if (first_face_dof[0] == GetNDof())
-      return FlatArray<VorB> (2, &nodes[ma->GetDimension()-1]); 
-    
+      return FlatArray<VorB> (2, &nodes[ma->GetDimension()-1 - int(vb)]);
+
     return FlatArray<VorB> (ma->GetDimension()-int(vb)+1, &nodes[0]); 
   }
 
