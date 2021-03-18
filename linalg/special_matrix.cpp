@@ -470,7 +470,22 @@ namespace ngla
 	hx.SetSize (realmatrix->Height());
 	hy.SetSize (realmatrix->Width());
       }
-  }    
+  }
+
+  template <class TVR, class TVC>
+  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateRowVector() const
+  {
+    auto h = realmatrix->Width();
+    return make_unique<VVector<TVC>> (h);
+  }
+    
+  template <class TVR, class TVC>
+  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateColVector() const
+  {
+    auto w = realmatrix->Width();
+    return make_unique<VVector<TVC>> (w);
+  }
+    
 
 
   template <class TVR, class TVC>

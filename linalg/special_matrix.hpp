@@ -258,10 +258,8 @@ namespace ngla
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
-    AutoVector CreateRowVector() const override
-    { return realmatrix->CreateRowVector(); }
-    AutoVector CreateColVector() const override
-    { throw Exception("CreateColVector not implemented for Real2ComplexMatrix!"); }
+    AutoVector CreateRowVector() const override;
+    AutoVector CreateColVector() const override;
   };
 
 
