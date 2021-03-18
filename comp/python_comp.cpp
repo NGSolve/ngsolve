@@ -471,8 +471,15 @@ kwargs : kwargs
 		    py::list info;
 		    auto flags = CreateFlagsFromKwArgs(kwargs, fes_class, info);
                     Array<shared_ptr<FESpace>> spaces;
+                    bool dgjumps = flags.GetDefineFlag("dgjumps");
                     for (auto fes : lspaces )
-                      spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
+                    {
+                      auto fespace = py::extract<shared_ptr<FESpace>>(fes)(); 
+                      if (fespace->UsesDGCoupling())
+                        dgjumps = true;
+                      spaces.Append(fespace);
+                    }
+                    flags.SetFlag("dgjumps", dgjumps);
                     if (spaces.Size() == 0)
                       throw Exception("Compound space must have at least one space");
                     int dim = spaces[0]->GetDimension();
@@ -1026,6 +1033,7 @@ rho : ngsolve.fem.CoefficientFunction
         Flags flags;
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
+        flags.SetFlag ("dgjumps", space1->UsesDGCoupling() || space2->UsesDGCoupling());
         auto productspace = make_shared<CompoundFESpace> (space1->GetMeshAccess(), flags);
 
         for (auto s : { space1, space2 })
