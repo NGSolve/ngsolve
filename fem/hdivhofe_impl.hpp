@@ -220,10 +220,12 @@ template <typename MIP, typename TFA>
                 INT<2> e = GetEdgeSort (i, vnums);
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
-
+                
 		Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
 		// Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref; // original version - broken with curved elements
-		Vec<2,T> nv = L2Norm(tauref) / L2Norm(mip.GetJacobian()*tauref) * Cof(mip.GetJacobian()) * nvref; // new version
+		// Vec<2,T> nv = L2Norm(tauref) / L2Norm(mip.GetJacobian()*tauref) * Cof(mip.GetJacobian()) * nvref; // new version              
+                Vec<3,T> nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref; // latest version, see TET for derivation
+                
 		LegendrePolynomial::Eval
                   (p, xi,
                    SBLambda([&] (size_t nr, T val)
@@ -543,11 +545,20 @@ template <typename MIP, typename TFA>
                 T eta = lam[fav[1]]-lam[fav[2]];
                 Vec<3,T> tauref1 = pnts[fav[1]] - pnts[fav[0]];
 		Vec<3,T> tauref2 = pnts[fav[2]] - pnts[fav[0]];
+		Vec<3,T> nvref   = Cross(tauref1,tauref2);
+                
+		//Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref; // old version - broken with curved elements
+		//Vec<3,T> nv = L2Norm(nvref) / L2Norm(Cross(mip.GetJacobian()*tauref1, mip.GetJacobian()*tauref2)) * Cof(mip.GetJacobian()) * nvref; // new version
 
-		
-		Vec<3,T> nvref = Cross(tauref1,tauref2);
-		// Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref; // old version - broken with curved elements
-		Vec<3,T> nv = L2Norm(nvref) / L2Norm(Cross(mip.GetJacobian()*tauref1, mip.GetJacobian()*tauref2)) * Cof(mip.GetJacobian()) * nvref; // new version
+                // Rewrite new version: use often that Cof(F) = Det(F)*F^{-T}
+                // Cross(F*tauref1, F*tauref2): Cross(F*tauref1,F*tauref2)*v = Det(F*tauref1,F*tauref2,v) = Det(F)*Det(tauref1,tauref2,F^{-1}v) = Det(F)F^{-T}Cross(tauref1,tauref2)*v = Cof(F)*nvref*v
+                // -> Cross(F*tauref1, F*tauref2) = Cof(F)*nvref
+                // -> nv = L2Norm(nvref) / L2Norm(Cof(F)*nvref) * Cof(F) * nvref;
+                // 1/L2Norm(Cof(F)*nvref) * Cof(F)*nvref = Det(F)/Det(F) * 1/L2Norm(Cof(F)*nvref) * Cof(F)*nvref = 1/L2Norm(1/Det(F)*Cof(F)*nvref) * 1/Det(F)*Cof(F)*nvref
+                //                                       = 1/L2Norm(F^{-T}*nvref) * F^{-T}*nvref
+                // -> nv = L2Norm(nvref)/L2Norm(F^{-T}*nvref) * F^{-T}*nvref
+                Vec<3,T> nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref; // latest version 
+                
 		DubinerBasis::Eval(order_facet[i][0], xi, eta,
                                    SBLambda([&] (size_t nr, auto val)
                                             {
