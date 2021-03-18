@@ -1568,7 +1568,13 @@ namespace ngfem
     
     if (dx.element_vb == BND)
       {
-        bool has_other = true;
+        bool has_other = false;
+        cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                          {
+                            if (dynamic_cast<ProxyFunction*> (&cf))
+                              if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                has_other = true;
+                          });
         
         if (!has_other)
           ma.IterateElements
@@ -1714,10 +1720,9 @@ namespace ngfem
                  element_wise(el.Nr()) += hsum;
                AtomicAdd(sum, hsum);
              });
-          
-        
+
+          }
         return sum;
-      }
       }
     throw Exception ("only vol and bnd integrals are supported");
   }
