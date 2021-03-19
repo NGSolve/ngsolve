@@ -842,9 +842,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           AutoVector * avecy = dynamic_cast<AutoVector*>(&y);
 
           shared_ptr<BaseVector> sx = avecx ? shared_ptr<BaseVector>(*avecx) :
-            shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+            const_cast<BaseVector&>(x).shared_from_this();
+            // shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
           shared_ptr<BaseVector> sy = avecy ? shared_ptr<BaseVector>(*avecy) :
-            shared_ptr<BaseVector>(&y, NOOP_Deleter);
+            y.shared_from_this();
+          // shared_ptr<BaseVector>(&y, NOOP_Deleter);
 
           overload(sx,sy);
           cout << " complete" << endl;
