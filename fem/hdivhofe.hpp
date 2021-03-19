@@ -402,7 +402,7 @@ namespace ngfem
     virtual void CalcNormalShape (const IntegrationPoint & ip, 
                                   SliceVector<> nshape) const override;
 
-    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override;
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override;
 
   };
 

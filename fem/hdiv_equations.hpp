@@ -456,6 +456,41 @@ public:
   
 };
 
+template <int D>
+class DiffOpHDivDualSurface : public DiffOp<DiffOpHDivDualSurface<D> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D-1 };
+  enum { DIM_DMAT = D };
+  enum { DIFFORDER = 0 };
+
+  typedef DiffOpHDivDualSurface<D> DIFFOP_TRACE;
+
+  
+  static auto & Cast (const FiniteElement & fel) 
+  { return static_cast<const HDivFiniteElement<D-1>&> (fel); }
+  
+  
+  template <typename AFEL, typename MIP, typename MAT,
+            typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                              MAT & mat, LocalHeap & lh)
+  {
+    Cast(fel).CalcDualShape (mip, Trans(mat));
+  }
+  template <typename AFEL, typename MIP, typename MAT,
+            typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                              MAT & mat, LocalHeap & lh)
+  {
+    throw Exception(string("DiffOpHDivDualSurface not available for mat ")+typeid(mat).name());
+  }
+  
+  
+};
+
 
 
 

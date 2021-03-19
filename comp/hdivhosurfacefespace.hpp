@@ -48,6 +48,12 @@ namespace ngcomp
     {
       return "HDivHighOrderSurfaceFESpace";
     }
+
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
+    {
+      static VorB nodes[] = { VOL, BND };
+      return FlatArray<VorB> (2, &nodes[0]); 
+    }
     
     void Average (BaseVector & vec) const;
     
