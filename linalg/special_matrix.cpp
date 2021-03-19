@@ -913,17 +913,17 @@ namespace ngla
 
   AutoVector LoggingMatrix :: CreateRowVector () const 
   {
-    unique_ptr<BaseVector> vec = mat->CreateRowVector();
+    auto vec = mat->CreateRowVector();
     *out << "matrix '" << label << "' CreateRowVector "
-         << "size: " << vec->Size() << " " << PS(vec->GetParallelStatus()) << endl;
+         << "size: " << vec.Size() << " " << PS(vec.GetParallelStatus()) << endl;
     return move(vec);
   }
   
   AutoVector LoggingMatrix :: CreateColVector () const
   {
-    unique_ptr<BaseVector> vec = mat->CreateColVector();
+    auto vec = mat->CreateColVector();
     *out << "matrix '" << label << "' CreateColVector "
-         << "size: " << vec->Size() << " " << PS(vec->GetParallelStatus()) << endl;
+         << "size: " << vec.Size() << " " << PS(vec.GetParallelStatus()) << endl;
     return move(vec);
   }
 
