@@ -31,6 +31,12 @@ namespace ngcomp
       FESpace::FinalizeUpdate();
     }
 
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
+    {
+      return space->GetDualShapeNodes(vb);
+    }
+
+
     virtual string GetClassName() const override { return "Discontinuous" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
     
