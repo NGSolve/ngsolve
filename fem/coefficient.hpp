@@ -1693,6 +1693,11 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                    int first, Array<int> num, Array<int> dist);
+
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
 
   // for DG jump terms 

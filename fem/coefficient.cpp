@@ -4706,6 +4706,156 @@ MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
 }
 
 
+// ********************** SubTensorCoefficientFunction **********************
+
+  
+class SubTensorCoefficientFunction : public T_CoefficientFunction<SubTensorCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  int dim1;
+  int first;
+  Array<int> num, dist;
+  typedef T_CoefficientFunction<SubTensorCoefficientFunction> BASE;
+public:
+  SubTensorCoefficientFunction() = default;
+  SubTensorCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                int afirst, Array<int> anum, Array<int> adist)
+    : BASE(1, ac1->IsComplex()), c1(ac1), first(afirst), num(anum), dist(adist)
+  {
+    SetDimensions(anum);
+    dim1 = c1->Dimension();    
+    elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & dim1 & first & num & dist;
+  }
+
+  /*
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    auto dims = c1->Dimensions();
+    int i,j;
+    GetIndex(dims, comp, i, j);
+    code.body += Var(index).Assign( Var(inputs[0], i, j ));
+  }
+  */
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
+
+  
+  using BASE::Evaluate;
+
+  /*
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         BareSliceMatrix<Complex> result) const override
+  {
+    // int dim1 = c1->Dimension();
+    STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
+    FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
+    c1->Evaluate (ir, temp);
+    result.Col(0).Range(0,ir.Size()) = temp.Col(comp);
+  }  
+  */
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    STACK_ARRAY(T, hmem, ir.Size()*dim1);
+    FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
+    
+    c1->Evaluate (ir, temp);
+    size_t nv = ir.Size();
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          for (size_t k = 0; k < nv; k++)
+            values(i,k) = temp(first+i*dist[0], k);
+        break;
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    auto in0 = input[0];
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values.Row(i).Range(ir.Size()) = in0.Row(first+i*dist[0]);
+        break;
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+  
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return MakeSubTensorCoefficientFunction (c1->Diff(var, dir), first, Array<int> (num), Array<int> (dist));
+  }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values(i) = v1(first+i*dist[0]);
+        break;
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    c1->NonZeroPattern (ud, values);
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values(i) = values(first+i*dist[0]);
+        break;
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+
+  }
+};
+
+shared_ptr<CoefficientFunction>
+MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first, Array<int> num, Array<int> dist)
+{
+  return make_shared<SubTensorCoefficientFunction> (c1, first, move(num), move(dist));
+}
+
+
+
+
+
 
 
 // ************************ DomainWiseCoefficientFunction *************************************
