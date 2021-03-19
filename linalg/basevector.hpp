@@ -376,13 +376,15 @@ namespace ngla
   
   class NGS_DLL_HEADER AutoVector // : public BaseVector
   {
-    unique_ptr<BaseVector> vec;
+    shared_ptr<BaseVector> vec;
   public:
     AutoVector () { ; }
 
     AutoVector (AutoVector && av2) : vec(move(av2.vec)) { } 
     // { size = av2.Size(), entrysize = av2.EntrySize(); }
 
+    AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) { }
+    
     AutoVector (unique_ptr<BaseVector> hvec) : vec(move(hvec)) { } 
     // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
@@ -493,9 +495,10 @@ namespace ngla
       vec->SetScalar (s);
       return *this;
     }
-
-    operator unique_ptr<BaseVector> () && { return move(vec); }
-    operator shared_ptr<BaseVector> () && { return move(vec); }
+    
+    // operator unique_ptr<BaseVector> () && { return move(vec); }
+    // operator shared_ptr<BaseVector> () && { return move(vec); }
+    operator shared_ptr<BaseVector> () { return vec; }
     BaseVector & operator* () { return *vec; }
     const BaseVector & operator* () const { return *vec; }
     operator BaseVector & () { return *vec; }
