@@ -224,13 +224,13 @@ template <typename MIP, typename TFA>
 		Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
 		// Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref; // original version - broken with curved elements
 		// Vec<2,T> nv = L2Norm(tauref) / L2Norm(mip.GetJacobian()*tauref) * Cof(mip.GetJacobian()) * nvref; // new version              
-                Vec<3,T> nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref; // latest version, see TET for derivation
+                auto nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref; // latest version, see TET for derivation
                 
 		LegendrePolynomial::Eval
                   (p, xi,
                    SBLambda([&] (size_t nr, T val)
                             {
-                              Vec<2,T> vshape = val * nv;
+                              auto vshape = val * nv;
                               if (nr==0)
                                 shape[i] = vshape;
                               else

@@ -51,7 +51,7 @@ namespace ngcomp
 
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
     {
-      static VorB nodes[] = { BND, BBND };
+      static VorB nodes[] = { VOL, BND };
       return FlatArray<VorB> (2, &nodes[0]); 
     }
     
