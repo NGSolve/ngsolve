@@ -155,6 +155,8 @@ namespace std
     {
       return base_type::shared_from_this();
     }
+  public:
+    virtual ~enable_shared_from_this_virtual_base() { }
   };
   
   template<typename T>
