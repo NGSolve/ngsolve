@@ -496,8 +496,12 @@ namespace ngcomp
                    {
 		     /** Calc RHS **/
 		     elflux = SCAL(0.0);
+                     auto [nv,ne,nf,nc] = fel.GetNDofVEFC();
+                     int nvefc[] = {nv,ne,nf,nc};
 		     for (auto el_vb : fes->GetDualShapeNodes(vb))
 		       {
+                         if (!nvefc[ma->GetDimension()-el_vb-vb])
+                           continue;
 			 Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
 			 for (int locfnr : Range(f2el.GetNFacets()))
 			   {
@@ -569,8 +573,13 @@ namespace ngcomp
 	     */
 	     elflux = SCAL(0.0);
 
+             auto [nv,ne,nf,nc] = fel.GetNDofVEFC();
+             int nvefc[] = {nv,ne,nf,nc};
 	     for (auto el_vb : fes->GetDualShapeNodes(vb))
                {
+                 if (!nvefc[ma->GetDimension()-el_vb-vb])
+                   continue;
+
 		 Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
 		 for (int locfnr : Range(f2el.GetNFacets()))
                    {

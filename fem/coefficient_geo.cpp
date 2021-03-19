@@ -529,7 +529,7 @@ namespace ngfem
           Vec<2> tv_ref_v [] = { -tv_ref[0], tv_ref[2], -tv_ref[2], -tv_ref[1], tv_ref[1], tv_ref[0] };
 
 	  FlatMatrix<double> phys_tv(D,2,&res[0]);
-	  Vec<3> tmp = F*tv_ref_v[2*vnr+0];
+	  Vec<D> tmp = F*tv_ref_v[2*vnr+0];
           phys_tv.Col(0) = 1/L2Norm(tmp)*tmp;
 	  tmp = F*tv_ref_v[2*vnr+1];
           phys_tv.Col(1) = 1/L2Norm(tmp)*tmp;
@@ -577,10 +577,10 @@ namespace ngfem
         throw Exception("illegal dim of EdgeCurvatureCF");
 
 
-      // (nabla_t t)circ\phi = Ptau\circ\phi*nabla(t\circ\phi) F^-1 t\circ\phi
-      //                     = Ptau\circ\phi*nabla(t\circ\phi) F^-1 1/|F t_ref| F t_ref
-      //                     = 1/|F t_ref| * Ptau\circ\phi*nabla(t\circ\phi) t_ref
-      //                     = 1/|F t_ref| * F(F^TF)^-1F^T * nabla(t\circ\phi) t_ref
+      // (nabla_t t)circ\phi = nabla(t\circ\phi) F^-1 t\circ\phi
+      //                     = nabla(t\circ\phi) F^-1 1/|F t_ref| F t_ref
+      //                     = 1/|F t_ref|*nabla(t\circ\phi) t_ref
+      //                     = 1/|F t_ref|*nabla(t\circ\phi) t_ref
 
 
       if (bmip.IP().VB() == BND)
@@ -644,16 +644,9 @@ namespace ngfem
 
           // nabla(t\circ\phi) t_ref
           dshape = (1.0/(12.0*eps)) * (8.0*tangr-8.0*tangl-tangrr+tangll);
+       
 
-          // Ptau\circ\phi =  F(F^TF)^-1F^T = (I - nsurf\circ\phi \otimes nsurf\circ\phi)
-          Mat<D> Ptau=0;
-	  for (int i=0; i < D; i++)
-	    {
-	      Ptau(i,i) = 1.0;
-	      Ptau.Col(i) -= mip.GetNV()[i]*mip.GetNV();
-	    }
-
-          res = 1/measure*Ptau*dshape;
+          res = 1/measure*dshape;
         }
       else //throw Exception();
         res = 0.0;
