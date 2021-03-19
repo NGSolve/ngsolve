@@ -204,6 +204,10 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
 
+    NGS_DLL_HEADER virtual void Interpolate (const ElementTransformation & trafo, 
+                                             const class CoefficientFunction & func, SliceMatrix<> coefs,
+                                             LocalHeap & lh) const override;
+    
   public:
     NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;
     NGS_DLL_HEADER virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lhr) const override;

@@ -71,7 +71,7 @@ namespace ngfem
     virtual void Print (ostream & ost) const;
 
     virtual void Interpolate (const ElementTransformation & trafo, 
-                              const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
                               LocalHeap & lh) const;
       
     virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
@@ -120,7 +120,7 @@ namespace ngfem
     virtual void Print (ostream & ost) const override;
 
     virtual void Interpolate (const ElementTransformation & trafo, 
-                              const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
                               LocalHeap & lh) const override; 
   };
 
@@ -164,7 +164,7 @@ namespace ngfem
     virtual void Print (ostream & ost) const override;
 
     virtual void Interpolate (const ElementTransformation & trafo, 
-                              const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
                               LocalHeap & lh) const override; 
   };
 

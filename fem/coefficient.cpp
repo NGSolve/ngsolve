@@ -4722,6 +4722,7 @@ public:
                                 int afirst, Array<int> anum, Array<int> adist)
     : BASE(1, ac1->IsComplex()), c1(ac1), first(afirst), num(anum), dist(adist)
   {
+    // cout << "create sub-tensor, first = " << first << ", num = " << num << ", dist = " << dist << endl;
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();

@@ -32,7 +32,7 @@ namespace ngfem
   }
 
   void FiniteElement :: Interpolate (const ElementTransformation & trafo, 
-                                     const class CoefficientFunction & func, BareSliceMatrix<> coefs,
+                                     const class CoefficientFunction & func, SliceMatrix<> coefs,
                                      LocalHeap & lh) const
   {
     throw Exception(string("Element ") + typeid(*this).name() + " does not support interpolation");
@@ -91,7 +91,7 @@ namespace ngfem
 
 
   void CompoundFiniteElement :: Interpolate (const ElementTransformation & trafo, 
-                                             const CoefficientFunction & func, BareSliceMatrix<> coefs,
+                                             const CoefficientFunction & func, SliceMatrix<> coefs,
                                              LocalHeap & lh) const
   {
     // assume all elements are the same, and match with dim func
@@ -125,7 +125,7 @@ namespace ngfem
 
 
   void SymMatrixFiniteElement :: Interpolate (const ElementTransformation & trafo, 
-                                              const CoefficientFunction & func, BareSliceMatrix<> coefs,
+                                              const CoefficientFunction & func, SliceMatrix<> coefs,
                                               LocalHeap & lh) const
   {
     size_t scalndof = scalfe.GetNDof();

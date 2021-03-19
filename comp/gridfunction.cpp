@@ -258,7 +258,7 @@ namespace ngcomp
 
          GetElementVector (mdcomp, el.GetDofs(), elvec1);
          elvec1 += elvec;
-         SetElementVector (mdcomp, el.GetDofs(), elvec);
+         SetElementVector (mdcomp, el.GetDofs(), elvec1);
 
          for (auto d : el.GetDofs())
            if (IsRegularDof(d)) cnti[d]++;

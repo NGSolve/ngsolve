@@ -431,6 +431,65 @@ namespace ngfem
       AddGradTrans (ir, values.Rows(i*dim, (i+1)*dim), coefs.Col(i));
   }
 
+
+
+  
+  template<int D>
+  void ScalarFiniteElement<D> :: Interpolate (const ElementTransformation & trafo, 
+                                              const CoefficientFunction & func, SliceMatrix<> coefs,
+                                              LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    
+    FlatMatrix<> elflux(GetNDof(), coefs.Width(), lh);
+    elflux = 0.0;
+    
+    for (int el_vb = D; el_vb >= 0; el_vb--)
+      {
+        Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+        for (int locfnr : Range(f2el.GetNFacets()))
+          {
+            SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
+            auto & irvol = f2el(locfnr, irfacet, lh);
+            auto & mir = trafo(irvol, lh);
+
+            FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.IR().Size(), lh);
+            func.Evaluate (mir, mfluxi);
+
+            for (size_t j : Range(mir))
+              mfluxi.Col(j) *= mir[j].IP().Weight();
+
+            for (int i = 0; i < coefs.Width(); i++)
+              AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
+          }
+      }
+
+    for (int i = 0; i < coefs.Width(); i++)
+      if (!SolveDuality (elflux.Col(i), coefs.Col(i), lh))
+        throw Exception("scalar interpolate need solveduality");
+
+    /*
+      ... otherwise 
+                       {
+                       // Calc Element Matrix 
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                         bool symmetric_so_far = true;
+                         for (auto sbfi : single_bli)
+                           { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+                         
+                           // Invert Element Matrix and Solve for RHS 
+                         CalcInverse(elmat); // Not Symmetric !
+                         
+                         if (dim > 1) {
+                           for (int j = 0; j < dim; j++)
+                             { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+                         }
+                         else
+                           { elfluxi = elmat * elflux; }
+                       }
+  */
+  }
+				  
   
 
   template <int D>
@@ -647,8 +706,6 @@ namespace ngfem
   }
 
 
-
-				  
 
 
 
