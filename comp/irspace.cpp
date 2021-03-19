@@ -17,7 +17,7 @@ namespace ngcomp
     ELEMENT_TYPE ElementType() const override { return et; }
     
     void Interpolate (const ElementTransformation & trafo, 
-                      const CoefficientFunction & func, BareSliceMatrix<> coefs, LocalHeap & lh) const override
+                      const CoefficientFunction & func, SliceMatrix<> coefs, LocalHeap & lh) const override
     {
       HeapReset hr(lh);
       BaseMappedIntegrationRule & mir = trafo(ir, lh);

@@ -496,6 +496,7 @@ namespace ngfem
       SetDimensions(Array<int> ( { D, 2 } ));
     }
 
+    using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return 0;
@@ -511,9 +512,9 @@ namespace ngfem
       if (ip.IP().VB() == BBND)
         {
           auto F = ip.GetJacobian();
-          auto & trafo = ip.GetTransformation();
+          // auto & trafo = ip.GetTransformation();
           int vnr = ip.IP().FacetNr();
-          auto pnt = ip.IP().Point();
+          // auto pnt = ip.IP().Point();
           //ELEMENT_TYPE et = trafo.GetElementType();
           //int iavnums[] = { 0, 1, 2, 3 };
           //FlatArray<int> vnums(4, &iavnums[0]);
@@ -566,6 +567,7 @@ namespace ngfem
   public:
     cl_EdgeCurvatureCF () : CoefficientFunctionNoDerivative(D,false) { ; }
 
+    using CoefficientFunctionNoDerivative :: Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return 0;
