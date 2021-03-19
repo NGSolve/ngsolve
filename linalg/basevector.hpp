@@ -86,7 +86,7 @@ namespace ngla
   /**
      Base vector for linalg
   */
-  class NGS_DLL_HEADER BaseVector
+  class NGS_DLL_HEADER BaseVector : public enable_shared_from_this_virtual<BaseVector>
   {
   protected:
     /// size of vector
