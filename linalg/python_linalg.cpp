@@ -785,7 +785,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
         if (overload) {
           auto vec = py::cast<shared_ptr<BaseVector>> (overload());
-          return vec->CreateVector();
+          return vec; // vec->CreateVector();
         }
         throw Exception ("CreateRowVector not overloaded from python");        
         // python can only create shared_ptr<BaseVector>, create another unique_ptr<vector> from C++
@@ -803,7 +803,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::function overload = pybind11::get_overload(this, "CreateColVector");
         if (overload) {
           auto vec = py::cast<shared_ptr<BaseVector>> (overload());
-          return vec->CreateVector();
+          return vec; // vec->CreateVector();
         }
         throw Exception ("CreateColVector not overloaded from python");        
 #ifdef NONE        
@@ -829,13 +829,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
         if (overload) {
+          cout << "trampoline mult ... " << flush;
+          /*
 	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
           auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
 					   NOOP_Deleter);
 	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
           auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
 					   NOOP_Deleter);
+          */
+          AutoVector * avecx = const_cast<AutoVector*> (dynamic_cast<const AutoVector*>(&x));
+          AutoVector * avecy = dynamic_cast<AutoVector*>(&y);
+
+          shared_ptr<BaseVector> sx = avecx ? shared_ptr<BaseVector>(*avecx) :
+            shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          shared_ptr<BaseVector> sy = avecy ? shared_ptr<BaseVector>(*avecy) :
+            shared_ptr<BaseVector>(&y, NOOP_Deleter);
+
           overload(sx,sy);
+          cout << " complete" << endl;
         }
         else
           BaseMatrix::Mult(x,y);
@@ -845,6 +857,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTrans");
         if (overload) {
+          cout << "trampoline multtrans" << endl;
+          
 	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
           auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
 					   NOOP_Deleter);
@@ -861,6 +875,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultAdd");
         if (overload) {
+          cout << "trampoline multadd" << endl;
+          
 	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
           auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
 					   NOOP_Deleter);
@@ -877,6 +893,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
         if (overload) {
+          cout << "trampoline multtransadd" << endl;
+          
 	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
           auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
 					   NOOP_Deleter);
