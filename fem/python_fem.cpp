@@ -925,7 +925,8 @@ val : can be one of the following:
                                            
                                            auto [c1,inds] = comps;
                                            size_t start, step, n;
-                                           InitSlice( inds, dims[0], start, step, n );
+                                           InitSlice( inds, dims[1], start, step, n );
+                                           // cout << "get row " << c1 << ", start=" << start << ", step = " << step << ", n = " << n << endl;
                                            int first = start+c1*dims[1];
                                            Array<int> num = { int(n) };
                                            Array<int> dist = { int(step) };
