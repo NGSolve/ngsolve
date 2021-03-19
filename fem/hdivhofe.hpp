@@ -404,6 +404,8 @@ namespace ngfem
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override;
 
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override;
+
   };
 
 }

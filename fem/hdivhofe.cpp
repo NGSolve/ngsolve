@@ -597,8 +597,135 @@ namespace ngfem
   }
 
 
+  template <ELEMENT_TYPE ET>
+  tuple<int,int,int,int> HDivHighOrderFE<ET> :: 
+  GetNDofVEFC() const
+  {
+    int nv=0, ne = 0, nf = 0, nc = 0;
+    if (DIM == 2)
+      {
+        // if (only_ho_div)
+	//   {
+	//     if (ET == ET_TRIG)
+        //       {
+        //         ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
+        //         order = order_inner[0];
+        //       }
+	//     else
+        //       {
+        //         ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
+        //         order = max2(order_inner[0], order_inner[1])+1;
+        //       }
+	//     return;
+	//   }
+        // else
+	  {
+	    ne = ET_trait<ET>::N_EDGE;
+	    
+	    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+	      ne += order_facet[i][0];
+	    
+	    if (ET == ET_TRIG)
+	      {
+		if (order_inner[0] > 1)
+		  { 
+		    if (ho_div_free)
+		      nf += order_inner[0]*(order_inner[0]-1)/2;
+		    else
+		      nf += order_inner[0]*order_inner[0]-1;
+		  }
+                if (RT && order_inner[0] > 0)
+		  nf += order_inner[0] + 1;
+	      }
+	    else
+	      {  // quad
+		INT<2> p(order_inner[0], order_inner[1]);
+		
+		int ni = ho_div_free
+		  ? p[0]*p[1] 
+		  : 2*p[0]*p[1] + p[0] + p[1];
+		
+		nf += ni; 
+	      }
+	  }
+      }
+    else
+      {
 
+        int p = order_inner[0];
+        int pc = order_inner[0]; // should be order_inner_curl!!!  
+        int pz = p; // order_inner[2];
 
+        // if (only_ho_div){
+        //   switch (ET)
+        //     {   
+        //     case ET_TRIG: case ET_QUAD: // for the compiler
+        //       break;
+        //     case ET_TET: 
+        //         ndof = p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+        //       break;
+        //     case ET_PRISM:
+        //       if (order_inner[0]>0 )
+        //         ndof = (p+1)*(p+2)*(pz+1)/2 - 1;
+        //       /*
+        //           // inner_dof horizontal
+        //           ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
+        //           // inner dof vertical
+        //           ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
+        //       */
+        //       break;
+        //     case ET_HEX:
+        //       ndof = 3*(p+1)*(p+1)*p;
+        //       break; 
+        //     }
+        // }
+        // else
+        {
+          nf = ET_trait<ET>::N_FACE;
+
+          for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
+            {
+              INT<2> p = order_facet[i];
+              if (ET_trait<ET>::FaceType(i) == ET_TRIG)
+                nf += (p[0]*p[0]+3*p[0])/2;
+              else
+                nf +=  p[0]*p[1] + p[0] + p[1];
+            }
+
+          switch (ET)
+            {   
+            case ET_TRIG: case ET_QUAD: // for the compiler
+              break;
+
+            case ET_TET: 
+              if(pc > 1) 
+                nc += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
+              if(p > 1 && !ho_div_free) 
+                nc += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+	      if(RT && p >= 1)
+		nc += (p+1)*(p+2)/2;
+              break;
+
+            case ET_PRISM:
+              // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
+              if (order_inner[0]>0 )
+                {
+                  nc += (p+2)*p*(pz+1) + (p+1)*(p+2)*pz/2;
+                  if (ho_div_free)
+                    nc -= (p+1)*(p+2)*(pz+1)/2 - 1;
+                }
+              break;
+            case ET_HEX:
+              nc += 3*(p+1)*(p+1)*p;       
+              if (ho_div_free)     
+                nc -= p*p*p+3*p*p+3*p;
+              break; 
+            }
+        }
+      }
+
+    return { nv, ne, nf, nc };
+  }
 
 
   template <ELEMENT_TYPE ET>

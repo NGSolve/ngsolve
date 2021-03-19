@@ -43,6 +43,9 @@ namespace ngfem
     /// Number of degrees-of-freedom
     INLINE int GetNDof () const { return ndof; }
 
+    HD virtual tuple<int,int,int,int> GetNDofVEFC () const { return { 1, 1, 1, 1 }; }
+
+
     /// maximal polynomial order
     INLINE int Order () const { return order; }
 
