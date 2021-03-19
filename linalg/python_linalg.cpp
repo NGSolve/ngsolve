@@ -830,24 +830,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::function overload = pybind11::get_overload(this, "Mult");
         if (overload) {
           cout << "trampoline mult ... " << flush;
+          auto sx = x.shared_from_this();
+          auto sy = y.shared_from_this();
           /*
-	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
-					   NOOP_Deleter);
-	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
-					   NOOP_Deleter);
+            this version works also, IFF we used enable_shared_from_this
+          shared_ptr<BaseVector> sx(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          shared_ptr<BaseVector> sy(&y, NOOP_Deleter);
           */
-          AutoVector * avecx = const_cast<AutoVector*> (dynamic_cast<const AutoVector*>(&x));
-          AutoVector * avecy = dynamic_cast<AutoVector*>(&y);
-
-          shared_ptr<BaseVector> sx = avecx ? shared_ptr<BaseVector>(*avecx) :
-            const_cast<BaseVector&>(x).shared_from_this();
-            // shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          shared_ptr<BaseVector> sy = avecy ? shared_ptr<BaseVector>(*avecy) :
-            y.shared_from_this();
-          // shared_ptr<BaseVector>(&y, NOOP_Deleter);
-
           overload(sx,sy);
           cout << " complete" << endl;
         }
