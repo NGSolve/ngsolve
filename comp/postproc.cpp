@@ -1580,9 +1580,13 @@ namespace ngfem
         bool has_other = false;
         cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
                           {
+                            if (IsOtherCoefficientFunction (cf)) has_other = true;
+                            /*
+                              // not allowed here
                             if (dynamic_cast<ProxyFunction*> (&cf))
                               if (dynamic_cast<ProxyFunction&> (cf).IsOther())
                                 has_other = true;
+                            */
                           });
         
         if (!has_other)

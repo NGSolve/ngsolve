@@ -1703,7 +1703,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   // for DG jump terms 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me);
-
+  NGS_DLL_HEADER bool IsOtherCoefficientFunction (CoefficientFunction & coef);
 
   
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
