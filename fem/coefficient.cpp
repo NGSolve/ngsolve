@@ -5265,6 +5265,10 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
   return make_shared<OtherCoefficientFunction> (me);
 }
 
+bool IsOtherCoefficientFunction (CoefficientFunction & coef)
+{
+  return (dynamic_cast<OtherCoefficientFunction*> (&coef) != nullptr);
+}
 
 
 
