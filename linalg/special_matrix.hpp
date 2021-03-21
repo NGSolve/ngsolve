@@ -339,6 +339,64 @@ namespace ngla
   };
 
 
+  
+  class BaseMatrixFromVector : public BaseMatrix
+  {
+    shared_ptr<BaseVector> vec;
+
+  public:
+    BaseMatrixFromVector (shared_ptr<BaseVector> avec);
+
+    bool IsComplex() const override { return vec->IsComplex(); }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return vec->Size(); }
+    virtual int VWidth() const override { return 1; }
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+
+  class BaseMatrixFromMultiVector : public BaseMatrix
+  {
+    shared_ptr<MultiVector> vec;
+
+  public:
+    BaseMatrixFromMultiVector (shared_ptr<MultiVector> avec);
+
+    bool IsComplex() const override { return vec->IsComplex(); }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return vec->RefVec()->Size(); }
+    virtual int VWidth() const override { return vec->Size(); }
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+
+  class BaseMatrixFromMatrix : public BaseMatrix
+  {
+    Matrix<> mat;
+
+  public:
+    BaseMatrixFromMatrix (Matrix<> amat);
+
+    bool IsComplex() const override { return false; }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return mat.Height(); }
+    virtual int VWidth() const override { return mat.Width(); }
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+
 
 
   class LoggingMatrix : public BaseMatrix

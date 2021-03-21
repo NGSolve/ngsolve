@@ -1908,17 +1908,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
   {
-    LocalHeap lh(10000000);
-    Array<short> classnr(ma->GetNE());
+    LocalHeap lh(100000000);
+    
+    Array<int> classnr(ma->GetNE());
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
          classnr[el.Nr()] = 
-           SwitchET<ET_TRIG,ET_TET>
+           SwitchET<ET_TRIG,ET_QUAD,ET_TET,ET_HEX>
            (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+            [el] (auto et) {
+             return ET_trait<et.ElementType()>::GetClassNr(el.Vertices());
+            });
        });
-    
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
@@ -1941,12 +1944,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         ElementId ei(VOL,elclass_inds[0]);
         auto & fel = GetFE (ei, lh);
         auto & fel_l2 = l2space->GetFE (ei, lh);
-        // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
-        FE_ElementTransformation<2,2> trafo2d(ET_TRIG);
-        FE_ElementTransformation<3,3> trafo3d(ET_TET);
-        ElementTransformation & trafo = (fel.Dim() == 2) ?
-          (ElementTransformation&)trafo2d :
-          (ElementTransformation&)trafo3d;
+
+        auto & trafo = GetFEElementTransformation(fel.ElementType());
         MixedFiniteElement fel_mixed(fel, fel_l2);
         auto evaluator = GetEvaluator(VOL);
         auto l2evaluator = l2space->GetEvaluator(VOL);
@@ -1967,6 +1966,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         Matrix<> mass_l2(fel_l2.GetNDof(), fel_l2.GetNDof());
         Matrix<> mass_mixed(fel_l2.GetNDof(), fel.GetNDof());
+
         bfi_mass_l2->CalcElementMatrix (fel_l2, trafo, mass_l2, lh);
         bfi_mass_mixed->CalcElementMatrix (fel_mixed, trafo, mass_mixed, lh);
 
