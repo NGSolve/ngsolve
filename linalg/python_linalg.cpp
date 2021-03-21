@@ -947,6 +947,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         )
     */
     .def(py::init<> ())
+    .def(py::init<>([] (shared_ptr<BaseVector> vec)
+                    { return make_shared<BaseMatrixFromVector> (vec); }))
+    .def(py::init<>([] (shared_ptr<MultiVector> vec)
+                    { return make_shared<BaseMatrixFromMultiVector> (vec); }))
+    .def(py::init<>([] (Matrix<> mat)
+                    { return make_shared<BaseMatrixFromMatrix> (move(mat)); }))
     .def(py::init<>([] (py::object pyob)
                     { return make_shared<PyLinearOperator> (pyob); }))
     .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )

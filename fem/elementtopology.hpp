@@ -1517,7 +1517,22 @@ namespace ngfem
     template <typename TVN>
     static int GetClassNr (const TVN & vnums)
     {
-      return 0;
+      int verts[8];
+      for (int j = 0; j < 8; j++)
+        verts[j] = vnums[j];
+
+      int classnr = 0;
+      for (int j = 0; j < 7; j++)
+        {
+          int maxk = 0;
+          for (int k = 0; k < 8-j; k++)
+            if (verts[k] > verts[maxk]) maxk = k;
+          // compress
+          for (int k = maxk; k < 7-j; k++)
+            verts[k] = verts[k+1];
+          classnr = maxk + (8-j) * classnr;
+        }      
+      return classnr;
     }
 
     template <typename TVN>

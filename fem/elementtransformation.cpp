@@ -211,7 +211,30 @@ namespace ngfem
       mir[i].Compute();
   }
 
-  
+  const ElementTransformation & GetFEElementTransformation (ELEMENT_TYPE et)
+  {
+    static FE_ElementTransformation<0,0> trafo_point(ET_POINT);
+    static FE_ElementTransformation<1,1> trafo_segm(ET_SEGM);
+    static FE_ElementTransformation<2,2> trafo_trig(ET_TRIG);
+    static FE_ElementTransformation<2,2> trafo_quad(ET_QUAD);
+    static FE_ElementTransformation<3,3> trafo_tet(ET_TET);
+    static FE_ElementTransformation<3,3> trafo_prism(ET_PRISM);
+    static FE_ElementTransformation<3,3> trafo_pyramid(ET_PYRAMID);
+    static FE_ElementTransformation<3,3> trafo_hex(ET_HEX);
+
+    switch (et)
+      {
+      case ET_POINT: return trafo_point;
+      case ET_SEGM: return trafo_segm;
+      case ET_TRIG: return trafo_trig;
+      case ET_QUAD: return trafo_quad;
+      case ET_TET: return trafo_tet;
+      case ET_PRISM: return trafo_prism;
+      case ET_PYRAMID: return trafo_pyramid;
+      case ET_HEX: return trafo_hex;
+      }
+  }
+
   
   template class FE_ElementTransformation<1,1>;
   template class FE_ElementTransformation<2,2>;

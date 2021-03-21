@@ -4722,7 +4722,7 @@ public:
                                 int afirst, Array<int> anum, Array<int> adist)
     : BASE(1, ac1->IsComplex()), c1(ac1), first(afirst), num(anum), dist(adist)
   {
-    // cout << "create sub-tensor, first = " << first << ", num = " << num << ", dist = " << dist << endl;
+    cout << "create sub-tensor, first = " << first << ", num = " << num << ", dist = " << dist << endl;
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();
@@ -4784,6 +4784,13 @@ public:
           for (size_t k = 0; k < nv; k++)
             values(i,k) = temp(first+i*dist[0], k);
         break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            for (size_t k = 0; k < nv; k++)
+              values(ii,k) = temp(first+i*dist[0]+j*dist[1], k);
+        break;
+        
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
       }
@@ -4801,6 +4808,12 @@ public:
         for (int i = 0; i < num[0]; i++)
           values.Row(i).Range(ir.Size()) = in0.Row(first+i*dist[0]);
         break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
+        break;
+        
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
       }
@@ -4824,6 +4837,12 @@ public:
         for (int i = 0; i < num[0]; i++)
           values(i) = v1(first+i*dist[0]);
         break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values(ii) = v1(first+i*dist[0]+j*dist[1]);
+        break;
+
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
       }
@@ -4839,6 +4858,11 @@ public:
       case 1:
         for (int i = 0; i < num[0]; i++)
           values(i) = values(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values(ii) = values(first+i*dist[0]+j*dist[1]);
         break;
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");

@@ -871,6 +871,104 @@ namespace ngla
   }
 
 
+
+
+  
+  BaseMatrixFromVector :: BaseMatrixFromVector (shared_ptr<BaseVector> avec)
+    : vec(avec) { }
+  
+  void BaseMatrixFromVector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y += s * x.FV<double>()(0) * (*vec);
+  }
+    
+  void BaseMatrixFromVector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>()(0) += s * InnerProduct(x, *vec);
+  }
+  
+  AutoVector BaseMatrixFromVector :: CreateRowVector () const
+  {
+    // missing parallel: 1 dof for all
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(1);   
+    return sp;
+  }
+  
+  AutoVector BaseMatrixFromVector :: CreateColVector () const
+  {
+    return vec->CreateVector();
+  }
+
+
+
+
+
+  
+  BaseMatrixFromMultiVector :: BaseMatrixFromMultiVector (shared_ptr<MultiVector> avec)
+    : vec(avec) { }
+  
+  void BaseMatrixFromMultiVector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    // y += s * x.FV<double>()(0) * (*vec);
+    Vector<> tmp = x.FV<double>();
+    tmp *= s;
+    vec->AddTo(tmp, y);
+  }
+    
+  void BaseMatrixFromMultiVector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    Vector<> tmp = vec->InnerProductD(x);
+    y.FV<double>() += s *  tmp;
+  }
+  
+  AutoVector BaseMatrixFromMultiVector :: CreateRowVector () const
+  {
+    // missing parallel: 1 dof for all
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(vec->Size());   
+    return sp;
+  }
+  
+  AutoVector BaseMatrixFromMultiVector :: CreateColVector () const
+  {
+    return vec->RefVec()->CreateVector();
+  }
+
+
+
+  
+  BaseMatrixFromMatrix :: BaseMatrixFromMatrix (Matrix<> amat)
+    : mat(move(amat)) { }
+  
+  void BaseMatrixFromMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>() += s * mat * x.FV<double>();    
+  }
+    
+  void BaseMatrixFromMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>() += s * Trans(mat) * x.FV<double>();
+  }
+  
+  AutoVector BaseMatrixFromMatrix :: CreateRowVector () const
+  {
+    // missing parallel: 1 dof for all
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(mat.Width());   
+    return sp;
+  }
+  
+  AutoVector BaseMatrixFromMatrix :: CreateColVector () const
+  {
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(mat.Height());   
+    return sp;
+  }
+
+
+
+
+
+
+  
+  
   string PS(PARALLEL_STATUS stat)
   {
     switch (stat)
@@ -916,7 +1014,7 @@ namespace ngla
     auto vec = mat->CreateRowVector();
     *out << "matrix '" << label << "' CreateRowVector "
          << "size: " << vec.Size() << " " << PS(vec.GetParallelStatus()) << endl;
-    return move(vec);
+    return vec;
   }
   
   AutoVector LoggingMatrix :: CreateColVector () const
@@ -924,7 +1022,7 @@ namespace ngla
     auto vec = mat->CreateColVector();
     *out << "matrix '" << label << "' CreateColVector "
          << "size: " << vec.Size() << " " << PS(vec.GetParallelStatus()) << endl;
-    return move(vec);
+    return vec;
   }
 
   
