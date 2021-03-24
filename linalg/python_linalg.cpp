@@ -1390,6 +1390,13 @@ inverse : string
          py::arg("size"), py::arg("complex")=false)
     ;
 
+  py::class_<ngla::DiagonalMatrix<>, shared_ptr<ngla::DiagonalMatrix<>>, BaseMatrix> (m, "DiagonalMatrix")
+    .def(py::init([](shared_ptr<BaseVector> vec)
+                  {
+                    return make_shared<DiagonalMatrix<double>> (dynamic_pointer_cast<VVector<double>>(vec));
+                  }))
+    ;
+
   py::class_<Real2ComplexMatrix<double,Complex>, shared_ptr<Real2ComplexMatrix<double,Complex>>,
              BaseMatrix> (m, "Real2ComplexMatrix")
     .def(py::init<shared_ptr<BaseMatrix>>())

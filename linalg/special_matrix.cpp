@@ -177,20 +177,21 @@ namespace ngla
         
         auto sx = x.FV<TV_ROW>();
         auto sy = y.FV<TV_COL>();
-        
+        auto sd = this->diag->FV();
         ParallelForRange
-          (Range(diag), [sx,sy,s,this] (IntRange myrange)
+          (Range(*diag), [sx,sy,sd,s] (IntRange myrange)
            {
              for (size_t i : myrange)
-               sy(i) += s * this->diag(i)*sx(i);
+               sy(i) += s * sd(i)*sx(i);
+               // sy(i) += s * this->diag(i)*sx(i);
            });
       }
     else
       {
         auto sx = x.SV<TSCAL>();
         auto sy = y.SV<TSCAL>();
-        for (size_t i : Range(diag))
-          sy(i) += s * diag(i)*sx(i);
+        for (size_t i : Range(*diag))
+          sy(i) += s * (*diag)(i)*sx(i);
       }
   }
 
@@ -203,26 +204,26 @@ namespace ngla
   template <typename TM>  
   AutoVector DiagonalMatrix<TM> :: CreateRowVector () const 
   {
-    return CreateBaseVector(diag.Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
+    return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
   }
 
   template <typename TM>    
   AutoVector DiagonalMatrix<TM> :: CreateColVector () const 
   {
-    return CreateBaseVector(diag.Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::HEIGHT);
+    return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::HEIGHT);
   }
 
   template <typename TM>    
   shared_ptr<BaseMatrix> DiagonalMatrix<TM> ::
   InverseMatrix (shared_ptr<BitArray> subset) const
   {
-    VVector<TM> v2(diag.Size());
+    VVector<TM> v2(diag->Size());
     if (subset)
       {
-        for (size_t i = 0; i < diag.Size(); i++)
+        for (size_t i = 0; i < diag->Size(); i++)
           if (subset->Test(i))
             {
-              v2(i) = diag(i);
+              v2(i) = (*diag)(i);
               CalcInverse(v2(i));
             }
           else
@@ -230,9 +231,9 @@ namespace ngla
       }
     else
       {
-        for (size_t i = 0; i < diag.Size(); i++)
+        for (size_t i = 0; i < diag->Size(); i++)
           {
-            v2(i) = diag(i);
+            v2(i) = (*diag)(i);
             CalcInverse(v2(i));
           }
       }

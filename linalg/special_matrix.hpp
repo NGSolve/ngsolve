@@ -43,24 +43,26 @@ namespace ngla
   template <typename TM=double>
   class DiagonalMatrix : public BaseMatrix
   {
-    VVector<TM> diag;
+    shared_ptr<VVector<TM>> diag;
   public:
     // typedef typename mat_traits<TM>::TV_ROW TV_ROW;
     // typedef typename mat_traits<TM>::TV_COL TV_COL;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     
     DiagonalMatrix(size_t h)
-      : diag(h) { }
+      : diag(make_shared<VVector<TM>>(h)) { }
     DiagonalMatrix(const VVector<TM> & diag_)
+      : diag(make_shared<VVector<TM>>(diag_)) { } 
+    DiagonalMatrix(shared_ptr<VVector<TM>> diag_)
       : diag(diag_) { } 
-
+    
     bool IsComplex() const override { return false; } 
-    TM & operator() (size_t i) { return diag(i); }
-    const TM & operator() (size_t i) const { return diag(i); }
-    int VHeight() const override { return diag.Size(); }
-    int VWidth() const override { return diag.Size(); }
+    TM & operator() (size_t i) { return (*diag)(i); }
+    const TM & operator() (size_t i) const { return (*diag)(i); }
+    int VHeight() const override { return diag->Size(); }
+    int VWidth() const override { return diag->Size(); }
 
-    BaseVector & AsVector() override { return diag; }
+    BaseVector & AsVector() override { return *diag; }
     ostream & Print (ostream & ost) const override;
     
     AutoVector CreateRowVector () const override;

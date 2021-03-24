@@ -19,7 +19,7 @@ from .ngstd import Timers, Timer, IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
 from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
     CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
-    Projector, IdentityMatrix, Embedding, PermutationMatrix, \
+    Projector, DiagonalMatrix, IdentityMatrix, Embedding, PermutationMatrix, \
     ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
 from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
