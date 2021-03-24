@@ -2113,7 +2113,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       paralleldofs -> GetNDofGlobal() : GetNDof(); 
   }
 
-  BitArray FESpace :: GetDofs (Region reg) const
+  BitArray FESpace :: GetDofs (const Region & reg) const
   {
     BitArray ba(GetNDof());
     ba.Clear();

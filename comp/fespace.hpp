@@ -454,7 +454,7 @@ ANY                  1 1 1 1 | 15
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
     
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
-    BitArray GetDofs (Region reg) const;
+    BitArray GetDofs (const Region & reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
 
     /// get coupling types of dofs
