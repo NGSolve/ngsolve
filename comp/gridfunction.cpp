@@ -237,6 +237,15 @@ namespace ngcomp
     Array<int> cnti(fes->GetNDof());
     cnti = 0;
 
+    if (reg)
+      {
+        auto regdofs = make_shared<BitArray> (fes->GetDofs(*reg));
+        Projector p(regdofs, false);
+        p.Project (GetVector(mdcomp));
+      }
+    else
+      GetVector(mdcomp) = 0.0;
+   
     auto vb = reg ? reg->VB() : VOL;
     IterateElements 
       (*fes, vb, clh, 
