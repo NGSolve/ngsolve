@@ -1186,9 +1186,10 @@ component : int
 
   py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
     (m,"MatrixValued")
-    .def(py::init([] (shared_ptr<FESpace> space, int dim, bool symmetric) {
+    .def(py::init([] (shared_ptr<FESpace> space, int dim, bool symmetric, bool deviatoric) {
           Flags flags;
           if (symmetric) flags.SetFlag("symmetric");
+          if (deviatoric) flags.SetFlag("deviatoric");
           auto matspace = make_shared<MatrixFESpace> (space, dim, flags);
           matspace->Update();
           matspace->FinalizeUpdate();
@@ -1207,7 +1208,7 @@ component : int
           fes->FinalizeUpdate();
           return fes;
           */
-        }),py::arg("space"), py::arg("dim"), py::arg("symmetric"))
+        }),py::arg("space"), py::arg("dim"), py::arg("symmetric"), py::arg("deviatoric")=false)
     ;
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")

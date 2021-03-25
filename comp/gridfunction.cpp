@@ -237,14 +237,16 @@ namespace ngcomp
     Array<int> cnti(fes->GetNDof());
     cnti = 0;
 
+    auto tempvec = GetVector(mdcomp).CreateVector();
+    
     if (reg)
       {
         auto regdofs = make_shared<BitArray> (fes->GetDofs(*reg));
-        Projector p(regdofs, false);
-        p.Project (GetVector(mdcomp));
+        Projector proj(regdofs, false);
+        tempvec = proj * GetVector(mdcomp);
       }
     else
-      GetVector(mdcomp) = 0.0;
+      tempvec = 0.0;
    
     auto vb = reg ? reg->VB() : VOL;
     IterateElements 
@@ -260,23 +262,32 @@ namespace ngcomp
          const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
          
          FlatVector<> elvec(ndof, lh), elvec1(ndof, lh);
+
+         // GetElementVector (mdcomp, el.GetDofs(), elvec1);
+         // cout << "elvec, before: " << endl << elvec1 << endl;
+         
          // fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof/dimcf, dimcf), lh);
          fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, 1), lh);
+         // cout << "elvec, minmizer: " << endl << elvec << endl;
          
          fes->TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
 
-         GetElementVector (mdcomp, el.GetDofs(), elvec1);
+         // GetElementVector (mdcomp, el.GetDofs(), elvec1);
+         tempvec.GetIndirect (el.GetDofs(), elvec1);
          elvec1 += elvec;
-         SetElementVector (mdcomp, el.GetDofs(), elvec1);
-
+         // SetElementVector (mdcomp, el.GetDofs(), elvec1);
+         tempvec.SetIndirect (el.GetDofs(), elvec1);
+         
          for (auto d : el.GetDofs())
            if (IsRegularDof(d)) cnti[d]++;
        });
 
 #ifdef PARALLEL
     AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
-    GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
-    GetVector(mdcomp).Cumulate(); 	 
+    // GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+    // GetVector(mdcomp).Cumulate(); 	 
+    (*tempvec).SetParallelStatus(DISTRIBUTED);
+    (*tempvec).Cumulate(); 	 
 #endif
 
     ParallelForRange
@@ -289,11 +300,15 @@ namespace ngcomp
            if (cnti[i])
              {
                dnums[0] = i;
-               GetElementVector (mdcomp, dnums, fluxi);
+               // GetElementVector (mdcomp, dnums, fluxi);
+               tempvec.GetIndirect (dnums, fluxi);               
                fluxi /= double (cnti[i]);
-               SetElementVector (mdcomp, dnums, fluxi);
+               tempvec.SetIndirect (dnums, fluxi);                              
+               // SetElementVector (mdcomp, dnums, fluxi);
              }
        });
+
+    GetVector(mdcomp) = tempvec;
   }
   
   

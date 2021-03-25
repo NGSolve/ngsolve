@@ -144,11 +144,12 @@ namespace ngfem
   {
   protected:
     int vdim;
+    bool deviatoric;
     int dim;
     const FiniteElement & scalfe;
   public:
     /// initialize with pointers to components, copy pointers
-    SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim);
+    SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim, bool adeviatoric);
 
     virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
     /// number of components

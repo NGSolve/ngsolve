@@ -90,6 +90,8 @@ namespace ngfem
 
       for (int step = 0; step < 5; step++)
         {
+          // cout << "step = " << step; // << ", starting: " << endl << xk << endl;
+      
           double energy = 0;
 
           auto proxy1 = proxy;
@@ -113,8 +115,9 @@ namespace ngfem
 
               if (k == 0)
                 for (size_t i = 0; i < mir.Size(); i++)
-                  energy += ddval(i,0).Value();
+                  energy += mir[i].GetWeight() * ddval(i,0).Value();
             }
+          // cout << "energy old = " << energy << endl;
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
@@ -156,11 +159,16 @@ namespace ngfem
                   Matrix proj_mat = Trans(*vsemb) * mat * *vsemb;
                   Vector proj_sol(proj_rhs.Size());
 
+                  // cout << "proj rhs = " << proj_rhs << endl;
+                  // cout << "proj mat = " << proj_mat << endl;
+                  
                   // cout << "mat = " << mat << ", projmat = " << proj_mat << endl;
                   CalcInverse (proj_mat);
                   proj_sol = proj_mat * proj_rhs;
+                  // cout << "proj sol = " << proj_sol << endl;
+                  
                   w.Row(i) = *vsemb * proj_sol;
-                  // cout << "sol = " << proj_sol << endl;
+                  // cout << "sol = " << w << endl;
                 }
             }
           
@@ -180,11 +188,10 @@ namespace ngfem
           double alpha = 1;
           // linesearch
           double newenergy = energy + 1;
-          
+          // cout << "w = " << endl << w << endl;
           while (newenergy > energy && alpha > 1e-10)
             {
               xk = xold - alpha * w;
-              alpha /= 2;
 
               newenergy = 0;
               ud.trialfunction = proxy;
@@ -193,8 +200,13 @@ namespace ngfem
               ud.test_comp = 0;
               expression -> Evaluate (mir, ddval);
               for (size_t i = 0; i < mir.Size(); i++)
-                newenergy += ddval(i,0).Value();
+                newenergy +=  mir[i].GetWeight() * ddval(i,0).Value();
+
+              // cout << "alpha = " << alpha << ", newen = " << newenergy << endl;
+              alpha /= 2;
             }
+
+          // cout << "energy-dec: " << newenergy-energy << endl;
         }
 
       // cout << "result = " << xk << endl;

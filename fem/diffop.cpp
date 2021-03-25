@@ -1064,6 +1064,7 @@ namespace ngfem
             mat.Row(i*vdim+j).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
             mat.Row(j*vdim+i).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
           }
+    // cout << "symmat, bmat = " << mat << endl;
   }
   
   void SymMatrixDifferentialOperator ::
@@ -1080,6 +1081,8 @@ namespace ngfem
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < VSDim(); i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
+
+    // cout << "symmat, bmat vs = " << mat << endl;    
   }
   
   void SymMatrixDifferentialOperator ::
@@ -1108,7 +1111,8 @@ namespace ngfem
           tens(ii,STAR,vdim*i+j,STAR) = smat;
           tens(ii,STAR,vdim*j+i,STAR) = smat;
         }
-    //    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
+
+    // cout << "symmat, SIMD bmat tensor = " << tens << endl;        
   }
 
   
@@ -1134,6 +1138,7 @@ namespace ngfem
           flux.Row(j*vdim+i).Range(0, mir.Size()) = hflux.Row(ii);
         }
     
+    // cout << "symmat, apply, x = " << x.Range(bfel.GetNDof()) << ", y = " << flux.AddSize(vdim*vdim, mir.Size()) << endl;
   }
 
 
@@ -1156,7 +1161,8 @@ namespace ngfem
       for (int j = 0; j <= i; j++, ii++)
         {
           hflux.Row(ii) += flux.Row(i*vdim+j).Range(0, mir.Size());
-          hflux.Row(ii) += flux.Row(j*vdim+i).Range(0, mir.Size());
+          if (i != j)
+            hflux.Row(ii) += flux.Row(j*vdim+i).Range(0, mir.Size());
         }
 
     for (int k = 0; k < hflux.Height(); k++)
@@ -1165,6 +1171,182 @@ namespace ngfem
 
 
 
+
+
+  SymDevMatrixDifferentialOperator ::
+  SymDevMatrixDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
+                                 int avdim)
+  : DifferentialOperator(sqr(avdim)*adiffop->Dim(), adiffop->BlockDim(),
+                         adiffop->VB(), adiffop->DiffOrder()),
+      diffop(adiffop), vdim(avdim)
+  {
+    if (adiffop->Dimensions().Size() == 0)
+      {
+        SetDimensions ( { avdim, avdim } );
+        Matrix<> vsembedding(sqr(vdim), vdim*(vdim+1)/2-1);
+        vsembedding = 0.0;
+        for (int i = 0, ii = 0; i < vdim; i++)
+          for (int j = 0; j <= i; j++, ii++)
+            if (ii < vsembedding.Width())
+              {
+                vsembedding(i*vdim+j, ii) = 1;
+                vsembedding(j*vdim+i, ii) = 1;
+              }
+        for (int i = 0; i < vdim-1; i++)
+          vsembedding.Row(vdim*vdim-1) -= vsembedding.Row(i*(vdim+1));
+        cout << "SymDev vsembedding = " << vsembedding << endl;
+        SetVectorSpaceEmbedding(vsembedding);
+      }
+    else
+      throw Exception("no matrix-valued of vector-valued possible");
+  }
+
+
+  SymDevMatrixDifferentialOperator :: ~SymDevMatrixDifferentialOperator ()  { ; }
+  
+
+  void SymDevMatrixDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const 
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();    
+
+    size_t ndi = fel.GetNDof();
+    size_t dimi = 1;  // diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        if (ii != 0)
+          {
+            if (j+1 < vdim)
+              {
+                mat.Row(i*vdim+j).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
+                mat.Row(j*vdim+i).Range(ii*ndi, (ii+1)*ndi) = mat.Row(0).Range(ndi);
+              }
+            else
+              {
+                for (int k = 0; k < vdim-1; k++)
+                  mat.Row(i*vdim+j) -= mat.Row(k*(vdim+1)).Range(ndi);                
+              }
+          }
+
+    /*
+    cout << "CalcMatrix, mat = " << endl << mat << endl;
+    Matrix<double,ColMajor> hmat( (*GetVSEmbedding()).Height(), mat.Width());
+
+    CalcMatrixVS (bfel, mip, hmat, lh);
+    Matrix<> m2 =  (*GetVSEmbedding()) * hmat;
+    cout << "m2 = " << m2 << endl;
+    cout << "DIFF = " << L2Norm(m2-mat) << endl;
+    */
+  }
+  
+  void SymDevMatrixDifferentialOperator ::
+  CalcMatrixVS (const FiniteElement & bfel,
+                const BaseMappedIntegrationPoint & mip,
+                SliceMatrix<double,ColMajor> mat, 
+                LocalHeap & lh) const 
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+    size_t dimi = 1;  // diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
+    for (int i = 1; i < VSDim(); i++)
+      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
+  }
+
+  /*
+  void SymDevMatrixDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              BareSliceMatrix<SIMD<double>> bmat) const
+  {
+    auto & fel = static_cast<const SymDevMatrixFiniteElement&> (bfel);
+    auto & feli = fel.ScalFE();
+
+    size_t ndi = feli.GetNDof();
+    // size_t dimi = diffop->Dim();
+
+    auto mat = bmat.AddSize(sqr(vdim)*bfel.GetNDof(), mir.Size());
+    mat = 0.0;
+
+    STACK_ARRAY(SIMD<double>, mem, ndi*mir.Size());
+    FlatMatrix<SIMD<double>> smat(ndi, mir.Size(), &mem[0]);
+    
+    diffop->CalcMatrix (feli, mir, smat);
+    FlatTensor<4,SIMD<double>> tens(vdim*(vdim+1)/2, ndi, sqr(vdim), mir.Size(), bmat.Data());
+    
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          tens(ii,STAR,vdim*i+j,STAR) = smat;
+          tens(ii,STAR,vdim*j+i,STAR) = smat;
+        }
+    //    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
+  }
+
+  
+  void SymDevMatrixDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & mir,
+         BareSliceVector<double> x, 
+         BareSliceMatrix<SIMD<double>> flux) const
+  {
+    auto & fel = static_cast<const SymDevMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+
+    STACK_ARRAY(SIMD<double>, mem, vdim*(vdim+1)/2*mir.Size());
+    FlatMatrix<SIMD<double>> hflux(vdim*(vdim+1)/2, mir.Size(), &mem[0]);
+    
+    for (int k = 0; k < hflux.Height(); k++)
+      diffop->Apply(fel, mir, x.Range(k*ndi, (k+1)*ndi), hflux.Rows(k,k+1));
+
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          flux.Row(i*vdim+j).Range(0, mir.Size()) = hflux.Row(ii);
+          flux.Row(j*vdim+i).Range(0, mir.Size()) = hflux.Row(ii);
+        }
+    
+  }
+
+
+
+  void SymDevMatrixDifferentialOperator ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<SIMD<double>> flux,
+            BareSliceVector<double> y) const
+  {
+    auto & fel = static_cast<const SymDevMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+
+    STACK_ARRAY(SIMD<double>, mem, vdim*(vdim+1)/2*mir.Size());
+    FlatMatrix<SIMD<double>> hflux(vdim*(vdim+1)/2, mir.Size(), &mem[0]);
+    
+    hflux = SIMD<double> (0.0);
+    
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          hflux.Row(ii) += flux.Row(i*vdim+j).Range(0, mir.Size());
+          hflux.Row(ii) += flux.Row(j*vdim+i).Range(0, mir.Size());
+        }
+
+    for (int k = 0; k < hflux.Height(); k++)
+      diffop->AddTrans(fel, mir, hflux.Rows(k,k+1), y.Range(k*ndi, (k+1)*ndi));
+  }
+  */
+
+
+
+  
 
   
   /*
