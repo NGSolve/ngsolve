@@ -551,7 +551,10 @@ namespace ngla
   void PardisoInverse<TM,TV_ROW,TV_COL> ::
   MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    const_cast<integer&>(hparams[11]) = 1; // Solve transposed matrix
+    const_cast<integer&>(hparams[11]) = 2; // Solve transposed matrix
+
+    // See https://software.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-c/top/sparse-solver-routines/onemkl-pardiso-parallel-direct-sparse-solver-interface/pardiso-iparm-parameter.html
+    
     Mult(x,y);
     const_cast<integer&>(hparams[11]) = 0;
   }
