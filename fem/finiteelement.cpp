@@ -109,8 +109,10 @@ namespace ngfem
 
 
 
-  SymMatrixFiniteElement :: SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim)
-    : vdim(avdim), dim(avdim*(avdim+1)/2), scalfe(ascalfe)
+  SymMatrixFiniteElement :: SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim, bool adeviatoric)
+    : vdim(avdim), deviatoric(adeviatoric),
+      dim(avdim*(avdim+1)/2 - (adeviatoric ? 1 : 0)),
+      scalfe(ascalfe)
   {
     ndof = dim*scalfe.GetNDof();
     order = scalfe.Order();
@@ -119,7 +121,7 @@ namespace ngfem
 
   void SymMatrixFiniteElement :: Print (ostream & ost) const
   {
-    ost << "SymMatrixFiniteElement" << endl;
+    ost << string("Sym") + (deviatoric ? "Dev" : "") + "MatrixFiniteElement" << endl;
     scalfe.Print (ost);
   }
 
@@ -129,16 +131,20 @@ namespace ngfem
                                               LocalHeap & lh) const
   {
     size_t scalndof = scalfe.GetNDof();
-    size_t dim = vdim*vdim;
-    STACK_ARRAY(double, mem, ndof*dim); 
-    FlatMatrix temp(scalndof, dim, &mem[0]);
+    size_t fulldim = vdim*vdim;
+    STACK_ARRAY(double, mem, ndof*fulldim); 
+    FlatMatrix temp(scalndof, fulldim, &mem[0]);
     scalfe.Interpolate (trafo, func, temp, lh);
+    // cout << "interpol, temp = " << temp << endl;
     
     // now we need to transpose, not sure if we stay with that
     for (int i = 0, ii = 0; i < vdim; i++)
       for (int j = 0; j <= i; j++, ii++)
-        for (int k = 0; k < scalndof; k++)
-          coefs(ii*scalndof+k, 0) = 0.5 * (temp(k,i*vdim+j)+temp(k,j*vdim+i));
+        if (ii < dim)
+          for (int k = 0; k < scalndof; k++)
+            coefs(ii*scalndof+k, 0) = 0.5 * (temp(k,i*vdim+j)+temp(k,j*vdim+i));
+
+    // cout << "interpol, coefs = " << coefs << endl;    
   }
 }
 

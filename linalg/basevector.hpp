@@ -595,15 +595,34 @@ namespace ngla
 
 
     void GetIndirect (FlatArray<int> ind, 
-			      FlatVector<double> v) const
+                      FlatVector<double> v) const
     {
       vec -> GetIndirect (ind, v);
     }
     void GetIndirect (FlatArray<int> ind, 
-			      FlatVector<Complex> v) const
+                      FlatVector<Complex> v) const
     {
       vec -> GetIndirect (ind, v);
     }
+
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v)
+    {
+      vec->SetIndirect (ind,v);
+    }
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v)
+    {
+      vec->SetIndirect (ind,v);      
+    }
+    
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false)
+    {
+      vec->AddIndirect (ind, v, use_atomic);
+    }
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false)
+    {
+      vec->AddIndirect (ind, v, use_atomic);
+    }
+    
 
     void Cumulate () const 
     { vec -> Cumulate(); }

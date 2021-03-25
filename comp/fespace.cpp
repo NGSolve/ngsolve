@@ -3562,8 +3562,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     : CompoundFESpace (space->GetMeshAccess(), flags), vdim(avdim)
   {
     symmetric = flags.GetDefineFlag("symmetric");
+    deviatoric = flags.GetDefineFlag("deviatoric");
+
+    if (deviatoric && !symmetric) throw Exception ("non-symmetric and deviatoric not supported");
     
     int dim = symmetric ? vdim*(vdim+1)/2 : sqr(vdim);
+    if (deviatoric) dim--;
     for (int i = 0; i < dim; i++)
       AddSpace (space);
     
@@ -3572,7 +3576,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
         if (auto eval = spaces[0] -> GetEvaluator(vb))
           {
             if (symmetric)
-              evaluator[vb] = make_shared<SymMatrixDifferentialOperator> (eval, vdim);
+              {
+                if (deviatoric)
+                  evaluator[vb] = make_shared<SymDevMatrixDifferentialOperator> (eval, vdim);
+                else
+                  evaluator[vb] = make_shared<SymMatrixDifferentialOperator> (eval, vdim);
+              }
             else
               evaluator[vb] = make_shared<MatrixDifferentialOperator> (eval, vdim);
           }
@@ -3586,15 +3595,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
       additional_evaluators.Set (additional.GetName(i),
                                  make_shared<VectorDifferentialOperator>(additional[i], dim));
     */
+    /*
     if (symmetric)
-      type = "SymMatrix"+(*this)[0]->type;
+      type = "Sym"+Matrix"+(*this)[0]->type;
     else
       type = "Matrix"+(*this)[0]->type;
+    */
+    type = string((symmetric) ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
   }
   
   string MatrixFESpace :: GetClassName () const
   {
-    return ( symmetric ? "SymMatrix" : "Matrix" ) + (*this)[0]->GetClassName();
+    // return ( symmetric ? "SymMatrix" : "Matrix" ) + (*this)[0]->GetClassName();
+    return string(symmetric ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->GetClassName();
   }
 
 
@@ -3605,7 +3618,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       {
         const FiniteElement & fe0 = spaces[0]->GetFE(ei, alloc);
-        return *new (alloc) SymMatrixFiniteElement(fe0, vdim);
+        return *new (alloc) SymMatrixFiniteElement(fe0, vdim, deviatoric);
       }
   }
 
