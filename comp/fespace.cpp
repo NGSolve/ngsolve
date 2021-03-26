@@ -2322,6 +2322,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
     FESpace::Update();
     if (low_order_space) low_order_space -> Update();
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+
+    if (first_update)
+      {
+	used_vertex.SetSize(ma->GetNV());
+	used_vertex = false;
+
+	for (auto vb : { VOL, BND })
+	  ParallelFor
+	    (ma->GetNE(vb), [&] (size_t nr)
+	     {
+	       ElementId ei(vb, nr);
+	       Ngs_Element el = (*ma)[ei];
+
+	       if (!DefinedOn (el)) return;
+
+	       used_vertex[el.Vertices()] = true;
+	     });
+      }
+
     // if (ma->GetNLevels() > ndlevel.Size())
       {
 	size_t ndof = ma->GetNV();
@@ -2351,6 +2372,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
             for (DofId d : el.GetDofs())
               if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
       }
+
+    UpdateCouplingDofArray();
+  }
+
+  void NodalFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(GetNDof());
+    ParallelFor
+      (ma->GetNV(), [&] (size_t i)
+       {
+         ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
+       });
   }
 
   void NodalFESpace :: DoArchive (Archive & archive)

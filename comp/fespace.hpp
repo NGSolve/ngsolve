@@ -983,6 +983,7 @@ ANY                  1 1 1 1 | 15
     ///
     // Array<int> ndlevel;
     bool hb_defined;
+    Array<bool> used_vertex;
 
   public:
 
@@ -999,6 +1000,7 @@ ANY                  1 1 1 1 | 15
 
     ///
     void Update () override;
+    void UpdateCouplingDofArray() override;
     
     virtual void DoArchive (Archive & archive) override;
 
