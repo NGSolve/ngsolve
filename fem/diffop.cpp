@@ -1230,7 +1230,7 @@ namespace ngfem
             else
               {
                 for (int k = 0; k < vdim-1; k++)
-                  mat.Row(i*vdim+j) -= mat.Row(k*(vdim+1)).Range(ndi);                
+                  mat.Row(i*vdim+j) -= mat.Row(k*(vdim+1));
               }
           }
 
