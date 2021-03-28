@@ -2329,6 +2329,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	used_vertex.SetSize(ma->GetNV());
 	used_vertex = false;
+        used_edge.SetSize(ma->GetNEdges());
+        used_edge = false;
 
 	for (auto vb : { VOL, BND })
 	  ParallelFor
@@ -2340,6 +2342,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	       if (!DefinedOn (el)) return;
 
 	       used_vertex[el.Vertices()] = true;
+               used_edge[el.Edges()] = true;
 	     });
       }
 
@@ -2384,6 +2387,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
        {
          ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
        });
+
+    if(order > 1 && GetNDof() > ma->GetNV())
+      ParallelFor
+        (ma->GetNEdges(), [&] (size_t i)
+         {
+           ctofdof[ma->GetNV() + i] = used_edge[i] ? INTERFACE_DOF : UNUSED_DOF;
+         });
   }
 
   void NodalFESpace :: DoArchive (Archive & archive)
