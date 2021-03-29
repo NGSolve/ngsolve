@@ -335,6 +335,10 @@ static shared_ptr<PDE> pde;
   public:
     WorkerOutArchive () : Archive(true) { ; }
 
+    virtual Archive & operator & (float & f)
+    {
+      return *this;
+    }
     virtual Archive & operator & (double & d) 
     {
       return *this; 
