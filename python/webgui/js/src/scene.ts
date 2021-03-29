@@ -1841,8 +1841,8 @@ export class Scene {
 
     if(this.is_complex)
     {
-      uniforms.complex_scale.value.x = Math.cos(gui_status.Complex.phase);
-      uniforms.complex_scale.value.y = Math.sin(gui_status.Complex.phase);
+      uniforms.complex_scale.value.x = Math.cos(-gui_status.Complex.phase);
+      uniforms.complex_scale.value.y = Math.sin(-gui_status.Complex.phase);
     }
 
     if(gui_status.Vectors.show)
