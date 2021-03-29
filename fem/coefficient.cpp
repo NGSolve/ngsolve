@@ -2654,13 +2654,14 @@ public:
   {
     auto dims_c1 = c1 -> Dimensions();
     auto dims_c2 = c2 -> Dimensions();
-    if (dims_c1.Size() != 2 || dims_c2.Size() != 1)
+    if (dims_c1.Size() < 2 || dims_c2.Size() != 1)
       throw Exception("Not a mat-vec multiplication");
-    if (dims_c1[1] != dims_c2[0])
+    if (dims_c1.Last() != dims_c2[0])
       throw Exception(string ("Matrix dimensions don't fit: mat is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) + ", vec is " + ToLiteral(dims_c2[0]));
-    SetDimensions (ngstd::INT<1>(dims_c1[0]));
-    inner_dim = dims_c1[1];
+    // SetDimensions (ngstd::INT<1>(dims_c1[0]));
+    SetDimensions (dims_c1.Range(0, dims_c1.Size()-1)); // ngstd::INT<1>(dims_c1[0]));    
+    inner_dim = dims_c1.Last(); // [1];
   }
 
   void DoArchive(Archive& ar) override
@@ -2725,14 +2726,14 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    FlatArray<int> hdims = Dimensions();
-    Vector<AutoDiffDiff<1,bool>> va(hdims[0]*inner_dim), vb(inner_dim);
+    // FlatArray<int> hdims = Dimensions();
+    Vector<AutoDiffDiff<1,bool>> va(Dimension()*inner_dim), vb(inner_dim);
     c1->NonZeroPattern (ud, va);
     c2->NonZeroPattern (ud, vb);
     
     values = false;
     
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < Dimension(); i++)
       for (size_t j = 0; j < inner_dim; j++)
         values(i) += va(i*inner_dim+j) * vb(j);
   }
@@ -2744,10 +2745,10 @@ public:
     auto va = input[0];
     auto vb = input[1];
     
-    FlatArray<int> hdims = Dimensions();    
+    // FlatArray<int> hdims = Dimensions();    
     values = false;
     
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < Dimension(); i++)
       for (size_t j = 0; j < inner_dim; j++)
         values(i) += va(i*inner_dim+j) * vb(j);
   }
@@ -2757,6 +2758,7 @@ public:
     throw Exception ("MultMatVecCF:: scalar evaluate for matrix called");
   }
 
+  /*
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const override
   {
@@ -2787,20 +2789,21 @@ public:
     result = a * vb;
     //cout << "MultMatMat: complex not implemented" << endl;
   }  
-
+  */
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    FlatArray<int> hdims = Dimensions();    
-    STACK_ARRAY(T, hmem1, ir.Size()*hdims[0]*inner_dim);
+    // FlatArray<int> hdims = Dimensions();
+    int dim = Dimension();
+    STACK_ARRAY(T, hmem1, ir.Size()*dim*inner_dim);
     STACK_ARRAY(T, hmem2, ir.Size()*inner_dim);
-    FlatMatrix<T,ORD> temp1(hdims[0]*inner_dim, ir.Size(), &hmem1[0]);
+    FlatMatrix<T,ORD> temp1(dim*inner_dim, ir.Size(), &hmem1[0]);
     FlatMatrix<T,ORD> temp2(inner_dim, ir.Size(), &hmem2[0]);
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
     values.AddSize(Dimension(),ir.Size()) = T(0.0);
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < dim; i++)
       for (size_t j = 0; j < inner_dim; j++)
         for (size_t k = 0; k < ir.Size(); k++)
           values(i,k) += temp1(i*inner_dim+j, k) * temp2(j,k);
@@ -2814,10 +2817,11 @@ public:
     auto va = input[0];
     auto vb = input[1];
     
-    FlatArray<int> hdims = Dimensions();    
+    // FlatArray<int> hdims = Dimensions();
+    int dim = Dimension();
     values.AddSize(Dimension(),ir.Size()) = T(0.0);
     
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < dim; i++)
       for (size_t j = 0; j < inner_dim; j++)
         for (size_t k = 0; k < ir.Size(); k++)
           values(i,k) += va(i*inner_dim+j, k) * vb(j,k);
@@ -4286,7 +4290,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       }
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       return make_shared<MultMatMatCoefficientFunction> (c1, c2);
-    if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
+    if (c1->Dimensions().Size() >= 2 && c2->Dimensions().Size() == 1)
       return make_shared<MultMatVecCoefficientFunction> (c1, c2);
     if (c1->Dimension() > 1 && c2->Dimension() > 1)
       {
