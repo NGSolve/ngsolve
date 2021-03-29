@@ -1,31 +1,74 @@
 
 from ngsolve import Projector, Norm, TimeFunction, BaseMatrix, Preconditioner, InnerProduct, \
     Norm, sqrt, Vector, Matrix, BaseVector, BitArray
-from typing import Optional, Callable
+from typing import Optional, Callable, Union
 import logging
 from netgen.libngpy._meshing import _PushStatus, _GetStatus, _SetThreadPercentage
 from math import log
 
-class CGSolver(BaseMatrix):
-    def __init__(self, mat : BaseMatrix, pre : Optional[Preconditioner] = None,
+linear_solver_param_doc = """
+mat : BaseMatrix
+  The left hand side of the equation to solve.
+
+pre : Preconditioner, BaseMatrix = None
+  If provided, the preconditioner for the system.
+
+freedofs : BitArray = None
+  If no preconditioner is provided, the BitArray of the FESpace freedofs must be given.
+
+tol : double = 1e-12
+  Relative tolerance for the residuum reduction.
+
+maxiter : int = 100
+  Maximum number of iterations, if reached solver will emit a warning.
+
+callback : Callable[[int, float], None] = None
+  Callback function that is called with iteration number and residual in each iteration step.
+
+callback_sol : Callable[[BaseVector], None] = None
+  Callback function that is called with solution x_k in each iteration step.
+
+printing : bool = False
+  Print iterations to stdout.
+"""
+
+class LinearSolver(BaseMatrix):
+    """Base class for linear solvers.
+""" + linear_solver_param_doc
+    name = "LinearSolver"
+    def __init__(self, mat : BaseMatrix,
+                 pre : Optional[Preconditioner] = None,
                  freedofs : Optional[BitArray] = None,
-                 conjugate : bool = False, tol : float = 1e-12, maxsteps : int = 100,
+                 tol : float = 1e-12,
+                 maxiter : int = 100,
+                 atol : float = None,
                  callback : Optional[Callable[[int, float], None]] = None,
-                 printing=False, abstol=None):
+                 callback_sol : Optional[Callable[[BaseVector], None]] = None,
+                 printing : bool = False):
         super().__init__()
         self.mat = mat
         assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
         self.pre = pre if pre else Projector(freedofs, True)
-        self.conjugate = conjugate
         self.tol = tol
-        self.abstol = abstol
-        self.maxsteps = maxsteps
+        self.atol = atol
+        self.maxiter = maxiter
         self.callback = callback
-        self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
-
+        self.callback_sol = callback_sol
         self.printing = printing
         self.errors = []
         self.iterations = 0
+
+    @TimeFunction
+    def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
+              initialize : bool = True) -> BaseVector:
+        old_status = _GetStatus()
+        _PushStatus(self.name + " Solve")
+        _SetThreadPercentage(0)
+        sol = self.SolveImpl(rhs=rhs, sol=sol, initialize=initialize)
+        if old_status[0] != "idle":
+            _PushStatus(old_status[0])
+            _SetThreadPercentage(old_status[1])
+        return sol
 
     def Height(self) -> int:
         return self.mat.width
@@ -43,16 +86,54 @@ class CGSolver(BaseMatrix):
         if hasattr(self.pre, "Update"):
             self.pre.Update()
 
-    @TimeFunction
-    def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
-              initialize : bool = True) -> None:
-        old_status = _GetStatus()
-        _PushStatus("CG Solve")
-        _SetThreadPercentage(0)
+    def StoreError(self, error):
+        self.errors.append(error)
+        if len(self.errors) == 1:
+            self._final_error = error * self.tol
+            if self.atol is not None:
+                self._final_error = max(self._final_error, self.atol)
+        logerrstop = log(self._final_error)
+        logerrfirst = log(self.errors[0])
+        _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
+                                      (log(error)-logerrfirst)/(logerrstop - logerrfirst)))
+        if self.printing:
+            print("Iteration {}, error = {}".format(self.iterations, error))
+
+class CGSolver(LinearSolver):
+    """Preconditioned conjugate gradient method
+
+    Parameters
+    ----------
+
+""" + linear_solver_param_doc + """
+
+conjugate : bool = False
+  If set to True, then the complex inner product is used, else a pseudo inner product that makes CG work with complex symmetric matrices.
+"""
+    name = "CG"
+
+    def __init__(self, *args,
+                 conjugate : bool = False,
+                 abstol : float = None,
+                 maxsteps : int = None,
+                 **kwargs):
+        if abstol is not None:
+            print("WARNING: abstol is deprecated, use atol instead!")
+            atol = abstol
+        if maxsteps is not None:
+            print("WARNING: maxsteps is deprecated, use maxiter instead!")
+            maxiter = maxsteps
+        super().__init__(*args, **kwargs)
+        self.conjugate = conjugate
+        self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
+
+    def SolveImpl(self, rhs : BaseVector,
+                  sol : Optional[BaseVector] = None,
+                  initialize : bool = True) -> BaseVector:
         self.sol = sol if sol is not None else self.mat.CreateRowVector()
         d, w, s = self._tmp_vecs
         u, mat, pre, conjugate, tol, maxsteps, callback = self.sol, self.mat, self.pre, self.conjugate, \
-            self.tol, self.maxsteps, self.callback
+            self.tol, self.maxiter, self.callback
         if initialize:
             u[:] = 0
             d.data = rhs
@@ -65,13 +146,13 @@ class CGSolver(BaseMatrix):
             wdn = 1.
         err0 = sqrt(abs(wdn))
 
-        self.errors = [err0]
+        self.StoreError(err0)
         if wdn==err0:
             return u
         lwstart = log(err0)
         errstop = err0 * tol
-        if self.abstol is not None:
-            errstop = max(errstop, self.abstol)
+        if self.atol is not None:
+            errstop = max(errstop, self.atol)
         logerrstop = log(errstop)
 
         for it in range(maxsteps):
@@ -93,70 +174,21 @@ class CGSolver(BaseMatrix):
             s.data += w
 
             err = sqrt(abs(wd))
-            self.errors.append(err)
-            if self.printing:
-                print("iteration " + str(it) + " error = " + str(err))
+            self.StoreError(err)
             if callback is not None:
                 callback(it,err)
-            _SetThreadPercentage(100.*max(it/maxsteps, (log(err)-lwstart)/(logerrstop - lwstart)))
             if err < errstop: break
         else:
             if self.printing:
                 print("CG did not converge to tol")
-        if old_status[0] != "idle":
-            _PushStatus(old_status[0])
-            _SetThreadPercentage(old_status[1])
-            
+        return u
         
-
-
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None):
-    """preconditioned conjugate gradient method
-
-
-    Parameters
-    ----------
-
-    mat : Matrix
-      The left hand side of the equation to solve. The matrix has to be spd or hermitsch.
-
-    rhs : Vector
-      The right hand side of the equation.
-
-    pre : Preconditioner
-      If provided the preconditioner is used.
-
-    sol : Vector
-      Start vector for CG method, if initialize is set False. Gets overwritten by the solution vector. If sol = None then a new vector is created.
-
-    tol : double
-      Tolerance of the residuum. CG stops if tolerance is reached.
-
-    maxsteps : int
-      Number of maximal steps for CG. If the maximal number is reached before the tolerance is reached CG stops.
-
-    printrates : bool
-      If set to True then the error of the iterations is displayed.
-
-    initialize : bool
-      If set to True then the initial guess for the CG method is set to zero. Otherwise the values of the vector sol, if provided, is used.
-
-    conjugate : bool
-      If set to True, then the complex inner product is used.
-
-
-    Returns
-    -------
-    (vector)
-      Solution vector of the CG method.
-
-    """
+    """This function is deprecated, use the CGSolver directly instead!"""
     solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxsteps=maxsteps,
                       callback=callback, printing=printrates)
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
     return solver.sol
-
-
 
 @TimeFunction
 def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printrates = True, initialize = True, ep = 1.0, tol = 1e-7):
@@ -548,177 +580,163 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
     else:
         print("Warning: Preconditioned Richardson did not converge to TOL")    
 
-    return u   
+    return u
 
-
-def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
-          callback=None, restart=None, startiteration=0, printrates=True, reltol=None):
-    """ Restarting preconditioned gmres solver for A*x=b. Minimizes the preconditioned
-residuum pre*(b-A*x)
+class GMResSolver(LinearSolver):
+    """Preconditioned GMRes solver. Minimizes the preconditioned residuum pre * (b-A*x)
 
 Parameters
 ----------
 
-A : BaseMatrix
-  The left hand side of the linear system.
+""" + linear_solver_param_doc + """
 
-b : BaseVector
-  The right hand side of the linear system.
-
-pre : BaseMatrix = None
-  The preconditioner for the system. If no preconditioner is given, the freedofs
-  of the system must be given.
-
-freedofs : BitArray = None
-  Freedofs to solve on, only necessary if no preconditioner is given.
-
-x : BaseVector = None
-  Startvector, if given it will be modified in the routine and returned. Will be created
-  if not given.
-
-maxsteps : int = 100
-  Maximum iteration steps.
-
-tol : float = 1e-7
-  Tolerance to be computed to. Gmres breaks if norm(pre*(b-A*x)) < tol.
-
-innerproduct : function = None
-  Innerproduct to be used in iteration, all orthogonalizations/norms are computed with
-  respect to that inner product.
-
-callback : function = None
-  If given, this function is called with the solution vector x in each step. Only for debugging
-  purposes, since it requires the overhead of computing x in every step.
+innerproduct : Callable[[BaseVector, BaseVector], Union[float, complex]] = None
+  Innerproduct to be used in iteration, all orthogonalizations/norms are computed with respect to that inner product.
 
 restart : int = None
-  If given, gmres is restarted with the current solution x every 'restart' steps.
-
-startiteration : int = 0
-  Internal value to count total number of iterations in restarted setup, no user input required
-  here.
-
-printrates : bool = True
-  Print norm of preconditioned residual in each step.
+  If given, GMRes is restarted with the current solution x every 'restart' steps.
 """
+    name = "GMRes"
 
-    if not innerproduct:
-        innerproduct = lambda x,y: y.InnerProduct(x, conjugate=True)
-        norm = Norm
-    else:
-        norm = lambda x: sqrt(innerproduct(x,x).real)
-    is_complex = b.is_complex
-    if not pre:
-        assert freedofs is not None
-        pre = Projector(freedofs, True)
-    n = len(b)
-    m = maxsteps
-    if not x:
-        x = b.CreateVector()
-        x[:] = 0
-
-    if callback:
-        xstart = x.CreateVector()
-        xstart.data = x
-    else:
-        xstart = None
-    sn = Vector(m, is_complex)
-    cs = Vector(m, is_complex)
-    sn[:] = 0
-    cs[:] = 0
-
-    r = b.CreateVector()
-    tmp = b.CreateVector()
-    tmp.data = b - A * x
-    r.data = pre * tmp
-
-    Q = []
-    H = []
-    Q.append(b.CreateVector())
-    r_norm = norm(r)
-    if printrates:
-        print("Step 0, error = ", r_norm)
-    if reltol is not None and r_norm != 0:
-        rtol = reltol * abs(r_norm)
-        tol = rtol if tol is None else max(rtol, tol)
-    if tol is None:
-        tol = 1e-7
-    if abs(r_norm) < tol:
-        return x
-    Q[0].data = 1./r_norm * r
-    beta = Vector(m+1, is_complex)
-    beta[:] = 0
-    beta[0] = r_norm
-
-    def arnoldi(A,Q,k):
-        q = b.CreateVector()
-        tmp.data = A * Q[k]
-        q.data = pre * tmp
-        h = Vector(m+1, is_complex)
-        h[:] = 0
-        for i in range(k+1):
-            h[i] = innerproduct(Q[i],q)
-            q.data += (-1)* h[i] * Q[i]
-        h[k+1] = norm(q)
-        if abs(h[k+1]) < 1e-12:
-            return h, None
-        q *= 1./h[k+1].real
-        return h, q
-
-    def givens_rotation(v1,v2):
-        if v2 == 0:
-            return 1,0
-        elif v1 == 0:
-            return 0,v2/abs(v2)
+    def __init__(self, *args,
+                 innerproduct : Optional[Callable[[BaseVector, BaseVector],
+                                                  Union[float, complex]]] = None,
+                 restart : Optional[int] = None,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        if innerproduct is not None:
+            self.innnerproduct = innerproduct
+            self.norm = lambda x: sqrt(innerproduct(x,x).real)
         else:
-            t = sqrt((v1.conjugate()*v1+v2.conjugate()*v2).real)
-            cs = abs(v1)/t
-            sn = v1/abs(v1) * v2.conjugate()/t
-            return cs,sn
+            self.innerproduct = lambda x, y: y.InnerProduct(x, conjugate=True)
+            self.norm = Norm
+            self.restart = restart
 
-    def apply_givens_rotation(h, cs, sn, k):
-        for i in range(k):
-            temp = cs[i] * h[i] + sn[i] * h[i+1]
-            h[i+1] = -sn[i].conjugate() * h[i] + cs[i].conjugate() * h[i+1]
-            h[i] = temp
-        cs[k], sn[k] = givens_rotation(h[k], h[k+1])
-        h[k] = cs[k] * h[k] + sn[k] * h[k+1]
-        h[k+1] = 0
+    def SolveImpl(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
+                  initialize : bool = True) -> BaseVector:
+        is_complex = rhs.is_complex
+        A, pre, innerproduct, norm = self.mat, self.pre, self.innerproduct, self.norm
+        n = len(rhs)
+        m = self.maxiter
+        if sol is None:
+            sol = rhs.CreateVector()
+            initialize = True
+        if initialize:
+            sol[:] = 0
+        sn = Vector(m, is_complex)
+        cs = Vector(m, is_complex)
+        sn[:] = 0
+        cs[:] = 0
+        r = rhs.CreateVector()
+        tmp = rhs.CreateVector()
+        tmp.data = rhs - A * sol
+        r.data = pre * tmp
+        self._k_computed = 0
+        Q = []
+        H = []
+        Q.append(rhs.CreateVector())
+        r_norm = norm(r)
+        self.StoreError(r_norm)
+        if abs(r_norm) < self._final_error:
+            return sol
+        Q[0].data = 1./r_norm * r
+        beta = Vector(m+1, is_complex)
+        beta[:] = 0
+        beta[0] = r_norm
 
-    def calcSolution(k):
-        mat = Matrix(k+1,k+1, is_complex)
-        for i in range(k+1):
-            mat[:,i] = H[i][:k+1]
-        rs = Vector(k+1, is_complex)
-        rs[:] = beta[:k+1]
-        y = mat.I * rs
-        if xstart:
-            x.data = xstart
-        for i in range(k+1):
-            x.data += y[i] * Q[i]
+        def arnoldi(A,Q,k):
+            q = rhs.CreateVector()
+            tmp.data = A * Q[k]
+            q.data = pre * tmp
+            h = Vector(m+1, is_complex)
+            h[:] = 0
+            for i in range(k+1):
+                h[i] = innerproduct(Q[i],q)
+                q.data += (-1)* h[i] * Q[i]
+            h[k+1] = norm(q)
+            if abs(h[k+1]) < 1e-12:
+                return h, None
+            q *= 1./h[k+1].real
+            return h, q
 
-    for k in range(m):
-        startiteration += 1
-        h,q = arnoldi(A,Q,k)
-        H.append(h)
-        if q is None:
-            break
-        Q.append(q)
-        apply_givens_rotation(h, cs, sn, k)
-        beta[k+1] = -sn[k].conjugate() * beta[k]
-        beta[k] = cs[k] * beta[k]
-        error = abs(beta[k+1])
-        if printrates:
-            print("Step", startiteration, ", error = ", error)
-        if callback:
-            calcSolution(k)
-            callback(x)
-        if error < tol:
-            break
-        if restart and k+1 == restart and not (restart == maxsteps):
-            calcSolution(k)
-            del Q
-            return GMRes(A, b, freedofs=freedofs, pre=pre, x=x, maxsteps=maxsteps-restart, callback=callback,
-                         tol=tol, innerproduct=innerproduct,
-                         restart=restart, startiteration=startiteration, printrates=printrates)
-    calcSolution(k)
-    return x
+        def givens_rotation(v1,v2):
+            if v2 == 0:
+                return 1,0
+            elif v1 == 0:
+                return 0,v2/abs(v2)
+            else:
+                t = sqrt((v1.conjugate()*v1+v2.conjugate()*v2).real)
+                cs = abs(v1)/t
+                sn = v1/abs(v1) * v2.conjugate()/t
+                return cs,sn
+
+        def apply_givens_rotation(h, cs, sn, k):
+            for i in range(k):
+                temp = cs[i] * h[i] + sn[i] * h[i+1]
+                h[i+1] = -sn[i].conjugate() * h[i] + cs[i].conjugate() * h[i+1]
+                h[i] = temp
+            cs[k], sn[k] = givens_rotation(h[k], h[k+1])
+            h[k] = cs[k] * h[k] + sn[k] * h[k+1]
+            h[k+1] = 0
+
+        def calcSolution(k):
+            mat = Matrix(k+1,k+1, is_complex)
+            for i in range(k+1):
+                mat[:,i] = H[i][:k+1]
+            rs = Vector(k+1, is_complex)
+            rs[:] = beta[:k+1]
+            y = mat.I * rs
+            for i in range(self._k_computed, k+1):
+                sol.data += y[i] * Q[i]
+            self._k_computed = k+1
+
+        for k in range(m):
+            self.iterations += 1
+            h,q = arnoldi(A,Q,k)
+            H.append(h)
+            if q is None:
+                break
+            Q.append(q)
+            apply_givens_rotation(h, cs, sn, k)
+            beta[k+1] = -sn[k].conjugate() * beta[k]
+            beta[k] = cs[k] * beta[k]
+            error = abs(beta[k+1])
+            self.StoreError(error)
+            if self.callback_sol is not None:
+                calcSolution(k)
+                self.callback_sol(sol)
+            if self.callback is not None:
+                self.callback(self.iteration, error)
+            if error < self._final_error:
+                break
+            if self.restart and k+1 == self.restart and not (self.restart == self.maxiter):
+                calcSolution(k)
+                del Q
+                restarted_solver = GMResSolver(mat=self.mat,
+                                               pre=self.pre,
+                                               tol=0,
+                                               atol=self._final_error,
+                                               callback=self.callback,
+                                               callback_sol=self.callback_sol,
+                                               maxiter=self.maxiter-self.restart,
+                                               restart=self.restart,
+                                               printing=self.printing)
+                restarted_solver.iterations = self.iterations
+                sol = restarted_solver.Solve(rhs = rhs, sol = sol, initialize=False)
+                self.errors += restarted_solver.errors
+                self.iterations = restarted_solver.iterations
+                return sol
+        calcSolution(k)
+        return sol
+
+
+
+def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
+          callback=None, restart=None, startiteration=0, printrates=True, reltol=None):
+    """Deprecated, use the class GMResSolver instead!"""
+    solver = GMResSolver(mat=A, pre=pre, freedofs=freedofs,
+                         maxiter=maxsteps, tol=reltol, atol=tol,
+                         innerproduct=innerproduct,
+                         callback_sol=callback, restart=restart,
+                         printing=printrates)
+    return solver.Solve(rhs=b, sol=x)
