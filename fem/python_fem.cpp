@@ -959,6 +959,38 @@ val : can be one of the following:
            return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
          }, py::arg("components"))
     
+
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 3)
+             throw py::index_error();
+           
+           auto [c1,c2,c3] = comps;
+           if (c1 < 0 || c2 < 0 || c3 < 0 ||
+               c1 >= dims[0] || c2 >= dims[1] || c3 >= dims[2])
+             throw py::index_error();
+           
+           int comp = (c1 * dims[1] + c2) * dims[2] + c3;
+           return MakeComponentCoefficientFunction (self, comp);
+         }, py::arg("components"))
+
+    
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int,int> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 4)
+             throw py::index_error();
+           
+           auto [c1,c2,c3,c4] = comps;
+           if (c1 < 0 || c2 < 0 || c3 < 0 || c4 < 0 ||
+               c1 >= dims[0] || c2 >= dims[1] || c3 >= dims[2] || c4 >= dims[3])
+             throw py::index_error();
+           
+           int comp = ((c1 * dims[1] + c2) * dims[2] + c3) * dims[3] + c4;
+           return MakeComponentCoefficientFunction (self, comp);
+         }, py::arg("components"))
+
     
     
 
