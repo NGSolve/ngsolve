@@ -606,7 +606,7 @@ namespace ngfem
 	  tv_ref /= L2Norm(tv_ref);
 
           // compute |F t_ref|
-          Vec<3> tv_phys = F*tv_ref;
+          Vec<D> tv_phys = F*tv_ref;
           double measure = L2Norm(tv_phys);
 
           // compute nabla(t\circ\phi) t_ref numerically
@@ -625,13 +625,13 @@ namespace ngfem
           iprr(0) += 2*tv_ref[0]*eps;
           iprr(1) += 2*tv_ref[1]*eps;
 
-          MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
-          MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
-          MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
-          MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
+          MappedIntegrationPoint<2,D> sipl(ipl, eltrans);
+          MappedIntegrationPoint<2,D> sipr(ipr, eltrans);
+          MappedIntegrationPoint<2,D> sipll(ipll, eltrans);
+          MappedIntegrationPoint<2,D> siprr(iprr, eltrans);
 
           // Need unit tangent vectors at the stencil points, not directly computed in MappedIntegrationPoint
-	  Mat<3,2> Ft = sipr.GetJacobian();
+	  Mat<D,2> Ft = sipr.GetJacobian();
 	  Vec<D> tangr = Ft*tv_ref;
 	  tangr /= L2Norm(tangr);
 	  Ft = sipl.GetJacobian();
