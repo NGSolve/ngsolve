@@ -2660,7 +2660,8 @@ public:
       throw Exception(string ("Matrix dimensions don't fit: mat is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) + ", vec is " + ToLiteral(dims_c2[0]));
     // SetDimensions (ngstd::INT<1>(dims_c1[0]));
-    SetDimensions (dims_c1.Range(0, dims_c1.Size()-1)); // ngstd::INT<1>(dims_c1[0]));    
+    // SetDimensions (dims_c1.Range(0, dims_c1.Size()-1)); // ngstd::INT<1>(dims_c1[0]));
+    SetDimensions (dims_c1.Range(0, END-1));
     inner_dim = dims_c1.Last(); // [1];
   }
 
