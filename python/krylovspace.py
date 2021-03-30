@@ -44,7 +44,7 @@ class LinearSolver(BaseMatrix):
                  atol : float = None,
                  callback : Optional[Callable[[int, float], None]] = None,
                  callback_sol : Optional[Callable[[BaseVector], None]] = None,
-                 printing : bool = False):
+                 printrates : bool = False):
         super().__init__()
         self.mat = mat
         assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
@@ -54,8 +54,8 @@ class LinearSolver(BaseMatrix):
         self.maxiter = maxiter
         self.callback = callback
         self.callback_sol = callback_sol
-        self.printing = printing
-        self.errors = []
+        self.printrates = printrates
+        self.residuals = []
         self.iterations = 0
 
     @TimeFunction
@@ -64,7 +64,13 @@ class LinearSolver(BaseMatrix):
         old_status = _GetStatus()
         _PushStatus(self.name + " Solve")
         _SetThreadPercentage(0)
-        sol = self.SolveImpl(rhs=rhs, sol=sol, initialize=initialize)
+        if sol is None:
+            sol = rhs.CreateVector()
+            initialize = True
+        if initialize:
+            sol[:] = 0
+        self.sol = sol
+        self._SolveImpl(rhs=rhs, sol=sol)
         if old_status[0] != "idle":
             _PushStatus(old_status[0])
             _SetThreadPercentage(old_status[1])
@@ -86,18 +92,27 @@ class LinearSolver(BaseMatrix):
         if hasattr(self.pre, "Update"):
             self.pre.Update()
 
-    def StoreError(self, error):
-        self.errors.append(error)
-        if len(self.errors) == 1:
-            self._final_error = error * self.tol
+    def CheckResidual(self, residual):
+        self.iterations += 1
+        self.residuals.append(residual)
+        if len(self.residuals) == 1:
+            self._final_residual = residual * self.tol
             if self.atol is not None:
-                self._final_error = max(self._final_error, self.atol)
-        logerrstop = log(self._final_error)
-        logerrfirst = log(self.errors[0])
+                self._final_residual = max(self._final_residual, self.atol)
+        else:
+            if self.callback is not None:
+                self.callback(self.iterations, residual)
+            if self.callback_sol is not None:
+                self.callback_sol(self.sol)
+        logerrstop = log(self._final_residual)
+        logerrfirst = log(self.residuals[0])
         _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
-                                      (log(error)-logerrfirst)/(logerrstop - logerrfirst)))
-        if self.printing:
-            print("Iteration {}, error = {}".format(self.iterations, error))
+                                      (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
+        if self.printrates:
+            print("{} iteration {}, residual = {}".format(self.name, self.iterations, residual))
+            if self.iterations == self.maxiter and residual >= self._final_residual:
+                print("WARNING: {} did not converge to TOL".format(self.name))
+        return self.iterations == self.maxiter or residual < self._final_residual
 
 class CGSolver(LinearSolver):
     """Preconditioned conjugate gradient method
@@ -116,81 +131,245 @@ conjugate : bool = False
                  conjugate : bool = False,
                  abstol : float = None,
                  maxsteps : int = None,
+                 printing : bool = False,
                  **kwargs):
+        if printing:
+            print("WARNING: printing is deprecated, use printrates instead!")
+            kwargs["printrates"] = printing
         if abstol is not None:
             print("WARNING: abstol is deprecated, use atol instead!")
-            atol = abstol
+            kwargs["abstol"] = abstol
         if maxsteps is not None:
             print("WARNING: maxsteps is deprecated, use maxiter instead!")
-            maxiter = maxsteps
+            kwargs["maxiter"] = maxsteps
         super().__init__(*args, **kwargs)
+        self.errors = self.residuals # for backward compatibility
         self.conjugate = conjugate
-        self._tmp_vecs = [self.mat.CreateRowVector() for i in range(3)]
 
-    def SolveImpl(self, rhs : BaseVector,
-                  sol : Optional[BaseVector] = None,
-                  initialize : bool = True) -> BaseVector:
-        self.sol = sol if sol is not None else self.mat.CreateRowVector()
-        d, w, s = self._tmp_vecs
-        u, mat, pre, conjugate, tol, maxsteps, callback = self.sol, self.mat, self.pre, self.conjugate, \
-            self.tol, self.maxiter, self.callback
-        if initialize:
-            u[:] = 0
-            d.data = rhs
-        else:
-            d.data = rhs - mat * u
-        w.data = pre * d
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
+        d, w, s = [sol.CreateVector() for i in range(3)]
+        conjugate = self.conjugate
+        d.data = rhs - self.mat * sol
+        w.data = self.pre * d
         s.data = w
         wdn = w.InnerProduct(d, conjugate=conjugate)
-        if wdn == 0:
-            wdn = 1.
-        err0 = sqrt(abs(wdn))
+        if self.CheckResidual(sqrt(abs(wdn))):
+            return
 
-        self.StoreError(err0)
-        if wdn==err0:
-            return u
-        lwstart = log(err0)
-        errstop = err0 * tol
-        if self.atol is not None:
-            errstop = max(errstop, self.atol)
-        logerrstop = log(errstop)
-
-        for it in range(maxsteps):
-            self.iterations = it+1
-            w.data = mat * s
+        while True:
+            w.data = self.mat * s
             wd = wdn
             as_s = s.InnerProduct(w, conjugate=conjugate)        
             if as_s == 0 or wd == 0: break
             alpha = wd / as_s
-            u.data += alpha * s
+            sol.data += alpha * s
             d.data += (-alpha) * w
 
-            w.data = pre*d
+            w.data = self.pre * d
 
             wdn = w.InnerProduct(d, conjugate=conjugate)
-            beta = wdn / wd
+            if self.CheckResidual(sqrt(abs(wdn))):
+                return
 
+            beta = wdn / wd
             s *= beta
             s.data += w
 
-            err = sqrt(abs(wd))
-            self.StoreError(err)
-            if callback is not None:
-                callback(it,err)
-            if err < errstop: break
-        else:
-            if self.printing:
-                print("CG did not converge to tol")
-        return u
         
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None):
-    """This function is deprecated, use the CGSolver directly instead!"""
+    """preconditioned conjugate gradient method
+
+
+    Parameters
+    ----------
+
+    mat : Matrix
+      The left hand side of the equation to solve. The matrix has to be spd o hermitsch.
+
+    rhs : Vector
+      The right hand side of the equation.
+
+    pre : Preconditioner
+      If provided the preconditioner is used.
+
+    sol : Vector
+      Start vector for CG method, if initialize is set False. Gets overwritten by the solution vector. If sol = None then a new vector is created.
+
+    tol : double
+      Tolerance of the residuum. CG stops if tolerance is reached.
+
+    maxsteps : int
+      Number of maximal steps for CG. If the maximal number is reached before the tolerance is reached CG stops.
+
+    printrates : bool
+      If set to True then the error of the iterations is displayed.
+
+    initialize : bool
+      If set to True then the initial guess for the CG method is set to zero. Otherwise the values of the vector sol, if provided, is used.
+
+    conjugate : bool
+      If set to True, then the complex inner product is used.
+
+
+    Returns
+    -------
+    (vector)
+      Solution vector of the CG method.
+
+    """
     solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxsteps=maxsteps,
-                      callback=callback, printing=printrates)
+                      callback=callback, printrates=printrates)
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
     return solver.sol
 
-@TimeFunction
+class QMRSolver(LinearSolver):
+    """Quasi Minimal Residuum method
+
+    Parameters
+    ----------
+
+""" + linear_solver_param_doc + """
+
+pre2 : Preconditioner = None
+  Second preconditioner, if provided.
+
+ep : double
+  Start epsilon.
+"""
+
+    name = "QMR"
+
+    def __init__(self, *args, pre2 : Preconditioner = None,
+                 ep : float = 1., **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pre2 = pre2
+        self.ep = ep
+
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
+        u, mat, ep, pre1, pre2 = sol, self.mat, self.ep, self.pre, self.pre2
+        r = rhs.CreateVector()
+        v = rhs.CreateVector()
+        v_tld = rhs.CreateVector()
+        w = rhs.CreateVector()
+        w_tld = rhs.CreateVector()
+        y = rhs.CreateVector()
+        y_tld = rhs.CreateVector()
+        z = rhs.CreateVector()
+        z_tld = rhs.CreateVector()
+        p = rhs.CreateVector()
+        p_tld = rhs.CreateVector()
+        q = rhs.CreateVector()
+        d = rhs.CreateVector()
+        s = rhs.CreateVector()
+
+        r.data = rhs - mat * u
+        v_tld.data = r
+        y.data = pre1 * v_tld
+
+        rho = InnerProduct(y,y)
+        rho = sqrt(rho)
+
+        w_tld.data = r
+        z.data = pre2.T * w_tld if pre2 else w_tld
+
+        xi = InnerProduct(z,z)
+        xi = sqrt(xi)
+
+        gamma = 1.0
+        eta = -1.0
+        theta = 0.0
+
+        for i in range(1,self.maxiter+1):
+            if (rho == 0.0):
+                print('Breakdown in rho')
+                return
+            if (xi == 0.0):
+                print('Breakdown in xi')
+                return
+            v.data = (1.0/rho) * v_tld
+            y.data = (1.0/rho) * y
+
+            w.data = (1.0/xi) * w_tld
+            z.data = (1.0/xi) * z
+
+            delta = InnerProduct(z,y)
+            if (delta == 0.0):
+                print('Breakdown in delta')
+                return
+
+            y_tld.data = pre2 * y if pre2 else y
+            z_tld.data = pre1.T * z
+
+            if (i > 1):
+                p.data = (-xi*delta / ep) * p
+                p.data += y_tld
+
+                q.data = (-rho * delta / ep) * q
+                q.data += z_tld
+            else:
+                p.data = y_tld
+                q.data = z_tld
+
+            p_tld.data = mat * p
+            ep = InnerProduct(q, p_tld)
+            if (ep == 0.0):
+                print('Breakdown in epsilon')
+                return
+
+            beta = ep/delta
+            if (beta == 0.0):
+                print('Breakdown in beta')
+                return
+
+            v_tld.data = p_tld - beta * v;
+
+            y.data = pre1 * v_tld
+
+            rho_1 = rho
+            rho = InnerProduct(y,y)
+            rho = sqrt(rho)
+
+            w_tld.data = mat.T * q
+            w_tld.data -= beta * w
+
+            z.data = pre2.T * w_tld if pre2 else w_tld
+
+            xi = InnerProduct(z,z)
+            xi = sqrt(xi)
+
+            gamma_1 = gamma
+            theta_1 = theta
+
+            theta = rho/(gamma_1 * abs(beta))
+            gamma = 1.0 / sqrt(1.0 + theta * theta)
+            if (gamma == 0.0):
+                print('Breakdown in gamma')
+                return
+
+            eta = -eta * rho_1 * gamma * gamma / (beta * gamma_1 * gamma_1);
+
+            if (i > 1):
+                d.data = (theta_1 * theta_1 * gamma * gamma) * d
+                d.data += eta * p
+
+                s.data = (theta_1 * theta_1 * gamma * gamma) * s
+                s.data += eta * p_tld
+
+            else:
+                d.data = eta * p
+                s.data = eta * p_tld
+
+            u.data += d
+            r.data -= s
+
+            #Projected residuum: Better terminating condition necessary?
+            v.data = self.pre * r
+            ResNorm = sqrt(InnerProduct(r,v))
+            # ResNorm = sqrt( np.dot(r.FV().NumPy()[fdofs],r.FV().NumPy()[fdofs]))
+            #ResNorm = sqrt(InnerProduct(r,r))
+            if self.CheckResidual(ResNorm):
+                return
+
 def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printrates = True, initialize = True, ep = 1.0, tol = 1e-7):
     """Quasi Minimal Residuum method
 
@@ -238,147 +417,114 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
       Solution vector of the QMR method.
 
     """
-    u = sol if sol else rhs.CreateVector()
-    
-    r = rhs.CreateVector()
-    v = rhs.CreateVector()  
-    v_tld = rhs.CreateVector()
-    w = rhs.CreateVector()
-    w_tld = rhs.CreateVector()
-    y = rhs.CreateVector()
-    y_tld = rhs.CreateVector()
-    z = rhs.CreateVector()
-    z_tld = rhs.CreateVector()  
-    p = rhs.CreateVector()
-    p_tld = rhs.CreateVector()
-    q = rhs.CreateVector()  
-    d = rhs.CreateVector()
-    s = rhs.CreateVector()
-
-    if (initialize): u[:] = 0.0
-
-    r.data = rhs - mat * u
-    v_tld.data = r
-    y.data = pre1 * v_tld if pre1 else v_tld
-    
-    rho = InnerProduct(y,y)
-    rho = sqrt(rho)
-    
-    w_tld.data = r 
-    z.data = pre2.T * w_tld if pre2 else w_tld
-    
-    xi = InnerProduct(z,z)
-    xi = sqrt(xi)
-    
-    gamma = 1.0
-    eta = -1.0
-    theta = 0.0
-
-    
-    for i in range(1,maxsteps+1):
-        if (rho == 0.0):
-            print('Breakdown in rho')
-            return
-        if (xi == 0.0):
-            print('Breakdown in xi')
-            return
-        v.data = (1.0/rho) * v_tld
-        y.data = (1.0/rho) * y
-
-        w.data = (1.0/xi) * w_tld
-        z.data = (1.0/xi) * z
-
-        delta = InnerProduct(z,y)
-        if (delta == 0.0):
-            print('Breakdown in delta')
-            return
-        
-        y_tld.data = pre2 * y if pre2 else y
-        z_tld.data = pre1.T * z if pre1 else z
-
-        if (i > 1):
-            p.data = (-xi*delta / ep) * p
-            p.data += y_tld
-
-            q.data = (-rho * delta / ep) * q
-            q.data += z_tld
-        else:
-            p.data = y_tld
-            q.data = z_tld
-        
-        p_tld.data = mat * p
-        ep = InnerProduct(q, p_tld)
-        if (ep == 0.0):
-            print('Breakdown in epsilon')
-            return
-
-        beta = ep/delta
-        if (beta == 0.0):
-            print('Breakdown in beta')
-            return
-        
-        v_tld.data = p_tld - beta * v;      
-
-        y.data = pre1 * v_tld if pre1 else v_tld
-        
-        rho_1 = rho
-        rho = InnerProduct(y,y)
-        rho = sqrt(rho)     
-        
-        
-        w_tld.data = mat.T * q
-        w_tld.data -= beta * w
-        
-        z.data = pre2.T * w_tld if pre2 else w_tld      
-        
-        xi = InnerProduct(z,z)
-        xi = sqrt(xi)
-
-        gamma_1 = gamma
-        theta_1 = theta
-
-        theta = rho/(gamma_1 * abs(beta)) 
-        gamma = 1.0 / sqrt(1.0 + theta * theta)
-        if (gamma == 0.0):
-            print('Breakdown in gamma')
-            return
-    
-        eta = -eta * rho_1 * gamma * gamma / (beta * gamma_1 * gamma_1);        
-
-        if (i > 1):
-            d.data = (theta_1 * theta_1 * gamma * gamma) * d
-            d.data += eta * p
-
-            s.data = (theta_1 * theta_1 * gamma * gamma) * s    
-            s.data += eta * p_tld
-
-        else: 
-            d.data = eta * p
-            s.data = eta * p_tld
-        
-        
-        u.data += d
-        r.data -= s
-
-        #Projected residuum: Better terminating condition necessary?
-        ResNorm = sqrt( np.dot(r.FV().NumPy()[fdofs],r.FV().NumPy()[fdofs]))
-        #ResNorm = sqrt(InnerProduct(r,r))
-
-        if (printrates):
-            print ("it = ", i, " err = ", ResNorm)
-            
-        if (ResNorm <= tol):
-            break
-    else:
-        print("Warning: QMR did not converge to TOL")
-
-    return u
+    # backwards compatibility, but freedofs are not needed then.
+    if pre1 is not None:
+        fdofs = None
+    return QMRSolver(mat=mat, freedofs=fdofs, pre=pre1,
+                     pre2=pre2, maxiter=maxsteps,
+                     printrates=printrates, ep=ep,
+                     tol=tol).Solve(rhs=rhs, sol=sol, initialize=initialize)
 
 
 
 
 #Source: Michael Kolmbauer https://www.numa.uni-linz.ac.at/Teaching/PhD/Finished/kolmbauer-diss.pdf
-@TimeFunction
+class MinResSolver(LinearSolver):
+    """Minimal Residuum method
+
+    Parameters
+    ----------
+""" + linear_solver_param_doc
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _SolveImpl(self, rhs: BaseVector, sol : BaseVector):
+        pre, mat, u = self.pre, self.mat, sol
+        v_new = rhs.CreateVector()
+        v = rhs.CreateVector()
+        v_old = rhs.CreateVector()
+        w_new = rhs.CreateVector()
+        w = rhs.CreateVector()
+        w_old = rhs.CreateVector()
+        z_new = rhs.CreateVector()
+        z = rhs.CreateVector()
+        mz = rhs.CreateVector()
+
+        v.data = rhs - mat * u
+
+        z.data = pre * v
+
+        #First Step
+        gamma = sqrt(InnerProduct(z,v))
+        gamma_new = 0
+        z.data = 1/gamma * z
+        v.data = 1/gamma * v
+
+        ResNorm = gamma
+        ResNorm_old = gamma
+
+        if self.CheckResidual(ResNorm):
+            return
+
+        eta_old = gamma
+        c_old = 1
+        c = 1
+        s_new = 0
+        s = 0
+        s_old = 0
+
+        v_old[:] = 0.0
+        w_old[:] = 0.0
+        w[:] = 0.0
+
+        k = 1
+        while True:
+            mz.data = mat*z
+            delta = InnerProduct(mz,z)
+            v_new.data = mz - delta*v - gamma * v_old
+
+            z_new.data = pre * v_new
+
+            gamma_new = sqrt(InnerProduct(z_new, v_new))
+            z_new *= 1/gamma_new
+            v_new *= 1/gamma_new
+
+            alpha0 = c*delta - c_old*s*gamma
+            alpha1 = sqrt(alpha0*alpha0 + gamma_new*gamma_new) #**
+            alpha2 = s*delta + c_old*c*gamma
+            alpha3 = s_old * gamma
+
+            c_new = alpha0/alpha1
+            s_new = gamma_new/alpha1
+
+            w_new.data = z - alpha3*w_old - alpha2*w
+            w_new.data = 1/alpha1 * w_new
+
+            u.data += c_new*eta_old * w_new
+            eta = -s_new * eta_old
+
+            #update of residuum
+            ResNorm = abs(s_new) * ResNorm_old
+            if self.CheckResidual(ResNorm):
+                return
+            k += 1
+
+            # shift vectors by renaming
+            v_old, v, v_new = v, v_new, v_old
+            w_old, w, w_new = w, w_new, w_old
+            z, z_new = z_new, z
+
+            eta_old = eta
+
+            s_old = s
+            s = s_new
+
+            c_old = c
+            c = c_new
+
+            gamma = gamma_new
+            ResNorm_old = ResNorm
+
 def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
     """Minimal Residuum method
 
@@ -417,106 +563,46 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
       Solution vector of the MinRes method.
 
     """
-    u = sol if sol else rhs.CreateVector()
-
-    v_new = rhs.CreateVector()
-    v = rhs.CreateVector()  
-    v_old = rhs.CreateVector()
-    w_new = rhs.CreateVector()
-    w = rhs.CreateVector()
-    w_old = rhs.CreateVector()
-    z_new = rhs.CreateVector()
-    z = rhs.CreateVector()
-    mz = rhs.CreateVector()
+    return MinResSolver(mat=mat, pre=pre, maxiter=maxsteps,
+                        printrates=printrates,
+                        tol=tol).Solve(rhs=rhs, sol=sol,
+                                       initialize=initialize)
 
 
-    if (initialize):
-        u[:] = 0.0
-        v.data = rhs
-    else:
-        v.data = rhs - mat * u
-        
-    z.data = pre * v if pre else v
-    
-    #First Step
-    gamma = sqrt(InnerProduct(z,v))
-    gamma_new = 0
-    z.data = 1/gamma * z 
-    v.data = 1/gamma * v    
-    
-    ResNorm = gamma      
-    ResNorm_old = gamma  
-    
-    if (printrates):
-        print("it = ", 0, " err = ", ResNorm)       
-        
-    eta_old = gamma
-    c_old = 1
-    c = 1
-    s_new = 0
-    s = 0
-    s_old = 0
+class RichardsonSolver(LinearSolver):
+    """ Preconditioned Richardson Iteration
 
-    v_old[:] = 0.0
-    w_old[:] = 0.0
-    w[:] = 0.0
-    
-    k = 1
-    while (k < maxsteps+1 and ResNorm > tol):
-        mz.data = mat*z
-        delta = InnerProduct(mz,z)
-        v_new.data = mz - delta*v - gamma * v_old
-        
-        z_new.data = pre * v_new if pre else v_new
+Parameters
+----------
+""" + linear_solver_param_doc + """
 
-        gamma_new = sqrt(InnerProduct(z_new, v_new))
-        z_new *= 1/gamma_new
-        v_new *= 1/gamma_new
-        
-        alpha0 = c*delta - c_old*s*gamma    
-        alpha1 = sqrt(alpha0*alpha0 + gamma_new*gamma_new) #**
-        alpha2 = s*delta + c_old*c*gamma
-        alpha3 = s_old * gamma
+dampfactor : float = 1.
+  Set the damping factor for the Richardson iteration. If it is 1 then no damping is done. Values greater than 1 are allowed.
+"""
+    name = "Richardson"
+    def __init__(self, *args, dampfactor = 1., **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dampfactor = dampfactor
 
-        c_new = alpha0/alpha1
-        s_new = gamma_new/alpha1
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
+        r = rhs.CreateVector()
+        d = sol.CreateVector()
+        r.data = rhs - self.mat*sol
+        d.data = self.pre * r
+        res_norm = abs(InnerProduct(d,r))
+        if self.CheckResidual(res_norm):
+            return
 
-        w_new.data = z - alpha3*w_old - alpha2*w
-        w_new.data = 1/alpha1 * w_new   
+        while True:
+            sol.data += self.dampfactor * d
+            r.data = rhs - self.mat * sol
+            d.data = self.pre * r
 
-        u.data += c_new*eta_old * w_new
-        eta = -s_new * eta_old
-
-        
-        #update of residuum
-        ResNorm = abs(s_new) * ResNorm_old
-        if (printrates):        
-            print("it = ", k, " err = ", ResNorm)   
-        if ResNorm < tol: break
-        k += 1
-
-        # shift vectors by renaming
-        v_old, v, v_new = v, v_new, v_old
-        w_old, w, w_new = w, w_new, w_old
-        z, z_new = z_new, z
-        
-        eta_old = eta
-        
-        s_old = s
-        s = s_new
-
-        c_old = c
-        c = c_new
-
-        gamma = gamma_new
-        ResNorm_old = ResNorm
-    else:
-        print("Warning: MinRes did not converge to TOL")
-
-    return u
+            res_norm = abs(InnerProduct(d,r))
+            if self.CheckResidual(res_norm):
+                return
 
 
-@TimeFunction
 def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-8, dampfactor=1.0, printing=True):
     """ Preconditioned Richardson Iteration
 
@@ -552,7 +638,6 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
       Solution vector of the Preconditioned Richardson iteration.
 
     """
-
     u = rhs.CreateVector()
     r = rhs.CreateVector()
     u[:] = 0
@@ -612,32 +697,27 @@ restart : int = None
             self.norm = Norm
             self.restart = restart
 
-    def SolveImpl(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
-                  initialize : bool = True) -> BaseVector:
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
         is_complex = rhs.is_complex
         A, pre, innerproduct, norm = self.mat, self.pre, self.innerproduct, self.norm
         n = len(rhs)
         m = self.maxiter
-        if sol is None:
-            sol = rhs.CreateVector()
-            initialize = True
-        if initialize:
-            sol[:] = 0
         sn = Vector(m, is_complex)
         cs = Vector(m, is_complex)
         sn[:] = 0
         cs[:] = 0
+        if self.callback_sol is not None:
+            sol_start = sol.CreateVector()
+            sol_start.data = sol
         r = rhs.CreateVector()
         tmp = rhs.CreateVector()
         tmp.data = rhs - A * sol
         r.data = pre * tmp
-        self._k_computed = 0
         Q = []
         H = []
         Q.append(rhs.CreateVector())
         r_norm = norm(r)
-        self.StoreError(r_norm)
-        if abs(r_norm) < self._final_error:
+        if self.CheckResidual(abs(r_norm)):
             return sol
         Q[0].data = 1./r_norm * r
         beta = Vector(m+1, is_complex)
@@ -680,18 +760,19 @@ restart : int = None
             h[k+1] = 0
 
         def calcSolution(k):
+            # if callback_sol is set we need to recompute solution in every step
+            if self.callback_sol is not None:
+                sol.data = sol_start
             mat = Matrix(k+1,k+1, is_complex)
             for i in range(k+1):
                 mat[:,i] = H[i][:k+1]
             rs = Vector(k+1, is_complex)
             rs[:] = beta[:k+1]
             y = mat.I * rs
-            for i in range(self._k_computed, k+1):
+            for i in range(k+1):
                 sol.data += y[i] * Q[i]
-            self._k_computed = k+1
 
         for k in range(m):
-            self.iterations += 1
             h,q = arnoldi(A,Q,k)
             H.append(h)
             if q is None:
@@ -701,42 +782,79 @@ restart : int = None
             beta[k+1] = -sn[k].conjugate() * beta[k]
             beta[k] = cs[k] * beta[k]
             error = abs(beta[k+1])
-            self.StoreError(error)
             if self.callback_sol is not None:
                 calcSolution(k)
-                self.callback_sol(sol)
-            if self.callback is not None:
-                self.callback(self.iteration, error)
-            if error < self._final_error:
+            if self.CheckResidual(error):
                 break
-            if self.restart and k+1 == self.restart and not (self.restart == self.maxiter):
+            if self.restart is not None and (k+1 == self.restart and not (self.restart == self.maxiter)):
                 calcSolution(k)
                 del Q
                 restarted_solver = GMResSolver(mat=self.mat,
                                                pre=self.pre,
                                                tol=0,
-                                               atol=self._final_error,
+                                               atol=self._final_residual,
                                                callback=self.callback,
                                                callback_sol=self.callback_sol,
-                                               maxiter=self.maxiter-self.restart,
+                                               maxiter=self.maxiter,
                                                restart=self.restart,
-                                               printing=self.printing)
+                                               printrates=self.printrates)
                 restarted_solver.iterations = self.iterations
                 sol = restarted_solver.Solve(rhs = rhs, sol = sol, initialize=False)
-                self.errors += restarted_solver.errors
+                self.residuals += restarted_solver.residuals
                 self.iterations = restarted_solver.iterations
                 return sol
         calcSolution(k)
         return sol
 
-
-
 def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
           callback=None, restart=None, startiteration=0, printrates=True, reltol=None):
-    """Deprecated, use the class GMResSolver instead!"""
+    """Restarting preconditioned gmres solver for A*x=b. Minimizes the preconditioned residuum pre*(b-A*x).
+
+Parameters
+----------
+
+A : BaseMatrix
+  The left hand side of the linear system.
+
+b : BaseVector
+  The right hand side of the linear system.
+
+pre : BaseMatrix = None
+  The preconditioner for the system. If no preconditioner is given, the freedofs
+  of the system must be given.
+
+freedofs : BitArray = None
+  Freedofs to solve on, only necessary if no preconditioner is given.
+
+x : BaseVector = None
+  Startvector, if given it will be modified in the routine and returned. Will be created
+  if not given.
+
+maxsteps : int = 100
+  Maximum iteration steps.
+
+tol : float = 1e-7
+
+innerproduct : function = None
+  Innerproduct to be used in iteration, all orthogonalizations/norms are computed with
+  respect to that inner product.
+
+callback : function = None
+  If given, this function is called with the solution vector x in each step. Only for debugging
+
+restart : int = None
+  If given, gmres is restarted with the current solution x every 'restart' steps.
+
+startiteration : int = 0
+  Internal value to count total number of iterations in restarted setup, no user input required
+  here.
+
+printrates : bool = True
+  Print norm of preconditioned residual in each step.
+"""
     solver = GMResSolver(mat=A, pre=pre, freedofs=freedofs,
                          maxiter=maxsteps, tol=reltol, atol=tol,
                          innerproduct=innerproduct,
                          callback_sol=callback, restart=restart,
-                         printing=printrates)
+                         printrates=printrates)
     return solver.Solve(rhs=b, sol=x)
