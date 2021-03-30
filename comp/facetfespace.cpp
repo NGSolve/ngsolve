@@ -103,7 +103,48 @@ namespace ngcomp
       return ZeroCF(Array<int>());
     }
 
-  }; 
+  };
+
+
+    template <int D>
+  class DiffOpGradFacet : public DiffOp<DiffOpGradFacet<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "grad"; }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      int facetnr = mip.IP().FacetNr();
+      if (facetnr >= 0)
+        {
+          HeapReset hr(lh);
+          
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          auto r = fel_facet.GetFacetDofs(facetnr);
+          
+          FlatMatrix<> dshaperef(r.Size(), DIM_ELEMENT, lh);
+          mat = 0.0;
+          /*
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), 
+                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+          */
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), dshaperef);
+          mat.Cols(r) = Trans(mip.GetJacobianInverse()) * Trans(dshaperef);
+        }
+      else
+        {
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
+    }
+  };
 
 
 
@@ -186,12 +227,15 @@ namespace ngcomp
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
         integrator[BND] = make_shared<RobinIntegrator<2>> (one);
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<2>>>();
+
       }
     else
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<3>>>();
       }
 
     if (dimension > 1)
