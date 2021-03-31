@@ -95,12 +95,19 @@ namespace ngla
   void BaseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     // y = 0;
+    if(safety_check & 1)
+      throw Exception("Mult or MultAdd must be implemented for BaseMatrix!");
     y.SetZero();
     MultAdd (1, x, y);
   }
 
   void BaseMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
   {
+    if(IsSymmetric().IsTrue())
+      { Mult(x, y); return; }
+    if(safety_check & 2)
+      throw Exception("MultTransAdd or MultTrans must be implemented for (maybe) not symmetric BaseMatrix!");
+
     // y = 0;
     y.SetZero();
     MultTransAdd (1, x, y);
@@ -110,6 +117,7 @@ namespace ngla
   {
     //    cout << "Warning: BaseMatrix::MultAdd(double), this = " << typeid(*this).name() << endl;
     auto temp = y.CreateVector();
+    safety_check |= 1;
     Mult (x, *temp);
     y += s * *temp;
   }
@@ -123,13 +131,18 @@ namespace ngla
     throw Exception (err.str());
     */
     auto temp = y.CreateVector();
+    safety_check |= 1;
     Mult (x, *temp);
     y += s * *temp;
   }
   
   void BaseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if(IsSymmetric().IsTrue())
+      { MultAdd(s, x, y); return; }
+
     auto temp = y.CreateVector();
+    safety_check |= 2;
     MultTrans (x, *temp);
     y += s * *temp;
     /*
@@ -148,6 +161,10 @@ namespace ngla
 
   void BaseMatrix :: MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
+    if(IsSymmetric().IsTrue())
+      { MultAdd(s, x, y); return; }
+
+    safety_check |= 2;
     auto temp = y.CreateVector();
     MultTrans (x, *temp);
     y += s * *temp;
