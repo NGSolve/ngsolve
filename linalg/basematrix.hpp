@@ -23,7 +23,7 @@ namespace ngla
   {
   protected:
     shared_ptr<ParallelDofs> paralleldofs;
-    char safety_check = 0;
+    mutable char safety_check = 0;
 
   protected:
     /// 
