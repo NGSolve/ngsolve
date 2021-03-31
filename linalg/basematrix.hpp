@@ -23,6 +23,7 @@ namespace ngla
   {
   protected:
     shared_ptr<ParallelDofs> paralleldofs;
+    mutable char safety_check = 0;
 
   protected:
     /// 
@@ -50,6 +51,8 @@ namespace ngla
     {
       return VWidth();
     }
+
+    virtual xbool IsSymmetric() const { return maybe; }
 
     /// is matrix complex ?
     virtual bool IsComplex() const { return false; }
