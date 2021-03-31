@@ -242,14 +242,14 @@ namespace ngmg
 	    //(*testout) << "u.Size() " << u.Size() << " d.Size() " << d.Size()
 	    //       << " w.Size() " << w.Size() << endl;
 
-	    // smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
-	    smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
+	    smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
+	    //smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
 	    
 	    auto dt = d.Range (0, fespace.GetNDofLevel(level-1));
 	    auto wt = w.Range (0, fespace.GetNDofLevel(level-1));
 
 
-	    // smoother->Residuum (level, u, f, d);
+	    smoother->Residuum (level, u, f, d);
             // cout << "level = " << level << ", prolproj = " << endl << prol_projection << endl;
             if (harmonic_extension_prolongation)
               if (level < he_prolongation.Size() && he_prolongation[level])
@@ -261,9 +261,13 @@ namespace ngmg
             
 	    prolongation->RestrictInline (level, d);
 	    w = 0;
-	    for (int j = 1; j <= cycle; j++)
-	      MGM (level-1, wt, dt, incsm * incsmooth);
-	    
+      if (level == 1) 
+        MGM (level-1, wt, dt, incsm * incsmooth);
+      else{
+        for (int j = 1; j <= cycle; j++)
+          MGM (level-1, wt, dt, incsm * incsmooth);
+      }
+
 	    prolongation->ProlongateInline (level, w);
 	    u += w;
 
