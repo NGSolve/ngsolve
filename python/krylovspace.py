@@ -104,7 +104,10 @@ class LinearSolver(BaseMatrix):
                 self.callback(self.iterations, residual)
             if self.callback_sol is not None:
                 self.callback_sol(self.sol)
-        logerrstop = log(self._final_residual)
+        if self._final_residual != 0:
+            logerrstop = log(self._final_residual)
+        else:
+            logerrstop = 0
         logerrfirst = log(self.residuals[0])
         _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
                                       (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
