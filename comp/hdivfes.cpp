@@ -651,13 +651,22 @@ namespace ngcomp
               fv(2*i)   = fac0 * fv(2*pa1) + 0.125 * fv(2*pa1+1);
               fv(2*i+1) = 0.25 * fv(2*pa1+1);
             }
-          else
+          else if (info<8)//bisecting edge
             {
               double fac1 = (info&1) ? 0.5 : -0.5;
               double fac2 = (info&2) ? 0.5 : -0.5;
               double fac3 = (info&4) ? 0.125 : -0.125;
               fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3+1);
               fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1)) - 0.25*fv(2*pa3+1);
+            }
+          else // info>=8: red edge
+            {
+              double fac1 = (info&1) ? 0.25 : -0.25;
+              double fac2 = (info&2) ? 0.25 : -0.25;
+              double fac3 = (info&4) ? 0.25 : -0.25;
+              fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3)
+                - 0.125 * fv(2*pa1+1) + 0.125 * fv(2*pa2+1);
+              fv(2*i+1) = 0.25*fv(2*pa3+1);
             }
         }
       
@@ -706,7 +715,7 @@ namespace ngcomp
               fv(2*pa1) += fac0 * fv(2*i);
               fv(2*pa1+1) += 0.125 * fv(2*i) + 0.25 * fv(2*i+1);
             }
-          else
+          else if (info<8)//bisecting edge
             {
               double fac1 = (info&1) ? 0.5 : -0.5;
               double fac2 = (info&2) ? 0.5 : -0.5;
@@ -716,6 +725,18 @@ namespace ngcomp
               fv(2*pa2)   += fac2 * fv(2*i);
               fv(2*pa2+1) += 0.5 * fv(2*i+1);
               fv(2*pa3+1) += fac3 * fv(2*i) - 0.25 * fv(2*i+1);
+            }
+          else // info>=8: red edge
+            {
+              double fac1 = (info&1) ? 0.25 : -0.25;
+              double fac2 = (info&2) ? 0.25 : -0.25;
+              double fac3 = (info&4) ? 0.25 : -0.25;
+              fv(2*pa1)   += fac1 * fv(2*i);
+              fv(2*pa1+1) -= 0.125 * fv(2*i);
+              fv(2*pa2)   += fac2 * fv(2*i);
+              fv(2*pa2+1) += 0.125 * fv(2*i);
+              fv(2*pa3) += fac3 * fv(2*i);
+              fv(2*pa3+1) += 0.25*fv(2*i+1);
             }
         }
       
