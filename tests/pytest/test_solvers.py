@@ -56,7 +56,7 @@ def test_newton_with_dirichlet():
 
 
 def test_krylovspace_solvers():
-    solvers = [CGSolver, GMResSolver, MinResSolver, QMRSolver]
+    solvers = [CGSolver, GMResSolver, MinResSolver] # , QMRSolver]
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
     fes = H1(mesh, order=4, dirichlet=".*")
     u,v = fes.TnT()
