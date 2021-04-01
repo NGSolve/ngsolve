@@ -587,6 +587,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          { return -e1; })
     .def("__sub__", [](shared_ptr<MultiVectorExpr> e1, shared_ptr<MultiVectorExpr> e2)
          { return e1-e2; })
+    .def("Evaluate", [](shared_ptr<MultiVectorExpr> exp)
+      {
+        auto vec = exp->CreateVector();
+        auto mv = make_shared<MultiVector> (vec, exp->Size());
+        Vector<> ones(exp->Size()); ones = 1.0;
+        exp->AssignTo(ones, *mv);
+        return mv;
+      })
     ;
 
   py::class_<MultiVector, MultiVectorExpr, shared_ptr<MultiVector>> (m, "MultiVector")
@@ -1381,7 +1389,19 @@ inverse : string
     .def(py::init<shared_ptr<BitArray>,bool>(),
          py::arg("mask"), py::arg("range"),
          "Linear operator projecting to true/false bits of BitArray mask, depending on argument range")
-    .def("Project", &Projector::Project, "project vector inline")
+    .def("Project", [](const Projector & proj, shared_ptr<BaseVector> v)
+         {
+           proj.Project(*v);
+           return v;
+         },
+         "project vector inline")
+    .def("Project", [](const Projector & proj, shared_ptr<MultiVector> mv)
+         {
+           for (auto i : Range(*mv))
+             proj.Project(*(*mv)[i]);
+           return mv;
+         },
+         "project vector inline")
     ;
   
   py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
