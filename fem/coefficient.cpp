@@ -5707,6 +5707,8 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
                                          shared_ptr<CoefficientFunction> cf_then,
                                          shared_ptr<CoefficientFunction> cf_else)
   {
+    if(cf_if->Dimension() != 1)
+      throw Exception("Dimension of first component in IfPos must be 1!");
     return make_shared<IfPosCoefficientFunction> (cf_if, cf_then, cf_else);
   }
 
