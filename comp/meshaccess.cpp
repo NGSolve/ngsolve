@@ -2466,7 +2466,7 @@ namespace ngcomp
 #endif
 
 
-  function<void()> cleanup_func;
+  function<void()> cleanup_func = ProgressOutput :: SumUpLocal;
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
 				    string atask, size_t atotal)
     : ma(ama), comm(ama->GetCommunicator()), task(atask), total(atotal)
@@ -2484,7 +2484,7 @@ namespace ngcomp
     done_called = false;
     cnt = 0;
     thd_cnt = 0;
-    cleanup_func = [this] () {  this->SumUpLocal(); };
+    // cleanup_func = [this] () {  this->SumUpLocal(); };
     TaskManager::SetCleanupFunction(cleanup_func);
   }
 
