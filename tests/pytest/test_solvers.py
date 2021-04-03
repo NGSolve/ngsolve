@@ -1,6 +1,7 @@
 from netgen.geom2d import unit_square
 from ngsolve import *
 import pytest
+from ngsolve.krylovspace import *
 
 def test_arnoldi():
     SetHeapSize (10*1000*1000)
@@ -54,5 +55,29 @@ def test_newton_with_dirichlet():
     newton = solvers.Newton(a, gfu, dirichletvalues=dirichlet.vec)
 
 
+def test_krylovspace_solvers():
+    solvers = [CGSolver, GMResSolver, MinResSolver] # , QMRSolver]
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    fes = H1(mesh, order=4, dirichlet=".*")
+    u,v = fes.TnT()
+    f = LinearForm(32 * (y*(1-y)+x*(1-x)) * v * dx).Assemble()
+    a = BilinearForm(grad(u)*grad(v)*dx)
+    c = Preconditioner(a, type="bddc")
+    a.Assemble()
+    u = GridFunction(fes)
+    exact = 16*x*(1-x)*y*(1-y)
+    for solver in solvers:
+        inv = solver(mat=a.mat, pre=c)
+        u.vec.data = inv * f.vec
+        error = sqrt(Integrate((u-exact)*(u-exact), mesh))
+        print(solver.name, ": iterations = ", inv.iterations)
+        print("Error = ", error)
+        assert inv.iterations < 40
+        # p4 should be exact
+        assert error < 1e-12
+
+
+
 if __name__ == "__main__":
-    test_arnoldi()
+    # test_arnoldi()
+    test_krylovspace_solvers()
