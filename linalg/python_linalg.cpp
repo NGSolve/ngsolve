@@ -494,7 +494,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   [](shared_ptr<BaseVector> self)
                   { return self; },
                   [](shared_ptr<BaseVector> self, DynamicVectorExpression v2)
-                  { v2.AssignTo(1, *self); })
+                  {
+                    py::gil_scoped_release rel;
+                    v2.AssignTo(1, *self);
+                  })
     
     .def("__add__", [] (shared_ptr<BaseVector> a, DynamicVectorExpression b)
          { return a+b; })

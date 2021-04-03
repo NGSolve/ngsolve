@@ -150,6 +150,55 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   static size_t global_heapsize = 10000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
 
+  class LocalHeapProvider
+  {
+    Array<LocalHeap*> heaps;
+    std::mutex m;
+    
+    class BorrowedLocalHeap 
+    {
+      LocalHeap * lh;
+      LocalHeapProvider * provider;
+    public:
+      BorrowedLocalHeap (LocalHeap * alh, LocalHeapProvider * aprovider)
+        : lh(alh), provider(aprovider) { }
+    
+      ~BorrowedLocalHeap()
+      {
+        // cout << "returns lh to provider" << endl;
+        provider -> ReturnLH(lh);
+      }
+
+      LocalHeap & LH() { return *lh; }
+      operator LocalHeap& () { return *lh; }
+    };
+    
+  
+  public:
+    BorrowedLocalHeap GetLH()
+    {
+      std::lock_guard lock(m);
+      if (heaps.Size())
+        {
+          auto tmp = heaps.Last();
+          heaps.SetSize(heaps.Size()-1);
+          // cout << "reuse existing lh" << endl;        
+          return BorrowedLocalHeap (tmp, this);
+        }
+      
+      // cout << "create new lh" << endl;
+      return BorrowedLocalHeap(new LocalHeap(global_heapsize, "python-comp lh"), this);
+    }
+    
+    void ReturnLH (LocalHeap * lh)
+    {
+      std::lock_guard lock(m);
+      heaps.Append (lh);
+    }
+  };
+  static LocalHeapProvider lhp;
+
+  
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::enum_<COUPLING_TYPE> (m, "COUPLING_TYPE", docu_string(R"raw_string(
@@ -2397,7 +2446,8 @@ integrator : ngsolve.fem.BFI
     
     .def("Assemble", [](shared_ptr<BilinearForm> self, bool reallocate)
          {
-           self->ReAssemble(glh,reallocate);
+           // self->ReAssemble(glh,reallocate);
+           self->ReAssemble(lhp.GetLH(),reallocate);           
            return self;
          }, py::call_guard<py::gil_scoped_release>(),
          py::arg("reallocate")=false, docu_string(R"raw_string(
@@ -2680,7 +2730,11 @@ integrator : ngsolve.fem.LFI
                            { return MakePyTuple (self->Integrators()); }, "returns tuple of integrators of the linear form")
 
     .def("Assemble", [](shared_ptr<LF> self)
-         { self->Assemble(glh); return self; },
+         {
+           // self->Assemble(glh);
+           self->Assemble(lhp.GetLH());
+           return self;
+         },
          py::call_guard<py::gil_scoped_release>(), "Assemble linear form")
     
     .def_property_readonly("components", [](shared_ptr<LF> self)
