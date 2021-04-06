@@ -6061,7 +6061,7 @@ public:
         throw Exception ("cannot apply operator "+name+" for coordinate");
       
       Array<shared_ptr<CoefficientFunction>> funcs(spacedim);
-      funcs = make_shared<ConstantCoefficientFunction> (0);
+      funcs = ZeroCF(Array<int>());
       funcs[dir] = make_shared<ConstantCoefficientFunction> (1);
       return MakeVectorialCoefficientFunction (move(funcs));
     }

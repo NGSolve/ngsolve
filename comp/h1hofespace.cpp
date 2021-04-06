@@ -2331,8 +2331,8 @@ into the wirebasket.
               auto dir = flags.GetStringFlag(dirnames[i]);
               if(flags.StringFlagDefined("dirichlet"))
                 dir += "|" + flags.GetStringFlag("dirichlet");
-              cout << "dirichlet = " << dir << endl;
-              cout << "dirichlet flag = " << flags.GetStringFlag("dirichlet") << endl;
+              // cout << "dirichlet = " << dir << endl;
+              // cout << "dirichlet flag = " << flags.GetStringFlag("dirichlet") << endl;
               tmpflags.SetFlag ("dirichlet", dir);
             }
           if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
