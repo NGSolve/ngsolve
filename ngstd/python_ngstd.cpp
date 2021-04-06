@@ -93,6 +93,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("__iter__", [] (ngstd::IntRange & i)
          { return py::make_iterator(i.begin(), i.end()); },
          py::keep_alive<0,1>())
+    .def("__contains__", [] (const IntRange & self, int i)
+         { return i >= self.begin() && i < self.end(); })
     .def_property_readonly("start", [](IntRange& self) { return self.First();})
     .def_property_readonly("stop", [](IntRange& self) { return self.Next();})
     .def_property_readonly("step", [](IntRange& self) { return 1; })
