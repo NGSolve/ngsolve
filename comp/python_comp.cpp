@@ -1235,16 +1235,17 @@ component : int
 
   py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
     (m,"MatrixValued")
-    .def(py::init([] (shared_ptr<FESpace> space, int dim, bool symmetric, bool deviatoric) {
+    .def(py::init([] (shared_ptr<FESpace> space, py::object dim, bool symmetric, bool deviatoric) {
           Flags flags;
           if (symmetric) flags.SetFlag("symmetric");
           if (deviatoric) flags.SetFlag("deviatoric");
-          auto matspace = make_shared<MatrixFESpace> (space, dim, flags);
+          int sdim = py::extract<DummyArgument> (dim).check() ? space->GetSpatialDimension() : py::extract<int>(dim)();
+          auto matspace = make_shared<MatrixFESpace> (space, sdim, flags);
           matspace->Update();
           matspace->FinalizeUpdate();
           return matspace;
           /*
-          flags.SetFlag ("dim", dim);
+          flags.SetFlag ("sdim", sdim);          
           bool is_complex = spaces[0]->IsComplex();
           for (auto space : spaces)
             if (space->IsComplex() != is_complex)
@@ -1257,7 +1258,7 @@ component : int
           fes->FinalizeUpdate();
           return fes;
           */
-        }),py::arg("space"), py::arg("dim"), py::arg("symmetric"), py::arg("deviatoric")=false)
+        }),py::arg("space"), py::arg("dim")=DummyArgument(), py::arg("symmetric")=false, py::arg("deviatoric")=false)
     ;
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
