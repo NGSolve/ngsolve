@@ -39,13 +39,15 @@ class LinearSolver(BaseMatrix):
     def __init__(self, mat : BaseMatrix,
                  pre : Optional[Preconditioner] = None,
                  freedofs : Optional[BitArray] = None,
-                 tol : float = 1e-12,
+                 tol : float = None,
                  maxiter : int = 100,
                  atol : float = None,
                  callback : Optional[Callable[[int, float], None]] = None,
                  callback_sol : Optional[Callable[[BaseVector], None]] = None,
                  printrates : bool = False):
         super().__init__()
+        if atol is None and tol is None:
+            tol = 1e-12
         self.mat = mat
         assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
         self.pre = pre if pre else Projector(freedofs, True)
@@ -96,21 +98,22 @@ class LinearSolver(BaseMatrix):
         self.iterations += 1
         self.residuals.append(residual)
         if len(self.residuals) == 1:
-            self._final_residual = residual * self.tol
-            if self.atol is not None:
-                self._final_residual = max(self._final_residual, self.atol)
+            if self.tol is None:
+                self._final_residual = self.atol
+            else:
+                self._final_residual = residual * self.tol
+                if self.atol is not None:
+                    self._final_residual = max(self._final_residual, self.atol)
         else:
             if self.callback is not None:
                 self.callback(self.iterations, residual)
             if self.callback_sol is not None:
                 self.callback_sol(self.sol)
-        if self._final_residual != 0:
+        if self.residuals[0] != 0:
             logerrstop = log(self._final_residual)
-        else:
-            logerrstop = 0
-        logerrfirst = log(self.residuals[0])
-        _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
-                                      (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
+            logerrfirst = log(self.residuals[0])
+            _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
+                                          (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
         if self.printrates:
             print("{} iteration {}, residual = {}".format(self.name, self.iterations, residual))
             if self.iterations == self.maxiter and residual >= self._final_residual:
