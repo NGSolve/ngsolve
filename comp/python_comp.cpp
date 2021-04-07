@@ -195,6 +195,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
       std::lock_guard lock(m);
       heaps.Append (lh);
     }
+    void Clear()
+    {
+        for (auto lh : heaps)
+            delete lh;
+        heaps.SetSize(0);
+    }
   };
   static LocalHeapProvider lhp;
 
@@ -437,6 +443,7 @@ when building the system matrices.
             {
               global_heapsize = heapsize;
               glh = LocalHeap (heapsize, "python-comp lh", true);
+              lhp.Clear();
             }
         }, py::arg("size"), docu_string(R"raw_string(
 Set a new heapsize.
