@@ -790,33 +790,48 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
 	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
-    .def("MapToAllElements", [](MeshAccess* self, IntegrationRule& rule, VorB vb)
+    .def("MapToAllElements", [](MeshAccess* self, IntegrationRule& rule, std::variant<VorB, Region> vb_or_reg)
          -> py::array_t<MeshPoint>
                              {
                                Array<MeshPoint> points;
-                               points.SetAllocSize(self->GetNE() * rule.Size());
-                               for(auto el : self->Elements(vb))
-                                 for(const auto& p : rule)
-                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
+
+                               if (auto vb = get_if<VorB>(&vb_or_reg); vb)
+                               {
+                                 points.SetAllocSize(self->Elements(*vb).Size() * rule.Size());
+                                 for(auto el : self->Elements(*vb))
+                                   for(const auto& p : rule)
+                                     points.Append({p(0), p(1), p(2), self, *vb, int(el.Nr())});
+                               }
+
+                               if (auto reg = get_if<Region>(&vb_or_reg); reg)
+                               {
+                                 for(auto el : self->Elements(reg->VB()))
+                                   if (reg->Mask().Test(el.GetIndex()))
+                                     for(const auto& p : rule)
+                                       points.Append({p(0), p(1), p(2), self, reg->VB(), int(el.Nr())});
+                               }
+
                                return MoveToNumpyArray(points);
                              })
-    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, VorB vb)
+    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, std::variant<VorB, Region> vb_or_reg)
          -> py::array_t<MeshPoint>
                              {
                                Array<MeshPoint> points;
-                               for(auto el : self->Elements(vb))
-                                 for(const auto& p : rules[el.GetType()])
-                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
-                               return MoveToNumpyArray(points);
-                             })
-    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, Region & reg)
-         -> py::array_t<MeshPoint>
-                             {
-                               Array<MeshPoint> points;
-                               for(auto el : self->Elements(reg.VB()))
-                                 if (reg.Mask().Test(el.GetIndex()))
+
+                               if (auto vb = get_if<VorB>(&vb_or_reg); vb)
+                               {
+                                 for(auto el : self->Elements(*vb))
                                    for(const auto& p : rules[el.GetType()])
-                                     points.Append({p(0), p(1), p(2), self, reg.VB(), int(el.Nr())});
+                                     points.Append({p(0), p(1), p(2), self, *vb, int(el.Nr())});
+                               }
+
+                               if (auto reg = get_if<Region>(&vb_or_reg); reg)
+                               {
+                                 for(auto el : self->Elements(reg->VB()))
+                                   if (reg->Mask().Test(el.GetIndex()))
+                                     for(const auto& p : rules[el.GetType()])
+                                       points.Append({p(0), p(1), p(2), self, reg->VB(), int(el.Nr())});
+                               }
                                return MoveToNumpyArray(points);
                              })
     ;
