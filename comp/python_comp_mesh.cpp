@@ -337,6 +337,7 @@ nr : int
       auto range = self.GetElements();
       return py::make_iterator(range.begin(), range.end());
     }, py::keep_alive<0,1>())
+    .def_property_readonly("mesh", &Region::Mesh)
     .def("__hash__", &Region::Hash)
     .def("__eq__", &Region::operator==)
     .def(py::self + py::self)
