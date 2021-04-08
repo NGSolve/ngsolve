@@ -551,7 +551,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
         "Return list of pml transformations"
     )
     .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
-        if (ma.GetPMLTrafos()[domnr])
+        if (ma.GetPMLTrafos()[domnr-1])
      	  return ma.GetPMLTrafos()[domnr-1];
         else
           throw Exception("No PML Trafo set"); 
