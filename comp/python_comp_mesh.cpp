@@ -809,6 +809,16 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                    points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
                                return MoveToNumpyArray(points);
                              })
+    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, Region & reg)
+         -> py::array_t<MeshPoint>
+                             {
+                               Array<MeshPoint> points;
+                               for(auto el : self->Elements(reg.VB()))
+                                 if (reg.Mask().Test(el.GetIndex()))
+                                   for(const auto& p : rules[el.GetType()])
+                                     points.Append({p(0), p(1), p(2), self, reg.VB(), int(el.Nr())});
+                               return MoveToNumpyArray(points);
+                             })
     ;
     PyDefVectorized(mesh_access, "__call__",
          [](MeshAccess* ma, double x, double y, double z, VorB vb)
