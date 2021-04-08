@@ -761,6 +761,7 @@ namespace ngcomp
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
             additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
+	    additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
             prol = make_shared<BDM1ProlongationTRIG> (*this);
           }
         else if(ma->GetDimension() == 3) 
@@ -769,7 +770,8 @@ namespace ngcomp
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
             additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<3>>> ());
-            prol = make_shared<BDM1Prolongation> (*this);
+	    additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
+	    prol = make_shared<BDM1Prolongation> (*this);
           }
       }
     
