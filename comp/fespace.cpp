@@ -3066,7 +3066,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
       {
-	spaces[i] -> Update();
+        if(do_subspace_update)
+          spaces[i] -> Update();
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
@@ -3154,7 +3155,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: FinalizeUpdate()
   {
     for (int i = 0; i < spaces.Size(); i++)
-      spaces[i] -> FinalizeUpdate();
+      if(do_subspace_update)
+        spaces[i] -> FinalizeUpdate();
 
     FESpace::FinalizeUpdate();
 

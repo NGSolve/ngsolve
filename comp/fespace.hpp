@@ -1157,6 +1157,7 @@ ANY                  1 1 1 1 | 15
     /// dofs on each multigrid level
     /// Array<int> ndlevel;
     bool all_the_same;
+    bool do_subspace_update = true;
   public:
     /// generates a compound space.
     /// components will be added later
@@ -1251,7 +1252,10 @@ ANY                  1 1 1 1 | 15
                        SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override;
 
     /// number of component spaces
-    inline int GetNSpaces () const { return spaces.Size(); } 
+    inline int GetNSpaces () const { return spaces.Size(); }
+
+    void SetDoSubspaceUpdate(bool _do_subspace_update)
+    { do_subspace_update = _do_subspace_update; }
   };
 
 
