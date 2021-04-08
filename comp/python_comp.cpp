@@ -1101,8 +1101,10 @@ rho : ngsolve.fem.CoefficientFunction
             else
               productspace->AddSpace (s);
           }
+        productspace->SetDoSubspaceUpdate(false);
         productspace->Update();
         productspace->FinalizeUpdate();
+        productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
 
@@ -1113,8 +1115,10 @@ rho : ngsolve.fem.CoefficientFunction
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
         auto productspace = make_shared<CompoundFESpaceAllSame> (space, p, flags);
+        productspace->SetDoSubspaceUpdate(false);
         productspace->Update();
         productspace->FinalizeUpdate();
+        productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
     ;
@@ -1146,8 +1150,10 @@ rho : ngsolve.fem.CoefficientFunction
             flags.SetFlag ("complex");
 
           auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+          fes->SetDoSubspaceUpdate(false);
           fes->Update();
           fes->FinalizeUpdate();
+          fes->SetDoSubspaceUpdate(true);
           return fes;
         }))
     .def(py::pickle([] (py::object pyfes)
@@ -1221,6 +1227,7 @@ component : int
                              return Array<shared_ptr<FESpace>>(self->Spaces());
                            },
                   "Return a list of the components of a product space")
+    .def("SetDoSubspaceUpdate", &CompoundFESpace::SetDoSubspaceUpdate)
 
     // not working because shared_ptr<Array<int>> cannot be pybind return type?
     // TODO CL: Find out why...
