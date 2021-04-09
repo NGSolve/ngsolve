@@ -716,7 +716,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           {
           case ET_SEGM:
             {
-              auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;              
+              auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();
               fe1d -> SetVertexNumbers (vnums);
               auto ednums = ma->GetElEdges(ei);
               int p = order_facet[ednums[0]][0];
@@ -727,7 +727,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
             }
           case ET_TRIG: 
             {
-              auto fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;              
+              auto fe2d = new (lh) L2HighOrderFE<ET_TRIG> ();
               fe2d -> SetVertexNumbers (vnums);
               int p = order_facet[ma->GetSElFace(ei.Nr())][0];
               if (highest_order_dc) p--;
@@ -737,7 +737,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
             }
           case ET_QUAD: 
             {
-              auto fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;              
+              auto fe2d = new (lh) L2HighOrderFE<ET_QUAD> ();
               fe2d -> SetVertexNumbers (vnums);
               int p = order_facet[ma->GetSElFace(ei.Nr())][0];
               if (highest_order_dc) p--;
