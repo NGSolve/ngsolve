@@ -51,15 +51,18 @@ namespace ngcomp
       d0 = L2Norm2(dist);
     }
 
-    Vec<DIM> CalcMinimumOnSegment( Vec<DIM> x1, Vec<DIM> x2 )
+    bool CalcMinimumOnSegment( Vec<DIM> x1, Vec<DIM> x2, Vec<DIM> & res )
     {
       auto v = x2-x1;
       Vec<DIM> va = a*v;
-      double lam = InnerProduct(v,b) - InnerProduct(va,x2+x0);
+      double lam = - InnerProduct(v,b) - InnerProduct(va,x1-x0);
       lam /= InnerProduct(va,v);
-      lam = min(lam,1.0);
-      lam = max(lam,0.0);
-      return lam*x1 + (1-lam)*x2;
+
+      if(lam<0 || lam>1.0)
+          return false;
+
+      res = lam*x2 + (1-lam)*x1;
+      return true;
     }
 
     Vec<DIM> CalcMinimum( )
@@ -116,12 +119,19 @@ namespace ngcomp
       if constexpr (DIMS==2)
       {
         // TODO: Handle quad elements
+        auto getDist = [&] ( auto l )
+        {
+          Vec<DIMR> p;
+          trafo.CalcPoint( {l}, p );
+          return L2Norm2( p-pmaster );
+        };
 
         // check corner points
         ArrayMem<Vec<DIMS>, 5> points{ {0,0}, {0,1}, {1,0} };
         for (Vec<DIMS> lam : points)
         {
-          auto d = t2(lam);
+          // auto d = t2(lam);
+          auto d = getDist(lam);
           if(is_front && d < min_dist)
           {
             min_dist = d;
@@ -129,38 +139,38 @@ namespace ngcomp
           }
         }
 
-        ArrayMem<Vec<DIMS>, 5> lam;
-        ArrayMem<double, 5> dist;
+        auto checkLam = [&]( auto lam )
+        {
+            if(!is_front)
+                return;
+            auto dist = getDist(lam);
+
+            if(dist < min_dist)
+            {
+                min_dist = dist;
+                min_lam = lam;
+            }
+        };
 
         auto l = t2.CalcMinimum();
+
         if(l[0]>0 && l[1]>0 && l[0]<1 && l[1]<1 && l[0]+l[1]<1)
-        {
-          lam.Append(l);
-          dist.Append(t2(lam.Last()));
-        }
+            checkLam(l);
 
-//         lam.Append(t2.CalcMinimumOnSegment( {0,0}, {1,0} ));
-//         dist.Append(t2(lam.Last()));
-// 
-//         lam.Append(t2.CalcMinimumOnSegment( {1,0}, {0,1} ));
-//         dist.Append(t2(lam.Last()));
-// 
-//         lam.Append(t2.CalcMinimumOnSegment( {0,1}, {0,0} ));
-//         dist.Append(t2(lam.Last()));
+        if(t2.CalcMinimumOnSegment( {0,0}, {1,0}, l ))
+            checkLam(l);
 
-        for(auto i : Range(lam.Size()))
-        {
-          if(is_front && dist[i]<min_dist && InnerProduct(n , mip.GetNV())<0)
-          {
-            min_dist = dist[i];
-            min_lam = lam[i];
-          }
-        }
+        if(t2.CalcMinimumOnSegment( {1,0}, {0,1}, l ))
+            checkLam(l);
+
+        if(t2.CalcMinimumOnSegment( {0,1}, {0,0}, l ))
+            checkLam(l);
+
       }
     }
 
-    if(min_dist > h)
-      return min_dist;
+    if(min_dist > h*h)
+      return sqrt(min_dist);
 
     ip = min_lam;
     trafo.CalcPoint( ip, p );
