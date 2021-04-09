@@ -1911,14 +1911,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeap lh(100000000);
     
     Array<int> classnr(ma->GetNE());
+    
+    FlatArray<int> vertex_map;
+    if (const PeriodicFESpace * periodic = dynamic_cast<const PeriodicFESpace*> (this))
+      vertex_map.Assign (periodic->GetVertexMap());
+    
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
          classnr[el.Nr()] = 
            SwitchET<ET_TRIG,ET_QUAD,ET_TET,ET_HEX>
            (el.GetType(),
-            [el] (auto et) {
-             return ET_trait<et.ElementType()>::GetClassNr(el.Vertices());
+            [el, vertex_map] (auto et) {
+             if (vertex_map.Size())
+               return ET_trait<et.ElementType()>::GetClassNr(vertex_map[el.Vertices()]);
+             else
+               return ET_trait<et.ElementType()>::GetClassNr(el.Vertices());
             });
        });
 

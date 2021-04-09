@@ -46,6 +46,8 @@ namespace ngfem
     using VertexOrientedFE<ET>::vnums;
     using VertexOrientedFE<ET>::GetVertexOrientedFace;
   public:
+    using VertexOrientedFE<ET>::SetVertexNumbers;    
+
     T_HDivHighOrderNormalFiniteElement ()
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
