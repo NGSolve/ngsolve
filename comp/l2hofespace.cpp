@@ -1658,35 +1658,25 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           }
         else
           {
-            /*
-            DGFiniteElement<2> * fe2d = 0;
-
-            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());
-            
-            switch (ngel.GetType())
-              {
-              case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-              case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-              default:
-                ;
-              }
-
-            fe2d -> SetVertexNumbers (ngel.vertices);
-            fe2d -> SetOrder (order_inner[ei.Nr()]);
-            fe2d -> ComputeNDof();
-            return *fe2d;
-            */
             Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());            
-            return
-              SwitchET<ET_TRIG, ET_QUAD> (ngel.GetType(),
-                                          [&] (auto ET) -> BaseScalarFiniteElement&
-                                          {
-                                            auto fe2d = new (lh) L2HighOrderFE<ET.ElementType()> ();
-                                            fe2d -> SetVertexNumbers (ngel.vertices);
-                                            fe2d -> SetOrder (order_inner[ei.Nr()]);
-                                            fe2d -> ComputeNDof();
-                                            return *fe2d;
-                                          });
+            // SwitchET generates an "internal compiler error" on MSVC 2019 14.28.29910
+            if(ngel.GetType()==ET_TRIG)
+            {
+              auto fe2d = new (lh) L2HighOrderFE<ET_TRIG> ();
+              fe2d -> SetVertexNumbers (ngel.vertices);
+              fe2d -> SetOrder (order_inner[ei.Nr()]);
+              fe2d -> ComputeNDof();
+              return *fe2d;
+            }
+            else if(ngel.GetType()==ET_QUAD)
+            {
+              auto fe2d = new (lh) L2HighOrderFE<ET_QUAD> ();
+              fe2d -> SetVertexNumbers (ngel.vertices);
+              fe2d -> SetOrder (order_inner[ei.Nr()]);
+              fe2d -> ComputeNDof();
+              return *fe2d;
+            }
+            throw Exception("Unknown eltype for L2SurfaceHighOrderFESpace " + ToString(ngel.GetType()));
           }
       }
 
