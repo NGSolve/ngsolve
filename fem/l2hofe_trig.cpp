@@ -26,14 +26,14 @@ namespace ngfem
 
   
   template class L2HighOrderFE<ET_TRIG>;  
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
+  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<ET_TRIG> >;
 
   //constexpr int MAX_FO_TRIG = 2;
   
   template<>
   ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_TRIG> (int order, FlatArray<int> vnums, Allocator & lh)
   {
-    DGFiniteElement<2> * hofe = nullptr;
+    DGFiniteElement<ET_TRIG> * hofe = nullptr;
 
     // now we orient trigs such that the first vertex is the lowest
     if (vnums[0] < vnums[1] && vnums[0] < vnums[2] )

@@ -719,8 +719,8 @@ namespace ngfem
 
 
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>
+  void DGFiniteElement<ET>:: 
   GetDiagMassMatrix (FlatVector<> mass) const
   {
 #ifndef __CUDA_ARCH__
@@ -737,8 +737,8 @@ namespace ngfem
   }
 
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   CalcTraceMatrix (int facet, FlatMatrix<> trace) const
   {
     ELEMENT_TYPE ftype = ElementTopology::GetFacetType (this->ElementType(), facet);
@@ -789,8 +789,8 @@ namespace ngfem
     delete facetfe2;
   }
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   CalcGradientMatrix (FlatMatrix<> gmat) const
   {
     IntegrationRule ir (this->ElementType(), 2*order);
@@ -819,8 +819,8 @@ namespace ngfem
   }
 
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>    
+  void DGFiniteElement<ET>:: 
   GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
   {
     Matrix<> gmat(D*grad.Height(), coefs.Size());
@@ -828,9 +828,9 @@ namespace ngfem
     FlatVector<> vgrad(gmat.Height(), &grad(0,0));
     vgrad = gmat * coefs;
   }
-  
-  template <int D>
-  void DGFiniteElement<D>:: 
+
+  template <ELEMENT_TYPE ET>    
+  void DGFiniteElement<ET>:: 
   GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
   {
     Matrix<> gmat(D*grad.Height(), coefs.Size());
@@ -838,9 +838,10 @@ namespace ngfem
     FlatVector<> vgrad(gmat.Height(), &grad(0,0));
     coefs = Trans (gmat) * vgrad;
   }
+
   
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
   {
     Matrix<> trace(fcoefs.Size(), coefs.Size());
@@ -848,8 +849,8 @@ namespace ngfem
     fcoefs = trace * coefs;
   }
   
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
   {
     Matrix<> trace(fcoefs.Size(), coefs.Size());
@@ -864,12 +865,20 @@ namespace ngfem
   template class ScalarFiniteElement<2>;
   template class ScalarFiniteElement<3>;
 
-
+  template class DGFiniteElement<ET_POINT>;
+  template class DGFiniteElement<ET_SEGM>;
+  template class DGFiniteElement<ET_TRIG>;
+  template class DGFiniteElement<ET_QUAD>;
+  template class DGFiniteElement<ET_TET>;
+  template class DGFiniteElement<ET_PRISM>;
+  template class DGFiniteElement<ET_PYRAMID>;
+  template class DGFiniteElement<ET_HEX>;
+  /*
   template class DGFiniteElement<0>;
   template class DGFiniteElement<1>;
   template class DGFiniteElement<2>;
   template class DGFiniteElement<3>;
-  
+  */
 
 
   template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;

@@ -51,7 +51,7 @@ namespace ngfem
           }
 
         Matrix<> * trace = new Matrix<>(nf, ndof);
-        DGFiniteElement<DIM>::CalcTraceMatrix (f, *trace);
+        DGFiniteElement<ET>::CalcTraceMatrix (f, *trace);
         precomp_trace.Set (INT<2> (order, classnr), trace);
       }
 #endif
@@ -69,7 +69,7 @@ namespace ngfem
       return;
 
     Matrix<> * gmat = new Matrix<>(ndof*DIM, ndof);
-    DGFiniteElement<DIM>::CalcGradientMatrix (*gmat);
+    DGFiniteElement<ET>::CalcGradientMatrix (*gmat);
     precomp_grad.Set (INT<2> (order, classnr), gmat);
 #endif
   }
@@ -180,7 +180,7 @@ namespace ngfem
       }
     else
 #endif
-      DGFiniteElement<DIM>::GetGradient (coefs, grad);
+      DGFiniteElement<ET>::GetGradient (coefs, grad);
   }
   
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
@@ -199,7 +199,7 @@ namespace ngfem
       }
     else
 #endif
-      DGFiniteElement<DIM>::GetGradientTrans (grad, coefs);
+      DGFiniteElement<ET>::GetGradientTrans (grad, coefs);
   }
 
 
@@ -225,7 +225,7 @@ namespace ngfem
 	}
       else
 #endif
-	DGFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
+	DGFiniteElement<ET>::GetTrace (facet, coefs, fcoefs);
     }
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
@@ -242,7 +242,7 @@ namespace ngfem
 	}
       else
 #endif
-	DGFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
+	DGFiniteElement<ET>::GetTraceTrans (facet, fcoefs, coefs);
     }
 
 
@@ -288,7 +288,7 @@ namespace ngfem
         break;
         
       default:
-        DGFiniteElement<ET_trait<ET>::DIM>::GetDiagMassMatrix (mass);
+        DGFiniteElement<ET>::GetDiagMassMatrix (mass);
       }
   }
 

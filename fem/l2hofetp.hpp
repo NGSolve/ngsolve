@@ -824,7 +824,7 @@ namespace ngfem
   
   template <> // ELEMENT_TYPE ET>
   class L2HighOrderFETP <ET_TET> :
-    public T_ScalarFiniteElementTP<L2HighOrderFETP<ET_TET>, L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_trait<ET_TET>::DIM>>,
+    public T_ScalarFiniteElementTP<L2HighOrderFETP<ET_TET>, L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_TET>>,
     public ET_trait<ET_TET>
   {
     enum { DIM = ET_trait<ET_TET>::DIM };
@@ -1047,11 +1047,11 @@ namespace ngfem
   
   template <> 
   class L2HighOrderFETP <ET_QUAD> :
-    public T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>,
+    public T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD>>,
     public ET_trait<ET_QUAD>
   {
     enum { DIM = ET_trait<ET_QUAD>::DIM };
-    typedef T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>> TBASE;
+    typedef T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD>> TBASE;
   public:
     template <typename TA> 
     L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)

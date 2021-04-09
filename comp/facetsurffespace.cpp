@@ -489,20 +489,20 @@ namespace ngcomp
         }
       case BBND:
 	{
-	  DGFiniteElement<1> * fe1d = 0;
-	  
 	  switch (ma->GetElType(ei))
 	    {
-	    case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+	    case ET_SEGM:
+              {
+                auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();
+                fe1d -> SetVertexNumbers (vnums);
+                fe1d -> SetOrder (order); 
+                fe1d -> ComputeNDof();
+                return *fe1d;
+              }
 	    default:
 	      throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
 			       ElementTopology::GetElementName(ma->GetElType(ei)));
 	    }
-	  
-	  fe1d -> SetVertexNumbers (vnums);
-	  fe1d -> SetOrder (order); 
-	  fe1d -> ComputeNDof();
-	  return *fe1d;
 	  break;
 	}
       case BBBND:

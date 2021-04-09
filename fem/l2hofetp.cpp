@@ -336,7 +336,7 @@ namespace ngfem
   
   
   // template class L2HighOrderFETP<ET_QUAD>;
-  template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
+  template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD>>;
 
 
   // ********************************** HEX ****************
