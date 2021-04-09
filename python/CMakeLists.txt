@@ -1,6 +1,6 @@
 if(NETGEN_USE_PYTHON)
     install (FILES
-            __expr.py internal.py __console.py
+            __expr.py internal.py __console.py webgui.py
             __init__.py utils.py solvers.py eigenvalues.py meshes.py
             krylovspace.py nonlinearsolvers.py bvp.py timing.py TensorProductTools.py
             ngs2petsc.py
@@ -20,7 +20,5 @@ else()
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../stubs/ngsolve-stubs/ DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/ COMPONENT ngsolve)
 endif()
 endif(BUILD_STUB_FILES)
-
-add_subdirectory(webgui)
 
 endif(NETGEN_USE_PYTHON)
