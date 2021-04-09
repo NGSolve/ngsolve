@@ -15,7 +15,7 @@ namespace ngfem
   template<>
   ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_QUAD> (int order, FlatArray<int> vnums, Allocator & lh)
   {
-    DGFiniteElement<2> * hofe = new (lh) L2HighOrderFE<ET_QUAD> (order);
+    DGFiniteElement<ET_QUAD> * hofe = new (lh) L2HighOrderFE<ET_QUAD> (order);
     for (int j = 0; j < 4; j++)
       hofe->SetVertexNumber (j, vnums[j]);
     return hofe;

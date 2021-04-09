@@ -26,14 +26,14 @@ namespace ngfem
   */
   
   template class L2HighOrderFE<ET_TET>;  
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
+  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_TET> >;
 
 
 
   template<>
   ScalarFiniteElement<3> * CreateL2HighOrderFE<ET_TET> (int order, FlatArray<int> vnums, Allocator & lh)
   {
-    DGFiniteElement<3> * hofe = nullptr;    
+    DGFiniteElement<ET_TET> * hofe = nullptr;    
     if (vnums[0] < vnums[1] && vnums[1] < vnums[2] && vnums[1] < vnums[3])
     // if (false)
       { // new standard orientation

@@ -427,6 +427,7 @@ namespace ngcomp
           if (!xtrafo.IsCurvedElement())
           {
             FlatVector<double> diag_mass(ndofx, lh);
+            /*
             switch (meshx->GetDimension())
             {
               case 1:
@@ -436,6 +437,8 @@ namespace ngcomp
               case 3:
                 static_cast<const DGFiniteElement<3>&> (felx).GetDiagMassMatrix (diag_mass);
             }
+            */
+            static_cast<const BaseScalarFiniteElement&>(felx).GetDiagMassMatrix (diag_mass);            
             IntegrationRule ir(felx.ElementType(), 0);
             BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
             diag_mass *= mir[0].GetMeasure();
@@ -469,6 +472,7 @@ namespace ngcomp
             if (!ytrafo.IsCurvedElement())
             {
               FlatVector<double> diag_mass(ndofy, lh);
+              /*
               switch (meshy->GetDimension())
               {
                 case 1:
@@ -477,7 +481,8 @@ namespace ngcomp
                   static_cast<const DGFiniteElement<2>&> (fely).GetDiagMassMatrix (diag_mass);
                 case 3:
                   static_cast<const DGFiniteElement<3>&> (fely).GetDiagMassMatrix (diag_mass);
-              }
+                  }*/
+              static_cast<const BaseScalarFiniteElement&>(fely).GetDiagMassMatrix (diag_mass);              
               IntegrationRule ir(fely.ElementType(), 0);
               BaseMappedIntegrationRule & mir = ytrafo(ir, lh);
               diag_mass *= mir[0].GetMeasure();
@@ -603,6 +608,7 @@ namespace ngcomp
       else
       {
         FlatVector<double> diag_mass(fel.GetNDof(), lh);
+        /*
         switch (fes->GetMeshAccess()->GetDimension())
         {
           case 1:
@@ -611,7 +617,9 @@ namespace ngcomp
             static_cast<const DGFiniteElement<2>&> (fel).GetDiagMassMatrix (diag_mass);
           case 3:
             static_cast<const DGFiniteElement<3>&> (fel).GetDiagMassMatrix (diag_mass);
-        }
+            }*/
+        static_cast<const BaseScalarFiniteElement&>(fel).GetDiagMassMatrix (diag_mass);                      
+        
         IntegrationRule ir(fel.ElementType(), 0);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         diag_mass *= mir[0].GetMeasure();

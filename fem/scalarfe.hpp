@@ -232,15 +232,18 @@ namespace ngfem
 
 
 
-  template<int D>
-  class DGFiniteElement : public ScalarFiniteElement<D>
+  template<ELEMENT_TYPE ET>
+  class DGFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>,
+                          public VertexOrientedFE<ET>
   {
   protected:
-    int vnums[1<<D];  
-
+    // int vnums[1<<D];  
+    enum { D = ET_trait<ET>::DIM };
+    
     using ScalarFiniteElement<D>::ndof;
     using ScalarFiniteElement<D>::order;
-
+    using VertexOrientedFE<ET>::vnums;
+    
   public:
     /// global vertex numbers define ordering of vertices
     template <typename TA>
@@ -283,10 +286,14 @@ namespace ngfem
   SCALARFE_EXTERN template class ScalarFiniteElement<2>;
   SCALARFE_EXTERN template class ScalarFiniteElement<3>;
 
-  SCALARFE_EXTERN template class DGFiniteElement<0>;
-  SCALARFE_EXTERN template class DGFiniteElement<1>;
-  SCALARFE_EXTERN template class DGFiniteElement<2>;
-  SCALARFE_EXTERN template class DGFiniteElement<3>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_POINT>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_SEGM>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_TRIG>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_QUAD>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_TET>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_PRISM>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_PYRAMID>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_HEX>;
 
 #endif
 }

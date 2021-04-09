@@ -683,7 +683,7 @@ global system.
 
   const FiniteElement & L2HighOrderFESpace :: GetFacetFE (int fnr, LocalHeap & lh) const
   {
-    DGFiniteElement<2> * fe2d = NULL;
+    // DGFiniteElement<2> * fe2d = NULL;
 
     ArrayMem<int,4> vnums;
     ma->GetFacetPNums (fnr, vnums);
@@ -692,8 +692,10 @@ global system.
       {
       case 1: return *new (lh) L2HighOrderFE<ET_POINT> (0);
       case 2: return *CreateL2HighOrderFE<ET_SEGM> (order, vnums, lh);
-      case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-      case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+      case 3: return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
+      case 4: return *CreateL2HighOrderFE<ET_QUAD> (order, vnums, lh);
+        // case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+        // case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
       default:
 	{
 	  stringstream str;
@@ -702,11 +704,12 @@ global system.
 	  throw Exception (str.str());
 	}
       }
-
+    /*
     fe2d-> SetVertexNumbers (vnums);
     fe2d-> SetOrder(order);
     fe2d-> ComputeNDof();
     return *fe2d;
+    */
   }
 
 
@@ -1120,8 +1123,8 @@ global system.
 
   Matrix<> GetTraceMatrix (const FiniteElement & fel)
   {
-    auto * dgfel2 = dynamic_cast<const DGFiniteElement<2>*> (&fel);
-    if (dgfel2)
+    // auto * dgfel2 = dynamic_cast<const DGFiniteElement<2>*> (&fel);
+    if (auto dgfel2 = dynamic_cast<const DGFiniteElement<ET_TRIG>*> (&fel))
       {
         int order = fel.Order();
         Matrix<> trace(3*(order+1), fel.GetNDof());
@@ -1129,8 +1132,8 @@ global system.
           dgfel2->CalcTraceMatrix(j, trace.Rows(j*(order+1), (j+1)*(order+1)));
         return trace;
       }
-    auto * dgfel3 = dynamic_cast<const DGFiniteElement<3>*> (&fel);
-    if (dgfel3)
+    // auto * dgfel3 = dynamic_cast<const DGFiniteElement<3>*> (&fel);
+    if (auto dgfel3 = dynamic_cast<const DGFiniteElement<ET_TET>*> (&fel))
       {
         int order = fel.Order();
         int nd2d = (order+1)*(order+2)/2;
@@ -1637,7 +1640,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       {
         if (ma->GetDimension() == 2)
           {
-            DGFiniteElement<1> * fe1d = 0;
+            DGFiniteElement<ET_SEGM> * fe1d = 0;
 
             Ngs_Element ngel = ma->GetElement<1,BND> (ei.Nr());
 
@@ -1655,10 +1658,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           }
         else
           {
+            /*
             DGFiniteElement<2> * fe2d = 0;
 
             Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());
-
+            
             switch (ngel.GetType())
               {
               case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
@@ -1671,6 +1675,18 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
             fe2d -> SetOrder (order_inner[ei.Nr()]);
             fe2d -> ComputeNDof();
             return *fe2d;
+            */
+            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());            
+            return
+              SwitchET<ET_TRIG, ET_QUAD> (ngel.GetType(),
+                                          [&] (auto ET) -> BaseScalarFiniteElement&
+                                          {
+                                            auto fe2d = new (lh) L2HighOrderFE<ET.ElementType()> ();
+                                            fe2d -> SetVertexNumbers (ngel.vertices);
+                                            fe2d -> SetOrder (order_inner[ei.Nr()]);
+                                            fe2d -> ComputeNDof();
+                                            return *fe2d;
+                                          });
           }
       }
 

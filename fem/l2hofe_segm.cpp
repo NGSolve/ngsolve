@@ -14,12 +14,12 @@
 namespace ngfem
 {
   template class L2HighOrderFE<ET_SEGM>;  
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
+  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<ET_SEGM> >;
   
   template<>
   ScalarFiniteElement<1> * CreateL2HighOrderFE<ET_SEGM> (int order, FlatArray<int> vnums, Allocator & lh)
   {
-    DGFiniteElement<1> * hofe = 0;
+    DGFiniteElement<ET_SEGM> * hofe = 0;
     switch (order)
       {
       case 0: hofe = new (lh)  L2HighOrderFEFO<ET_SEGM,0> (); break;

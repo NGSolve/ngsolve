@@ -695,6 +695,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           */
       case BND:
         {
+          /*
         DGFiniteElement<1> * fe1d = 0;
         DGFiniteElement<2> * fe2d = 0;
 
@@ -707,7 +708,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
             throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
                              ElementTopology::GetElementName(ma->GetElType(ei)));
           }
-     
+          */
         // ArrayMem<int,4> ednums;
     
         auto vnums = ma->GetElVertices(ei);
@@ -715,6 +716,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           {
           case ET_SEGM:
             {
+              auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;              
               fe1d -> SetVertexNumbers (vnums);
               auto ednums = ma->GetElEdges(ei);
               int p = order_facet[ednums[0]][0];
@@ -722,23 +724,31 @@ for the two neighbouring elements. This allows a simple implementation of the Le
               fe1d -> SetOrder (p); 
               fe1d -> ComputeNDof();
               return *fe1d;
-              break;
             }
           case ET_TRIG: 
-          case ET_QUAD: 
             {
+              auto fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;              
               fe2d -> SetVertexNumbers (vnums);
               int p = order_facet[ma->GetSElFace(ei.Nr())][0];
               if (highest_order_dc) p--;
               fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
               fe2d -> ComputeNDof();
               return *fe2d;
-              break;
+            }
+          case ET_QUAD: 
+            {
+              auto fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;              
+              fe2d -> SetVertexNumbers (vnums);
+              int p = order_facet[ma->GetSElFace(ei.Nr())][0];
+              if (highest_order_dc) p--;
+              fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+              fe2d -> ComputeNDof();
+              return *fe2d;
             }
           default:
-            break;
+            throw Exception("Undefined BND GetFE of FacetFESpace");            
           }
-        return *fe2d;
+        // return *fe2d;
         }
       case BBND:
         throw Exception("No BBND GetFE implemented for FacetFESpace");
