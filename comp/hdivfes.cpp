@@ -273,7 +273,7 @@ namespace ngcomp
     shared_ptr<MeshAccess> ma;
     const FESpace & space;
     
-    array<Mat<3,3>, 16> boundaryprol;
+    array<Mat<3,3>, 20> boundaryprol; // 16 + 4
     // array<Mat<3,12>, 6+3+1> innerprol;
     array<Mat<3,12>, 120> innerprol;
     
@@ -286,7 +286,8 @@ namespace ngcomp
       // v3 ... subdivision vertex
       
       ma->EnableTable("parentfaces");
-      // boundary prol (only 8 cases are actually used) 
+      // boundary prol (only 8 cases are actually used)
+      // add 4 more cases for tet red refinement
       for (int classnr = 0; classnr < 16; classnr++)
         {
           int verts[4] = { 1, 2, 3, 4 };
@@ -325,7 +326,32 @@ namespace ngcomp
             }
           CalcInverse (massf);
           boundaryprol[classnr] = 0.5 * massf * massfc;
-          // cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
+          //cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
+        }
+      
+      // 4 red refinement boundary faces
+      for (int classnr =16; classnr < 20; classnr++)
+        {
+          Matrix<> bprol(3,3);
+          if (classnr==16){
+            bprol(0,0) = 0.25; bprol(0,1) = 0.0625; bprol(0,2) = -0.125;
+            bprol(1,0) = 0; bprol(1,1) = 0.125; bprol(1,2) = 0;
+            bprol(2,0) = 0; bprol(2,1) = 0.; bprol(2,2) = 0.125;
+          }else if (classnr==17){
+            bprol(0,0) = -0.25; bprol(0,1) = 0.0625; bprol(0,2) = 0.125;
+            bprol(1,0) = 0; bprol(1,1) = 0.125; bprol(1,2) = 0;
+            bprol(2,0) = 0; bprol(2,1) = 0.; bprol(2,2) = -0.125;
+          }else if (classnr==18){
+            bprol(0,0) = 0.25; bprol(0,1) = 0; bprol(0,2) = 0.25;
+            bprol(1,0) = 0; bprol(1,1) = -0.0625; bprol(1,2) = 0.375;
+            bprol(2,0) = 0; bprol(2,1) = -0.03125; bprol(2,2) = -0.0625;
+          }else{
+            bprol(0,0) = -0.25; bprol(0,1) = 0; bprol(0,2) = 0;
+            bprol(1,0) = 0; bprol(1,1) = 0.0625; bprol(1,2) = 0.375;
+            bprol(2,0) = 0; bprol(2,1) = 0.03125; bprol(2,2) = -0.0625;
+          }
+          boundaryprol[classnr] = bprol;
+          //cout << "boundarypol[" << classnr << "] = " << endl << FlatMatrix(boundaryprol[classnr]) << endl;
         }
 
 
@@ -499,7 +525,7 @@ namespace ngcomp
       for (size_t i = nc; i < nf; i++)
         {
           auto [info, nrs] = ma->GetParentFaces(i);
-          if (nrs[1] != -1)
+          if (nrs[1] != -1 || info==20)
             for (int j = 0; j < 3; j++)
               if (freedofs->Test(3*i+j))
                 inner.SetBit(3*i+j);
@@ -531,9 +557,12 @@ namespace ngcomp
 
           if (pa2 == -1)
             {
-              Vec<3> fvecc = fv.Range(3*pa1, 3*pa1+3);
-              Vec<3> fvecf = boundaryprol[info%16] * fvecc;
-              fv.Range(3*i, 3*i+3) = fvecf;
+              if (info==20) ;// interior face:: do nothing
+              else{ // bisect or red face
+                Vec<3> fvecc = fv.Range(3*pa1, 3*pa1+3);
+                Vec<3> fvecf = boundaryprol[info] * fvecc;
+                fv.Range(3*i, 3*i+3) = fvecf;
+              }
             }
           else
             {
@@ -591,10 +620,13 @@ namespace ngcomp
 
           if (pa2 == -1)
             {
-              Vec<3> fvecf = fv.Range(3*i, 3*i+3);
-              Vec<3> fvecc = Trans(boundaryprol[info%16]) * fvecf;
-              fv.Range(3*pa1, 3*pa1+3) += fvecc;
-              fv.Range(3*i, 3*i+3) = 0.0;              
+              if (info==20) ;// interior face:: do nothing
+              else{ // bisect or red face
+                Vec<3> fvecf = fv.Range(3*i, 3*i+3);
+                Vec<3> fvecc = Trans(boundaryprol[info]) * fvecf;
+                fv.Range(3*pa1, 3*pa1+3) += fvecc;
+                fv.Range(3*i, 3*i+3) = 0.0;           
+              }
             }
           else
             {
