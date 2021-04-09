@@ -20,6 +20,16 @@ namespace ngfem
   {
     return "FiniteElement"; 
   }
+
+  void FiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
+  {
+    SwitchET (ElementType(), [&](auto et)
+              {
+                if (auto vofe = dynamic_cast<VertexOrientedFE<et.ElementType()>*>(this))
+                  vofe->SetVertexNumbers(vnums);
+              });
+  }
+
   
   IntegrationRule FiniteElement :: GetIR (int order) const
   {

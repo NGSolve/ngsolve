@@ -64,7 +64,7 @@ namespace ngfem
     bool nodalp2 = false;
 
   public:
-
+    using VertexOrientedFE<ET>::SetVertexNumbers;    
     using ET_trait<ET>::ElementType;
     // using VertexOrientedFE<ET>::SetVertexNumbers;
     // using VertexOrientedFE<ET>::SetVertexNumber;

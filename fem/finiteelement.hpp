@@ -62,6 +62,8 @@ namespace ngfem
     /// the name of the element family
     virtual string ClassName() const;
 
+    virtual void SetVertexNumbers (FlatArray<int> vnums);
+    
     virtual IntegrationRule GetIR (int order) const;
 
     /// precomputes shape for integrationrule
@@ -116,7 +118,13 @@ namespace ngfem
 
     /// the name of the element family
     virtual string ClassName() const override { return "CompoundFiniteElement"; }
-
+    
+    virtual void SetVertexNumbers (FlatArray<int> vnums) override
+    {
+      for (auto pfel : fea)
+        const_cast<FiniteElement*>(pfel) -> SetVertexNumbers(vnums);
+    }
+    
     virtual void Print (ostream & ost) const override;
 
     virtual void Interpolate (const ElementTransformation & trafo, 
