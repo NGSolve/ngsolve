@@ -24,7 +24,7 @@ variables:
     - set NG_USE_NATIVE_ARCH=OFF
     - call tests\gitlab-ci\win\set_vars.bat
 
-win_build:
+.win_build:
   <<: *win
   stage: build
   script:
@@ -34,7 +34,7 @@ win_build:
     - call tests\gitlab-ci\win\upload.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
 
-win_test:
+.win_test:
   <<: *win
   stage: test
   script:
@@ -42,7 +42,7 @@ win_test:
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
   needs: ["win_build"]
 
-win_cleanup:
+.win_cleanup:
   <<: *win
   stage: cleanup
   script:
@@ -70,14 +70,14 @@ win_avx_build:
     - call tests\gitlab-ci\win\build.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
 
-win_avx_test:
+.win_avx_test:
   <<: *win_avx
   stage: test
   script:
     - call tests\gitlab-ci\win\test.bat
   needs: ["win_avx_build"]
 
-win_avx_cleanup:
+.win_avx_cleanup:
   <<: *win_avx
   stage: cleanup
   script:
@@ -100,9 +100,6 @@ win_avx_cleanup:
   variables:
     IMAGE_NAME: "avx"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
-  only:
-    - schedules
-    - tags
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
@@ -133,15 +130,15 @@ ubuntu_avx_build:
   <<: *ubuntu_avx
   <<: *build_linux
 
-ubuntu_avx512_build:
+.ubuntu_avx512_build:
   <<: *ubuntu_avx512
   <<: *build_linux
 
-ubuntu_debug_build:
+.ubuntu_debug_build:
   <<: *ubuntu_debug
   <<: *build_linux
 
-ubuntu_mpi_build:
+.ubuntu_mpi_build:
   <<: *ubuntu_mpi
   <<: *build_linux
 
@@ -155,17 +152,17 @@ ubuntu_avx_test:
   <<: *test_linux
   needs: ["ubuntu_avx_build"]
 
-ubuntu_avx512_test:
+.ubuntu_avx512_test:
   <<: *ubuntu_avx512
   <<: *test_linux
   needs: ["ubuntu_avx512_build"]
 
-ubuntu_debug_test:
+.ubuntu_debug_test:
   <<: *ubuntu_debug
   <<: *test_linux
   needs: ["ubuntu_debug_build"]
 
-ubuntu_mpi_test:
+.ubuntu_mpi_test:
   <<: *ubuntu_mpi
   <<: *test_linux
   needs: ["ubuntu_mpi_build"]
@@ -201,21 +198,21 @@ linux_cleanup_avx512:
   before_script:
     - source tests/gitlab-ci/mac/set_vars.sh
 
-mac_build:
+.mac_build:
   <<: *mac
   stage: build
   script:
     - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/build.sh
     - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/upload.sh
 
-mac_test:
+.mac_test:
   <<: *mac
   stage: test
   script:
     - source tests/gitlab-ci/mac/test.sh
   needs: ["mac_build"]
 
-mac_cleanup:
+.mac_cleanup:
   <<: *mac
   stage: cleanup
   script:
@@ -352,6 +349,15 @@ deploy_nightly:
     - schedules
   except:
     - tags
+  environment: deploy_nigthly
+
+deploy_docu_test:
+  stage: deploy
+  tags:
+    - linux
+    - docker
+  script:
+    - /home/gitlab-runner/deploy/deploy_docu_test.sh $CI_PIPELINE_ID;
   environment: deploy_nigthly
 
 ############################################
