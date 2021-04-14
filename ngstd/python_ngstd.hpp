@@ -182,7 +182,8 @@ inline T NonElement() { return cl_NonElement<T>::Val(); }
 template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
 void PyDefROBracketOperator( py::module &m, TCLASS &c )
 {
-    auto Get = [](T& self, int i) { 
+    auto Get = [](T& self, int i) {
+      if (i < 0) i += self.Size();
       if( i<self.Size() && i>=0 )
         return self[i];
       throw py::index_error();
@@ -198,6 +199,7 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
 {
     PyDefROBracketOperator<T, TELEM>(m, c);
     auto Set = [](T& self, int i, TELEM val) {
+      if (i < 0) i += self.Size();      
       if( i<self.Size() && i>=0 )
         self[i] = val;
       else
