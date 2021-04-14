@@ -317,9 +317,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
     .def_property_readonly("is_complex", &BaseVector::IsComplex)
 
-    .def("CreateVector", [] (BaseVector & self)
-         { return shared_ptr<BaseVector>(self.CreateVector()); },
-         "creates a new vector of same type, contents is undefined")
+    .def("CreateVector", [] (BaseVector & self, bool copy)
+         {
+           auto newvec = self.CreateVector();
+           if (copy) newvec = self;
+           return shared_ptr<BaseVector>(newvec);
+         }, py::arg("copy")=false,
+         "creates a new vector of same type, contents is undefined if copy is false")
     
     .def("Copy", [] (BaseVector & self)
          {
@@ -439,6 +443,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
       }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
+    .def("__setitem__", [](BaseVector & self, py::slice inds, shared_ptr<BaseVector> v )
+      {
+        size_t start, step, n;
+        InitSlice( inds, self.Size(), start, step, n );
+        if (step != 1)
+          throw Exception ("slices with non-unit distance not allowed");          
+        self.Range(start, start+n) = *v;
+      }, py::arg("inds"), py::arg("vec") )
+    .def("__setitem__", [](BaseVector & self, py::slice inds, DynamicVectorExpression expr)
+      {
+        size_t start, step, n;
+        InitSlice( inds, self.Size(), start, step, n );
+        if (step != 1)
+          throw Exception ("slices with non-unit distance not allowed");          
+        // self.Range(start, start+n) = *v;
+        expr.AssignTo (1, self.Range(start, start+n));
+      }, py::arg("inds"), py::arg("vec") )
+
     .def("__setitem__", [](BaseVector & self,  IntRange range, double d )
       {
         self.Range(range) = d;
