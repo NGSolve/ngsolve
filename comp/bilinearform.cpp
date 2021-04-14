@@ -6685,13 +6685,11 @@ namespace ngcomp
     if ( !low_order_bilinear_form )
       for (int finelevel = ma->GetNLevels()-1; finelevel>0; finelevel--)
         {
-          SparseMatrix<double> * prolMat = prol->CreateProlongationMatrix (finelevel);
+          auto prolMat = prol->CreateProlongationMatrix (finelevel);
           
           if (prolMat)					  
             mats[finelevel-1] = dynamic_cast< const BaseSparseMatrix& >(GetMatrix(finelevel)).
               Restrict(*prolMat,dynamic_pointer_cast<BaseSparseMatrix>(GetMatrixPtr(finelevel-1)));
-          
-          delete prolMat;
         }
   }
 

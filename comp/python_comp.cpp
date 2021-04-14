@@ -2763,6 +2763,7 @@ integrator : ngsolve.fem.LFI
   py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
     .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
     .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
+    .def ("CreateMatrix", &Prolongation::CreateProlongationMatrix, py::arg("finelevel"))    
     ;
   
   /////////////////////////////// Preconditioner /////////////////////////////////////////////

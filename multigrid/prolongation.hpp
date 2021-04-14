@@ -25,7 +25,7 @@ namespace ngmg
     virtual void Update (const FESpace & fes) = 0;
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const = 0;
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const = 0;
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const = 0;
     ///
@@ -52,7 +52,7 @@ namespace ngmg
 
     virtual void Update (const FESpace & fes) override;
 
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override;
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override;
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
@@ -106,7 +106,7 @@ namespace ngmg
     { ; }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
     ///
@@ -168,7 +168,7 @@ namespace ngmg
     virtual void Update (const FESpace & fes) override;
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
@@ -197,7 +197,7 @@ namespace ngmg
     virtual void Update (const FESpace & fes) override { ; }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
     ///
@@ -231,7 +231,7 @@ namespace ngmg
 	{ ; }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
     ///
@@ -274,7 +274,7 @@ namespace ngmg
     }
 
     ///
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
 

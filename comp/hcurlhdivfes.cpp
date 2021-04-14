@@ -764,7 +764,7 @@ namespace ngcomp
     virtual ~EdgeP1Prolongation() { }
   
     virtual void Update (const FESpace & fes) { ; }
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const
     { return nullptr; }
 
     virtual void ProlongateInline (int finelevel, BaseVector & v) const

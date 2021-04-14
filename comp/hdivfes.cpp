@@ -510,7 +510,7 @@ namespace ngcomp
     virtual ~BDM1Prolongation() { }
   
     virtual void Update (const FESpace & fes) { ; }
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const
     { return nullptr; }
 
     virtual shared_ptr<BitArray> GetInnerDofs (int finelevel) const
@@ -659,7 +659,7 @@ namespace ngcomp
     virtual ~BDM1ProlongationTRIG() { }
     
     virtual void Update (const FESpace & fes) { ; }
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const
     { return nullptr; }
     
     virtual void ProlongateInline (int finelevel, BaseVector & v) const

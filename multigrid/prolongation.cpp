@@ -131,7 +131,7 @@ namespace ngmg
   }
 
 
-  SparseMatrix< double >* LinearProlongation :: CreateProlongationMatrix( int finelevel ) const
+  shared_ptr<SparseMatrix< double >> LinearProlongation :: CreateProlongationMatrix( int finelevel ) const
   {
     int i;
     int parents[2];
@@ -181,7 +181,7 @@ namespace ngmg
       }
 
     // write prolongation matrix
-    SparseMatrix< double >* prol = new SparseMatrix< double >( mg, 1 );
+    shared_ptr<SparseMatrix< double >> prol = make_shared<SparseMatrix< double >> ( mg, 1 );
     for( i=0; i<nc; i++ )
       (*prol)( i, i ) = 1;
     for( i=nc; i<nf; i++ )

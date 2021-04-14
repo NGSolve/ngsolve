@@ -435,7 +435,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def ("nnodes", &MeshAccess::GetNNodes, "number of nodes given type")
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "the Netgen mesh")
-
+    .def_property_readonly ("levels", &MeshAccess::GetNLevels, "multigrid levels")
     
     .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
           {
