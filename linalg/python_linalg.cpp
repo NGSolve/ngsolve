@@ -460,7 +460,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         // self.Range(start, start+n) = *v;
         expr.AssignTo (1, self.Range(start, start+n));
       }, py::arg("inds"), py::arg("vec") )
-
+    .def("__setitem__", [](BaseVector & self, DofRange range, DynamicVectorExpression expr)
+      {
+        expr.AssignTo (1, self.Range(range));
+      }, py::arg("inds"), py::arg("vec") )    
     .def("__setitem__", [](BaseVector & self,  IntRange range, double d )
       {
         self.Range(range) = d;
