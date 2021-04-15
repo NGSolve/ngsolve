@@ -15,6 +15,8 @@ namespace ngmg
   */
   class NGS_DLL_HEADER Prolongation
   {
+    Array<DofRange> leveldofs;
+    
   public:
     ///
     Prolongation();
@@ -22,8 +24,10 @@ namespace ngmg
     virtual ~Prolongation();
   
     ///
-    virtual void Update (const FESpace & fes) = 0;
+    virtual void Update (const FESpace & fes);
     virtual size_t GetNDofLevel (int level) { throw Exception("Prolongation::GetNDofLevel not overloaded"); }
+    DofRange LevelDofs (int level) const;
+
     ///
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const = 0;
     ///

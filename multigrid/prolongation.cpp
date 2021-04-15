@@ -23,6 +23,21 @@ namespace ngmg
     ;
   }
 
+  void Prolongation :: Update (const FESpace & fes)
+  {
+    if (leveldofs.Size() < fes.GetMeshAccess()->GetNLevels())
+      leveldofs.Append (DofRange(fes.GetNDof(), fes.GetParallelDofs()));
+  }
+
+  
+  DofRange Prolongation :: LevelDofs (int level) const
+  {
+    if (level < 0 || level >= leveldofs.Size())
+      throw Exception("Illegal level " + ToString(level) + " num levels = " + ToString(leveldofs.Size()));
+    return leveldofs[level];
+  }
+
+
   LinearProlongation :: ~LinearProlongation() { ; }
 
   
@@ -32,6 +47,8 @@ namespace ngmg
       if (ma->GetNLevels() > nvlevel.Size())
       nvlevel.Append (ma->GetNV());
     */
+    Prolongation::Update(fes);
+    
     nvlevel.SetSize(ma->GetNLevels());
     for (auto i : Range(nvlevel))
       nvlevel[i] = ma->GetNVLevel(i);
