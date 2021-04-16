@@ -157,7 +157,7 @@ namespace ngfem
   {
     static bool firsttime = true;
     if (firsttime)
-      {
+    {
         cerr << "Eval1 not implemented for class " << typeid(*this).name() << endl;
         firsttime = false;
       }
@@ -220,7 +220,7 @@ namespace ngfem
     values = AutoDiffDiff<1,bool> (true);
   }
 
-  shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
+  // shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
 
 
 
@@ -267,6 +267,7 @@ namespace ngfem
     values.AddSize(ir.Size(), 1) = val;
   }
 
+  /*
   template <typename MIR, typename T, ORDERING ORD>
   void ConstantCoefficientFunction ::
   T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -276,6 +277,7 @@ namespace ngfem
     for (size_t i = 0; i < np; i++)
       values(0,i) = val;
   }
+  */
   
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -6071,7 +6073,8 @@ public:
     shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dirdiff) const override
     {
-      if (var == shape.get())
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))
         return MakeComponentCoefficientFunction (dirdiff, dir);
       // return BASE::Diff (var, dirdiff);
       

@@ -1691,8 +1691,12 @@ namespace ngcomp
   shared_ptr<CoefficientFunction> GridFunctionCoefficientFunction ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == shape.get())
+    // if (var == shape.get())
+    if (auto diffshape = dynamic_cast<const DiffShapeCF*>(var))                
       {
+        const CoefficientFunction * me = this;
+        cout << "diff GF is " << (diffshape->Eulerian_gridfunctions.Contains(me) ? "Eulrian" : "Lagrange") << endl;
+            
         for (int i = 0; i < 4; i++)
           if (diffop[i])
             return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);

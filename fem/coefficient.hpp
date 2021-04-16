@@ -245,9 +245,7 @@ namespace ngfem
 
   };
 
-
-  extern shared_ptr<CoefficientFunction> shape;  // for shape derivative
-
+  
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
   {
     cf.PrintReport (ost);
@@ -565,7 +563,14 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
 
     template <typename MIR, typename T, ORDERING ORD>
-      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
+      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      size_t np = ir.Size();    
+      __assume (np > 0);
+      for (size_t i = 0; i < np; i++)
+        values(0,i) = val;
+    }
+      
     template <typename MIR, typename T, ORDERING ORD>
       void T_Evaluate (const MIR & ir,
                        FlatArray<BareSliceMatrix<T,ORD>> input,                       
@@ -1673,6 +1678,22 @@ public:
       }
   }
 };
+
+
+  
+  // extern shared_ptr<CoefficientFunction> shape;  // for shape derivative
+  // information howto treat GridFunctions (and maybe other stuff) for shape-derivatives
+  class DiffShapeCF : public ConstantCoefficientFunction
+  {
+  public:
+    DiffShapeCF() : ConstantCoefficientFunction(1) { }
+    Array<const CoefficientFunction*> Eulerian_gridfunctions;
+  };
+
+
+
+
+
 
   template <typename OP>
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
