@@ -4,7 +4,7 @@ from time import time
 import ngsolve as ngs
 import os
 
-from webgui_jupyter_widgets import BaseWebGuiScene, encodeData
+from webgui_jupyter_widgets import BaseWebGuiScene, encodeData, WebGuiDocuWidget
 import webgui_jupyter_widgets.widget as wg
 
 class WebGLScene(BaseWebGuiScene):
@@ -476,6 +476,7 @@ def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=Non
     json.dump(data, open(data_file_abs, "w"))
     scene.MakeScreenshot(preview_file_abs, 1200, 600)
     scene.Redraw = lambda : None
+    from IPython.display import display, HTML
     display(widget)
     return scene
 
