@@ -4,67 +4,10 @@ from time import time
 import ngsolve as ngs
 import os
 
-# the build script fills the contents of the variables below
-render_js_code = ""
-widgets_version = ""
+from webgui_jupyter_widgets import BaseWebGuiScene, encodeData, WebGuiDocuWidget
+import webgui_jupyter_widgets.widget as wg
 
-try:
-    __IPYTHON__
-    _IN_IPYTHON = True
-except NameError:
-    _IN_IPYTHON = False
-
-try:
-    import google.colab
-    _IN_GOOGLE_COLAB = True
-except ImportError:
-    _IN_GOOGLE_COLAB = False
-
-#           <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
-#           <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.js"></script>
-#           <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
-# 
-html_template = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>NGSolve WebGUI</title>
-        <meta name='viewport' content='width=device-width, user-scalable=no'/>
-        <style>
-            body{
-                margin:0;
-                overflow:hidden;
-            }
-            canvas{
-                cursor:grab;
-                cursor:-webkit-grab;
-                cursor:-moz-grab;
-            }
-            canvas:active{
-                cursor:grabbing;
-                cursor:-webkit-grabbing;
-                cursor:-moz-grabbing;
-            }
-        </style>
-    </head>
-    <body>
-          <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"></script>
-          <script>
-            {render}
-
-            require(["ngsolve_jupyter_widgets"], ngs=>
-            {
-                let scene = new ngs.Scene();
-                scene.init(document.body, render_data, {preserveDrawingBuffer: false});
-            });
-          </script>
-    </body>
-</html>
-"""
-screenshot_html_template = html_template.replace("preserveDrawingBuffer: false", "preserveDrawingBuffer: true")
-
-
-class WebGLScene:
+class WebGLScene(BaseWebGuiScene):
     def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_):
         from IPython.display import display, Javascript
         import threading
@@ -165,65 +108,6 @@ class WebGLScene:
                 d['eval'] = 6
 
         return d
-
-    def GenerateHTML(self, filename=None, template=html_template):
-        import json
-        d = self.GetData()
-
-        data = json.dumps(d)
-
-        html = template.replace('{data}', data )
-        jscode = "var render_data = {}\n".format(data) + render_js_code
-        html = html.replace('{render}', jscode )
-
-        if filename is not None:
-            open(filename,'w').write( html )
-        return html
-
-    def MakeScreenshot(self, filename, width=1200, height=600):
-        html_file = filename+".html"
-        self.GenerateHTML(html_file, screenshot_html_template)
-
-        # start headless browser to render html
-        from selenium import webdriver
-        from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        # https://stackoverflow.com/questions/54297559/getting-cannot-activate-web-view
-        options.add_argument("--disable-infobars")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-browser-side-navigation")
-        #options.add_argument("--disable-gpu")
-        options.add_argument("--disable-features=VizDisplayCompositor")
-
-        options.add_argument('window-size=1200x600')
-
-
-        driver = webdriver.Chrome(options=options)
-        fpath = 'file://'+os.path.join(os.path.abspath('.'), html_file)
-        driver.get(fpath)
-        driver.implicitly_wait(10)
-
-        import time
-        time.sleep(2)
-        driver.get_screenshot_as_file(filename)
-        os.remove(html_file)
-
-
-    def Draw(self):
-        self.widget = NGSWebGuiWidget()
-        d = self.GetData()
-        self.widget.value = d
-        display(self.widget)
-
-    def Redraw(self):
-        d = self.GetData(set_minmax=False)
-        self.widget.value = d
-
-    def __repr__(self):
-        return ""
 
 
 bezier_trig_trafos = { }  # cache trafos for different orders
@@ -532,8 +416,8 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         mesh = mesh_or_none or func.space.mesh
         
     scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval)
-    if _IN_IPYTHON:
-        if _IN_GOOGLE_COLAB:
+    if wg._IN_IPYTHON:
+        if wg._IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
             html = scene.GenerateHTML()
             display(HTML(html))
@@ -546,47 +430,6 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
             scene.GenerateHTML(filename=filename)
         return scene
 
-
-from ipywidgets import DOMWidget, register
-from traitlets import Unicode
-
-@register
-class NGSWebGuiWidget(DOMWidget):
-    from traitlets import Dict, Unicode
-    _view_name = Unicode('NGSolveView').tag(sync=True)
-    _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
-    _view_module_version = Unicode(widgets_version).tag(sync=True)
-    value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
-
-tencode = ngs.Timer("encode")
-def encodeData( array ):
-    from base64 import b64encode
-    tencode.Start()
-    values = np.array(array.flatten(), dtype=np.float32)
-    res = b64encode(values).decode("ascii")
-    tencode.Stop()
-    return res
-
-_jupyter_lab_extension_path = os.path.join(os.path.dirname(ngs.__file__), "labextension")
-
-def howtoInstallJupyterLabextension():
-    import ngsolve, os
-    d = os.path.dirname(ngsolve.__file__)
-    labdir = os.path.join(d, "labextension")
-    print("""# To install jupyter lab extension:
-jupyter labextension install --clean {labdir}
-""".format(labdir=_jupyter_lab_extension_path))
-
-@register
-class NGSDocuWebGuiWidget(DOMWidget):
-    from traitlets import Dict, Unicode
-    _view_name = Unicode('NGSolveDocuView').tag(sync=True)
-    _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
-    _view_module_version = Unicode(widgets_version).tag(sync=True)
-    value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
-
-# counter for each directory to name preview.png and render_data.json files
-# __docu_file_counter = -1
 
 def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename=""):
     if isinstance(mesh_or_func, ngs.Mesh):
@@ -620,22 +463,20 @@ def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=Non
 
     open(counter_file,'w').write(str(file_counter))
 
-#     file_counter = __docu_file_counter[path]
-#     __docu_file_counter[path] += 1
-
     data_file = 'render_data_{}.json'.format(file_counter)
     data_file_abs = os.path.join(path, data_file)
     preview_file = 'preview_{}.png'.format(file_counter)
     preview_file_abs = os.path.join(path, preview_file)
 
 
-    widget = NGSDocuWebGuiWidget()
+    widget = WebGuiDocuWidget()
     widget.value = {'render_data' : data_file, 'preview' : preview_file }
     scene.widget = widget
     data = scene.GetData()
     json.dump(data, open(data_file_abs, "w"))
     scene.MakeScreenshot(preview_file_abs, 1200, 600)
     scene.Redraw = lambda : None
+    from IPython.display import display, HTML
     display(widget)
     return scene
 
@@ -647,11 +488,4 @@ if 'NETGEN_DOCUMENTATION_SRC_DIR' in os.environ:
 
     _Draw = Draw
     Draw = _DrawDocu
-
-
-
-
-
-
-
 

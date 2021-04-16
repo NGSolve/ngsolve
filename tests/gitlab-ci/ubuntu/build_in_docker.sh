@@ -76,8 +76,9 @@ then
   echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_mpi/ipcluster_config.py
   jupyter nbextension install --py widgetsnbextension
   jupyter nbextension enable --py widgetsnbextension
-  jupyter nbextension install --py ngsolve
-  jupyter nbextension enable --py ngsolve
+  pip3 install webgui_jupyter_widgets
+  jupyter nbextension install --py webgui_jupyter_widgets
+  jupyter nbextension enable --py webgui_jupyter_widgets
   make docs > out
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files
