@@ -1110,12 +1110,17 @@ cf : ngsolve.CoefficientFunction
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=nullptr)
 
-    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
+    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir, std::vector<shared_ptr<CoefficientFunction>> Eulerian)
           {
-            return coef->Diff (shape.get(), dir);
+            DiffShapeCF shape;
+            for (auto gf : Eulerian)
+              shape.Eulerian_gridfunctions.Append(gf.get());
+            return coef->Diff (&shape, dir);
+            
+            // return coef->Diff (shape.get(), dir);
           },
           "Compute shape derivative in direction", 
-          py::arg("direction")=1.0)
+          py::arg("direction")=1.0,  py::arg("Eulerian")=std::vector<shared_ptr<CoefficientFunction>> ())
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now

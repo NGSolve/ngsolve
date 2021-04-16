@@ -157,7 +157,8 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
-      if (var == shape.get())
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))
         return -TransposeCF(dir->Operator("Gradboundary")) * const_cast<cl_NormalVectorCF*>(this)->shared_from_this();
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
@@ -252,7 +253,8 @@ namespace ngfem
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
       //d/dt tang|t=0 = dX*tang - ((dX*tang)*tang)*tang
-      if (var == shape.get())
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))                
         return dir->Operator("Gradboundary") * const_cast<cl_TangentialVectorCF*>(this)->shared_from_this() - InnerProduct(dir->Operator("Gradboundary")*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this(),const_cast<cl_TangentialVectorCF*>(this)->shared_from_this())*const_cast<cl_TangentialVectorCF*>(this)->shared_from_this();    
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
@@ -311,7 +313,8 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
-      if (var == shape.get())
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))        
         throw Exception("Shape derivative not implemented yet for JacobianMatrixCF");
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
@@ -449,7 +452,8 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
-      if (var == shape.get())
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))                
         {
           int dim = dir->Dimension();
           auto n = NormalVectorCF(dim);

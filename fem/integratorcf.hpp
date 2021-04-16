@@ -99,6 +99,9 @@ namespace ngfem
       auto tang = TangentialVectorCF(dir->Dimension(), false);
       tang -> SetDimensions( Array<int> ( { dir->Dimension(), 1 } ) );
       auto bsdivdir = InnerProduct(sgrad*tang,tang);
+
+      DiffShapeCF shape;
+      cout << "should add Eulerian here" << endl;
       
       for (auto & icf : icfs)
         {
@@ -106,17 +109,17 @@ namespace ngfem
             {
             case VOL:
               if (icf->dx.element_vb == VOL)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + divdir*icf->cf, icf->dx);
               else
                 throw Exception("In DiffShape: for vb=VOL only element_vb=VOL implemented!");
               break;
             case BND:
               if (icf->dx.element_vb == VOL)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + sdivdir*icf->cf, icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + sdivdir*icf->cf, icf->dx);
               else if (icf->dx.element_vb == BND && dir->Dimension() == 3)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + bsdivdir*icf->cf, icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + bsdivdir*icf->cf, icf->dx);
               else if (icf->dx.element_vb == BND && dir->Dimension() == 2)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir), icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir), icf->dx);
               else
                 throw Exception("In DiffShape: for vb=BND something went wrong!");
               break;
