@@ -34,18 +34,19 @@ To work through the i-tutorials, you first have to install
 
 To use the webgui visualization within jupyter you need
 
-- pip3 install ipywidgets
-- jupyter nbextension install --py widgetsnbextension
-- jupyter nbextension enable --py widgetsnbextension
-- jupyter nbextension install --user --py ngsolve
-- jupyter nbextension enable --user --py ngsolve
+.. code-block:: bash
+
+    pip3 install webgui_jupyter_widgets
+    jupyter nbextension install --user --py webgui_jupyter_widgets
+    jupyter nbextension enable --user --py webgui_jupyter_widgets
 
   
 Some of the tutorials require packages from scipy and matplotlib, so it
 is a good idea to install them as well:
 
--  pip3 install scipy
--  pip3 install matplotlib
+.. code-block:: bash
+
+    pip3 install scipy matplotlib matplotlib
 
 i-tutorials on Youtube
 ----------------------
