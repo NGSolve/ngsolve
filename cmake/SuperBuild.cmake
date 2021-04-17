@@ -39,7 +39,7 @@ endmacro()
 if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
   set(COMMON_BUILD_COMMAND $(MAKE) --silent )
 else()
-  set(COMMON_BUILD_COMMAND ${CMAKE_COMMAND} --config ${CMAKE_BUILD_TYPE} --build .)
+  set(COMMON_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} )
 endif()
 
 #######################################################################
