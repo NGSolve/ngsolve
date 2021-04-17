@@ -109,6 +109,15 @@ namespace ngcomp
       : FESpace(ama, flags)
     {
       order = int(flags.GetNumFlag("order", 3));
+      try
+        {
+          std::tie(reg_interface, mapping) = any_cast<std::tuple<Region, shared_ptr<CoefficientFunction>>>(flags.GetAnyFlag("mapping"));
+        }
+      catch(std::bad_any_cast ex)
+        {
+          cout << "No mapping or wrong mapping given!" << endl;
+          cout << "GlobalInterfaceSpace needs kwarg: mapping=(interface, mapping_func)" << endl;
+        }
     
       SetNDof( (2*order+1) );
     
@@ -116,15 +125,6 @@ namespace ngcomp
       evaluator[BND] = make_shared<InterfaceDiffOp>();
     }
 
-    void SetInterfaceMapping (Region ainterface, shared_ptr<CoefficientFunction> amapping)
-    {
-      reg_interface = ainterface;
-      mapping = amapping;
-      Update();
-      FinalizeUpdate();
-    }
-
-  
     virtual void Update() 
     {
       FESpace::Update();
@@ -200,7 +200,13 @@ namespace ngcomp
         }
     
     }
-  
+
+    static DocInfo GetDocu()
+    {
+      auto docu = FESpace::GetDocu();
+      docu.Arg("mapping") = "Mapping for global interface space.";
+      return docu;
+    }
   };
 
 
@@ -420,7 +426,17 @@ namespace ngcomp
   {
     ExportFESpace<GlobalInterfaceSpace1DPeriodic>
       (m, "GlobalInterfaceSpace1DPeriodic")
-      .def("SetInterfaceMapping", &GlobalInterfaceSpace1DPeriodic::SetInterfaceMapping)
+      .def_static("__special_treated_flags__", [] ()
+      {
+        py::dict special(**py::module::import("ngsolve").attr("FESpace").attr("__special_treated_flags__")(),
+        py::arg("mapping") = py::cpp_function
+          ([] (std::tuple<Region,shared_ptr<CoefficientFunction>> mapping,
+               Flags* flags, py::list info)
+          {
+            flags->SetFlag("mapping", mapping);
+          }));
+        return special;
+      })
       ;
   }
 
