@@ -31,14 +31,8 @@ namespace ngcomp
                        shared_ptr<SumOfIntegrals> lf,
                        shared_ptr<GridFunction> gf,
                        LocalHeap & lh);
-  
 
-
-
-
-
-
-  
+  extern void ExportGlobalInterfaceSpaces(py::module & m);
 }
 
 
@@ -1321,9 +1315,9 @@ component : int
 
   ExportFESpace<NodalFESpace> (m, "NodalFESpace");  
   ExportFESpace<VectorFESpace<NodalFESpace>> (m, "VectorNodalFESpace");
-
   
-
+  
+  ExportGlobalInterfaceSpaces (m);  
 
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
