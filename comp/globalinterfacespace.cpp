@@ -12,7 +12,7 @@ namespace ngcomp
   {
     shared_ptr<CoefficientFunction> mapping;
     int order;
-    Region interface;
+    Region reg_interface;
     Array<bool> nitsche_facet;
 
   
@@ -118,7 +118,7 @@ namespace ngcomp
 
     void SetInterfaceMapping (Region ainterface, shared_ptr<CoefficientFunction> amapping)
     {
-      interface = ainterface;
+      reg_interface = ainterface;
       mapping = amapping;
       Update();
       FinalizeUpdate();
@@ -132,8 +132,8 @@ namespace ngcomp
       nitsche_facet.SetSize(ma->GetNNodes(NT_FACET));
       nitsche_facet = false;
 
-      if (interface.Mesh())
-        for (auto el : interface.GetElements())
+      if (reg_interface.Mesh())
+        for (auto el : reg_interface.GetElements())
           nitsche_facet[el.Facets()] = true;
     }
   
