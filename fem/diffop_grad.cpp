@@ -8,8 +8,10 @@ namespace ngfem
   template <int D, typename FEL>
   shared_ptr<CoefficientFunction> DiffOpGradient<D,FEL> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpGradient");
     return -TransposeCF(dir->Operator("Grad")) * proxy;
     // return -dir->Operator("grad") * proxy;
   }
@@ -17,8 +19,10 @@ namespace ngfem
   template <int D, typename FEL>
   shared_ptr<CoefficientFunction> DiffOpGradientBoundary<D,FEL> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpGradientBoundary");    
     int dim = dir->Dimension();
     auto n = NormalVectorCF(dim);
     n -> SetDimensions( Array<int> ( { dim, 1 } ) );
@@ -32,8 +36,10 @@ namespace ngfem
   template <int DIM_SPC>
   shared_ptr<CoefficientFunction> DiffOpGradVectorH1<DIM_SPC> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpGradVectorH1");        
     return -proxy*dir->Operator("Grad");
   }
 
@@ -41,8 +47,10 @@ namespace ngfem
   template <int DIM_SPC>
   shared_ptr<CoefficientFunction> DiffOpGradBoundaryVectorH1<DIM_SPC> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpGradBoundaryVectorH1");            
     int dim = dir->Dimension();
     auto n = NormalVectorCF(dim);
     n -> SetDimensions( Array<int> ( { dim, 1 } ) );

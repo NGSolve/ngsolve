@@ -156,7 +156,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
 
@@ -214,7 +215,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
   
@@ -451,7 +453,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
 
@@ -1795,7 +1798,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
     
   };
 
@@ -1892,7 +1896,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
 
@@ -1977,7 +1982,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
   

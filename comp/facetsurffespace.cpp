@@ -55,8 +55,10 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacet_");      
       return ZeroCF(Array<int>());
     }
 
@@ -143,8 +145,10 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacetSurface");      
       return ZeroCF(Array<int>());
     }
 
@@ -175,8 +179,10 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacetSurface");      
       return ZeroCF(Array<int>());
     }
 
