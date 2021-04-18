@@ -12,7 +12,6 @@ namespace ngcomp
   {
     shared_ptr<CoefficientFunction> mapping;
     int order;
-    Region reg_interface;
     Array<bool> nitsche_facet;
 
   
@@ -111,7 +110,7 @@ namespace ngcomp
       order = int(flags.GetNumFlag("order", 3));
       try
         {
-          std::tie(reg_interface, mapping) = any_cast<std::tuple<Region, shared_ptr<CoefficientFunction>>>(flags.GetAnyFlag("mapping"));
+          mapping = std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("mapping"));
         }
       catch(std::bad_any_cast ex)
         {
@@ -132,8 +131,8 @@ namespace ngcomp
       nitsche_facet.SetSize(ma->GetNNodes(NT_FACET));
       nitsche_facet = false;
 
-      if (reg_interface.Mesh())
-        for (auto el : reg_interface.GetElements())
+      for (auto el : ma->Elements(BND))
+        if(definedon[BND][el.GetIndex()])
           nitsche_facet[el.Facets()] = true;
     }
   
@@ -430,7 +429,7 @@ namespace ngcomp
       {
         py::dict special(**py::module::import("ngsolve").attr("FESpace").attr("__special_treated_flags__")(),
         py::arg("mapping") = py::cpp_function
-          ([] (std::tuple<Region,shared_ptr<CoefficientFunction>> mapping,
+          ([] (shared_ptr<CoefficientFunction> mapping,
                Flags* flags, py::list info)
           {
             flags->SetFlag("mapping", mapping);
