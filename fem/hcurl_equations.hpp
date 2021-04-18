@@ -155,8 +155,10 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdEdge");
       return -TransposeCF(dir->Operator("Grad")) * proxy;      
     }
   };
@@ -230,8 +232,10 @@ namespace ngfem
     
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpCurlEdge");      
       auto grad = dir->Operator("Grad");
       return -TraceCF(grad) * proxy;
     }
@@ -334,8 +338,10 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpCurlEdge");      
       auto grad = dir->Operator("Grad");
       return grad * proxy - TraceCF(grad) * proxy;
     }
@@ -561,8 +567,10 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdBoundaryEdge");      
       int dim = dir->Dimension();
       auto n = NormalVectorCF(dim);
       n -> SetDimensions( Array<int> ( { dim, 1 } ) );
@@ -667,8 +675,10 @@ public:
 
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpCurlBoundaryEdge");    
     auto grad = dir->Operator("Gradboundary");
     return -TraceCF(grad)*proxy + grad * proxy;
   }

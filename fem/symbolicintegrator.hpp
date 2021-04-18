@@ -602,9 +602,9 @@ public:
 
    virtual shared_ptr<CoefficientFunction>
    DiffShape (shared_ptr<CoefficientFunction> proxy,
-              shared_ptr<CoefficientFunction> dir) const override
+              shared_ptr<CoefficientFunction> dir, bool Eulerian) const override
   {
-    return diffop->DiffShape(proxy,dir);
+    return diffop->DiffShape(proxy,dir,Eulerian);
   }
 };
 

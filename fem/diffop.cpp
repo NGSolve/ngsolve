@@ -596,11 +596,12 @@ namespace ngfem
 
   shared_ptr<CoefficientFunction> BlockDifferentialOperator ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir) const 
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian) const 
   {
     // assume it's a grad ...
     // return (-1)*dir->Operator("grad") * proxy;
-    return diffop->DiffShape(proxy, dir);
+    return diffop->DiffShape(proxy, dir, Eulerian);
   }
 
 
@@ -809,9 +810,10 @@ namespace ngfem
 
   shared_ptr<CoefficientFunction> BlockDifferentialOperatorTrans ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir) const 
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian) const 
   {
-    return TransposeCF (diffop->DiffShape(TransposeCF(proxy), dir));
+    return TransposeCF (diffop->DiffShape(TransposeCF(proxy), dir, Eulerian));
   }
 
 
@@ -963,10 +965,11 @@ namespace ngfem
       diffop->AddTrans(fel, mir, flux.Rows(k*dimi, (k+1)*dimi), x.Range(k*ndi, (k+1)*ndi));
   }
 
-
+  
   shared_ptr<CoefficientFunction> VectorDifferentialOperator ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir) const 
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian) const 
   {
     int ddim = diffop->Dim();
     Array<shared_ptr<CoefficientFunction>> proxys(dim);
@@ -981,7 +984,7 @@ namespace ngfem
     
     Array<shared_ptr<CoefficientFunction>> cflist(dim);
     for (int i = 0; i < dim; i++)
-        cflist[i] = diffop->DiffShape(proxys[i], dir);
+      cflist[i] = diffop->DiffShape(proxys[i], dir, Eulerian);
     auto result = MakeVectorialCoefficientFunction(move(cflist));
     result->SetDimensions( Array({dim,diffop->Dim()}) );
 

@@ -7,16 +7,23 @@ namespace ngfem
   template <int D, typename FEL>
   shared_ptr<CoefficientFunction> DiffOpId<D,FEL> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
-    return ZeroCF(Array<int>());
+    if (Eulerian) 
+      // return dir->Deriv() * proxy;
+      return proxy->Operator(make_shared<T_DifferentialOperator<DiffOpGradient<D>>>()) * dir;
+    else
+      return ZeroCF(Array<int>());
   }
 
   template <int DIM_SPC, VorB VB>
   shared_ptr<CoefficientFunction> DiffOpIdVectorH1<DIM_SPC,VB> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdVectorH1");            
     return ZeroCF(Array<int>( {DIM_SPC} ));
   }
 
@@ -25,8 +32,10 @@ namespace ngfem
   template <>
   shared_ptr<CoefficientFunction> DiffOpIdVectorH1<3,BBND> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdVectorH1");                
     return ZeroCF(Array<int>( {3} ));
   }
 

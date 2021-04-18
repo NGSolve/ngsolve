@@ -160,7 +160,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir) 
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian) 
     {
       throw Exception (string("shape derivative not implemented for DifferentialOperator")+Name());
     }
@@ -401,7 +402,8 @@ namespace ngfem
 
     
     virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
-                                                       shared_ptr<CoefficientFunction> dir) const
+                                                       shared_ptr<CoefficientFunction> dir,
+                                                       bool Eulerian = false) const
     {
       throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
     }
@@ -507,7 +509,8 @@ namespace ngfem
 
 
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
-                                               shared_ptr<CoefficientFunction> dir) const override;
+                                               shared_ptr<CoefficientFunction> dir,
+                                               bool Eulerian) const override;
   };
 
 
@@ -601,7 +604,8 @@ namespace ngfem
 
 
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
-                                               shared_ptr<CoefficientFunction> dir) const override;
+                                               shared_ptr<CoefficientFunction> dir,
+                                               bool Eulerian) const override;
   };
 
   
@@ -693,7 +697,8 @@ namespace ngfem
               BareSliceVector<Complex> x) const override;
 
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
-                                               shared_ptr<CoefficientFunction> dir) const override;
+                                               shared_ptr<CoefficientFunction> dir,
+                                               bool Eulerian) const override;
   };
 
 
@@ -1001,9 +1006,10 @@ namespace ngfem
 
 #endif
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
-                                               shared_ptr<CoefficientFunction> dir) const override
+                                               shared_ptr<CoefficientFunction> dir,
+                                               bool Eulerian) const override
     {
-      return DIFFOP::DiffShape(proxy, dir);
+      return DIFFOP::DiffShape(proxy, dir, Eulerian);
     }
     
   };

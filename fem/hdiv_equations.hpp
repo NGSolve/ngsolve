@@ -135,8 +135,10 @@ public:
 
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdHDiv");    
     return -TraceCF(dir->Operator("Grad"))*proxy + dir->Operator("Grad") * proxy;
   }
 };
@@ -202,8 +204,10 @@ public:
   
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdHDivSurface");        
     return -TraceCF(dir->Operator("Gradboundary"))*proxy + dir->Operator("Gradboundary") * proxy;
   }
   
@@ -291,8 +295,10 @@ public:
 
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpDivHDiv");        
     return -TraceCF(dir->Operator("Grad"))*proxy;
   }
   
