@@ -15,11 +15,11 @@ n = specialcf.normal(2)
 h = specialcf.mesh_size
 
 a = BilinearForm(fes)
-a += SymbolicBFI ( grad(u) * grad(v) )
+a += grad(u) * grad(v) * dx
 cf1 = -0.5 * InnerProduct(grad(u), n)*(v-v.Other(bnd=0))
 cf2 = -0.5 * InnerProduct(grad(v), n)*(u-u.Other(bnd=u0))
 cf3 = 2*( (order+1)**2)/h * (u-u.Other(bnd=u0)) * v
-a += SymbolicBFI (cf1+cf2+cf3, element_boundary=True)
+a += (cf1+cf2+cf3)*dx(element_boundary=True)
 
 u = GridFunction(fes)
 u.Set(u0)

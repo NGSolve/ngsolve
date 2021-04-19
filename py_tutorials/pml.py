@@ -17,10 +17,10 @@ v = fes.TestFunction()
 omega = 10
 
 a = BilinearForm(fes)
-a += SymbolicBFI(grad(u)*grad(v)-omega*omega*u*v)
+a += (grad(u)*grad(v)-omega*omega*u*v)*dx
 
 f = LinearForm(fes)
-f += SymbolicLFI(exp(-20**2*((x-0.3)*(x-0.3)+y*y))*v)
+f += exp(-20**2*((x-0.3)*(x-0.3)+y*y))*v*dx
 
 a.Assemble()
 f.Assemble()

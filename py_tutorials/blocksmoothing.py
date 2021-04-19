@@ -7,11 +7,11 @@ fes = H1(mesh, order=3)
 u,v = fes.TrialFunction(), fes.TestFunction()
 
 a = BilinearForm(fes)
-a += SymbolicBFI (grad(u)*grad(v)+u*v)
+a += (grad(u)*grad(v)+u*v)*dx
 a.Assemble()
 
 f = LinearForm(fes)
-f += SymbolicLFI (v)
+f += v*dx
 f.Assemble()
 
 blocks = [set() for x in range(mesh.nv)]
