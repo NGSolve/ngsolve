@@ -33,16 +33,16 @@ mean_dvdn = 0.5*n * (grad(v)+grad(v.Other()))
 
 alpha = 4
 h = specialcf.mesh_size
-a = BilinearForm(fes)
-a += SymbolicBFI(grad(u)*grad(v))
-a += SymbolicBFI(alpha*order**2/h*jump_u*jump_v, skeleton=True)
-a += SymbolicBFI(-mean_dudn*jump_v -mean_dvdn*jump_u, skeleton=True)
-a += SymbolicBFI(alpha*order**2/h*u*v, BND, skeleton=True, definedon=mesh.Boundaries("outer"))
-a += SymbolicBFI(-n*grad(u)*v-n*grad(v)*u, BND, skeleton=True, definedon=mesh.Boundaries("outer"))
+a = BilinearForm(fes, symmetric=True)
+a += grad(u)*grad(v)*dx
+a += alpha*order**2/h*jump_u*jump_v*dx(skeleton=True)
+a += (-mean_dudn*jump_v -mean_dvdn*jump_u)*dx(skeleton=True)
+a += alpha*order**2/h*u*v*ds("outer", skeleton=True)
+a += (-n*grad(u)*v-n*grad(v)*u)*ds("outer", skeleton=True)
 a.Assemble()
 
 f = LinearForm(fes)
-f += SymbolicLFI(1*v)
+f += 1*v*dx
 f.Assemble()
 
 gfu = GridFunction(fes, name="uDG")

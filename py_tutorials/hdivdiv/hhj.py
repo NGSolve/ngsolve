@@ -12,8 +12,8 @@ mesh = Mesh (unit_square.GenerateMesh(maxh=0.05))
 order = 3
 
 V = HDivDiv(mesh, order=order-1)
-Q = H1(mesh, order=order, dirichlet=[1,2,3,4])
-X = FESpace([V,Q])
+Q = H1(mesh, order=order, dirichlet="left|right|top|bottom")
+X = V*Q
 
 print ("ndof-V:", V.ndof, ", ndof-Q:", Q.ndof)
 
@@ -25,13 +25,13 @@ n = specialcf.normal(2)
 def tang(u): return u-(u*n)*n
 
 a = BilinearForm(X, symmetric=True)
-a += SymbolicBFI ( InnerProduct (sigma, tau) + div(sigma)*grad(v) + div(tau)*grad(u) - 1e-10*u*v )
-a += SymbolicBFI ( -(sigma*n) * tang(grad(v)) - (tau*n)*tang(grad(u)), element_boundary=True)
+a += (InnerProduct (sigma, tau) + div(sigma)*grad(v) + div(tau)*grad(u) - 1e-10*u*v)*dx
+a += (-(sigma*n) * tang(grad(v)) - (tau*n)*tang(grad(u)))*dx(element_boundary=True)
 a.Assemble()
 
 f = LinearForm(X)
-f += SymbolicLFI ( 1 * v )
-# f += SymbolicLFI (tau.Trace(), BND, definedon=[1])
+f += 1 * v * dx
+# f += Trace(tau.Trace()) * ds("bottom")
 f.Assemble()
 
 u = GridFunction(X)

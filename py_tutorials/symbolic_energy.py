@@ -4,12 +4,12 @@ from netgen.geom2d import unit_square
 mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))
 
 
-V = H1(mesh, order=4, dirichlet=[1,2,3,4])
+V = H1(mesh, order=4, dirichlet="left|right|top|bottom")
 
 u = V.TrialFunction()
 
 a = BilinearForm (V, symmetric=False)
-a += SymbolicEnergy (0.05*grad(u)*grad(u) + u*u*u*u - 100*u)
+a += Variation( (0.05*grad(u)*grad(u) + u*u*u*u - 100*u)*dx )
 
 u = GridFunction (V)
 u.vec[:] = 0
