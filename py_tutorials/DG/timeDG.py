@@ -14,8 +14,8 @@ bn = b*specialcf.normal(2)
 ubnd = CoefficientFunction(0)
 
 a = BilinearForm(fes)
-a += SymbolicBFI (-u * b*grad(v))
-a += SymbolicBFI (bn*IfPos(bn, u, u.Other(bnd=ubnd)) * v, element_boundary=True)
+a += -u * b*grad(v) * dx
+a += bn*IfPos(bn, u, u.Other(bnd=ubnd)) * v * dx(element_boundary=True)
 
 u = GridFunction(fes)
 u.Set(exp (-40 * ( (x-0.7)*(x-0.7) + (y-0.7)*(y-0.7) )))

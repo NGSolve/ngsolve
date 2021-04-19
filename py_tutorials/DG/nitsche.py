@@ -15,14 +15,14 @@ penalty = 3*order**2
 
 udir = CoefficientFunction(x*y)
 
-a = BilinearForm(V)
-a += SymbolicBFI (grad(u)*grad(v))
-a += SymbolicBFI (-n*grad(u)*v - n*grad(v)*u + penalty/h*u*v, BND, skeleton=True)
+a = BilinearForm(V, symmetric=True)
+a += grad(u)*grad(v)*dx
+a += (-n*grad(u)*v - n*grad(v)*u + penalty/h*u*v)*ds(skeleton=True)
 a.Assemble()
 
 f = LinearForm(V)
-f += SymbolicLFI ( 1 * v)
-f += SymbolicLFI ( -n*grad(v)*udir + penalty/h*udir*v, BND, skeleton=True)
+f += 1 * v * dx
+f += ( -n*grad(v)*udir + penalty/h*udir*v)*ds(skeleton=True)
 f.Assemble()
 
 u = GridFunction(V)

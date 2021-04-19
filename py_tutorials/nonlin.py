@@ -3,12 +3,12 @@ from ngsolve import *
 
 m = Mesh (unit_square.GenerateMesh(maxh=0.3))
 
-V = H1(m, order=3, dirichlet=[1,2,3,4])
+V = H1(m, order=3, dirichlet="left|right|top|bottom")
 u = V.TrialFunction()
 v = V.TestFunction()
 
 a = BilinearForm(V)
-a += SymbolicBFI( grad(u) * grad(v) + 5*u*u*v- 1 * v)
+a += ( grad(u) * grad(v) + 5*u*u*v- 1 * v)*dx
 
 u = GridFunction(V)
 r = u.vec.CreateVector()
