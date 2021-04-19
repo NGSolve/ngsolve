@@ -16,7 +16,7 @@ mesh = Mesh( geo.GenerateMesh(maxh=0.5))
 order = 3
 V = HDivDiv(mesh, order=order-1, dirichlet="bottom|right|top", plus = True)
 Q = HCurl(mesh, order=order, dirichlet="left", type1 = True)
-X = FESpace([V,Q])
+X = V*Q
 
 print ("ndof-V:", V.ndof, ", ndof-Q:", Q.ndof)
 
@@ -28,12 +28,12 @@ n = specialcf.normal(2)
 def tang(u): return u-(u*n)*n
 
 a = BilinearForm(X, symmetric=True)
-a += SymbolicBFI ( InnerProduct (sigma, tau) + div(sigma)*v + div(tau)*u - 1e-10 * u*v )
-a += SymbolicBFI ( -(sigma*n) * tang(v) - (tau*n)*tang(u), element_boundary=True)
+a += (InnerProduct (sigma, tau) + div(sigma)*v + div(tau)*u - 1e-10 * u*v)*dx
+a += (-(sigma*n) * tang(v) - (tau*n)*tang(u))*dx(element_boundary=True)
 a.Assemble()
 
 f = LinearForm(X)
-f += SymbolicLFI ( 1 * v[1] )
+f +=  1 * v[1] * dx
 f.Assemble()
 
 u = GridFunction(X)

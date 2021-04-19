@@ -14,15 +14,15 @@ bn = b*specialcf.normal(2)
 ubnd = CoefficientFunction(0)
 
 a = BilinearForm(fes)
-a += SymbolicBFI ( (-u * b*grad(v)) .Compile() )
+a += (-u * b*grad(v)) .Compile()*dx
 
 # the skeleton-formulation, sum over edges:
-a += SymbolicBFI ( bn*IfPos(bn, u, u.Other()) * (v-v.Other()), VOL, skeleton=True)
-a += SymbolicBFI ( bn*IfPos(bn, u, ubnd) * v, BND, skeleton=True)
+a += bn*IfPos(bn, u, u.Other()) * (v-v.Other()) * dx(skeleton=True)
+a += bn*IfPos(bn, u, ubnd) * v * ds(skeleton=True)
 
 # or the element-boundary formulation
 # note the bnd-value in the .Other operator
-# a += SymbolicBFI ( (bn*IfPos(bn, u, u.Other(bnd=ubnd)) * v), element_boundary=True)
+# a += bn*IfPos(bn, u, u.Other(bnd=ubnd)) * v * dx(element_boundary=True)
 
 u = GridFunction(fes)
 u.Set(exp (-40 * ( (x-0.7)*(x-0.7) + (y-0.7)*(y-0.7) )))

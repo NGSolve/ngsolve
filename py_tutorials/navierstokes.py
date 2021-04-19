@@ -18,13 +18,13 @@ mesh.Curve(3)
 V = VectorH1(mesh,order=3, dirichlet="wall|cyl|inlet")
 Q = H1(mesh,order=2)
 
-X = FESpace([V,Q])
+X = V*Q
 
 u,p = X.TrialFunction()
 v,q = X.TestFunction()
 
 stokes = nu*InnerProduct(grad(u), grad(v))+div(u)*q+div(v)*p - 1e-10*p*q
-a = BilinearForm(X)
+a = BilinearForm(X, symmetric=True)
 a += stokes*dx
 a.Assemble()
 
@@ -48,8 +48,8 @@ gfu.vec.data += inv_stokes * res
 
 
 # matrix for implicit Euler 
-mstar = BilinearForm(X)
-mstar += SymbolicBFI(u*v + tau*stokes)
+mstar = BilinearForm(X, symmetric=True)
+mstar += (u*v + tau*stokes)*dx
 mstar.Assemble()
 inv = mstar.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky")
 

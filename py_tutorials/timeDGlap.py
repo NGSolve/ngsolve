@@ -53,16 +53,16 @@ cf1 = -0.5 * InnerProduct(grad(u    ), n)*(v-v.Other(bnd=0))
 cf2 = -0.5 * InnerProduct(grad(v), n)*(u-u.Other(bnd=0))
 cf3 =    2 * ( (order+1)**2)/h * (u-u.Other(bnd=0)) * v
 
-a += SymbolicBFI ( grad(u) * grad(v) )
-a += SymbolicBFI (  cf1+cf2+cf3,VOL, element_boundary=True)
-a += SymbolicBFI ( -cf1-cf2-cf3,BND, skeleton=True)
-#a += SymbolicBFI ( -cf1-cf2-cf3, skeleton=True,definedon=mesh.Boundaries("top|bottom"))
-#a += SymbolicBFI( h*u*v )
+a += grad(u) * grad(v) * dx
+a += (cf1+cf2+cf3)*dx(element_boundary=True)
+a += (-cf1-cf2-cf3)*ds(skeleton=True)
+#a += (-cf1-cf2-cf3)*ds("top|bottom", skeleton=True)
+#a += h*u*v*dx
 
 l = LinearForm(fes)
-l += SymbolicLFI ( 8.0*pi*pi*uex*v )                                     # volume force
-#l += SymbolicLFI ( 1e-1*uex*v,skeleton=True,definedon=mesh.Boundaries("left")) # dirichlet data
-l += SymbolicLFI ( n*grad(uex)*v,BND,skeleton=True) # neumann data
+l += 8.0*pi*pi*uex*v*dx                   # volume force
+#l += 1e-1*uex*v*ds("left",skeleton=True) # dirichlet data
+l += n*grad(uex)*v*ds(skeleton=True)      # neumann data
 
 diff = GridFunction(fes)
 ddiff = GridFunction(fes)

@@ -5,7 +5,7 @@ mesh = Mesh (unit_square.GenerateMesh(maxh=0.05))
 
 order=4
 fes1 = L2(mesh, order=order)
-fes = FESpace ([fes1,fes1,fes1])
+fes = fes1*fes1*fes1
 
 p,ux,uy = fes.TrialFunction()
 q,vx,vy = fes.TestFunction()
@@ -18,12 +18,12 @@ v = CoefficientFunction( (vx, vy) )
 u = CoefficientFunction( (ux, uy) )
 
 a1 = BilinearForm(fes)
-a1 += SymbolicBFI ( grad(p) * v )
-a1 += SymbolicBFI ( -0.5 * (p - p.Other()) * (v*n), element_boundary = True)
+a1 += grad(p) * v * dx
+a1 += -0.5 * (p - p.Other()) * (v*n) * dx(element_boundary = True)
 
 a2 = BilinearForm(fes)
-a2 += SymbolicBFI ( -grad(q) * u )
-a2 += SymbolicBFI ( 0.5 * (q - q.Other()) * (u*n), element_boundary = True)
+a2 += -grad(q) * u * dx
+a2 += 0.5 * (q - q.Other()) * (u*n) * dx(element_boundary = True)
 
 
 u = GridFunction(fes)

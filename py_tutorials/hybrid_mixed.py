@@ -10,18 +10,18 @@ mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
 order = 2
 fes1 = HDiv(mesh, order=order, discontinuous=True)
 fes2 = L2(mesh, order=order-1)
-fes3 = FacetFESpace(mesh, order=order, dirichlet=[1,2,3])
+fes3 = FacetFESpace(mesh, order=order, dirichlet="top|bottom|right")
 
-fes = FESpace([fes1,fes2,fes3])
+fes = fes1*fes2*fes3
 
 sigma,u,uhat = fes.TrialFunction()
 tau,v,vhat = fes.TestFunction()
 
 n = specialcf.normal(mesh.dim)
 
-a = BilinearForm(fes, symmetric=False, eliminate_internal = True)
-a += SymbolicBFI(sigma*tau + div(sigma)*v + div(tau)*u)
-a += SymbolicBFI(sigma*n*vhat+tau*n*uhat, element_boundary=True)
+a = BilinearForm(fes, symmetric=False, condense = True)
+a += (sigma*tau + div(sigma)*v + div(tau)*u)*dx
+a += (sigma*n*vhat+tau*n*uhat)*dx(element_boundary=True)
 
 # c = Preconditioner(type="direct", bf=a, inverse = sparsecholesky)
 # c = Preconditioner(type="direct", bf=a, inverse = pardiso)
@@ -32,7 +32,7 @@ c = Preconditioner(type="bddc", bf=a)
 a.Assemble()
 
 f = LinearForm(fes)
-f += SymbolicLFI(-1*v)
+f += -1*v*dx
 f.Assemble()
 
 u = GridFunction(fes)
