@@ -352,13 +352,14 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             ir_prism = ngs.IntegrationRule( ipts, [0]*len(ipts) )
 
 
-            # ipts_cube = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
-            #              [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
-            #              [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
-            #              [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
-            #              [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
-            #              [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
-            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
+            ipts_hex = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
+                         [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
+                         [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
+                         [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
+                         [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
+                         [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
+            ir_hex = ngs.IntegrationRule( ipts_hex, [0]*len(ipts_hex) )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism, ngs.ET.HEX: ir_hex }, ngs.VOL)
             
             
         else:
