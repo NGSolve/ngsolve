@@ -424,7 +424,11 @@ namespace ngfem
 			       int adim, int acomp = -1)
       : DifferentialOperator(adim*adiffop->Dim(), adim*adiffop->BlockDim(),
                              adiffop->VB(), adiffop->DiffOrder()),
-        diffop(adiffop), dim(adim), comp(acomp) { ; }
+        diffop(adiffop), dim(adim), comp(acomp)
+    {
+      if(adiffop->Dimensions().Size()==0)
+	SetDimensions( { BlockDim() } );
+    }
 
     NGS_DLL_HEADER virtual ~BlockDifferentialOperator ();
     
