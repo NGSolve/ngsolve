@@ -645,6 +645,11 @@ direction : int
       return VertexTangentialVectorsCF(dim);
     }
 
+    shared_ptr<CF> GetEdgeFaceTangentialVectorsCF (int dim)
+    {
+      return EdgeFaceTangentialVectorsCF(dim);
+    }
+    
     shared_ptr<CF> GetEdgeCurvatureCF (int dim)
     {
       return EdgeCurvatureCF(dim);
@@ -704,6 +709,9 @@ direction : int
          "space-dimension must be provided")
     .def("VertexTangentialVectors", &SpecialCoefficientFunctions::GetVertexTangentialVectorsCF, py::arg("dim"),
          "VertexTangentialVectors \n"
+         "space-dimension must be provided")
+    .def("EdgeFaceTangentialVectors", &SpecialCoefficientFunctions::GetEdgeFaceTangentialVectorsCF, py::arg("dim"),
+         "EdgeFaceTangentialVectors \n"
          "space-dimension must be provided")
     .def("EdgeCurvature", &SpecialCoefficientFunctions::GetEdgeCurvatureCF, py::arg("dim"),
          "EdgeCurvature \n"
