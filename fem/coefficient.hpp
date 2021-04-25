@@ -1852,6 +1852,8 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> VertexTangentialVectorsCF (int dim);
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> EdgeFaceTangentialVectorsCF (int dim);
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> EdgeCurvatureCF (int dim);
 
   template <typename OP /* , typename OPC */>
