@@ -957,6 +957,92 @@ namespace ngcomp
     //}
   };
   
+
+
+
+    /// Riemann curvature tensor for HCurlCurl
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpRicciHCurlCurl : public DiffOp<DiffOpRicciHCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 2 };
+    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); };
+    static constexpr double eps() { return 1e-4; } 
+
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      throw Exception("Ricci curvature tensor is a nonlinear operator! Use only apply!");
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      typedef typename TVX::TSCAL TSCAL;
+
+      Vec<D*D*D*D,TSCAL> Riemann;
+      DiffOpRiemannHCurlCurl<D>::Apply(fel, mip, x, Riemann, lh);
+      Mat<D,D> g;
+      if constexpr (std::is_same<TSCAL,double>())
+                     bfel.EvaluateMappedShape (mip, x, g);
+
+      Mat<D,D> ginv = Inv(g);
+      
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D; j++)
+          {
+            TSCAL sum = 0.0;
+            for (int k = 0; k < D; k++)
+              for (int l = 0; l < D; l++)
+                sum += ginv(k,l) * Riemann(((i*D+k)*D+j)*D+l);
+            y(i*D+j) = sum;
+          }
+    }
+
+    //static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    //                                  const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    //{
+    //}
+    //
+    //using DiffOp<DiffOpRiemannHCurlCurl<D>>::ApplySIMDIR;
+    //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    //                         BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    //{
+    //  
+    //}
+    //
+    //using DiffOp<DiffOpRiemannHCurlCurl<D>>::AddTransSIMDIR;    
+    //static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    //                            BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    //{
+    //}
+  };
+  
+
+
   
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags), issurfacespace(false)
@@ -998,6 +1084,7 @@ namespace ngcomp
         additional_evaluators.Set ("christoffel2", make_shared<T_DifferentialOperator<DiffOpChristoffel2HCurlCurl<2>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<2>>> ());
         additional_evaluators.Set ("Riemann", make_shared<T_DifferentialOperator<DiffOpRiemannHCurlCurl<2>>> ());
+        additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<2>>> ());
 	break;
       case 3:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
@@ -1006,6 +1093,7 @@ namespace ngcomp
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<3>>> ());
         additional_evaluators.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDualBoundary<3>>> ());
         additional_evaluators.Set ("Riemann", make_shared<T_DifferentialOperator<DiffOpRiemannHCurlCurl<3>>> ());
+        additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<3>>> ());
 	break;
       default:
         ;

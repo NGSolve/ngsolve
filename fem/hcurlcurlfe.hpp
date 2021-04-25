@@ -24,6 +24,10 @@ namespace ngfem
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                      BareSliceVector<double> coefs,
+                                      BareSliceMatrix<double> shape) const = 0;
+
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
       BareSliceMatrix<double> shape) const = 0;
 
@@ -351,7 +355,26 @@ namespace ngfem
                            }));
       
     }
+    
+    virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                      BareSliceVector<double> coefs,
+                                      BareSliceMatrix<double> shape) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Mat<DIM*(DIM+1)/2> sum = 0.0;
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([coefs, &sum](int nr,auto val)
+                           {
+                             sum += coefs(nr) * val.Shape();
+                             // VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
+                           }));
+      // Mat<DIM,DIM> summat = 0.0;
+      VecToSymMat<DIM> (sum, shape);
+      // shape.AddSize(DIM,DIM) = sum;
+    }
 
+
+    
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override
     {
       shape = 0.0;
