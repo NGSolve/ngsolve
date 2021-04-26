@@ -362,7 +362,7 @@ namespace ngfem
     {
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
       Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Mat<DIM*(DIM+1)/2> sum = 0.0;
+      Vec<DIM*(DIM+1)/2> sum = 0.0;
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([coefs, &sum](int nr,auto val)
                            {
                              sum += coefs(nr) * val.Shape();
