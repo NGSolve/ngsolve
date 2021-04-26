@@ -637,17 +637,73 @@ namespace ngcomp
                        const TVX & x, TVY & y,
                        LocalHeap & lh) 
     {
-      //cout << "apply" << endl;
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      
       typedef typename TVX::TSCAL TSCAL;
-      int nd_u = bfel.GetNDof();
-      FlatMatrixFixWidth<D*D*D> bmat(nd_u, lh);
       
-      CalcDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, bmat, lh, eps());
-     
-      Vec<D*D*D,TSCAL> hdv = Trans(bmat) * x;
+      Vec<D*D*D,TSCAL> hdv;
+
+      if constexpr (std::is_same<TSCAL,double>())
+                     {
+                       //ApplyDShapeFE<FEL,D,D,D*D,TVX,TVY>(static_cast<const FEL&>(fel), mip, x, y, lh, eps());
+                       //hdv = y;
+    const IntegrationPoint& ip = mip.IP();
+    const ElementTransformation & eltrans = mip.GetTransformation();
+    Mat<D,D> shape_ul;
+    Mat<D,D> shape_ur;
+    Mat<D,D> shape_ull;
+    Mat<D,D> shape_urr;
+    Mat<D,D> dshape_u_ref;
+
+    Vec<D> dshape_u_ref_comp;
+    Vec<D> dshape_u;
+    
+    for (int j = 0; j < D; j++)   // d / dxj
+      {
+        IntegrationPoint ipl(ip);
+        ipl(j) -= eps();
+        IntegrationPoint ipr(ip);
+        ipr(j) += eps();
+        IntegrationPoint ipll(ip);
+        ipll(j) -= 2*eps();
+        IntegrationPoint iprr(ip);
+        iprr(j) += 2*eps();
+        
+        MappedIntegrationPoint<D,D> mipl(ipl, eltrans);
+        MappedIntegrationPoint<D,D> mipr(ipr, eltrans);
+        MappedIntegrationPoint<D,D> mipll(ipll, eltrans);
+        MappedIntegrationPoint<D,D> miprr(iprr, eltrans);
+        
+        bfel.EvaluateMappedShape (mipl,  x, shape_ul);
+        bfel.EvaluateMappedShape (mipr,  x, shape_ur);
+        bfel.EvaluateMappedShape (mipll, x, shape_ull);
+        bfel.EvaluateMappedShape (miprr, x, shape_urr);
+        
+        dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+        
+        for (int l = 0; l < D*D; l++)
+          hdv(j*D*D+l) = dshape_u_ref(l);
+      }
+    
+    for (int j = 0; j < D*D; j++)
+      {
+        for (int l = 0; l < D; l++)
+          dshape_u_ref_comp(l) = hdv(l*D*D+j);
+        
+        dshape_u = Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
+        
+        for (int l = 0; l < D; l++)
+          hdv(l*D*D+j) = dshape_u(l);
+      }
+                     }
+      else
+        {
+          int nd_u = bfel.GetNDof();
+          FlatMatrixFixWidth<D*D*D> bmat(nd_u, lh);
+          CalcDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, bmat, lh, eps());
+          hdv = Trans(bmat) * x;
+        }
+
 
       for (int i=0; i<D; i++)
         for (int j=0; j<D; j++)
@@ -737,7 +793,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
-      throw Exception("Christoffel symbol of second art is a nonlinear operator! Use only apply!");
+      throw Exception("Christoffel symbol of second kind is a nonlinear operator! Use only apply!");
     }
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
@@ -747,17 +803,22 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      
       typedef typename TVX::TSCAL TSCAL;
-      int nd_u = bfel.GetNDof();
-      FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
-      bfel.CalcMappedShape (mip, bmat);
       
-      Vec<D*D,TSCAL> hv = Trans(bmat) * x;
-      Mat<D,D,TSCAL> defmat;
-      defmat.AsVector() = hv;
-      Mat<D,D,TSCAL> invmat = Inv(defmat);
 
+      Mat<D,D,TSCAL> G;
+      if constexpr (std::is_same<TSCAL,double>())
+                     bfel.EvaluateMappedShape (mip, x, G);
+      else
+        {
+          int nd_u = bfel.GetNDof();
+          FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
+          bfel.CalcMappedShape (mip, bmat);
+          Vec<D*D,TSCAL> hv = Trans(bmat) * x;
+          G.AsVector() = hv;
+        }
+      Mat<D,D,TSCAL> invmat = Inv(G);
+      
       Vec<D*D*D,TSCAL> hdv;
       DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hdv, lh);
       
@@ -771,11 +832,12 @@ namespace ngcomp
             }
     }
 
-    //static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-    //                                  const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
-    //{
-    //}
-    //
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      throw Exception("Christoffel symbol of second kind is a nonlinear operator! Use only apply!");
+    }
+    
     //using DiffOp<DiffOpChristoffel2HCurlCurl<D>>::ApplySIMDIR;
     //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
     //                         BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
@@ -834,25 +896,19 @@ namespace ngcomp
       
       typedef typename TVX::TSCAL TSCAL;
       int nd_u = bfel.GetNDof();
-      FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
-      bfel.CalcMappedShape (mip, bmat);
+      //FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
+      //bfel.CalcMappedShape (mip, bmat);
       
-      Vec<D*D,TSCAL> hv = Trans(bmat) * x;
-      Mat<D,D,TSCAL> defmat;
-      defmat.AsVector() = hv;
-      // Mat<D,D,TSCAL> invmat = Inv(defmat);
+      Vec<D*D*D,TSCAL> shape_ul;
+      Vec<D*D*D,TSCAL> shape_ur;
+      Vec<D*D*D,TSCAL> shape_ull;
+      Vec<D*D*D,TSCAL> shape_urr;
+      Vec<D*D*D,TSCAL> dshape_u_ref;
 
-      FlatMatrix<double> shape_ul(nd_u,D*D*D, lh);
-      FlatMatrix<double> shape_ur(nd_u,D*D*D, lh);
-      FlatMatrix<double> shape_ull(nd_u,D*D*D, lh);
-      FlatMatrix<double> shape_urr(nd_u,D*D*D, lh);
-      FlatMatrix<double> dshape_u_ref(nd_u,D*D*D, lh);
-
-      FlatMatrix<double> bmatu(nd_u,D*D*D*D, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref_comp(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);
+      Vec<D,TSCAL> dshape_u_ref_comp;
+      Vec<D,TSCAL> dshape_u;
+      Vec<D*D*D*D,TSCAL> hchristoffel1_der;
       
-      DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mip, Trans(shape_ul), lh);
       Vec<D*D*D,TSCAL> hchristoffel1;
       Vec<D*D*D,TSCAL> hchristoffel2;
       DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hchristoffel1, lh);
@@ -876,32 +932,30 @@ namespace ngcomp
           MappedIntegrationPoint<D,D> mipll(ipll, eltrans);
           MappedIntegrationPoint<D,D> miprr(iprr, eltrans);
 
-          DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mipl, Trans(shape_ul), lh);
-          DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mipr, Trans(shape_ur), lh);
-          DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, mipll, Trans(shape_ull), lh);
-          DiffOpChristoffelHCurlCurl<D>::GenerateMatrix(fel, miprr, Trans(shape_urr), lh);
+          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipl,  x, shape_ul, lh);
+          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipr,  x, shape_ur, lh);
+          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipll, x, shape_ull, lh);
+          DiffOpChristoffelHCurlCurl<D>::Apply(fel, miprr, x, shape_urr, lh);
+
           
           dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
 
           for (int l = 0; l < D*D*D; l++)
-            bmatu.Col(j*D*D*D+l) = dshape_u_ref.Col(l);
+            hchristoffel1_der(j*D*D*D+l) = dshape_u_ref(l);
         }
 
 
       for (int j = 0; j < D*D*D; j++)
         {
-          for (int k = 0; k < nd_u; k++)
-            for (int l = 0; l < D; l++)
-              dshape_u_ref_comp(k,l) = bmatu(k, l*D*D*D+j);
+          for (int l = 0; l < D; l++)
+            dshape_u_ref_comp(l) = hchristoffel1_der(l*D*D*D+j);
           
-          dshape_u = dshape_u_ref_comp * mip.GetJacobianInverse();
+          dshape_u =  Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
           
-          for (int k = 0; k < nd_u; k++)
-            for (int l = 0; l < D; l++)
-              bmatu(k, l*D*D*D+j) = dshape_u(k,l);
+          for (int l = 0; l < D; l++)
+            hchristoffel1_der(l*D*D*D+j) = dshape_u(l);
         }
 
-      Vec<D*D*D*D,TSCAL> hchristoffel1_der = Trans(bmatu)*x;
 
       if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
        {
@@ -938,10 +992,13 @@ namespace ngcomp
         }
     }
 
-    //static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-    //                                  const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
-    //{
-    //}
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+            throw Exception("Riemann curvature tensor is a nonlinear operator! Use only apply!");
+
+    }
+    
     //
     //using DiffOp<DiffOpRiemannHCurlCurl<D>>::ApplySIMDIR;
     //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
