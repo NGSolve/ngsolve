@@ -1017,7 +1017,7 @@ namespace ngcomp
             TSCAL sum = 0.0;
             for (int k = 0; k < D; k++)
               for (int l = 0; l < D; l++)
-                sum += ginv(k,l) * Riemann(((i*D+k)*D+j)*D+l);
+                sum += ginv(k,l) * Riemann(((k*D+i)*D+l)*D+j);
             y(i*D+j) = sum;
           }
     }
