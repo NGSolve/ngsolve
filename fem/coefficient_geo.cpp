@@ -635,7 +635,7 @@ namespace ngfem
           Vec<3> tref = v2-v1;
 
           Vec<3> tref1 = Cross(tref, nref1);
-          Vec<3> tref2 = Cross(tref, nref2);
+          Vec<3> tref2 = -Cross(tref, nref2);
 
           Vec<3> t1 = F * tref1;
           Vec<3> t2 = F * tref2;
