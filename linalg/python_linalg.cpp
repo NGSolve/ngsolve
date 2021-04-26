@@ -819,6 +819,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #endif
       tuple<size_t, size_t> Shape() const
       {
+        pybind11::gil_scoped_acquire gil; 
         pybind11::function overload = pybind11::get_overload(this, "Shape");
         if(overload)
           return py::cast<tuple<size_t, size_t>>(overload());
