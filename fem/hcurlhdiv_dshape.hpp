@@ -74,6 +74,60 @@ namespace ngfem
       }
   }
 
+
+  template<typename FEL, int DIMSPACE, int DIM, int DIM_STRESS, class TVX, class TVY>
+  void ApplyDShapeFE(const FEL & fel, const MappedIntegrationPoint<DIM,DIMSPACE>& mip, const TVX & x, TVY & y, LocalHeap& lh, double eps = 1e-4)
+  {
+    const IntegrationPoint& ip = mip.IP();
+    const ElementTransformation & eltrans = mip.GetTransformation();
+    Vec<DIM_STRESS> shape_ul;
+    Vec<DIM_STRESS> shape_ur;
+    Vec<DIM_STRESS> shape_ull;
+    Vec<DIM_STRESS> shape_urr;
+    Vec<DIM_STRESS> dshape_u_ref;
+
+    Vec<DIM> dshape_u_ref_comp;
+    Vec<DIMSPACE> dshape_u;
+    
+    for (int j = 0; j < DIM; j++)   // d / dxj
+      {
+        IntegrationPoint ipl(ip);
+        ipl(j) -= eps;
+        IntegrationPoint ipr(ip);
+        ipr(j) += eps;
+        IntegrationPoint ipll(ip);
+        ipll(j) -= 2*eps;
+        IntegrationPoint iprr(ip);
+        iprr(j) += 2*eps;
+        
+        MappedIntegrationPoint<DIM,DIMSPACE> mipl(ipl, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> mipr(ipr, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> mipll(ipll, eltrans);
+        MappedIntegrationPoint<DIM,DIMSPACE> miprr(iprr, eltrans);
+        
+        fel.EvaluateMappedShape (mipl,  x, shape_ul);
+        fel.EvaluateMappedShape (mipr,  x, shape_ur);
+        fel.EvaluateMappedShape (mipll, x, shape_ull);
+        fel.EvaluateMappedShape (miprr, x, shape_urr);
+        
+        dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+        
+        for (int l = 0; l < DIM_STRESS; l++)
+          y(j*DIM_STRESS+l) = dshape_u_ref(l);
+      }
+    
+    for (int j = 0; j < DIM_STRESS; j++)
+      {
+        for (int l = 0; l < DIM; l++)
+          dshape_u_ref_comp(l) = y(l*DIM_STRESS+j);
+        
+        dshape_u = Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
+        
+        for (int l = 0; l < DIMSPACE; l++)
+          y(l*DIM_STRESS+j) = dshape_u(l);
+      }
+  }
+
   template<typename FEL, int DIMSPACE, int DIM, int DIM_STRESS, class TVX, class TVY>
   void ApplyTransDShapeFE(const FEL & fel_u, const MappedIntegrationPoint<DIM,DIMSPACE>& mip, const TVX & x, TVY & by, LocalHeap & lh, double eps = 1e-4)
   {
