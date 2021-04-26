@@ -80,11 +80,11 @@ namespace ngfem
   {
     const IntegrationPoint& ip = mip.IP();
     const ElementTransformation & eltrans = mip.GetTransformation();
-    Vec<DIM_STRESS> shape_ul;
-    Vec<DIM_STRESS> shape_ur;
-    Vec<DIM_STRESS> shape_ull;
-    Vec<DIM_STRESS> shape_urr;
-    Vec<DIM_STRESS> dshape_u_ref;
+    Mat<DIM_STRESS,1> shape_ul;
+    Mat<DIM_STRESS,1> shape_ur;
+    Mat<DIM_STRESS,1> shape_ull;
+    Mat<DIM_STRESS,1> shape_urr;
+    Mat<DIM_STRESS,1> dshape_u_ref;
 
     Vec<DIM> dshape_u_ref_comp;
     Vec<DIMSPACE> dshape_u;

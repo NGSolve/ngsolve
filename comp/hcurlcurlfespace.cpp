@@ -645,56 +645,8 @@ namespace ngcomp
 
       if constexpr (std::is_same<TSCAL,double>())
                      {
-                       //ApplyDShapeFE<FEL,D,D,D*D,TVX,TVY>(static_cast<const FEL&>(fel), mip, x, y, lh, eps());
-                       //hdv = y;
-    const IntegrationPoint& ip = mip.IP();
-    const ElementTransformation & eltrans = mip.GetTransformation();
-    Mat<D,D> shape_ul;
-    Mat<D,D> shape_ur;
-    Mat<D,D> shape_ull;
-    Mat<D,D> shape_urr;
-    Mat<D,D> dshape_u_ref;
-
-    Vec<D> dshape_u_ref_comp;
-    Vec<D> dshape_u;
-    
-    for (int j = 0; j < D; j++)   // d / dxj
-      {
-        IntegrationPoint ipl(ip);
-        ipl(j) -= eps();
-        IntegrationPoint ipr(ip);
-        ipr(j) += eps();
-        IntegrationPoint ipll(ip);
-        ipll(j) -= 2*eps();
-        IntegrationPoint iprr(ip);
-        iprr(j) += 2*eps();
-        
-        MappedIntegrationPoint<D,D> mipl(ipl, eltrans);
-        MappedIntegrationPoint<D,D> mipr(ipr, eltrans);
-        MappedIntegrationPoint<D,D> mipll(ipll, eltrans);
-        MappedIntegrationPoint<D,D> miprr(iprr, eltrans);
-        
-        bfel.EvaluateMappedShape (mipl,  x, shape_ul);
-        bfel.EvaluateMappedShape (mipr,  x, shape_ur);
-        bfel.EvaluateMappedShape (mipll, x, shape_ull);
-        bfel.EvaluateMappedShape (miprr, x, shape_urr);
-        
-        dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-        
-        for (int l = 0; l < D*D; l++)
-          hdv(j*D*D+l) = dshape_u_ref(l);
-      }
-    
-    for (int j = 0; j < D*D; j++)
-      {
-        for (int l = 0; l < D; l++)
-          dshape_u_ref_comp(l) = hdv(l*D*D+j);
-        
-        dshape_u = Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
-        
-        for (int l = 0; l < D; l++)
-          hdv(l*D*D+j) = dshape_u(l);
-      }
+                       ApplyDShapeFE<FEL,D,D,D*D,TVX,TVY>(static_cast<const FEL&>(fel), mip, x, y, lh, eps());
+                       hdv = y;
                      }
       else
         {
