@@ -587,7 +587,7 @@ namespace ngfem
       if (ip.DimSpace() != D)
         throw Exception("illegal dim of EdgeFaceTangentialVector");
 
-      //cout << "in VertexTangentialVectorsCF, VB = " << ip.IP().VB() << endl;
+      //cout << "in EdgeFaceTangentialVectorsCF, VB = " << ip.IP().VB() << endl;
       // assume tets !!!
       
       if (ip.IP().VB() == BBND)
@@ -642,8 +642,8 @@ namespace ngfem
           Vec<3> t = F * tref;
 
           t /= L2Norm(t);
-          t1 -= (t1*t) * t;
-          t2 -= (t2*t) * t;
+          t1 -= InnerProduct(t1,t)*t;
+          t2 -= InnerProduct(t2,t)*t;
 
           t1 /= L2Norm(t1);
           t2 /= L2Norm(t2);
