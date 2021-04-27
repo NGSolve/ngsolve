@@ -3696,7 +3696,7 @@ public:
         //Cofactor Matrix linear in 2d (in 1d Cofactor Matrix = 0)
         return CofactorCF(c1->Diff(var,dir));
       }
-    else //3d
+    else if (this->Dimensions()[0] == 3) //3d
       {
         //formula follows from Cayley–Hamilton
         //Cof(A) = 0.5*(tr(A)**2 - tr(A**2))I - tr(A)A^T +(AA)^T
@@ -3704,6 +3704,8 @@ public:
         //return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->Diff(var,dir);
         return  0.5*(2*TraceCF(c1)*TraceCF(c1->Diff(var,dir)) - TraceCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir)))*IdentityCF(3)- TraceCF(c1->Diff(var,dir))*TransposeCF(c1) - TraceCF(c1)*TransposeCF(c1->Diff(var,dir)) + TransposeCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir));
       }
+    else
+      throw Exception("CofactorCF diff only implemented for dim <=3");
   }  
 };
 
@@ -4517,6 +4519,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       case 1: return make_shared<CofactorCoefficientFunction<1>> (coef);
       case 2: return make_shared<CofactorCoefficientFunction<2>> (coef);
       case 3: return make_shared<CofactorCoefficientFunction<3>> (coef);
+      case 4: return make_shared<CofactorCoefficientFunction<4>> (coef);
       default:
         throw Exception("Cofactor of matrix of size "+ToString(dims[0]) + " not available");
       }
