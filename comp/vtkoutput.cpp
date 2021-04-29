@@ -332,6 +332,8 @@ namespace ngcomp
   template <int D>
   void VTKOutput<D>::PrintCells()
   {
+    stringstream connectivity;
+    stringstream offsets;
     // count number of data for cells, one + number of vertices
     int ndata = 0;
     for (auto c : cells)
@@ -339,22 +341,28 @@ namespace ngcomp
       ndata++;
       ndata += c[0];
     }
-    *fileout << "CELLS " << cells.Size() << " " << ndata << endl;
+
     for (auto c : cells)
     {
       int nv = c[0];
-      *fileout << nv << "\t";
+      offsets << nv << " ";
       for (int i = 0; i < nv; i++)
-        *fileout << c[i + 1] << "\t";
-      *fileout << endl;
+        connectivity << c[i + 1] << " ";
     }
+    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\"" << endl;
+    *fileout << connectivity.str() << endl
+             << "</DataArray>" << endl;
+    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\"" << endl;
+
+    *fileout << offsets.str() << endl
+             << "</DataArray>" << endl;
   }
 
   /// output of cell types (here only simplices)
   template <int D>
   void VTKOutput<D>::PrintCellTypes(VorB vb, const BitArray *drawelems)
   {
-    *fileout << "CELL_TYPES " << cells.Size() << endl;
+    *fileout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
     int factor = (1 << subdivision) * (1 << subdivision);
     if (D == 3 && vb == VOL)
       factor *= (1 << subdivision);
@@ -367,30 +375,29 @@ namespace ngcomp
       {
       case ET_TET:
         for (int i = 0; i < factor; i++)
-          *fileout << "10 " << endl; //(void)c;
+          *fileout << "10 "; //(void)c;
         break;
       case ET_QUAD:
         for (int i = 0; i < factor; i++)
-          *fileout << "9 " << endl;
+          *fileout << "9 ";
         break;
       case ET_TRIG:
         for (int i = 0; i < factor; i++)
-          *fileout << "5 " << endl;
+          *fileout << "5 ";
         break;
       case ET_PRISM:
         for (int i = 0; i < factor; i++)
-          *fileout << "13 " << endl;
+          *fileout << "13 ";
         break;
       case ET_HEX:
         for (int i = 0; i < factor; i++)
-          *fileout << "12 " << endl;
+          *fileout << "12 ";
         break;
       default:
         cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
       }
     }
-    *fileout << "CELL_DATA " << cells.Size() << endl;
-    *fileout << "POINT_DATA " << points.Size() << endl;
+    *fileout << "</DataArray>" << endl;
   }
 
   /// output of field data (coefficient values)
@@ -552,8 +559,10 @@ namespace ngcomp
     *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumerOfCells=\"" << cells.Size() << "\">" << endl;
     PrintPoints();
     PrintFieldData();
+    *fileout << "<Cells>" << endl;
     PrintCells();
     PrintCellTypes(vb, drawelems);
+    *fileout << "</Cells>" << endl;
 
     // Footer:
     *fileout << "</Piece>" << endl;
