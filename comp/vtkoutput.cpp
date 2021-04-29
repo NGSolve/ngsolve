@@ -397,7 +397,8 @@ namespace ngcomp
         cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
       }
     }
-    *fileout << "</DataArray>" << endl;
+    *fileout << endl
+             << "</DataArray>" << endl;
   }
 
   /// output of field data (coefficient values)
