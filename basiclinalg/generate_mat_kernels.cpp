@@ -2307,9 +2307,9 @@ void GenerateTriangularXY (ofstream & out, bool solve, bool lowerleft, bool norm
 
 
 
-int main ()
+int main (int argn, char **argv)
 {
-  ofstream out("matkernel.hpp");
+  ofstream out(argv[1]);
 
   out << "template <int N>\n"
     "void FMAnonasm (SIMD<double,N> a, SIMD<double,N> b, SIMD<double,N> & sum)\n"

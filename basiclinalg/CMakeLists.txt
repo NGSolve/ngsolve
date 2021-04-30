@@ -12,8 +12,9 @@ if(NETGEN_BUILD_FOR_CONDA)
 endif()
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
-  COMMAND kernel_generator
+  COMMAND kernel_generator "${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp"
   DEPENDS kernel_generator
+  WORKING_DIRECTORY ${NETGEN_BINARY_DIR}
   )
 
 add_custom_target(kernel_generated DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp)
