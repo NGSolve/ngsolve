@@ -6498,7 +6498,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
       cf -> TraverseTree (func);
-      func(*cf);
+      // func(*cf);
+      func(*this);      
     }
 
     // virtual bool IsComplex() const { return cf->IsComplex(); }
