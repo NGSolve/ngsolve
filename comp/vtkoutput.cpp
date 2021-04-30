@@ -318,10 +318,13 @@ namespace ngcomp
   void VTKOutput<D>::PrintPoints()
   {
     *fileout << "<Points>" << endl;
-    *fileout << "<DataArray  type=\"Float32\" NumberOfComponents=\"" << D << "\"format=\"ascii\">" << endl;
+    *fileout << "<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"ascii\">" << endl;
     for (auto p : points)
     {
-      *fileout << p;
+      for (int k = 0; k < D; k++)
+        *fileout << p[k] << endl;
+      if (D == 2)
+        *fileout << 0 << endl;
     }
     *fileout << endl
              << "</DataArray>" << endl;
@@ -341,18 +344,20 @@ namespace ngcomp
       ndata++;
       ndata += c[0];
     }
-
+    int offs = 0;
     for (auto c : cells)
     {
       int nv = c[0];
-      offsets << nv << " ";
+      offs += nv;
+      offsets
+          << offs << endl;
       for (int i = 0; i < nv; i++)
-        connectivity << c[i + 1] << " ";
+        connectivity << c[i + 1] << endl;
     }
-    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\"" << endl;
+    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
     *fileout << connectivity.str() << endl
              << "</DataArray>" << endl;
-    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\"" << endl;
+    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
 
     *fileout << offsets.str() << endl
              << "</DataArray>" << endl;
@@ -375,23 +380,23 @@ namespace ngcomp
       {
       case ET_TET:
         for (int i = 0; i < factor; i++)
-          *fileout << "10 "; //(void)c;
+          *fileout << "10" << endl; //(void)c;
         break;
       case ET_QUAD:
         for (int i = 0; i < factor; i++)
-          *fileout << "9 ";
+          *fileout << "9" << endl;
         break;
       case ET_TRIG:
         for (int i = 0; i < factor; i++)
-          *fileout << "5 ";
+          *fileout << "5" << endl;
         break;
       case ET_PRISM:
         for (int i = 0; i < factor; i++)
-          *fileout << "13 ";
+          *fileout << "13" << endl;
         break;
       case ET_HEX:
         for (int i = 0; i < factor; i++)
-          *fileout << "12 ";
+          *fileout << "12" << endl;
         break;
       default:
         cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
@@ -407,19 +412,19 @@ namespace ngcomp
   {
     string header = "";
     string content = "";
-    header += "<PointData Scalars="; // \"" << field->Name() << "\">" << endl;
+    header += "<PointData"; // \"" << field->Name() << "\">" << endl;
     int k = 0;
     for (auto field : value_field)
     {
       if (k == 0)
       {
 
-        *fileout << header << "\"" << field->Name() << "\">" << endl;
+        *fileout << header << ">" << endl;
       }
-      *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" format=\"ascii\">" << endl;
+      *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"1\" format=\"ascii\">" << endl;
 
       for (auto v : *field)
-        *fileout << v << " ";
+        *fileout << v << endl;
       *fileout << endl;
       *fileout << "</DataArray>" << endl;
       k++;
@@ -435,7 +440,7 @@ namespace ngcomp
     if (output_cnt > 0)
       filenamefinal << "_" << output_cnt;
     lastoutputname = filenamefinal.str();
-    filenamefinal << ".vtk";
+    filenamefinal << ".vtu";
     fileout = make_shared<ofstream>(filenamefinal.str());
     cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
@@ -463,9 +468,9 @@ namespace ngcomp
     FillReferenceHex(ref_vertices_hex, ref_hexes);
 
     // header:
-    *fileout << "<?xml version=\"1.0\">" << endl;
+    *fileout << "<?xml version=\"1.0\"?>" << endl;
 
-    *fileout << "<VTKfile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
+    *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
     *fileout << "<UnstructuredGrid>" << endl;
 
     int ne = ma->GetNE(vb);
@@ -557,18 +562,18 @@ namespace ngcomp
         cells.Append(new_elem);
       }
     }
-    *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumerOfCells=\"" << cells.Size() << "\">" << endl;
+    *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
     PrintPoints();
-    PrintFieldData();
     *fileout << "<Cells>" << endl;
     PrintCells();
     PrintCellTypes(vb, drawelems);
     *fileout << "</Cells>" << endl;
+    PrintFieldData();
 
     // Footer:
     *fileout << "</Piece>" << endl;
     *fileout << "</UnstructuredGrid>" << endl;
-    *fileout << "</VTKfile>" << endl;
+    *fileout << "</VTKFile>" << endl;
 
     cout << IM(4) << " Done." << endl;
   }
