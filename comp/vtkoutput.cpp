@@ -421,7 +421,7 @@ namespace ngcomp
 
         *fileout << header << ">" << endl;
       }
-      *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"1\" format=\"ascii\">" << endl;
+      *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"ascii\">" << endl;
 
       for (auto v : *field)
         *fileout << v << endl;
