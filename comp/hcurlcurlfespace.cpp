@@ -638,15 +638,15 @@ namespace ngcomp
                        LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
       typedef typename TVX::TSCAL TSCAL;
       
       Vec<D*D*D,TSCAL> hdv;
 
       if constexpr (std::is_same<TSCAL,double>())
                      {
-                       ApplyDShapeFE<FEL,D,D,D*D,TVX,TVY>(static_cast<const FEL&>(fel), mip, x, y, lh, eps());
-                       hdv = y;
+                       ApplyDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, x, hdv, lh, eps());
+                       // hdv = y;
                      }
       else
         {
@@ -678,36 +678,24 @@ namespace ngcomp
       DiffOpGradientHCurlCurl<D>::GenerateMatrixSIMDIR(bfel,bmr, bmat);
       }*/
     
-    // using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
-    // static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-    //                          BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    // {
-    //   const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
-    //   cout << "apply simd" << endl;
-    //   //typedef typename TVX::TSCAL TSCAL;
-    //   //int nd_u = bfel.GetNDof();
-    //   //FlatMatrixFixWidth<D*D*D> bmat(nd_u, lh);
+    using DiffOp<DiffOpChristoffelHCurlCurl<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*D*D;
+      STACK_ARRAY(SIMD<double>, mem, size);
+      FlatMatrix<SIMD<double>> hdv(D*D*D, bmir.Size(), mem);
       
-    //   //CalcDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, bmat, lh, eps());
-
-    //   //BareSliceMatrix<SIMD<double>> hdv = Trans(bmat) * x;
-    //   size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*D*D;
-    //   STACK_ARRAY(char, data, size);
-    //   LocalHeap lh(data, size);
-    //   FlatMatrix<SIMD<double>> hdv(D*D*D, bmir.Size(), lh);
-    //   ApplySIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), bmir, x, hdv, eps());
-
-
-    //   for (int i=0; i<D; i++)
-    //     for (int j=0; j<D; j++)
-    //       for (int k=0; k<D; k++)
-    //         {
-    //           //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-    //           y.AddSize(D*D*D,bmir.Size()).Col(k*D*D+j*D+i) = hdv.Col(i*D*D+(D*k+j));
-    //           //y.Col(k*D*D+j*D+i) = 0.5*(hdv.Col(i*D*D+(D*k+j))+hdv.Col(j*D*D+(D*i+k))-hdv.Col(k*D*D+(D*i+j)));
-    //         }
-
-    // }
+      ApplySIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), bmir, x, hdv, eps());
+      
+      for (int i=0; i<D; i++)
+        for (int j=0; j<D; j++)
+          for (int k=0; k<D; k++)
+            {
+              //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
+              y.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(hdv.Row(i*D*D+(D*k+j))+hdv.Row(j*D*D+(D*i+k))-hdv.Row(k*D*D+(D*i+j)));
+            }
+    }
     /*
     using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
@@ -847,7 +835,7 @@ namespace ngcomp
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
       
       typedef typename TVX::TSCAL TSCAL;
-      int nd_u = bfel.GetNDof();
+      // int nd_u = bfel.GetNDof();
       //FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
       //bfel.CalcMappedShape (mip, bmat);
       
@@ -864,7 +852,26 @@ namespace ngcomp
       Vec<D*D*D,TSCAL> hchristoffel1;
       Vec<D*D*D,TSCAL> hchristoffel2;
       DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hchristoffel1, lh);
-      DiffOpChristoffel2HCurlCurl<D>::Apply(fel, mip, x, hchristoffel2, lh);
+      // DiffOpChristoffel2HCurlCurl<D>::Apply(fel, mip, x, hchristoffel2, lh);
+
+      if constexpr (std::is_same<TSCAL,double>())
+                     {
+                       Mat<D,D,TSCAL> G;
+                       bfel.EvaluateMappedShape (mip, x, G);
+                       Mat<D,D,TSCAL> invG = Inv(G);      
+                       
+                       for (int i=0; i<D; i++)
+                         for (int j=0; j<D; j++)
+                           for (int k=0; k<D; k++)
+                             {
+                               TSCAL sum = 0; 
+                               for (int p=0; p<D; p++)
+                                 sum += invG(i,p)*hchristoffel1(p*D*D+j+D*k);
+                               hchristoffel2(i*D*D+j*D+k) = sum;
+                             }
+                     }
+      else
+        DiffOpChristoffel2HCurlCurl<D>::Apply(fel, mip, x, hchristoffel2, lh);        
       
       const IntegrationPoint& ip = mip.IP();
       const ElementTransformation & eltrans = mip.GetTransformation();
@@ -933,13 +940,22 @@ namespace ngcomp
                     // hchristoffel1_der(i*D*D*D+j*D*D+k*D+l) = d_i Gamma_lkj
                     // hchristoffel1(k*D*D+j*D+i) = Gamma_ijk
                     // hchristoffel2(k*D*D+j*D+i) = invmat(k,p)*hdv(p*D*D+D*j+i) = Cinv_kp Gamma_ijp = Gamma_ij^k;
-                    
+
+                    /*
                     y(i*D*D*D+j*D*D+k*D+l) = hchristoffel1_der(k*D*D*D+i*D*D+l*D+j)-hchristoffel1_der(l*D*D*D+i*D*D+k*D+j);
                     for (int q=0; q<D; q++)
                       {
                         y(i*D*D*D+j*D*D+k*D+l) += hchristoffel2(q*D*D+k*D+j)*hchristoffel1(q*D*D+i*D+l);
                         y(i*D*D*D+j*D*D+k*D+l) -= hchristoffel2(q*D*D+l*D+j)*hchristoffel1(q*D*D+i*D+k);
                       }
+                    */
+                    TSCAL sum = hchristoffel1_der(k*D*D*D+i*D*D+l*D+j)-hchristoffel1_der(l*D*D*D+i*D*D+k*D+j);
+                    for (int q=0; q<D; q++)
+                      {
+                        sum += hchristoffel2(q*D*D+k*D+j)*hchristoffel1(q*D*D+i*D+l);
+                        sum -= hchristoffel2(q*D*D+l*D+j)*hchristoffel1(q*D*D+i*D+k);
+                      }
+                    y(i*D*D*D+j*D*D+k*D+l) = sum;
                   }
         }
     }

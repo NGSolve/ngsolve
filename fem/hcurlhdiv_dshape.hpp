@@ -249,7 +249,7 @@ namespace ngfem
   {
     constexpr size_t BS = 64; // number of simd-points
     size_t maxnp = min2(BS, bmir.Size());
-    size_t size = (maxnp+1)*SIMD<double>::Size()*500;
+    size_t size = (maxnp+1)*SIMD<double>::Size()*500  +  5*DIM_STRESS*BS*sizeof(SIMD<double>);
     STACK_ARRAY(char, data, size);
     LocalHeap lh(data, size);
     
