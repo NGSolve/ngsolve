@@ -331,7 +331,7 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                            BareSliceMatrix<double> shapes) const override
+                                  BareSliceMatrix<double> shapes) const override
     {
 
       /*
@@ -347,9 +347,17 @@ namespace ngfem
                                                        }));
          });*/
 
+      /*
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([shapes](int nr,auto val)
+                           {
+                             VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
+                           }));
+      */
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([shapes](int nr,auto val)
                            {
                              VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
                            }));
@@ -361,16 +369,14 @@ namespace ngfem
                                       BareSliceMatrix<double> shape) const override
     {
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      // Vec<DIM, AutoDiff<DIM>> adp = mip;
       Vec<DIM*(DIM+1)/2> sum = 0.0;
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([coefs, &sum](int nr,auto val)
+      // Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([coefs, &sum](int nr,auto val)
+      Cast() -> T_CalcShape (GetTIP(mip),SBLambda([coefs, &sum](int nr,auto val)
                            {
                              sum += coefs(nr) * val.Shape();
-                             // VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
                            }));
-      // Mat<DIM,DIM> summat = 0.0;
       VecToSymMat<DIM> (sum, shape);
-      // shape.AddSize(DIM,DIM) = sum;
     }
 
 
