@@ -125,7 +125,7 @@ class LinearSolver(BaseMatrix):
                 print("WARNING: {} did not converge to TOL".format(self.name))
         is_converged = self.iterations == self.maxiter or residual < self._final_residual
         if is_converged and self.printrates == "\r":
-            print("{} converged in {} iterations to residual {}".format(self.name, self.iterations, residual))
+            print("{} {}converged in {} iterations to residual {}".format(self.name, "NOT " if residual >= self._final_residual else "", self.iterations, residual))
         return is_converged
 
 class CGSolver(LinearSolver):
