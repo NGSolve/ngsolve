@@ -28,8 +28,13 @@ callback : Callable[[int, float], None] = None
 callback_sol : Callable[[BaseVector], None] = None
   Callback function that is called with solution x_k in each iteration step.
 
-printing : bool = False
-  Print iterations to stdout.
+printrates : bool = False
+  Print iterations to stdout. One can give a string to be passed as an `end`
+  argument to the print function, for example:
+  >>> printrates="\r"
+  will call
+  >>> print("iteration = 1, residual = 1e-3", end="\r")
+  if "\r" is passed, a final output will also be printed.
 """
 
 class LinearSolver(BaseMatrix):
@@ -115,10 +120,13 @@ class LinearSolver(BaseMatrix):
             _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
                                           (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
         if self.printrates:
-            print("{} iteration {}, residual = {}".format(self.name, self.iterations, residual))
+            print("{} iteration {}, residual = {}".format(self.name, self.iterations, residual), end="\n" if isinstance(self.printrates, bool) else self.printrates)
             if self.iterations == self.maxiter and residual >= self._final_residual:
                 print("WARNING: {} did not converge to TOL".format(self.name))
-        return self.iterations == self.maxiter or residual < self._final_residual
+        is_converged = self.iterations == self.maxiter or residual < self._final_residual
+        if is_converged and self.printrates == "\r":
+            print("{} converged in {} iterations to residual {}".format(self.name, self.iterations, residual))
+        return is_converged
 
 class CGSolver(LinearSolver):
     """Preconditioned conjugate gradient method
