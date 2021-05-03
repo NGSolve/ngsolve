@@ -4743,15 +4743,33 @@ public:
     ar.Shallow(c1) & dim1 & first & num & dist;
   }
 
-  /*
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    auto dims = c1->Dimensions();
-    int i,j;
-    GetIndex(dims, comp, i, j);
-    code.body += Var(index).Assign( Var(inputs[0], i, j ));
+    auto dims1 = c1->Dimensions();
+
+    if(num.Size()==1)
+      {
+        for (int i = 0; i < num[0]; i++)
+         {
+            int i1,k1;
+            auto comp = first+i*dist[0];
+            GetIndex(dims1, comp, i1, k1);
+            code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+          }
+      }
+
+    if(num.Size()==2)
+      {
+        for (int i = 0; i < num[0]; i++)
+           for (int k = 0; k < num[0]; k++)
+             {
+                int i1,k1;
+                auto comp = first+i1*dist[0]+k1*dist[1];
+                GetIndex(dims1, comp, i1, k1);
+                code.body += Var(index, i, k).Assign( Var(inputs[0], i, k ));
+              }
+      }
   }
-  */
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
