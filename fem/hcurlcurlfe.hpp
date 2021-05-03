@@ -31,6 +31,11 @@ namespace ngfem
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                         BareSliceVector<double> coefs,
+                                         BareSliceMatrix<double> inc) const = 0;
+
+    
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
@@ -83,6 +88,7 @@ namespace ngfem
     }
   }
 
+  
   template <int D,typename T ,typename MAT>
   Vec<D*D-D,T> SymMatToVec(MAT & mat)
   {
@@ -274,7 +280,44 @@ namespace ngfem
   
   template <int D, typename T>
   auto vEpsGradu (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_vEpsGradu<D,T>(au, av); }
-    
+
+
+
+  template <int D, typename T> class ReggeADD;
+
+  template <typename T>
+  class ReggeADD<3,T>
+  {
+    Mat<3,3,T> value;
+    Mat<3,3,T> curl;
+    Mat<3,3,T> inc;
+
+  public:
+    ReggeADD (AutoDiffDiff<3,T> a, AutoDiffDiff<3,T> b)
+    {
+      // value = outersym(a,b) ...
+    }
+
+    auto Value() const { return value; }
+    auto Curl() const { return curl; }
+    auto Inc() const { return inc; }
+  };
+
+
+  template <int D, typename T>
+  auto MakeReggeAD(AutoDiffDiff<D,T> a, AutoDiffDiff<D,T> b)
+  {
+    return ReggeADD<D,T>(a, b);
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator* (AutoDiffDiff<3,T> s, ReggeADD<3,T> A) { return A; }
+
+  // +, -,  double*ReggeAD, ...
+  
+
+
+  
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
 
   
@@ -379,6 +422,19 @@ namespace ngfem
       VecToSymMat<DIM> (sum, shape);
     }
 
+    virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                         BareSliceVector<double> coefs,
+                                         BareSliceMatrix<double> inc) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Mat<DIM,DIM> sum = 0.0;
+      if constexpr (ET == ET_TET)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([coefs, &sum](int nr,auto val)
+                                                                       {
+                                                                         sum += coefs(nr) * val.Inc();
+                                                                       }));
+      inc.AddSize(DIM,DIM) = sum;
+    }
 
     
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override
@@ -1443,8 +1499,78 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);                                                                                                                                                   }));
-        }
+        }      
     };
+
+
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape2 (TIP<3,Tx> ip, TFA & shape) const
+    {
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      Tx lam[4] = {x, y, z, 1-x-y-z};
+      int ii = 0;
+
+      for (int i = 0; i < 6; i++)
+        {
+          INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+          Tx ls = lam[e[1]], le = lam[e[0]];
+
+          // Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(ls,le);
+          // auto symdyadic = ReggeADD<3,double>(ls, le);
+          auto symdyadic = MakeReggeAD(ls, le);
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+                            {
+                              shape[ii++] = -val*symdyadic;
+                            }));
+        }
+
+      /*
+      for(int fa = 0; fa < 4; fa++)
+        {
+          if (order_facet[fa][0] > 0)
+            {
+              INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
+              AutoDiff<3,T> ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
+              
+              Vec<6, AutoDiff<3,T>> symdyadic1 = lt*SymDyadProd(ls,le);
+              Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
+              Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
+              
+              DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
+                                  SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
+                                           {
+                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
+                                           }));
+            }
+        }
+
+      if (order_inner[0] > 1)
+        {
+          AutoDiff<3,T> li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
+
+          Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
+          Vec<6, AutoDiff<3,T>> symdyadic2 = lj*lk*SymDyadProd(ll,li);
+          Vec<6, AutoDiff<3,T>> symdyadic3 = lk*ll*SymDyadProd(li,lj);
+          Vec<6, AutoDiff<3,T>> symdyadic4 = ll*li*SymDyadProd(lj,lk);
+          Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
+          Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
+          
+          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val)
+                                                                                   {
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
+                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);                                                                                                                                                   }));
+        }
+      */
+    }
+
+    
 
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
