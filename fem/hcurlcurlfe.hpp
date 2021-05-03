@@ -10,6 +10,73 @@
 namespace ngfem
 {
 
+  //Assuming i,j,k \in [0,1,2]
+  template <typename T=double>
+  constexpr int LeviCivitaSymbol(int i, int j, int k)
+  {
+    if (i==j || i==k || j==k)
+      return T(0);
+    else if ( (i==0 && j==1) || (i==1 && j==2) || (i==2 && j==0) )
+      return T(1);
+    else
+      return -T(1);
+  }
+  
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Mat<3,3,T> B)
+  {
+    Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              for (int m=0; m<3; m++)
+                for (int n=0; n<3; n++)
+                  {
+                    result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,m);
+                  }
+        }
+    return result;
+  }
+  
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Vec<3,T> v, Mat<3,3,T> A)
+  {
+    Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              {
+                result(i,j) += LeviCivitaSymbol<T>(i,k,l)*v(k)*A(l,j);
+              }
+        }
+    return result;
+  }
+
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Vec<3,T> v)
+  {
+    Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              {
+                result(i,j) += LeviCivitaSymbol<T>(j,k,l)*A(i,k)*v(l);
+              }
+        }
+    return result;
+  }
+  
+  
+
   template <int DIM>
   class HCurlCurlFiniteElement : public FiniteElement
   {
@@ -22,7 +89,7 @@ namespace ngfem
 			    SliceMatrix<> shape) const = 0;
     
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-      BareSliceMatrix<double> shape) const = 0;
+                                  BareSliceMatrix<double> shape) const = 0;
 
     virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
                                       BareSliceVector<double> coefs,
@@ -30,6 +97,9 @@ namespace ngfem
 
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
       BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                     BareSliceMatrix<double> shape) const = 0;
 
     virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
                                          BareSliceVector<double> coefs,
@@ -293,14 +363,93 @@ namespace ngfem
     Mat<3,3,T> inc;
 
   public:
+    ReggeADD ()
+    {
+      value = T(0);
+      curl = T(0);
+      inc = T(0);
+    }
+    
     ReggeADD (AutoDiffDiff<3,T> a, AutoDiffDiff<3,T> b)
     {
-      // value = outersym(a,b) ...
+      auto Da = Vec<3,T>(a.DValue(0),a.DValue(1),a.DValue(2));
+      auto Db = Vec<3,T>(b.DValue(0),b.DValue(1),b.DValue(2));
+      //0.5?
+      value = SymDyadProd(Da,Db);
+      //value *= 0.5
+      // curl(s*v) = nabla s x v + s curl(v) in 3D
+      //                     | nabla a_1 x b + a_1 curl(b) |
+      // curl(a \otimes b) = | nabla a_2 x b + a_2 curl(b) |
+      //                     | nabla a_3 x b + a_3 curl(b) |
+
+      // curl( nabla s ) = 0
+      //                                      | nabla d_x a x nabla b |
+      // ->  curl( nabla a \otimes nabla b) = | nabla d_y a x nabla b |
+      //                                      | nabla d_z a x nabla b |
+
+      Vec<3,T> Ddai [3] = { Vec<3,T>(a.DDValue(0,0), a.DDValue(0,1), a.DDValue(0,2)), Vec<3,T>(a.DDValue(1,0), a.DDValue(1,1), a.DDValue(1,2)), Vec<3,T>(a.DDValue(2,0), a.DDValue(2,1), a.DDValue(2,2)) };
+      Vec<3,T> Ddbi [3] = { Vec<3,T>(b.DDValue(0,0), b.DDValue(0,1), b.DDValue(0,2)), Vec<3,T>(b.DDValue(1,0), b.DDValue(1,1), b.DDValue(1,2)), Vec<3,T>(b.DDValue(2,0), b.DDValue(2,1), b.DDValue(2,2)) };
+
+      for (int i = 0; i < 3; i++)
+        curl.Row(i) = Cross(Ddai[i], Db) + Cross(Ddbi[i], Da);
+
+      //0.5?
+      //curl *= 0.5;
+
+      //                                   | nabla d_x a x nabla b |
+      //  curl( nabla a \otimes nabla b) = | nabla d_y a x nabla b |
+      //                                   | nabla d_z a x nabla b |
+
+
+      // curl T curl ( nabla a \otimes nabla b):
+      //11: d_yd_z(a) d_yd_z(b) - d^2_z(a) d^2_y(b)   - d_y^2(a) d^2_z(b)   + d_yd_z(a)d_yd_z(b)
+      //12: d_xd_y(a) d_z^2(b)  - d_xd_z(a) d_yd_z(b) - d_yd_z(a) d_xd_z(b) + d_z^2(a)d_xd_y(b)
+      //13: d^2_y(a) d_xd_z(b)  - d_yd_z(a) d_xd_y(b) - d_xd_y(a) d_yd_z(b) + d_xd_z(a)d^2_y(b)
+      //22: d_xd_z(a) d_xd_z(b) - d^2_x(a) d^2_z(b)   - d^2_z(a) d^2_x(b)   + d_xd_z(a)d_xd_z(b)
+      //23: d_yd_z(a) d^2_x(b)  - d_xd_y(a) d_xd_z(b) - d_xd_z(a) d_xd_y(b) + d^2_x(a)d_yd_z(b)
+      //33: d^2_x(a) d^2_y(b)   - d_xd_y(a) d_xd_y(b) - d_xd_y(a) d_xd_y(b) + d^2_y(a)d^2_x(b)
+
+      // = ??? = - hesse(a) x hesse(b) = -eps_imn eps_jlk d_md_l(a) d_nd_k b ??
+
+      /*inc(0,0) = a.DDValue(1,2)*b.DDValue(1,2) - a.DDValue(2,2)*b.DDValue(1,1) - a.DDValue(1,1)*b.DDValue(2,2) + a.DDValue(1,2)*b.DDValue(1,2);
+      inc(0,1) = a.DDValue(0,1)*b.DDValue(2,2) - a.DDValue(0,2)*b.DDValue(1,2) - a.DDValue(1,2)*b.DDValue(0,2) + a.DDValue(2,2)*b.DDValue(0,1);
+      inc(0,2) = a.DDValue(1,1)*b.DDValue(0,2) - a.DDValue(1,2)*b.DDValue(0,1) - a.DDValue(0,1)*b.DDValue(1,2) + a.DDValue(0,2)*b.DDValue(1,1);
+      inc(1,1) = a.DDValue(0,2)*b.DDValue(0,2) - a.DDValue(0,0)*b.DDValue(2,2) - a.DDValue(2,2)*b.DDValue(0,0) + a.DDValue(0,2)*b.DDValue(0,2);
+      inc(1,2) = a.DDValue(1,2)*b.DDValue(0,0) - a.DDValue(0,1)*b.DDValue(0,2) - a.DDValue(0,2)*b.DDValue(0,1) + a.DDValue(0,0)*b.DDValue(1,2);
+      inc(2,2) = a.DDValue(0,0)*b.DDValue(1,1) - a.DDValue(0,1)*b.DDValue(0,1) - a.DDValue(0,1)*b.DDValue(0,1) + a.DDValue(1,1)*b.DDValue(0,0);
+
+      // curl T curl ( nabla b \otimes nabla a):
+      inc(0,0) += b.DDValue(1,2)*a.DDValue(1,2) - b.DDValue(2,2)*a.DDValue(1,1) - b.DDValue(1,1)*a.DDValue(2,2) + b.DDValue(1,2)*a.DDValue(1,2);
+      inc(0,1) += b.DDValue(0,1)*a.DDValue(2,2) - b.DDValue(0,2)*a.DDValue(1,2) - b.DDValue(1,2)*a.DDValue(0,2) + b.DDValue(2,2)*a.DDValue(0,1);
+      inc(0,2) += b.DDValue(1,1)*a.DDValue(0,2) - b.DDValue(1,2)*a.DDValue(0,1) - b.DDValue(0,1)*a.DDValue(1,2) + b.DDValue(0,2)*a.DDValue(1,1);
+      inc(1,1) += b.DDValue(0,2)*a.DDValue(0,2) - b.DDValue(0,0)*a.DDValue(2,2) - b.DDValue(2,2)*a.DDValue(0,0) + b.DDValue(0,2)*a.DDValue(0,2);
+      inc(1,2) += b.DDValue(1,2)*a.DDValue(0,0) - b.DDValue(0,1)*a.DDValue(0,2) - b.DDValue(0,2)*a.DDValue(0,1) + b.DDValue(0,0)*a.DDValue(1,2);
+      inc(2,2) += b.DDValue(0,0)*a.DDValue(1,1) - b.DDValue(0,1)*a.DDValue(0,1) - b.DDValue(0,1)*a.DDValue(0,1) + b.DDValue(1,1)*a.DDValue(0,0);
+
+
+      //0.5? and symmetry
+      //inc *= 0.5;
+      inc(1,0) = inc(0,1);
+      inc(2,0) = inc(0,2);
+      inc(2,1) = inc(1,2);*/
+
+      Mat<3,3,T> hesse1, hesse2;
+      a.LoadHessian(hesse1.Data());
+      b.LoadHessian(hesse2.Data());
+
+      inc = -2*TensorCrossProduct(hesse1,hesse2);
+
+      //*0.5?
+
     }
 
     auto Value() const { return value; }
     auto Curl() const { return curl; }
     auto Inc() const { return inc; }
+
+    auto & Value() { return value; }
+    auto & Curl() { return value; }
+    auto & Inc() { return value; }
   };
 
 
@@ -311,9 +460,59 @@ namespace ngfem
   }
 
   template <typename T>
-  ReggeADD<3,T> operator* (AutoDiffDiff<3,T> s, ReggeADD<3,T> A) { return A; }
+  ReggeADD<3,T> operator* (AutoDiffDiff<3,T> s, ReggeADD<3,T> A)
+  {
+    ReggeADD<3,T> result;
+    result.Value() = s.Value()*A.Value();
 
-  // +, -,  double*ReggeAD, ...
+    // s scalar, v vector
+    // curl(s*v) = nabla s x v + s curl(v) in 3D
+    Vec<3,T> gradient;
+    s.LoadGradient(gradient.Data());
+   
+    result.Curl() = s.Value()*A.Curl();
+    for (int i = 0; i < 3; i++)
+      result.Curl().Row(i) += Cross(gradient, Vec<3,T>(A.Curl().Row(i)));
+
+    // inc(s A) = s inc(A) + 2sym(grad(s) x T(curl A)) + X(s) :: A
+    Mat<3,3,T> hesse;
+    s.LoadHessian(hesse.Data());
+    
+    result.Inc() = s.Value()*A.Inc() + (TensorCrossProduct(gradient,A.Value())+TensorCrossProduct(A.Value(),gradient)) +  TensorCrossProduct(hesse,A.Value());
+    return result;
+  }
+
+  
+  template <typename T>
+  ReggeADD<3,T> operator* (T s, ReggeADD<3,T> A)
+  {
+    ReggeADD<3,T> result = A;
+    result.Value() *= s;
+    result.Curl() *= s;
+    result.Inc() *= s;
+    return result;
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator+ (ReggeADD<3,T> A, ReggeADD<3,T> B)
+  {
+    ReggeADD<3,T> result = A;
+    result.Value() += B.Value();
+    result.Curl()  += B.Curl();
+    result.Inc()   += B.Inc();
+    return result;
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator- (ReggeADD<3,T> A, ReggeADD<3,T> B) 
+  {
+    ReggeADD<3,T> result = A;
+    result.Value() -= B.Value();
+    result.Curl()  -= B.Curl();
+    result.Inc()   -= B.Inc();
+    return result;
+  }
+  
   
 
 
@@ -399,22 +598,21 @@ namespace ngfem
                            }));
       */
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([shapes](int nr,auto val)
+      Cast() -> T_CalcShape (GetTIP(mip),SBLambda([shapes](int nr,auto val)
                            {
                              VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
                            }));
       
     }
+
+
     
     virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
                                       BareSliceVector<double> coefs,
                                       BareSliceMatrix<double> shape) const override
     {
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-      // Vec<DIM, AutoDiff<DIM>> adp = mip;
       Vec<DIM*(DIM+1)/2> sum = 0.0;
-      // Cast() -> T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),SBLambda([coefs, &sum](int nr,auto val)
       Cast() -> T_CalcShape (GetTIP(mip),SBLambda([coefs, &sum](int nr,auto val)
                            {
                              sum += coefs(nr) * val.Shape();
@@ -422,6 +620,18 @@ namespace ngfem
       VecToSymMat<DIM> (sum, shape);
     }
 
+    virtual void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                  BareSliceMatrix<double> shapes) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+        if constexpr (ET == ET_TET)
+                       Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shapes](int nr,auto val)
+                                                                         {
+                                                                           shapes.AddSize(DIM,DIM) = val.Inc();
+                                                                         }));
+      
+    }
+                            
     virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
                                          BareSliceVector<double> coefs,
                                          BareSliceMatrix<double> inc) const override

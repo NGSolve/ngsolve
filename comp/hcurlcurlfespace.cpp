@@ -300,6 +300,52 @@ namespace ngcomp
     }
   };
 
+
+  template<int D>
+  class DiffOpIncHCurlCurl: public DiffOp<DiffOpCurlHCurlCurl<D> >
+  {
+  };
+
+
+  template<>
+  class DiffOpIncHCurlCurl<3>: public DiffOp<DiffOpCurlHCurlCurl<3> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 3 };
+    enum { DIM_ELEMENT = 3 };
+    enum { DIM_DMAT = 9 };
+    enum { DIFFORDER = 2 };
+
+    static Array<int> GetDimensions() { return Array<int> ({3,3}); }
+
+    static string Name() { return "inc"; }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+                               SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlCurlFiniteElement<3> & fel =
+        static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+      
+      fel.CalcMappedIncShape (sip, Trans(mat));
+    }
+
+    /*
+    // not compiling so far
+    template <typename AFEL, typename MIP, class TVX>
+    static void Apply (const AFEL & bfel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<3> & fel = static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+
+      fel.EvaluateMappedIncShape(mip, x, y);
+      }*/
+
+  };
+
   
   /*class DiffOpCurlHCurlCurlBoundary : public DiffOp<DiffOpCurlHCurlCurlBoundary>
   {
@@ -1119,6 +1165,7 @@ namespace ngcomp
         additional_evaluators.Set ("dualbnd", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDualBoundary<3>>> ());
         additional_evaluators.Set ("Riemann", make_shared<T_DifferentialOperator<DiffOpRiemannHCurlCurl<3>>> ());
         additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<3>>> ());
+        additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<3>>> ());
 	break;
       default:
         ;
