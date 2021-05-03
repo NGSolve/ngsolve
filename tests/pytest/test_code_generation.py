@@ -9,7 +9,7 @@ def test_code_generation_volume_terms(unit_mesh_3d):
     gfu = GridFunction(fes)
 
     # piecewise polynomials - also test interpolation on L2 space and the resulting GridFunction
-    functions = [x,y,x*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2]
+    functions = [x,y,x*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2, Id(3)[:,2][2]]
 
     for cf in functions:
         gfu.Set(cf)
