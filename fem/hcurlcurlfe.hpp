@@ -434,8 +434,8 @@ namespace ngfem
       inc(2,1) = inc(1,2);*/
 
       Mat<3,3,T> hesse1, hesse2;
-      a.LoadHessian(hesse1.Data());
-      b.LoadHessian(hesse2.Data());
+      a.StoreHessian(hesse1.Data());
+      b.StoreHessian(hesse2.Data());
 
       inc = -2*TensorCrossProduct(hesse1,hesse2);
 
@@ -447,9 +447,9 @@ namespace ngfem
     auto Curl() const { return curl; }
     auto Inc() const { return inc; }
 
-    auto & Value() { return value; }
-    auto & Curl() { return value; }
-    auto & Inc() { return value; }
+    Mat<3,3,T> & Value() { return value; }
+    Mat<3,3,T> & Curl() { return curl; }
+    Mat<3,3,T> & Inc() { return inc; }
   };
 
 
@@ -468,17 +468,18 @@ namespace ngfem
     // s scalar, v vector
     // curl(s*v) = nabla s x v + s curl(v) in 3D
     Vec<3,T> gradient;
-    s.LoadGradient(gradient.Data());
-   
+    s.StoreGradient(gradient.Data());
+
     result.Curl() = s.Value()*A.Curl();
     for (int i = 0; i < 3; i++)
-      result.Curl().Row(i) += Cross(gradient, Vec<3,T>(A.Curl().Row(i)));
-
+      result.Curl().Row(i) += Cross(gradient, Vec<3,T>(A.Value().Row(i)));
+    
     // inc(s A) = s inc(A) + 2sym(grad(s) x T(curl A)) + X(s) :: A
     Mat<3,3,T> hesse;
-    s.LoadHessian(hesse.Data());
+    s.StoreHessian(hesse.Data());
     
-    result.Inc() = s.Value()*A.Inc() + (TensorCrossProduct(gradient,A.Value())+TensorCrossProduct(A.Value(),gradient)) +  TensorCrossProduct(hesse,A.Value());
+    result.Inc() = s.Value()*A.Inc() + TensorCrossProduct(gradient,A.Curl()) + Trans(TensorCrossProduct(gradient,A.Curl())) +  TensorCrossProduct(hesse,A.Value());
+
     return result;
   }
 
@@ -627,7 +628,7 @@ namespace ngfem
         if constexpr (ET == ET_TET)
                        Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shapes](int nr,auto val)
                                                                          {
-                                                                           shapes.AddSize(DIM,DIM) = val.Inc();
+                                                                           shapes.Row(nr).AddSize(DIM_DMAT) = val.Inc().AsVector();
                                                                          }));
       
     }
@@ -726,20 +727,32 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                      BareSliceMatrix<double> shape) const override
     {
       auto mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &>(bmip);
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
-      if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
-      {
-        Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
+
+
+      if constexpr (ET == ET_TET)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shape](int nr,auto val)
+                                                                       {
+                                                                         shape.Row(nr).AddSize(DIM_DMAT) = val.Curl().AsVector();
+                                                                       }));
+      else
         {
-          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
-        }));
-      }
-      else // curved element
-      {
-        throw Exception("CalcMappedCurlShape not implemented for curved elements!");
-      }
+      
+          Vec<DIM, AutoDiff<DIM>> adp = mip;
+          TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
+          
+          if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
+            {
+              Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
+                                                    {
+                                                      shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+                                                    }));
+            }
+          else // curved element
+            {
+              throw Exception("CalcMappedCurlShape not implemented for curved elements!");
+            }
+        }
     }
 
     template <int DIMSPACE>
@@ -1727,7 +1740,6 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           Tx ls = lam[e[1]], le = lam[e[0]];
 
           // Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(ls,le);
-          // auto symdyadic = ReggeADD<3,double>(ls, le);
           auto symdyadic = MakeReggeAD(ls, le);
           LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
@@ -1735,49 +1747,62 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                             }));
         }
 
-      /*
+      
       for(int fa = 0; fa < 4; fa++)
         {
           if (order_facet[fa][0] > 0)
             {
               INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
-              AutoDiff<3,T> ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
+              Tx ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
               
-              Vec<6, AutoDiff<3,T>> symdyadic1 = lt*SymDyadProd(ls,le);
-              Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
-              Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
+
+              auto symdyadic1 = lt*MakeReggeAD(ls, le);
+              auto symdyadic2 = ls*MakeReggeAD(lt, le);
+              auto symdyadic3 = le*MakeReggeAD(ls, lt);
+              //Vec<6, AutoDiff<3,T>> symdyadic1 = lt*SymDyadProd(ls,le);
+              //Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
+              //Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
               
               DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
-                                  SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
-                                           {
-                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
-                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
-                                             shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
-                                           }));
+                                 SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
+                                          {
+                                            shape[ii++] = val*symdyadic1;
+                                            shape[ii++] = val*symdyadic2;
+                                            shape[ii++] = val*symdyadic3;
+                                          }));
             }
         }
 
       if (order_inner[0] > 1)
         {
-          AutoDiff<3,T> li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
+          Tx li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
 
-          Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
-          Vec<6, AutoDiff<3,T>> symdyadic2 = lj*lk*SymDyadProd(ll,li);
-          Vec<6, AutoDiff<3,T>> symdyadic3 = lk*ll*SymDyadProd(li,lj);
-          Vec<6, AutoDiff<3,T>> symdyadic4 = ll*li*SymDyadProd(lj,lk);
-          Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
-          Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
+          //Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
+          //Vec<6, AutoDiff<3,T>> symdyadic2 = lj*lk*SymDyadProd(ll,li);
+          //Vec<6, AutoDiff<3,T>> symdyadic3 = lk*ll*SymDyadProd(li,lj);
+          //Vec<6, AutoDiff<3,T>> symdyadic4 = ll*li*SymDyadProd(lj,lk);
+          //Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
+          //Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
+
+          auto symdyadic1 = li*lj*MakeReggeAD(lk, ll);
+          auto symdyadic2 = lj*lk*MakeReggeAD(ll, li);
+          auto symdyadic3 = lk*ll*MakeReggeAD(li, lj);
+          auto symdyadic4 = ll*li*MakeReggeAD(lj, lk);
+          auto symdyadic5 = li*lk*MakeReggeAD(lj, ll);
+          auto symdyadic6 = lj*ll*MakeReggeAD(li, lk);
+
           
           DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val)
                                                                                    {
-                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic1);
-                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic2);
-                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic3);
-                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
-                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
-                                                                                     shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);                                                                                                                                                   }));
+                                                                                     shape[ii++] = val*symdyadic1;
+                                                                                     shape[ii++] = val*symdyadic2;
+                                                                                     shape[ii++] = val*symdyadic3;
+                                                                                     shape[ii++] = val*symdyadic4;
+                                                                                     shape[ii++] = val*symdyadic5;
+                                                                                     shape[ii++] = val*symdyadic6;
+                                                                                   }));
         }
-      */
+      
     }
 
     
