@@ -346,6 +346,19 @@ namespace ngcomp
           mat(j,i) = incshape(i,j);
     }
 
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      const HCurlCurlFiniteElement<3> & bfel = static_cast<const HCurlCurlFiniteElement<3>&> (fel);
+      typedef typename TVX::TSCAL TSCAL;
+      if constexpr (std::is_same<TSCAL,double>())
+                     bfel.EvaluateMappedIncShape (mip, x, y);
+
+    }
+
   };
 
   
@@ -895,12 +908,10 @@ namespace ngcomp
 
       Vec<D,TSCAL> dshape_u_ref_comp;
       Vec<D,TSCAL> dshape_u;
-      Vec<D*D*D*D,TSCAL> hchristoffel1_der;
       
       Vec<D*D*D,TSCAL> hchristoffel1;
       Vec<D*D*D,TSCAL> hchristoffel2;
       DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hchristoffel1, lh);
-      // DiffOpChristoffel2HCurlCurl<D>::Apply(fel, mip, x, hchristoffel2, lh);
 
       if constexpr (std::is_same<TSCAL,double>())
                      {
@@ -920,66 +931,89 @@ namespace ngcomp
                      }
       else
         DiffOpChristoffel2HCurlCurl<D>::Apply(fel, mip, x, hchristoffel2, lh);        
-      
-      const IntegrationPoint& ip = mip.IP();
-      const ElementTransformation & eltrans = mip.GetTransformation();
-      for (int j = 0; j < D; j++)   // d / dxj
-        {
-          IntegrationPoint ipl(ip);
-          ipl(j) -= eps();
-          IntegrationPoint ipr(ip);
-          ipr(j) += eps();
-          IntegrationPoint ipll(ip);
-          ipll(j) -= 2*eps();
-          IntegrationPoint iprr(ip);
-          iprr(j) += 2*eps();
-          
-          MappedIntegrationPoint<D,D> mipl(ipl, eltrans);
-          MappedIntegrationPoint<D,D> mipr(ipr, eltrans);
-          MappedIntegrationPoint<D,D> mipll(ipll, eltrans);
-          MappedIntegrationPoint<D,D> miprr(iprr, eltrans);
-
-          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipl,  x, shape_ul, lh);
-          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipr,  x, shape_ur, lh);
-          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipll, x, shape_ull, lh);
-          DiffOpChristoffelHCurlCurl<D>::Apply(fel, miprr, x, shape_urr, lh);
-
-          
-          dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-
-          for (int l = 0; l < D*D*D; l++)
-            hchristoffel1_der(j*D*D*D+l) = dshape_u_ref(l);
-        }
-
-
-      for (int j = 0; j < D*D*D; j++)
-        {
-          for (int l = 0; l < D; l++)
-            dshape_u_ref_comp(l) = hchristoffel1_der(l*D*D*D+j);
-          
-          dshape_u =  Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
-          
-          for (int l = 0; l < D; l++)
-            hchristoffel1_der(l*D*D*D+j) = dshape_u(l);
-        }
-
 
       if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
-       {
-         y = TSCAL(0.0);
-         //R1212
-         y(0*D*D*D+1*D*D+0*D+1) = hchristoffel1_der(0*D*D*D+0*D*D+1*D+1)-hchristoffel1_der(1*D*D*D+0*D*D+0*D+1);
-         for (int q=0; q<D; q++)
-           {
-             y(0*D*D*D+1*D*D+0*D+1) += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
-             y(0*D*D*D+1*D*D+0*D+1) -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
-           }
-         y(1*D*D*D+0*D*D+1*D+0) = y(0*D*D*D+1*D*D+0*D+1);
-         y(1*D*D*D+0*D*D+0*D+1) = -y(0*D*D*D+1*D*D+0*D+1);
-         y(0*D*D*D+1*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+1);
-       }
+      {
+        Vec<D*D*D*D,TSCAL> hchristoffel1_der;
+
+        const IntegrationPoint& ip = mip.IP();
+        const ElementTransformation & eltrans = mip.GetTransformation();
+        for (int j = 0; j < D; j++)   // d / dxj
+          {
+            IntegrationPoint ipl(ip);
+            ipl(j) -= eps();
+            IntegrationPoint ipr(ip);
+            ipr(j) += eps();
+            IntegrationPoint ipll(ip);
+            ipll(j) -= 2*eps();
+            IntegrationPoint iprr(ip);
+            iprr(j) += 2*eps();
+            
+            MappedIntegrationPoint<D,D> mipl(ipl, eltrans);
+            MappedIntegrationPoint<D,D> mipr(ipr, eltrans);
+            MappedIntegrationPoint<D,D> mipll(ipll, eltrans);
+            MappedIntegrationPoint<D,D> miprr(iprr, eltrans);
+            
+            DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipl,  x, shape_ul, lh);
+            DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipr,  x, shape_ur, lh);
+            DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipll, x, shape_ull, lh);
+            DiffOpChristoffelHCurlCurl<D>::Apply(fel, miprr, x, shape_urr, lh);
+            
+            
+            dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+            
+            for (int l = 0; l < D*D*D; l++)
+              hchristoffel1_der(j*D*D*D+l) = dshape_u_ref(l);
+          }
+        
+        
+        for (int j = 0; j < D*D*D; j++)
+          {
+            for (int l = 0; l < D; l++)
+              dshape_u_ref_comp(l) = hchristoffel1_der(l*D*D*D+j);
+            
+            dshape_u =  Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
+            
+            for (int l = 0; l < D; l++)
+              hchristoffel1_der(l*D*D*D+j) = dshape_u(l);
+            
+          }
+        
+        
+        y = TSCAL(0.0);
+        //R1212
+        y(0*D*D*D+1*D*D+0*D+1) = hchristoffel1_der(0*D*D*D+0*D*D+1*D+1)-hchristoffel1_der(1*D*D*D+0*D*D+0*D+1);
+        for (int q=0; q<D; q++)
+          {
+            y(0*D*D*D+1*D*D+0*D+1) += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
+            y(0*D*D*D+1*D*D+0*D+1) -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
+          }
+        y(1*D*D*D+0*D*D+1*D+0) = y(0*D*D*D+1*D*D+0*D+1);
+        y(1*D*D*D+0*D*D+0*D+1) = -y(0*D*D*D+1*D*D+0*D+1);
+        y(0*D*D*D+1*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+1);
+      }
       else //slow version for three dimensions. TODO: Exploit that only 6 numbers are involved
         {
+          
+          Vec<D*D,TSCAL> incshape;
+          Vec<D*D*D*D,TSCAL> Riemannincpart;
+          if constexpr (std::is_same<TSCAL,double>())
+                         {
+                           bfel.EvaluateMappedIncShape(mip,x,incshape);
+                           Mat<3,3,size_t> i3(0);
+                           i3(0,1) = i3(1,0) = 2; 
+                           i3(2,0) = i3(0,2) = 1;
+                           Mat<3,3,double> Eps(0);
+                           Eps(0,1)=Eps(1,2)=Eps(2,0)=1.0;
+                           Eps(1,0)=Eps(2,1)=Eps(0,2)=-1.0;
+                           
+                           for(int i = 0; i < D; i++)
+                             for(int j = 0; j < D; j++)
+                               for(int k = 0; k < D; k++)
+                                 for(int l = 0; l < D; l++)
+                                   Riemannincpart(i*D*D*D+j*D*D+k*D+l) = -0.5 * Eps(i,j) * Eps(k,l) * incshape(D*i3(i,j)+i3(k,l));
+                           
+                         }
           for (int i=0; i<D; i++)
             for (int j=0; j<D; j++)
               for (int k=0; k<D; k++)
@@ -989,15 +1023,7 @@ namespace ngcomp
                     // hchristoffel1(k*D*D+j*D+i) = Gamma_ijk
                     // hchristoffel2(k*D*D+j*D+i) = invmat(k,p)*hdv(p*D*D+D*j+i) = Cinv_kp Gamma_ijp = Gamma_ij^k;
 
-                    /*
-                    y(i*D*D*D+j*D*D+k*D+l) = hchristoffel1_der(k*D*D*D+i*D*D+l*D+j)-hchristoffel1_der(l*D*D*D+i*D*D+k*D+j);
-                    for (int q=0; q<D; q++)
-                      {
-                        y(i*D*D*D+j*D*D+k*D+l) += hchristoffel2(q*D*D+k*D+j)*hchristoffel1(q*D*D+i*D+l);
-                        y(i*D*D*D+j*D*D+k*D+l) -= hchristoffel2(q*D*D+l*D+j)*hchristoffel1(q*D*D+i*D+k);
-                      }
-                    */
-                    TSCAL sum = hchristoffel1_der(k*D*D*D+i*D*D+l*D+j)-hchristoffel1_der(l*D*D*D+i*D*D+k*D+j);
+                    TSCAL sum = Riemannincpart(i*D*D*D+j*D*D+k*D+l);
                     for (int q=0; q<D; q++)
                       {
                         sum += hchristoffel2(q*D*D+k*D+j)*hchristoffel1(q*D*D+i*D+l);
