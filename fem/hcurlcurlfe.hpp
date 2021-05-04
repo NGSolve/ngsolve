@@ -38,6 +38,12 @@ namespace ngfem
                     result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,n);
                   }
         }
+
+
+    // A x B = 0.5*(cof(A+B) - cof(A-B))
+    //ikl  +123 -132 +231 -213 +312 -321 others=0
+    //jmn  +123 -132 +231 -213 +312 -321 others=0
+    //result(0,0) = 
     return result;
   }
   
@@ -103,7 +109,7 @@ namespace ngfem
 
     virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
                                          BareSliceVector<double> coefs,
-                                         BareSliceMatrix<double> inc) const = 0;
+                                         BareSliceVector<double> inc) const = 0;
 
     
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
@@ -635,7 +641,7 @@ namespace ngfem
                             
     virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
                                          BareSliceVector<double> coefs,
-                                         BareSliceMatrix<double> inc) const override
+                                         BareSliceVector<double> inc) const override
     {
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
       Mat<DIM,DIM> sum = 0.0;
@@ -644,7 +650,9 @@ namespace ngfem
                                                                        {
                                                                          sum += coefs(nr) * val.Inc();
                                                                        }));
-      inc.AddSize(DIM,DIM) = sum;
+
+      inc.Range(0,DIM*DIM) = sum.AsVector();
+      //inc.AddSize(DIM,DIM) = sum;
     }
 
     
