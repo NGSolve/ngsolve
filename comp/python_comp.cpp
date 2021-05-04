@@ -3417,7 +3417,11 @@ element_wise: bool = False
          {
            bool iscomplex = false;
            for (auto & ci : igls)
-             iscomplex |= ci->cf->IsComplex();
+             {
+               iscomplex |= ci->cf->IsComplex();
+               if (ci->cf->Dimension() > 1)
+                 throw Exception("Integrate(cf*dx) needs scalar-valued CoefficientFunction");
+             }
 
            auto integrate = [&] (auto tscal) 
            {
