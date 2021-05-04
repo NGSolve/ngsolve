@@ -35,7 +35,7 @@ namespace ngfem
               for (int m=0; m<3; m++)
                 for (int n=0; n<3; n++)
                   {
-                    result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,m);
+                    result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,n);
                   }
         }
     return result;
