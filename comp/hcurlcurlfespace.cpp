@@ -302,13 +302,13 @@ namespace ngcomp
 
 
   template<int D>
-  class DiffOpIncHCurlCurl: public DiffOp<DiffOpCurlHCurlCurl<D> >
+  class DiffOpIncHCurlCurl: public DiffOp<DiffOpIncHCurlCurl<D> >
   {
   };
 
 
   template<>
-  class DiffOpIncHCurlCurl<3>: public DiffOp<DiffOpCurlHCurlCurl<3> >
+  class DiffOpIncHCurlCurl<3>: public DiffOp<DiffOpIncHCurlCurl<3> >
   {
   public:
     enum { DIM = 1 };
@@ -325,24 +325,26 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
                                SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      const HCurlCurlFiniteElement<3> & fel =
-        static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+      const HCurlCurlFiniteElement<3> & fel = static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
       
       fel.CalcMappedIncShape (sip, Trans(mat));
     }
 
-    /*
-    // not compiling so far
-    template <typename AFEL, typename MIP, class TVX>
-    static void Apply (const AFEL & bfel, const MIP & mip,
-                       const TVX & x, TVY & y,
-                       LocalHeap & lh) 
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<3> & fel = static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
 
-      fel.EvaluateMappedIncShape(mip, x, y);
-      }*/
+      int nd = fel.GetNDof();
+      FlatMatrix<> incshape(nd, 9, lh);
+      fel.CalcMappedIncShape (sip, incshape);
+      for (int i=0; i<nd; i++)
+        for (int j=0; j<9; j++)
+          mat(j,i) = incshape(i,j);
+    }
 
   };
 
