@@ -25,7 +25,7 @@ namespace ngfem
   template <typename T>
   Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Mat<3,3,T> B)
   {
-    Mat<3,3,T> result;
+    /*Mat<3,3,T> result;
     for (int i=0; i<3; i++)
       for (int j=0; j<3; j++)
         {
@@ -37,20 +37,21 @@ namespace ngfem
                   {
                     result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,n);
                   }
-        }
+                  }
 
 
     // A x B = 0.5*(cof(A+B) - cof(A-B))
     //ikl  +123 -132 +231 -213 +312 -321 others=0
     //jmn  +123 -132 +231 -213 +312 -321 others=0
     //result(0,0) = 
-    return result;
+    return result;*/
+    return 0.5 * ( Cof(Mat<3,3,T>(A+B)) - Cof(Mat<3,3,T>(A-B)) );
   }
   
   template <typename T>
   Mat<3,3,T> TensorCrossProduct(Vec<3,T> v, Mat<3,3,T> A)
   {
-    Mat<3,3,T> result;
+    /*Mat<3,3,T> result;
     for (int i=0; i<3; i++)
       for (int j=0; j<3; j++)
         {
@@ -61,13 +62,18 @@ namespace ngfem
                 result(i,j) += LeviCivitaSymbol<T>(i,k,l)*v(k)*A(l,j);
               }
         }
+        return result;*/
+
+    Mat<3,3,T> result;
+    for (int j = 0; j < 3; j++)
+      result.Col(j) = Cross(v, Vec<3,T>(A.Col(j)));
     return result;
   }
 
   template <typename T>
   Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Vec<3,T> v)
   {
-    Mat<3,3,T> result;
+    /*Mat<3,3,T> result;
     for (int i=0; i<3; i++)
       for (int j=0; j<3; j++)
         {
@@ -78,6 +84,11 @@ namespace ngfem
                 result(i,j) += LeviCivitaSymbol<T>(j,k,l)*A(i,k)*v(l);
               }
         }
+        return result;*/
+
+    Mat<3,3,T> result;
+    for (int j = 0; j < 3; j++)
+      result.Row(j) = Cross(Vec<3,T>(A.Row(j)),v);
     return result;
   }
   
@@ -652,7 +663,6 @@ namespace ngfem
                                                                        }));
 
       inc.Range(0,DIM*DIM) = sum.AsVector();
-      //inc.AddSize(DIM,DIM) = sum;
     }
 
     
