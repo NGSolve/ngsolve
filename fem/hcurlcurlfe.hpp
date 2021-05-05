@@ -45,7 +45,8 @@ namespace ngfem
     //jmn  +123 -132 +231 -213 +312 -321 others=0
     //result(0,0) = 
     return result;*/
-    return 0.5 * ( Cof(Mat<3,3,T>(A+B)) - Cof(Mat<3,3,T>(A-B)) );
+    // return 0.5 * ( Cof(Mat<3,3,T>(A+B)) - Cof(Mat<3,3,T>(A-B)) );
+    return 0.5 * ( Cof(A+B) - Cof(A-B) );
   }
   
   template <typename T>
