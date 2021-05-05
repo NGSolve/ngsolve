@@ -4761,12 +4761,12 @@ public:
     if(num.Size()==2)
       {
         for (int i = 0; i < num[0]; i++)
-           for (int k = 0; k < num[0]; k++)
+          for (int j = 0; j < num[1]; j++)
              {
-                int i1,k1;
-                auto comp = first+i1*dist[0]+k1*dist[1];
-                GetIndex(dims1, comp, i1, k1);
-                code.body += Var(index, i, k).Assign( Var(inputs[0], i, k ));
+                int i1,j1;
+                auto comp = first+i*dist[0]+j*dist[1];
+                GetIndex(dims1, comp, i1, j1);
+                code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
               }
       }
   }
