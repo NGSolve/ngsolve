@@ -1093,10 +1093,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    FlatArray<int> hdims = Dimensions();        
-    for (int i : Range(hdims[0]))
-      for (int j : Range(hdims[1]))
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(string("0.0"));
+    });
   }
 
   using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
