@@ -435,6 +435,15 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
     set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib ngcore.lib libngsolve.lib" )
+    set(ngsld_header
+"set PYTHON_LIBRARY=${NETGEN_PYTHON_LIBRARIES}
+")
+    if(NETGEN_USE_PYTHON)
+      set(ngsld_header
+"for /f  %%a in ('python -c \"import sys,os; print(os.path.join(sys.base_prefix, 'libs'))\"') do set PYTHON_LIBDIR=\"%%a\"
+")
+      set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%PYTHON_LIBDIR%\"")
+    endif()
 else()
     set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
     set(ngscxx_header
@@ -456,7 +465,7 @@ if(WIN32)
                   CONDITION $<CONFIG:${CMAKE_BUILD_TYPE}>
                   )
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
-                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\nlink /DLL %* ${ngsld_flags}\n")
+                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\n${ngsld_header}\nlink /DLL %* ${ngsld_flags}\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)

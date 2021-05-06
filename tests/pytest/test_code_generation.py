@@ -82,6 +82,20 @@ def test_code_generation_derivatives(unit_mesh_3d):
         vals -= vals_ref
         assert Norm(vals) == approx(0)
 
+def test_code_generation_python_module(unit_mesh_3d):
+    from ngsolve.fem import CompilePythonModule
+
+    m = CompilePythonModule("""
+        m.def("mysquare", [](double x) {return x*x;});
+        m.def("refine", [](shared_ptr<MeshAccess> ma) { ma->Refine(false); });
+        """)
+
+    assert m.mysquare(10) == 10*10
+    ne_before = unit_mesh_3d.ne
+    m.refine(unit_mesh_3d)
+    ne_after = unit_mesh_3d.ne
+    assert 8*ne_before==ne_after
+
 if __name__ == "__main__":
     test_code_generation_derivatives()
     test_code_generation_volume_terms()
