@@ -2593,6 +2593,64 @@ If linear is True the function will be interpolated linearly between the values.
 
 )delimiter");
 
+      const string header = R"CODE(
+#include <comp.hpp>
+#include <python_ngstd.hpp>
+
+using namespace ngcomp;
+
+extern "C" {
+
+  void init(py::object & res)
+  {
+    static py::module::module_def def;
+    py::module m = py::module::create_extension_module("", "", &def);
+
+    // BEGIN USER DEFINED CODE
+
+)CODE";
+      const string footer = R"CODE(
+    // END USER DEFINED CODE
+    res = m;
+  }
+}
+)CODE";
+      const string docu = R"raw_string(
+Utility function to compile c++ code with python bindings at run-time.
+
+Parameters:
+
+code: c++ code snippet ( add_header=True ) or a complete .cpp file ( add_header=False )
+
+init_function_name (default = "init"): Function, which is called after the compiled code is loaded. The prototype must match:
+extern "C" void init_function_name(py::object & res);
+
+add_header (default = True): wrap the code snippet with the template
+)raw_string" + header + footer;
+
+  m.def("CompilePythonModule",
+       [header, footer](string code, string init_function_name, bool add_header)
+       {
+           py::object result;
+           typedef void (*init_function_type)(py::object & res);
+
+           if(add_header)
+             code = header + code + footer;
+
+           auto library = CompileCode( {code}, {""} );
+           auto func = library->GetFunction<init_function_type>(init_function_name);
+           func(result);
+           library.release(); // TODO: bind lifetime of "library" to python object "result"
+           return result;
+       },
+       py::arg("code"),
+       py::arg("init_function_name")="init",
+       py::arg("add_header")=true,
+       docu.c_str()
+    );
+
+
+
 }
 
 #endif
