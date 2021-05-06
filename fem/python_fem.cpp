@@ -2601,7 +2601,7 @@ using namespace ngcomp;
 
 extern "C" {
 
-  void init(py::object & res)
+  NGCORE_API_EXPORT void init(py::object & res)
   {
     static py::module::module_def def;
     py::module m = py::module::create_extension_module("", "", &def);

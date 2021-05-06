@@ -57,12 +57,15 @@ namespace ngfem
       cout << IM(3) << "linking..." << endl;
       tlink.Start();
 #ifdef WIN32
-        string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files + "\"";
-#else
-        string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem -lngcomp -lngcore";
-#endif
+      string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files;
       for (auto flag : link_flags)
         slink += " "+flag;
+      slink += " \"";
+#else
+      string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem -lngcomp -lngcore";
+      for (auto flag : link_flags)
+        slink += " "+flag;
+#endif
       int err = system(slink.c_str());
       if (err) throw Exception ("problem calling linker");      
       tlink.Stop();
