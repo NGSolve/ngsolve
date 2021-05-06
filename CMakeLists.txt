@@ -435,6 +435,9 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
     set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib ngcore.lib libngsolve.lib" )
+    set(ngsld_header
+"set PYTHON_LIBRARY=${NETGEN_PYTHON_LIBRARIES}
+")
 else()
     set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
     set(ngscxx_header

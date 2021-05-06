@@ -2637,6 +2637,10 @@ add_header (default = True): wrap the code snippet with the template
            if(add_header)
              code = header + code + footer;
 
+           std::vector<string> libraries;
+#ifdef WIN32
+           libraries.push_back("%PYTHON_LIBRARY%");
+#endif
            auto library = CompileCode( {code}, {""} );
            auto func = library->GetFunction<init_function_type>(init_function_name);
            func(result);
