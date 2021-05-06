@@ -59,7 +59,7 @@ namespace ngfem
 #ifdef WIN32
         string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files + "\"";
 #else
-        string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem -lngcore";
+        string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem -lngcomp -lngcore";
         for (auto flag : link_flags)
             slink += " "+flag;
 #endif
