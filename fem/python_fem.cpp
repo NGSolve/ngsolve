@@ -1234,6 +1234,9 @@ wait : bool
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
   m.def("MinimizationCF", &CreateMinimizationCF);
+  m.def("NewtonCF", &CreateNewtonCF, py::arg("expression"), py::arg("startingpoint"),
+        py::arg("tol") = 1e-8, py::arg("rtol") = 0.0, py::arg("maxiter") = 10)
+);
   
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
