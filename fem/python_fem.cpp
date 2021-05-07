@@ -763,6 +763,11 @@ val : can be one of the following:
           if(dims.has_value())
             {
               auto cdims = makeCArray<int> (*dims);
+              int dimension = 1;
+              for (int d : cdims) dimension *= d;
+              if (coef->Dimension() != dimension)
+                throw Exception("dims does not fit to dimension of CoefficientFunction");
+
               coef->SetDimensions(cdims);
             }
           return coef;
