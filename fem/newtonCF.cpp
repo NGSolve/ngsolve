@@ -68,7 +68,10 @@ namespace ngfem
       : expression(aexpression), startingpoint(astartingpoint)
     {
 
-      // NOTES: support case proxies.size() > 1
+      // NOTES: 
+        
+      // TODO: INTERPOLATION INTO GENERIC COMPOUND SPACES DOES NOT WORK CURRENTLY (only first component is respected)
+        
       // All proxies must originate from one FE space. However, there is no way to check this.
       // Available information for proxies:
       //  - block index: via Proxy Evaluator if this can be cast to a CompoundDifferentialOperator
@@ -90,9 +93,7 @@ namespace ngfem
       //         components corresponding to the proxies
       //  4. Call SetDimensions with the appropriate information.
       
-        
-      // Further notes (nice to have...): 
-      //  TODO: GF on product space have "proper" dimension information (at least not complete in python)
+      // NOTE: GFs on generic CompoundSpaces do not provide useful/usable dimension data!
         
       expression->TraverseTree
         ( [&] (CoefficientFunction & nodecf)
@@ -156,6 +157,8 @@ namespace ngfem
             if (proxy->Dimensions() != stpt_comp->Dimensions())
               throw Exception(std::string("NewtonCF: Dimensions of component ") + std::to_string(comp) + " do not agree");
             
+            // TODO: Does this make sense or shall we just not set dimensions in case of generic compound spaces/multiple proxies
+            // Should probably be consistent with Compound GFs/CFs
             const auto pdims = proxy->Dimensions();
             for (auto dim : pdims)
                dims.Append(dim);
@@ -218,7 +221,7 @@ namespace ngfem
       FlatArray<FlatMatrix<double>> res_blocks(nblocks);
       FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks);
       
-      // These are only used for blocks respecting "vsemb"
+      // These are only "independent" for blocks having "vsemb"; otherwise just views
       FlatArray<FlatMatrix<double>> rhs_blocks(nblocks);
       FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks);
       
@@ -235,18 +238,15 @@ namespace ngfem
           else
             rhs_blocks[i].AssignMemory(mir.Size(), proxy_dof_dimension(proxy), res_blocks[i].Data());
           
-          // TODO: no AssignMemory for FlatTensor yet
-          // TODO: no constructor for FlatTensor taking a pointer to data
-          // NOTE: code below won't work most likely as default-constructed tensor will probably refuse assignment
           for (int j = : Range(proxies))
             {
               //TODO: IMPORTANT convention: row-major/column-major?
               const auto ij = j * nblocks + i;
-              lin_blocks[ij] = FlatTensor<3>{lh, mir.Size(), proxies[i]->Dimension(), proxies[j]->Dimension()};
+              lin_blocks[ij].AssignMemory(lh, mir.Size(), proxies[i]->Dimension(), proxies[j]->Dimension());
               if (has_vs_embedding(proxy))
-                lhs_blocks[ij] = FlatTensor<3>{lh, mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i])};
+                lhs_blocks[ij].AssignMemory(lh, mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i]));
               else
-                lhs_blocks[ij] = FlatTensor<3>{lin_blocks[ij].Data(), mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i])};
+                lhs_blocks[ij].AssignMemory(in_blocks[ij].Data(), mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i]));
             }
         }
       
