@@ -188,9 +188,18 @@ public:
   FlatTensor (LocalHeap & lh, ARG ... args)
     : FlatTensor (args...)
   {
-    size_t totsize = this->GetTotalSize();    
+    size_t totsize = this->GetTotalSize();
+    // TODO: why this call instead of lh.Alloc<T> as in FlatMatrix?
     this->Data() = new(lh) T[totsize];
-  }  
+  }
+  
+  template <typename ... ARG>
+  FlatTensor (T * data, ARG ... args)
+    : FlatTensor (args...)
+  {
+    this->Data() = data;
+  }
+
   
   FlatTensor (size_t as, size_t ad, FlatTensor<DIM-1,T> asub) 
     : size(as), dist(ad), sub(asub) { ; }
@@ -251,6 +260,32 @@ public:
 
   T *& Data () { return sub.Data(); }
   T * Data () const { return sub.Data(); }
+  
+  
+  
+  template<typename ... ARG>
+  INLINE void SetSize (size_t s, ARG ... args) throw ()
+  {
+    size = s;
+    sub.SetSize(args...);
+  }
+  
+  //TODO: is this feasible?
+  /// set size, and assign mem
+  template<typename ... ARG>
+  INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
+  {
+    SetSize(s, args...);
+    size_t totsize = this->GetTotalSize()
+    this->Data() = lh.Alloc<T>(totsize);
+  }
+  
+  /// set size, and assign mem
+  INLINE void AssignMemory (T * mem, size_t s, ARG ... args) throw()
+  {
+    SetSize(s, args...);
+    this->Data() = mem;
+  }
 };
 
 
