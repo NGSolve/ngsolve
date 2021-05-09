@@ -319,35 +319,26 @@ namespace ngcomp
   {
     *fileout << "<Points>" << endl;
     *fileout << "<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
-    uint32_t bytecount = 0;
+    stringstream data;
     const double val = 0;
-    int count = 0;
-    bytecount = points.Size() * sizeof(double) * 2;
-    // Adjust the size if it is lower dimensional
-    if (D == 2)
-      bytecount += bytecount / 2;
-    *offset = bytecount + 4;
-    appenddata->write((char *)&bytecount, sizeof(uint32_t));
+    uint32_t count = 0;
+
     for (auto p : points)
     {
       for (int k = 0; k < D; k++)
       {
-        appenddata->write((char *)&p[k], sizeof(double));
+        data.write((char *)&p[k], sizeof(double));
         count += sizeof(double);
       }
       if (D == 2)
       {
-        appenddata->write((char *)&val, sizeof(double));
+        data.write((char *)&val, sizeof(double));
         count += sizeof(double);
       }
     }
-    /*    for (auto p : points)
-    {
-      for (int k = 0; k < D; k++)
-        *fileout << p[k] << endl;
-      if (D == 2)
-        *fileout << 0 << endl;
-    }*/
+    appenddata->write((char *)&count, sizeof(uint32_t));
+    *appenddata << data.str();
+    *offset = count + 4;
     *fileout << endl
              << "</DataArray>" << endl;
     *fileout << "</Points>" << endl;
@@ -363,19 +354,17 @@ namespace ngcomp
     uint32_t sizeoff = 0;
     // count number of data for cells, one + number of vertices
     int32_t ndata = 0;
-
     int32_t offs = 0;
     for (auto c : cells)
     {
-      sizeoff += sizeof(int);
+
       int nv = c[0];
       offs += nv;
-      offsets.write((char *)&offs, sizeof(offs));
-      cout << sizeof(offs) << endl;
-      sizeoff += sizeof(offs);
+      offsets.write((char *)&offs, sizeof(int32_t));
+      sizeoff += sizeof(int32_t);
       for (int i = 0; i < nv; i++)
       {
-        connectivity.write((char *)&c[i + 1], sizeof(c[i + 1]));
+        connectivity.write((char *)&c[i + 1], sizeof(int));
         sizecon += sizeof(int);
       }
     }
@@ -387,6 +376,7 @@ namespace ngcomp
     *fileout
         << "</DataArray>" << endl;
     *offset += 8 + sizecon + sizeoff;
+
     appenddata->write((char *)&sizecon, sizeof(uint32_t));
     *appenddata << connectivity.str();
     appenddata->write((char *)&sizeoff, sizeof(uint32_t));
@@ -395,10 +385,14 @@ namespace ngcomp
 
   /// output of cell types (here only simplices)
   template <int D>
-  void VTKOutput<D>::PrintCellTypes(VorB vb, const BitArray *drawelems)
+  void VTKOutput<D>::PrintCellTypes(VorB vb, int *offset, stringstream *appenddata, const BitArray *drawelems)
   {
-    *fileout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
+    *fileout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
     int factor = (1 << subdivision) * (1 << subdivision);
+    stringstream data;
+    uint32_t sizetypes = 0;
+    uint8_t eltype;
+
     if (D == 3 && vb == VOL)
       factor *= (1 << subdivision);
     for (auto e : ma->Elements(vb))
@@ -410,44 +404,70 @@ namespace ngcomp
       {
       case ET_TET:
         for (int i = 0; i < factor; i++)
-          *fileout << "10" << endl; //(void)c;
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 10;
+          data.write((char *)&eltype, sizeof(uint8_t)); //(void)c;
+        }
         break;
       case ET_QUAD:
         for (int i = 0; i < factor; i++)
-          *fileout << "9" << endl;
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 9;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
         break;
       case ET_TRIG:
         for (int i = 0; i < factor; i++)
-          *fileout << "5" << endl;
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 5;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
         break;
       case ET_PRISM:
         for (int i = 0; i < factor; i++)
-          *fileout << "13" << endl;
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 13;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
         break;
       case ET_HEX:
         for (int i = 0; i < factor; i++)
-          *fileout << "12" << endl;
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 12;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
         break;
       default:
         cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
       }
     }
+    appenddata->write((char *)&sizetypes, sizeof(uint32_t));
+    *appenddata << data.str();
+    *offset += sizetypes + 4;
+
     *fileout << endl
              << "</DataArray>" << endl;
   }
 
   /// output of field data (coefficient values)
   template <int D>
-  void VTKOutput<D>::PrintFieldData()
+  void VTKOutput<D>::PrintFieldData(int *offset, stringstream *appenddata)
   {
     string header = "";
     string content = "";
+    stringstream data;
+    int32_t fieldsize = 0;
     header += "<PointData>"; // \"" << field->Name() << "\">" << endl;
     *fileout << header << endl;
     for (auto field : value_field)
     {
 
-      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"ascii\">" << endl;
+      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
       //      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"0\">" << endl;
 
       for (auto v : *field)
@@ -455,8 +475,16 @@ namespace ngcomp
 
         //float temp = v;
         //fileout->write((char *)&temp, sizeof(double));
-        *fileout << v << endl;
+        data.write((char *)&v, sizeof(double));
+        fieldsize += sizeof(double);
       }
+      *offset += 4 + fieldsize;
+      appenddata->write((char *)&fieldsize, sizeof(int32_t));
+      *appenddata << data.str();
+
+      data.str("");
+      data.clear();
+      fieldsize = 0;
       *fileout << endl;
       *fileout << "</DataArray>" << endl;
     }
@@ -615,9 +643,9 @@ namespace ngcomp
     PrintPoints(&offs, &appended);
     *fileout << "<Cells>" << endl;
     PrintCells(&offs, &appended);
-    PrintCellTypes(vb, drawelems);
+    PrintCellTypes(vb, &offs, &appended, drawelems);
     *fileout << "</Cells>" << endl;
-    PrintFieldData();
+    PrintFieldData(&offs, &appended);
 
     // Footer:
     *fileout << "</Piece>" << endl;

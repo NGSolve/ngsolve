@@ -72,8 +72,8 @@ namespace ngcomp
     // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
     void PrintPoints(int *offset, stringstream *appenddata);
     void PrintCells(int *offset, stringstream *appenddata);
-    void PrintCellTypes(VorB vb, const BitArray *drawelems = nullptr);
-    void PrintFieldData();
+    void PrintCellTypes(VorB vb, int *offset, stringstream *appenddata, const BitArray *drawelems = nullptr);
+    void PrintFieldData(int *offset, stringstream *appenddata);
     void PrintAppended(stringstream *appenddata);
 
     virtual void Do(LocalHeap &lh, VorB vb = VOL, const BitArray *drawelems = 0);
