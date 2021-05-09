@@ -315,17 +315,39 @@ namespace ngcomp
 
   /// output of data points
   template <int D>
-  void VTKOutput<D>::PrintPoints()
+  void VTKOutput<D>::PrintPoints(int *offset, stringstream *appenddata)
   {
     *fileout << "<Points>" << endl;
-    *fileout << "<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"ascii\">" << endl;
+    *fileout << "<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
+    uint32_t bytecount = 0;
+    const double val = 0;
+    int count = 0;
+    bytecount = points.Size() * sizeof(double) * 2;
+    // Adjust the size if it is lower dimensional
+    if (D == 2)
+      bytecount += bytecount / 2;
+    *offset = bytecount + 4;
+    appenddata->write((char *)&bytecount, sizeof(uint32_t));
     for (auto p : points)
+    {
+      for (int k = 0; k < D; k++)
+      {
+        appenddata->write((char *)&p[k], sizeof(double));
+        count += sizeof(double);
+      }
+      if (D == 2)
+      {
+        appenddata->write((char *)&val, sizeof(double));
+        count += sizeof(double);
+      }
+    }
+    /*    for (auto p : points)
     {
       for (int k = 0; k < D; k++)
         *fileout << p[k] << endl;
       if (D == 2)
         *fileout << 0 << endl;
-    }
+    }*/
     *fileout << endl
              << "</DataArray>" << endl;
     *fileout << "</Points>" << endl;
@@ -333,34 +355,42 @@ namespace ngcomp
 
   /// output of cells in form vertices
   template <int D>
-  void VTKOutput<D>::PrintCells()
+  void VTKOutput<D>::PrintCells(int *offset, stringstream *appenddata)
   {
     stringstream connectivity;
     stringstream offsets;
+    uint32_t sizecon = 0;
+    uint32_t sizeoff = 0;
     // count number of data for cells, one + number of vertices
-    int ndata = 0;
+    int32_t ndata = 0;
+
+    int32_t offs = 0;
     for (auto c : cells)
     {
-      ndata++;
-      ndata += c[0];
-    }
-    int offs = 0;
-    for (auto c : cells)
-    {
+      sizeoff += sizeof(int);
       int nv = c[0];
       offs += nv;
-      offsets
-          << offs << endl;
+      offsets.write((char *)&offs, sizeof(offs));
+      cout << sizeof(offs) << endl;
+      sizeoff += sizeof(offs);
       for (int i = 0; i < nv; i++)
-        connectivity << c[i + 1] << endl;
+      {
+        connectivity.write((char *)&c[i + 1], sizeof(c[i + 1]));
+        sizecon += sizeof(int);
+      }
     }
-    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
-    *fileout << connectivity.str() << endl
-             << "</DataArray>" << endl;
-    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
+    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+    *fileout
+        << "</DataArray>" << endl;
+    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"" << *offset + 4 + sizecon << "\">" << endl;
 
-    *fileout << offsets.str() << endl
-             << "</DataArray>" << endl;
+    *fileout
+        << "</DataArray>" << endl;
+    *offset += 8 + sizecon + sizeoff;
+    appenddata->write((char *)&sizecon, sizeof(uint32_t));
+    *appenddata << connectivity.str();
+    appenddata->write((char *)&sizeoff, sizeof(uint32_t));
+    *appenddata << offsets.str();
   }
 
   /// output of cell types (here only simplices)
@@ -412,30 +442,50 @@ namespace ngcomp
   {
     string header = "";
     string content = "";
-    header += "<PointData"; // \"" << field->Name() << "\">" << endl;
-    int k = 0;
+    header += "<PointData>"; // \"" << field->Name() << "\">" << endl;
+    *fileout << header << endl;
     for (auto field : value_field)
     {
-      if (k == 0)
-      {
 
-        *fileout << header << ">" << endl;
-      }
-      *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"ascii\">" << endl;
+      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"ascii\">" << endl;
+      //      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"0\">" << endl;
 
       for (auto v : *field)
+      {
+
+        //float temp = v;
+        //fileout->write((char *)&temp, sizeof(double));
         *fileout << v << endl;
+      }
       *fileout << endl;
       *fileout << "</DataArray>" << endl;
-      k++;
     }
     *fileout << "</PointData>" << endl;
   }
-
+  template <int D>
+  void VTKOutput<D>::PrintAppended(stringstream *appended)
+  {
+    *fileout << "<AppendedData encoding=\"raw\">" << endl
+             << "_";
+    *fileout << appended->str();
+    /*   for (auto field : value_field)
+    {
+      for (auto v : *field)
+      {
+        fileout->write((char *)&v, sizeof(double));
+      }
+    }*/
+    *fileout << endl
+             << "</AppendedData>" << endl;
+  }
   template <int D>
   void VTKOutput<D>::Do(LocalHeap &lh, VorB vb, const BitArray *drawelems)
   {
     ostringstream filenamefinal;
+    stringstream appended;
+    vector<int> datalength;
+    int offs = 0;
+
     filenamefinal << filename;
     if (output_cnt > 0)
       filenamefinal << "_" << output_cnt;
@@ -446,7 +496,6 @@ namespace ngcomp
     if (output_cnt > 0)
       cout << IM(4) << " ( " << output_cnt << " )";
     cout << IM(4) << ":" << flush;
-
     output_cnt++;
 
     ResetArrays();
@@ -563,9 +612,9 @@ namespace ngcomp
       }
     }
     *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
-    PrintPoints();
+    PrintPoints(&offs, &appended);
     *fileout << "<Cells>" << endl;
-    PrintCells();
+    PrintCells(&offs, &appended);
     PrintCellTypes(vb, drawelems);
     *fileout << "</Cells>" << endl;
     PrintFieldData();
@@ -573,6 +622,7 @@ namespace ngcomp
     // Footer:
     *fileout << "</Piece>" << endl;
     *fileout << "</UnstructuredGrid>" << endl;
+    PrintAppended(&appended);
     *fileout << "</VTKFile>" << endl;
 
     cout << IM(4) << " Done." << endl;
