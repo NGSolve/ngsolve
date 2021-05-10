@@ -161,6 +161,78 @@ namespace ngcomp
     return irs;
   }
 
+
+
+
+    IntegrationRuleSpaceSurface::IntegrationRuleSpaceSurface (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
+      : FESpace (ama, flags)
+    {
+      type = "irspacesurface";
+      evaluator[VOL] = make_shared<T_DifferentialOperator<IRDiffOp>>();
+      evaluator[BND] = make_shared<T_DifferentialOperator<IRDiffOp>>();
+      
+      if (dimension > 1)
+        {
+          evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+          evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
+        }
+    }
+
+  void IntegrationRuleSpaceSurface::Update()
+  {
+    //cout << "update irspace" << endl;
+    firsteldof.SetSize(ma->GetNSE()+1);
+    size_t ndof = 0;
+    for (auto i : Range(ma->GetNSE()))
+      {
+        firsteldof[i] = ndof;
+        IntegrationRule ir(ma->GetElType( { BND, i } ), 2*order);
+        ndof += ir.Size();
+      }
+    firsteldof.Last() = ndof;
+    //cout << "firstel = " << firsteldof << endl;
+    SetNDof(ndof);
+
+    UpdateCouplingDofArray();
+  }
+
+  void IntegrationRuleSpaceSurface::UpdateCouplingDofArray()
+  {
+    // all dofs are local dofs
+    ctofdof.SetSize(ndof);
+    ctofdof = LOCAL_DOF;
+  }
+  
+  
+  FiniteElement & IntegrationRuleSpaceSurface::GetFE (ElementId ei, Allocator & lh) const
+  {
+    if (ei.VB() == BND && DefinedOn(ei))
+      return *new (lh) IRFiniteElement(ma->GetElType(ei), order);
+    else
+      return SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                       {
+                         return *new (lh) DummyFE<et.ElementType()> ();
+                       });
+  }
+  
+  void IntegrationRuleSpaceSurface::GetDofNrs (ElementId ei, Array<int> & dnums) const
+  {
+    if (ei.VB() == BND)
+      dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
+    else
+      dnums.SetSize0();
+  }
+
+  std::map<ELEMENT_TYPE, IntegrationRule> IntegrationRuleSpaceSurface::GetIntegrationRules() const
+  {
+    std::map<ELEMENT_TYPE, IntegrationRule> irs;
+    irs[ET_SEGM] = IntegrationRule(ET_SEGM, 2*order);
+    irs[ET_TRIG] = IntegrationRule(ET_TRIG, 2*order);
+    irs[ET_QUAD] = IntegrationRule(ET_QUAD, 2*order);
+    return irs;
+  }
+
   
   static RegisterFESpace<IntegrationRuleSpace> init ("irspace");
+  static RegisterFESpace<IntegrationRuleSpaceSurface> initsurf ("irspacesurface");
 }
