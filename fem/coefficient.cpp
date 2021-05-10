@@ -7326,7 +7326,8 @@ class RealCF : public CoefficientFunctionNoDerivative
 
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    auto cf = make_shared<CompiledCoefficientFunction> (c);
+    auto compiledcf = dynamic_pointer_cast<CompiledCoefficientFunction>(c);
+    auto cf = compiledcf ? compiledcf : make_shared<CompiledCoefficientFunction> (c);
     if(realcompile)
       cf->RealCompile(maxderiv, wait);
     return cf;
