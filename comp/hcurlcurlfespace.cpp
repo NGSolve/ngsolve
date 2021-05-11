@@ -1139,6 +1139,89 @@ namespace ngcomp
     //{
     //}
   };
+
+
+    /// Curvature operator for HCurlCurl
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpCurvatureHCurlCurl : public DiffOp<DiffOpCurvatureHCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = (D*(D-1)/2)*(D*(D-1)/2) };
+    enum { DIFFORDER = 2 };
+    static Array<int> GetDimensions() { return Array<int> ( { (D*(D-1)/2),(D*(D-1)/2) } ); };
+    
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      throw Exception("Curvature curvature tensor is a nonlinear operator! Use only apply!");
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      typedef typename TVX::TSCAL TSCAL;
+      if constexpr (!std::is_same<TSCAL,double>())
+                     {
+                       throw Exception("Curvature diffop only implemented for TSCAL == double");
+                     }
+      else
+        {
+          HeapReset hr(lh);
+          const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+          typedef typename TVX::TSCAL TSCAL;
+
+          Vec<D*D*D*D,TSCAL> Riemann;
+          DiffOpRiemannHCurlCurl<D>::Apply(fel, mip, x, Riemann, lh);
+          
+        
+          if constexpr (D==2)
+            {
+              // - ?
+              y = Riemann(0*D*D*D+1*D*D+0*D+1);
+            }
+          else
+            {
+              /*
+                Q_xx = <Q(x),x> = -R_yzyz
+                Q_xy = <Q(y),x> =  R_xzyz
+                Q_xz = <Q(z),x> = -R_xyyz
+                Q_yy = <Q(y),y> = -R_xzxz
+                Q_yz = <Q(z),y> =  R_xyxz
+                Q_zz = <Q(z),z> = -R_xyxy                
+              */
+              y(0*D+0) = -Riemann(1*D*D*D+2*D*D+1*D+2);
+              y(0*D+1) =  Riemann(0*D*D*D+2*D*D+1*D+2);
+              y(0*D+2) = -Riemann(0*D*D*D+1*D*D+1*D+2);
+              y(1*D+1) = -Riemann(0*D*D*D+2*D*D+0*D+2);
+              y(1*D+2) =  Riemann(0*D*D*D+1*D*D+0*D+2);
+              y(2*D+2) = -Riemann(0*D*D*D+1*D*D+0*D+1);
+                
+              y(1*D+0) = y(0*D+1);
+              y(2*D+0) = y(0*D+2);
+              y(2*D+1) = y(1*D+2);
+            }
+        }
+    }
+  };
+
   
 
 
@@ -1184,6 +1267,7 @@ namespace ngcomp
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<2>>> ());
         additional_evaluators.Set ("Riemann", make_shared<T_DifferentialOperator<DiffOpRiemannHCurlCurl<2>>> ());
         additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<2>>> ());
+        additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<2>>> ());
 	break;
       case 3:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
@@ -1194,6 +1278,7 @@ namespace ngcomp
         additional_evaluators.Set ("Riemann", make_shared<T_DifferentialOperator<DiffOpRiemannHCurlCurl<3>>> ());
         additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<3>>> ());
         additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<3>>> ());
+        additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<3>>> ());
 	break;
       default:
         ;
