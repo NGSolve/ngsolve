@@ -276,11 +276,12 @@ public:
   INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
   {
     SetSize(s, args...);
-    size_t totsize = this->GetTotalSize()
+    size_t totsize = this->GetTotalSize();
     this->Data() = lh.Alloc<T>(totsize);
   }
   
   /// set size, and assign mem
+  template<typename ... ARG>
   INLINE void AssignMemory (T * mem, size_t s, ARG ... args) throw()
   {
     SetSize(s, args...);
@@ -315,6 +316,26 @@ public:
   T & operator= (double d) { *data = d; return *data; }
   T & operator-= (double d) { *data -= d; return *data; }
   T & operator+= (double d) { *data += d; return *data; }
+
+  template<typename ... ARG>
+  INLINE void SetSize (ARG ... args) throw ()
+  {
+  }
+
+//  //TODO: is this required?
+//  /// set size, and assign mem
+//  template<typename ... ARG>
+//  INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
+//  {
+//    this->Data() = lh.Alloc<T>(this->GetSize());
+//  }
+//
+//  /// set size, and assign mem
+//  template<typename ... ARG>
+//  INLINE void AssignMemory (T * mem, size_t s, ARG ... args) throw()
+//  {
+//    this->Data() = mem;
+//  }
 };
 
 

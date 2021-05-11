@@ -4,7 +4,13 @@
 /* Date:   Feb 2021                                                  */
 /*********************************************************************/
 
-#include <fem.hpp>
+#include <ngstd.hpp>
+#include <nginterface.h>
+#include <comp.hpp>
+#include <multigrid.hpp>
+#include <parallelngs.hpp>
+#include <stdlib.h>
+
 #include <limits>
 #include <cmath>
 
@@ -13,20 +19,21 @@ namespace ngfem
     
   namespace 
   {
-    template<typename T
-    LInfNorm(const T& array) -> auto
+    template<typename T>
+    auto LInfNorm(const T& array) -> auto
     {
-      std::remove_cv_t<decltype(*begin(array))> s = 0;
-      for (auto item : array) 
+      std::remove_reference_t<std::remove_cv_t<decltype(*(array.Data()))>> s = 0;
+      // TODO: support range iterators over items
+      for (int i : Range(array))
       {
-        s = std::abs(item) > s ? std::abs(item) : s;
+        s = std::abs(array[i]) > s ? std::abs(array[i]) : s;
       }
       return s;
     }
     
     
     bool has_vs_embedding(const ProxyFunction * proxy) {
-      return proxy->Evaluator()->GetVSEmbedding();
+      return proxy->Evaluator()->GetVSEmbedding().has_value();
     }
     
     auto get_vs_embedding(const ProxyFunction * proxy) {
@@ -47,7 +54,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> expression;
     shared_ptr<CoefficientFunction> startingpoint;
 
-    FlatArray<ProxyFunction *> proxies;
+    Array<ProxyFunction *> proxies;
     Array<CoefficientFunction*> cachecf;
     
     // The total dimension of the linear system (because of VS embeddings, this can be different from this->Dimension())
@@ -103,7 +110,10 @@ namespace ngfem
               {
                 if (!nodeproxy->IsTestFunction())
                   {
-                    if (std::find(proxies.begin(), proxies.end(), nodeproxy) == proxies.end())
+                    //TODO: support this
+                    //if (std::find(proxies.begin(), proxies.end(), nodeproxy) == proxies.end())
+                    // gcc complains!
+                    if (std::find(proxies.Data(), proxies.Data()+proxies.Size(), nodeproxy) == proxies.Data()+proxies.Size())
                       proxies.Append(nodeproxy);
                   }
               }
@@ -113,24 +123,28 @@ namespace ngfem
       if (proxies.Size() == 0) 
         throw Exception("NewtonCF: don't have a proxy");
       
-      if (proxies.Size() != startingpoint.GetNComponents()) 
-        throw Exception("NewtonCF: number of proxies does not match the number of components of the startingpoint");
-      
-      
       Array<int> dims;
       
       if (proxies.Size() == 1)
-        {  
-          if (proxy->Dimensions() != stpt_comp->Dimensions())
-            throw Exception(std::string("NewtonCF: Dimensions of proxy and startingpoint do not agree");
+        {
+          const auto proxy = proxies[0];
+          if (!(proxy->Dimensions() == startingpoint->Dimensions()))
+            throw Exception("NewtonCF: Dimensions of proxy and startingpoint do not agree");
           
           dims = proxy->Dimensions();
         }
       else
-        { 
+        {
+          const auto startingpoint_gf = dynamic_pointer_cast<ngcomp::GridFunction>(startingpoint);
+          if (!startingpoint_gf)
+            throw Exception("NewtonCF: number of proxies greater than one requires a GridFunction as starting point");
+
+          if (proxies.Size() != startingpoint_gf->GetNComponents())
+            throw Exception("NewtonCF: number of proxies does not match the number of components of the 'startingpoint'");
+
           // Check whether all proxies belong to a compound FE space and put them in order
-          FlatArray<ProxyFunction*> sorted_proxies(proxies.Size(), nullptr);
-          FlatArray<DifferentialOperator*> diffops(proxies.Size(), nullptr);
+          Array<ProxyFunction*> sorted_proxies(proxies.Size());
+          Array<const DifferentialOperator*> diffops(proxies.Size());
           for (const auto proxy : proxies)
             {
               const auto evaluator = dynamic_cast<const CompoundDifferentialOperator*>(proxy->Evaluator().get());
@@ -140,21 +154,27 @@ namespace ngfem
                 }
               else
                 {
-                  if (sorted_proxies[evaluator->Component()] || std::find(diffops.begin(), diffops.end(), evaluator) != diffops.end())
+                  if (sorted_proxies[evaluator->Component()] ||
+                      //TODO: support this
+                      //std::find(diffops.begin(), diffops.end(), evaluator) != diffops.end()
+                      std::find(diffops.Data(), diffops.Data() + diffops.Size(), evaluator) != diffops.Data() + diffops.Size()
+                      )
                     throw Exception("NewtonCF: A proxy evaluator (component) has been detected twice");
                   diffops[evaluator->Component()] = evaluator;
                   sorted_proxies[evaluator->Component()] = proxy;
                 }
             }
           // Copy over...
-          std::copy(sorted_proxies.begin(), sorted_proxies.end(), proxies.begin());
+            // TODO: support this
+          //std::copy(sorted_proxies.begin(), sorted_proxies.end(), proxies.begin());
+          std::copy(sorted_proxies.Data(), sorted_proxies.Data() + sorted_proxies.Size(), proxies.Data());
           
           // Process dimensions
-          for (auto comp = startingpoint.GetNComponents(); comp > 0; --comp) {
-            const auto stpt_comp = startingpoint->GetComponent(comp);
+          for (auto comp = startingpoint_gf->GetNComponents(); comp > 0; --comp) {
+            const auto stpt_comp = startingpoint_gf->GetComponent(comp);
             const auto proxy = proxies[comp];
             
-            if (proxy->Dimensions() != stpt_comp->Dimensions())
+            if (!(proxy->Dimensions() == stpt_comp->Dimensions()))
               throw Exception(std::string("NewtonCF: Dimensions of component ") + std::to_string(comp) + " do not agree");
             
             // TODO: Does this make sense or shall we just not set dimensions in case of generic compound spaces/multiple proxies
@@ -196,6 +216,8 @@ namespace ngfem
       // RegionTracer regtr(TaskManager::GetThreadId(), t);
         
       // cout << "eval minimization" << endl;
+
+      //TODO: is there something more efficient?
       LocalHeap lh(1000000);
       
       // startingpoint -> Evaluate (mir, values);
@@ -215,15 +237,15 @@ namespace ngfem
       
       // Prepare data structures for blocks
       const auto nblocks = proxies.Size();
-      FlatArray<FlatMatrix<double>> xk_blocks(nblocks);
-      FlatArray<FlatMatrix<double>> w_blocks(nblocks);
-      FlatArray<FlatMatrix<double>> xold_blocks(nblocks);
-      FlatArray<FlatMatrix<double>> res_blocks(nblocks);
-      FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks);
+      FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
+      FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
+      FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
+      FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
+      FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
       
       // These are only "independent" for blocks having "vsemb"; otherwise just views
-      FlatArray<FlatMatrix<double>> rhs_blocks(nblocks);
-      FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks);
+      FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
+      FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
       
       for (int i : Range(proxies))
         {
@@ -238,7 +260,7 @@ namespace ngfem
           else
             rhs_blocks[i].AssignMemory(mir.Size(), proxy_dof_dimension(proxy), res_blocks[i].Data());
           
-          for (int j = : Range(proxies))
+          for (int j : Range(proxies))
             {
               //TODO: IMPORTANT convention: row-major/column-major?
               const auto ij = j * nblocks + i;
@@ -246,7 +268,7 @@ namespace ngfem
               if (has_vs_embedding(proxy))
                 lhs_blocks[ij].AssignMemory(lh, mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i]));
               else
-                lhs_blocks[ij].AssignMemory(in_blocks[ij].Data(), mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i]));
+                lhs_blocks[ij].AssignMemory(lin_blocks[ij].Data(), mir.Size(), proxy_dof_dimension(proxies[j]), proxy_dof_dimension(proxies[i]));
             }
         }
       
@@ -262,14 +284,21 @@ namespace ngfem
       FlatVector<> rhs(numeric_dim, lh);
       FlatVector<> sol(numeric_dim, lh);
       FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
-      
-      
-      const auto converged = [&](const auto& rhs_vec) {
-        const auto res = LInfNorm(res);
-        return res <= tol || (res / res_0) <= rtol;
+
+      const auto converged = [&](const auto& rhs_vec, double res_0=0) {
+        const auto res = LInfNorm(rhs_vec);
+        return res <= tol || (res_0 > 0 && res / res_0) <= rtol;
       };
-      
-      const auto calc_residuals = [&]() mutable -> void {
+
+      const auto all_converged = [&](const auto& rhs_blocks, double res_0=0) {
+        //TODO: support this
+//        return std::all_of(rhs_blocks.begin(), rhs_blocks.end(),
+//                    [=](const auto& block) {return converged(block, res_0);});
+        return std::all_of(rhs_blocks.Data(), rhs_blocks.Data() + rhs_blocks.Size(),
+                           [=](const auto& block) {return converged(block.AsVector(), res_0);});
+      };
+
+      const auto calc_residuals = [&](auto& ud, auto& res_blocks) -> void {
           // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
           for (int block : Range(proxies))
             {
@@ -284,13 +313,13 @@ namespace ngfem
                   ud.test_comp = k;
                   expression -> Evaluate (mir, dval);
                   for (size_t qi = 0; qi < mir.Size(); qi++)
-                    res(qi,k) = dval(qi,0).Value(0);
+                    res(qi,k) = dval(qi,0).Value();
                 }
               cout << "res block " << block << " = " << res << endl;
             }
       };
       
-      const auto calc_linearizations = [&]() mutable -> void {
+      const auto calc_linearizations = [&](auto& ud, auto& lin_blocks) -> void {
           // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
           for (int block1 = 0; block1 < nblocks; ++block1)
             for (int block2 = 0; block2 < nblocks; ++block2) 
@@ -319,8 +348,8 @@ namespace ngfem
             }
       };
       
-      const auto compute_increments = [&]() mutable -> void {
-          for (size_t qi = 0; qi < mir.Size(); qi++)
+      const auto compute_increments = [&](auto& sol, auto&lhs, auto& rhs) -> void {
+        for (size_t qi = 0; qi < mir.Size(); qi++)
           {
               
             // TODO: when to skip something because of convergence?
@@ -334,7 +363,7 @@ namespace ngfem
                 const auto& rhsb = rhs_blocks[block1].Row(qi);
                 if (auto vsemb = get_vs_embedding(proxy1); vsemb)
                   {
-                    rhsb = Trans(vsemb) * resb;
+                    rhsb = Trans(vsemb.value()) * resb;
                   }
                 else
                   {  
@@ -344,25 +373,25 @@ namespace ngfem
                 for (int k : Range(rhsb.Size()))
                   rhs[offset1 + k] = rhsb[k];
                 
-                int offset2 = 0
+                int offset2 = 0;
                 for (int block2 : Range(proxies))
                   {
                     const auto proxy2 = proxies[block2];
-                    const auto& linb = lin_blocks[block2 * nblocks + block1](qi);
-                    const auto& lhsb = lhs_blocks[block2 * nblocks + block1](qi);
+                    const auto& linb = lin_blocks[block2 * nblocks + block1](qi, STAR, STAR);
+                    const auto& lhsb = lhs_blocks[block2 * nblocks + block1](qi, STAR, STAR);
                     if (auto vsemb1 = get_vs_embedding(proxy1); vsemb1)
                       if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2)
                         {
-                          lhsb = Trans(vsemb1) * linb * vsemb2;
+                          lhsb = Trans(vsemb1.value()) * linb * vsemb2.value();
                         }
                       else
                         {
-                          lhsb = Trans(vsemb1) * linb;
+                          lhsb = Trans(vsemb1.value()) * linb;
                         }
                     else
                       if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2)
                         {
-                          lhsb = linb * vsemb2;
+                          lhsb = linb * vsemb2.value();
                         }
                       else
                         {
@@ -371,7 +400,7 @@ namespace ngfem
                 
                     for (int k : Range(lhsb.Width()))
                       for (int l : Range(lhsb.Height()))
-                        lhs(offset2 + l, offset1 + k) = lhsb[l, k];
+                        lhs(offset2 + l, offset1 + k) = lhsb(l, k);
                         
                     offset2 += lhsb.Height();
                   }
@@ -396,22 +425,21 @@ namespace ngfem
               {
                 const auto proxy = proxies[block];
                 if (const auto vsemb = get_vs_embedding(proxy); vsemb)
-                  wi.Range(offset_w + proxy->Dimension()) = vsemb * sol.Range(offset_sol);
+                  wi.Range(offset_w + proxy->Dimension()) = vsemb.value() * sol.Range(offset_sol);
                 offset_w += proxy->Dimension();
                 offset_sol += proxy_dof_dimension(proxy);
               }
-            }
-
           }
+
       };
       
-      const auto distribute_xk_to_blocks = [&]() mutable -> void {
+      const auto distribute_xk_to_blocks = [&](auto& xk) -> void {
         // TODO: Better got for a layout that uses Col instead of Row?
         for (size_t qi = 0; qi < mir.Size(); ++qi) 
           {
             auto xk_qi = xk.Row(qi);
             int offset = 0;
-            for (int block : Range(proxies))
+            for (int block : Range(this->proxies))
               {
                 auto xkb_qi = xk_blocks[block].Row(qi);
                 // Q: Does this assign values?
@@ -423,34 +451,34 @@ namespace ngfem
     
       
       // Evaluate starting point
-      startingpoint.GetComponent(i) -> Evaluate (mir, xk);
+      startingpoint -> Evaluate (mir, xk);
       xold = xk;
       
       // Distribute starting point to proxies
-      distribute_xk_to_blocks();
+      distribute_xk_to_blocks(xk);
         
       cout << "starting value = " << xk << endl;
       cout << "blocks:" << endl;
       for (int i : Range(proxies))
           cout << i << " -> " << ud.GetMemory(proxies[i]) << endl;
       cout << endl;
-      
+
       // The actual algorithm
       for (int step = 0; step < maxiter; step++)
         {            
-          calc_residuals();
-          
-          if(converged(res))
+          calc_residuals(ud, res_blocks);
+
+          if(all_converged(res_blocks))
               break;
           
-          calc_linearizations();
-          compute_increments();
+          calc_linearizations(ud, lin_blocks);
+          compute_increments(sol, lhs, rhs);
 
           xk = xold - w;
-          distribute_xk_to_blocks();
+          distribute_xk_to_blocks(xk);
         }
         
-      if (!converged(res))
+      if (!all_converged(res_blocks))
           xk = std::numeric_limits<double>::quiet_NaN();
 
       // cout << "result = " << xk << endl;
@@ -601,13 +629,14 @@ namespace ngfem
 
       double energy = 0;
       
-      const auto converged = [&](const auto& rhs_vec){
-        const auto res = L2Norm(res);
-        return res <= tol || (res / res_0) <= rtol;
+      const auto converged = [&](const auto& rhs_vec, double res_0 = 0){
+        const auto res = L2Norm(rhs_vec);
+        return res <= tol || (res_0 > 0 && res / res_0) <= rtol;
       };
       
       
-      const auto calc_energy_rhs_and_diags = [&]() mutable -> void {
+      const auto calc_energy_rhs_and_diags = [&](auto& ud/*auto& energy, auto& rhs, auto& diags*/) -> void {
+        auto& rhs = dWdB;
             // RegionTracer regtr1(TaskManager::GetThreadId(), t1); 
           for (int k = 0; k < proxy->Dimension(); k++)
             {
@@ -619,7 +648,7 @@ namespace ngfem
               for (size_t i = 0; i < mir.Size(); i++)
                 diags(i,k) = ddval(i,0).DDValue(0);
               for (size_t i = 0; i < mir.Size(); i++)
-                dWdB(i,k) = ddval(i,0).DValue(0);
+                rhs(i,k) = ddval(i,0).DValue(0);
 
               if (k == 0)
                 for (size_t i = 0; i < mir.Size(); i++)
@@ -628,7 +657,8 @@ namespace ngfem
           // cout << "energy old = " << energy << endl;
       };
       
-      const auto calc_off_diagonals = [&]() mutable -> void {
+      const auto calc_off_diagonals = [&](auto& ud/*auto lhs_values*/) -> void {
+        auto& lhs_values = proxyvalues;
           // TODO: exploit symmetry
           // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
           for (int k = 0; k < proxy1->Dimension(); k++)
@@ -645,22 +675,20 @@ namespace ngfem
                     dderiv(i,0) = ddval(i,0).DDValue(0);
                   }
                 }
-                proxyvalues(STAR,l,k) = dderiv.Col(0);
+                lhs_values(STAR,l,k) = dderiv.Col(0);
 
                 if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
                   {
-                    proxyvalues(STAR,l,k) -= diags.Col(k);
-                    proxyvalues(STAR,l,k) -= diags.Col(l);
-                    proxyvalues(STAR,l,k) *= 0.5;
+                    lhs_values(STAR,l,k) -= diags.Col(k);
+                    lhs_values(STAR,l,k) -= diags.Col(l);
+                    lhs_values(STAR,l,k) *= 0.5;
                   }
               }
       };
       
-      const auto compute_increments = [&]() mutable -> void {
+      const auto compute_increments = [&](/*auto& w, auto& proj_sol, auto& mat, auto& proj_mat, auto& rhs, auto& proj_rhs*/) -> void {
         for (size_t i = 0; i < mir.Size(); i++) 
           {
-            
-            
             if(converged(dWdB.Row(i)))
               {
                 w.Row(i) = 0;
@@ -670,11 +698,11 @@ namespace ngfem
             rhs = dWdB.Row(i);
             mat = proxyvalues(i, STAR,STAR);
             if (vsemb) {
-              proj_rhs = Trans(vsemb) * rhs;
-              proj_mat = Trans(vsemb) * mat * vsemb;
+              proj_rhs = Trans(vsemb.value()) * rhs;
+              proj_mat = Trans(vsemb.value()) * mat * vsemb.value();
               CalcInverse (proj_mat);
               proj_sol = proj_mat * proj_rhs;
-              w.Row(i) = vsemb * proj_sol;
+              w.Row(i) = vsemb.value() * proj_sol;
             }
             else {
               CalcInverse (mat);
@@ -684,7 +712,7 @@ namespace ngfem
       };
       
       
-      const auto linesearch = [&]() mutable -> void {// linesearch
+      const auto linesearch = [&](auto& ud) -> void {// linesearch
           xold = xk;
           double alpha = 1;
           double newenergy = energy + 1;
@@ -713,13 +741,13 @@ namespace ngfem
       // The actual algorithm
       for (int step = 0; step < maxiter; step++)
         {            
-          calc_energy_rhs_and_diags();
+          calc_energy_rhs_and_diags(ud);
           if(converged(dWdB))
               break;
           
-          calc_off_diagonals();
+          calc_off_diagonals(ud);
           compute_increments();
-          linesearch();
+          linesearch(ud);
         }
         
       if (!converged(dWdB))
@@ -746,8 +774,7 @@ namespace ngfem
                   shared_ptr<CoefficientFunction> startingpoint,
                   std::optional<double> atol,
                   std::optional<double> rtol,
-                  std::optional<int> maxiter,
-                 )
+                  std::optional<int> maxiter)
   {
     return make_shared<NewtonCF> (expression, startingpoint, atol, rtol, maxiter);
   }
