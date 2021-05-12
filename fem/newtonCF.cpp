@@ -250,7 +250,7 @@ namespace ngfem
       for (int i : Range(proxies))
         {
           const auto proxy = proxies[i];
-          xk_blocks[i] = ud.GetMemory(proxy);
+          xk_blocks[i].Assign(ud.GetMemory(proxy));
           xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
           w_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
           res_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
@@ -274,9 +274,10 @@ namespace ngfem
       
       // Block-agnostic data structures
       FlatMatrix<> deriv(mir.Size(), 1,lh);
+      FlatMatrix<double> val(mir.Size(), 1, lh);
       FlatMatrix<AutoDiff<1,double>> dval(mir.Size(), 1, lh);
-      
-      // TODO: Why? FlatMatrix has column-major layout, thus it is cheaper to take cols instead of rows to access qp data.!
+      // TODO: Why a matrices instead of vector above?
+      // TODO: Why? FlatMatrix has column-major layout, thus it is cheaper to take cols instead of rows to access qp data!
       FlatMatrix<> xk(mir.Size(), Dimension(), lh);
       FlatMatrix<> xold(mir.Size(), Dimension(), lh);
       FlatMatrix<> w(mir.Size(), Dimension(), lh);
@@ -287,7 +288,7 @@ namespace ngfem
 
       const auto converged = [&](const auto& rhs_vec, double res_0=0) {
         const auto res = LInfNorm(rhs_vec);
-        return res <= tol || (res_0 > 0 && res / res_0) <= rtol;
+        return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
       };
 
       const auto all_converged = [&](const auto& rhs_blocks, double res_0=0) {
@@ -298,7 +299,7 @@ namespace ngfem
                            [=](const auto& block) {return converged(block.AsVector(), res_0);});
       };
 
-      const auto calc_residuals = [&](auto& ud, auto& res_blocks) -> void {
+      const auto calc_residuals = [&]() -> void {
           // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
           for (int block : Range(proxies))
             {
@@ -307,10 +308,15 @@ namespace ngfem
               
               for (int k = 0; k < proxy->Dimension(); k++)
                 {
-                  ud.trialfunction = proxy;
-                  ud.trial_comp = k;
-                  ud.testfunction = proxy;
-                  ud.test_comp = k;
+                // TODO: the lines below are presently not required. However, for better performance,
+                //  there should be a lambda that compute RHS and LHS simultaneously!
+
+//                  ud.trialfunction = proxy;
+//                  ud.trial_comp = k;
+
+                  auto xp = ud.GetMemory(proxy);
+                  cout << "xp (" << k << ") = " << xp << endl;
+                  cout << "expression " << ToString(*expression) << endl;
                   expression -> Evaluate (mir, dval);
                   for (size_t qi = 0; qi < mir.Size(); qi++)
                     res(qi,k) = dval(qi,0).Value();
@@ -319,7 +325,7 @@ namespace ngfem
             }
       };
       
-      const auto calc_linearizations = [&](auto& ud, auto& lin_blocks) -> void {
+      const auto calc_linearizations = [&]() -> void {
           // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
           for (int block1 = 0; block1 < nblocks; ++block1)
             for (int block2 = 0; block2 < nblocks; ++block2) 
@@ -334,10 +340,11 @@ namespace ngfem
                       // TODO: row/col major? -> implementation is col-major, no?
                       // Is this ordering compatible with the blocks in this implementation?
                       //  -> symbolicintegrator.cpp:4656ff for block handling
+
+                      // This means, the derivative is taken wrt proxy 1
                       ud.trialfunction = proxy1;
                       ud.trial_comp = k;
-                      ud.testfunction = proxy2;
-                      ud.test_comp = l;
+
                       expression -> Evaluate (mir, dval);
                       for (size_t qi = 0; qi < mir.Size(); qi++) {
                         deriv(qi,0) = dval(qi,0).DValue(0);
@@ -348,7 +355,7 @@ namespace ngfem
             }
       };
       
-      const auto compute_increments = [&](auto& sol, auto&lhs, auto& rhs) -> void {
+      const auto compute_increments = [&]() -> void {
         for (size_t qi = 0; qi < mir.Size(); qi++)
           {
               
@@ -425,7 +432,11 @@ namespace ngfem
               {
                 const auto proxy = proxies[block];
                 if (const auto vsemb = get_vs_embedding(proxy); vsemb)
-                  wi.Range(offset_w + proxy->Dimension()) = vsemb.value() * sol.Range(offset_sol);
+                  wi.Range(offset_w, offset_w + proxy->Dimension()) =
+                      vsemb.value() * sol.Range(offset_sol, offset_sol + proxy_dof_dimension(proxy));
+                else
+                  wi.Range(offset_w, offset_w + proxy->Dimension()) =
+                      sol.Range(offset_sol, offset_sol + proxy_dof_dimension(proxy));
                 offset_w += proxy->Dimension();
                 offset_sol += proxy_dof_dimension(proxy);
               }
@@ -433,7 +444,7 @@ namespace ngfem
 
       };
       
-      const auto distribute_xk_to_blocks = [&](auto& xk) -> void {
+      const auto distribute_xk_to_blocks = [&]() -> void {
         // TODO: Better got for a layout that uses Col instead of Row?
         for (size_t qi = 0; qi < mir.Size(); ++qi) 
           {
@@ -442,7 +453,6 @@ namespace ngfem
             for (int block : Range(this->proxies))
               {
                 auto xkb_qi = xk_blocks[block].Row(qi);
-                // Q: Does this assign values?
                 xkb_qi = xk_qi.Range(offset, offset + xkb_qi.Size());
                 offset += xkb_qi.Size();
               }
@@ -455,7 +465,7 @@ namespace ngfem
       xold = xk;
       
       // Distribute starting point to proxies
-      distribute_xk_to_blocks(xk);
+      distribute_xk_to_blocks();
         
       cout << "starting value = " << xk << endl;
       cout << "blocks:" << endl;
@@ -466,16 +476,16 @@ namespace ngfem
       // The actual algorithm
       for (int step = 0; step < maxiter; step++)
         {            
-          calc_residuals(ud, res_blocks);
+          calc_residuals();
 
           if(all_converged(res_blocks))
               break;
           
-          calc_linearizations(ud, lin_blocks);
-          compute_increments(sol, lhs, rhs);
+          calc_linearizations();
+          compute_increments();
 
-          xk = xold - w;
-          distribute_xk_to_blocks(xk);
+          xk -= w;
+          distribute_xk_to_blocks();
         }
         
       if (!all_converged(res_blocks))
@@ -496,7 +506,7 @@ namespace ngfem
     std::vector<ProxyFunction *> proxies;
     Array<CoefficientFunction*> cachecf;
     
-    // same parameters as scipy's newton
+    // same parameters like in scipy's newton
     // Alternatively, could one think of ParameterCFs here?
     double tol{1e-8};
     double rtol{0.0};
@@ -631,7 +641,7 @@ namespace ngfem
       
       const auto converged = [&](const auto& rhs_vec, double res_0 = 0){
         const auto res = L2Norm(rhs_vec);
-        return res <= tol || (res_0 > 0 && res / res_0) <= rtol;
+        return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
       };
       
       
