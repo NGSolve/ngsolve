@@ -645,6 +645,11 @@ direction : int
       return VertexTangentialVectorsCF(dim);
     }
 
+    shared_ptr<CF> GetEdgeFaceTangentialVectorsCF (int dim)
+    {
+      return EdgeFaceTangentialVectorsCF(dim);
+    }
+    
     shared_ptr<CF> GetEdgeCurvatureCF (int dim)
     {
       return EdgeCurvatureCF(dim);
@@ -705,6 +710,9 @@ direction : int
     .def("VertexTangentialVectors", &SpecialCoefficientFunctions::GetVertexTangentialVectorsCF, py::arg("dim"),
          "VertexTangentialVectors \n"
          "space-dimension must be provided")
+    .def("EdgeFaceTangentialVectors", &SpecialCoefficientFunctions::GetEdgeFaceTangentialVectorsCF, py::arg("dim"),
+         "EdgeFaceTangentialVectors \n"
+         "space-dimension must be provided")
     .def("EdgeCurvature", &SpecialCoefficientFunctions::GetEdgeCurvatureCF, py::arg("dim"),
          "EdgeCurvature \n"
          "space-dimension must be provided")
@@ -755,6 +763,11 @@ val : can be one of the following:
           if(dims.has_value())
             {
               auto cdims = makeCArray<int> (*dims);
+              int dimension = 1;
+              for (int d : cdims) dimension *= d;
+              if (coef->Dimension() != dimension)
+                throw Exception("dims does not fit to dimension of CoefficientFunction");
+
               coef->SetDimensions(cdims);
             }
           return coef;
@@ -2586,6 +2599,68 @@ x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
 If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
 
 )delimiter");
+
+      const string header = R"CODE(
+#include <comp.hpp>
+#include <python_ngstd.hpp>
+
+using namespace ngcomp;
+
+extern "C" {
+
+  NGCORE_API_EXPORT void init(py::object & res)
+  {
+    static py::module::module_def def;
+    py::module m = py::module::create_extension_module("", "", &def);
+
+    // BEGIN USER DEFINED CODE
+
+)CODE";
+      const string footer = R"CODE(
+    // END USER DEFINED CODE
+    res = m;
+  }
+}
+)CODE";
+      const string docu = R"raw_string(
+Utility function to compile c++ code with python bindings at run-time.
+
+Parameters:
+
+code: c++ code snippet ( add_header=True ) or a complete .cpp file ( add_header=False )
+
+init_function_name (default = "init"): Function, which is called after the compiled code is loaded. The prototype must match:
+extern "C" void init_function_name(py::object & res);
+
+add_header (default = True): wrap the code snippet with the template
+)raw_string" + header + footer;
+
+  m.def("CompilePythonModule",
+       [header, footer](string code, string init_function_name, bool add_header)
+       {
+           py::object result;
+           typedef void (*init_function_type)(py::object & res);
+
+           if(add_header)
+             code = header + code + footer;
+
+           std::vector<string> libraries;
+#ifdef WIN32
+           libraries.push_back("%PYTHON_LIBRARY%");
+#endif
+           auto library = CompileCode( {code}, {""} );
+           auto func = library->GetFunction<init_function_type>(init_function_name);
+           func(result);
+           library.release(); // TODO: bind lifetime of "library" to python object "result"
+           return result;
+       },
+       py::arg("code"),
+       py::arg("init_function_name")="init",
+       py::arg("add_header")=true,
+       docu.c_str()
+    );
+
+
 
 }
 

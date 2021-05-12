@@ -10,6 +10,91 @@
 namespace ngfem
 {
 
+  //Assuming i,j,k \in [0,1,2]
+  template <typename T=double>
+  constexpr int LeviCivitaSymbol(int i, int j, int k)
+  {
+    if (i==j || i==k || j==k)
+      return T(0);
+    else if ( (i==0 && j==1) || (i==1 && j==2) || (i==2 && j==0) )
+      return T(1);
+    else
+      return -T(1);
+  }
+  
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Mat<3,3,T> B)
+  {
+    /*Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              for (int m=0; m<3; m++)
+                for (int n=0; n<3; n++)
+                  {
+                    result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,n);
+                  }
+                  }
+
+
+    // A x B = 0.5*(cof(A+B) - cof(A-B))
+    //ikl  +123 -132 +231 -213 +312 -321 others=0
+    //jmn  +123 -132 +231 -213 +312 -321 others=0
+    //result(0,0) = 
+    return result;*/
+    // return 0.5 * ( Cof(Mat<3,3,T>(A+B)) - Cof(Mat<3,3,T>(A-B)) );
+    return 0.5 * ( Cof(A+B) - Cof(A-B) );
+  }
+  
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Vec<3,T> v, Mat<3,3,T> A)
+  {
+    /*Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              {
+                result(i,j) += LeviCivitaSymbol<T>(i,k,l)*v(k)*A(l,j);
+              }
+        }
+        return result;*/
+
+    Mat<3,3,T> result;
+    for (int j = 0; j < 3; j++)
+      result.Col(j) = Cross(v, Vec<3,T>(A.Col(j)));
+    return result;
+  }
+
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Vec<3,T> v)
+  {
+    /*Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              {
+                result(i,j) += LeviCivitaSymbol<T>(j,k,l)*A(i,k)*v(l);
+              }
+        }
+        return result;*/
+
+    Mat<3,3,T> result;
+    for (int j = 0; j < 3; j++)
+      result.Row(j) = Cross(Vec<3,T>(A.Row(j)),v);
+    return result;
+  }
+  
+  
+
   template <int DIM>
   class HCurlCurlFiniteElement : public FiniteElement
   {
@@ -22,11 +107,23 @@ namespace ngfem
 			    SliceMatrix<> shape) const = 0;
     
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-      BareSliceMatrix<double> shape) const = 0;
+                                  BareSliceMatrix<double> shape) const = 0;
+
+    virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                      BareSliceVector<double> coefs,
+                                      BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                     BareSliceMatrix<double> shape) const = 0;
+
+    virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                         BareSliceVector<double> coefs,
+                                         BareSliceVector<double> inc) const = 0;
+
+    
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
@@ -79,6 +176,7 @@ namespace ngfem
     }
   }
 
+  
   template <int D,typename T ,typename MAT>
   Vec<D*D-D,T> SymMatToVec(MAT & mat)
   {
@@ -270,7 +368,174 @@ namespace ngfem
   
   template <int D, typename T>
   auto vEpsGradu (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_vEpsGradu<D,T>(au, av); }
+
+
+
+  template <int D, typename T> class ReggeADD;
+
+  template <typename T>
+  class ReggeADD<3,T>
+  {
+    Mat<3,3,T> value;
+    Mat<3,3,T> curl;
+    Mat<3,3,T> inc;
+
+  public:
+    ReggeADD ()
+    {
+      value = T(0);
+      curl = T(0);
+      inc = T(0);
+    }
     
+    ReggeADD (AutoDiffDiff<3,T> a, AutoDiffDiff<3,T> b)
+    {
+      auto Da = Vec<3,T>(a.DValue(0),a.DValue(1),a.DValue(2));
+      auto Db = Vec<3,T>(b.DValue(0),b.DValue(1),b.DValue(2));
+      //0.5?
+      value = SymDyadProd(Da,Db);
+      //value *= 0.5
+      // curl(s*v) = nabla s x v + s curl(v) in 3D
+      //                     | nabla a_1 x b + a_1 curl(b) |
+      // curl(a \otimes b) = | nabla a_2 x b + a_2 curl(b) |
+      //                     | nabla a_3 x b + a_3 curl(b) |
+
+      // curl( nabla s ) = 0
+      //                                      | nabla d_x a x nabla b |
+      // ->  curl( nabla a \otimes nabla b) = | nabla d_y a x nabla b |
+      //                                      | nabla d_z a x nabla b |
+
+      Vec<3,T> Ddai [3] = { Vec<3,T>(a.DDValue(0,0), a.DDValue(0,1), a.DDValue(0,2)), Vec<3,T>(a.DDValue(1,0), a.DDValue(1,1), a.DDValue(1,2)), Vec<3,T>(a.DDValue(2,0), a.DDValue(2,1), a.DDValue(2,2)) };
+      Vec<3,T> Ddbi [3] = { Vec<3,T>(b.DDValue(0,0), b.DDValue(0,1), b.DDValue(0,2)), Vec<3,T>(b.DDValue(1,0), b.DDValue(1,1), b.DDValue(1,2)), Vec<3,T>(b.DDValue(2,0), b.DDValue(2,1), b.DDValue(2,2)) };
+
+      for (int i = 0; i < 3; i++)
+        curl.Row(i) = Cross(Ddai[i], Db) + Cross(Ddbi[i], Da);
+
+      //0.5?
+      //curl *= 0.5;
+
+      //                                   | nabla d_x a x nabla b |
+      //  curl( nabla a \otimes nabla b) = | nabla d_y a x nabla b |
+      //                                   | nabla d_z a x nabla b |
+
+
+      // curl T curl ( nabla a \otimes nabla b):
+      //11: d_yd_z(a) d_yd_z(b) - d^2_z(a) d^2_y(b)   - d_y^2(a) d^2_z(b)   + d_yd_z(a)d_yd_z(b)
+      //12: d_xd_y(a) d_z^2(b)  - d_xd_z(a) d_yd_z(b) - d_yd_z(a) d_xd_z(b) + d_z^2(a)d_xd_y(b)
+      //13: d^2_y(a) d_xd_z(b)  - d_yd_z(a) d_xd_y(b) - d_xd_y(a) d_yd_z(b) + d_xd_z(a)d^2_y(b)
+      //22: d_xd_z(a) d_xd_z(b) - d^2_x(a) d^2_z(b)   - d^2_z(a) d^2_x(b)   + d_xd_z(a)d_xd_z(b)
+      //23: d_yd_z(a) d^2_x(b)  - d_xd_y(a) d_xd_z(b) - d_xd_z(a) d_xd_y(b) + d^2_x(a)d_yd_z(b)
+      //33: d^2_x(a) d^2_y(b)   - d_xd_y(a) d_xd_y(b) - d_xd_y(a) d_xd_y(b) + d^2_y(a)d^2_x(b)
+
+      // = ??? = - hesse(a) x hesse(b) = -eps_imn eps_jlk d_md_l(a) d_nd_k b ??
+
+      /*inc(0,0) = a.DDValue(1,2)*b.DDValue(1,2) - a.DDValue(2,2)*b.DDValue(1,1) - a.DDValue(1,1)*b.DDValue(2,2) + a.DDValue(1,2)*b.DDValue(1,2);
+      inc(0,1) = a.DDValue(0,1)*b.DDValue(2,2) - a.DDValue(0,2)*b.DDValue(1,2) - a.DDValue(1,2)*b.DDValue(0,2) + a.DDValue(2,2)*b.DDValue(0,1);
+      inc(0,2) = a.DDValue(1,1)*b.DDValue(0,2) - a.DDValue(1,2)*b.DDValue(0,1) - a.DDValue(0,1)*b.DDValue(1,2) + a.DDValue(0,2)*b.DDValue(1,1);
+      inc(1,1) = a.DDValue(0,2)*b.DDValue(0,2) - a.DDValue(0,0)*b.DDValue(2,2) - a.DDValue(2,2)*b.DDValue(0,0) + a.DDValue(0,2)*b.DDValue(0,2);
+      inc(1,2) = a.DDValue(1,2)*b.DDValue(0,0) - a.DDValue(0,1)*b.DDValue(0,2) - a.DDValue(0,2)*b.DDValue(0,1) + a.DDValue(0,0)*b.DDValue(1,2);
+      inc(2,2) = a.DDValue(0,0)*b.DDValue(1,1) - a.DDValue(0,1)*b.DDValue(0,1) - a.DDValue(0,1)*b.DDValue(0,1) + a.DDValue(1,1)*b.DDValue(0,0);
+
+      // curl T curl ( nabla b \otimes nabla a):
+      inc(0,0) += b.DDValue(1,2)*a.DDValue(1,2) - b.DDValue(2,2)*a.DDValue(1,1) - b.DDValue(1,1)*a.DDValue(2,2) + b.DDValue(1,2)*a.DDValue(1,2);
+      inc(0,1) += b.DDValue(0,1)*a.DDValue(2,2) - b.DDValue(0,2)*a.DDValue(1,2) - b.DDValue(1,2)*a.DDValue(0,2) + b.DDValue(2,2)*a.DDValue(0,1);
+      inc(0,2) += b.DDValue(1,1)*a.DDValue(0,2) - b.DDValue(1,2)*a.DDValue(0,1) - b.DDValue(0,1)*a.DDValue(1,2) + b.DDValue(0,2)*a.DDValue(1,1);
+      inc(1,1) += b.DDValue(0,2)*a.DDValue(0,2) - b.DDValue(0,0)*a.DDValue(2,2) - b.DDValue(2,2)*a.DDValue(0,0) + b.DDValue(0,2)*a.DDValue(0,2);
+      inc(1,2) += b.DDValue(1,2)*a.DDValue(0,0) - b.DDValue(0,1)*a.DDValue(0,2) - b.DDValue(0,2)*a.DDValue(0,1) + b.DDValue(0,0)*a.DDValue(1,2);
+      inc(2,2) += b.DDValue(0,0)*a.DDValue(1,1) - b.DDValue(0,1)*a.DDValue(0,1) - b.DDValue(0,1)*a.DDValue(0,1) + b.DDValue(1,1)*a.DDValue(0,0);
+
+
+      //0.5? and symmetry
+      //inc *= 0.5;
+      inc(1,0) = inc(0,1);
+      inc(2,0) = inc(0,2);
+      inc(2,1) = inc(1,2);*/
+
+      Mat<3,3,T> hesse1, hesse2;
+      a.StoreHessian(hesse1.Data());
+      b.StoreHessian(hesse2.Data());
+
+      inc = -2*TensorCrossProduct(hesse1,hesse2);
+
+      //*0.5?
+
+    }
+
+    auto Value() const { return value; }
+    auto Curl() const { return curl; }
+    auto Inc() const { return inc; }
+
+    Mat<3,3,T> & Value() { return value; }
+    Mat<3,3,T> & Curl() { return curl; }
+    Mat<3,3,T> & Inc() { return inc; }
+  };
+
+
+  template <int D, typename T>
+  auto MakeReggeAD(AutoDiffDiff<D,T> a, AutoDiffDiff<D,T> b)
+  {
+    return ReggeADD<D,T>(a, b);
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator* (AutoDiffDiff<3,T> s, ReggeADD<3,T> A)
+  {
+    ReggeADD<3,T> result;
+    result.Value() = s.Value()*A.Value();
+
+    // s scalar, v vector
+    // curl(s*v) = nabla s x v + s curl(v) in 3D
+    Vec<3,T> gradient;
+    s.StoreGradient(gradient.Data());
+
+    result.Curl() = s.Value()*A.Curl();
+    for (int i = 0; i < 3; i++)
+      result.Curl().Row(i) += Cross(gradient, Vec<3,T>(A.Value().Row(i)));
+    
+    // inc(s A) = s inc(A) + 2sym(grad(s) x T(curl A)) + X(s) :: A
+    Mat<3,3,T> hesse;
+    s.StoreHessian(hesse.Data());
+    
+    result.Inc() = s.Value()*A.Inc() + TensorCrossProduct(gradient,A.Curl()) + Trans(TensorCrossProduct(gradient,A.Curl())) +  TensorCrossProduct(hesse,A.Value());
+
+    return result;
+  }
+
+  
+  template <typename T>
+  ReggeADD<3,T> operator* (T s, ReggeADD<3,T> A)
+  {
+    ReggeADD<3,T> result = A;
+    result.Value() *= s;
+    result.Curl() *= s;
+    result.Inc() *= s;
+    return result;
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator+ (ReggeADD<3,T> A, ReggeADD<3,T> B)
+  {
+    ReggeADD<3,T> result = A;
+    result.Value() += B.Value();
+    result.Curl()  += B.Curl();
+    result.Inc()   += B.Inc();
+    return result;
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator- (ReggeADD<3,T> A, ReggeADD<3,T> B) 
+  {
+    ReggeADD<3,T> result = A;
+    result.Value() -= B.Value();
+    result.Curl()  -= B.Curl();
+    result.Inc()   -= B.Inc();
+    return result;
+  }
+  
+  
+
+
+  
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
 
   
@@ -327,7 +592,7 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                            BareSliceMatrix<double> shapes) const override
+                                  BareSliceMatrix<double> shapes) const override
     {
 
       /*
@@ -343,15 +608,65 @@ namespace ngfem
                                                        }));
          });*/
 
+      /*
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([shapes](int nr,auto val)
                            {
                              VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
                            }));
+      */
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Cast() -> T_CalcShape (GetTIP(mip),SBLambda([shapes](int nr,auto val)
+                           {
+                             VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
+                           }));
       
     }
 
+
+    
+    virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                      BareSliceVector<double> coefs,
+                                      BareSliceMatrix<double> shape) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Vec<DIM*(DIM+1)/2> sum = 0.0;
+      Cast() -> T_CalcShape (GetTIP(mip),SBLambda([coefs, &sum](int nr,auto val)
+                           {
+                             sum += coefs(nr) * val.Shape();
+                           }));
+      VecToSymMat<DIM> (sum, shape);
+    }
+
+    virtual void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                  BareSliceMatrix<double> shapes) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+        if constexpr (ET == ET_TET)
+                       Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shapes](int nr,auto val)
+                                                                         {
+                                                                           shapes.Row(nr).AddSize(DIM_DMAT) = val.Inc().AsVector();
+                                                                         }));
+      
+    }
+                            
+    virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                         BareSliceVector<double> coefs,
+                                         BareSliceVector<double> inc) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Mat<DIM,DIM> sum = 0.0;
+      if constexpr (ET == ET_TET)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([coefs, &sum](int nr,auto val)
+                                                                       {
+                                                                         sum += coefs(nr) * val.Inc();
+                                                                       }));
+
+      inc.Range(0,DIM*DIM) = sum.AsVector();
+    }
+
+    
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override
     {
       shape = 0.0;
@@ -431,20 +746,32 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                      BareSliceMatrix<double> shape) const override
     {
       auto mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &>(bmip);
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
-      if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
-      {
-        Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
+
+
+      if constexpr (ET == ET_TET)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shape](int nr,auto val)
+                                                                       {
+                                                                         shape.Row(nr).AddSize(DIM_DMAT) = val.Curl().AsVector();
+                                                                       }));
+      else
         {
-          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
-        }));
-      }
-      else // curved element
-      {
-        throw Exception("CalcMappedCurlShape not implemented for curved elements!");
-      }
+      
+          Vec<DIM, AutoDiff<DIM>> adp = mip;
+          TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
+          
+          if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
+            {
+              Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
+                                                    {
+                                                      shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+                                                    }));
+            }
+          else // curved element
+            {
+              throw Exception("CalcMappedCurlShape not implemented for curved elements!");
+            }
+        }
     }
 
     template <int DIMSPACE>
@@ -1414,8 +1741,90 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);                                                                                                                                                   }));
-        }
+        }      
     };
+
+
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape2 (TIP<3,Tx> ip, TFA & shape) const
+    {
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      Tx lam[4] = {x, y, z, 1-x-y-z};
+      int ii = 0;
+
+      for (int i = 0; i < 6; i++)
+        {
+          INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+          Tx ls = lam[e[1]], le = lam[e[0]];
+
+          // Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(ls,le);
+          auto symdyadic = MakeReggeAD(ls, le);
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+                            {
+                              shape[ii++] = -val*symdyadic;
+                            }));
+        }
+
+      
+      for(int fa = 0; fa < 4; fa++)
+        {
+          if (order_facet[fa][0] > 0)
+            {
+              INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
+              Tx ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
+              
+
+              auto symdyadic1 = lt*MakeReggeAD(ls, le);
+              auto symdyadic2 = ls*MakeReggeAD(lt, le);
+              auto symdyadic3 = le*MakeReggeAD(ls, lt);
+              //Vec<6, AutoDiff<3,T>> symdyadic1 = lt*SymDyadProd(ls,le);
+              //Vec<6, AutoDiff<3,T>> symdyadic2 = ls*SymDyadProd(lt,le);
+              //Vec<6, AutoDiff<3,T>> symdyadic3 = le*SymDyadProd(ls,lt);
+              
+              DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
+                                 SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
+                                          {
+                                            shape[ii++] = val*symdyadic1;
+                                            shape[ii++] = val*symdyadic2;
+                                            shape[ii++] = val*symdyadic3;
+                                          }));
+            }
+        }
+
+      if (order_inner[0] > 1)
+        {
+          Tx li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
+
+          //Vec<6, AutoDiff<3,T>> symdyadic1 = li*lj*SymDyadProd(lk,ll);
+          //Vec<6, AutoDiff<3,T>> symdyadic2 = lj*lk*SymDyadProd(ll,li);
+          //Vec<6, AutoDiff<3,T>> symdyadic3 = lk*ll*SymDyadProd(li,lj);
+          //Vec<6, AutoDiff<3,T>> symdyadic4 = ll*li*SymDyadProd(lj,lk);
+          //Vec<6, AutoDiff<3,T>> symdyadic5 = li*lk*SymDyadProd(lj,ll);
+          //Vec<6, AutoDiff<3,T>> symdyadic6 = lj*ll*SymDyadProd(li,lk);
+
+          auto symdyadic1 = li*lj*MakeReggeAD(lk, ll);
+          auto symdyadic2 = lj*lk*MakeReggeAD(ll, li);
+          auto symdyadic3 = lk*ll*MakeReggeAD(li, lj);
+          auto symdyadic4 = ll*li*MakeReggeAD(lj, lk);
+          auto symdyadic5 = li*lk*MakeReggeAD(lj, ll);
+          auto symdyadic6 = lj*ll*MakeReggeAD(li, lk);
+
+          
+          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val)
+                                                                                   {
+                                                                                     shape[ii++] = val*symdyadic1;
+                                                                                     shape[ii++] = val*symdyadic2;
+                                                                                     shape[ii++] = val*symdyadic3;
+                                                                                     shape[ii++] = val*symdyadic4;
+                                                                                     shape[ii++] = val*symdyadic5;
+                                                                                     shape[ii++] = val*symdyadic6;
+                                                                                   }));
+        }
+      
+    }
+
+    
 
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const

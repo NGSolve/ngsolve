@@ -29,9 +29,15 @@ class WebGLScene(BaseWebGuiScene):
 
         self.deformation = deformation
 
+        if isinstance(mesh, ngs.comp.Region):
+            self.region = mesh
+            self.mesh = self.region.mesh
+        else:
+            self.region = None
+
     def GetData(self, set_minmax=True):
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation)
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation, region=self.region)
 
         if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
             # multidim gridfunction - generate data for each component
@@ -52,7 +58,7 @@ class WebGLScene(BaseWebGuiScene):
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -123,7 +129,7 @@ timer3list = ngs.Timer("timer3 - make list")
 timer4 = ngs.Timer("func")
 
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None):
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True):
     timer.Start()
 
     if isinstance(deformation, ngs.CoefficientFunction) and deformation.dim==2:
@@ -213,6 +219,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
+        if region and region.VB() == vb:
+            vb = region
         cf = func1 if draw_surf else func0
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
         pmat = cf(pts)
@@ -243,6 +251,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ipts = [(i/og,0) for i in range(og+1)]
         ir_seg = ngs.IntegrationRule(ipts, [0,]*len(ipts))
         vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
+        if region and region.VB() == vb:
+            vb = region
         pts = mesh.MapToAllElements(ir_seg, vb)
         pmat = func0(pts)
         pmat = pmat.reshape(-1, og+1, 4)
@@ -287,6 +297,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
         
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
+        if region and region.VB() == vb:
+            vb = region
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
@@ -352,13 +364,14 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             ir_prism = ngs.IntegrationRule( ipts, [0]*len(ipts) )
 
 
-            # ipts_cube = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
-            #              [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
-            #              [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
-            #              [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
-            #              [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
-            #              [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
-            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
+            ipts_hex = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
+                         [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
+                         [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
+                         [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
+                         [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
+                         [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
+            ir_hex = ngs.IntegrationRule( ipts_hex, [0]*len(ipts_hex) )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism, ngs.ET.HEX: ir_hex }, ngs.VOL)
             
             
         else:

@@ -482,6 +482,12 @@ namespace ngfem
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                           FlatArray<BareSliceMatrix<double,ColMajor>> input,
+                           BareSliceMatrix<double,ColMajor> values) const override
+    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
+    
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
@@ -1858,6 +1864,8 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> WeingartenCF (int dim);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> VertexTangentialVectorsCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> EdgeFaceTangentialVectorsCF (int dim);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> EdgeCurvatureCF (int dim);
 

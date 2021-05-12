@@ -564,6 +564,112 @@ namespace ngfem
   }
 
 
+
+
+
+  template <int D>
+  class cl_EdgeFaceTangentialVectorsCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    cl_EdgeFaceTangentialVectorsCF () : CoefficientFunctionNoDerivative(2*D,false)
+    {
+      SetDimensions(Array<int> ( { D, 2 } ));
+    }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      return 0;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
+    {
+      if (ip.DimSpace() != D)
+        throw Exception("illegal dim of EdgeFaceTangentialVector");
+
+      //cout << "in EdgeFaceTangentialVectorsCF, VB = " << ip.IP().VB() << endl;
+      // assume tets !!!
+      
+      if (ip.IP().VB() == BBND)
+        {
+          auto F = ip.GetJacobian();
+          int edgenr = ip.IP().FacetNr();
+
+          /*
+            edge -> vertex is 
+            static const int tet_edges[6][2] =
+            { { 3, 0 },
+            { 3, 1 },
+            { 3, 2 }, 
+            { 0, 1 }, 
+            { 0, 2 },
+            { 1, 2 }};
+
+            face -> vertex is 
+            { { 3, 1, 2, -1 },
+            { 3, 2, 0, -1 },
+            { 3, 0, 1, -1 },
+            { 0, 2, 1, -1 } }; // all faces point into interior!
+
+            from this we get edge -> face
+          */
+          static int edge2face[6][2] =
+            { { 1, 2 },
+              { 0, 2 },
+              { 0, 1 },
+              { 2, 3 },
+              { 1, 3 },
+              { 0, 3 }
+            };
+
+
+          FlatVector<Vec<3>> normals = ElementTopology::GetNormals<3>(ET_TET);
+          const EDGE * edge = ElementTopology::GetEdges(ET_TET) + edgenr;
+          auto [v1x, v1y, v1z] = ElementTopology::GetVertices(ET_TET)[(*edge)[0]];
+          Vec<3> v1(v1x, v1y, v1z);
+          auto [v2x, v2y, v2z] = ElementTopology::GetVertices(ET_TET)[(*edge)[1]];
+          Vec<3> v2(v2x, v2y, v2z);
+          
+          Vec<3> nref1 = normals[edge2face[edgenr][0]];
+          Vec<3> nref2 = normals[edge2face[edgenr][1]];
+          Vec<3> tref = v2-v1;
+
+          Vec<3> tref1 = Cross(tref, nref1);
+          Vec<3> tref2 = -Cross(tref, nref2);
+
+          Vec<3> t1 = F * tref1;
+          Vec<3> t2 = F * tref2;
+          Vec<3> t = F * tref;
+
+          t /= L2Norm(t);
+          t1 -= InnerProduct(t1,t)*t;
+          t2 -= InnerProduct(t2,t)*t;
+
+          t1 /= L2Norm(t1);
+          t2 /= L2Norm(t2);
+
+	  FlatMatrix<double> phys_tv(D,2,&res[0]);
+          phys_tv.Col(0) = t1;
+          phys_tv.Col(1) = t2;
+        }
+      else
+        throw Exception("EdgeFaceTangentialVector only makes sense on edges");
+    }
+    
+  };
+
+
+  shared_ptr<CoefficientFunction> EdgeFaceTangentialVectorsCF (int dim)
+  {
+    if (dim == 3)
+      return make_shared<cl_EdgeFaceTangentialVectorsCF<3>>();
+    throw Exception ("EdgeFaceTangentialVectors available only in 3D");
+  }
+
+
+
+
+  
   
   template <int D>
   class cl_EdgeCurvatureCF : public CoefficientFunctionNoDerivative
