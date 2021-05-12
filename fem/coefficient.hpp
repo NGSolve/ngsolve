@@ -1819,6 +1819,13 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   CreateMinimizationCF (shared_ptr<CoefficientFunction> expression,
                         shared_ptr<CoefficientFunction> startingpoint);
 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  CreateNewtonCF (shared_ptr<CoefficientFunction> expression,
+                      shared_ptr<CoefficientFunction> startingpoint,
+                      std::optional<double> atol,
+                      std::optional<double> rtol,
+                      std::optional<int> maxiter);
+
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
 
