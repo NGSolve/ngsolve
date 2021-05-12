@@ -617,6 +617,7 @@ public:
   protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
+    Array<CoefficientFunction*> gridfunction_cfs;
     VorB vb;
     // bool element_boundary;
     VorB element_vb;

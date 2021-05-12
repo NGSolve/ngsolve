@@ -832,9 +832,14 @@ namespace ngfem
     cf->TraverseTree
       ([&] (CoefficientFunction & nodecf)
        {
-         auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
-         if (proxy && !proxies.Contains(proxy))
-           proxies.Append (proxy);
+         if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+           {
+             if (!proxies.Contains(proxy))
+               proxies.Append (proxy);
+           }
+         else
+           if (nodecf.StoreUserData() && !gridfunction_cfs.Contains(&nodecf))
+             gridfunction_cfs.Append (&nodecf);
        });
 
     for (auto proxy : proxies)
@@ -917,7 +922,10 @@ namespace ngfem
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             
-            ProxyUserData ud;
+            ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
+            for (CoefficientFunction * cf : gridfunction_cfs)
+              ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
+            
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
             // mir.ComputeNormalsAndMeasure (eltype, k);
@@ -1007,8 +1015,10 @@ namespace ngfem
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
         
         FlatMatrix<SCAL> values(ir.Size(), 1, lh);
-        ProxyUserData ud;
+        ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
+        for (CoefficientFunction * cf : gridfunction_cfs)
+          ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
         
         elvec = 0;
         for (auto proxy : proxies)

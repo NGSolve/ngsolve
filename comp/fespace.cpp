@@ -2350,7 +2350,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	       if (!DefinedOn (el)) return;
 
 	       used_vertex[el.Vertices()] = true;
-               used_edge[el.Edges()] = true;
+               if (order > 1)
+                 used_edge[el.Edges()] = true;
 	     });
       }
 

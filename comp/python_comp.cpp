@@ -1115,6 +1115,23 @@ rho : ngsolve.fem.CoefficientFunction
         productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
+
+    // not working because shared_ptr<Array<int>> cannot be pybind return type?
+    // TODO CL: Find out why...
+    // .def("CreateDirectSolverCluster", &FESpace::CreateDirectSolverClusters)
+    .def("CreateDirectSolverCluster", [](FESpace& self, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      auto cluster = self.CreateDirectSolverClusters(flags);
+      py::list pycluster(self.GetNDof());
+      if(cluster)
+        for(auto i : Range(self.GetNDof()))
+          pycluster[i] = (*cluster)[i];
+      else
+        for(auto i : Range(self.GetNDof()))
+          pycluster[i] = 0;
+      return pycluster;
+    })
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
@@ -1222,19 +1239,6 @@ component : int
                            },
                   "Return a list of the components of a product space")
     .def("SetDoSubspaceUpdate", &CompoundFESpace::SetDoSubspaceUpdate)
-
-    // not working because shared_ptr<Array<int>> cannot be pybind return type?
-    // TODO CL: Find out why...
-    // .def("CreateDirectSolverCluster", &FESpace::CreateDirectSolverClusters)
-    .def("CreateDirectSolverCluster", [](FESpace& self, py::kwargs kwargs)
-    {
-      auto flags = CreateFlagsFromKwArgs(kwargs);
-      auto cluster = self.CreateDirectSolverClusters(flags);
-      py::list pycluster(cluster->Size());
-      for(auto i : Range(*cluster))
-        pycluster[i] = (*cluster)[i];
-      return pycluster;
-    })
     ;
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
@@ -1281,6 +1285,9 @@ component : int
   ExportFESpace<NumberFESpace> (m, "NumberSpace");
   ExportFESpace<IntegrationRuleSpace> (m, "IntegrationRuleSpace")
     .def("GetIntegrationRules", &IntegrationRuleSpace::GetIntegrationRules)
+    ;
+  ExportFESpace<IntegrationRuleSpaceSurface> (m, "IntegrationRuleSpaceSurface")
+    .def("GetIntegrationRules", &IntegrationRuleSpaceSurface::GetIntegrationRules)
     ;
     
 
@@ -3417,7 +3424,11 @@ element_wise: bool = False
          {
            bool iscomplex = false;
            for (auto & ci : igls)
-             iscomplex |= ci->cf->IsComplex();
+             {
+               iscomplex |= ci->cf->IsComplex();
+               if (ci->cf->Dimension() > 1)
+                 throw Exception("Integrate(cf*dx) needs scalar-valued CoefficientFunction");
+             }
 
            auto integrate = [&] (auto tscal) 
            {

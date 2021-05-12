@@ -509,6 +509,8 @@ namespace ngfem
             auto & mip = hmips[i];        
             Vec<3> tau = mip.GetJacobian() * tau_ref;
             mip.SetMeasure(L2Norm(tau));
+            tau /= L2Norm(tau);
+            mip.SetTV(tau);
           }
         return;
       }

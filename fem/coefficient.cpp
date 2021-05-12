@@ -1093,10 +1093,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    FlatArray<int> hdims = Dimensions();        
-    for (int i : Range(hdims[0]))
-      for (int j : Range(hdims[1]))
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(string("0.0"));
+    });
   }
 
   using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
@@ -3696,7 +3695,7 @@ public:
         //Cofactor Matrix linear in 2d (in 1d Cofactor Matrix = 0)
         return CofactorCF(c1->Diff(var,dir));
       }
-    else //3d
+    else if (this->Dimensions()[0] == 3) //3d
       {
         //formula follows from Cayley–Hamilton
         //Cof(A) = 0.5*(tr(A)**2 - tr(A**2))I - tr(A)A^T +(AA)^T
@@ -3704,6 +3703,8 @@ public:
         //return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->Diff(var,dir);
         return  0.5*(2*TraceCF(c1)*TraceCF(c1->Diff(var,dir)) - TraceCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir)))*IdentityCF(3)- TraceCF(c1->Diff(var,dir))*TransposeCF(c1) - TraceCF(c1)*TransposeCF(c1->Diff(var,dir)) + TransposeCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir));
       }
+    else
+      throw Exception("CofactorCF diff only implemented for dim <=3");
   }  
 };
 
@@ -4517,6 +4518,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       case 1: return make_shared<CofactorCoefficientFunction<1>> (coef);
       case 2: return make_shared<CofactorCoefficientFunction<2>> (coef);
       case 3: return make_shared<CofactorCoefficientFunction<3>> (coef);
+      case 4: return make_shared<CofactorCoefficientFunction<4>> (coef);
       default:
         throw Exception("Cofactor of matrix of size "+ToString(dims[0]) + " not available");
       }
@@ -4729,7 +4731,6 @@ public:
                                 int afirst, Array<int> anum, Array<int> adist)
     : BASE(1, ac1->IsComplex()), c1(ac1), first(afirst), num(anum), dist(adist)
   {
-    cout << "create sub-tensor, first = " << first << ", num = " << num << ", dist = " << dist << endl;
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();
@@ -4741,15 +4742,33 @@ public:
     ar.Shallow(c1) & dim1 & first & num & dist;
   }
 
-  /*
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    auto dims = c1->Dimensions();
-    int i,j;
-    GetIndex(dims, comp, i, j);
-    code.body += Var(index).Assign( Var(inputs[0], i, j ));
+    auto dims1 = c1->Dimensions();
+
+    if(num.Size()==1)
+      {
+        for (int i = 0; i < num[0]; i++)
+         {
+            int i1,k1;
+            auto comp = first+i*dist[0];
+            GetIndex(dims1, comp, i1, k1);
+            code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+          }
+      }
+
+    if(num.Size()==2)
+      {
+        for (int i = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+             {
+                int i1,j1;
+                auto comp = first+i*dist[0]+j*dist[1];
+                GetIndex(dims1, comp, i1, j1);
+                code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
+              }
+      }
   }
-  */
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
@@ -6496,7 +6515,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
       cf -> TraverseTree (func);
-      func(*cf);
+      // func(*cf);
+      func(*this);      
     }
 
     // virtual bool IsComplex() const { return cf->IsComplex(); }
@@ -7306,7 +7326,8 @@ class RealCF : public CoefficientFunctionNoDerivative
 
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    auto cf = make_shared<CompiledCoefficientFunction> (c);
+    auto compiledcf = dynamic_pointer_cast<CompiledCoefficientFunction>(c);
+    auto cf = compiledcf ? compiledcf : make_shared<CompiledCoefficientFunction> (c);
     if(realcompile)
       cf->RealCompile(maxderiv, wait);
     return cf;
