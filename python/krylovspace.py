@@ -69,6 +69,7 @@ class LinearSolver(BaseMatrix):
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
               initialize : bool = True) -> BaseVector:
         self.iterations = 0
+        self.residuals = []
         old_status = _GetStatus()
         _PushStatus(self.name + " Solve")
         _SetThreadPercentage(0)
@@ -158,8 +159,12 @@ conjugate : bool = False
             print("WARNING: maxsteps is deprecated, use maxiter instead!")
             kwargs["maxiter"] = maxsteps
         super().__init__(*args, **kwargs)
-        self.errors = self.residuals # for backward compatibility
         self.conjugate = conjugate
+
+    # for backward compatibility
+    @property
+    def errors(self):
+        return self.residuals
 
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
         d, w, s = [sol.CreateVector() for i in range(3)]
