@@ -657,6 +657,7 @@ public:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<CoefficientFunction*> gridfunction_cfs;
+    Array<CoefficientFunction*> cache_cfs;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;           // on the boundary of the domain ? 
     // bool element_boundary;
