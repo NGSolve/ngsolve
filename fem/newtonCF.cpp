@@ -30,8 +30,17 @@ namespace ngfem
       }
       return s;
     }
-    
-    
+
+    template<typename T>
+    bool is_compound_space(const std::shared_ptr<T>& space) {
+      return std::dynamic_pointer_cast<CompoundFESpace>(space);
+    }
+
+    template<typename T>
+    bool is_compound_space(const T* space) {
+      return dynamic_cast<CompoundFESpace*>(space);
+    }
+
     bool has_vs_embedding(const ProxyFunction * proxy) {
       return proxy->Evaluator()->GetVSEmbedding().has_value();
     }
@@ -52,6 +61,8 @@ namespace ngfem
   class NewtonCF : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> expression;
+    // TODO: use an array of startingpoints (one per block). For a GF on a
+    //  compound space just use its components.
     shared_ptr<CoefficientFunction> startingpoint;
 
     Array<ProxyFunction *> proxies;
@@ -89,16 +100,14 @@ namespace ngfem
       // For the CF (starting point):
       //  - dim, dims (misleading for GF of CompoundFESpace)
       //  - components (CFs) for GF of CompoundFESpace
+      //  --> provide a sequence of stps or use components of a GF
       
       // Strategy: 
       //  1. If more that one proxy has been found, sort proxies by block index; only allow each block index appear exactly once.
       //     IOW, two different proxies with for some reason same block index are forbidden.
-      //  2. Determine cumulated dimensions of collected proxies.
-      //  3. Compare cumulated dimension with dimension of startingpoint.
-      //     '-> In case of mismatch, try whether startingpoint has components
-      //     '-> In case of multiple proxies and startingpoint being a GF, the latter must have 
-      //         components corresponding to the proxies
-      //  4. Call SetDimensions with the appropriate information.
+      //  2. Determine cumulated dimensions of collected proxies and compare
+      //    them with dimensions of startingpoints.
+      //  4. Call SetDimensions with the appropriate information (TODO: what is appropriate???).
       
       // NOTE: GFs on generic CompoundSpaces do not provide useful/usable dimension data!
         
@@ -135,6 +144,7 @@ namespace ngfem
         }
       else
         {
+          // TODO: also allow a sequence of CFs
           const auto startingpoint_gf = dynamic_pointer_cast<ngcomp::GridFunction>(startingpoint);
           if (!startingpoint_gf)
             throw Exception("NewtonCF: number of proxies greater than one requires a GridFunction as starting point");
@@ -144,7 +154,12 @@ namespace ngfem
 
           // Check whether all proxies belong to a compound FE space and put them in order
           Array<ProxyFunction*> sorted_proxies(proxies.Size());
+          sorted_proxies = nullptr;
           Array<const DifferentialOperator*> diffops(proxies.Size());
+          diffops = nullptr;
+          cout << "\n" << "sorted proxies " << sorted_proxies
+               << "\n" << "diffops " << diffops << endl;
+
           for (const auto proxy : proxies)
             {
               const auto evaluator = dynamic_cast<const CompoundDifferentialOperator*>(proxy->Evaluator().get());
@@ -154,6 +169,13 @@ namespace ngfem
                 }
               else
                 {
+                  cout << "proxy " << proxy
+                       << "\n" << "sorted proxies " << sorted_proxies
+                       << "\n" << "diffops " << diffops
+                       << "\n" << "component" << evaluator->Component()
+                       << "\n" << "sorted proxy " << sorted_proxies
+                       << "\n" << "evaluator "<< evaluator
+                       << "\n" << endl;
                   if (sorted_proxies[evaluator->Component()] ||
                       //TODO: support this
                       //std::find(diffops.begin(), diffops.end(), evaluator) != diffops.end()
@@ -170,15 +192,17 @@ namespace ngfem
           std::copy(sorted_proxies.Data(), sorted_proxies.Data() + sorted_proxies.Size(), proxies.Data());
           
           // Process dimensions
-          for (auto comp = startingpoint_gf->GetNComponents(); comp > 0; --comp) {
+          for (auto comp = startingpoint_gf->GetNComponents() - 1; comp != 0; --comp) {
             const auto stpt_comp = startingpoint_gf->GetComponent(comp);
             const auto proxy = proxies[comp];
             
             if (!(proxy->Dimensions() == stpt_comp->Dimensions()))
               throw Exception(std::string("NewtonCF: Dimensions of component ") + std::to_string(comp) + " do not agree");
             
-            // TODO: Does this make sense or shall we just not set dimensions in case of generic compound spaces/multiple proxies
-            // Should probably be consistent with Compound GFs/CFs
+            // TODO: Does this make sense or shall we just not set dimensions in
+            //  case of generic compound spaces/multiple proxies
+            // Should probably be consistent with Compound GFs/CFs but note that
+            // Dimensions() is currently used and would need a substitute
             const auto pdims = proxy->Dimensions();
             for (auto dim : pdims)
                dims.Append(dim);
@@ -225,7 +249,7 @@ namespace ngfem
 
       const ElementTransformation & trafo = mir.GetTransformation();
       
-      ProxyUserData ud(1, cachecf.Size(), lh);
+      ProxyUserData ud(proxies.Size(), cachecf.Size(), lh);
       for (CoefficientFunction * cf : cachecf)
         ud.AssignMemory (cf, mir.Size(), cf->Dimension(), lh);
       
@@ -461,9 +485,9 @@ namespace ngfem
     
       
       // Evaluate starting point
+      // TODO: evaluate per blocks and then merge into xk!
       startingpoint -> Evaluate (mir, xk);
-      xold = xk;
-      
+
       // Distribute starting point to proxies
       distribute_xk_to_blocks();
         
