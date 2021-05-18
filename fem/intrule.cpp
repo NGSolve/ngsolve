@@ -4128,6 +4128,9 @@ namespace ngcore
   template class SIMD<ngfem::MappedIntegrationPoint<2,2>>;
   template class SIMD<ngfem::MappedIntegrationPoint<3,3>>;
 
+  template class SIMD<ngfem::MappedIntegrationPoint<1,2>>;
+  template class SIMD<ngfem::MappedIntegrationPoint<1,3>>;
+  template class SIMD<ngfem::MappedIntegrationPoint<2,3>>;
 
   
 }

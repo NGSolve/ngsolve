@@ -7558,7 +7558,7 @@ Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
 }
 
 
-void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
                         LocalHeap & lh)
 {
   // static Timer t("Precompute CacheCF");
@@ -7593,7 +7593,7 @@ void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegr
 
 
 
-void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
                         LocalHeap & lh)
 {
   auto & trafo = mir.GetTransformation();
