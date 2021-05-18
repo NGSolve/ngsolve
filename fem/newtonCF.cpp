@@ -33,12 +33,12 @@ namespace ngfem
 
     template<typename T>
     bool is_compound_space(const std::shared_ptr<T>& space) {
-      return std::dynamic_pointer_cast<CompoundFESpace>(space);
+      return std::dynamic_pointer_cast<ngcomp::CompoundFESpace>(space);
     }
 
     template<typename T>
     bool is_compound_space(const T* space) {
-      return dynamic_cast<CompoundFESpace*>(space);
+      return dynamic_cast<ngcomp::CompoundFESpace*>(space);
     }
 
     bool has_vs_embedding(const ProxyFunction * proxy) {
@@ -55,6 +55,36 @@ namespace ngfem
       else
         return proxy->Dimension();
     }
+
+    template<typename T>
+    const T* cbegin(const Array<T>& array) {
+      return array.Data();
+    }
+
+    template<typename T>
+    const T* cend(const Array<T>& array) {
+      return array.Data() + array.size();
+    }
+
+    template<typename T>
+    T* begin(Array<T>& array) {
+      return array.Data();
+    }
+
+    template<typename T>
+    const T* begin(const Array<T>& array) {
+      return array.Data();
+    }
+
+    template<typename T>
+    T* end(Array<T>& array) {
+      return array.Data() + array.size();
+    }
+
+    template<typename T>
+    const T* end(const Array<T>& array) {
+      return array.Data() + array.size();
+    }
   }
   
 
@@ -63,7 +93,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> expression;
     // TODO: use an array of startingpoints (one per block). For a GF on a
     //  compound space just use its components.
-    shared_ptr<CoefficientFunction> startingpoint;
+    Array<shared_ptr<CoefficientFunction>> startingpoints;
 
     Array<ProxyFunction *> proxies;
     Array<CoefficientFunction*> cachecf;
@@ -78,12 +108,21 @@ namespace ngfem
     int maxiter{10};
     
   public:
+
     NewtonCF (shared_ptr<CoefficientFunction> aexpression,
-                    shared_ptr<CoefficientFunction> astartingpoint,
+              shared_ptr<CoefficientFunction> astartingpoint,
+              std::optional<double> atol,
+              std::optional<double> artol,
+              std::optional<int> amaxiter)
+        : NewtonCF{aexpression, Array<shared_ptr<CoefficientFunction>>{astartingpoint}, atol, artol, amaxiter}{}
+
+
+    NewtonCF (shared_ptr<CoefficientFunction> aexpression,
+                    const Array<shared_ptr<CoefficientFunction>>& astartingpoints,
                     std::optional<double> atol, 
                     std::optional<double> artol, 
                     std::optional<int> amaxiter)
-      : expression(aexpression), startingpoint(astartingpoint)
+      : expression(aexpression)
     {
 
       // NOTES: 
@@ -119,11 +158,10 @@ namespace ngfem
               {
                 if (!nodeproxy->IsTestFunction())
                   {
-                    //TODO: support this
-                    //if (std::find(proxies.begin(), proxies.end(), nodeproxy) == proxies.end())
-                    // gcc complains!
-                    if (std::find(proxies.Data(), proxies.Data()+proxies.Size(), nodeproxy) == proxies.Data()+proxies.Size())
-                      proxies.Append(nodeproxy);
+                    if (std::find(cbegin(proxies), cend(proxies), nodeproxy) == end(proxies))
+                     proxies.Append(nodeproxy);
+//                    if (std::find(proxies.Data(), proxies.Data()+proxies.Size(), nodeproxy) == proxies.Data()+proxies.Size())
+//                      proxies.Append(nodeproxy);
                   }
               }
             else if (nodecf.StoreUserData() && !cachecf.Contains(&nodecf))
@@ -131,88 +169,149 @@ namespace ngfem
           });
       if (proxies.Size() == 0) 
         throw Exception("NewtonCF: don't have a proxy");
-      
-      Array<int> dims;
-      
-      if (proxies.Size() == 1)
-        {
-          const auto proxy = proxies[0];
-          if (!(proxy->Dimensions() == startingpoint->Dimensions()))
-            throw Exception("NewtonCF: Dimensions of proxy and startingpoint do not agree");
-          
-          dims = proxy->Dimensions();
-        }
-      else
-        {
-          // TODO: also allow a sequence of CFs
-          const auto startingpoint_gf = dynamic_pointer_cast<ngcomp::GridFunction>(startingpoint);
-          if (!startingpoint_gf)
-            throw Exception("NewtonCF: number of proxies greater than one requires a GridFunction as starting point");
 
-          if (proxies.Size() != startingpoint_gf->GetNComponents())
-            throw Exception("NewtonCF: number of proxies does not match the number of components of the 'startingpoint'");
-
-          // Check whether all proxies belong to a compound FE space and put them in order
-          Array<ProxyFunction*> sorted_proxies(proxies.Size());
-          sorted_proxies = nullptr;
-          Array<const DifferentialOperator*> diffops(proxies.Size());
-          diffops = nullptr;
-          cout << "\n" << "sorted proxies " << sorted_proxies
-               << "\n" << "diffops " << diffops << endl;
-
-          for (const auto proxy : proxies)
-            {
-              const auto evaluator = dynamic_cast<const CompoundDifferentialOperator*>(proxy->Evaluator().get());
-              if (!evaluator)
-                {
-                  throw Exception("NewtonCF: More than one proxy has been found but not all proxy evaluators are of type CompoundDifferentialOperator");
-                }
-              else
-                {
-                  cout << "proxy " << proxy
-                       << "\n" << "sorted proxies " << sorted_proxies
-                       << "\n" << "diffops " << diffops
-                       << "\n" << "component" << evaluator->Component()
-                       << "\n" << "sorted proxy " << sorted_proxies
-                       << "\n" << "evaluator "<< evaluator
-                       << "\n" << endl;
-                  if (sorted_proxies[evaluator->Component()] ||
-                      //TODO: support this
-                      //std::find(diffops.begin(), diffops.end(), evaluator) != diffops.end()
-                      std::find(diffops.Data(), diffops.Data() + diffops.Size(), evaluator) != diffops.Data() + diffops.Size()
-                      )
-                    throw Exception("NewtonCF: A proxy evaluator (component) has been detected twice");
-                  diffops[evaluator->Component()] = evaluator;
-                  sorted_proxies[evaluator->Component()] = proxy;
-                }
-            }
-          // Copy over...
-            // TODO: support this
-          //std::copy(sorted_proxies.begin(), sorted_proxies.end(), proxies.begin());
-          std::copy(sorted_proxies.Data(), sorted_proxies.Data() + sorted_proxies.Size(), proxies.Data());
-          
-          // Process dimensions
-          for (auto comp = startingpoint_gf->GetNComponents() - 1; comp != 0; --comp) {
-            const auto stpt_comp = startingpoint_gf->GetComponent(comp);
-            const auto proxy = proxies[comp];
-            
-            if (!(proxy->Dimensions() == stpt_comp->Dimensions()))
-              throw Exception(std::string("NewtonCF: Dimensions of component ") + std::to_string(comp) + " do not agree");
-            
-            // TODO: Does this make sense or shall we just not set dimensions in
-            //  case of generic compound spaces/multiple proxies
-            // Should probably be consistent with Compound GFs/CFs but note that
-            // Dimensions() is currently used and would need a substitute
-            const auto pdims = proxy->Dimensions();
-            for (auto dim : pdims)
-               dims.Append(dim);
-          }
-        }
-      
-      SetDimensions(dims);
+      // Check whether all proxies belong to a compound FE space and put them in order
+      Array<ProxyFunction*> sorted_proxies(proxies.Size());
+      sorted_proxies = nullptr;
+      Array<const DifferentialOperator*> diffops(proxies.Size());
+      diffops = nullptr;
+//      cout << "\n" << "sorted proxies " << sorted_proxies
+//           << "\n" << "diffops " << diffops << endl;
 
       for (const auto proxy : proxies)
+      {
+        const auto evaluator = dynamic_cast<const CompoundDifferentialOperator*>(proxy->Evaluator().get());
+        if (!evaluator)
+        {
+          throw Exception("NewtonCF: More than one proxy has been found but not all proxy evaluators are of type CompoundDifferentialOperator");
+        }
+        else
+        {
+//          cout << "proxy " << proxy
+//               << "\n" << "sorted proxies " << sorted_proxies
+//               << "\n" << "diffops " << diffops
+//               << "\n" << "component" << evaluator->Component()
+//               << "\n" << "sorted proxy " << sorted_proxies
+//               << "\n" << "evaluator "<< evaluator
+//               << "\n" << endl;
+          if (sorted_proxies[evaluator->Component()] ||
+              std::find(cbegin(diffops), cend(diffops), evaluator) != cend(diffops)
+//              std::find(diffops.Data(), diffops.Data() + diffops.Size(), evaluator) != diffops.Data() + diffops.Size()
+              )
+            throw Exception("NewtonCF: A proxy evaluator (component) has been detected twice");
+          diffops[evaluator->Component()] = evaluator;
+          sorted_proxies[evaluator->Component()] = proxy;
+        }
+      }
+      // Copy over...
+      std::copy(cbegin(sorted_proxies), cend(sorted_proxies), begin(proxies));
+//      std::copy(sorted_proxies.Data(), sorted_proxies.Data() + sorted_proxies.Size(), proxies.Data());
+
+      // Process startingpoints
+      // Handle GF on CompoundFESpace
+      if (astartingpoints.Size() == 1 && proxies.Size() > 1) {
+        const auto startingpoint_gf =
+            dynamic_pointer_cast<ngcomp::GridFunction>(astartingpoints[0]);
+        if (!startingpoint_gf)
+          throw Exception("NewtonCF: number of proxies greater than one requires a GridFunction as starting point");
+
+        if (proxies.Size() != startingpoint_gf->GetNComponents())
+          throw Exception("NewtonCF: number of proxies does not match the number of components of the 'startingpoint'");
+
+        startingpoints.DeleteAll();
+        for (int i : Range(startingpoint_gf->GetNComponents()))
+          startingpoints.Append(startingpoint_gf->GetComponent(i));
+      }
+      else
+        startingpoints = astartingpoints;
+
+      // Check dimensions and/or fill empty startingpoints
+      if (startingpoints.Size() == 0)
+      {
+        for (const auto proxy : proxies)
+          startingpoints.Append(ZeroCF(proxy->Dimensions()));
+      }
+      else if (startingpoints.Size() == proxies.Size())
+      {
+        for (int i : Range(proxies))
+        {
+          if (!startingpoints[i])
+            startingpoints[i] = ZeroCF(proxies[i]->Dimensions());
+          else if (!(proxies[i]->Dimensions() == startingpoints[i]->Dimensions()))
+            throw Exception(std::string("NewtonCF: Dimensions of component ") + std::to_string(i) + " do not agree");
+        }
+      }
+      else
+        throw Exception("NewtonCF: Number of given startingpoints does not match number of detected proxies");
+
+      Array<int> dims;
+      numeric_dim = 0;
+      for (const auto proxy : proxies) {
+        const auto pdims = proxy->Dimensions();
         numeric_dim += proxy_dof_dimension(proxy);
+
+        // TODO: Does this make sense or shall we just not set dimensions in
+        //  case of generic compound spaces/multiple proxies
+        // Should probably be consistent with Compound GFs/CFs but note that
+        // Dimensions() is currently used and would need a substitute
+        for (auto dim : pdims)
+          dims.Append(dim);
+      }
+      SetDimensions(dims);
+
+//      if (startingpoints.Size() > proxies.Size())
+//        throw Exception("NewtonCF: More startingpoints than proxies detected");
+//
+//      if (proxies.Size() == 1)
+//        {
+//          if (astartingpoints.Size() == 0)
+//            startingpoints.Append(std::shared_ptr<CoefficientFunction>{});
+//          else
+//            startingpoints[0] = astartingpoints[0];
+//
+//          const auto proxy = proxies[0];
+//          if (!startingpoints[0])
+//            startingpoints[0] = ZeroCF(proxy->Dimensions());
+//
+//          if (!(proxy->Dimensions() == startingpoints[0]->Dimensions()))
+//            throw Exception("NewtonCF: Dimensions of proxy and startingpoint do not agree");
+//
+//          dims = proxy->Dimensions();
+//        }
+//      else
+//        {
+//          // TODO: also allow a sequence of CFs
+//          const auto startingpoint_gf = dynamic_pointer_cast<ngcomp::GridFunction>(startingpoint);
+//          if (!startingpoint_gf)
+//            throw Exception("NewtonCF: number of proxies greater than one requires a GridFunction as starting point");
+//
+//          if (proxies.Size() != startingpoint_gf->GetNComponents())
+//            throw Exception("NewtonCF: number of proxies does not match the number of components of the 'startingpoint'");
+//
+//
+//
+//          // Process dimensions
+//          for (auto comp = startingpoint_gf->GetNComponents() - 1; comp != 0; --comp) {
+//            const auto stpt_comp = startingpoint_gf->GetComponent(comp);
+//            const auto proxy = proxies[comp];
+//
+//            if (!(proxy->Dimensions() == stpt_comp->Dimensions()))
+//              throw Exception(std::string("NewtonCF: Dimensions of component ") + std::to_string(comp) + " do not agree");
+//
+//             TODO: Does this make sense or shall we just not set dimensions in
+//              case of generic compound spaces/multiple proxies
+//             Should probably be consistent with Compound GFs/CFs but note that
+//             Dimensions() is currently used and would need a substitute
+//            const auto pdims = proxy->Dimensions();
+//            for (auto dim : pdims)
+//               dims.Append(dim);
+//          }
+//        }
+//
+//      SetDimensions(dims);
+//
+//      for (const auto proxy : proxies)
+//        numeric_dim += proxy_dof_dimension(proxy);
       
       // Process options
       if (atol)
@@ -467,7 +566,22 @@ namespace ngfem
           }
 
       };
-      
+
+      const auto merge_xk_blocks = [&]() -> void {
+        // TODO: Better got for a layout that uses Col instead of Row?
+        for (size_t qi = 0; qi < mir.Size(); ++qi)
+        {
+          auto xk_qi = xk.Row(qi);
+          int offset = 0;
+          for (int block : Range(this->proxies))
+          {
+            auto xkb_qi = xk_blocks[block].Row(qi);
+            xk_qi.Range(offset, offset + xkb_qi.Size()) = xkb_qi;
+            offset += xkb_qi.Size();
+          }
+        }
+      };
+
       const auto distribute_xk_to_blocks = [&]() -> void {
         // TODO: Better got for a layout that uses Col instead of Row?
         for (size_t qi = 0; qi < mir.Size(); ++qi) 
@@ -486,10 +600,10 @@ namespace ngfem
       
       // Evaluate starting point
       // TODO: evaluate per blocks and then merge into xk!
-      startingpoint -> Evaluate (mir, xk);
+      for (int i : Range(startingpoints))
+        startingpoints[i] -> Evaluate (mir, xk_blocks[i]);
 
-      // Distribute starting point to proxies
-      distribute_xk_to_blocks();
+      merge_xk_blocks();
         
       cout << "starting value = " << xk << endl;
       cout << "blocks:" << endl;
