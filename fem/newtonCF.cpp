@@ -22,11 +22,11 @@ namespace ngfem
     template<typename T>
     auto LInfNorm(const T& array) -> auto
     {
-      std::remove_reference_t<std::remove_cv_t<decltype(*(array.Data()))>> s = 0;
-      // TODO: support range iterators over items
-      for (int i : Range(array))
+      using number_t = std::remove_reference_t<std::remove_cv_t<decltype(*(array.Data()))>>;
+      number_t s = 0;
+      for (const number_t item : array)
       {
-        s = std::abs(array[i]) > s ? std::abs(array[i]) : s;
+        s = std::abs(item) > s ? std::abs(item) : s;
       }
       return s;
     }
@@ -63,7 +63,7 @@ namespace ngfem
 
     template<typename T>
     const T* cend(const Array<T>& array) {
-      return array.Data() + array.size();
+      return array.Data() + array.Size();
     }
 
     template<typename T>
@@ -78,12 +78,12 @@ namespace ngfem
 
     template<typename T>
     T* end(Array<T>& array) {
-      return array.Data() + array.size();
+      return array.Data() + array.Size();
     }
 
     template<typename T>
     const T* end(const Array<T>& array) {
-      return array.Data() + array.size();
+      return array.Data() + array.Size();
     }
   }
   
@@ -93,13 +93,16 @@ namespace ngfem
     shared_ptr<CoefficientFunction> expression;
     // TODO: use an array of startingpoints (one per block). For a GF on a
     //  compound space just use its components.
-    Array<shared_ptr<CoefficientFunction>> startingpoints;
+    Array<shared_ptr<CoefficientFunction>> startingpoints{};
 
-    Array<ProxyFunction *> proxies;
-    Array<CoefficientFunction*> cachecf;
+    Array<ProxyFunction *> proxies{};
+    Array<CoefficientFunction*> cachecf{};
     
     // The total dimension of the linear system (because of VS embeddings, this can be different from this->Dimension())
     int numeric_dim = 0;
+    int full_dim = 0;
+    Array<int> proxy_dims{};
+
     
     // Same parameters as scipy's newton
     // Alternatively, could one think of ParameterCFs here?
@@ -169,43 +172,44 @@ namespace ngfem
           });
       if (proxies.Size() == 0) 
         throw Exception("NewtonCF: don't have a proxy");
-
-      // Check whether all proxies belong to a compound FE space and put them in order
-      Array<ProxyFunction*> sorted_proxies(proxies.Size());
-      sorted_proxies = nullptr;
-      Array<const DifferentialOperator*> diffops(proxies.Size());
-      diffops = nullptr;
+      else if (proxies.Size() > 1) {
+        // Check whether all proxies belong to a compound FE space and put them in order
+        Array<ProxyFunction*> sorted_proxies(proxies.Size());
+        sorted_proxies = nullptr;
+        Array<const DifferentialOperator*> diffops(proxies.Size());
+        diffops = nullptr;
 //      cout << "\n" << "sorted proxies " << sorted_proxies
 //           << "\n" << "diffops " << diffops << endl;
 
-      for (const auto proxy : proxies)
-      {
-        const auto evaluator = dynamic_cast<const CompoundDifferentialOperator*>(proxy->Evaluator().get());
-        if (!evaluator)
-        {
-          throw Exception("NewtonCF: More than one proxy has been found but not all proxy evaluators are of type CompoundDifferentialOperator");
+        for (const auto proxy : proxies) {
+          const auto evaluator =
+              dynamic_cast<const CompoundDifferentialOperator *>(
+                  proxy->Evaluator().get());
+          if (!evaluator) {
+            throw Exception(
+                "NewtonCF: More than one proxy has been found but not all proxy evaluators are of type CompoundDifferentialOperator");
+          } else {
+            //          cout << "proxy " << proxy
+            //               << "\n" << "sorted proxies " << sorted_proxies
+            //               << "\n" << "diffops " << diffops
+            //               << "\n" << "component" << evaluator->Component()
+            //               << "\n" << "sorted proxy " << sorted_proxies
+            //               << "\n" << "evaluator "<< evaluator
+            //               << "\n" << endl;
+            if (sorted_proxies[evaluator->Component()] ||
+                std::find(cbegin(diffops), cend(diffops), evaluator) !=
+                    cend(diffops)
+                //              std::find(diffops.Data(), diffops.Data() + diffops.Size(), evaluator) != diffops.Data() + diffops.Size()
+            )
+              throw Exception("NewtonCF: A proxy evaluator (component) has been detected twice");
+            diffops[evaluator->Component()] = evaluator;
+            sorted_proxies[evaluator->Component()] = proxy;
+          }
         }
-        else
-        {
-//          cout << "proxy " << proxy
-//               << "\n" << "sorted proxies " << sorted_proxies
-//               << "\n" << "diffops " << diffops
-//               << "\n" << "component" << evaluator->Component()
-//               << "\n" << "sorted proxy " << sorted_proxies
-//               << "\n" << "evaluator "<< evaluator
-//               << "\n" << endl;
-          if (sorted_proxies[evaluator->Component()] ||
-              std::find(cbegin(diffops), cend(diffops), evaluator) != cend(diffops)
-//              std::find(diffops.Data(), diffops.Data() + diffops.Size(), evaluator) != diffops.Data() + diffops.Size()
-              )
-            throw Exception("NewtonCF: A proxy evaluator (component) has been detected twice");
-          diffops[evaluator->Component()] = evaluator;
-          sorted_proxies[evaluator->Component()] = proxy;
-        }
+        // Copy over...
+        std::copy(cbegin(sorted_proxies), cend(sorted_proxies), begin(proxies));
+        //      std::copy(sorted_proxies.Data(), sorted_proxies.Data() + sorted_proxies.Size(), proxies.Data());
       }
-      // Copy over...
-      std::copy(cbegin(sorted_proxies), cend(sorted_proxies), begin(proxies));
-//      std::copy(sorted_proxies.Data(), sorted_proxies.Data() + sorted_proxies.Size(), proxies.Data());
 
       // Process startingpoints
       // Handle GF on CompoundFESpace
@@ -244,20 +248,25 @@ namespace ngfem
       else
         throw Exception("NewtonCF: Number of given startingpoints does not match number of detected proxies");
 
-      Array<int> dims;
-      numeric_dim = 0;
       for (const auto proxy : proxies) {
-        const auto pdims = proxy->Dimensions();
         numeric_dim += proxy_dof_dimension(proxy);
+        full_dim += proxy->Dimension();
 
         // TODO: Does this make sense or shall we just not set dimensions in
         //  case of generic compound spaces/multiple proxies
         // Should probably be consistent with Compound GFs/CFs but note that
         // Dimensions() is currently used and would need a substitute
-        for (auto dim : pdims)
-          dims.Append(dim);
+        const auto pdims = proxy->Dimensions();
+        if (pdims.Size() > 0)
+          for (auto dim : pdims)
+            proxy_dims.Append(dim);
+        else
+          proxy_dims.Append(proxy->Dimension());
       }
-      SetDimensions(dims);
+
+      // TODO: Is this okay?
+      if (proxies.Size() == 1)
+        CoefficientFunction::SetDimensions(proxy_dims);
 
 //      if (startingpoints.Size() > proxies.Size())
 //        throw Exception("NewtonCF: More startingpoints than proxies detected");
@@ -351,6 +360,7 @@ namespace ngfem
       ProxyUserData ud(proxies.Size(), cachecf.Size(), lh);
       for (CoefficientFunction * cf : cachecf)
         ud.AssignMemory (cf, mir.Size(), cf->Dimension(), lh);
+      //TODO: Q -- When to actually compute cachfs values? Does this happen automatically if StoreUserData() == true?
       
       const_cast<ElementTransformation&>(trafo).userdata = &ud;
       
@@ -363,9 +373,11 @@ namespace ngfem
       FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
       FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
       FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
+      FlatArray<FlatMatrix<AutoDiff<1, double>>> dval_blocks(nblocks, lh);
+      FlatArray<FlatMatrix<double>> deriv_blocks(nblocks, lh);
       FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
       FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
-      
+
       // These are only "independent" for blocks having "vsemb"; otherwise just views
       FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
       FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
@@ -376,6 +388,8 @@ namespace ngfem
           xk_blocks[i].Assign(ud.GetMemory(proxy));
           xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
           w_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
+          dval_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
+          deriv_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
           res_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
           
           if (has_vs_embedding(proxy))
@@ -396,14 +410,13 @@ namespace ngfem
         }
       
       // Block-agnostic data structures
-      FlatMatrix<> deriv(mir.Size(), 1,lh);
-      FlatMatrix<double> val(mir.Size(), 1, lh);
-      FlatMatrix<AutoDiff<1,double>> dval(mir.Size(), 1, lh);
+//      FlatMatrix<AutoDiff<1,double>> dval(mir.Size(), 1, lh);
       // TODO: Why a matrices instead of vector above?
       // TODO: Why? FlatMatrix has column-major layout, thus it is cheaper to take cols instead of rows to access qp data!
-      FlatMatrix<> xk(mir.Size(), Dimension(), lh);
-      FlatMatrix<> xold(mir.Size(), Dimension(), lh);
-      FlatMatrix<> w(mir.Size(), Dimension(), lh);
+      FlatMatrix<> xk(mir.Size(), full_dim, lh);
+      FlatMatrix<> xold(mir.Size(), full_dim, lh);
+      FlatMatrix<> w(mir.Size(), full_dim, lh);
+      FlatMatrix<AutoDiff<1,double>> dval(mir.Size(), full_dim, lh);
       
       FlatVector<> rhs(numeric_dim, lh);
       FlatVector<> sol(numeric_dim, lh);
@@ -422,27 +435,46 @@ namespace ngfem
                            [=](const auto& block) {return converged(block.AsVector(), res_0);});
       };
 
+
+      const auto distribute_vec_to_blocks = [&](const auto& src, auto&dest) -> void {
+        // TODO: Better got for a layout that uses Col instead of Row?
+        for (size_t qi = 0; qi < mir.Size(); ++qi)
+        {
+          auto src_qi = src.Row(qi);
+          int offset = 0;
+          for (int block : Range(this->proxies))
+          {
+            auto dest_qi = dest[block].Row(qi);
+            dest_qi = src_qi.Range(offset, offset + dest_qi.Size());
+            offset += dest_qi.Size();
+          }
+        }
+      };
+
       const auto calc_residuals = [&]() -> void {
           // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
+
+          expression -> Evaluate (mir, dval);
+          distribute_vec_to_blocks(dval, dval_blocks);
+
           for (int block : Range(proxies))
             {
               auto proxy = proxies[block];
               auto& res = res_blocks[block];
-              
+              auto& dvalb = dval_blocks[block];
+
               for (int k = 0; k < proxy->Dimension(); k++)
                 {
                 // TODO: the lines below are presently not required. However, for better performance,
                 //  there should be a lambda that compute RHS and LHS simultaneously!
+//                ud.trialfunction = proxy;
+//                ud.trial_comp = k;
 
-//                  ud.trialfunction = proxy;
-//                  ud.trial_comp = k;
-
-                  auto xp = ud.GetMemory(proxy);
-                  cout << "xp (" << k << ") = " << xp << endl;
-                  cout << "expression " << ToString(*expression) << endl;
-                  expression -> Evaluate (mir, dval);
+//                  auto xp = ud.GetMemory(proxy);
+//                  cout << "xp (" << k << ") = " << xp << endl;
+//                  cout << "expression " << ToString(*expression) << endl;
                   for (size_t qi = 0; qi < mir.Size(); qi++)
-                    res(qi,k) = dval(qi,0).Value();
+                    res(qi,k) = dvalb(qi,k).Value();
                 }
               cout << "res block " << block << " = " << res << endl;
             }
@@ -455,26 +487,34 @@ namespace ngfem
               { 
                 auto proxy1 = proxies[block1];
                 auto proxy2 = proxies[block2];
+                auto& dvalb = dval_blocks[block2];
+                auto& deriv = deriv_blocks[block2];
                 auto& lin = lin_blocks[block2 * nblocks + block1];
                 
-                for (int k = 0; k < proxy1->Dimension(); ++k)
-                  for (int l = 0; l < proxy2->Dimension(); ++l)
-                    {
-                      // TODO: row/col major? -> implementation is col-major, no?
-                      // Is this ordering compatible with the blocks in this implementation?
-                      //  -> symbolicintegrator.cpp:4656ff for block handling
+                for (int k = 0; k < proxy1->Dimension(); ++k) {
+                  // This means, the derivative is taken wrt proxy 1
+                  ud.trialfunction = proxy1;
+                  ud.trial_comp = k;
+                  expression->Evaluate(mir, dval);
+                  distribute_vec_to_blocks(dval, dval_blocks);
 
-                      // This means, the derivative is taken wrt proxy 1
-                      ud.trialfunction = proxy1;
-                      ud.trial_comp = k;
-
-                      expression -> Evaluate (mir, dval);
-                      for (size_t qi = 0; qi < mir.Size(); qi++) {
-                        deriv(qi,0) = dval(qi,0).DValue(0);
-                      }
-                      lin(STAR,l,k) = deriv.Col(0);
+                  for (int l = 0; l < proxy2->Dimension(); ++l) {
+                    // TODO: row/col major? -> implementation is col-major, no?
+                    // Is this ordering compatible with the blocks in this implementation?
+                    //  -> symbolicintegrator.cpp:4656ff for block handling
+                    for (size_t qi = 0; qi < mir.Size(); qi++) {
+                      deriv(qi, l) = dvalb(qi, l).DValue(0);
                     }
-                cout << "lin block (" << block2 << ", " << block1 << ") = " << lin << endl;
+                    lin(STAR, l, k) = deriv.Col(l);
+                    cout << "lin block (" << block2 << ", " << block1
+                         << ")[*, " << l << ", " << k << "] = " << lin(STAR, l, k) << endl;
+                  }
+                  // TODO: SEGFAULTS for vector-valued case-> Why?
+//                  lin(STAR, STAR, k) = deriv;
+                }
+                // TODO: SEGFAULTS for vector-valued case -> Why?
+                cout << "lin block (" << block2 << ", " << block1
+                     << ") = " << lin << endl;
             }
       };
       
@@ -546,7 +586,7 @@ namespace ngfem
             CalcInverse (lhs);
             sol = lhs * rhs;
             
-            // handle vs embedding
+            // Handle VS-embedding
             // TODO: Better go for a layout that uses Col instead of Row?
             auto& wi = w.Row(qi);
             int offset_w = 0;
@@ -582,20 +622,24 @@ namespace ngfem
         }
       };
 
-      const auto distribute_xk_to_blocks = [&]() -> void {
-        // TODO: Better got for a layout that uses Col instead of Row?
-        for (size_t qi = 0; qi < mir.Size(); ++qi) 
-          {
-            auto xk_qi = xk.Row(qi);
-            int offset = 0;
-            for (int block : Range(this->proxies))
-              {
-                auto xkb_qi = xk_blocks[block].Row(qi);
-                xkb_qi = xk_qi.Range(offset, offset + xkb_qi.Size());
-                offset += xkb_qi.Size();
-              }
-          }
-      };
+//      const auto distribute_xk_to_blocks = [&]() -> void {
+//        distribute_vec_to_blocks(xk, xk_blocks);
+//      };
+
+//      const auto distribute_xk_to_blocks = [&]() -> void {
+//        // TODO: Better got for a layout that uses Col instead of Row?
+//        for (size_t qi = 0; qi < mir.Size(); ++qi)
+//          {
+//            auto xk_qi = xk.Row(qi);
+//            int offset = 0;
+//            for (int block : Range(this->proxies))
+//              {
+//                auto xkb_qi = xk_blocks[block].Row(qi);
+//                xkb_qi = xk_qi.Range(offset, offset + xkb_qi.Size());
+//                offset += xkb_qi.Size();
+//              }
+//          }
+//      };
     
       
       // Evaluate starting point
@@ -623,14 +667,14 @@ namespace ngfem
           compute_increments();
 
           xk -= w;
-          distribute_xk_to_blocks();
+          distribute_vec_to_blocks(xk, xk_blocks);
         }
         
       if (!all_converged(res_blocks))
           xk = std::numeric_limits<double>::quiet_NaN();
 
       // cout << "result = " << xk << endl;
-      values.AddSize(mir.Size(), Dimension()) = xk;
+      values.AddSize(mir.Size(), full_dim) = xk;
     }
     
   };
