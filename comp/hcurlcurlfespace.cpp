@@ -152,44 +152,21 @@ namespace ngcomp
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlCurlFiniteElement<D>&> (fel); }
 
-    template <typename FEL,typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, 
-				const MIP & mip,
-				MAT && mat, LocalHeap & lh)
-    {
-      
-      GenerateMatrix2 (bfel, mip, SliceIfPossible<double> (mat), lh);
-    }
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix2 (const FEL & fel, const MIP & mip,
-				MAT && mat, LocalHeap & lh)
-    {
-      HeapReset hr(lh);
-      auto refmat = Cast(fel).GetShape(mip.IP(), lh);
-      Mat<D,D,double> refmati, physmati;
-      for (size_t i = 0; i < Cast(fel).ndof; i++)
-        {
-          for (int j = 0; j < D; j++)
-            for (int k = 0; k < D; k++)
-              refmati(j,k) = refmat.Row(i)(j*D+k);
-          physmati = Trans(mip.GetJacobianInverse())*refmati*mip.GetJacobianInverse();
-          for (int j = 0; j < D; j++)
-            for (int k = 0; k < D; k++)
-              mat.Col(i)(j*D+k) = physmati(j,k);
 
-          
-          // physmat = refmat.Row(i);
-          // mat.Col(i) = Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse();
-        }
-    }
-
-    template <typename FEL>
-    static void GenerateMatrix2 (const FEL & fel, 
-                                 const MappedIntegrationPoint<D,D> & mip,
-                                 SliceMatrix<> mat, LocalHeap & lh)
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedShape (mip,Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpIdHCurlCurl not available for mat ")+typeid(mat).name());
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
@@ -308,6 +285,66 @@ namespace ngcomp
 
 
   template<>
+  class DiffOpIncHCurlCurl<2>: public DiffOp<DiffOpIncHCurlCurl<2> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 2 };
+    enum { DIM_ELEMENT = 2 };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 2 };
+    
+    
+    static string Name() { return "inc"; }
+    
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+                               SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlCurlFiniteElement<2> & fel = static_cast<const HCurlCurlFiniteElement<2>&> (bfel);
+      
+      fel.CalcMappedIncShape (sip, Trans(mat));
+    }
+
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      const HCurlCurlFiniteElement<2> & bfel = static_cast<const HCurlCurlFiniteElement<2>&> (fel);
+      typedef typename TVX::TSCAL TSCAL;
+      if constexpr (std::is_same<TSCAL,double>())
+                     bfel.EvaluateMappedIncShape (mip, x, y);
+    }
+
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      const HCurlCurlFiniteElement<2> & fel = static_cast<const HCurlCurlFiniteElement<2>&> (bfel);
+      fel.CalcMappedIncShape (mir, mat);
+    }
+
+
+
+    using DiffOp<DiffOpIncHCurlCurl<2> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel).EvaluateIncShape (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIncHCurlCurl<2> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel).AddTransIncShape (mir, y, x);
+    }
+  };
+
+  template<>
   class DiffOpIncHCurlCurl<3>: public DiffOp<DiffOpIncHCurlCurl<3> >
   {
   public:
@@ -331,22 +368,6 @@ namespace ngcomp
     }
 
 
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
-    {
-      HeapReset hr(lh);
-      const HCurlCurlFiniteElement<3> & fel = static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
-
-      int nd = fel.GetNDof();
-      FlatMatrix<> incshape(nd, 9, lh);
-      fel.CalcMappedIncShape (sip, incshape);
-      for (int i=0; i<nd; i++)
-        for (int j=0; j<9; j++)
-          mat(j,i) = incshape(i,j);
-    }
-
-
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
                        const TVX & x, TVY & y,
@@ -356,7 +377,28 @@ namespace ngcomp
       typedef typename TVX::TSCAL TSCAL;
       if constexpr (std::is_same<TSCAL,double>())
                      bfel.EvaluateMappedIncShape (mip, x, y);
+    }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      const HCurlCurlFiniteElement<3> & fel = static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+      fel.CalcMappedIncShape (mir, mat);
+    }
+
+    using DiffOp<DiffOpIncHCurlCurl<3> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel).EvaluateIncShape (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIncHCurlCurl<3> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel).AddTransIncShape (mir, y, x);
     }
 
   };
@@ -581,7 +623,7 @@ namespace ngcomp
           const ElementTransformation & eltrans = mir[i].GetTransformation();
 
           // double eps = 1e-4;
-          for (int j = 0; j < D; j++)   // d / dxj
+          for (size_t j = 0; j < D; j++)   // d / dxj
             {
               HeapReset hr(lh);
               SIMD<IntegrationPoint> ipts[4];
@@ -649,6 +691,8 @@ namespace ngcomp
   };
   
   /// Christoffel Symbol of first kind for HCurlCurl
+  // Gamma_ijk saved in offset order k*D*D+j*D+i
+  // Christoffel Symbol of first kind is symmetric w.r.t. first two indices: Gamma_ijk=Gamma_jik
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
   {
@@ -682,10 +726,10 @@ namespace ngcomp
       
       CalcDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), mip, bmat, lh, eps());
       
-      for (int i=0; i<D; i++)
-        for (int j=0; j<D; j++)
-          for (int k=0; k<D; k++)
-            for (int l=0; l<nd_u; l++)
+      for (size_t i=0; i<D; i++)
+        for (size_t j=0; j<D; j++)
+          for (size_t k=0; k<D; k++)
+            for (size_t l=0; l<nd_u; l++)
               {
                 //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
                 mat(k*D*D+j*D+i,l) = 0.5*(bmat(l,i*D*D+(D*k+j))+bmat(l,j*D*D+(D*i+k))-bmat(l,k*D*D+(D*i+j)));
@@ -718,9 +762,9 @@ namespace ngcomp
         }
 
 
-      for (int i=0; i<D; i++)
-        for (int j=0; j<D; j++)
-          for (int k=0; k<D; k++)
+      for (size_t i=0; i<D; i++)
+        for (size_t j=0; j<D; j++)
+          for (size_t k=0; k<D; k++)
             {
               //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
               y(k*D*D+j*D+i) = 0.5*(hdv(i*D*D+(D*k+j))+hdv(j*D*D+(D*i+k))-hdv(k*D*D+(D*i+j)));
@@ -728,34 +772,53 @@ namespace ngcomp
     }
 
     
-    /*static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
-    {
-      size_t nd_u = static_cast<const FEL&>(fel).GetNDof();
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+    // static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    //                                   const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    // {
+    //   size_t nd_u = static_cast<const FEL&>(bfel).GetNDof();
+    //   auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
       
-      STACK_ARRAY(SIMD<double>, mem1, mir.Size()*D*D*D*nd_u);
-      FlatMatrix<SIMD<double>> bmat(mir.Size()*nd_u*D*D*D, 1, &mem1[0]);
-      DiffOpGradientHCurlCurl<D>::GenerateMatrixSIMDIR(bfel,bmr, bmat);
-      }*/
+    //   STACK_ARRAY(SIMD<double>, mem1, mir.Size()*D*D*D*nd_u);
+    //   FlatMatrix<SIMD<double>> bmat(nd_u*D*D*D, mir.Size(), &mem1[0]);
+
+    //   /*
+    //     no known conversion from 'SIMD<MappedIntegrationPoint<2, 2> >' to 'const ngfem::BaseMappedIntegrationPoint' for 1st argument
+    //     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
+    //   */
+    //   CalcSIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(bfel), mir, bmat, eps());
+      
+    //   for (size_t i=0; i<D; i++)
+    //     for (size_t j=0; j<D; j++)
+    //       for (size_t k=0; k<D; k++)
+    //         {
+    //           //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
+    //           mat.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(bmat.Row(i*D*D+(D*k+j))+bmat.Row(j*D*D+(D*i+k))-bmat.Row(k*D*D+(D*i+j)));
+    //         }
+    // }
     
-    using DiffOp<DiffOpChristoffelHCurlCurl<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      throw ExceptionNOSIMD("ApplySIMDIR for Complex not implemented in Christoffel1 DiffOp");
+    }
+    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*D*D;
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> hdv(D*D*D, bmir.Size(), mem);
       
       ApplySIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(fel), bmir, x, hdv, eps());
-      
-      for (int i=0; i<D; i++)
-        for (int j=0; j<D; j++)
-          for (int k=0; k<D; k++)
+
+      for (size_t i=0; i<D; i++)
+        for (size_t j=0; j<D; j++)
+          for (size_t k=0; k<D; k++)
             {
               //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
               y.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(hdv.Row(i*D*D+(D*k+j))+hdv.Row(j*D*D+(D*i+k))-hdv.Row(k*D*D+(D*i+j)));
             }
+
     }
     /*
     using DiffOp<DiffOpGradientHCurlCurl<D>>::AddTransSIMDIR;    
@@ -767,6 +830,8 @@ namespace ngcomp
 
 
   /// Christoffel Symbol of second kind for HCurlCurl
+  // Gamma_ij^k=g^kl Gamma_ijl saved in offset order k*D*D+j*D+i
+  // Christoffel Symbol of second kind is symmetric w.r.t. first two indices: Gamma_ij^k=Gamma_ji^k
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
   {
@@ -806,7 +871,6 @@ namespace ngcomp
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
       typedef typename TVX::TSCAL TSCAL;
       
-
       Mat<D,D,TSCAL> G;
       if constexpr (std::is_same<TSCAL,double>())
                      bfel.EvaluateMappedShape (mip, x, G);
@@ -823,14 +887,17 @@ namespace ngcomp
       Vec<D*D*D,TSCAL> hdv;
       DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hdv, lh);
       
-      for (int i=0; i<D; i++)
-        for (int j=0; j<D; j++)
-          for (int k=0; k<D; k++)
-            {
-              y(i*D*D+j*D+k) = 0;
-              for (int p=0; p<D; p++)
-                y(i*D*D+j*D+k) += invmat(i,p)*hdv(p*D*D+j+D*k);
-            }
+      for (size_t i=0; i<D; i++)
+        for (size_t jk=0; jk<D*D; jk++)
+          {
+            TSCAL sum = 0;
+            for (size_t p=0; p<D; p++)
+              {
+                // Gamma_jk^i=g^ip Gamma_jkp
+                sum += invmat(i,p)*hdv(p*D*D+jk);
+              }
+            y(i*D*D+jk) = sum;
+          }
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
@@ -839,13 +906,48 @@ namespace ngcomp
       throw Exception("Christoffel symbol of second kind is a nonlinear operator! Use only apply!");
     }
     
-    //using DiffOp<DiffOpChristoffel2HCurlCurl<D>>::ApplySIMDIR;
-    //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-    //                         BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    //{
-    //  
-    //}
-    //
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      throw ExceptionNOSIMD("ApplySIMDIR for Complex not implemented in Christoffel2 DiffOp");
+    }
+    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+       
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D;
+      STACK_ARRAY(SIMD<double>, mem, size);
+      FlatMatrix<SIMD<double>> hchristoffel1(D*D*D, bmir.Size(), &mem[0]);
+          
+      DiffOpChristoffelHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, hchristoffel1);
+
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
+      bfel.Evaluate (bmir, x, G);
+
+      for (int m = 0; m < bmir.Size(); m++)
+        {
+          Mat<D,D,SIMD<double>> G_m;
+          for (size_t j = 0; j < D*D; j++)
+            G_m(j) = G(j,m);
+          Mat<D,D,SIMD<double>> invG = Inv(G_m);
+
+          auto christoffel1_m = hchristoffel1.Col(m);
+          
+          for (size_t i=0; i<D; i++)
+            for (size_t jk=0; jk<D*D; jk++)
+              {
+                SIMD<double> sum(0);
+                for (size_t p=0; p<D; p++)
+                  sum += invG(i,p)*christoffel1_m(p*D*D+jk);
+                y(i*D*D+jk,m) = sum;
+              }
+        }
+    }
+    
     //using DiffOp<DiffOpChristoffel2HCurlCurl<D>>::AddTransSIMDIR;    
     //static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
     //                            BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
@@ -854,7 +956,7 @@ namespace ngcomp
   };
 
 
-    /// Riemann curvature tensor for HCurlCurl
+  /// Riemann curvature tensor for HCurlCurl
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpRiemannHCurlCurl : public DiffOp<DiffOpRiemannHCurlCurl<D> >
   {
@@ -892,168 +994,236 @@ namespace ngcomp
                        const TVX & x, TVY & y,
                        LocalHeap & lh) 
     {
-      HeapReset hr(lh);
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      
       typedef typename TVX::TSCAL TSCAL;
-      // int nd_u = bfel.GetNDof();
-      //FlatMatrixFixWidth<D*D> bmat(nd_u, lh);
-      //bfel.CalcMappedShape (mip, bmat);
-      
-      Vec<D*D*D,TSCAL> shape_ul;
-      Vec<D*D*D,TSCAL> shape_ur;
-      Vec<D*D*D,TSCAL> shape_ull;
-      Vec<D*D*D,TSCAL> shape_urr;
-      Vec<D*D*D,TSCAL> dshape_u_ref;
-
-      Vec<D,TSCAL> dshape_u_ref_comp;
-      Vec<D,TSCAL> dshape_u;
-      
-      Vec<D*D*D,TSCAL> hchristoffel1;
-      Vec<D*D*D,TSCAL> hchristoffel2;
-      DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hchristoffel1, lh);
-
-      if constexpr (std::is_same<TSCAL,double>())
+      if constexpr (!std::is_same<TSCAL,double>())
                      {
-                       Mat<D,D,TSCAL> G;
-                       bfel.EvaluateMappedShape (mip, x, G);
-                       Mat<D,D,TSCAL> invG = Inv(G);      
-                       
-                       for (int i=0; i<D; i++)
-                         for (int j=0; j<D; j++)
-                           for (int k=0; k<D; k++)
-                             {
-                               TSCAL sum = 0; 
-                               for (int p=0; p<D; p++)
-                                 sum += invG(i,p)*hchristoffel1(p*D*D+j+D*k);
-                               hchristoffel2(i*D*D+j*D+k) = sum;
-                             }
+                       throw Exception("Riemann diffop only implemented for TSCAL == double");
                      }
       else
-        DiffOpChristoffel2HCurlCurl<D>::Apply(fel, mip, x, hchristoffel2, lh);        
-
-      if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
-      {
-        Vec<D*D*D*D,TSCAL> hchristoffel1_der;
-
-        const IntegrationPoint& ip = mip.IP();
-        const ElementTransformation & eltrans = mip.GetTransformation();
-        for (int j = 0; j < D; j++)   // d / dxj
-          {
-            IntegrationPoint ipl(ip);
-            ipl(j) -= eps();
-            IntegrationPoint ipr(ip);
-            ipr(j) += eps();
-            IntegrationPoint ipll(ip);
-            ipll(j) -= 2*eps();
-            IntegrationPoint iprr(ip);
-            iprr(j) += 2*eps();
-            
-            MappedIntegrationPoint<D,D> mipl(ipl, eltrans);
-            MappedIntegrationPoint<D,D> mipr(ipr, eltrans);
-            MappedIntegrationPoint<D,D> mipll(ipll, eltrans);
-            MappedIntegrationPoint<D,D> miprr(iprr, eltrans);
-            
-            DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipl,  x, shape_ul, lh);
-            DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipr,  x, shape_ur, lh);
-            DiffOpChristoffelHCurlCurl<D>::Apply(fel, mipll, x, shape_ull, lh);
-            DiffOpChristoffelHCurlCurl<D>::Apply(fel, miprr, x, shape_urr, lh);
-            
-            
-            dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-            
-            for (int l = 0; l < D*D*D; l++)
-              hchristoffel1_der(j*D*D*D+l) = dshape_u_ref(l);
-          }
-        
-        
-        for (int j = 0; j < D*D*D; j++)
-          {
-            for (int l = 0; l < D; l++)
-              dshape_u_ref_comp(l) = hchristoffel1_der(l*D*D*D+j);
-            
-            dshape_u =  Trans(mip.GetJacobianInverse()) * dshape_u_ref_comp;
-            
-            for (int l = 0; l < D; l++)
-              hchristoffel1_der(l*D*D*D+j) = dshape_u(l);
-            
-          }
-        
-        
-        y = TSCAL(0.0);
-        //R1212
-        y(0*D*D*D+1*D*D+0*D+1) = hchristoffel1_der(0*D*D*D+0*D*D+1*D+1)-hchristoffel1_der(1*D*D*D+0*D*D+0*D+1);
-        for (int q=0; q<D; q++)
-          {
-            y(0*D*D*D+1*D*D+0*D+1) += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
-            y(0*D*D*D+1*D*D+0*D+1) -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
-          }
-        y(1*D*D*D+0*D*D+1*D+0) = y(0*D*D*D+1*D*D+0*D+1);
-        y(1*D*D*D+0*D*D+0*D+1) = -y(0*D*D*D+1*D*D+0*D+1);
-        y(0*D*D*D+1*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+1);
-      }
-      else //slow version for three dimensions. TODO: Exploit that only 6 numbers are involved
         {
+          HeapReset hr(lh);
+          const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+       
+          Vec<D*D*D,TSCAL> hchristoffel1;
+          Vec<D*D*D,TSCAL> hchristoffel2;
+          DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hchristoffel1, lh);
           
-          Vec<D*D,TSCAL> incshape;
-          Vec<D*D*D*D,TSCAL> Riemannincpart;
-          if constexpr (std::is_same<TSCAL,double>())
-                         {
-                           bfel.EvaluateMappedIncShape(mip,x,incshape);
-                           Mat<3,3,size_t> i3(0);
-                           i3(0,1) = i3(1,0) = 2; 
-                           i3(2,0) = i3(0,2) = 1;
-                           Mat<3,3,double> Eps(0);
-                           Eps(0,1)=Eps(1,2)=Eps(2,0)=1.0;
-                           Eps(1,0)=Eps(2,1)=Eps(0,2)=-1.0;
-                           
-                           for(int i = 0; i < D; i++)
-                             for(int j = 0; j < D; j++)
-                               for(int k = 0; k < D; k++)
-                                 for(int l = 0; l < D; l++)
-                                   Riemannincpart(i*D*D*D+j*D*D+k*D+l) = -0.5 * Eps(i,j) * Eps(k,l) * incshape(D*i3(i,j)+i3(k,l));
-                           
-                         }
-          for (int i=0; i<D; i++)
-            for (int j=0; j<D; j++)
-              for (int k=0; k<D; k++)
-                for (int l=0; l<D; l++)
-                  {                    
-                    // hchristoffel1_der(i*D*D*D+j*D*D+k*D+l) = d_i Gamma_lkj
-                    // hchristoffel1(k*D*D+j*D+i) = Gamma_ijk
-                    // hchristoffel2(k*D*D+j*D+i) = invmat(k,p)*hdv(p*D*D+D*j+i) = Cinv_kp Gamma_ijp = Gamma_ij^k;
+          Mat<D,D,TSCAL> G;
+          bfel.EvaluateMappedShape (mip, x, G);
+          Mat<D,D,TSCAL> invG = Inv(G);      
+          
+          for (size_t i=0; i<D; i++)
+            for (size_t jk=0; jk<D*D; jk++)
+              {
+                TSCAL sum = 0; 
+                for (size_t p=0; p<D; p++)
+                  sum += invG(i,p)*hchristoffel1(p*D*D+jk);
+                hchristoffel2(i*D*D+jk) = sum;
+              }
+        
+          if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
+            {
+              Vec<1,TSCAL> incshape;
+              bfel.EvaluateMappedIncShape(mip, x, incshape);
+        
+              y = TSCAL(0.0);
+              //R1212
+              y(0*D*D*D+1*D*D+0*D+1) = -0.5*incshape(0);
+              for (size_t q=0; q<D; q++)
+                {
+                  y(0*D*D*D+1*D*D+0*D+1) += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
+                  y(0*D*D*D+1*D*D+0*D+1) -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
+                }
+              // set other non-zero components
+              y(1*D*D*D+0*D*D+1*D+0) = y(0*D*D*D+1*D*D+0*D+1);
+              y(1*D*D*D+0*D*D+0*D+1) = -y(0*D*D*D+1*D*D+0*D+1);
+              y(0*D*D*D+1*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+1);
+            }
+          else //slow version for three dimensions. TODO: Exploit that only 6 numbers are involved
+            {
+              Vec<D*D,TSCAL> incshape;
+              Vec<D*D*D*D,TSCAL> Riemannincpart;
+              bfel.EvaluateMappedIncShape(mip, x, incshape);
+              Mat<3,3,size_t> i3(0);
+              i3(0,1) = i3(1,0) = 2; 
+              i3(2,0) = i3(0,2) = 1;
+              Mat<3,3,double> Eps(0);
+              Eps(0,1)=Eps(1,2)=Eps(2,0)=1.0;
+              Eps(1,0)=Eps(2,1)=Eps(0,2)=-1.0;
+              
+              for(size_t i = 0; i < D; i++)
+                for(size_t j = 0; j < D; j++)
+                  for(size_t k = 0; k < D; k++)
+                    for(size_t l = 0; l < D; l++)
+                      Riemannincpart(i*D*D*D+j*D*D+k*D+l) = -0.5 * Eps(i,j) * Eps(k,l) * incshape(D*i3(i,j)+i3(k,l));
+              
 
-                    TSCAL sum = Riemannincpart(i*D*D*D+j*D*D+k*D+l);
-                    for (int q=0; q<D; q++)
-                      {
-                        sum += hchristoffel2(q*D*D+k*D+j)*hchristoffel1(q*D*D+i*D+l);
-                        sum -= hchristoffel2(q*D*D+l*D+j)*hchristoffel1(q*D*D+i*D+k);
+              // these components are non-zero and have 6 independent values
+              // R1212 = -R2112 = -R1221 = R2121
+              // R1213 = R1312 = -R2113 = -R1231 = -R3112 = -R1321 = R2131 = R3121
+              // R1223 = -R2123 = -R1232 = R2312 = -R2321 = -R3212 = R2132 = R3221
+              // R1313 = -R3113 = - R1331 = R3131
+              // R1323 = -R3123 = -R1332 = R2313 = -R2331 = -R3213 = R3231 = R3132
+              // R2323 = -R3223 = -R2332 = R3232
+
+              // these comonents are zero:
+              // R1111, R1112, R1113, R1121, R1122, R1123, R1131, R1132, R1133
+              // R1211, R1222, R1233
+              // R1311, R1322, R1333
+              // R2111, R2122, R2133
+              // R2211, R2212, R2213, R2221, R2222, R2223, R2231, R2232, R2233
+              // R2311, R2322, R2333
+              // R3111, R3122, R3133
+              // R3211, R3222, R3233
+              // R3311, R3312, R3313, R3321, R3322, R3323, R3331, R3332, R3333
+              
+              for (size_t i=0; i<D; i++)
+                for (size_t j=0; j<D; j++)
+                  for (size_t k=0; k<D; k++)
+                    for (size_t l=0; l<D; l++)
+                      {                    
+                        // hchristoffel1_der(i*D*D*D+j*D*D+k*D+l) = d_i Gamma_lkj
+                        // hchristoffel1(k*D*D+j*D+i) = Gamma_ijk
+                        // hchristoffel2(k*D*D+j*D+i) = invmat(k,p)*hdv(p*D*D+D*j+i) = Cinv_kp Gamma_ijp = Gamma_ij^k;
+
+                        TSCAL sum = Riemannincpart(i*D*D*D+j*D*D+k*D+l);
+                        for (size_t q=0; q<D; q++)
+                          {
+                            sum += hchristoffel2(q*D*D+k*D+j)*hchristoffel1(q*D*D+i*D+l);
+                            sum -= hchristoffel2(q*D*D+l*D+j)*hchristoffel1(q*D*D+i*D+k);
+                          }
+                        y(i*D*D*D+j*D*D+k*D+l) = sum;
                       }
-                    y(i*D*D*D+j*D*D+k*D+l) = sum;
-                  }
+            }
         }
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
-            throw Exception("Riemann curvature tensor is a nonlinear operator! Use only apply!");
-
+      throw Exception("Riemann curvature tensor is a nonlinear operator! Use only apply!");
     }
     
-    //
+    
     //using DiffOp<DiffOpRiemannHCurlCurl<D>>::ApplySIMDIR;
-    //static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-    //                         BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    //{
-    //  
-    //}
-    //
-    //using DiffOp<DiffOpRiemannHCurlCurl<D>>::AddTransSIMDIR;    
-    //static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      throw ExceptionNOSIMD("ApplySIMDIR for Complex not implemented in Riemann DiffOp");
+    }
+    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*D*D;
+      STACK_ARRAY(SIMD<double>, mem, 2*size);
+      FlatMatrix<SIMD<double>> hchristoffel1(D*D*D, bmir.Size(), &mem[0]);
+      FlatMatrix<SIMD<double>> hchristoffel2(D*D*D, bmir.Size(), &mem[size]);
+
+      DiffOpChristoffelHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, hchristoffel1);
+     
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
+      bfel.Evaluate (bmir, x, G);
+      
+      //inner?
+      for (size_t m = 0; m < bmir.Size(); m++)
+        {
+          Mat<D,D,SIMD<double>> G_m;
+          for (size_t j = 0; j < D*D; j++)
+            G_m(j) = G(j,m);
+          Mat<D,D,SIMD<double>> invG = Inv(G_m);      
+
+          auto christoffel1_m = hchristoffel1.Col(m);
+          for (size_t i=0; i<D; i++)
+            for (size_t jk=0; jk<D*D; jk++)
+                {
+                  //ip schleife?
+                  SIMD<double> sum = 0; 
+                  for (size_t p=0; p<D; p++)
+                    sum += invG(i,p)*christoffel1_m(p*D*D+jk);
+                  hchristoffel2(i*D*D+jk,m) = sum;
+                }
+        }
+      if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
+        {
+          STACK_ARRAY(SIMD<double>, mem3, bmir.Size()*SIMD<double>::Size());
+          
+          FlatMatrix<SIMD<double>> incshape(1, bmir.Size(), &mem3[0]);
+          bfel.EvaluateIncShape(bmir, x, incshape);
+
+          //set zero, can this be improved?
+          for (size_t i = 0; i < D*D*D*D; i++) 
+            y.Row(i).Range(bmir.Size()) = SIMD<double>(0);
+          
+          //R1212
+          y.Row(0*D*D*D+1*D*D+0*D+1).Range(bmir.Size()) = -0.5*incshape.Row(0);
+          for (size_t q=0; q<D; q++)
+            {
+              for (size_t m = 0; m < bmir.Size(); m++)
+                {
+                  y(0*D*D*D+1*D*D+0*D+1,m) += hchristoffel2(q*D*D+0*D+1,m)*hchristoffel1(q*D*D+0*D+1,m);
+                  y(0*D*D*D+1*D*D+0*D+1,m) -= hchristoffel2(q*D*D+1*D+1,m)*hchristoffel1(q*D*D+0*D+0,m);
+                }
+            }
+          // set other non-zero components
+          y.Row(1*D*D*D+0*D*D+1*D+0).Range(bmir.Size()) =  y.Row(0*D*D*D+1*D*D+0*D+1);
+          y.Row(1*D*D*D+0*D*D+0*D+1).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+0*D+1);
+          y.Row(0*D*D*D+1*D*D+1*D+0).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+0*D+1);
+        }
+      else //slow version for three dimensions. TODO: Exploit that only 6 numbers are involved
+        {
+          Vec<D*D*D*D,SIMD<double>> Riemannincpart;
+
+          STACK_ARRAY(SIMD<double>, mem3, bmir.Size()*D*D*SIMD<double>::Size());
+          FlatMatrix<SIMD<double>> incshape(D*D, bmir.Size(), &mem3[0]);
+
+          bfel.EvaluateIncShape(bmir, x, incshape);
+          Mat<3,3,size_t> i3(0);
+          i3(0,1) = i3(1,0) = 2; 
+          i3(2,0) = i3(0,2) = 1;
+          Mat<3,3,double> Eps(0);
+          Eps(0,1)=Eps(1,2)=Eps(2,0)=1.0;
+          Eps(1,0)=Eps(2,1)=Eps(0,2)=-1.0;
+
+
+          for (size_t m = 0; m < bmir.Size(); m++)
+            {
+              for(size_t i = 0; i < D; i++)
+                for(size_t j = 0; j < D; j++)
+                  for(size_t k = 0; k < D; k++)
+                    for(size_t l = 0; l < D; l++)
+                      Riemannincpart(i*D*D*D+j*D*D+k*D+l) = -0.5 * Eps(i,j) * Eps(k,l) * incshape(D*i3(i,j)+i3(k,l),m);
+          
+              for (size_t i=0; i<D; i++)
+                for (size_t j=0; j<D; j++)
+                  for (size_t k=0; k<D; k++)
+                    for (size_t l=0; l<D; l++)
+                      {                    
+                        // hchristoffel1_der(i*D*D*D+j*D*D+k*D+l) = d_i Gamma_lkj
+                        // hchristoffel1(k*D*D+j*D+i) = Gamma_ijk
+                        // hchristoffel2(k*D*D+j*D+i) = invmat(k,p)*hdv(p*D*D+D*j+i) = Cinv_kp Gamma_ijp = Gamma_ij^k;
+                        
+                        SIMD<double> sum = Riemannincpart(i*D*D*D+j*D*D+k*D+l);
+                        for (size_t q=0; q<D; q++)
+                          {
+                            sum += hchristoffel2(q*D*D+k*D+j,m)*hchristoffel1(q*D*D+i*D+l,m);
+                            sum -= hchristoffel2(q*D*D+l*D+j,m)*hchristoffel1(q*D*D+i*D+k,m);
+                          }
+                        y(i*D*D*D+j*D*D+k*D+l,m) = sum;
+                      }
+            }
+        }
+      
+    }
+    
+    // using DiffOp<DiffOpRiemannHCurlCurl<D>>::AddTransSIMDIR;    
+    // static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
     //                            BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
-    //{
-    //}
+    // {
+    // }
   };
   
 
@@ -1110,12 +1280,12 @@ namespace ngcomp
 
       Mat<D,D> ginv = Inv(g);
       
-      for (int i = 0; i < D; i++)
-        for (int j = 0; j < D; j++)
+      for (size_t i = 0; i < D; i++)
+        for (size_t j = 0; j < D; j++)
           {
             TSCAL sum = 0.0;
-            for (int k = 0; k < D; k++)
-              for (int l = 0; l < D; l++)
+            for (size_t k = 0; k < D; k++)
+              for (size_t l = 0; l < D; l++)
                 sum += ginv(k,l) * Riemann(((k*D+i)*D+l)*D+j);
             y(i*D+j) = sum;
           }
@@ -1141,7 +1311,7 @@ namespace ngcomp
   };
 
 
-    /// Curvature operator for HCurlCurl
+  /// Curvature operator for HCurlCurl
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpCurvatureHCurlCurl : public DiffOp<DiffOpCurvatureHCurlCurl<D> >
   {
@@ -1176,6 +1346,8 @@ namespace ngcomp
                        const TVX & x, TVY & y,
                        LocalHeap & lh) 
     {
+      //cout << "Curv no simd " << endl;
+
       typedef typename TVX::TSCAL TSCAL;
       if constexpr (!std::is_same<TSCAL,double>())
                      {
@@ -1220,8 +1392,51 @@ namespace ngcomp
             }
         }
     }
-  };
 
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      throw ExceptionNOSIMD("ApplySIMDIR for Complex not implemented in Curvature DiffOp");
+    }
+    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*D*D*D;
+      STACK_ARRAY(SIMD<double>, mem, size);
+      FlatMatrix<SIMD<double>> Riemann(D*D*D*D, bmir.Size(), &mem[0]);
+      DiffOpRiemannHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Riemann);
+        
+      if constexpr (D==2)
+        {
+          // - ?
+          y.Row(0).Range(bmir.Size()) = Riemann.Row(0*D*D*D+1*D*D+0*D+1);
+        }
+      else
+        {
+          /*
+            Q_xx = <Q(x),x> = -R_yzyz
+            Q_xy = <Q(y),x> =  R_xzyz
+            Q_xz = <Q(z),x> = -R_xyyz
+            Q_yy = <Q(y),y> = -R_xzxz
+            Q_yz = <Q(z),y> =  R_xyxz
+            Q_zz = <Q(z),z> = -R_xyxy                
+          */
+          y.Row(0*D+0).Range(bmir.Size()) = -Riemann.Row(1*D*D*D+2*D*D+1*D+2);
+          y.Row(0*D+1).Range(bmir.Size()) =  Riemann.Row(0*D*D*D+2*D*D+1*D+2);
+          y.Row(0*D+2).Range(bmir.Size()) = -Riemann.Row(0*D*D*D+1*D*D+1*D+2);
+          y.Row(1*D+1).Range(bmir.Size()) = -Riemann.Row(0*D*D*D+2*D*D+0*D+2);
+          y.Row(1*D+2).Range(bmir.Size()) =  Riemann.Row(0*D*D*D+1*D*D+0*D+2);
+          y.Row(2*D+2).Range(bmir.Size()) = -Riemann.Row(0*D*D*D+1*D*D+0*D+1);
+          
+          y.Row(1*D+0).Range(bmir.Size()) = y.Row(0*D+1);
+          y.Row(2*D+0).Range(bmir.Size()) = y.Row(0*D+2);
+          y.Row(2*D+1).Range(bmir.Size()) = y.Row(1*D+2);
+        }
+    }
+  };
   
 
 
@@ -1267,6 +1482,7 @@ namespace ngcomp
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlCurlDual<2>>> ());
         additional_evaluators.Set ("Riemann", make_shared<T_DifferentialOperator<DiffOpRiemannHCurlCurl<2>>> ());
         additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<2>>> ());
+        additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<2>>> ());
         additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<2>>> ());
 	break;
       case 3:

@@ -1110,6 +1110,8 @@ namespace ngfem
             }
         });
 
+    cache_cfs = FindCacheCF(*cf);
+
     for (auto proxy : trial_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
@@ -1392,6 +1394,7 @@ namespace ngfem
 
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          PrecomputeCacheCF(cache_cfs, mir, lh);
 
           // bool symmetric_so_far = true;
           int k1 = 0;
