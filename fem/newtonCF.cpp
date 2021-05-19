@@ -207,8 +207,10 @@ public:
                         "as starting point");
 
       if (proxies.Size() != startingpoint_gf->GetNComponents())
-        throw Exception("NewtonCF: number of proxies does not match the number "
-                        "of components of the 'startingpoint'");
+        throw Exception(string("NewtonCF: number of proxies (=") +
+                        to_string(proxies.Size()) + ") does not match the number "
+                        "of components of the 'startingpoint' (=" +
+                        to_string(startingpoint_gf->GetNComponents()) + ")");
 
       startingpoints.DeleteAll();
       for (int i : Range(startingpoint_gf->GetNComponents()))
@@ -229,8 +231,10 @@ public:
                           std::to_string(i) + " do not agree");
       }
     } else
-      throw Exception("NewtonCF: Number of given startingpoints does not match "
-                      "number of detected proxies");
+      throw Exception(string("NewtonCF: Number of given startingpoints (=") +
+                      to_string(startingpoints.Size()) + ") does not match "
+                      "number of detected proxies (=" +
+                      to_string(proxies.Size()) + ")");
 
     for (const auto proxy : proxies) {
       numeric_dim += proxy_dof_dimension(proxy);
