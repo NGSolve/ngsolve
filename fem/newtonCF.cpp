@@ -5,12 +5,8 @@
 /*********************************************************************/
 
 #include <comp.hpp>
-#include <multigrid.hpp>
-#include <nginterface.h>
 #include <ngstd.hpp>
 #include <parallelngs.hpp>
-#include <stdlib.h>
-
 #include <cmath>
 #include <limits>
 
