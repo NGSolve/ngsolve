@@ -1247,8 +1247,19 @@ wait : bool
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
   m.def("MinimizationCF", &CreateMinimizationCF);
-  m.def("NewtonCF", &CreateNewtonCF, py::arg("expression"), py::arg("startingpoint"),
-        py::arg("tol") = 1e-8, py::arg("rtol") = 0.0, py::arg("maxiter") = 10);
+  m.def("NewtonCF", [](shared_ptr<CF> expr, const vector<shared_ptr<CF>>& startingpoints, optional<double> tol, optional<double> rtol, optional<int> maxiter){
+                      Array<shared_ptr<CF>> stps(startingpoints.size());
+                      for (auto stp : startingpoints)
+                        stps.Append(stp);
+                      return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+                    },
+        py::arg("expression"), py::arg("startingpoints"), py::arg("tol") = 1e-8,
+        py::arg("rtol") = 0.0, py::arg("maxiter") = 10);
+  m.def("NewtonCF",
+        py::overload_cast<shared_ptr<CF>, shared_ptr<CF>, optional<double>,
+            optional<double>, optional<int>>(&CreateNewtonCF),
+        py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
+        py::arg("rtol") = 0.0, py::arg("maxiter") = 10);
   
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
