@@ -1247,10 +1247,11 @@ wait : bool
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
   m.def("MinimizationCF", &CreateMinimizationCF);
+  // TODO: fix overload resolution for GridFunction
   m.def("NewtonCF", [](shared_ptr<CF> expr, const vector<shared_ptr<CF>>& startingpoints, optional<double> tol, optional<double> rtol, optional<int> maxiter){
                       Array<shared_ptr<CF>> stps(startingpoints.size());
-                      for (auto stp : startingpoints)
-                        stps.Append(stp);
+                      for (auto i : Range(stps))
+                        stps[i] = startingpoints[i];
                       return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
                     },
         py::arg("expression"), py::arg("startingpoints"), py::arg("tol") = 1e-8,
