@@ -94,8 +94,6 @@ template <typename T> const T *end(const FlatArray<T> &array) {
 
 } // namespace
 
-
-
 // TODO: (general)
 //  * Interpolation into generic compound spaces does not work as expected
 //     (only one component is respected)
@@ -121,7 +119,7 @@ class NewtonCF : public CoefficientFunction {
   int full_dim = 0;
   Array<int> proxy_dims{};
 
-  // Same parameters as scipy's newton
+  // Same parameters as for scipy's newton
   // Alternatively, could one think of ParameterCFs here?
   double tol{1e-8};
   double rtol{0.0};
@@ -229,9 +227,10 @@ public:
 
     if (expression->Dimension() != full_dim)
       throw Exception(string("NewtonCF: dimension of residual expression (=") +
-                      to_string(expression->Dimension())
-                      + ") does not match the accumulated dimension of detected "
-                        "trial functions (=" + to_string(full_dim) + ")");
+                      to_string(expression->Dimension()) +
+                      ") does not match the accumulated dimension of detected "
+                      "trial functions (=" +
+                      to_string(full_dim) + ")");
 
     // Process startingpoints
 
@@ -272,14 +271,14 @@ public:
                           std::to_string(i) + " do not agree");
       }
     } else if (startingpoints.Size() == 1) {
-        if (startingpoints[0]->Dimension() != full_dim)
-          throw Exception(string("NewtonCF: Total dimension of startingpoints (=") +
-                          to_string(startingpoints[0]->Dimension()) +
-                          ") does not match the accumulated dimension of trial "
-                          "functions (=" +
-                          to_string(full_dim) + ")");
-    }
-    else
+      if (startingpoints[0]->Dimension() != full_dim)
+        throw Exception(
+            string("NewtonCF: Total dimension of startingpoints (=") +
+            to_string(startingpoints[0]->Dimension()) +
+            ") does not match the accumulated dimension of trial "
+            "functions (=" +
+            to_string(full_dim) + ")");
+    } else
       throw Exception(string("NewtonCF: Number of given startingpoints (=") +
                       to_string(startingpoints.Size()) +
                       ") does not match "
@@ -341,20 +340,21 @@ public:
 
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
-    // TODO: Into FlatVector instead?
+    // TODO: Into FlatVector instead; or std::vector & placement new?
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
+    FlatArray<FlatMatrix<double>> val_blocks(nblocks, lh);
     FlatArray<FlatMatrix<AutoDiff<1, double>>> dval_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> deriv_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
-    // TODO: Into a FlatMatrix instead?
+    // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
 
     // These are only "independent" for blocks having "vsemb"; otherwise just
     // views
     FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
-    // TODO: Into a FlatMatrix instead?
+    // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
 
     for (int i : Range(proxies)) {
@@ -362,6 +362,7 @@ public:
       xk_blocks[i].Assign(ud.GetMemory(proxy));
       xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       w_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
+      val_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       dval_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       deriv_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       res_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
@@ -389,6 +390,7 @@ public:
     FlatMatrix<> xk(mir.Size(), full_dim, lh);
     FlatMatrix<> xold(mir.Size(), full_dim, lh);
     FlatMatrix<> w(mir.Size(), full_dim, lh);
+    FlatMatrix<> val(mir.Size(), full_dim, lh);
     FlatMatrix<AutoDiff<1, double>> dval(mir.Size(), full_dim, lh);
 
     FlatVector<> rhs(numeric_dim, lh);
@@ -412,7 +414,7 @@ public:
       for (size_t qi = 0; qi < mir.Size(); ++qi) {
         auto src_qi = src.Row(qi);
         int offset = 0;
-        for (int block : Range(this->proxies)) {
+        for (int block : Range(nblocks)) {
           auto dest_qi = dest[block].Row(qi);
           dest_qi = src_qi.Range(offset, offset + dest_qi.Size());
           offset += dest_qi.Size();
@@ -423,46 +425,47 @@ public:
     const auto calc_residuals = [&]() -> void {
       // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
 
-      expression->Evaluate(mir, dval);
-      distribute_vec_to_blocks(dval, dval_blocks);
+      // TODO: For better performance, should RHS and some LHS components be
+      //  computed simultaneously?
+      expression->Evaluate(mir, val);
+      distribute_vec_to_blocks(val, val_blocks);
 
-      for (int block : Range(proxies)) {
+      for (int block : Range(nblocks)) {
         auto proxy = proxies[block];
         auto &res = res_blocks[block];
-        auto &dvalb = dval_blocks[block];
+        auto &rhs = rhs_blocks[block];
+        auto &valb = val_blocks[block];
 
-        for (int k = 0; k < proxy->Dimension(); k++) {
-          // TODO: the lines below are presently not required. However, for
-          //  better performance, there should be a lambda that compute RHS and
-          //  some LHS components simultaneously!
-
-          //   ud.trialfunction = proxy;
-          //   ud.trial_comp = k;
-
+        for (int k = 0; k < proxy->Dimension(); k++)
           for (size_t qi = 0; qi < mir.Size(); qi++)
-            res(qi, k) = dvalb(qi, k).Value();
-        }
+            res(qi, k) = valb(qi, k);
+
+        // The actual rhs (respecting VS embeddings)
+        for (size_t qi = 0; qi < mir.Size(); qi++)
+          if (auto vsemb = get_vs_embedding(proxy); vsemb)
+            rhs.Row(qi) = Trans(vsemb.value()) * res.Row(qi);
+
         // cout << "res block " << block << " = " << res << endl;
       }
     };
 
     const auto calc_linearizations = [&]() -> void {
       // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
-      for (int block1 = 0; block1 < nblocks; ++block1)
-        for (int block2 = 0; block2 < nblocks; ++block2) {
-          auto proxy1 = proxies[block1];
-          auto proxy2 = proxies[block2];
-          auto &dvalb = dval_blocks[block1];
-          auto &deriv = deriv_blocks[block1];
-          auto &lin = lin_blocks[block1 * nblocks + block2];
+      for (int block2 = 0; block2 < nblocks; ++block2) {
+        auto proxy2 = proxies[block2];
 
-          for (int l = 0; l < proxy2->Dimension(); ++l) {
-            // This means, the derivative is taken wrt proxy 2
-            ud.trialfunction = proxy2;
-            ud.trial_comp = l;
-            expression->Evaluate(mir, dval);
-            distribute_vec_to_blocks(dval, dval_blocks);
+        for (int l = 0; l < proxy2->Dimension(); ++l) {
+          // This means, the derivative is taken wrt proxy 2
+          ud.trialfunction = proxy2;
+          ud.trial_comp = l;
+          expression->Evaluate(mir, dval);
+          distribute_vec_to_blocks(dval, dval_blocks);
 
+          for (int block1 = 0; block1 < nblocks; ++block1) {
+            auto proxy1 = proxies[block1];
+            auto &dvalb = dval_blocks[block1];
+            auto &deriv = deriv_blocks[block1];
+            auto &lin = lin_blocks[block1 * nblocks + block2];
             for (int k = 0; k < proxy1->Dimension(); ++k) {
               for (size_t qi = 0; qi < mir.Size(); qi++) {
                 deriv(qi, k) = dvalb(qi, k).DValue(0);
@@ -475,25 +478,20 @@ public:
           // cout << "lin block (" << block1 << ", " << block2
           //      << ") = " << lin << endl;
         }
+      }
     };
 
     const auto compute_increments = [&]() -> void {
       for (size_t qi = 0; qi < mir.Size(); qi++) {
 
         // TODO: when to skip something because of convergence?
-        //  -> the current approach assumes that evaluation of "expression" for
-        //  all qpoints at once is beneficial!
+        //  -> the current approach assumes that evaluation of "expression"
+        //  for all qpoints at once is beneficial!
 
         int offset1 = 0;
         for (int block1 : Range(proxies)) {
           const auto proxy1 = proxies[block1];
-          const auto &resb = res_blocks[block1].Row(qi);
           const auto &rhsb = rhs_blocks[block1].Row(qi);
-          if (auto vsemb = get_vs_embedding(proxy1); vsemb) {
-            rhsb = Trans(vsemb.value()) * resb;
-          } else {
-            // nothing to do
-          }
 
           for (int k : Range(rhsb.Size()))
             rhs[offset1 + k] = rhsb[k];
@@ -533,13 +531,12 @@ public:
           continue;
         }
 
-        // cout << "RHS: " << rhs << endl;
-        // cout << "LHS: " << lhs << endl;
+//        cout << "RHS: " << rhs << endl;
+//        cout << "LHS: " << lhs << endl;
         CalcInverse(lhs);
         sol = lhs * rhs;
 
         // Handle VS-embedding
-        // TODO: Better go for a layout that uses Col instead of Row?
         auto &wi = w.Row(qi);
         int offset_w = 0;
         int offset_sol = 0;
@@ -586,14 +583,19 @@ public:
 
     // cout << "starting value = " << xk << endl;
     // cout << "blocks:" << endl;
-    for (int i : Range(proxies))
-      cout << i << " -> " << ud.GetMemory(proxies[i]) << endl;
-    cout << endl;
+    // for (int i : Range(proxies))
+    //   cout << i << " -> " << ud.GetMemory(proxies[i]) << endl;
+    // cout << endl;
 
     // The actual algorithm
-    for (int step = 0; step < maxiter; step++) {
-      calc_residuals();
+//    cout << "\n\n------------------------START------------------------------"
+//            "\n";
 
+    calc_residuals();
+
+//    cout << "(pre) rhs blocks: " << rhs_blocks;
+
+    for (int step = 0; step < maxiter; step++) {
       if (all_converged(rhs_blocks))
         break;
 
@@ -603,15 +605,20 @@ public:
       xk -= w;
       // cout << "xk: " << xk << endl;
       distribute_vec_to_blocks(xk, xk_blocks);
+      calc_residuals();
+//      cout << "\nstep: " << step << "\n"
+//           << "rhs blocks: " << rhs_blocks;
     }
 
-    // cout << "rhs blocks: " << rhs_blocks;
+//    cout << "rhs blocks (final): " << rhs_blocks;
     // cout << "xk (final): " << xk << endl;
+
     if (!all_converged(rhs_blocks))
       xk = std::numeric_limits<double>::quiet_NaN();
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
+//    cout << "\n-------------------------Done------------------------------\n";
   }
 };
 
@@ -622,7 +629,7 @@ class MinimizationCF : public CoefficientFunction {
   std::vector<ProxyFunction *> proxies;
   Array<CoefficientFunction *> cachecf;
 
-  // same parameters like in scipy's newton
+  // Same parameters as for scipy's newton
   // Alternatively, could one think of ParameterCFs here?
   double tol{1e-8};
   double rtol{0.0};
@@ -651,8 +658,8 @@ public:
       throw Exception("MinimizedCF: only a single proxy is support ATM");
 
     // TODO: support case proxies.size() > 1
-    // All proxies must originate from one FE space. However, there is no way to
-    // check this. Available information for proxies:
+    // All proxies must originate from one FE space. However, there is no way
+    // to check this. Available information for proxies:
     //  - block index: via Proxy Evaluator if this can be cast to a
     //  CompoundDifferentialOperator
     //  - block size: via Proxy Evaluator
@@ -666,8 +673,8 @@ public:
     // Strategy:
     //  1. If more that one proxy has been found, sort proxies by block index;
     //  only allow each block index appear exactly once.
-    //     IOW, two different proxies with for some reason same block index are
-    //     forbidden.
+    //     IOW, two different proxies with for some reason same block index
+    //     are forbidden.
     //  2. Determine cumulated dimensions of collected proxies.
     //  3. Compare cumulated dimension with dimension of startingpoint.
     //     '-> In case of mismatch, try whether startingpoint has components
@@ -704,8 +711,8 @@ public:
     LocalHeap lh(1000000);
 
     // startingpoint -> Evaluate (mir, values);
-    // cout << "starting: " << endl << values.AddSize(Dimension(), ir.Size()) <<
-    // endl;
+    // cout << "starting: " << endl << values.AddSize(Dimension(), ir.Size())
+    // << endl;
 
     const ElementTransformation &trafo = mir.GetTransformation();
 
