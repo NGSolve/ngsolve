@@ -94,6 +94,20 @@ template <typename T> const T *end(const FlatArray<T> &array) {
 
 } // namespace
 
+
+
+// TODO: (general)
+//  * Interpolation into generic compound spaces does not work as expected
+//     (only one component is respected)
+//  * Try to simplify the setup. Is it reasonable to support a list of
+//     starting points at the python level or is CF((f1, f2, f3)) enough?
+//  * How to handle consistent linearizations? This is probably a bigger topic
+//     because there is also no support for nonlinear equations at the FEM level
+//     (only nonlinear energies...). One could mix the linearization from an
+//     incremental variational principle with the evolution of via a general
+//     nonlinear equation. The effect on the convergence might not be huge in
+//     most cases. If it is, a smaller time step might be a good idea anyway.
+
 class NewtonCF : public CoefficientFunction {
   shared_ptr<CoefficientFunction> expression;
   Array<shared_ptr<CoefficientFunction>> startingpoints{};
@@ -129,9 +143,6 @@ public:
       : expression(aexpression) {
 
     // NOTES:
-
-    // TODO: INTERPOLATION INTO GENERIC COMPOUND SPACES DOES NOT WORK CURRENTLY
-    // (only first component is respected)
 
     // All proxies must originate from one FE space. However, there is no way to
     // check this. Available information for proxies:
@@ -191,13 +202,6 @@ public:
               "NewtonCF: More than one proxy has been found but not all proxy "
               "evaluators are of type CompoundDifferentialOperator");
         } else {
-          //          cout << "proxy " << proxy
-          //               << "\n" << "sorted proxies " << sorted_proxies
-          //               << "\n" << "diffops " << diffops
-          //               << "\n" << "component" << evaluator->Component()
-          //               << "\n" << "sorted proxy " << sorted_proxies
-          //               << "\n" << "evaluator "<< evaluator
-          //               << "\n" << endl;
           if (sorted_proxies[evaluator->Component()] ||
               std::find(cbegin(diffops), cend(diffops), evaluator) !=
                   cend(diffops))
@@ -222,6 +226,12 @@ public:
       else
         proxy_dims.Append(proxy->Dimension());
     }
+
+    if (expression->Dimension() != full_dim)
+      throw Exception(string("NewtonCF: dimension of residual expression (=") +
+                      to_string(expression->Dimension())
+                      + ") does not match the accumulated dimension of detected "
+                        "trial functions (=" + to_string(full_dim) + ")");
 
     // Process startingpoints
 
@@ -261,13 +271,14 @@ public:
           throw Exception(std::string("NewtonCF: Dimensions of component ") +
                           std::to_string(i) + " do not agree");
       }
-    } else if (startingpoints.Size() == 1 &&
-               startingpoints[0]->Dimension() != full_dim)
-      throw Exception(string("NewtonCF: Total dimension of startingpoints (=") +
-                      to_string(startingpoints[0]->Dimension()) +
-                      ") does not match the accumulated dimension of trial "
-                      "functions (=" +
-                      to_string(full_dim) + ")");
+    } else if (startingpoints.Size() == 1) {
+        if (startingpoints[0]->Dimension() != full_dim)
+          throw Exception(string("NewtonCF: Total dimension of startingpoints (=") +
+                          to_string(startingpoints[0]->Dimension()) +
+                          ") does not match the accumulated dimension of trial "
+                          "functions (=" +
+                          to_string(full_dim) + ")");
+    }
     else
       throw Exception(string("NewtonCF: Number of given startingpoints (=") +
                       to_string(startingpoints.Size()) +
