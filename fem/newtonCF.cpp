@@ -10,6 +10,25 @@
 #include <ngstd.hpp>
 #include <parallelngs.hpp>
 
+namespace std {
+
+// TODO: this was needed to stop std algos from complaining about missing
+//  iterator traits. Note that ArrayIterator is quite minimal, given that it
+//  could be a full-blown random access iterator... Why is that or why do
+//  FlatArray::begin() and FlatArray::end() not only return pointers?
+
+template<typename T, typename ind>
+//struct iterator_traits<ngcore::ArrayIterator<T, ind>> : public iterator_traits<T*> {};
+struct iterator_traits<ngcore::ArrayIterator<T, ind>> {
+  using iterator_category = forward_iterator_tag;
+  using value_type = T;
+//  using difference_type = ptrdiff_t;
+  using pointer = T*;
+  using reference = T&;
+};
+
+}
+
 namespace ngfem {
 
 namespace {
@@ -21,14 +40,6 @@ template <typename T> auto LInfNorm(const T &array) -> auto {
     s = std::abs(item) > s ? std::abs(item) : s;
   }
   return s;
-}
-
-template <typename T> bool is_compound_space(const std::shared_ptr<T> &space) {
-  return std::dynamic_pointer_cast<ngcomp::CompoundFESpace>(space);
-}
-
-template <typename T> bool is_compound_space(const T *space) {
-  return dynamic_cast<ngcomp::CompoundFESpace *>(space);
 }
 
 bool has_vs_embedding(const ProxyFunction *proxy) {
@@ -44,52 +55,6 @@ int proxy_dof_dimension(const ProxyFunction *proxy) {
     return vsemb->Width();
   else
     return proxy->Dimension();
-}
-
-// TODO: This is required because ArrayIterator is not a proper iterator
-
-template <typename T> T *begin(Array<T> &array) { return array.Data(); }
-
-template <typename T> const T *cbegin(const Array<T> &array) {
-  return array.Data();
-}
-
-template <typename T> const T *begin(const Array<T> &array) {
-  return array.Data();
-}
-
-template <typename T> T *end(Array<T> &array) {
-  return array.Data() + array.Size();
-}
-
-template <typename T> const T *cend(const Array<T> &array) {
-  return array.Data() + array.Size();
-}
-
-template <typename T> const T *end(const Array<T> &array) {
-  return array.Data() + array.Size();
-}
-
-template <typename T> T *begin(FlatArray<T> &array) { return array.Data(); }
-
-template <typename T> const T *cbegin(const FlatArray<T> &array) {
-  return array.Data();
-}
-
-template <typename T> const T *begin(const FlatArray<T> &array) {
-  return array.Data();
-}
-
-template <typename T> T *end(FlatArray<T> &array) {
-  return array.Data() + array.Size();
-}
-
-template <typename T> const T *cend(const FlatArray<T> &array) {
-  return array.Data() + array.Size();
-}
-
-template <typename T> const T *end(const FlatArray<T> &array) {
-  return array.Data() + array.Size();
 }
 
 } // namespace
@@ -290,7 +255,7 @@ public:
     // Should probably be consistent with Compound GFs/CFs but note that
     // Dimensions() is currently used and would need a substitute
     if (proxies.Size() == 1)
-      CoefficientFunction::SetDimensions(proxy_dims);
+      CoefficientFunction::SetDimensions(FlatArray{proxy_dims.Size(), proxy_dims.Data()});
 
     // Process options
     if (atol)
@@ -357,7 +322,7 @@ public:
     // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
 
-    for (int i : Range(proxies)) {
+    for (int i : Range(nblocks)) {
       const auto proxy = proxies[i];
       xk_blocks[i].Assign(ud.GetMemory(proxy));
       xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
@@ -373,7 +338,7 @@ public:
         rhs_blocks[i].AssignMemory(mir.Size(), proxy_dof_dimension(proxy),
                                    res_blocks[i].Data());
 
-      for (int j : Range(proxies)) {
+      for (int j : Range(nblocks)) {
         const auto ij = i * nblocks + j;
         lin_blocks[ij].AssignMemory(lh, mir.Size(), proxies[i]->Dimension(),
                                     proxies[j]->Dimension());
@@ -411,7 +376,7 @@ public:
 
     const auto distribute_vec_to_blocks = [&](const auto &src,
                                               auto &dest) -> void {
-      for (size_t qi = 0; qi < mir.Size(); ++qi) {
+      for (size_t qi : Range(mir)) {
         auto src_qi = src.Row(qi);
         int offset = 0;
         for (int block : Range(nblocks)) {
@@ -436,12 +401,12 @@ public:
         auto &rhs = rhs_blocks[block];
         auto &valb = val_blocks[block];
 
-        for (int k = 0; k < proxy->Dimension(); k++)
-          for (size_t qi = 0; qi < mir.Size(); qi++)
+        for (int k : Range(proxy->Dimension()))
+          for (size_t qi : Range(mir))
             res(qi, k) = valb(qi, k);
 
         // The actual rhs (respecting VS embeddings)
-        for (size_t qi = 0; qi < mir.Size(); qi++)
+        for (size_t qi : Range(mir))
           if (auto vsemb = get_vs_embedding(proxy); vsemb)
             rhs.Row(qi) = Trans(vsemb.value()) * res.Row(qi);
 
@@ -451,23 +416,23 @@ public:
 
     const auto calc_linearizations = [&]() -> void {
       // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
-      for (int block2 = 0; block2 < nblocks; ++block2) {
+      for (int block2 : Range(nblocks)) {
         auto proxy2 = proxies[block2];
 
-        for (int l = 0; l < proxy2->Dimension(); ++l) {
+        for (int l : Range(proxy2->Dimension())) {
           // This means, the derivative is taken wrt proxy 2
           ud.trialfunction = proxy2;
           ud.trial_comp = l;
           expression->Evaluate(mir, dval);
           distribute_vec_to_blocks(dval, dval_blocks);
 
-          for (int block1 = 0; block1 < nblocks; ++block1) {
+          for (int block1 : Range(nblocks)) {
             auto proxy1 = proxies[block1];
             auto &dvalb = dval_blocks[block1];
             auto &deriv = deriv_blocks[block1];
             auto &lin = lin_blocks[block1 * nblocks + block2];
-            for (int k = 0; k < proxy1->Dimension(); ++k) {
-              for (size_t qi = 0; qi < mir.Size(); qi++) {
+            for (int k : Range(proxy1->Dimension())) {
+              for (size_t qi : Range(mir)) {
                 deriv(qi, k) = dvalb(qi, k).DValue(0);
               }
             }
@@ -482,7 +447,7 @@ public:
     };
 
     const auto compute_increments = [&]() -> void {
-      for (size_t qi = 0; qi < mir.Size(); qi++) {
+      for (size_t qi : Range(mir)) {
 
         // TODO: when to skip something because of convergence?
         //  -> the current approach assumes that evaluation of "expression"
@@ -556,7 +521,7 @@ public:
     };
 
     const auto merge_xk_blocks = [&]() -> void {
-      for (size_t qi = 0; qi < mir.Size(); ++qi) {
+      for (size_t qi : Range(mir)) {
         auto xk_qi = xk.Row(qi);
         int offset = 0;
         for (int block : Range(this->proxies)) {
@@ -595,7 +560,7 @@ public:
 
 //    cout << "(pre) rhs blocks: " << rhs_blocks;
 
-    for (int step = 0; step < maxiter; step++) {
+    for (int step : Range(maxiter)) {
       if (all_converged(rhs_blocks))
         break;
 
