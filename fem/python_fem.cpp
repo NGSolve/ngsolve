@@ -1247,21 +1247,70 @@ wait : bool
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
   m.def("MinimizationCF", &CreateMinimizationCF);
-  // TODO: fix overload resolution for GridFunction
-  m.def("NewtonCF", [](shared_ptr<CF> expr, const vector<shared_ptr<CF>>& startingpoints, optional<double> tol, optional<double> rtol, optional<int> maxiter){
-                      Array<shared_ptr<CF>> stps(startingpoints.size());
-                      for (auto i : Range(stps))
-                        stps[i] = startingpoints[i];
-                      return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
-                    },
-        py::arg("expression"), py::arg("startingpoints"), py::arg("tol") = 1e-8,
-        py::arg("rtol") = 0.0, py::arg("maxiter") = 10);
-  m.def("NewtonCF",
-        py::overload_cast<shared_ptr<CF>, shared_ptr<CF>, optional<double>,
-            optional<double>, optional<int>>(&CreateNewtonCF),
-        py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
-        py::arg("rtol") = 0.0, py::arg("maxiter") = 10);
-  
+  m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
+                       optional<double> rtol, optional<int> maxiter){
+
+          // First check for a GridFunction. This case is important as GFs on
+          // compound spaces have "components" which are exploited in the
+          // constructor of NewtonCF
+          py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
+          if (egf.check())
+            return CreateNewtonCF(expr, egf(), tol, rtol, maxiter);
+
+          // If the given value is a list or a tuple... This must be handled
+          // explicitly to prevent implicit conversion to a CoefficientFucntion,
+          // which is problematic when a list of GridFunctions is given.
+          if (py::isinstance<py::list>(startingpoint) || py::isinstance<py::tuple>(startingpoint))
+          {
+            Array<shared_ptr<CoefficientFunction>> stps{};
+            for (auto val : startingpoint)
+            {
+              py::extract<shared_ptr<CoefficientFunction>> vcf(val);
+              if (vcf.check())
+                stps.Append(vcf());
+              else
+                throw std::invalid_argument(
+                    string("Cannot make CoefficientFunction from ")
+                    + string(py::str(val)) + " of type "
+                    + string(py::str(val.get_type())));
+            }
+            return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+          }
+
+          // Attemp std. conversion to a CoefficientFunction
+          py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
+          if (ecf.check())
+            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter);
+
+          throw std::invalid_argument(
+              string("Failed to convert startingpoint ")
+              + string(py::str(startingpoint))
+              + " to a CoefficientFunction");
+      },
+      py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
+      py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+Creates a CoefficientFunction that returns the solution to a nonlinear problem.
+Convergence failure is indicated by returning NaN(s).
+
+Parameters:
+
+expression : CoefficientFunction
+  the residual of the nonlinear equation
+
+startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
+  the initial guess for the iterative solution of the nonlinear problem
+
+tol: double
+  absolute tolerance
+
+rtol: double
+  relative tolerance
+
+maxiter: int
+  maximum iterations
+
+)raw_string"));
+
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
   py::implicitly_convertible<int, CoefficientFunction>();
