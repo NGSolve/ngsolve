@@ -68,6 +68,11 @@ namespace ngcomp
     return space->GetFE(ei,lh);
   }
 
+  FlatArray<VorB> CompressedFESpace::GetDualShapeNodes (VorB vb) const
+  {
+    return space->GetDualShapeNodes(vb);
+  }
+
   void CompressedFESpace::GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
     space->GetDofNrs(ei,dnums);
