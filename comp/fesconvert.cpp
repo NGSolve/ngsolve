@@ -124,9 +124,9 @@ namespace ngcomp
 	     ElementId eid(vb, i);
 	     Ngs_Element el = ma->GetElement(eid);
 	     if ( (!space_a->DefinedOn(vb, el.GetIndex())) || (!space_b->DefinedOn(vb, el.GetIndex())) )
-	       { return; }
+	       { continue; }
 	     if ( reg && !reg->Mask().Test(el.GetIndex()) )
-	       { return; }
+	       { continue; }
 	     space_a->GetDofNrs(eid, dnums_a, ANY_DOF); // get rid of UNUSED DOFs
 	     maxdsa = max2(maxdsa, int(dnums_a.Size()));
 	     for (auto da : dnums_a)
