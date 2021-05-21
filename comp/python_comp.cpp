@@ -650,24 +650,38 @@ kwargs : kwargs
                         if (py::isinstance<py::list> (definedon))
                           flags->SetFlag ("definedon", makeCArray<double> (definedon));
 
-                        py::extract<Region> definedon_reg(definedon);
-                        if (definedon_reg.check() && definedon_reg().IsVolume())
+                        try
                           {
-                            Array<double> defonlist;
-                            for (int i = 0; i < definedon_reg().Mask().Size(); i++)
-                              if (definedon_reg().Mask().Test(i))
-                                defonlist.Append(i+1);
-                            flags->SetFlag ("definedon", defonlist);
+                            auto reg = py::cast<Region>(definedon);
+                            flags->SetFlag("definedon", reg);
                           }
-                        if (definedon_reg.check() && definedon_reg().VB()==BND)
+                        catch(py::cast_error)
+                          {}
+                        try
                           {
-                            Array<double> defonlist;
-                            flags->SetFlag("definedon", defonlist); //empty
-                            for (auto i : Range(definedon_reg().Mask().Size()))
-                              if(definedon_reg().Mask().Test(i))
-                                defonlist.Append(i+1);
-                            flags->SetFlag("definedonbound", defonlist);
+                            auto map = py::cast<std::map<VorB, Region>>(definedon);
+                            flags->SetFlag("definedon", map);
                           }
+                        catch(py::cast_error)
+                          {}
+                        // py::extract<Region> definedon_reg(definedon);
+                        // if (definedon_reg.check() && definedon_reg().IsVolume())
+                        //   {
+                        //     Array<double> defonlist;
+                        //     for (int i = 0; i < definedon_reg().Mask().Size(); i++)
+                        //       if (definedon_reg().Mask().Test(i))
+                        //         defonlist.Append(i+1);
+                        //     flags->SetFlag ("definedon", defonlist);
+                        //   }
+                        // if (definedon_reg.check() && definedon_reg().VB()==BND)
+                        //   {
+                        //     Array<double> defonlist;
+                        //     flags->SetFlag("definedon", defonlist); //empty
+                        //     for (auto i : Range(definedon_reg().Mask().Size()))
+                        //       if(definedon_reg().Mask().Test(i))
+                        //         defonlist.Append(i+1);
+                        //     flags->SetFlag("definedonbound", defonlist);
+                        //   }
                       }),
                      py::arg("order_policy") = py::cpp_function
                      ([] (ORDER_POLICY op, Flags* flags, py::list info)
