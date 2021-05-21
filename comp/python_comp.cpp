@@ -18,6 +18,7 @@
 #include "compressedfespace.hpp"
 #include "../fem/integratorcf.hpp"
 #include "contact.hpp"
+#include "globalinterfacespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -31,8 +32,6 @@ namespace ngcomp
                        shared_ptr<SumOfIntegrals> lf,
                        shared_ptr<GridFunction> gf,
                        LocalHeap & lh);
-
-  extern void ExportGlobalInterfaceSpaces(py::module & m);
 }
 
 
@@ -1337,10 +1336,6 @@ component : int
   ExportFESpace<NodalFESpace> (m, "NodalFESpace");  
   ExportFESpace<VectorFESpace<NodalFESpace>> (m, "VectorNodalFESpace");
   
-  
-  ExportGlobalInterfaceSpaces (m);  
-
-  
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
   //   .def("Range", &CompoundFESpace::GetRange)
@@ -1683,7 +1678,25 @@ active_dofs : BitArray or None
               }
              }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
 
-
+   py::class_<GlobalInterfaceSpace, shared_ptr<GlobalInterfaceSpace>,
+              FESpace>
+     (m, "GlobalInterfaceSpace")
+     .def(py::init([](shared_ptr<MeshAccess> ma,
+                      shared_ptr<CoefficientFunction> mapping,
+                      optional<Region> definedon,
+                      bool periodic, bool periodicx, bool periodicy,
+                      int order)
+     {
+       auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
+                                             periodic, periodicx,
+                                             periodicy);
+       fes->Update();
+       fes->FinalizeUpdate();
+       return fes;
+     }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
+          "periodic"_a = false, "periodicx"_a = false,
+          "periodicy"_a = false, "order"_a = 3)
+     ;
 
 
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
