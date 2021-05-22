@@ -46,9 +46,9 @@ namespace ngcomp
     periodic[0] = periodic[1] = false;
     if(flags.GetDefineFlag("periodic"))
       periodic[0] = periodic[1] = true;
-    if(flags.GetDefineFlag("periodicx"))
+    if(flags.GetDefineFlag("periodicu"))
       periodic[0] = true;
-    if(flags.GetDefineFlag("periodicy"))
+    if(flags.GetDefineFlag("periodicv"))
       periodic[1] = true;
     try
       {
@@ -249,8 +249,8 @@ namespace ngcomp
       auto docu = FESpace::GetDocu();
       docu.Arg("mapping") = "Mapping for global interface space.";
       docu.Arg("periodic") = "Periodic global interface space (in 2d in x and y direction).";
-      docu.Arg("periodicx") = "Periodic x-dir (local coordinate system) global interface space.";
-      docu.Arg("periodicy") = "Periodic y-dir (local coordinate system) global interface space.";
+      docu.Arg("periodicu") = "Periodic u-dir (local coordinate system) global interface space.";
+      docu.Arg("periodicv") = "Periodic v-dir (local coordinate system) global interface space.";
       return docu;
     }
   };
@@ -456,19 +456,20 @@ namespace ngcomp
 
   shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
     (shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> mapping,
-     optional<Region> definedon, bool periodic, bool periodicx,
-     bool periodicy)
+     optional<Region> definedon, bool periodic, bool periodicu,
+     bool periodicv, int order)
   {
     Flags flags;
     flags.SetFlag("mapping", mapping);
     if(periodic)
       flags.SetFlag("periodic");
-    if(periodicx)
-      flags.SetFlag("periodicx");
-    if(periodicy)
-      flags.SetFlag("periodicy");
+    if(periodicu)
+      flags.SetFlag("periodicu");
+    if(periodicv)
+      flags.SetFlag("periodicv");
     if(definedon.has_value())
         flags.SetFlag("definedon", definedon.value());
+    flags.SetFlag("order", order);
     if(ma->GetDimension() == 2)
       return make_shared<GlobalInterfaceSpace1D>(ma, flags);
     throw Exception("this space is not yet implemented!");
