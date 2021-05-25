@@ -1246,7 +1246,72 @@ wait : bool
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
 
-  m.def("MinimizationCF", &CreateMinimizationCF);
+  m.def("MinimizationCFNoBlocks", &CreateMinimizationCFNoBlocks);
+
+  m.def("MinimizationCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
+                       optional<double> rtol, optional<int> maxiter){
+
+          // First check for a GridFunction. This case is important as GFs on
+          // compound spaces have "components" which are exploited in the
+          // constructor of MinimizationCF
+          py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
+          if (egf.check())
+            return CreateMinimizationCF(expr, egf(), tol, rtol, maxiter);
+
+          // If the given value is a list or a tuple... This must be handled
+          // explicitly to prevent implicit conversion to a CoefficientFunction,
+          // which is problematic when a list of GridFunctions is given.
+          if (py::isinstance<py::list>(startingpoint) || py::isinstance<py::tuple>(startingpoint))
+          {
+            Array<shared_ptr<CoefficientFunction>> stps{};
+            for (auto val : startingpoint)
+            {
+              py::extract<shared_ptr<CoefficientFunction>> vcf(val);
+              if (vcf.check())
+                stps.Append(vcf());
+              else
+                throw std::invalid_argument(
+                    string("Cannot make CoefficientFunction from ")
+                    + string(py::str(val)) + " of type "
+                    + string(py::str(val.get_type())));
+            }
+            return CreateMinimizationCF(expr, stps, tol, rtol, maxiter);
+          }
+
+          // Attemp std. conversion to a CoefficientFunction
+          py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
+          if (ecf.check())
+            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter);
+
+          throw std::invalid_argument(
+              string("Failed to convert startingpoint ")
+              + string(py::str(startingpoint))
+              + " to a CoefficientFunction");
+        },
+        py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
+        py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+Creates a CoefficientFunction that returns the solution to a minimization problem.
+Convergence failure is indicated by returning NaN(s).
+
+Parameters:
+
+expression : CoefficientFunction
+  the objective function to be minimized
+
+startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
+  the initial guess for the iterative solution of the nonlinear problem
+
+tol: double
+  absolute tolerance
+
+rtol: double
+  relative tolerance
+
+maxiter: int
+  maximum iterations
+
+)raw_string"));
+
   m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
                        optional<double> rtol, optional<int> maxiter){
 
@@ -1258,7 +1323,7 @@ wait : bool
             return CreateNewtonCF(expr, egf(), tol, rtol, maxiter);
 
           // If the given value is a list or a tuple... This must be handled
-          // explicitly to prevent implicit conversion to a CoefficientFucntion,
+          // explicitly to prevent implicit conversion to a CoefficientFunction,
           // which is problematic when a list of GridFunctions is given.
           if (py::isinstance<py::list>(startingpoint) || py::isinstance<py::tuple>(startingpoint))
           {
