@@ -1684,18 +1684,18 @@ active_dofs : BitArray or None
      .def(py::init([](shared_ptr<MeshAccess> ma,
                       shared_ptr<CoefficientFunction> mapping,
                       optional<Region> definedon,
-                      bool periodic, bool periodicx, bool periodicy,
+                      bool periodic, bool periodicu, bool periodicv,
                       int order)
      {
        auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
-                                             periodic, periodicx,
-                                             periodicy);
+                                             periodic, periodicu,
+                                             periodicv, order);
        fes->Update();
        fes->FinalizeUpdate();
        return fes;
      }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
-          "periodic"_a = false, "periodicx"_a = false,
-          "periodicy"_a = false, "order"_a = 3)
+          "periodic"_a = false, "periodicu"_a = false,
+          "periodicv"_a = false, "order"_a = 3)
      ;
 
 
