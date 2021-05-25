@@ -1039,7 +1039,7 @@ namespace ngcomp
               y(1*D*D*D+0*D*D+0*D+1) = -y(0*D*D*D+1*D*D+0*D+1);
               y(0*D*D*D+1*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+1);
             }
-          else //slow version for three dimensions. TODO: Exploit that only 6 numbers are involved
+          else // Exploit that only 6 independent numbers are involved
             {
               Vec<D*D,TSCAL> incshape;
               Vec<D*D*D*D,TSCAL> Riemannincpart;
@@ -1062,7 +1062,7 @@ namespace ngcomp
               // R1212 = -R2112 = -R1221 = R2121
               // R1213 = R1312 = -R2113 = -R1231 = -R3112 = -R1321 = R2131 = R3121
               // R1223 = -R2123 = -R1232 = R2312 = -R2321 = -R3212 = R2132 = R3221
-              // R1313 = -R3113 = - R1331 = R3131
+              // R1313 = -R3113 = -R1331 = R3131
               // R1323 = -R3123 = -R1332 = R2313 = -R2331 = -R3213 = R3231 = R3132
               // R2323 = -R3223 = -R2332 = R3232
 
@@ -1076,8 +1076,86 @@ namespace ngcomp
               // R3111, R3122, R3133
               // R3211, R3222, R3233
               // R3311, R3312, R3313, R3321, R3322, R3323, R3331, R3332, R3333
+
+              y = TSCAL(0.0);
               
-              for (size_t i=0; i<D; i++)
+              // R1212 = d1Gamma_221 - d2Gamma_211 + Gamma_21^p Gamma_21p - Gamma_22^p Gamma_11p
+              TSCAL sum = Riemannincpart(0*D*D*D+1*D*D+0*D+1);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
+                  sum -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
+                }
+              y(0*D*D*D+1*D*D+0*D+1) = sum;
+              // R1213 = d1Gamma_231 - d3Gamma_211 + Gamma_21^p Gamma_31p - Gamma_23^p Gamma_11p
+              sum = Riemannincpart(0*D*D*D+1*D*D+0*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+1*D+0)*hchristoffel1(q*D*D+2*D+0);
+                  sum -= hchristoffel2(q*D*D+1*D+2)*hchristoffel1(q*D*D+0*D+0);
+                }
+              y(0*D*D*D+1*D*D+0*D+2) = sum;
+              // R1223 = d2Gamma_231 - d3Gamma_221 + Gamma_22^p Gamma_31p - Gamma_23^p Gamma_21p
+              sum = Riemannincpart(0*D*D*D+1*D*D+1*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+2*D+0);
+                  sum -= hchristoffel2(q*D*D+1*D+2)*hchristoffel1(q*D*D+1*D+0);
+                }
+              y(0*D*D*D+1*D*D+1*D+2) = sum;
+              // R1313 = d1Gamma_331 - d3Gamma_311 + Gamma_31^p Gamma_31p - Gamma_33^p Gamma_11p
+              sum = Riemannincpart(0*D*D*D+2*D*D+0*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+2*D+0)*hchristoffel1(q*D*D+2*D+0);
+                  sum -= hchristoffel2(q*D*D+2*D+2)*hchristoffel1(q*D*D+0*D+0);
+                }
+              y(0*D*D*D+2*D*D+0*D+2) = sum;
+              // R1323 = d2Gamma_331 - d3Gamma_321 + Gamma_32^p Gamma_31p - Gamma_33^p Gamma_21p
+              sum = Riemannincpart(0*D*D*D+2*D*D+1*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+2*D+1)*hchristoffel1(q*D*D+2*D+0);
+                  sum -= hchristoffel2(q*D*D+2*D+2)*hchristoffel1(q*D*D+1*D+0);
+                }
+              y(0*D*D*D+2*D*D+1*D+2) = sum;
+              // R2323 = d2Gamma_332 - d3Gamma_322 + Gamma_32^p Gamma_32p - Gamma_33^p Gamma_22p
+              sum = Riemannincpart(1*D*D*D+2*D*D+1*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+2*D+1)*hchristoffel1(q*D*D+2*D+1);
+                  sum -= hchristoffel2(q*D*D+2*D+2)*hchristoffel1(q*D*D+1*D+1);
+                }
+              y(1*D*D*D+2*D*D+1*D+2) = sum;
+
+              // R1212 = -R2112 = -R1221 = R2121
+              // R1213 = R1312 = -R2113 = -R1231 = -R3112 = -R1321 = R2131 = R3121
+              // R1223 = -R2123 = -R1232 = R2312 = -R2321 = -R3212 = R2132 = R3221
+              // R1313 = -R3113 = -R1331 = R3131
+              // R1323 = -R3123 = -R1332 = R2313 = -R2331 = -R3213 = R3231 = R3132
+              // R2323 = -R3223 = -R2332 = R3232
+              y(1*D*D*D+0*D*D+0*D+1) = y(0*D*D*D+1*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+1);
+              y(1*D*D*D+0*D*D+1*D+0) = y(0*D*D*D+1*D*D+0*D+1);
+              
+              y(1*D*D*D+0*D*D+0*D+2) = y(0*D*D*D+1*D*D+2*D+0) = y(2*D*D*D+0*D*D+0*D+1) = y(0*D*D*D+2*D*D+1*D+0) = -y(0*D*D*D+1*D*D+0*D+2);
+              y(0*D*D*D+2*D*D+0*D+1) = y(1*D*D*D+0*D*D+2*D+0) = y(2*D*D*D+0*D*D+1*D+0) = y(0*D*D*D+1*D*D+0*D+2);
+              
+              y(1*D*D*D+0*D*D+1*D+2) = y(0*D*D*D+1*D*D+2*D+1) = y(1*D*D*D+2*D*D+1*D+0) = y(2*D*D*D+1*D*D+0*D+1) = -y(0*D*D*D+1*D*D+1*D+2);
+              y(1*D*D*D+2*D*D+0*D+1) = y(1*D*D*D+0*D*D+2*D+1) = y(2*D*D*D+1*D*D+1*D+0) = y(0*D*D*D+1*D*D+1*D+2);
+              
+              y(2*D*D*D+0*D*D+0*D+2) = y(0*D*D*D+2*D*D+2*D+0) = -y(0*D*D*D+2*D*D+0*D+2);
+              y(2*D*D*D+0*D*D+2*D+0) = y(0*D*D*D+2*D*D+0*D+2);
+              
+              y(2*D*D*D+0*D*D+1*D+2) = y(0*D*D*D+2*D*D+2*D+1) = y(1*D*D*D+2*D*D+2*D+0) = y(2*D*D*D+1*D*D+0*D+2) = -y(2*D*D*D+1*D*D+0*D+2);
+              y(1*D*D*D+2*D*D+0*D+2) = y(2*D*D*D+1*D*D+2*D+0) = y(2*D*D*D+0*D*D+2*D+1) = y(2*D*D*D+1*D*D+0*D+2);
+              
+              y(2*D*D*D+1*D*D+1*D+2) = y(1*D*D*D+2*D*D+2*D+1) = y(1*D*D*D+2*D*D+1*D+2);
+              y(2*D*D*D+1*D*D+2*D+1) = y(1*D*D*D+2*D*D+1*D+2);
+              
+              
+              /*
+              //slow version 
+                for (size_t i=0; i<D; i++)
                 for (size_t j=0; j<D; j++)
                   for (size_t k=0; k<D; k++)
                     for (size_t l=0; l<D; l++)
@@ -1093,7 +1171,7 @@ namespace ngcomp
                             sum -= hchristoffel2(q*D*D+l*D+j)*hchristoffel1(q*D*D+i*D+k);
                           }
                         y(i*D*D*D+j*D*D+k*D+l) = sum;
-                      }
+                        }*/
             }
         }
     }
@@ -1173,7 +1251,7 @@ namespace ngcomp
           y.Row(1*D*D*D+0*D*D+0*D+1).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+0*D+1);
           y.Row(0*D*D*D+1*D*D+1*D+0).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+0*D+1);
         }
-      else //slow version for three dimensions. TODO: Exploit that only 6 numbers are involved
+      else //Exploit that only 6 independent numbers are involved
         {
           Vec<D*D*D*D,SIMD<double>> Riemannincpart;
 
@@ -1188,6 +1266,9 @@ namespace ngcomp
           Eps(0,1)=Eps(1,2)=Eps(2,0)=1.0;
           Eps(1,0)=Eps(2,1)=Eps(0,2)=-1.0;
 
+          //set zero, can this be improved?
+          for (size_t i = 0; i < D*D*D*D; i++) 
+            y.Row(i).Range(bmir.Size()) = SIMD<double>(0);
 
           for (size_t m = 0; m < bmir.Size(); m++)
             {
@@ -1196,7 +1277,91 @@ namespace ngcomp
                   for(size_t k = 0; k < D; k++)
                     for(size_t l = 0; l < D; l++)
                       Riemannincpart(i*D*D*D+j*D*D+k*D+l) = -0.5 * Eps(i,j) * Eps(k,l) * incshape(D*i3(i,j)+i3(k,l),m);
-          
+
+              /* possible improvement: only this six components are needed:
+              Riemannincpart(0*D*D*D+1*D*D+0*D+1)
+              Riemannincpart(0*D*D*D+1*D*D+0*D+2)
+              Riemannincpart(0*D*D*D+1*D*D+1*D+2)
+              Riemannincpart(0*D*D*D+2*D*D+0*D+2)
+              Riemannincpart(0*D*D*D+2*D*D+1*D+2)
+              Riemannincpart(1*D*D*D+2*D*D+1*D+2)
+              */
+
+              // these components are non-zero and have 6 independent values
+              // R1212 = -R2112 = -R1221 = R2121
+              // R1213 = R1312 = -R2113 = -R1231 = -R3112 = -R1321 = R2131 = R3121
+              // R1223 = -R2123 = -R1232 = R2312 = -R2321 = -R3212 = R2132 = R3221
+              // R1313 = -R3113 = -R1331 = R3131
+              // R1323 = -R3123 = -R1332 = R2313 = -R2331 = -R3213 = R3231 = R3132
+              // R2323 = -R3223 = -R2332 = R3232
+
+              // these comonents are zero:
+              // R1111, R1112, R1113, R1121, R1122, R1123, R1131, R1132, R1133
+              // R1211, R1222, R1233
+              // R1311, R1322, R1333
+              // R2111, R2122, R2133
+              // R2211, R2212, R2213, R2221, R2222, R2223, R2231, R2232, R2233
+              // R2311, R2322, R2333
+              // R3111, R3122, R3133
+              // R3211, R3222, R3233
+              // R3311, R3312, R3313, R3321, R3322, R3323, R3331, R3332, R3333
+
+              
+              // R1212 = d1Gamma_221 - d2Gamma_211 + Gamma_21^p Gamma_21p - Gamma_22^p Gamma_11p
+              SIMD<double> sum = Riemannincpart(0*D*D*D+1*D*D+0*D+1);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+0*D+1,m)*hchristoffel1(q*D*D+0*D+1,m);
+                  sum -= hchristoffel2(q*D*D+1*D+1,m)*hchristoffel1(q*D*D+0*D+0,m);
+                }
+              y(0*D*D*D+1*D*D+0*D+1,m) = sum;
+              // R1213 = d1Gamma_231 - d3Gamma_211 + Gamma_21^p Gamma_31p - Gamma_23^p Gamma_11p
+              sum = Riemannincpart(0*D*D*D+1*D*D+0*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+1*D+0,m)*hchristoffel1(q*D*D+2*D+0,m);
+                  sum -= hchristoffel2(q*D*D+1*D+2,m)*hchristoffel1(q*D*D+0*D+0,m);
+                }
+              y(0*D*D*D+1*D*D+0*D+2,m) = sum;
+              // R1223 = d2Gamma_231 - d3Gamma_221 + Gamma_22^p Gamma_31p - Gamma_23^p Gamma_21p
+              sum = Riemannincpart(0*D*D*D+1*D*D+1*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+1*D+1,m)*hchristoffel1(q*D*D+2*D+0,m);
+                  sum -= hchristoffel2(q*D*D+1*D+2,m)*hchristoffel1(q*D*D+1*D+0,m);
+                }
+              y(0*D*D*D+1*D*D+1*D+2,m) = sum;
+              // R1313 = d1Gamma_331 - d3Gamma_311 + Gamma_31^p Gamma_31p - Gamma_33^p Gamma_11p
+              sum = Riemannincpart(0*D*D*D+2*D*D+0*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+2*D+0,m)*hchristoffel1(q*D*D+2*D+0,m);
+                  sum -= hchristoffel2(q*D*D+2*D+2,m)*hchristoffel1(q*D*D+0*D+0,m);
+                }
+              y(0*D*D*D+2*D*D+0*D+2,m) = sum;
+              // R1323 = d2Gamma_331 - d3Gamma_321 + Gamma_32^p Gamma_31p - Gamma_33^p Gamma_21p
+              sum = Riemannincpart(0*D*D*D+2*D*D+1*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+2*D+1,m)*hchristoffel1(q*D*D+2*D+0,m);
+                  sum -= hchristoffel2(q*D*D+2*D+2,m)*hchristoffel1(q*D*D+1*D+0,m);
+                }
+              y(0*D*D*D+2*D*D+1*D+2,m) = sum;
+              // R2323 = d2Gamma_332 - d3Gamma_322 + Gamma_32^p Gamma_32p - Gamma_33^p Gamma_22p
+              sum = Riemannincpart(1*D*D*D+2*D*D+1*D+2);
+              for (size_t q=0; q<D; q++)
+                {
+                  sum += hchristoffel2(q*D*D+2*D+1,m)*hchristoffel1(q*D*D+2*D+1,m);
+                  sum -= hchristoffel2(q*D*D+2*D+2,m)*hchristoffel1(q*D*D+1*D+1,m);
+                }
+              y(1*D*D*D+2*D*D+1*D+2,m) = sum;
+
+              
+              
+              
+              /*
+              //slow version 
+
               for (size_t i=0; i<D; i++)
                 for (size_t j=0; j<D; j++)
                   for (size_t k=0; k<D; k++)
@@ -1213,8 +1378,31 @@ namespace ngcomp
                             sum -= hchristoffel2(q*D*D+l*D+j,m)*hchristoffel1(q*D*D+i*D+k,m);
                           }
                         y(i*D*D*D+j*D*D+k*D+l,m) = sum;
-                      }
+                        }*/
             }
+          // R1212 = -R2112 = -R1221 = R2121
+          // R1213 = R1312 = -R2113 = -R1231 = -R3112 = -R1321 = R2131 = R3121
+          // R1223 = -R2123 = -R1232 = R2312 = -R2321 = -R3212 = R2132 = R3221
+          // R1313 = -R3113 = -R1331 = R3131
+          // R1323 = -R3123 = -R1332 = R2313 = -R2331 = -R3213 = R3231 = R3132
+          // R2323 = -R3223 = -R2332 = R3232
+          y.Row(1*D*D*D+0*D*D+0*D+1).Range(bmir.Size()) = y.Row(0*D*D*D+1*D*D+1*D+0).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+0*D+1);
+          y.Row(1*D*D*D+0*D*D+1*D+0).Range(bmir.Size()) = y.Row(0*D*D*D+1*D*D+0*D+1);
+          
+          y.Row(1*D*D*D+0*D*D+0*D+2).Range(bmir.Size()) = y.Row(0*D*D*D+1*D*D+2*D+0).Range(bmir.Size()) = y.Row(2*D*D*D+0*D*D+0*D+1).Range(bmir.Size()) = y.Row(0*D*D*D+2*D*D+1*D+0).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+0*D+2);
+          y.Row(0*D*D*D+2*D*D+0*D+1).Range(bmir.Size()) = y.Row(1*D*D*D+0*D*D+2*D+0).Range(bmir.Size()) = y.Row(2*D*D*D+0*D*D+1*D+0).Range(bmir.Size()) = y.Row(0*D*D*D+1*D*D+0*D+2);
+          
+          y.Row(1*D*D*D+0*D*D+1*D+2).Range(bmir.Size()) = y.Row(0*D*D*D+1*D*D+2*D+1).Range(bmir.Size()) = y.Row(1*D*D*D+2*D*D+1*D+0).Range(bmir.Size()) = y.Row(2*D*D*D+1*D*D+0*D+1).Range(bmir.Size()) = -y.Row(0*D*D*D+1*D*D+1*D+2);
+          y.Row(1*D*D*D+2*D*D+0*D+1).Range(bmir.Size()) = y.Row(1*D*D*D+0*D*D+2*D+1).Range(bmir.Size()) = y.Row(2*D*D*D+1*D*D+1*D+0).Range(bmir.Size()) = y.Row(0*D*D*D+1*D*D+1*D+2);
+          
+          y.Row(2*D*D*D+0*D*D+0*D+2).Range(bmir.Size()) = y.Row(0*D*D*D+2*D*D+2*D+0).Range(bmir.Size()) = -y.Row(0*D*D*D+2*D*D+0*D+2);
+          y.Row(2*D*D*D+0*D*D+2*D+0).Range(bmir.Size()) = y.Row(0*D*D*D+2*D*D+0*D+2);
+          
+          y.Row(2*D*D*D+0*D*D+1*D+2).Range(bmir.Size()) = y.Row(0*D*D*D+2*D*D+2*D+1).Range(bmir.Size()) = y.Row(1*D*D*D+2*D*D+2*D+0).Range(bmir.Size()) = y.Row(2*D*D*D+1*D*D+0*D+2).Range(bmir.Size()) = -y.Row(2*D*D*D+1*D*D+0*D+2);
+          y.Row(1*D*D*D+2*D*D+0*D+2).Range(bmir.Size()) = y.Row(2*D*D*D+1*D*D+2*D+0).Range(bmir.Size()) = y.Row(2*D*D*D+0*D*D+2*D+1).Range(bmir.Size()) = y.Row(2*D*D*D+1*D*D+0*D+2);
+          
+          y.Row(2*D*D*D+1*D*D+1*D+2).Range(bmir.Size()) = y.Row(1*D*D*D+2*D*D+2*D+1).Range(bmir.Size()) = y.Row(1*D*D*D+2*D*D+1*D+2);
+          y.Row(2*D*D*D+1*D*D+2*D+1).Range(bmir.Size()) = y.Row(1*D*D*D+2*D*D+1*D+2);
         }
       
     }
