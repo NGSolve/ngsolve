@@ -691,7 +691,7 @@ public:
     }
 
     if (expression->Dimension() != 1)
-      throw Exception(string("MinimizationCF: only scalar expressions are allowed");
+      throw Exception(string("MinimizationCF: only scalar expressions are allowed"));
 
     // Process startingpoints
 
