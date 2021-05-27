@@ -46,7 +46,13 @@ namespace ngfem
     //result(0,0) = 
     return result;*/
     // return 0.5 * ( Cof(Mat<3,3,T>(A+B)) - Cof(Mat<3,3,T>(A-B)) );
-    return 0.5 * ( Cof(A+B) - Cof(A-B) );
+    // return 0.5 * ( Cof(A+B) - Cof(A-B) );
+
+    Mat<3,3,T> prod;
+    prod.Col(0) = Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(2))) - Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(1)));
+    prod.Col(1) = Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(0))) - Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(2)));
+    prod.Col(2) = Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(1))) - Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(0)));
+    return prod;
   }
   
   template <typename T>
@@ -917,9 +923,10 @@ namespace ngfem
                                    BareSliceMatrix<SIMD<double>> values,
                                    BareSliceVector<> coefs) const override
     {
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (ir);
+      // auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (ir);
       if constexpr (ET == ET_TET || ET == ET_TRIG)
                      {
+                       cout << "nothing here" << endl;
                      }
     }
 

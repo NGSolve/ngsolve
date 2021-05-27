@@ -18,6 +18,7 @@
 #include "compressedfespace.hpp"
 #include "../fem/integratorcf.hpp"
 #include "contact.hpp"
+#include "globalinterfacespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -31,8 +32,6 @@ namespace ngcomp
                        shared_ptr<SumOfIntegrals> lf,
                        shared_ptr<GridFunction> gf,
                        LocalHeap & lh);
-
-  extern void ExportGlobalInterfaceSpaces(py::module & m);
 }
 
 
@@ -650,24 +649,38 @@ kwargs : kwargs
                         if (py::isinstance<py::list> (definedon))
                           flags->SetFlag ("definedon", makeCArray<double> (definedon));
 
-                        py::extract<Region> definedon_reg(definedon);
-                        if (definedon_reg.check() && definedon_reg().IsVolume())
+                        try
                           {
-                            Array<double> defonlist;
-                            for (int i = 0; i < definedon_reg().Mask().Size(); i++)
-                              if (definedon_reg().Mask().Test(i))
-                                defonlist.Append(i+1);
-                            flags->SetFlag ("definedon", defonlist);
+                            auto reg = py::cast<Region>(definedon);
+                            flags->SetFlag("definedon", reg);
                           }
-                        if (definedon_reg.check() && definedon_reg().VB()==BND)
+                        catch(py::cast_error)
+                          {}
+                        try
                           {
-                            Array<double> defonlist;
-                            flags->SetFlag("definedon", defonlist); //empty
-                            for (auto i : Range(definedon_reg().Mask().Size()))
-                              if(definedon_reg().Mask().Test(i))
-                                defonlist.Append(i+1);
-                            flags->SetFlag("definedonbound", defonlist);
+                            auto map = py::cast<std::map<VorB, Region>>(definedon);
+                            flags->SetFlag("definedon", map);
                           }
+                        catch(py::cast_error)
+                          {}
+                        // py::extract<Region> definedon_reg(definedon);
+                        // if (definedon_reg.check() && definedon_reg().IsVolume())
+                        //   {
+                        //     Array<double> defonlist;
+                        //     for (int i = 0; i < definedon_reg().Mask().Size(); i++)
+                        //       if (definedon_reg().Mask().Test(i))
+                        //         defonlist.Append(i+1);
+                        //     flags->SetFlag ("definedon", defonlist);
+                        //   }
+                        // if (definedon_reg.check() && definedon_reg().VB()==BND)
+                        //   {
+                        //     Array<double> defonlist;
+                        //     flags->SetFlag("definedon", defonlist); //empty
+                        //     for (auto i : Range(definedon_reg().Mask().Size()))
+                        //       if(definedon_reg().Mask().Test(i))
+                        //         defonlist.Append(i+1);
+                        //     flags->SetFlag("definedonbound", defonlist);
+                        //   }
                       }),
                      py::arg("order_policy") = py::cpp_function
                      ([] (ORDER_POLICY op, Flags* flags, py::list info)
@@ -1323,10 +1336,6 @@ component : int
   ExportFESpace<NodalFESpace> (m, "NodalFESpace");  
   ExportFESpace<VectorFESpace<NodalFESpace>> (m, "VectorNodalFESpace");
   
-  
-  ExportGlobalInterfaceSpaces (m);  
-
-  
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
   //   .def("Range", &CompoundFESpace::GetRange)
@@ -1669,7 +1678,25 @@ active_dofs : BitArray or None
               }
              }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
 
-
+   py::class_<GlobalInterfaceSpace, shared_ptr<GlobalInterfaceSpace>,
+              FESpace>
+     (m, "GlobalInterfaceSpace")
+     .def(py::init([](shared_ptr<MeshAccess> ma,
+                      shared_ptr<CoefficientFunction> mapping,
+                      optional<Region> definedon,
+                      bool periodic, bool periodicu, bool periodicv,
+                      int order)
+     {
+       auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
+                                             periodic, periodicu,
+                                             periodicv, order);
+       fes->Update();
+       fes->FinalizeUpdate();
+       return fes;
+     }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
+          "periodic"_a = false, "periodicu"_a = false,
+          "periodicv"_a = false, "order"_a = 3)
+     ;
 
 
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
