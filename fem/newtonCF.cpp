@@ -34,11 +34,12 @@ namespace ngfem {
 
 namespace {
 template <typename T> auto LInfNorm(const T &array) -> auto {
-  using number_t =
-      std::remove_reference_t<std::remove_cv_t<decltype(*(array.Data()))>>;
+  using number_t = remove_reference_t<remove_cv_t<decltype(*(array.Data()))>>;
   number_t s = 0;
   for (const number_t item : array) {
-    s = std::abs(item) > s ? std::abs(item) : s;
+    if (isnan(item))
+      return numeric_limits<number_t>::quiet_NaN();
+    s = abs(item) > s ? abs(item) : s;
   }
   return s;
 }
@@ -253,8 +254,14 @@ public:
 
     // TODO: Does this make sense or shall we just not set dimensions in
     //  case of generic compound spaces/multiple proxies
-    CoefficientFunction::SetDimensions(
-        FlatArray{proxy_dims.Size(), proxy_dims.Data()});
+    if (proxies.Size() == 1)
+      CoefficientFunction::SetDimensions(
+          FlatArray{proxy_dims.Size(), proxy_dims.Data()});
+    else {
+      Array<int> dims;
+      dims.Append(full_dim);
+      CoefficientFunction::SetDimensions(dims);
+    }
 
     // If it should be consistent with Compound GFs/CFs but note that
     // Dimensions() is currently used and would need a substitute
@@ -298,11 +305,12 @@ public:
     // endl;
 
     const ElementTransformation &trafo = mir.GetTransformation();
+    auto saved_ud = trafo.PushUserData();
 
     ProxyUserData ud(proxies.Size(), cachecf.Size(), lh);
     for (CoefficientFunction *cf : cachecf)
       ud.AssignMemory(cf, mir.Size(), cf->Dimension(), lh);
-    // TODO: Q -- When to actually compute cachcf values? Does this happen
+    // TODO: Q -- When to actually compute cachecf values? Does this happen
     //  automatically if StoreUserData() == true?
 
     const_cast<ElementTransformation &>(trafo).userdata = &ud;
@@ -413,8 +421,8 @@ public:
             res(qi, k) = valb(qi, k);
 
         // The actual rhs (respecting VS embeddings)
-        for (size_t qi : Range(mir))
-          if (auto vsemb = get_vs_embedding(proxy); vsemb)
+        if (auto vsemb = get_vs_embedding(proxy); vsemb)
+          for (size_t qi : Range(mir))
             rhs.Row(qi) = Trans(vsemb.value()) * res.Row(qi);
 
         // cout << "res block " << block << " = " << res << endl;
@@ -587,7 +595,7 @@ public:
     // cout << "xk (final): " << xk << endl;
 
     if (!all_converged(rhs_blocks))
-      xk = std::numeric_limits<double>::quiet_NaN();
+      xk = numeric_limits<double>::quiet_NaN();
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
@@ -752,8 +760,14 @@ public:
 
     // TODO: Does this make sense or shall we just not set dimensions in
     //  case of generic compound spaces/multiple proxies
-    CoefficientFunction::SetDimensions(
-        FlatArray{proxy_dims.Size(), proxy_dims.Data()});
+    if (proxies.Size() == 1)
+      CoefficientFunction::SetDimensions(
+          FlatArray{proxy_dims.Size(), proxy_dims.Data()});
+    else {
+      Array<int> dims;
+      dims.Append(full_dim);
+      CoefficientFunction::SetDimensions(dims);
+    }
 
     // If it should be consistent with Compound GFs/CFs but note that
     // Dimensions() is currently used and would need a substitute
@@ -792,11 +806,12 @@ public:
     LocalHeap lh(1000000);
 
     const ElementTransformation &trafo = mir.GetTransformation();
+    auto saved_ud = trafo.PushUserData();
 
     ProxyUserData ud(proxies.Size(), cachecf.Size(), lh);
     for (CoefficientFunction *cf : cachecf)
       ud.AssignMemory(cf, mir.Size(), cf->Dimension(), lh);
-    // TODO: Q -- When to actually compute cachcf values? Does this happen
+    // TODO: Q -- When to actually compute cachecf values? Does this happen
     //  automatically if StoreUserData() == true?
 
     const_cast<ElementTransformation &>(trafo).userdata = &ud;
@@ -826,6 +841,7 @@ public:
       xk_blocks[i].Assign(ud.GetMemory(proxy));
       xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       w_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
+      diags_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       res_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
 
       if (has_vs_embedding(proxy))
@@ -859,7 +875,7 @@ public:
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
 
     const auto converged = [&](const auto &rhs_vec, double res_0 = 0) {
-      const auto res = L2Norm(rhs_vec);
+      const auto res = LInfNorm(rhs_vec);
       return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
     };
 
@@ -889,7 +905,7 @@ public:
       for (int block : Range(nblocks)) {
         auto proxy = proxies[block];
         auto &res = res_blocks[block];
-        auto &rhs = rhs_blocks[block];
+        auto &rhsb = rhs_blocks[block];
         auto &diags = diags_blocks[block];
 
         for (int k : Range(proxy->Dimension())) {
@@ -902,17 +918,17 @@ public:
           for (size_t qi : Range(mir))
             diags(qi, k) = ddval(qi, 0).DDValue(0);
           for (size_t qi : Range(mir))
-            res(qi, k) = ddval(qi, k).DValue(0);
+            res(qi, k) = ddval(qi, 0).DValue(0);
 
-          if (k == 0)
+          if (k == 0 && block == 0)
             for (size_t qi : Range(mir))
               energy += mir[qi].GetWeight() * ddval(qi, 0).Value();
         }
 
         // The actual rhs (respecting VS embeddings)
-        for (size_t qi : Range(mir))
-          if (auto vsemb = get_vs_embedding(proxy); vsemb)
-            rhs.Row(qi) = Trans(vsemb.value()) * res.Row(qi);
+        if (auto vsemb = get_vs_embedding(proxy); vsemb)
+          for (size_t qi : Range(mir))
+            rhsb.Row(qi) = Trans(vsemb.value()) * res.Row(qi);
 
         // cout << "res block " << block << " = " << res << endl;
       }
@@ -921,18 +937,18 @@ public:
 
     const auto calc_off_diagonals = [&]() -> void {
       // TODO: exploit symmetry?
-      for (int k1 : Range(nblocks)) {
-        for (int l1 : Range(nblocks)) {
+      for (int l1 : Range(nblocks)) {
+        for (int k1 : Range(nblocks)) {
 
           auto proxy1 = proxies[k1];
           auto proxy2 = proxies[l1];
-          auto &lin = lin_blocks[k1 * nblocks + l1];
+          auto &lin = lin_blocks[l1 * nblocks + k1];
 
           for (int l : Range(proxy2->Dimension())) {
             for (int k : Range(proxy1->Dimension())) {
 
-              ud.trialfunction = proxy2;
-              ud.trial_comp = l;
+              ud.testfunction = proxy2;
+              ud.test_comp = l;
               ud.trialfunction = proxy1;
               ud.trial_comp = k;
 
@@ -995,8 +1011,9 @@ public:
               // nothing to do
             }
 
-            // cout << "lhs block (" << block1 << ", " << block2 << ") = "
-            //      << lhsb << endl;
+//            cout << "lhs block (" << block1 << ", " << block2 << ") = "
+//                 << lhsb << endl;
+
             for (int k : Range(lhsb.Height()))
               for (int l : Range(lhsb.Width()))
                 lhs(offset1 + k, offset2 + l) = lhsb(k, l);
@@ -1011,8 +1028,8 @@ public:
           continue;
         }
 
-        //        cout << "RHS: " << rhs << endl;
-        //        cout << "LHS: " << lhs << endl;
+//        cout << "RHS: " << rhs << endl;
+//        cout << "LHS: " << lhs << endl;
         CalcInverse(lhs);
         sol = lhs * rhs;
 
@@ -1033,13 +1050,10 @@ public:
           offset_sol += proxy_dof_dimension(proxy);
         }
       }
-
-      xk -= w;
-      distribute_vec_to_blocks(xk, xk_blocks);
     };
 
-    const auto linesearch = [&](auto &ud) -> void { // linesearch
-      xold = xk;
+    const auto linesearch = [&](auto &ud) -> void {
+      xold = xk;// linesearch
       double alpha = 1;
       double newenergy = energy + 1;
 
@@ -1065,19 +1079,53 @@ public:
       }
     };
 
+    const auto merge_xk_blocks = [&]() -> void {
+      for (size_t qi : Range(mir)) {
+        auto xk_qi = xk.Row(qi);
+        int offset = 0;
+        for (int block : Range(this->proxies)) {
+          auto xkb_qi = xk_blocks[block].Row(qi);
+          xk_qi.Range(offset, offset + xkb_qi.Size()) = xkb_qi;
+          offset += xkb_qi.Size();
+        }
+      }
+    };
+
+    // Evaluate starting point
+    if (startingpoints.Size() == proxies.Size()) {
+      for (int i : Range(startingpoints))
+        startingpoints[i]->Evaluate(mir, xk_blocks[i]);
+      merge_xk_blocks();
+    } else {
+      // This is the only case when we should end up here (checked in
+      // constructor)
+      assert(startingpoints.Size() == 1);
+
+      startingpoints[0]->Evaluate(mir, xk);
+      distribute_vec_to_blocks(xk, xk_blocks);
+    }
+
     // The actual algorithm
+//    cout << "\n" << "start newton loop" << "\n";
+    calc_energy_rhs_and_diags();
     for (int step = 0; step < maxiter; step++) {
-      calc_energy_rhs_and_diags();
       if (all_converged(rhs_blocks))
         break;
 
       calc_off_diagonals();
       compute_newton_step();
       linesearch(ud);
+      calc_energy_rhs_and_diags();
+//      cout << "newton step " << step + 1 << endl;
     }
 
+//    for (int block1 : Range(proxies))
+//      cout << "RHS block " << to_string(block1) << ": " << rhs_blocks[block1] << endl;
+//
+//    cout << "done" << "\n\n";
+
     if (!all_converged(rhs_blocks))
-      xk = std::numeric_limits<double>::quiet_NaN();
+      xk = numeric_limits<double>::quiet_NaN();
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), Dimension()) = xk;
@@ -1182,6 +1230,7 @@ public:
     for (CoefficientFunction *cf : cachecf)
       ud.AssignMemory(cf, mir.Size(), cf->Dimension(), lh);
 
+    // TODO: This currently prevents NewtonCF to be used in forms
     const_cast<ElementTransformation &>(trafo).userdata = &ud;
 
     auto proxy = proxies[0];
@@ -1326,6 +1375,8 @@ public:
       }
     };
 
+
+
     // The actual algorithm
     for (int step = 0; step < maxiter; step++) {
       calc_energy_rhs_and_diags(ud);
@@ -1338,7 +1389,7 @@ public:
     }
 
     if (!converged(dWdB))
-      xk = std::numeric_limits<double>::quiet_NaN();
+      xk = numeric_limits<double>::quiet_NaN();
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), Dimension()) = xk;
