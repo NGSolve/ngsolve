@@ -23,6 +23,9 @@ namespace ngcomp
     // we need it to update the space after refinement.
     // space should set dofs only in first update on level
 
+    // for dirichlet_vertex/edge/face. should we get the freedofs from base space instead?
+    FESpace::Update();
+
     const int ndofall = space->GetNDof();
     all2comp.SetSize(ndofall);
     comp2all.SetSize(ndofall);
