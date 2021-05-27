@@ -140,7 +140,7 @@ namespace ngfem
     //Nedelec low order edge shape function 
     shape[0] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
 
-    int p = order_cell[0]; 
+    int p = order_edge[0]; //order_cell[0]; 
     //HO-Edge shapes (Gradient Fields)   
     if(p > 0 && usegrad_cell)
       { 
