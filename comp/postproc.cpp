@@ -1523,6 +1523,7 @@ namespace ngfem
         ma.IterateElements
           (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
            {
+             if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
              // if(!mask.Test(el.GetIndex())) return;
              auto & trafo1 = ma.GetTrafo (el, lh);
              auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
@@ -1593,6 +1594,7 @@ namespace ngfem
           ma.IterateElements
             (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
              {
+               if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
                // if(!mask.Test(el.GetIndex())) return;
                auto & trafo1 = ma.GetTrafo (el, lh);
                auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
@@ -1660,6 +1662,7 @@ namespace ngfem
             ma.IterateElements
             (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
              {
+               if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
                auto & htrafo1 = ma.GetTrafo (el, lh);
                auto & trafo1 = htrafo1.AddDeformation(this->dx.deformation.get(), lh);
                auto eltype = trafo1.GetElementType();
