@@ -1353,8 +1353,7 @@ namespace ngcomp
             {
               //TODO check sign!
               bfel.EvaluateMappedIncShape(mip, x, y);
-              y *= 0.5;
-              
+              y(0) *= -0.5;
               for (size_t q=0; q<D; q++)
                 {
                   y(0) += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
@@ -1365,7 +1364,7 @@ namespace ngcomp
             {
               // linear inc part
               bfel.EvaluateMappedIncShape(mip, x, y);
-              y *= 0.5;
+              y.Range(0,9) *= 0.5;
 
               // Q_xx = <Q(x),x> = -R_yzyz
               // Q_xy = <Q(y),x> =  R_xzyz
@@ -1449,8 +1448,7 @@ namespace ngcomp
         {
           //TODO check sign!
           bfel.EvaluateIncShape(bmir, x, y);
-          y *= 0.5;
-          
+          y.Row(0).Range(0,bmir.Size()) *= -0.5;
           for (size_t q=0; q<D; q++)
             {
               for (size_t m = 0; m < bmir.Size(); m++)
@@ -1464,7 +1462,7 @@ namespace ngcomp
         {
           // linear inc part
           bfel.EvaluateIncShape(bmir, x, y);
-          y *= 0.5;
+          y.AddSize(9, bmir.Size()) *= 0.5;
           
           // Q_xx = <Q(x),x> = -R_yzyz
           // Q_xy = <Q(y),x> =  R_xzyz
