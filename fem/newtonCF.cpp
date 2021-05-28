@@ -129,8 +129,7 @@ public:
     //     forbidden.
     //  2. Determine cumulated dimensions of collected proxies and compare
     //    them with dimensions of startingpoints.
-    //  4. Call SetDimensions with the appropriate information (TODO: what is
-    //  appropriate???).
+    //  4. Call SetDimensions with the appropriate information.
 
     // NOTE: GFs on generic CompoundSpaces do not provide useful/usable
     // dimension data!
@@ -252,8 +251,6 @@ public:
                       "number of detected proxies (=" +
                       to_string(proxies.Size()) + ")");
 
-    // TODO: Does this make sense or shall we just not set dimensions in
-    //  case of generic compound spaces/multiple proxies
     if (proxies.Size() == 1)
       CoefficientFunction::SetDimensions(
           FlatArray{proxy_dims.Size(), proxy_dims.Data()});
@@ -262,12 +259,6 @@ public:
       dims.Append(full_dim);
       CoefficientFunction::SetDimensions(dims);
     }
-
-    // If it should be consistent with Compound GFs/CFs but note that
-    // Dimensions() is currently used and would need a substitute
-    //    if (proxies.Size() == 1)
-    //      CoefficientFunction::SetDimensions(FlatArray{proxy_dims.Size(),
-    //      proxy_dims.Data()});
 
     // Process options
     if (atol)
@@ -293,11 +284,6 @@ public:
 
     // cout << "eval minimization" << endl;
 
-    // TODO: is there something more efficient? Would be interesting to have a
-    //  LocalHeapMem which supports growth. One could also decide based on
-    //  full_dim and numeric_dim.
-    //  Another possibility would be to compute memory demand beforehand (in
-    //  constructor) and create an ArrayMem backing the LocalHeap.
     LocalHeap lh(1000000);
 
     // startingpoint -> Evaluate (mir, values);
@@ -310,8 +296,6 @@ public:
     ProxyUserData ud(proxies.Size(), cachecf.Size(), lh);
     for (CoefficientFunction *cf : cachecf)
       ud.AssignMemory(cf, mir.Size(), cf->Dimension(), lh);
-    // TODO: Q -- When to actually compute cachecf values? Does this happen
-    //  automatically if StoreUserData() == true?
 
     const_cast<ElementTransformation &>(trafo).userdata = &ud;
 
@@ -320,7 +304,6 @@ public:
 
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
-    // TODO: Into FlatVector instead; or std::vector & placement new?
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
@@ -328,13 +311,11 @@ public:
     FlatArray<FlatMatrix<AutoDiff<1, double>>> dval_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> deriv_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
-    // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
 
     // These are only "independent" for blocks having "vsemb"; otherwise just
     // views
     FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
-    // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
 
     for (int i : Range(nblocks)) {
@@ -404,9 +385,6 @@ public:
 
     const auto calc_residuals = [&]() -> void {
       // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
-
-      // TODO: For better performance, should RHS and some LHS components be
-      //  computed simultaneously?
       expression->Evaluate(mir, val);
       distribute_vec_to_blocks(val, val_blocks);
 
@@ -464,7 +442,7 @@ public:
     const auto compute_increments = [&]() -> void {
       for (size_t qi : Range(mir)) {
 
-        // TODO: when to skip something because of convergence?
+        // NOTE: when to skip something because of convergence?
         //  -> the current approach assumes that evaluation of "expression"
         //  for all qpoints at once is beneficial!
 
@@ -758,8 +736,6 @@ public:
                       "number of detected proxies (=" +
                       to_string(proxies.Size()) + ")");
 
-    // TODO: Does this make sense or shall we just not set dimensions in
-    //  case of generic compound spaces/multiple proxies
     if (proxies.Size() == 1)
       CoefficientFunction::SetDimensions(
           FlatArray{proxy_dims.Size(), proxy_dims.Data()});
@@ -768,12 +744,6 @@ public:
       dims.Append(full_dim);
       CoefficientFunction::SetDimensions(dims);
     }
-
-    // If it should be consistent with Compound GFs/CFs but note that
-    // Dimensions() is currently used and would need a substitute
-    //    if (proxies.Size() == 1)
-    //      CoefficientFunction::SetDimensions(FlatArray{proxy_dims.Size(),
-    //      proxy_dims.Data()});
 
     // Process options
     if (atol)
@@ -798,11 +768,7 @@ public:
     // RegionTracer regtr(TaskManager::GetThreadId(), t);
 
     // cout << "eval minimization" << endl;
-    // TODO: is there something more efficient? Would be interesting to have a
-    //  LocalHeapMem which supports growth. One could also decide based on
-    //  full_dim and numeric_dim.
-    //  Another possibility would be to compute memory demand beforehand (in
-    //  constructor) and create an ArrayMem backing the LocalHeap.
+
     LocalHeap lh(1000000);
 
     const ElementTransformation &trafo = mir.GetTransformation();
@@ -811,8 +777,6 @@ public:
     ProxyUserData ud(proxies.Size(), cachecf.Size(), lh);
     for (CoefficientFunction *cf : cachecf)
       ud.AssignMemory(cf, mir.Size(), cf->Dimension(), lh);
-    // TODO: Q -- When to actually compute cachecf values? Does this happen
-    //  automatically if StoreUserData() == true?
 
     const_cast<ElementTransformation &>(trafo).userdata = &ud;
 
@@ -821,19 +785,16 @@ public:
 
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
-    // TODO: Into FlatVector instead; or std::vector & placement new?
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> diags_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
-    // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
 
     // These are only "independent" for blocks having "vsemb"; otherwise just
     // views
     FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
-    // TODO: Into a FlatMatrix instead; or std::vector & placement new?
     FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
 
     for (int i : Range(nblocks)) {
@@ -936,7 +897,7 @@ public:
 
 
     const auto calc_off_diagonals = [&]() -> void {
-      // TODO: exploit symmetry?
+      // TODO: exploit symmetry
       for (int l1 : Range(nblocks)) {
         for (int k1 : Range(nblocks)) {
 
@@ -979,7 +940,7 @@ public:
     const auto compute_newton_step = [&]() -> void {
       for (size_t qi : Range(mir)) {
 
-        // TODO: when to skip something because of convergence?
+        // NOTE: when to skip something because of convergence?
         //  -> the current approach assumes that evaluation of "expression"
         //  for all qpoints at once is beneficial!
 
@@ -991,7 +952,7 @@ public:
           for (int k : Range(rhsb.Size()))
             rhs[offset1 + k] = rhsb[k];
 
-          // TODO: exploit symmetry?
+          // TODO: exploit symmetry
           int offset2 = 0;
           for (int block2 : Range(proxies)) {
             const auto proxy2 = proxies[block2];
@@ -1131,278 +1092,6 @@ public:
     values.AddSize(mir.Size(), Dimension()) = xk;
   }
 };
-
-class MinimizationCFNoBlocks : public CoefficientFunction {
-  shared_ptr<CoefficientFunction> expression;
-  shared_ptr<CoefficientFunction> startingpoint;
-
-  std::vector<ProxyFunction *> proxies;
-  Array<CoefficientFunction *> cachecf;
-
-  // Same parameters as for scipy's newton
-  // Alternatively, could one think of ParameterCFs here?
-  double tol{1e-8};
-  double rtol{0.0};
-  int maxiter{10};
-
-public:
-  MinimizationCFNoBlocks(shared_ptr<CoefficientFunction> aexpression,
-                 shared_ptr<CoefficientFunction> astartingpoint,
-                 std::optional<double> atol, std::optional<double> artol,
-                 std::optional<int> amaxiter)
-      : expression(aexpression), startingpoint(astartingpoint) {
-    expression->TraverseTree([&](CoefficientFunction &nodecf) {
-      auto nodeproxy = dynamic_cast<ProxyFunction *>(&nodecf);
-      if (nodeproxy) {
-        if (!nodeproxy->IsTestFunction()) {
-          if (std::find(begin(proxies), end(proxies), nodeproxy) ==
-              end(proxies))
-            proxies.push_back(nodeproxy);
-        }
-      } else if (nodecf.StoreUserData() && !cachecf.Contains(&nodecf))
-        cachecf.Append(&nodecf);
-    });
-    if (proxies.empty())
-      throw Exception("MinimizedCF: don't have a proxy");
-    if (proxies.size() > 1)
-      throw Exception("MinimizedCF: only a single proxy is support ATM");
-
-    // TODO: support case proxies.size() > 1
-    // All proxies must originate from one FE space. However, there is no way
-    // to check this. Available information for proxies:
-    //  - block index: via Proxy Evaluator if this can be cast to a
-    //  CompoundDifferentialOperator
-    //  - block size: via Proxy Evaluator
-    //  - dimension: should be the same as block size?
-    //  - dims: array with dimensions for each axis
-
-    // For the CF (starting point):
-    //  - dim, dims (misleading for GF of CompoundFESpace)
-    //  - components (CFs) for GF of CompoundFESpace
-
-    // Strategy:
-    //  1. If more that one proxy has been found, sort proxies by block index;
-    //  only allow each block index appear exactly once.
-    //     IOW, two different proxies with for some reason same block index
-    //     are forbidden.
-    //  2. Determine cumulated dimensions of collected proxies.
-    //  3. Compare cumulated dimension with dimension of startingpoint.
-    //     '-> In case of mismatch, try whether startingpoint has components
-    //     '-> In case of multiple proxies and startingpoint being a GF, the
-    //     latter must have
-    //         components corresponding to the proxies
-    //  4. Call SetDimensions with the appropriate information.
-
-    // Note: it would be nice, if GF on product space have proper dimensions
-    SetDimensions(startingpoint->Dimensions());
-
-    if (atol)
-      tol = *atol;
-    if (artol)
-      rtol = *artol;
-    if (amaxiter)
-      maxiter = *amaxiter;
-  }
-
-  double Evaluate(const BaseMappedIntegrationPoint &ip) const override {
-    cout << "pw eval not overloaded" << endl;
-    return 0;
-  }
-
-  void Evaluate(const BaseMappedIntegrationRule &mir,
-                BareSliceMatrix<double> values) const override {
-    // static Timer t("MinimizationCF::Eval", 2);
-    // static Timer t1("MinimizationCF::Eval get Jac", 2);
-    // static Timer t2("MinimizationCF::Eval solve", 2);
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-    // RegionTracer regtr(TaskManager::GetThreadId(), t);
-
-    // cout << "eval minimization" << endl;
-    LocalHeap lh(1000000);
-
-    // startingpoint -> Evaluate (mir, values);
-    // cout << "starting: " << endl << values.AddSize(Dimension(), ir.Size())
-    // << endl;
-
-    const ElementTransformation &trafo = mir.GetTransformation();
-
-    ProxyUserData ud(1, cachecf.Size(), lh);
-    for (CoefficientFunction *cf : cachecf)
-      ud.AssignMemory(cf, mir.Size(), cf->Dimension(), lh);
-
-    // TODO: This currently prevents NewtonCF to be used in forms
-    const_cast<ElementTransformation &>(trafo).userdata = &ud;
-
-    auto proxy = proxies[0];
-    ud.AssignMemory(proxy, mir.Size(), proxy->Dimension(), lh);
-
-    FlatMatrix xk{ud.GetMemory(proxy)};
-
-    startingpoint->Evaluate(mir, xk);
-    // cout << "starting value = " << ud.GetMemory(proxy) << endl;
-
-    // TODO: support multiple proxies (compound spaces)
-
-    FlatMatrix<> dderiv(mir.Size(), 1, lh);
-    FlatMatrix<AutoDiffDiff<1, double>> ddval(mir.Size(), 1, lh);
-
-    FlatMatrix<> diags(mir.Size(), proxy->Dimension(), lh);
-    FlatMatrix<> dWdB(mir.Size(), proxy->Dimension(), lh);
-
-    FlatMatrix<> w(mir.Size(), proxy->Dimension(), lh);
-    FlatMatrix<> xold(mir.Size(), proxy->Dimension(), lh);
-
-    auto proxy1 = proxy;
-    auto proxy2 = proxy;
-    FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(),
-                              proxy1->Dimension());
-
-    FlatVector<> rhs(proxy2->Dimension(), lh);
-    FlatVector<> sol(proxy1->Dimension(), lh);
-    FlatMatrix<> mat(proxy2->Dimension(), proxy1->Dimension(), lh);
-
-    const auto vsemb = proxy->Evaluator()->GetVSEmbedding();
-    const auto proj_dim_1 = vsemb ? vsemb->Width() : 0;
-    const auto proj_dim_2 = vsemb ? vsemb->Width() : 0;
-    FlatVector<> proj_rhs(proj_dim_2, lh);
-    FlatVector<> proj_sol(proj_dim_1, lh);
-    FlatMatrix<> proj_mat(proj_dim_2, proj_dim_1, lh);
-
-    double energy = 0;
-
-    const auto converged = [&](const auto &rhs_vec, double res_0 = 0) {
-      const auto res = L2Norm(rhs_vec);
-      return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
-    };
-
-    const auto calc_energy_rhs_and_diags =
-        [&](auto &ud /*auto& energy, auto& rhs, auto& diags*/) -> void {
-      auto &rhs = dWdB;
-      // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
-      for (int k = 0; k < proxy->Dimension(); k++) {
-        ud.trialfunction = proxy;
-        ud.trial_comp = k;
-        ud.testfunction = proxy;
-        ud.test_comp = k;
-        expression->Evaluate(mir, ddval);
-        for (size_t i = 0; i < mir.Size(); i++)
-          diags(i, k) = ddval(i, 0).DDValue(0);
-        for (size_t i = 0; i < mir.Size(); i++)
-          rhs(i, k) = ddval(i, 0).DValue(0);
-
-        if (k == 0)
-          for (size_t i = 0; i < mir.Size(); i++)
-            energy += mir[i].GetWeight() * ddval(i, 0).Value();
-      }
-      // cout << "energy old = " << energy << endl;
-    };
-
-    const auto calc_off_diagonals = [&](auto &ud /*auto lhs_values*/) -> void {
-      auto &lhs_values = proxyvalues;
-      // TODO: exploit symmetry
-      // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
-      for (int k = 0; k < proxy1->Dimension(); k++)
-        for (int l = 0; l < proxy2->Dimension(); l++) {
-          ud.trialfunction = proxy1;
-          ud.trial_comp = k;
-          ud.testfunction = proxy2;
-          ud.test_comp = l;
-
-          {
-            expression->Evaluate(mir, ddval);
-            for (size_t i = 0; i < mir.Size(); i++) {
-              dderiv(i, 0) = ddval(i, 0).DDValue(0);
-            }
-          }
-          lhs_values(STAR, l, k) = dderiv.Col(0);
-
-          if (proxy1 != proxy2 || k != l) // computed mixed second derivatives
-          {
-            lhs_values(STAR, l, k) -= diags.Col(k);
-            lhs_values(STAR, l, k) -= diags.Col(l);
-            lhs_values(STAR, l, k) *= 0.5;
-          }
-        }
-    };
-
-    const auto compute_increments = [&](/*auto& w, auto& proj_sol, auto& mat, auto& proj_mat, auto& rhs, auto& proj_rhs*/) -> void {
-        for (size_t i = 0; i < mir.Size(); i++) 
-          {
-            if(converged(dWdB.Row(i)))
-              {
-                w.Row(i) = 0;
-                continue;
-              }
-              
-            rhs = dWdB.Row(i);
-            mat = proxyvalues(i, STAR,STAR);
-            if (vsemb) {
-              proj_rhs = Trans(vsemb.value()) * rhs;
-              proj_mat = Trans(vsemb.value()) * mat * vsemb.value();
-              CalcInverse (proj_mat);
-              proj_sol = proj_mat * proj_rhs;
-              w.Row(i) = vsemb.value() * proj_sol;
-            }
-            else {
-              CalcInverse (mat);
-              w.Row(i) = mat * rhs;
-            }
-          }
-      };
-
-    const auto linesearch = [&](auto &ud) -> void { // linesearch
-      xold = xk;
-      double alpha = 1;
-      double newenergy = energy + 1;
-
-      ud.trialfunction = proxy;
-      ud.trial_comp = 0;
-      ud.testfunction = proxy;
-      ud.test_comp = 0;
-
-      // cout << "w = " << endl << w << endl;
-      while (newenergy > energy && alpha > 1e-10) {
-        xk = xold - alpha * w;
-
-        newenergy = 0;
-        expression->Evaluate(mir, ddval);
-        for (size_t i = 0; i < mir.Size(); i++) {
-          newenergy += mir[i].GetWeight() * ddval(i, 0).Value();
-        }
-
-        // cout << "alpha = " << alpha << ", newen = " << newenergy << endl;
-        alpha /= 2;
-      }
-    };
-
-
-
-    // The actual algorithm
-    for (int step = 0; step < maxiter; step++) {
-      calc_energy_rhs_and_diags(ud);
-      if (converged(dWdB))
-        break;
-
-      calc_off_diagonals(ud);
-      compute_increments();
-      linesearch(ud);
-    }
-
-    if (!converged(dWdB))
-      xk = numeric_limits<double>::quiet_NaN();
-
-    // cout << "result = " << xk << endl;
-    values.AddSize(mir.Size(), Dimension()) = xk;
-  }
-};
-
-shared_ptr<CoefficientFunction>
-CreateMinimizationCFNoBlocks(shared_ptr<CoefficientFunction> expression,
-                     shared_ptr<CoefficientFunction> startingpoint) {
-  return make_shared<MinimizationCFNoBlocks>(
-      expression, startingpoint, std::optional<double>{},
-      std::optional<double>{}, std::optional<int>{});
-}
 
 shared_ptr<CoefficientFunction>
 CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,

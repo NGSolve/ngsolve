@@ -1244,9 +1244,7 @@ wait : bool
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
-  m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
-
-  m.def("MinimizationCFNoBlocks", &CreateMinimizationCFNoBlocks);
+  m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");
 
   m.def("MinimizationCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
                        optional<double> rtol, optional<int> maxiter){
@@ -1281,7 +1279,7 @@ wait : bool
           // Attemp std. conversion to a CoefficientFunction
           py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
           if (ecf.check())
-            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter);
+            return CreateMinimizationCF(expr, ecf(), tol, rtol, maxiter);
 
           throw std::invalid_argument(
               string("Failed to convert startingpoint ")
