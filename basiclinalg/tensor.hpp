@@ -188,9 +188,18 @@ public:
   FlatTensor (LocalHeap & lh, ARG ... args)
     : FlatTensor (args...)
   {
-    size_t totsize = this->GetTotalSize();    
+    size_t totsize = this->GetTotalSize();
+    // TODO: why this call instead of lh.Alloc<T> as in FlatMatrix?
     this->Data() = new(lh) T[totsize];
-  }  
+  }
+  
+  template <typename ... ARG>
+  FlatTensor (T * data, ARG ... args)
+    : FlatTensor (args...)
+  {
+    this->Data() = data;
+  }
+
   
   FlatTensor (size_t as, size_t ad, FlatTensor<DIM-1,T> asub) 
     : size(as), dist(ad), sub(asub) { ; }
@@ -251,6 +260,48 @@ public:
 
   T *& Data () { return sub.Data(); }
   T * Data () const { return sub.Data(); }
+  
+  
+  
+  template<typename ... ARG>
+  INLINE void SetSize (size_t s, ARG ... args) throw ()
+  {
+    size = s;
+    sub.SetSize(args...);
+  }
+
+  /// TODO: Still problems!
+  /// copy data and sub pointers
+  INLINE FlatTensor & Assign (const FlatTensor & m) throw()
+  {
+    sub.Assign(m.sub);
+    dist = m.dist;
+    size = m.size;
+    return *this;
+  }
+
+  //TODO: is this feasible? Still problems!
+  /// set size, and assign mem
+  template<typename ... ARG>
+  INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
+  {
+    FlatTensor tmp{lh, s, args...};
+    Assign(tmp);
+//    FlatTensor tmp{args...};
+//    Assign(tmp);
+//    size_t totsize = tmp->GetTotalSize();
+//    this->Data() = lh.Alloc<T>(totsize);
+  }
+  
+  /// set size, and assign mem
+  template<typename ... ARG>
+  INLINE void AssignMemory (T * mem, size_t s, ARG ... args) throw()
+  {
+    FlatTensor tmp{mem, s, args...};
+    Assign(tmp);
+//    FlatTensor tmp{args...};
+//    this->Data() = mem;
+  }
 };
 
 
@@ -280,6 +331,31 @@ public:
   T & operator= (double d) { *data = d; return *data; }
   T & operator-= (double d) { *data -= d; return *data; }
   T & operator+= (double d) { *data += d; return *data; }
+
+  template<typename ... ARG>
+  INLINE void SetSize (ARG ... args) throw ()
+  {
+  }
+
+  INLINE void Assign (const FlatTensor& m) throw ()
+  {
+    this->data = m.data;
+  }
+
+//  //TODO: is this required?
+//  /// set size, and assign mem
+//  template<typename ... ARG>
+//  INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
+//  {
+//    this->Data() = lh.Alloc<T>(this->GetSize());
+//  }
+//
+//  /// set size, and assign mem
+//  template<typename ... ARG>
+//  INLINE void AssignMemory (T * mem, size_t s, ARG ... args) throw()
+//  {
+//    this->Data() = mem;
+//  }
 };
 
 
