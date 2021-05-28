@@ -1511,6 +1511,9 @@ namespace ngbla
 
     INLINE T* Data() const noexcept { return data; }
 
+    using CMCPMatExpr<SliceMatrix>::Rows;
+    using CMCPMatExpr<SliceMatrix>::Cols;
+
     INLINE const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);

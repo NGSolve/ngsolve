@@ -108,7 +108,7 @@ namespace ngbla
     integer m = a.Width();
     integer n = a.Height();
     double alpha = 1;
-    integer lda = a.Width();
+    integer lda = max(size_t(1), a.Width());
     integer incx = 1;
     double beta = 0;
     integer incy = 1;
@@ -123,7 +123,7 @@ namespace ngbla
     integer m = a.Width();
     integer n = a.Height();
     Complex alpha(1,0);
-    integer lda = a.Width();
+    integer lda = max(size_t(1), a.Width());
     integer incx = 1;
     Complex beta(0, 0);
     integer incy = 1;
@@ -140,7 +140,7 @@ namespace ngbla
     integer m = a.Width();
     integer n = a.Height();
     double alpha = 1;
-    integer lda = a.Width();
+    integer lda = max(size_t(1), a.Width());
     integer incx = 1;
     double beta = 0;
     integer incy = 1;
@@ -156,7 +156,7 @@ namespace ngbla
     integer m = a.Width();
     integer n = a.Height();
     double alpha = fac;
-    integer lda = a.Width();
+    integer lda = max(size_t(1), a.Width());
     integer incx = 1;
     integer incy = 1;
 
@@ -181,9 +181,9 @@ namespace ngbla
     integer k = transa ? a.Height() : a.Width();
     SCAL alpha = 1.0;
     SCAL beta = 0;
-    integer lda = a.Dist();
-    integer ldb = b.Dist();
-    integer ldc = c.Dist();
+    integer lda = max(size_t(1), a.Dist());
+    integer ldb = max(size_t(1), b.Dist());
+    integer ldc = max(size_t(1), c.Dist());
 
     gemm (&transb_, &transa_, &n, &m, &k, &alpha, 
 	  &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
@@ -205,9 +205,9 @@ namespace ngbla
     integer k = transa ? a.Height() : a.Width();
     SCAL alpha = aalpha;
     SCAL beta = abeta;
-    integer lda = a.Dist();
-    integer ldb = b.Dist();
-    integer ldc = c.Dist();
+    integer lda = max(size_t(1), a.Dist());
+    integer ldb = max(size_t(1), b.Dist());
+    integer ldc = max(size_t(1), c.Dist());
 
     gemm (&transb_, &transa_, &n, &m, &k, &alpha, 
 	  &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
@@ -512,9 +512,9 @@ namespace ngbla
     integer k = a.Width();
     double alpha = 1.0;
     double beta = 0;
-    integer lda = a.Dist();
-    integer ldb = b.Dist();
-    integer ldc = c.Dist();
+    integer lda = max(size_t(1), a.Dist());
+    integer ldb = max(size_t(1), b.Dist());
+    integer ldc = max(size_t(1), c.Dist());
 
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -531,9 +531,9 @@ namespace ngbla
     integer k = a.Width();
     double alpha = 1.0;
     double beta = 0;
-    integer lda = a.Dist();
-    integer ldb = b.Dist();
-    integer ldc = c.Dist();
+    integer lda = max(size_t(1), a.Dist());
+    integer ldb = max(size_t(1), b.Dist());
+    integer ldc = max(size_t(1), c.Dist());
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
@@ -548,9 +548,9 @@ namespace ngbla
     integer k = a.Height();
     double alpha = 1.0;
     double beta = 0;
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Dist(); // c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Dist()); // c.Width();
 
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -566,9 +566,9 @@ namespace ngbla
     integer k = a.Height();
     double alpha = 1.0;
     double beta = 0;
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -586,9 +586,9 @@ namespace ngbla
     integer k = a.Width();
     Complex alpha(1,0); // double alpha[2] =  { 1.0, 0.0 };
     Complex beta(0,0);  // double beta[2] = { 0.0, 0.0 };
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     zgemm (&transa, &transb, &n, &m, &k, &alpha,  
             &b(0,0), &ldb, 
@@ -611,9 +611,9 @@ namespace ngbla
     integer k = a.Width();
     double alpha = fac;
     double beta = 1.0;
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -631,9 +631,9 @@ namespace ngbla
     integer k = a.Width();
     double alpha = fac;
     double beta = 1.0;
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -650,9 +650,9 @@ namespace ngbla
     integer k = a.Height();
     double alpha = fac;
     double beta = 1.0;
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     dgemm (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -671,9 +671,9 @@ namespace ngbla
     integer k = a.Width();
     Complex alpha(fac, 0);
     Complex beta(1,0);
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     zgemm (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
@@ -696,9 +696,9 @@ namespace ngbla
     integer k = a.Height();
     Complex alpha(fac, 0); // double alpha[2] = { fac, 0 };
     Complex beta(1,0);     // double beta[2] = { 1.0, 0 };
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     zgemm (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
@@ -721,9 +721,9 @@ namespace ngbla
     integer k = a.Width();
     Complex alpha(fac, 0); // double alpha[2] = { fac, 0 };
     Complex beta(1,0);    // double beta[2] = { 1.0, 0 };
-    integer lda = a.Width();
-    integer ldb = b.Width();
-    integer ldc = c.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
+    integer ldc = max(size_t(1), c.Width());
 
     zgemm (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
@@ -767,7 +767,7 @@ namespace ngbla
     integer m = a.Height();
     if (m == 0) return;
     integer n = a.Width();
-    integer lda = a.Dist();
+    integer lda = max(size_t(1), a.Dist());
 
     ArrayMem<integer,100> ipiv(n);
     integer info;
@@ -789,7 +789,7 @@ namespace ngbla
   {
     integer n = a.Width();
     if (n == 0) return;
-    integer lda = a.Dist();
+    integer lda = max(size_t(1), a.Dist());
 
     integer info;
     char uplo = 'U';
@@ -822,8 +822,8 @@ namespace ngbla
   {
     integer m = a.Height();
     integer n = a.Width();
-    integer lda = a.Width();
-    integer ldb = b.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
     integer nrhs = b.Height();
 
     ArrayMem<integer,100> ipiv(n);
@@ -913,8 +913,8 @@ namespace ngbla
   {
     integer m = a.Height();
     integer n = a.Width();
-    integer lda = a.Width();
-    integer ldb = b.Width();
+    integer lda = max(size_t(1), a.Width());
+    integer ldb = max(size_t(1), b.Width());
     integer nrhs = b.Height();
     integer * ipiv = new integer[n];
     integer lwork = 100*n;

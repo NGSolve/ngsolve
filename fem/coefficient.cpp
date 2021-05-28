@@ -7136,7 +7136,14 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
-      return cf->GenerateCode(code, inputs, index);
+      TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
+	  code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).S() );
+	});
+    }
+
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    {
+      return Array<shared_ptr<CoefficientFunction>>({ cf });
     }
   };
 

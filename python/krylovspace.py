@@ -69,6 +69,7 @@ class LinearSolver(BaseMatrix):
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
               initialize : bool = True) -> BaseVector:
         self.iterations = 0
+        self.residuals = []
         old_status = _GetStatus()
         _PushStatus(self.name + " Solve")
         _SetThreadPercentage(0)
@@ -121,12 +122,12 @@ class LinearSolver(BaseMatrix):
             _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
                                           (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
         if self.printrates:
-            print("{} iteration {}, residual = {}".format(self.name, self.iterations, residual), end="\n" if isinstance(self.printrates, bool) else self.printrates)
+            print("\33[2K{} iteration {}, residual = {}".format(self.name, self.iterations, residual), end="\n" if isinstance(self.printrates, bool) else self.printrates)
             if self.iterations == self.maxiter and residual > self._final_residual:
-                print("WARNING: {} did not converge to TOL".format(self.name))
+                print("\33[2KWARNING: {} did not converge to TOL".format(self.name))
         is_converged = self.iterations >= self.maxiter or residual <= self._final_residual
         if is_converged and self.printrates == "\r":
-            print("{} {}converged in {} iterations to residual {}".format(self.name, "NOT " if residual >= self._final_residual else "", self.iterations, residual))
+            print("\33[2K{} {}converged in {} iterations to residual {}".format(self.name, "NOT " if residual >= self._final_residual else "", self.iterations, residual))
         return is_converged
 
 class CGSolver(LinearSolver):
@@ -158,8 +159,12 @@ conjugate : bool = False
             print("WARNING: maxsteps is deprecated, use maxiter instead!")
             kwargs["maxiter"] = maxsteps
         super().__init__(*args, **kwargs)
-        self.errors = self.residuals # for backward compatibility
         self.conjugate = conjugate
+
+    # for backward compatibility
+    @property
+    def errors(self):
+        return self.residuals
 
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
         d, w, s = [sol.CreateVector() for i in range(3)]

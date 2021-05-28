@@ -1,156 +1,202 @@
 #include <comp.hpp>
-#include <python_comp.hpp>
-
+#include "globalinterfacespace.hpp"
 
 namespace ngcomp
 {
-
-
-  // starting with 1D periodic
-
-  class GlobalInterfaceSpace1DPeriodic : public FESpace
+  template<typename VOLFE>
+  void GlobalInterfaceSpace::VolDiffOp<VOLFE>::CalcMatrix
+    (const FiniteElement & bfel,
+     const BaseMappedIntegrationPoint & mip,
+     SliceMatrix<double,ColMajor> mat,
+     LocalHeap & lh) const
   {
-    shared_ptr<CoefficientFunction> mapping;
-    int order;
+    auto & ip = mip.IP();
+    auto & fel = dynamic_cast<const VOLFE&> (bfel);
+    mat = 0;
+
+    int fnr = ip.FacetNr();
+
+    if (fnr != -1 && fel.bndels[fnr])
+      {
+        dynamic_cast<const typename VOLFE::INTERFACEFE&> (*fel.bndels[fnr]).CalcShape(mip, mat.Row(0));
+        return;
+      }
+    if(fnr == -1)
+      {
+        fel.CalcShape(mip, mat.Row(0));
+      }
+  }
+
+  template<typename INTERFACEFE>
+  void GlobalInterfaceSpace::InterfaceDiffOp<INTERFACEFE>::CalcMatrix
+    (const FiniteElement & fel,
+     const BaseMappedIntegrationPoint & mip,
+     SliceMatrix<double,ColMajor> mat,
+     LocalHeap & lh) const
+  {
+    if (fel.GetNDof() > 0)
+      dynamic_cast<const INTERFACEFE&> (fel).CalcShape(mip, mat.Row(0));
+  }
+
+  GlobalInterfaceSpace::GlobalInterfaceSpace(shared_ptr<MeshAccess> ama,
+                                             const Flags& flags)
+    : FESpace(ama, flags)
+  {
+    order = int(flags.GetNumFlag("order", 3));
+    periodic[0] = periodic[1] = false;
+    if(flags.GetDefineFlag("periodic"))
+      periodic[0] = periodic[1] = true;
+    if(flags.GetDefineFlag("periodicu"))
+      periodic[0] = true;
+    if(flags.GetDefineFlag("periodicv"))
+      periodic[1] = true;
+    try
+      {
+        mapping = std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("mapping"));
+      }
+    catch(std::bad_any_cast ex)
+      {
+        throw Exception("No mapping or wrong mapping given!\nGlobalInterfacespace needs kwarg: mapping=CoefficientFunction");
+      }
+  }
+
+  class GlobalInterfaceSpace1D : public GlobalInterfaceSpace
+  {
     Array<bool> nitsche_facet;
 
-  
     class InterfaceFE : public FiniteElement
     {
-      const GlobalInterfaceSpace1DPeriodic * fes;
+      const GlobalInterfaceSpace1D * fes;
     public:
-      InterfaceFE (const GlobalInterfaceSpace1DPeriodic * afes)
+      InterfaceFE (const GlobalInterfaceSpace1D * afes)
         : FiniteElement(afes->GetNDof(), afes->order), fes(afes) { ; }
-    
-      virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
-    
+
+      virtual ELEMENT_TYPE ElementType() const override { return ET_SEGM; }
+
       virtual void CalcShape (const BaseMappedIntegrationPoint & mip,
                               SliceVector<double> shapes) const
       {
         int order = fes->order;
         double phi = fes->mapping -> Evaluate(mip);
-      
-        shapes(0) = 1;
-        for (int i = 1; i <= order; i++)
-          {
-            shapes(2*i-1) = cos(i*phi);
-            shapes(2*i  ) = sin(i*phi);
-          }
-      }
-    };  
 
-    class InterfaceDiffOp : public DifferentialOperator
-    {
-    public:
-      InterfaceDiffOp () 
-        : DifferentialOperator(1, 1, BND, 0) { ; }
-    
-      virtual void
-      CalcMatrix (const FiniteElement & fel,
-                  const BaseMappedIntegrationPoint & mip,
-                  SliceMatrix<double,ColMajor> mat,   
-                  LocalHeap & lh) const
-      {
-        if (fel.GetNDof() > 0)
-          dynamic_cast<const InterfaceFE&> (fel).CalcShape(mip, mat.Row(0));
+        if(fes->periodic[0])
+          {
+            shapes(0) = 1;
+            for (int i = 1; i <= order; i++)
+              {
+                shapes(2*i-1) = cos(i*phi);
+                shapes(2*i  ) = sin(i*phi);
+              }
+          }
+        else
+          {
+            LegendrePolynomial (order, -1 + 2 * phi, shapes);
+          }
       }
     };
 
-
     class VolFE : public FiniteElement
     {
+      const GlobalInterfaceSpace1D * fes;
     public:
+      VolFE (const GlobalInterfaceSpace1D * afes, int order)
+        : FiniteElement(afes->GetNDof(), order), fes(afes) { ; }
+      using INTERFACEFE = InterfaceFE;
       InterfaceFE *bndels[3] = { nullptr, nullptr, nullptr };
 
       void ComputeNDof()
       {
-        ndof = 0;
-        order = 0;
+        if(order > 0)
+          {
+            if(fes->periodic[0])
+              ndof = 2*order+1;
+            else
+              ndof = order+1;
+          }
+        else
+          ndof = 0;
         for (int i = 0; i < 3; i++)
           if (bndels[i])
             {
-              ndof += bndels[i] -> GetNDof();
-              order = max2 (order, bndels[i]->Order());
+              ndof = bndels[i] -> GetNDof();
+              order = bndels[i]->Order();
             }
       }
-    
-      virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
-    };
 
-
-    class VolDiffOp : public DifferentialOperator
-    {
-    public:
-      VolDiffOp () 
-        : DifferentialOperator(1, 1, BND, 0) { ; }
-
-      virtual void
-      CalcMatrix (const FiniteElement & bfel,
-                  const BaseMappedIntegrationPoint & mip,
-                  SliceMatrix<double,ColMajor> mat,   
-                  LocalHeap & lh) const
+      void CalcShape(const BaseMappedIntegrationPoint& mip,
+                     SliceVector<double> shapes) const
       {
-        auto & ip = mip.IP();
-        auto & fel = dynamic_cast<const VolFE&> (bfel);
-        mat = 0;
-
-        int fnr = ip.FacetNr();
-
-        if (fnr != -1 && fel.bndels[fnr])
-          dynamic_cast<const InterfaceFE&> (*fel.bndels[fnr]).CalcShape(mip, mat.Row(0));
+        int order = fes->order;
+        double phi = fes->mapping->Evaluate(mip);
+        if(fes->periodic[0])
+          {
+            shapes(0) = 1.;
+            for (int i = 1; i <= order; i++)
+              {
+                shapes(2*i-1) = cos(i*phi);
+                shapes(2*i  ) = sin(i*phi);
+              }
+          }
+        else
+          {
+            LegendrePolynomial (order, -1 + 2 * phi, shapes);
+          }
       }
+
+      virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     };
 
-  
-  
   public:
-    GlobalInterfaceSpace1DPeriodic (shared_ptr<MeshAccess> ama, const Flags & flags)
-      : FESpace(ama, flags)
+    GlobalInterfaceSpace1D (shared_ptr<MeshAccess> ama, const Flags & flags)
+      : GlobalInterfaceSpace(ama, flags)
     {
-      order = int(flags.GetNumFlag("order", 3));
-      try
-        {
-          mapping = std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("mapping"));
-        }
-      catch(std::bad_any_cast ex)
-        {
-          cout << "No mapping or wrong mapping given!" << endl;
-          cout << "GlobalInterfaceSpace needs kwarg: mapping=(interface, mapping_func)" << endl;
-        }
+      if(periodic[0])
+        SetNDof(2*order+1);
+      else
+        SetNDof(order+1);
     
-      SetNDof( (2*order+1) );
-    
-      evaluator[VOL] = make_shared<VolDiffOp>();
-      evaluator[BND] = make_shared<InterfaceDiffOp>();
+      evaluator[VOL] = make_shared<VolDiffOp<VolFE>>();
+      evaluator[BND] = make_shared<InterfaceDiffOp<InterfaceFE>>();
     }
 
-    virtual void Update() 
+    void Update() override
     {
-      FESpace::Update();
+      GlobalInterfaceSpace::Update();
 
       nitsche_facet.SetSize(ma->GetNNodes(NT_FACET));
       nitsche_facet = false;
 
-      for (auto el : ma->Elements(BND))
-        if(definedon[BND][el.GetIndex()])
-          nitsche_facet[el.Facets()] = true;
+      if(definedon[BND].Size() == 0)
+        nitsche_facet = true;
+      else
+        {
+          for (auto el : ma->Elements(BND))
+            if(definedon[BND][el.GetIndex()])
+              nitsche_facet[el.Facets()] = true;
+        }
     }
   
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dofs) const
+    void GetDofNrs (ElementId ei, Array<DofId> & dofs) const override
     {
-      // cout << "dofid = " << ei << ", dofnrs = " << endl;
       dofs.SetSize0();
       switch (ei.VB())
         {
         case VOL:
           {
             auto ngel = ma->GetElement(ei);
-            for (auto f : ngel.Facets())
-              if (nitsche_facet[f])
-                {
-                  dofs += IntRange(0, GetNDof());
-                  break;
-                }
+            if(definedon[VOL].Size() == 0 || definedon[VOL][ngel.GetIndex()])
+              {
+                dofs += IntRange(GetNDof());
+              }
+            else
+              {
+                for (auto f : ngel.Facets())
+                  if (nitsche_facet[f])
+                    {
+                      dofs += IntRange(GetNDof());
+                      break;
+                    }
+              }
             break;
           }
 
@@ -158,23 +204,22 @@ namespace ngcomp
           {
             //if (ma->GetElement(ei).GetIndex() == bc)
             if (nitsche_facet[ma->GetElement(ei).Facets()[0]])
-              dofs += IntRange(0, GetNDof());
+              dofs += IntRange(GetNDof());
             break;
           }
         default:
           ;
         }
-      // cout << dofs << endl;
     }
 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const
+    FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override
     {
       switch (ei.VB())
         {
         case VOL:
           {
             auto ngel = ma->GetElement(ei);
-            auto & fe = * new (alloc) VolFE();
+            auto & fe = * new (alloc) VolFE(this, DefinedOn(ei) ? order : 0);
             for (size_t i = 0; i < 3; i++)
               {
                 auto f = ngel.Facets()[i];
@@ -189,7 +234,6 @@ namespace ngcomp
             // if (ma->GetElement(ei).GetIndex() == bc)
             if (nitsche_facet[ma->GetElement(ei).Facets()[0]])
               {
-                // cout << "get interfacefe" << endl;
                 return * new (alloc) InterfaceFE(this);
               }
             return * new (alloc) DummyFE<ET_SEGM>();
@@ -204,22 +248,12 @@ namespace ngcomp
     {
       auto docu = FESpace::GetDocu();
       docu.Arg("mapping") = "Mapping for global interface space.";
+      docu.Arg("periodic") = "Periodic global interface space (in 2d in x and y direction).";
+      docu.Arg("periodicu") = "Periodic u-dir (local coordinate system) global interface space.";
+      docu.Arg("periodicv") = "Periodic v-dir (local coordinate system) global interface space.";
       return docu;
     }
   };
-
-
-
-
-
-  
-
-
-
-
-
-
-
 
   /*
 
@@ -420,24 +454,24 @@ namespace ngcomp
   static RegisterFESpace<NitscheSpaceCylinder> initifes ("NitscheSpaceCylinder");
   */
 
-  
-  void ExportGlobalInterfaceSpaces(py::module & m)
+  shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
+    (shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> mapping,
+     optional<Region> definedon, bool periodic, bool periodicu,
+     bool periodicv, int order)
   {
-    ExportFESpace<GlobalInterfaceSpace1DPeriodic>
-      (m, "GlobalInterfaceSpace1DPeriodic")
-      .def_static("__special_treated_flags__", [] ()
-      {
-        py::dict special(**py::module::import("ngsolve").attr("FESpace").attr("__special_treated_flags__")(),
-        py::arg("mapping") = py::cpp_function
-          ([] (shared_ptr<CoefficientFunction> mapping,
-               Flags* flags, py::list info)
-          {
-            flags->SetFlag("mapping", mapping);
-          }));
-        return special;
-      })
-      ;
+    Flags flags;
+    flags.SetFlag("mapping", mapping);
+    if(periodic)
+      flags.SetFlag("periodic");
+    if(periodicu)
+      flags.SetFlag("periodicu");
+    if(periodicv)
+      flags.SetFlag("periodicv");
+    if(definedon.has_value())
+        flags.SetFlag("definedon", definedon.value());
+    flags.SetFlag("order", order);
+    if(ma->GetDimension() == 2)
+      return make_shared<GlobalInterfaceSpace1D>(ma, flags);
+    throw Exception("this space is not yet implemented!");
   }
-
-}
-  
+} // namespace ngcomp

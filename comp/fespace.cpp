@@ -159,7 +159,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
-        flags.StringListFlagDefined("definedon"))
+        flags.StringListFlagDefined("definedon") ||
+        flags.AnyFlagDefined("definedon"))
       {
 	definedon[VOL].SetSize (ma->GetNDomains());
 	definedon[VOL] = false;
@@ -200,6 +201,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	// fespace only defined on boundaries matching definedon-domains
 	definedon[BND].SetSize (ma->GetNBoundaries());
 	definedon[BND] = false;
+
+        if(flags.AnyFlagDefined("definedon"))
+          {
+            std::any anydefon = flags.GetAnyFlag("definedon");
+            if(anydefon.type() == typeid(std::map<VorB, Region>))
+              {
+                auto map = std::any_cast<std::map<VorB, Region>>(anydefon);
+                for(const auto& [vb, reg] : map)
+                  for(auto i : Range(definedon[vb]))
+                    definedon[vb][i] = reg.Mask().Test(i);
+                // if vol is not in map then definedon vol = empty
+                if(map.find(VOL) == map.end())
+                  definedon[VOL] = false;
+              }
+            else if(anydefon.type() == typeid(Region))
+              {
+                auto reg = std::any_cast<Region>(anydefon);
+                for(auto i : Range(definedon[reg.VB()]))
+                  definedon[reg.VB()][i] = reg.Mask().Test(i);
+                for(auto vb = VOL; vb < reg.VB(); vb++)
+                  definedon[vb] = false;
+              }
+            else
+              throw Exception("definedon with wrong argument type!");
+          }
+
 	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
             ElementId sei(BND, sel);
