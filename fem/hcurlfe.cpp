@@ -255,6 +255,105 @@ namespace ngfem
   }
 
 
+
+  template<int D>
+  list<tuple<string,double>> HCurlFiniteElement<D> :: Timing () const
+  {
+    list<tuple<string,double>>timings;
+    IntegrationRule ir(ElementType(), 2*Order());
+    SIMD_IntegrationRule simdir(ElementType(), 2*Order());
+
+    constexpr int DIMC = D*(D-1)/2;
+    Matrix<> shape(GetNDof(),D);
+    Vector<> coefs(GetNDof());
+    Vector<> values(ir.Size());
+    Matrix<> dvalues(ir.Size(), DIMC);
+    Matrix<SIMD<double>> avalues(D,simdir.Size());
+    Matrix<SIMD<double>> advalues(DIMC, simdir.Size());
+    Matrix<SIMD<double>> simd_shapes(DIMC*GetNDof(), simdir.Size());
+    FE_ElementTransformation<D,D> trafo(ElementType());
+    static LocalHeap lh (10000000, "FE - Timing");
+    HeapReset hr(lh);
+    // auto & mir = trafo(ir, lh);
+    auto & simdmir = trafo(simdir, lh);
+    
+    coefs = 1;
+    
+    double maxtime = 0.5;
+    double time;
+
+    constexpr size_t steps = 1000;
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> CalcShape(ir[0], shape);
+                     });
+    timings.push_back(make_tuple("CalcShape", time/D/steps*1e9/GetNDof()));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> CalcMappedShape(simdmir, simd_shapes);
+                     });
+    timings.push_back(make_tuple("CalcShape (SIMD)", time/D/steps*1e9/(simdir.GetNIP()*GetNDof())));
+
+    /*
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> Evaluate(ir, coefs, values);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate",time/steps*1e9/(GetNDof()*ir.GetNIP())));
+    */
+    
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> Evaluate(simdmir, coefs, avalues);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate(SIMD)", time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateCurl(ir, coefs, dvalues);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Curl", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateCurl(simdmir, coefs, advalues);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Curl(SIMD)", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    /*
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateTrans(ir, values, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(GetNDof()*ir.GetNIP())));
+    */
+    
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> AddTrans(simdmir, avalues, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
+
+    /*
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateCurlTrans(ir, dvalues, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans Curl", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+    */
+    
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> AddCurlTrans(simdmir, advalues, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans Curl(SIMD)", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    return timings;
+  }
+
+  
+
   template <int D>
   void HCurlFiniteElement<D> ::
   ComputeEdgeMoments (int enr, ScalarFiniteElement<1> & testfe,

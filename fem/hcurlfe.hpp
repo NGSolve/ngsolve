@@ -212,6 +212,9 @@ namespace ngfem
     ///
     void ComputeVolMoments (HDivFiniteElement<3> & testfe,
 			    FlatMatrix<> moments, int order, int shape = 1) const;
+
+    
+    NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;
   };
 
 

@@ -37,6 +37,8 @@ To use the webgui visualization within jupyter you need
 .. code-block:: bash
 
     pip3 install webgui_jupyter_widgets
+    jupyter nbextension install --user --py widgetsnbextension
+    jupyter nbextension enable --user --py widgetsnbextension
     jupyter nbextension install --user --py webgui_jupyter_widgets
     jupyter nbextension enable --user --py webgui_jupyter_widgets
 
