@@ -19,7 +19,8 @@ namespace ngcomp
                   flags.GetStringListFlag("fieldnames"),
                   flags.GetStringFlag("filename", "output"),
                   (int)flags.GetNumFlag("subdivision", 0),
-                  (int)flags.GetNumFlag("only_element", -1))
+                  (int)flags.GetNumFlag("only_element", -1),
+                  flags.GetStringFlag("floatsize", "Double"))
   {
     ;
   }
@@ -28,9 +29,9 @@ namespace ngcomp
   VTKOutput<D>::VTKOutput(shared_ptr<MeshAccess> ama,
                           const Array<shared_ptr<CoefficientFunction>> &a_coefs,
                           const Array<string> &a_field_names,
-                          string a_filename, int a_subdivision, int a_only_element)
+                          string a_filename, int a_subdivision, int a_only_element, string a_floatsize)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element)
+        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize)
   {
     value_field.SetSize(a_coefs.Size());
     for (int i = 0; i < a_coefs.Size(); i++)
@@ -318,22 +319,53 @@ namespace ngcomp
   void VTKOutput<D>::PrintPoints(int *offset, stringstream *appenddata)
   {
     *fileout << "<Points>" << endl;
-    *fileout << "<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
-    stringstream data;
-    const double val = 0;
-    uint32_t count = 0;
-
-    for (auto p : points)
+    if (floatsize == "Double")
     {
-      for (int k = 0; k < D; k++)
+      *fileout << "<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
+    }
+    else
+    {
+      *fileout << "<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
+    }
+    const double valdouble = 0;
+    double wvaldouble = 0;
+    const float val = 0;
+    float wval = 0;
+    stringstream data;
+
+    uint32_t count = 0;
+    if (floatsize == "Double")
+    {
+      for (auto p : points)
       {
-        data.write((char *)&p[k], sizeof(double));
-        count += sizeof(double);
+        for (int k = 0; k < D; k++)
+        {
+          wvaldouble = p[k];
+          data.write((char *)&wvaldouble, sizeof(wvaldouble));
+          count += sizeof(wvaldouble);
+        }
+        if (D == 2)
+        {
+          data.write((char *)&valdouble, sizeof(valdouble));
+          count += sizeof(valdouble);
+        }
       }
-      if (D == 2)
+    }
+    else
+    {
+      for (auto p : points)
       {
-        data.write((char *)&val, sizeof(double));
-        count += sizeof(double);
+        for (int k = 0; k < D; k++)
+        {
+          wval = p[k];
+          data.write((char *)&wval, sizeof(wval));
+          count += sizeof(wval);
+        }
+        if (D == 2)
+        {
+          data.write((char *)&val, sizeof(val));
+          count += sizeof(val);
+        }
       }
     }
     appenddata->write((char *)&count, sizeof(uint32_t));
@@ -343,7 +375,6 @@ namespace ngcomp
              << "</DataArray>" << endl;
     *fileout << "</Points>" << endl;
   }
-
   /// output of cells in form vertices
   template <int D>
   void VTKOutput<D>::PrintCells(int *offset, stringstream *appenddata)
@@ -466,17 +497,33 @@ namespace ngcomp
     *fileout << header << endl;
     for (auto field : value_field)
     {
-
-      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
-      //      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"0\">" << endl;
-
+      if (floatsize == "Double")
+      {
+        *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+        //      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"0\">" << endl;
+      }
+      else
+      {
+        *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+      }
+      double temp = 0;
+      float temp2 = 0;
       for (auto v : *field)
       {
-
-        //float temp = v;
-        //fileout->write((char *)&temp, sizeof(double));
-        data.write((char *)&v, sizeof(double));
-        fieldsize += sizeof(double);
+        if (floatsize == "Double")
+        {
+          temp = v;
+          //fileout->write((char *)&temp, sizeof(double));
+          data.write((char *)&temp, sizeof(temp));
+          fieldsize += sizeof(temp);
+        }
+        else
+        {
+          temp2 = v;
+          //fileout->write((char *)&temp, sizeof(double));
+          data.write((char *)&temp2, sizeof(temp2));
+          fieldsize += sizeof(temp2);
+        }
       }
       *offset += 4 + fieldsize;
       appenddata->write((char *)&fieldsize, sizeof(int32_t));

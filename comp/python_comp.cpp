@@ -4018,7 +4018,7 @@ deformation : ngsolve.comp.GridFunction
 
    py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
     .def(py::init([] (shared_ptr<MeshAccess> ma, py::list coefs_list,
-                      py::list names_list, string filename, int subdivision, int only_element)
+                      py::list names_list, string filename, int subdivision, int only_element, string floatsize)
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
@@ -4027,9 +4027,9 @@ deformation : ngsolve.comp.GridFunction
              = makeCArray<string> (names_list);
            shared_ptr<BaseVTKOutput> ret;
            if (ma->GetDimension() == 2)
-             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element);
+             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element, floatsize);
            else
-             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element);
+             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize);
            return ret;
          }),
          py::arg("ma"),
@@ -4037,7 +4037,8 @@ deformation : ngsolve.comp.GridFunction
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
-         py::arg("only_element") = -1
+         py::arg("only_element") = -1,
+         py::arg("floatsize") = "Double"
          )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb)
           { 

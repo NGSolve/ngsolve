@@ -45,8 +45,10 @@ namespace ngcomp
     string filename;
     int subdivision;
     int only_element = -1;
+    string floatsize = "Double";
 
-    Array<shared_ptr<ValueField>> value_field;
+    Array<shared_ptr<ValueField>>
+        value_field;
     Array<Vec<D>> points;
     Array<INT<ELEMENT_MAXPOINTS + 1>> cells;
 
@@ -59,7 +61,7 @@ namespace ngcomp
               const Flags &, shared_ptr<MeshAccess>);
 
     VTKOutput(shared_ptr<MeshAccess>, const Array<shared_ptr<CoefficientFunction>> &,
-              const Array<string> &, string, int, int);
+              const Array<string> &, string, int, int, string);
     virtual ~VTKOutput() { ; }
 
     void ResetArrays();
