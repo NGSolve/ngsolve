@@ -218,6 +218,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             else if(anydefon.type() == typeid(Region))
               {
                 auto reg = std::any_cast<Region>(anydefon);
+                definedon[reg.VB()].SetSize(reg.Mask().Size());
                 for(auto i : Range(definedon[reg.VB()]))
                   definedon[reg.VB()][i] = reg.Mask().Test(i);
                 for(auto vb = VOL; vb < reg.VB(); vb++)
