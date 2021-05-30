@@ -704,7 +704,7 @@ namespace ngcomp
       if (blockcreator)
         {
           shared_ptr<Table<int>> blocks = blockcreator(*bfa->GetFESpace());
-          cout << "created blocks: " << *blocks << endl;
+          // cout << "created blocks: " << *blocks << endl;
           jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
             .CreateBlockJacobiPrecond(blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
           return;
@@ -825,7 +825,7 @@ namespace ngcomp
 
     if(flags.AnyFlagDefined("blockcreator"))
       {
-        blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(FESpace&)>>(flags.GetAnyFlag("blockcreator"));
+        blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
         cout << "local pre, got blockcreator" << endl;
       }
   }

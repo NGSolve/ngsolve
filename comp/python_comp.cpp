@@ -1,5 +1,4 @@
 #ifdef NGS_PYTHON
-
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
@@ -2807,11 +2806,10 @@ integrator : ngsolve.fem.LFI
          {
            auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
 
-           // if (auto bc = kwargs["blockcreator"])
            if (kwargs.contains("blockcreator"))
              {
                auto bc = kwargs["blockcreator"];
-               cout << "have a blockreator-flag" << endl;
+               
                /*
                  // if it is a compiled C++ user-function we should stay within C++
                if (auto func = py::cast<function<shared_ptr<Table<DofId>>(FESpace&)>>(bc))
@@ -2822,15 +2820,18 @@ integrator : ngsolve.fem.LFI
                else
                */
                  {
-                   cout << "create a wrapper" << endl;
-                   function<shared_ptr<Table<DofId>>(FESpace&)> lam =
-                            [bc](FESpace & fes) -> shared_ptr<Table<DofId>>
+                   // cout << "create a wrapper" << endl;
+                   function<shared_ptr<Table<DofId>>(const FESpace&)> lam =
+                     [bc](const FESpace & fes) -> shared_ptr<Table<DofId>>
                      {
                        py::gil_scoped_acquire aq;
-                       cout << "bc lambda called" << endl;
                        py::object blocks = bc(py::cast(fes));
-                       cout << "py-lambda is back" << endl;
-                       // py::print (blocks);
+
+                       if (auto cblocks = py::cast<shared_ptr<Table<DofId>>>(blocks))
+                         {
+                           cout << "have cblocks" << endl;
+                           return cblocks;
+                         }
                        
                        size_t size = py::len(blocks);
                        Array<int> cnt(size);
@@ -2847,7 +2848,7 @@ integrator : ngsolve.fem.LFI
                            for (auto val : block)
                              row[j++] = val.cast<int>();
                          }
-                       cout << "blocktable = " << *blocktable << endl;
+                       // cout << "blocktable = " << *blocktable << endl;
                        return blocktable;
                      };
                    flags.SetFlag("blockcreator", lam);
