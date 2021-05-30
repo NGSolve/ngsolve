@@ -2806,6 +2806,54 @@ integrator : ngsolve.fem.LFI
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
            auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
+
+           // if (auto bc = kwargs["blockcreator"])
+           if (kwargs.contains("blockcreator"))
+             {
+               auto bc = kwargs["blockcreator"];
+               cout << "have a blockreator-flag" << endl;
+               /*
+                 // if it is a compiled C++ user-function we should stay within C++
+               if (auto func = py::cast<function<shared_ptr<Table<DofId>>(FESpace&)>>(bc))
+                 {
+                   cout << "it's a func" << endl;
+                   flags.SetFlag("blockcreator", func);
+                 }
+               else
+               */
+                 {
+                   cout << "create a wrapper" << endl;
+                   function<shared_ptr<Table<DofId>>(FESpace&)> lam =
+                            [bc](FESpace & fes) -> shared_ptr<Table<DofId>>
+                     {
+                       py::gil_scoped_acquire aq;
+                       cout << "bc lambda called" << endl;
+                       py::object blocks = bc(py::cast(fes));
+                       cout << "py-lambda is back" << endl;
+                       // py::print (blocks);
+                       
+                       size_t size = py::len(blocks);
+                       Array<int> cnt(size);
+                       size_t i = 0;
+                       for (auto block : blocks)
+                         cnt[i++] = py::len(block);
+                       
+                       i = 0;
+                       auto blocktable = make_shared<Table<DofId>>(cnt);
+                       for (auto block : blocks)
+                         {
+                           auto row = (*blocktable)[i++];
+                           size_t j = 0;
+                           for (auto val : block)
+                             row[j++] = val.cast<int>();
+                         }
+                       cout << "blocktable = " << *blocktable << endl;
+                       return blocktable;
+                     };
+                   flags.SetFlag("blockcreator", lam);
+                 }
+             }
+           
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");
