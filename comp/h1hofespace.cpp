@@ -446,18 +446,21 @@ into the wirebasket.
 
 	// for (FESpace::Element el : Elements (VOL))
 
-	for (auto vb : { VOL, BND })
-	  ParallelFor
-	    (ma->GetNE(vb), [&] (size_t nr)
-	     {
-	       ElementId ei(vb, nr);
-	       Ngs_Element el = (*ma)[ei];
+	// for (auto vb : { VOL, BND, BBND })
+        for (auto vb : Range(VOL, VorB(dim+1)))
+          ParallelFor
+            (ma->GetNE(vb), [&] (size_t nr)
+             {
+               ElementId ei(vb, nr);
+               Ngs_Element el = (*ma)[ei];
            
-	       if (!DefinedOn (el)) return; 
-           
-	       used_vertex[el.Vertices()] = true;
-	       if (dim >= 2) used_edge[el.Edges()] = true;
-	       if (dim == 3) used_face[el.Faces()] = true;
+	       // if (!DefinedOn (el)) return;
+               if (DefinedOnX (el).IsTrue())
+                 {
+                   used_vertex[el.Vertices()] = true;
+                   if (dim >= 2) used_edge[el.Edges()] = true;
+                   if (dim == 3) used_face[el.Faces()] = true;
+                 }
 	     });
     
 	/*

@@ -663,6 +663,7 @@ namespace ngcomp
 
     string ct;
     shared_ptr<Preconditioner> coarse_pre;
+    function<shared_ptr<Table<DofId>>(FESpace&)> blockcreator;
   public:
     ///
     LocalPreconditioner (const PDE & pde, const Flags & aflags,
@@ -700,6 +701,15 @@ namespace ngcomp
 // 	bbct = DIRECT_COARSE; break;
 //       }
 
+      if (blockcreator)
+        {
+          shared_ptr<Table<int>> blocks = blockcreator(*bfa->GetFESpace());
+          // cout << "created blocks: " << *blocks << endl;
+          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
+            .CreateBlockJacobiPrecond(blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
+          return;
+        }
+      
       if ( block && blocktype == -1 ) blocktype = 0;
       if ( blocktype >= 0 )
         {
@@ -812,6 +822,12 @@ namespace ngcomp
 
     // coarse-grid preconditioner only used in parallel!!
     ct = "NO_COARSE";
+
+    if(flags.AnyFlagDefined("blockcreator"))
+      {
+        blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
+        cout << "local pre, got blockcreator" << endl;
+      }
   }
 
 
