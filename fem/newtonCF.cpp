@@ -6,28 +6,7 @@
 
 #include <cmath>
 #include <fem.hpp>
-// #include <limits>
 #include <ngstd.hpp>
-
-namespace std {
-
-// TODO: this was needed to stop std algos from complaining about missing
-//  iterator traits. Note that ArrayIterator is quite minimal, given that it
-//  could be a full-blown random access iterator... Why is that or why do
-//  FlatArray::begin() and FlatArray::end() not only return pointers?
-
-template <typename T, typename ind>
-// struct iterator_traits<ngcore::ArrayIterator<T, ind>> : public
-// iterator_traits<T*> {};
-struct iterator_traits<ngcore::ArrayIterator<T, ind>> {
-  using iterator_category = forward_iterator_tag;
-  using value_type = T;
-  //  using difference_type = ptrdiff_t;
-  using pointer = T *;
-  using reference = T &;
-};
-
-} // namespace std
 
 namespace ngfem {
 
@@ -63,8 +42,6 @@ int proxy_dof_dimension(const ProxyFunction *proxy) {
 // TODO: (general)
 //  * Interpolation into generic compound spaces does not work as expected
 //     (only one component is respected)
-//  * Try to simplify the setup. Is it reasonable to support a list of
-//     starting points at the python level or is CF((f1, f2, f3)) enough?
 //  * How to handle consistent linearizations? This is probably a bigger topic
 //     because there is also no support for nonlinear equations at the FEM level
 //     (only nonlinear energies...). One could mix the linearization from an
@@ -131,7 +108,8 @@ public:
     //  4. Call SetDimensions with the appropriate information.
 
     // NOTE: GFs on generic CompoundSpaces do not provide useful/usable
-    // dimension data!
+    // dimension data! They are currently not supported. For that, newtonCF.cpp
+    // would have to be part of "comp" instead of "fem"
 
     expression->TraverseTree([&](CoefficientFunction &nodecf) {
       auto nodeproxy = dynamic_cast<ProxyFunction *>(&nodecf);
