@@ -1249,12 +1249,21 @@ wait : bool
   m.def("MinimizationCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
                        optional<double> rtol, optional<int> maxiter){
 
-          // First check for a GridFunction. This case is important as GFs on
-          // compound spaces have "components" which are exploited in the
-          // constructor of MinimizationCF
+          // First check for a GridFunction. This case is important for GFs on
+          // (abstract) compound spaces.
           py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
-          if (egf.check())
-            return CreateMinimizationCF(expr, egf(), tol, rtol, maxiter);
+          if (egf.check()) {
+            const auto gf = egf();
+            if (gf->GetFESpace()->GetEvaluator())
+              return CreateMinimizationCF(expr, gf, tol, rtol, maxiter);
+            else {
+              // Probably a GF on a generic compound space
+              Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
+              for (int comp : Range(stps))
+                stps[comp] = gf->GetComponent(comp);
+              return CreateMinimizationCF(expr, stps, tol, rtol, maxiter);
+            }
+          }
 
           // If the given value is a list or a tuple... This must be handled
           // explicitly to prevent implicit conversion to a CoefficientFunction,
@@ -1313,12 +1322,21 @@ maxiter: int
   m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
                        optional<double> rtol, optional<int> maxiter){
 
-          // First check for a GridFunction. This case is important as GFs on
-          // compound spaces have "components" which are exploited in the
-          // constructor of NewtonCF
+          // First check for a GridFunction. This case is important for GFs on
+          // generic compound spaces.
           py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
-          if (egf.check())
-            return CreateNewtonCF(expr, egf(), tol, rtol, maxiter);
+          if (egf.check()) {
+            const auto gf = egf();
+            if (gf->GetFESpace()->GetEvaluator())
+              return CreateNewtonCF(expr, gf, tol, rtol, maxiter);
+            else {
+              // Probably a GF on a generic compound space
+              Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
+              for (int comp : Range(stps))
+                stps[comp] = gf->GetComponent(comp);
+              return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+            }
+          }
 
           // If the given value is a list or a tuple... This must be handled
           // explicitly to prevent implicit conversion to a CoefficientFunction,
