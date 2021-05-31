@@ -644,7 +644,8 @@ into the wirebasket.
     if (low_order_space)
       low_order_embedding =
         make_shared<Embedding> (GetNDof(),
-                                IntRange(low_order_space->GetNDof()));
+                                IntRange(low_order_space->GetNDof()),
+                                IsComplex());
     // timer3.Stop();
   }
 

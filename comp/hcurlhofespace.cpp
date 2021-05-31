@@ -477,6 +477,12 @@ namespace ngcomp
 
     UpdateDofTables(); 
     UpdateCouplingDofArray();
+    if (low_order_space)
+      low_order_embedding =
+        make_shared<Embedding> (GetNDof(),
+                                IntRange(low_order_space->GetNDof()),
+                                IsComplex());
+
   }
 		
   void HCurlHighOrderFESpace :: DoArchive(Archive & archive)
