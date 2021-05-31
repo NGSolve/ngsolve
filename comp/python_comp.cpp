@@ -5,6 +5,7 @@
 #include "python_comp.hpp"
 #include <comp.hpp>
 #include <multigrid.hpp> 
+#include <pybind11/functional.h>
 
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
@@ -2812,10 +2813,13 @@ integrator : ngsolve.fem.LFI
                py::print("createor: ", bc);
                  // if it is a compiled C++ user-function we should stay within C++
                // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
-               if (py::isinstance<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
+               if (py::function pyf=bc; pyf.is_cpp_function())
                  {
                    cout << "it's a C++ function" << endl;
-                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc);
+                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(pyf.cpp_function());
+                   typedef shared_ptr<Table<DofId>>(*callbackfunc)(const FESpace &);
+                   cout << "function pointer " << (void*)(*func.target<callbackfunc>()) << endl;
+
                    flags.SetFlag("blockcreator", func);
                  }
                else
