@@ -2809,17 +2809,18 @@ integrator : ngsolve.fem.LFI
            if (kwargs.contains("blockcreator"))
              {
                auto bc = kwargs["blockcreator"];
-               
-               /*
+               py::print("createor: ", bc);
                  // if it is a compiled C++ user-function we should stay within C++
-               if (auto func = py::cast<function<shared_ptr<Table<DofId>>(FESpace&)>>(bc))
+               // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
+               if (py::isinstance<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
                  {
-                   cout << "it's a func" << endl;
+                   cout << "it's a C++ function" << endl;
+                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc);
                    flags.SetFlag("blockcreator", func);
                  }
                else
-               */
                  {
+                   cout << "could not extract C++ function" << endl;                   
                    // cout << "create a wrapper" << endl;
                    function<shared_ptr<Table<DofId>>(const FESpace&)> lam =
                      [bc](const FESpace & fes) -> shared_ptr<Table<DofId>>
@@ -2827,11 +2828,8 @@ integrator : ngsolve.fem.LFI
                        py::gil_scoped_acquire aq;
                        py::object blocks = bc(py::cast(fes));
 
-                       if (auto cblocks = py::cast<shared_ptr<Table<DofId>>>(blocks))
-                         {
-                           cout << "have cblocks" << endl;
-                           return cblocks;
-                         }
+                       if (py::isinstance<Table<DofId>>(blocks))
+                         return py::cast<shared_ptr<Table<DofId>>>(blocks);
                        
                        size_t size = py::len(blocks);
                        Array<int> cnt(size);
