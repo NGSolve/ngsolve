@@ -538,6 +538,12 @@ namespace ngcomp
         blocksmoother->SetDirectSolverCluster(cluster);
   }
 
+  void MGPreconditioner::SetCoarsePreconditioner(shared_ptr<Preconditioner> prec)
+  {
+      coarse_pre = prec;
+      mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
+  }
+
   
   // ****************************** DirectPreconditioner **************************
 
