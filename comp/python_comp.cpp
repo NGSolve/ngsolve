@@ -1097,6 +1097,8 @@ rho : ngsolve.fem.CoefficientFunction
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
         flags.SetFlag ("dgjumps", space1->UsesDGCoupling() || space2->UsesDGCoupling());
+        if(space1->LowOrderFESpacePtr() && space2->LowOrderFESpacePtr())
+          flags.SetFlag("low_order_space");
         auto productspace = make_shared<CompoundFESpace> (space1->GetMeshAccess(), flags);
 
         for (auto s : { space1, space2 })
