@@ -5,10 +5,9 @@
 /*********************************************************************/
 
 #include <cmath>
-#include <comp.hpp>
-#include <limits>
+#include <fem.hpp>
+// #include <limits>
 #include <ngstd.hpp>
-#include <parallelngs.hpp>
 
 namespace std {
 
@@ -200,6 +199,8 @@ public:
 
     // Process startingpoints
 
+    /*
+      // if we want that we should move it to comp - level ???
     // Handle GF on CompoundFESpace
     if (astartingpoints.Size() == 1 && astartingpoints[0]->Dimension() == 1 &&
         proxies.Size() > 1) {
@@ -222,6 +223,7 @@ public:
         startingpoints.Append(startingpoint_gf->GetComponent(i));
 
     } else
+    */
       startingpoints = astartingpoints;
 
     // Check dimensions and/or fill empty startingpoints
@@ -681,6 +683,8 @@ public:
 
     // Process startingpoints
 
+    /*
+      // then we shold move to to comp level ???
     // Handle GF on CompoundFESpace
     if (astartingpoints.Size() == 1 && astartingpoints[0]->Dimension() == 1 &&
         proxies.Size() > 1) {
@@ -704,6 +708,7 @@ public:
           startingpoints.Append(startingpoint_gf->GetComponent(i));
 
     } else
+    */
       startingpoints = astartingpoints;
 
     // Check dimensions and/or fill empty startingpoints

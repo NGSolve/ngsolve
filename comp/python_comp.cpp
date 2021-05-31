@@ -1,5 +1,4 @@
 #ifdef NGS_PYTHON
-
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
@@ -2806,6 +2805,54 @@ integrator : ngsolve.fem.LFI
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
            auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
+
+           if (kwargs.contains("blockcreator"))
+             {
+               auto bc = kwargs["blockcreator"];
+               py::print("createor: ", bc);
+                 // if it is a compiled C++ user-function we should stay within C++
+               // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
+               if (py::isinstance<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
+                 {
+                   cout << "it's a C++ function" << endl;
+                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc);
+                   flags.SetFlag("blockcreator", func);
+                 }
+               else
+                 {
+                   cout << "could not extract C++ function" << endl;                   
+                   // cout << "create a wrapper" << endl;
+                   function<shared_ptr<Table<DofId>>(const FESpace&)> lam =
+                     [bc](const FESpace & fes) -> shared_ptr<Table<DofId>>
+                     {
+                       py::gil_scoped_acquire aq;
+                       py::object blocks = bc(py::cast(fes));
+
+                       if (py::isinstance<Table<DofId>>(blocks))
+                         return py::cast<shared_ptr<Table<DofId>>>(blocks);
+                       
+                       size_t size = py::len(blocks);
+                       Array<int> cnt(size);
+                       size_t i = 0;
+                       for (auto block : blocks)
+                         cnt[i++] = py::len(block);
+                       
+                       i = 0;
+                       auto blocktable = make_shared<Table<DofId>>(cnt);
+                       for (auto block : blocks)
+                         {
+                           auto row = (*blocktable)[i++];
+                           size_t j = 0;
+                           for (auto val : block)
+                             row[j++] = val.cast<int>();
+                         }
+                       // cout << "blocktable = " << *blocktable << endl;
+                       return blocktable;
+                     };
+                   flags.SetFlag("blockcreator", lam);
+                 }
+             }
+           
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");

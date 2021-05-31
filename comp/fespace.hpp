@@ -512,6 +512,17 @@ ANY                  1 1 1 1 | 15
       return definedon[el.VB()][el.GetIndex()];
     }
 
+    xbool DefinedOnX (Ngs_Element el) const
+    {
+      // a temporary workaround,
+      // clean solution will be to set definedon[BND] correctly
+      if (el.VB() <= BND) return DefinedOn(el);
+      
+      if (!definedon[el.VB()].Size()) return maybe;
+      return definedon[el.VB()][el.GetIndex()];
+    }
+
+    
     virtual void SetDefinedOn (VorB vb, const BitArray& defon);
     ///
     //[[deprecated("Use SetDefinedOn(VorB, const Bitarray&)")]]
