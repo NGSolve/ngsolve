@@ -209,8 +209,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
               {
                 auto map = std::any_cast<std::map<VorB, Region>>(anydefon);
                 for(const auto& [vb, reg] : map)
-                  for(auto i : Range(definedon[vb]))
-                    definedon[vb][i] = reg.Mask().Test(i);
+                  {
+                    if(vb == BBND || vb == BBBND)
+                      definedon[vb].SetSize(ma->GetNRegions(vb));
+                    for(auto i : Range(definedon[vb]))
+                      definedon[vb][i] = reg.Mask().Test(i);
+                  }
                 // if vol is not in map then definedon vol = empty
                 if(map.find(VOL) == map.end())
                   definedon[VOL] = false;

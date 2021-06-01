@@ -5,6 +5,7 @@
 #include "python_comp.hpp"
 #include <comp.hpp>
 #include <multigrid.hpp> 
+#include <pybind11/functional.h>
 
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
@@ -1096,6 +1097,8 @@ rho : ngsolve.fem.CoefficientFunction
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
         flags.SetFlag ("dgjumps", space1->UsesDGCoupling() || space2->UsesDGCoupling());
+        if(space1->LowOrderFESpacePtr() && space2->LowOrderFESpacePtr())
+          flags.SetFlag("low_order_space");
         auto productspace = make_shared<CompoundFESpace> (space1->GetMeshAccess(), flags);
 
         for (auto s : { space1, space2 })
@@ -2812,10 +2815,16 @@ integrator : ngsolve.fem.LFI
                py::print("createor: ", bc);
                  // if it is a compiled C++ user-function we should stay within C++
                // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
-               if (py::isinstance<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
+               if (py::function pyf=bc; pyf.is_cpp_function())
                  {
                    cout << "it's a C++ function" << endl;
-                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc);
+                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(pyf.cpp_function());
+                   cout << "have func object, type(func) = " << typeid(func).name() << endl;
+                   cout << "type cppfunc = " << typeid(pyf.cpp_function()).name() << endl;
+                   typedef shared_ptr<Table<DofId>>(*callbackfunc)(const FESpace &);
+                   cout << "func-ptr = " << func.target<callbackfunc>() << endl;
+                   // cout << "function pointer " << (void*)(*func.target<callbackfunc>()) << endl;
+
                    flags.SetFlag("blockcreator", func);
                  }
                else
