@@ -2839,7 +2839,13 @@ integrator : ngsolve.fem.LFI
 
                        if (py::isinstance<Table<DofId>>(blocks))
                          return py::cast<shared_ptr<Table<DofId>>>(blocks);
-                       
+
+                       // not yet working:
+                       // print ("blocks:", blocks);
+                       // py::cast<shared_ptr<Table<DofId>>> (blocks);
+                       // cout << "cast did work" << endl;
+                       // return py::cast<shared_ptr<Table<DofId>>>(blocks);  
+
                        size_t size = py::len(blocks);
                        Array<int> cnt(size);
                        size_t i = 0;
