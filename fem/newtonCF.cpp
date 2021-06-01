@@ -558,7 +558,7 @@ public:
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
     //    cout <<
-    //    "\n-------------------------Done------------------------------\n";
+    //    "\n--------------------- NewtonCF done ---------------------------\n";
   }
 };
 
@@ -880,42 +880,46 @@ public:
 
 
     const auto calc_off_diagonals = [&]() -> void {
-      // TODO: exploit symmetry
-      for (int l1 : Range(nblocks)) {
-        for (int k1 : Range(nblocks)) {
+      // NOTE: this computes only one triangle of the matrix, whereby the diagonal
+      // blocks are fully set if there is a VS embedding!
+      for (auto l1 : Range(nblocks)) {
+        for (auto k1 : Range(l1, nblocks)) {
 
           auto proxy1 = proxies[k1];
           auto proxy2 = proxies[l1];
           auto &lin = lin_blocks[l1 * nblocks + k1];
+//          auto &linT = lin_blocks[k1 * nblocks + l1];
 
-          for (int l : Range(proxy2->Dimension())) {
-            for (int k : Range(proxy1->Dimension())) {
+          for (auto l : Range(proxy2->Dimension())) {
 
-              ud.testfunction = proxy2;
-              ud.test_comp = l;
-              ud.trialfunction = proxy1;
-              ud.trial_comp = k;
+            for (auto k : Range(proxy1 == proxy2 ? l : 0, proxy1->Dimension())) {
 
-              expression->Evaluate(mir, ddval);
-              for (size_t i : Range(mir)) {
-                dderiv(i, 0) = ddval(i, 0).DDValue(0);
-              }
-              lin(STAR, l, k) = dderiv.Col(0);
+              if (proxy1 == proxy2 && k == l)
+                lin(STAR, k, k) = diags_blocks[k1].Col(k);
+              else { // computed mixed second derivatives
+                ud.testfunction = proxy2;
+                ud.test_comp = l;
+                ud.trialfunction = proxy1;
+                ud.trial_comp = k;
 
-              if (proxy1 != proxy2 ||
-                  k != l) // computed mixed second derivatives
-              {
+                expression->Evaluate(mir, ddval);
+                for (size_t qi : Range(mir))
+                  dderiv(qi, 0) = ddval(qi, 0).DDValue(0);
+
+                lin(STAR, l, k) = dderiv.Col(0);
                 lin(STAR, l, k) -= diags_blocks[k1].Col(k);
                 lin(STAR, l, k) -= diags_blocks[l1].Col(l);
                 lin(STAR, l, k) *= 0.5;
-              }
 
+                if (proxy1 == proxy2 && get_vs_embedding(proxy1))
+                  lin(STAR, k, l) = lin(STAR, l, k);
+              }
               // cout << "lin block (" << k1 << ", " << l1 << ")[*, *, "
               //      << l << "] = " << lin(STAR, STAR, l) << endl;
             }
-            // cout << "lin block (" << k1 << ", " << l1
-            //      << ") = " << lin << endl;
           }
+//          cout << "lin block (" << l1 << ", " << k1
+//               << ") = " << lin << endl;
         }
       }
     };
@@ -928,21 +932,21 @@ public:
         //  for all qpoints at once is beneficial!
 
         int offset1 = 0;
-        for (int block1 : Range(proxies)) {
+        for (size_t block1 : Range(nblocks)) {
           const auto proxy1 = proxies[block1];
           const auto &rhsb = rhs_blocks[block1].Row(qi);
 
           for (int k : Range(rhsb.Size()))
             rhs[offset1 + k] = rhsb[k];
 
-          // TODO: exploit symmetry
-          int offset2 = 0;
-          for (int block2 : Range(proxies)) {
+          int offset2 = offset1;
+          for (size_t block2 : Range(block1, nblocks)) {
             const auto proxy2 = proxies[block2];
             const auto &linb =
                 lin_blocks[block1 * nblocks + block2](qi, STAR, STAR);
             const auto &lhsb =
                 lhs_blocks[block1 * nblocks + block2](qi, STAR, STAR);
+
             if (auto vsemb1 = get_vs_embedding(proxy1); vsemb1)
               if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2) {
                 lhsb = Trans(vsemb1.value()) * linb * vsemb2.value();
@@ -957,10 +961,22 @@ public:
 
 //            cout << "lhs block (" << block1 << ", " << block2 << ") = "
 //                 << lhsb << endl;
-
-            for (int k : Range(lhsb.Height()))
-              for (int l : Range(lhsb.Width()))
-                lhs(offset1 + k, offset2 + l) = lhsb(k, l);
+            // Fill q-point LHS with exploitation of symmetry. Unfortunately,
+            // CalcInverse does not respect symmetry yet.
+            for (auto k : Range(lhsb.Height())) {
+              if (offset1 == offset2) {
+                lhs(offset1 + k, offset1 + k) = lhsb(k, k);
+                for (auto l : Range(k + 1, lhsb.Width())) {
+                  lhs(offset1 + k, offset2 + l) = lhsb(k, l);
+                  lhs(offset2 + l, offset1 + k) = lhsb(k, l);
+                }
+              } else {
+                for (auto l : Range(lhsb.Width())) {
+                  lhs(offset1 + k, offset2 + l) = lhsb(k, l);
+                  lhs(offset2 + l, offset1 + k) = lhsb(k, l);
+                }
+              }
+            }
 
             offset2 += lhsb.Width();
           }
@@ -1066,7 +1082,7 @@ public:
 //    for (int block1 : Range(proxies))
 //      cout << "RHS block " << to_string(block1) << ": " << rhs_blocks[block1] << endl;
 //
-//    cout << "done" << "\n\n";
+//    cout << "MinimizationCF done" << "\n\n";
 
     if (!all_converged(rhs_blocks))
       xk = numeric_limits<double>::quiet_NaN();
