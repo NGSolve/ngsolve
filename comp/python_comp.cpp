@@ -2897,11 +2897,14 @@ integrator : ngsolve.fem.LFI
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");
   prec_multigrid
-    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, py::kwargs kwargs)
+    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, optional<shared_ptr<Preconditioner>> lo_precond, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, prec_multigrid);
-                    return make_shared<MGPreconditioner>(bfa,flags, name);
-                  }), py::arg("bf"), "name"_a = "multigrid")
+                    auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
+                    if(lo_precond.has_value())
+                      mgpre->SetCoarsePreconditioner(lo_precond.value());
+                    return mgpre;
+                  }), py::arg("bf"), "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
     .def_static("__flags_doc__", [prec_class] ()
                 {
                   auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
