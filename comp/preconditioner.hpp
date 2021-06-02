@@ -302,6 +302,7 @@ namespace ngcomp
     void MgTest () const;
 
     void SetDirectSolverCluster(shared_ptr<Array<int>> cluster);
+    void SetCoarsePreconditioner(shared_ptr<Preconditioner> prec);
   };
 
   class CommutingAMGPreconditioner : public Preconditioner
