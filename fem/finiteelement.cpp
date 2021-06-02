@@ -67,7 +67,11 @@ namespace ngfem
   CompoundFiniteElement ::  CompoundFiniteElement (FlatArray<const FiniteElement*> afea)
     : FiniteElement (), fea(afea)
   {
-    if (fea.Size() && fea[0])
+    if (fea.Size() == 0)
+      {
+        throw Exception("CompoundFE: no sub-elements provided");
+      }
+    else
       {
 	ndof = 0;
 	order = 0;
@@ -78,16 +82,11 @@ namespace ngfem
 	      order = max2 (order, fea[i]->Order());
 	    }
 	  else
-	    {
-	      cout << "WARNING: CompoundFE, undefined component" << i << endl;
-	    }
-      }
-    else
-      {
-	throw Exception("WARNING: CompoundFE, undefined components");
-	cout << "WARNING: CompoundFE, undefined components" << endl;
-	ndof = 0;
-	order = 0;
+            throw Exception(string{"CompoundFE: undefined component "} + to_string(i));
+
+        for (int i = 1; i < fea.Size(); i++)
+          if (fea[i] != fea[0])
+            all_the_same = false;
       }
   }
 
@@ -104,17 +103,38 @@ namespace ngfem
                                              const CoefficientFunction & func, SliceMatrix<> coefs,
                                              LocalHeap & lh) const
   {
-    // assume all elements are the same, and match with dim func
-    size_t ndof = fea[0]->GetNDof();
-    size_t dim = fea.Size();
-    STACK_ARRAY(double, mem, ndof*dim); 
-    FlatMatrix temp(ndof, dim, &mem[0]);
-    fea[0] -> Interpolate (trafo, func, temp, lh);
+    if (all_the_same)
+      {
+        size_t ndof = fea[0]->GetNDof();
+        size_t dim = fea.Size();
 
-    // now we need to transpose, not sure if we stay with that 
-    for (int i = 0, ii=0; i < temp.Width(); i++)
-      for (int j = 0; j < temp.Height(); j++, ii++)
-        coefs(ii,0) = temp(j,i);
+        // Be safe... This case will probably not always be handled correctly
+        if (dynamic_cast<const CompoundFiniteElement*>(fea[0]))
+          throw Exception("Interpolation is not implement for 'compound of compounds'.");
+
+        if (dim != func.Dimension())
+          throw Exception("Dimensions do not match.");
+
+        STACK_ARRAY(double, mem, ndof*dim);
+        FlatMatrix temp(ndof, dim, &mem[0]);
+        fea[0] -> Interpolate (trafo, func, temp, lh);
+
+        // now we need to transpose, not sure if we stay with that
+        for (int i = 0, ii=0; i < temp.Width(); i++)
+          for (int j = 0; j < temp.Height(); j++, ii++)
+            coefs(ii,0) = temp(j,i);
+      }
+    else
+      throw Exception("Interpolation only implemented for a compound of identical elements.");
+
+    //  TODO: For this to work, one might need to split func into appropriate pieces
+    //   (components, slicing) which are then given to the sub-elements for
+    //   interpolation. Currently, FiniteElement does not provide enough corresponding
+    //   information, i.e. it lacks physical dimension.
+    //   To avoid excessive evaluations in the case of identical evaluation points one
+    //   might come up with a CF wrapper that caches the previous evaluation,
+    //   which is identified by element number/index and evaluation point data
+    //   (IRs do not have a comparison operator).
   }
 
 
@@ -146,7 +166,7 @@ namespace ngfem
     FlatMatrix temp(scalndof, fulldim, &mem[0]);
     scalfe.Interpolate (trafo, func, temp, lh);
     // cout << "interpol, temp = " << temp << endl;
-    
+
     // now we need to transpose, not sure if we stay with that
     for (int i = 0, ii = 0; i < vdim; i++)
       for (int j = 0; j <= i; j++, ii++)
