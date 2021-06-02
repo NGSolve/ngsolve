@@ -77,6 +77,7 @@ namespace ngcomp
     void PrintCellTypes(VorB vb, int *offset, stringstream *appenddata, const BitArray *drawelems = nullptr);
     void PrintFieldData(int *offset, stringstream *appenddata);
     void PrintAppended(stringstream *appenddata);
+    void PvdFile(string filename, int index);
 
     virtual void Do(LocalHeap &lh, VorB vb = VOL, const BitArray *drawelems = 0);
   };
