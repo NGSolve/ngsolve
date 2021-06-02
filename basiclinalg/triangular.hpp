@@ -138,6 +138,8 @@ namespace ngbla
             typename TT, typename TX, ORDERING OT, ORDERING OX>
   void TriangularMult2 (BareSliceMatrix<TT,OT> T, SliceMatrix<TX,OX> X)
   {
+    // static Timer t("TriangularMult generic, rec"); RegionTimer r(t);
+    
     size_t n = X.Height();
   
     if (n == 0) return;
@@ -148,7 +150,7 @@ namespace ngbla
         return;
       }
 
-    if (n < 8)
+    if (n < 8) {
       if constexpr (SIDE == UpperRight) { 
           for (size_t i = 0; i < n; i++)
             {
@@ -157,10 +159,23 @@ namespace ngbla
               for (size_t j = i+1; j < n; j++)
                 X.Row(i) += T(i,j) * X.Row(j);
             }
-          return;
         }
-    
-    IntRange r1(0,n/2), r2(n/2,n);
+      else {
+        for (size_t i = n; i > 0; i--)
+          {
+            size_t im = i-1;
+            if (NORM==NonNormalized)
+              X.Row(im) *= T(im,im);
+            for (size_t j = 0; j < im; j++)
+              X.Row(im) += T(im,j) * X.Row(j);
+          }
+      }
+      return;
+    }
+
+    size_t n2 = n/2;
+    // if (n2 > 4) n2 = n2 - n2%4;
+    IntRange r1(0,n2), r2(n2,n);
     auto T11 = T.Rows(r1).Cols(r1);
     auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());;
     auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
@@ -188,6 +203,7 @@ namespace ngbla
             typename TT, typename TX, ORDERING OT, ORDERING OX>
   void TriangularMult (BareSliceMatrix<TT,OT> T, SliceMatrix<TX,OX> X)
   {
+    static Timer t("TriangularMult generic"); RegionTimer r(t);
     size_t i = 0;
     constexpr size_t bw = 256;
     for ( ; i+bw <= X.Width(); i += bw)
@@ -196,29 +212,58 @@ namespace ngbla
       TriangularMult2<SIDE,NORM> (T, X.Cols(i,X.Width()));      
   }
 
+  
   extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+
   template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularMultLL(T,X);
   }
 
-  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
   template <> inline void TriangularMult<LowerLeft,Normalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularMultLLN(T,X);
   }
 
+  template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultLL(T,X);
+  }
+
+  template <> inline void TriangularMult<LowerLeft,Normalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultLLN(T,X);
+  }
+
+
+  
   extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X);
   extern NGS_DLL_HEADER void TriangularMultURN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
   
   template <> inline void TriangularMult<UpperRight,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularMultUR(T,X);
   }
+
   template <> inline void TriangularMult<UpperRight,Normalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularMultURN(T,X);
   }
+
+  template <> inline void TriangularMult<UpperRight,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultUR(T,X);
+  }
+  template <> inline void TriangularMult<UpperRight,Normalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularMultURN(T,X);
+  }
+
   
   
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
@@ -267,35 +312,11 @@ namespace ngbla
 
 
 
-
-
-
-
-  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OX, ORDERING OY>
-  void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
-                                     SliceMatrix<double, OX> X,
-                                     SliceMatrix<double, OY> Y)
-  {
-    if constexpr (SIDE == LowerLeft) {
-        
-        auto [Y1,Y2] = Y.SplitRows(X.Height());
-        auto [T1,T2] = T.SplitRows(X.Height());
-        
-        Y1 = X;
-        TriangularMult<SIDE, NORM> (T1, Y1);
-        Y2 = T2 * X;
-      }
-    else {
-
-      auto [X1,X2] = X.SplitRows(T.Height());
-      auto [T1,T2] = T.SplitCols(T.Height());
-
-      Y = X1;
-      TriangularMult<SIDE, NORM> (T1, Y);
-      Y += T2 * X2;
-    }
-  }
-
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
+  extern NGS_DLL_HEADER void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
+                                                           SliceMatrix<double, OXY> X,
+                                                           SliceMatrix<double, OXY> Y);
+    
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
   void GeneralizedTriangularMult (const TT & T,
                                   const TX & X,
@@ -306,8 +327,22 @@ namespace ngbla
   
 
 
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
+  extern NGS_DLL_HEADER void GeneralizedTriangularSub_SM (SliceMatrix<double, OT> T,
+                                                           SliceMatrix<double, OXY> X,
+                                                           SliceMatrix<double, OXY> Y);
 
+    
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
+  void GeneralizedTriangularSub (const TT & T,
+                                 const TX & X,
+                                 const TY & Y)
+  {
+    GeneralizedTriangularSub_SM<SIDE,NORM> (make_SliceMatrix(T), make_SliceMatrix(X), make_SliceMatrix(Y));
+  }
+  
 
+  
 
 
   

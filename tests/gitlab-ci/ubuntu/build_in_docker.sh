@@ -38,6 +38,39 @@ git submodule update --init --recursive
 cd
 mkdir -p build/ngsolve
 cd build/ngsolve
+
+pip3 install numpy scipy matplotlib
+
+if [ "$IMAGE_NAME" == "avx" ]
+then
+    apt-get upgrade -y
+    apt-get install -y software-properties-common
+    add-apt-repository -y ppa:saiarcot895/chromium-beta
+    apt-get update
+    apt-get install -y rsync chromium-browser chromium-chromedriver
+    ln -s /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver
+
+    pip3 install \
+        sphinx \
+        sphinx_rtd_theme \
+        ipython \
+        nbsphinx \
+        jupyter \
+        jupyter-client \
+        nbstripout \
+        ipykernel \
+        widgetsnbextension \
+        ipyparallel \
+        selenium \
+        webgui_jupyter_widgets \
+        pybind11-stubgen==0.5 \
+        docutils==0.16 \
+        Jinja2==2.11.3 \
+
+fi
+
+pip3 freeze > /logs/pip_freeze.log
+
 cmake ../../src/ngsolve \
   -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
   -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
@@ -62,18 +95,17 @@ cd ngsolve
 if [ "$IMAGE_NAME" == "avx" ]
 then
   ## build and upload docu to server
-  apt-get install -y rsync
+
 
   export NGS_NUM_THREADS=4
   echo "build docu"
-  pip3 install --upgrade jupyter widgetsnbextension ipyparallel
   ipython profile create --parallel --profile=mpi
   echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_mpi/ipcluster_config.py
   jupyter nbextension install --py widgetsnbextension
   jupyter nbextension enable --py widgetsnbextension
-  jupyter nbextension install --py ngsolve
-  jupyter nbextension enable --py ngsolve
-  make docs > out
+  jupyter nbextension install --py webgui_jupyter_widgets
+  jupyter nbextension enable --py webgui_jupyter_widgets
+  make docs > /logs/build_docs.log 2>&1
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files
   zip -r docs/html/i-tutorials.zip docs/html/jupyter-files

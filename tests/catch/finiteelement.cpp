@@ -28,7 +28,7 @@ using L2 = L2HighOrderFE<
   T_ScalarFiniteElement<
     L2HighOrderFE_Shape<ET>,
     ET,
-    DGFiniteElement<ET_trait<ET>::DIM>
+    DGFiniteElement<ET>
     >
   >;
 

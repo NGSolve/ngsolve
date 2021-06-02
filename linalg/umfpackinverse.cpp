@@ -338,7 +338,10 @@ namespace ngla
       }
 
     if (this->values.Size() == 0)
-      return;
+      {
+        y = 0.0;
+        return;
+      }
 
     double *data = reinterpret_cast<double *>(this->values.Data());
 

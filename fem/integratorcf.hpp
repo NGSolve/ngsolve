@@ -2,7 +2,7 @@
 
 namespace ngfem
 {
-  
+  class Integral;
   class DifferentialSymbol
   {
   public:
@@ -19,6 +19,12 @@ namespace ngfem
     DifferentialSymbol (VorB _vb, VorB _element_vb, bool _skeleton, // const BitArray & _definedon,
                         int _bonus_intorder)
       : vb(_vb), element_vb(_element_vb), skeleton(_skeleton), /* definedon(_definedon), */ bonus_intorder(_bonus_intorder) { ; }
+
+    virtual ~DifferentialSymbol() { }
+    virtual shared_ptr<Integral> MakeIntegral(shared_ptr<CoefficientFunction> cf) const
+    {
+      return make_shared<Integral> (cf, *this);
+    }
   };
   
 
@@ -30,10 +36,20 @@ namespace ngfem
     Integral (shared_ptr<CoefficientFunction> _cf,
               DifferentialSymbol _dx)
       : cf(_cf), dx(_dx) { ; }
+    virtual ~Integral() { }
 
     template <typename TSCAL>
-    TSCAL Integrate (const ngcomp::MeshAccess & ma,
-                     FlatVector<TSCAL> element_wise);
+    TSCAL T_Integrate (const ngcomp::MeshAccess & ma,
+                       FlatVector<TSCAL> element_wise);
+
+    virtual double Integrate (const ngcomp::MeshAccess & ma,
+                              FlatVector<double> element_wise);
+
+    virtual Complex Integrate (const ngcomp::MeshAccess & ma,
+                               FlatVector<Complex> element_wise);
+    
+    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
+    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator();
   };
   
   inline Integral operator* (double fac, const Integral & cf)
@@ -80,9 +96,12 @@ namespace ngfem
       auto sgrad = dynamic_pointer_cast<ProxyFunction>(grad)->Trace();
       auto sdivdir = TraceCF(sgrad);
 
-      auto tang = TangentialVectorCF(dir->Dimension());
+      auto tang = TangentialVectorCF(dir->Dimension(), false);
       tang -> SetDimensions( Array<int> ( { dir->Dimension(), 1 } ) );
       auto bsdivdir = InnerProduct(sgrad*tang,tang);
+
+      DiffShapeCF shape;
+      cout << "should add Eulerian here" << endl;
       
       for (auto & icf : icfs)
         {
@@ -90,17 +109,17 @@ namespace ngfem
             {
             case VOL:
               if (icf->dx.element_vb == VOL)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + divdir*icf->cf, icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + divdir*icf->cf, icf->dx);
               else
                 throw Exception("In DiffShape: for vb=VOL only element_vb=VOL implemented!");
               break;
             case BND:
               if (icf->dx.element_vb == VOL)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + sdivdir*icf->cf, icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + sdivdir*icf->cf, icf->dx);
               else if (icf->dx.element_vb == BND && dir->Dimension() == 3)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir) + bsdivdir*icf->cf, icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + bsdivdir*icf->cf, icf->dx);
               else if (icf->dx.element_vb == BND && dir->Dimension() == 2)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(shape.get(), dir), icf->dx);
+                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir), icf->dx);
               else
                 throw Exception("In DiffShape: for vb=BND something went wrong!");
               break;
@@ -119,6 +138,12 @@ namespace ngfem
       for (auto & icf : icfs)
         compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait), icf->dx);
       return compiled;
+    }
+
+    void SetDefinedOnElements(shared_ptr<BitArray> defon)
+    {
+      for(auto& icf : icfs)
+        icf->dx.definedonelements = defon;
     }
   };
 

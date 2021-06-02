@@ -135,6 +135,35 @@ namespace ngla
   }
   
 
+  void Projector :: SetValues (BaseVector & x, double value) const
+  {
+    auto setval = [this, value] (BitArray & bits, auto sx)
+      {
+        ParallelForRange
+        (bits.Size(),
+         [&bits, sx, this,value] (IntRange myrange)
+            {
+              if (keep_values)
+                {
+                  for (size_t i : myrange) 
+                    if (bits[i])
+                      sx(i) = value;
+                }
+              else
+                {
+                  for (size_t i : myrange) 
+                    if (!bits[i])
+                      sx(i) = value;
+                }
+            });
+      };
+
+    if (x.EntrySize() == 1)
+      setval (*bits, x.FV<double>());
+    else
+      setval (*bits, x.SV<double>());
+  }
+  
 
 
   template <typename TM>
@@ -148,20 +177,21 @@ namespace ngla
         
         auto sx = x.FV<TV_ROW>();
         auto sy = y.FV<TV_COL>();
-        
+        auto sd = this->diag->FV();
         ParallelForRange
-          (Range(diag), [sx,sy,s,this] (IntRange myrange)
+          (Range(*diag), [sx,sy,sd,s] (IntRange myrange)
            {
              for (size_t i : myrange)
-               sy(i) += s * this->diag(i)*sx(i);
+               sy(i) += s * sd(i)*sx(i);
+               // sy(i) += s * this->diag(i)*sx(i);
            });
       }
     else
       {
         auto sx = x.SV<TSCAL>();
         auto sy = y.SV<TSCAL>();
-        for (size_t i : Range(diag))
-          sy(i) += s * diag(i)*sx(i);
+        for (size_t i : Range(*diag))
+          sy(i) += s * (*diag)(i)*sx(i);
       }
   }
 
@@ -174,26 +204,26 @@ namespace ngla
   template <typename TM>  
   AutoVector DiagonalMatrix<TM> :: CreateRowVector () const 
   {
-    return CreateBaseVector(diag.Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
+    return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
   }
 
   template <typename TM>    
   AutoVector DiagonalMatrix<TM> :: CreateColVector () const 
   {
-    return CreateBaseVector(diag.Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::HEIGHT);
+    return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::HEIGHT);
   }
 
   template <typename TM>    
   shared_ptr<BaseMatrix> DiagonalMatrix<TM> ::
   InverseMatrix (shared_ptr<BitArray> subset) const
   {
-    VVector<TM> v2(diag.Size());
+    VVector<TM> v2(diag->Size());
     if (subset)
       {
-        for (size_t i = 0; i < diag.Size(); i++)
+        for (size_t i = 0; i < diag->Size(); i++)
           if (subset->Test(i))
             {
-              v2(i) = diag(i);
+              v2(i) = (*diag)(i);
               CalcInverse(v2(i));
             }
           else
@@ -201,9 +231,9 @@ namespace ngla
       }
     else
       {
-        for (size_t i = 0; i < diag.Size(); i++)
+        for (size_t i = 0; i < diag->Size(); i++)
           {
-            v2(i) = diag(i);
+            v2(i) = (*diag)(i);
             CalcInverse(v2(i));
           }
       }
@@ -441,7 +471,22 @@ namespace ngla
 	hx.SetSize (realmatrix->Height());
 	hy.SetSize (realmatrix->Width());
       }
-  }    
+  }
+
+  template <class TVR, class TVC>
+  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateRowVector() const
+  {
+    auto h = realmatrix->Width();
+    return make_unique<VVector<TVC>> (h);
+  }
+    
+  template <class TVR, class TVC>
+  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateColVector() const
+  {
+    auto w = realmatrix->Width();
+    return make_unique<VVector<TVC>> (w);
+  }
+    
 
 
   template <class TVR, class TVC>
@@ -827,6 +872,104 @@ namespace ngla
   }
 
 
+
+
+  
+  BaseMatrixFromVector :: BaseMatrixFromVector (shared_ptr<BaseVector> avec)
+    : vec(avec) { }
+  
+  void BaseMatrixFromVector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y += s * x.FV<double>()(0) * (*vec);
+  }
+    
+  void BaseMatrixFromVector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>()(0) += s * InnerProduct(x, *vec);
+  }
+  
+  AutoVector BaseMatrixFromVector :: CreateRowVector () const
+  {
+    // missing parallel: 1 dof for all
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(1);   
+    return sp;
+  }
+  
+  AutoVector BaseMatrixFromVector :: CreateColVector () const
+  {
+    return vec->CreateVector();
+  }
+
+
+
+
+
+  
+  BaseMatrixFromMultiVector :: BaseMatrixFromMultiVector (shared_ptr<MultiVector> avec)
+    : vec(avec) { }
+  
+  void BaseMatrixFromMultiVector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    // y += s * x.FV<double>()(0) * (*vec);
+    Vector<> tmp = x.FV<double>();
+    tmp *= s;
+    vec->AddTo(tmp, y);
+  }
+    
+  void BaseMatrixFromMultiVector :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    Vector<> tmp = vec->InnerProductD(x);
+    y.FV<double>() += s *  tmp;
+  }
+  
+  AutoVector BaseMatrixFromMultiVector :: CreateRowVector () const
+  {
+    // missing parallel: 1 dof for all
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(vec->Size());   
+    return sp;
+  }
+  
+  AutoVector BaseMatrixFromMultiVector :: CreateColVector () const
+  {
+    return vec->RefVec()->CreateVector();
+  }
+
+
+
+  
+  BaseMatrixFromMatrix :: BaseMatrixFromMatrix (Matrix<> amat)
+    : mat(move(amat)) { }
+  
+  void BaseMatrixFromMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>() += s * mat * x.FV<double>();    
+  }
+    
+  void BaseMatrixFromMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>() += s * Trans(mat) * x.FV<double>();
+  }
+  
+  AutoVector BaseMatrixFromMatrix :: CreateRowVector () const
+  {
+    // missing parallel: 1 dof for all
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(mat.Width());   
+    return sp;
+  }
+  
+  AutoVector BaseMatrixFromMatrix :: CreateColVector () const
+  {
+    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(mat.Height());   
+    return sp;
+  }
+
+
+
+
+
+
+  
+  
   string PS(PARALLEL_STATUS stat)
   {
     switch (stat)
@@ -869,25 +1012,26 @@ namespace ngla
 
   AutoVector LoggingMatrix :: CreateRowVector () const 
   {
-    unique_ptr<BaseVector> vec = mat->CreateRowVector();
+    auto vec = mat->CreateRowVector();
     *out << "matrix '" << label << "' CreateRowVector "
-         << "size: " << vec->Size() << " " << PS(vec->GetParallelStatus()) << endl;
-    return move(vec);
+         << "size: " << vec.Size() << " " << PS(vec.GetParallelStatus()) << endl;
+    return vec;
   }
   
   AutoVector LoggingMatrix :: CreateColVector () const
   {
-    unique_ptr<BaseVector> vec = mat->CreateColVector();
+    auto vec = mat->CreateColVector();
     *out << "matrix '" << label << "' CreateColVector "
-         << "size: " << vec->Size() << " " << PS(vec->GetParallelStatus()) << endl;
-    return move(vec);
+         << "size: " << vec.Size() << " " << PS(vec.GetParallelStatus()) << endl;
+    return vec;
   }
 
   
   void LoggingMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     if (comm.has_value()) comm->Barrier();
-    *out << "matrix '" << label << "' Mult: " << typeid(*mat).name() << " "
+    const BaseMatrix & rmat = *mat;
+    *out << "matrix '" << label << "' Mult: " << typeid(rmat).name() << " "
          << "x: " << x.Size() << " " << PS(x.GetParallelStatus()) << " "
          << "y: " << y.Size() << " " << PS(y.GetParallelStatus()) << endl;
     if (comm.has_value()) comm->Barrier();

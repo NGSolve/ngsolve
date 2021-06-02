@@ -99,7 +99,9 @@ namespace ngfem
                                   pcoefs += dist; }
                                 ));
         
-        std::tie(values(i), values(i+1)) = sum;
+        // std::tie(values(i), values(i+1)) = sum;
+        values(i) = sum.Lo();
+        values(i+1) = sum.Hi();
       }
 
     if (i < hir.Size())
@@ -325,7 +327,44 @@ namespace ngfem
     */
   }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values,
+            BareSliceVector<> coefs) const
+  {
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
+      {
+        TIP<DIM,SIMD<double>> tip = hir[i].TIp<DIM>();
+        SIMD<double> val = values(i);
+        static_cast<const FEL*> (this)->        
+          T_CalcDualShape (tip, SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
+      }
+  }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddDualTrans (const IntegrationRule & ir, BareVector<double> values,
+            BareSliceVector<> coefs) const
+  {
+    FlatArray<IntegrationPoint> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
+      {
+        TIP<DIM,double> tip = hir[i].TIp<DIM>();
+        double val = values(i);
+        static_cast<const FEL*> (this)->                
+          T_CalcDualShape (tip, SBLambda ( [&](int j, double shape) { coefs(j) += val*shape; } ));
+      }
+  }
+
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>  
+  bool T_ScalarFiniteElement<FEL,ET,BASE> :: GetDiagDualityMassInverse (FlatVector<> diag) const 
+  {
+    return static_cast<const FEL*>(this)->GetDiagDualityMassInverse2(diag);
+  }
+  
+  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddTrans (const SIMD_IntegrationRule & ir,
@@ -856,7 +895,17 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
-    static_cast<const FEL*>(this) -> CalcDualShape2 (mip, shape);
+    try
+      {
+        static_cast<const FEL*>(this) -> CalcDualShape2 (mip, shape);
+      }
+    catch (Exception e)
+      {
+        double imeas = 1.0/mip.GetMeasure();
+        shape = 0.0;
+        static_cast<const FEL*> (this)->        
+          T_CalcDualShape (GetTIP<DIM>(mip.IP()), SBLambda ( [&](int j, double val) { shape(j) = imeas * val; }));
+      }
   }
   
   

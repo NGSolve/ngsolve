@@ -85,8 +85,7 @@ void LoadBin (istream & ist, T & val)
 
 
 
-
-
+  /*
 template <int NUM>
 class Cl_Iterate
 {
@@ -120,6 +119,15 @@ INLINE void Iterate (FUNC f)
 {
   Cl_Iterate<NUM-1>::Do(f);
 }
+  */
+
+
+template <int NUM, typename FUNC>
+INLINE void Iterate (FUNC f)
+{
+  if constexpr (NUM > 1) Iterate<NUM-1> (f);
+  if constexpr (NUM >= 1) f(IC<NUM-1>());
+}
 
 
 
@@ -145,7 +153,7 @@ class Cl_Switch<-1>
 {
 public:
   template <typename FUNC>
-  static INLINE void Do (size_t nr, FUNC f)  { }
+  static INLINE void Do (size_t /* nr */, FUNC /* f */)  { }
 };
 
 template <>
@@ -153,7 +161,7 @@ class Cl_Switch<0>
 {
 public:
   template <typename FUNC>
-  static INLINE void Do (size_t nr, FUNC f)
+  static INLINE void Do (size_t /* nr */, FUNC f)
   {
     // if (nr == 0)
     f(IC<0>());

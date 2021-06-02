@@ -20,7 +20,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp DGIntegrators.cpp pml.cpp
         h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
-        tensorproductintegrator.cpp code_generation.cpp
+        newtonCF.cpp tensorproductintegrator.cpp code_generation.cpp
         voxelcoefficientfunction.cpp
         )
 
@@ -33,8 +33,8 @@ if(USE_CUDA)
     target_link_libraries(ngfem ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
 endif(USE_CUDA)
 
-target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE netgen_python)
-target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>")
+target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngfem ${ngs_install_dir} )
 
 install( FILES
@@ -44,13 +44,13 @@ install( FILES
         facethofe.hpp fastmat.hpp fem.hpp finiteelement.hpp generic_recpol.hpp	
         h1hofefo.hpp h1hofefo_impl.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp
         hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp
-        integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp
+        integrator.hpp integratorcf.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp
         recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	
         specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp normalfacetfe.hpp
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
-        thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp 
+        thcurlfe_impl.hpp symbolicintegrator.hpp hcurlhdiv_dshape.hpp code_generation.hpp 
         tensorproductintegrator.hpp fe_interfaces.hpp python_fem.hpp
         voxelcoefficientfunction.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}

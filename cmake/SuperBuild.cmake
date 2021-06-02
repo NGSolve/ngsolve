@@ -39,7 +39,7 @@ endmacro()
 if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
   set(COMMON_BUILD_COMMAND $(MAKE) --silent )
 else()
-  set(COMMON_BUILD_COMMAND ${CMAKE_COMMAND} --config ${CMAKE_BUILD_TYPE} --build .)
+  set(COMMON_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} )
 endif()
 
 #######################################################################
@@ -239,12 +239,15 @@ set_vars( NGSOLVE_CMAKE_ARGS
   INTEL_MIC
   ENABLE_UNIT_TESTS
   BUILD_STUB_FILES
-  BUILD_JUPYTER_WIDGETS
   )
 
 set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
 
 set(NGSOLVE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX} ${CMAKE_PREFIX_PATH})
+
+if(DEFINED ENV{CI} AND WIN32)
+    set(log_output LOG_BUILD ON LOG_MERGED_STDOUTERR ON LOG_OUTPUT_ON_FAILURE ON)
+endif()
 
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
@@ -253,6 +256,7 @@ ExternalProject_Add (ngsolve
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
+  ${log_output}
   )
 
 

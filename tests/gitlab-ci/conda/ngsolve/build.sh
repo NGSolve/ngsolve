@@ -1,5 +1,5 @@
 #!/bin/bash
-export OSX_DEPLOYMENT_TARGET=10.12
+export OSX_DEPLOYMENT_TARGET=10.14
 
 PLATFORM=`python -c "import platform; print(platform.system())"`
 if [ "$PLATFORM" = "Darwin" ]
@@ -22,9 +22,10 @@ mkdir -p build_ngsolve
 cd build_ngsolve
 
 cmake -G "Unix Makefiles" \
+  -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk \
   -DUSE_CCACHE=ON \
   -DUSE_SUPERBUILD=OFF \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${PREFIX} \
   -DUSE_NATIVE_ARCH=OFF \
@@ -35,7 +36,6 @@ cmake -G "Unix Makefiles" \
   -DLAPACK_LIBRARIES=${PREFIX}/lib/libmkl_rt.${SHARED_EXT} \
   -DUSE_UMFPACK=OFF \
   -DBUILD_STUB_FILES=OFF \
-   -DBUILD_JUPYTER_WIDGETS=ON \
   ${SRC_DIR}
 
 make -j$CPU_COUNT

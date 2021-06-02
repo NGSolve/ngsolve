@@ -112,127 +112,6 @@ namespace ngcomp
   };
 
 
-  template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
-  class DiffOpGradientTraceHDiv;
-  
-  /// Gradient operator for HDiv
-  template <int D, typename FEL = HDivFiniteElement<D> >
-  class DiffOpGradientHDiv : public DiffOp<DiffOpGradientHDiv<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 1 };
-    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
-    
-    static constexpr double eps() { return 1e-4; }
-
-    typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
-    ///
-    template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
-    {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
-    }
-    
-    // template <typename AFEL, typename SIP>
-    // static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-    // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
-    template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT mat, LocalHeap & lh)
-    {
-      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
-    }
-
-    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
-    {
-      CalcSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
-    }
-    
-    template <typename AFEL, typename MIP, class TVX, class TVY>
-    static void Apply (const AFEL & fel, const MIP & mip,
-                       const TVX & x, TVY & y,
-                       LocalHeap & lh) 
-    {
-      // typedef typename TVX::TSCAL TSCAL;
-      HeapReset hr(lh);
-      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, hm, lh, eps());
-      y = Trans(hm)*x;
-    }
-
-
-    template <typename AFEL, typename MIP, class TVX, class TVY>
-    static void ApplyTrans (const AFEL & fel, const MIP & mip,
-			    const TVX & x, TVY & by,
-			    LocalHeap & lh) 
-    {
-      ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
-    }
-
-    using DiffOp<DiffOpGradientHDiv<D>>::ApplySIMDIR;
-    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      ApplySIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
-    }
-      
-
-    
-    using DiffOp<DiffOpGradientHDiv<D>>::AddTransSIMDIR;
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
-    {
-      AddTransSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
-    }
-  };
-
-
-  /// Trace gradient operator for HDiv
-  template <int D, typename FEL>
-  class DiffOpGradientTraceHDiv : public DiffOp<DiffOpGradientTraceHDiv<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 1 };
-    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
-    
-    static constexpr double eps() { return 1e-4; }
-
-    typedef void DIFFOP_TRACE;
-    ///
-    template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
-    {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
-    }
-    
-    template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
-    {
-      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
-    }
-  };  
-
-
-
 
 
 
@@ -275,8 +154,10 @@ namespace ngcomp
     if (discont) loflags.SetFlag ("discontinuous"); // supported ?
 
     // low_order_space = new RaviartThomasFESpace (ma, loflags);
-    low_order_space = 0; 
-
+    low_order_space = nullptr;
+    if (flags.GetDefineFlag("loworderp1"))
+      low_order_space = CreateFESpace ("BDM1", ma, loflags);
+    
 
 
     // Variable order space: 
@@ -597,6 +478,34 @@ namespace ngcomp
     
     UpdateDofTables(); 
     UpdateCouplingDofArray();
+
+    if (low_order_space)
+      {
+        if (low_order_space->GetClassName()=="BDM11FESpace")
+          {
+            cout << "make p1 embedding" << endl;
+            Array<int> ia, ja;
+            Array<double> va;
+            for (auto f : Range(ma->GetNFacets()))
+              {
+                ia.Append(f);
+                ja.Append(3*f);
+                va.Append(1);
+
+                auto fd = GetFacetDofs(f);
+                ia.Append(fd[0]);
+                ja.Append(3*f+1);
+                va.Append(1);
+                
+                ia.Append(fd[0]+order);
+                ja.Append(3*f+2);
+                va.Append(1);
+              }
+            low_order_embedding = SparseMatrix<double>::CreateFromCOO (ia, ja, va,
+                                                                       GetNDof(), low_order_space->GetNDof());
+            // cout << "low_order_embeddingn = " << *low_order_embedding << endl;
+          }
+      }
   }
 
   void HDivHighOrderFESpace :: UpdateDofTables()
@@ -1640,6 +1549,8 @@ namespace ngcomp
 		  table[offset + i ] [cnt[offset+i]++] = l;
 	      }
 
+            offset += nfa;
+            
 	    for (int i = 0; i < nel; i++ )
 	      {
 		first = first_inner_dof[i];
@@ -1698,7 +1609,8 @@ namespace ngcomp
     auto spclusters = make_shared<Array<int>> (GetNDof());
     Array<int> & clusters = *spclusters;
 
-    int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
+    int default_ds = low_order_space ? 0 : 1;
+    int clustertype = int(precflags.GetNumFlag("ds_cluster",default_ds)); 
     cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
   
     Array<int> vnums,elnums; 
@@ -1715,7 +1627,8 @@ namespace ngcomp
         // 0) none
       case 0:
         clusters = 0;
-
+        break;
+        
         // 1) low-order dofs
       case 1: 
         clusters = 0;

@@ -92,7 +92,7 @@ namespace ngfem
             STACK_ARRAY(SIMD<double>, mem_facx, nshapex*irx.Size());          
             FlatMatrix<SIMD<double>> simd_facx(nshapex, irx.Size(), &mem_facx[0]);
             Cast().CalcXFactor(irx, simd_facx);
-            SliceMatrix<double> facx(nshapex, nipx, irx.Size()*SIMD<double>::Size(), &simd_facx(0,0)[0]);
+            SliceMatrix<double> facx(nshapex, nipx, irx.Size()*SIMD<double>::Size(), (double*)&simd_facx(0,0));
             
             ThreadRegionTimer regmult(txmult, TaskManager::GetThreadId());                                  
             for (size_t shapenr = 0; shapenr <= order; shapenr++)
@@ -118,7 +118,7 @@ namespace ngfem
             STACK_ARRAY(SIMD<double>, mem_facy, ndof2d*iry.Size());
             FlatMatrix<SIMD<double>> simd_facy(ndof2d, iry.Size(), &mem_facy[0]);
             Cast().CalcYFactor(iry, simd_facy);          
-            SliceMatrix<double> facy(ndof2d, nipy, iry.Size()*SIMD<double>::Size(), &simd_facy(0,0)[0]);
+            SliceMatrix<double> facy(ndof2d, nipy, iry.Size()*SIMD<double>::Size(), (double*)&simd_facy(0,0));
             
             ThreadRegionTimer regmult(tymult, TaskManager::GetThreadId());
             NgProfiler::AddThreadFlops (tymult, TaskManager::GetThreadId(), nipx*nipy*ndof2d);            
@@ -159,10 +159,10 @@ namespace ngfem
             ThreadRegionTimer reg(tz, TaskManager::GetThreadId());
             NgProfiler::AddThreadFlops (tzmult, TaskManager::GetThreadId(), nipx*nipy*nipz*ndof1d);
 
-            FlatMatrix<double> hvalues(nipz, nipx*nipy,  &values(0)[0]);
+            FlatMatrix<double> hvalues(nipz, nipx*nipy,  (double*)&values(0));
             STACK_ARRAY(SIMD<double>, mem_facz, ndof1d*irz.Size());
             FlatMatrix<SIMD<double>> simd_facz(ndof1d, irz.Size(), &mem_facz[0]);
-            SliceMatrix<double> facz(ndof1d, nipz, irz.Size()*SIMD<double>::Size(), &simd_facz(0,0)[0]);
+            SliceMatrix<double> facz(ndof1d, nipz, irz.Size()*SIMD<double>::Size(), (double*)&simd_facz(0,0));
             for (auto iz : Range(irz))
               Cast().CalcZFactorIP(irz[iz](0), simd_facz.Col(iz));
 
@@ -220,10 +220,10 @@ namespace ngfem
             ThreadRegionTimer reg(tz, TaskManager::GetThreadId());
             NgProfiler::AddThreadFlops (tzmult, TaskManager::GetThreadId(), nipx*nipy*nipz*ndof1d);
 
-            FlatMatrix<double> hvalues(nipz, nipx*nipy,  &values(0)[0]);
+            FlatMatrix<double> hvalues(nipz, nipx*nipy,  (double*)&values(0));
             STACK_ARRAY(SIMD<double>, mem_facz, ndof1d*irz.Size());
             FlatMatrix<SIMD<double>> simd_facz(ndof1d, irz.Size(), &mem_facz[0]);
-            SliceMatrix<double> facz(ndof1d, nipz, irz.Size()*SIMD<double>::Size(), &simd_facz(0,0)[0]);
+            SliceMatrix<double> facz(ndof1d, nipz, irz.Size()*SIMD<double>::Size(), (double*)&simd_facz(0,0));
 
             for (auto iz : Range(irz))
               Cast().CalcZFactorIP(irz[iz](0), simd_facz.Col(iz));
@@ -241,7 +241,7 @@ namespace ngfem
             STACK_ARRAY(SIMD<double>, mem_facy, ndof2d*iry.Size());
             FlatMatrix<SIMD<double>> simd_facy(ndof2d, iry.Size(), &mem_facy[0]);
             Cast().CalcYFactor(iry, simd_facy);          
-            SliceMatrix<double> facy(ndof2d, nipy, iry.Size()*SIMD<double>::Size(), &simd_facy(0,0)[0]);          
+            SliceMatrix<double> facy(ndof2d, nipy, iry.Size()*SIMD<double>::Size(), (double*)&simd_facy(0,0));     
 
             ThreadRegionTimer regmult(tymult, TaskManager::GetThreadId());
             NgProfiler::AddThreadFlops (tymult, TaskManager::GetThreadId(), nipx*nipy*ndof2d);
@@ -262,7 +262,7 @@ namespace ngfem
             STACK_ARRAY(SIMD<double>, mem_facx, nshapex*irx.Size());          
             FlatMatrix<SIMD<double>> simd_facx(nshapex, irx.Size(), &mem_facx[0]);
             Cast().CalcXFactor(irx, simd_facx);
-            SliceMatrix<double> facx(nshapex, nipx, irx.Size()*SIMD<double>::Size(), &simd_facx(0,0)[0]);
+            SliceMatrix<double> facx(nshapex, nipx, irx.Size()*SIMD<double>::Size(), (double*)&simd_facx(0,0));
 
             STACK_ARRAY(double, mem_trans3, this->ndof);
             FlatVector<> trans3(this->ndof, &mem_trans3[0]);
@@ -459,14 +459,14 @@ namespace ngfem
                               }));
             }
 
-          SliceMatrix<double> facz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), &facz(0)[0]);
-          SliceMatrix<double> facdz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), &facdz(0)[0]);
+          SliceMatrix<double> facz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), (double*)&facz(0));
+          SliceMatrix<double> facdz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), (double*)&facdz(0));
 
-          SliceMatrix<double> facy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), &facy(0)[0]);
-          SliceMatrix<double> facdy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), &facdy(0)[0]);
+          SliceMatrix<double> facy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), (double*)&facy(0));
+          SliceMatrix<double> facdy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), (double*)&facdy(0));
           
-          SliceMatrix<double> facx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), &facx(0)[0]);
-          SliceMatrix<double> facdx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), &facdx(0)[0]);
+          SliceMatrix<double> facx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), (double*)&facx(0));
+          SliceMatrix<double> facdx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), (double*)&facdx(0));
           
           STACK_ARRAY(double, mem_gridx, 2*ndof2d*nipx);
           FlatMatrix<double> gridx(ndof2d, nipx, &mem_gridx[0]);
@@ -477,14 +477,14 @@ namespace ngfem
           FlatMatrix<double> gridxy_dx(ndof1d, nipx*nipy, &mem_gridxy[ndof1d*nipxy]);
           FlatMatrix<double> gridxy_dy(ndof1d, nipx*nipy, &mem_gridxy[2*ndof1d*nipxy]);
 
-          FlatMatrix<> mgrid_dx(nipz, nipx*nipy, &values(0,0)[0]);
-          FlatMatrix<> mgrid_dy(nipz, nipx*nipy, &values(1,0)[0]);
-          FlatMatrix<> mgrid_dz(nipz, nipx*nipy, &values(2,0)[0]);
+          FlatMatrix<> mgrid_dx(nipz, nipx*nipy, (double*)&values(0,0));
+          FlatMatrix<> mgrid_dy(nipz, nipx*nipy, (double*)&values(1,0));
+          FlatMatrix<> mgrid_dz(nipz, nipx*nipy, (double*)&values(2,0));
           values.Col(ir.Size()-1).Range(0,3) = SIMD<double>(0);
           
-          FlatVector<double> vecx_ref(irx.GetNIP(), &vecx(0)[0]);
-          FlatVector<double> vecy_ref(iry.GetNIP(), &vecy(0)[0]);
-          FlatVector<double> vecz_ref(irz.GetNIP(), &vecz(0)[0]);
+          FlatVector<double> vecx_ref(irx.GetNIP(), (double*)&vecx(0));
+          FlatVector<double> vecy_ref(iry.GetNIP(), (double*)&vecy(0));
+          FlatVector<double> vecz_ref(irz.GetNIP(), (double*)&vecz(0));
           
           {
           ThreadRegionTimer regcalc(tcalc, TaskManager::GetThreadId());
@@ -680,14 +680,14 @@ namespace ngfem
                               }));
             }
 
-          SliceMatrix<double> facz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), &facz(0)[0]);
-          SliceMatrix<double> facdz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), &facdz(0)[0]);
+          SliceMatrix<double> facz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), (double*)&facz(0));
+          SliceMatrix<double> facdz_ref(ndof1d, irz.GetNIP(), SIMD<double>::Size()*irz.Size(), (double*)&facdz(0));
 
-          SliceMatrix<double> facy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), &facy(0)[0]);
-          SliceMatrix<double> facdy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), &facdy(0)[0]);
+          SliceMatrix<double> facy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), (double*)&facy(0));
+          SliceMatrix<double> facdy_ref(ndof2d, iry.GetNIP(), SIMD<double>::Size()*iry.Size(), (double*)&facdy(0));
           
-          SliceMatrix<double> facx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), &facx(0)[0]);
-          SliceMatrix<double> facdx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), &facdx(0)[0]);
+          SliceMatrix<double> facx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), (double*)&facx(0));
+          SliceMatrix<double> facdx_ref(ndof, irx.GetNIP(), SIMD<double>::Size()*irx.Size(), (double*)&facdx(0));
           
           STACK_ARRAY(double, mem_gridx, 2*ndof2d*nipx);
           FlatMatrix<double> gridx(ndof2d, nipx, &mem_gridx[0]);
@@ -698,14 +698,14 @@ namespace ngfem
           FlatMatrix<double> gridxy_dx(ndof1d, nipx*nipy, &mem_gridxy[ndof1d*nipxy]);
           FlatMatrix<double> gridxy_dy(ndof1d, nipx*nipy, &mem_gridxy[2*ndof1d*nipxy]);
 
-          FlatMatrix<> mgrid_dx(nipz, nipx*nipy, &values(0,0)[0]);
-          FlatMatrix<> mgrid_dy(nipz, nipx*nipy, &values(1,0)[0]);
-          FlatMatrix<> mgrid_dz(nipz, nipx*nipy, &values(2,0)[0]);
+          FlatMatrix<> mgrid_dx(nipz, nipx*nipy, (double*)&values(0,0));
+          FlatMatrix<> mgrid_dy(nipz, nipx*nipy, (double*)&values(1,0));
+          FlatMatrix<> mgrid_dz(nipz, nipx*nipy, (double*)&values(2,0));
           // values.Col(ir.Size()-1).Range(0,3) = SIMD<double>(0);
           
-          FlatVector<double> vecx_ref(irx.GetNIP(), &vecx(0)[0]);
-          FlatVector<double> vecy_ref(iry.GetNIP(), &vecy(0)[0]);
-          FlatVector<double> vecz_ref(irz.GetNIP(), &vecz(0)[0]);
+          FlatVector<double> vecx_ref(irx.GetNIP(), (double*)&vecx(0));
+          FlatVector<double> vecy_ref(iry.GetNIP(), (double*)&vecy(0));
+          FlatVector<double> vecz_ref(irz.GetNIP(), (double*)&vecz(0));
 
 
 
@@ -824,7 +824,7 @@ namespace ngfem
   
   template <> // ELEMENT_TYPE ET>
   class L2HighOrderFETP <ET_TET> :
-    public T_ScalarFiniteElementTP<L2HighOrderFETP<ET_TET>, L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_trait<ET_TET>::DIM>>,
+    public T_ScalarFiniteElementTP<L2HighOrderFETP<ET_TET>, L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_TET>>,
     public ET_trait<ET_TET>
   {
     enum { DIM = ET_trait<ET_TET>::DIM };
@@ -1047,11 +1047,11 @@ namespace ngfem
   
   template <> 
   class L2HighOrderFETP <ET_QUAD> :
-    public T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>,
+    public T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD>>,
     public ET_trait<ET_QUAD>
   {
     enum { DIM = ET_trait<ET_QUAD>::DIM };
-    typedef T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>> TBASE;
+    typedef T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD>> TBASE;
   public:
     template <typename TA> 
     L2HighOrderFETP (int aorder, const TA & avnums, Allocator & lh)

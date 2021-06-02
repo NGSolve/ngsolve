@@ -156,7 +156,7 @@ namespace ngla
     void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
                            BaseVector & res, int steps = 1) const  override
     {
-      GSSmooth (x, b, 1);
+      GSSmooth (x, b, steps);
       res = b - mat * x;
     }
 

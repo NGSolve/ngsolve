@@ -4,13 +4,16 @@
 
 namespace ngstd
 {
+  static mutex m;
   void BaseStatusHandler::PushStatus (const char * str) const
   {
+    lock_guard lock(m);
     Ng_PushStatus(str);
   }
 
   void BaseStatusHandler::PopStatus () const
   {
+    lock_guard lock(m);
     Ng_PopStatus();
   }
 

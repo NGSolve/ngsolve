@@ -44,7 +44,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, 
 	    class SHAPES = L2HighOrderFE_Shape<ET>,
-	    class BASE = T_ScalarFiniteElement<SHAPES, ET, DGFiniteElement<ET_trait<ET>::DIM> > >
+	    class BASE = T_ScalarFiniteElement<SHAPES, ET, DGFiniteElement<ET> > >
 	    
   class L2HighOrderFE : public BASE, public ET_trait<ET>
   { 
@@ -58,7 +58,7 @@ namespace ngfem
     using ET_trait<ET>::PolDimension;
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    using DGFiniteElement<DIM>::vnums;
+    using DGFiniteElement<ET>::vnums;
 
 
     INT<DIM> order_inner; 
@@ -95,9 +95,9 @@ namespace ngfem
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
 
     /// different orders in different directions
-    virtual void SetOrder (INT<DIM> p)  { order_inner = p; }
+    virtual void SetOrder (INT<DIM> p) override { order_inner = p; }
 
-    virtual void ComputeNDof()
+    virtual void ComputeNDof() override
     {
       ndof = PolDimension (order_inner);
       order = 0;
@@ -105,27 +105,45 @@ namespace ngfem
         order = max2(order, order_inner[i]);
     }
 
-    NGS_DLL_HEADER virtual void PrecomputeTrace ();
-    NGS_DLL_HEADER virtual void PrecomputeGrad ();
-    NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir);
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    {
+      switch (DIM)
+        {
+        case 0: return { 1, 0, 0, 0 };
+        case 1: return { 0, ndof, 0, 0 };
+        case 2: return { 0, 0, ndof, 0 };
+        case 3: return { 0, 0, 0, ndof };
+        }
+    }
+
+    NGS_DLL_HEADER virtual void PrecomputeTrace () override;
+    NGS_DLL_HEADER virtual void PrecomputeGrad () override;
+    NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir) override;
 
     using BASE::Evaluate;
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const;
-    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, BareSliceVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, BareSliceVector<> coefs) const override;
 
     using BASE::EvaluateGrad;    
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
 
     using BASE::EvaluateGradTrans;
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, BareSliceVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, BareSliceVector<> coefs) const override;
 
-    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const;
-    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const override;
+    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const override;
 
-    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
-    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const override;
+    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
+    NGS_DLL_HEADER virtual bool DualityMassDiagonal () const override { return true; }
+    NGS_DLL_HEADER virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
+    {
+      GetDiagMassMatrix(diag);
+      for (auto & d : diag) d = 1.0/d;
+      return true;
+    }
   };
 
 }
@@ -198,27 +216,27 @@ namespace ngfem
 namespace ngfem
 {
   L2HOFE_EXTERN template class L2HighOrderFE<ET_POINT>;
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
+  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<ET_POINT> >;
   
   extern template class L2HighOrderFE<ET_SEGM>;
-  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
+  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<ET_SEGM> >;
   
   extern template class L2HighOrderFE<ET_TRIG>;
-  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
+  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<ET_TRIG> >;
   
   L2HOFE_EXTERN template class L2HighOrderFE<ET_QUAD>;
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
+  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD> >;
   
   extern template class L2HighOrderFE<ET_TET>;
-  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
+  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<ET_TET> >;
   
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PRISM>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PYRAMID>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_HEX>;
 
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM, DGFiniteElement<3> >;
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<3> >;
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEX>, ET_HEX, DGFiniteElement<3> >;
+  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM, DGFiniteElement<ET_PRISM> >;
+  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<ET_PYRAMID> >;
+  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEX>, ET_HEX, DGFiniteElement<ET_HEX> >;
 }
 
 #endif

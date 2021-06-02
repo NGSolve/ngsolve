@@ -107,8 +107,8 @@ namespace std
 {
   template <int I1, int I2>
   constexpr INLINE integral_constant<int,I1+I2> 
-  operator+ (integral_constant<int,I1> i1,
-             integral_constant<int,I2> i2)
+  operator+ (integral_constant<int,I1> /* i1 */,
+             integral_constant<int,I2> /* i2 */)
   {
     return integral_constant<int,I1+I2>();
   }
@@ -155,6 +155,8 @@ namespace std
     {
       return base_type::shared_from_this();
     }
+  public:
+    virtual ~enable_shared_from_this_virtual_base() { }
   };
   
   template<typename T>

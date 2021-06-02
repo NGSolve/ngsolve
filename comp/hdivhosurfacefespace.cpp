@@ -71,8 +71,10 @@ public:
 
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpDivHDivSurface");    
     return -TraceCF(dir->Operator("Gradboundary"))*proxy;     
   }
 
@@ -156,6 +158,8 @@ public:
     DefineDefineFlag("discontinuous");   
     DefineDefineFlag("hodivfree");
     DefineNumFlag("orderinner");
+    DefineDefineFlag("RT");
+
     
     if(parseflags) CheckFlags(flags);
 
@@ -177,7 +181,9 @@ public:
 
     *testout << "uniform_order_inner = " << uniform_order_inner << endl;
 
-    ho_div_free = flags.GetDefineFlag("hodivfree"); 
+    ho_div_free = flags.GetDefineFlag("hodivfree");
+    RT = flags.GetDefineFlag ("RT");
+
            
     auto one = make_shared<ConstantCoefficientFunction> (1);
     
@@ -195,6 +201,7 @@ public:
 	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();
 
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDivSurface<3>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDualSurface<3>>> ());
       }
     
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
@@ -214,6 +221,11 @@ public:
     auto docu = FESpace::GetDocu();
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDivSurface space";
+    docu.Arg("hodivfree") = "bool = False\n"
+      "  Remove high order element bubbles with non zero divergence";
+    docu.Arg("RT") = "bool = False\n"
+      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
+
     return docu;
   }
   
@@ -359,6 +371,8 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
                 else
 		  inci = p[0]*(p[0]-1)/2;
 		    //inci = pc[0]*(pc[0]-1)/2;
+                if (RT)
+                  inci += p[0] + 1;
                 break;
               case ET_QUAD:
 		if (!ho_div_free)
@@ -497,6 +511,8 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     HDivHighOrderFE<ET>* hofe = new (lh)HDivHighOrderFE<ET>();
     hofe->SetOrderInner(order_inner[ei.Nr()][0]);
     hofe->SetVertexNumbers(ngel.Vertices());
+    hofe->SetRT(RT);
+
 
     Array<int> facet_order(ngel.Edges());
     facet_order = order;

@@ -24,7 +24,6 @@ option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
 option( BUILD_STUB_FILES "Build stub files for better autocompletion" ON)
-option( BUILD_JUPYTER_WIDGETS "Build javscript widgets library for jupyter" OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
@@ -183,6 +182,11 @@ if(APPLE)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS MSG_NOSIGNAL=0)
 endif(APPLE)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -Wno-undefined-var-template)
+endif()
+
+
 #######################################################################
 if (NETGEN_USE_GUI)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS TCL)
@@ -202,10 +206,13 @@ if (NETGEN_USE_MPI)
 endif (NETGEN_USE_MPI)
 
 #######################################################################
+add_library(ngs_lapack INTERFACE )
+install( TARGETS ngs_lapack ${ngs_install_dir} )
 if (USE_LAPACK)
     if(NOT LAPACK_LIBRARIES)
       find_package(LAPACK REQUIRED)
     endif()
+    target_link_libraries(ngs_lapack INTERFACE "${LAPACK_LIBRARIES}")
 endif (USE_LAPACK)
 
 #######################################################################
@@ -228,10 +235,9 @@ list (APPEND NGSOLVE_COMPILE_OPTIONS -DMAX_SYS_DIM=${MAX_SYS_DIM})
 #######################################################################
 if (USE_MKL)
     find_package(MKL REQUIRED)
-    include_directories(${MKL_INCLUDE_DIRS})
+    target_include_directories(ngs_lapack INTERFACE "${MKL_INCLUDE_DIRS}")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE USE_MKL)
-
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
       list(APPEND NGSOLVE_COMPILE_DEFINITIONS MKL_ILP64)
@@ -239,7 +245,6 @@ if (USE_MKL)
     if(MKL_STATIC AND WIN32)
       install(FILES ${MKL_RTL_LIBRARY_BIN} DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
     endif()
-
 endif (USE_MKL)
 
 if(MKL_STATIC)
@@ -410,6 +415,7 @@ if(APPLE)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pictures/logo.icns DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/../ RENAME Netgen.icns)
     if(CMAKE_OSX_SYSROOT)
         set( ngscxx_includes "-isysroot ${CMAKE_OSX_SYSROOT} ${ngscxx_includes}" )
+        set( ngsld_flags "-isysroot ${CMAKE_OSX_SYSROOT} ${ngsld_flags}" )
     endif()
     #   set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
     set(ngscxx_includes "${ngscxx_includes} -I$Netgen_BUNDLE/Contents/Resources/include" )  
@@ -429,6 +435,15 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
     set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib ngcore.lib libngsolve.lib" )
+    set(ngsld_header
+"set PYTHON_LIBRARY=${NETGEN_PYTHON_LIBRARIES}
+")
+    if(NETGEN_USE_PYTHON)
+      set(ngsld_header
+"for /f  %%a in ('python -c \"import sys,os; print(os.path.join(sys.base_prefix, 'libs'))\"') do set PYTHON_LIBDIR=\"%%a\"
+")
+      set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%PYTHON_LIBDIR%\"")
+    endif()
 else()
     set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
     set(ngscxx_header
@@ -450,7 +465,7 @@ if(WIN32)
                   CONDITION $<CONFIG:${CMAKE_BUILD_TYPE}>
                   )
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
-                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\nlink /DLL %* ${ngsld_flags}\n")
+                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\n${ngsld_header}\nlink /DLL %* ${ngsld_flags}\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)

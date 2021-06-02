@@ -98,12 +98,55 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacet");
       return ZeroCF(Array<int>());
     }
 
-  }; 
+  };
+
+
+    template <int D>
+  class DiffOpGradFacet : public DiffOp<DiffOpGradFacet<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "grad"; }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      int facetnr = mip.IP().FacetNr();
+      if (facetnr >= 0)
+        {
+          HeapReset hr(lh);
+          
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          auto r = fel_facet.GetFacetDofs(facetnr);
+          
+          FlatMatrix<> dshaperef(r.Size(), DIM_ELEMENT, lh);
+          mat = 0.0;
+          /*
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), 
+                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+          */
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), dshaperef);
+          mat.Cols(r) = Trans(mip.GetJacobianInverse()) * Trans(dshaperef);
+        }
+      else
+        {
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
+    }
+  };
 
 
 
@@ -186,12 +229,15 @@ namespace ngcomp
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
         integrator[BND] = make_shared<RobinIntegrator<2>> (one);
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<2>>>();
+
       }
     else
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<3>>>();
       }
 
     if (dimension > 1)
@@ -651,6 +697,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           */
       case BND:
         {
+          /*
         DGFiniteElement<1> * fe1d = 0;
         DGFiniteElement<2> * fe2d = 0;
 
@@ -663,7 +710,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
             throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
                              ElementTopology::GetElementName(ma->GetElType(ei)));
           }
-     
+          */
         // ArrayMem<int,4> ednums;
     
         auto vnums = ma->GetElVertices(ei);
@@ -671,6 +718,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           {
           case ET_SEGM:
             {
+              auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();
               fe1d -> SetVertexNumbers (vnums);
               auto ednums = ma->GetElEdges(ei);
               int p = order_facet[ednums[0]][0];
@@ -678,23 +726,31 @@ for the two neighbouring elements. This allows a simple implementation of the Le
               fe1d -> SetOrder (p); 
               fe1d -> ComputeNDof();
               return *fe1d;
-              break;
             }
           case ET_TRIG: 
-          case ET_QUAD: 
             {
+              auto fe2d = new (lh) L2HighOrderFE<ET_TRIG> ();
               fe2d -> SetVertexNumbers (vnums);
               int p = order_facet[ma->GetSElFace(ei.Nr())][0];
               if (highest_order_dc) p--;
               fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
               fe2d -> ComputeNDof();
               return *fe2d;
-              break;
+            }
+          case ET_QUAD: 
+            {
+              auto fe2d = new (lh) L2HighOrderFE<ET_QUAD> ();
+              fe2d -> SetVertexNumbers (vnums);
+              int p = order_facet[ma->GetSElFace(ei.Nr())][0];
+              if (highest_order_dc) p--;
+              fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+              fe2d -> ComputeNDof();
+              return *fe2d;
             }
           default:
-            break;
+            throw Exception("Undefined BND GetFE of FacetFESpace");            
           }
-        return *fe2d;
+        // return *fe2d;
         }
       case BBND:
         throw Exception("No BBND GetFE implemented for FacetFESpace");

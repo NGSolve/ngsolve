@@ -9,6 +9,9 @@
 namespace ngcomp
 { 
 
+  template <int D>
+  class DiffOpIdFacetSurface;
+
   /// Identity
   template <int D>
   class DiffOpIdFacet_ : public DiffOp<DiffOpIdFacet_<D> >
@@ -21,6 +24,8 @@ namespace ngcomp
     enum { DIFFORDER = 0 };
 
     static bool SupportsVB (VorB checkvb) { return true; }
+
+    typedef DiffOpIdFacetSurface<D> DIFFOP_TRACE;
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -50,8 +55,10 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacet_");      
       return ZeroCF(Array<int>());
     }
 
@@ -138,8 +145,10 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacetSurface");      
       return ZeroCF(Array<int>());
     }
 
@@ -170,8 +179,10 @@ namespace ngcomp
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir)
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
     {
+      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacetSurface");      
       return ZeroCF(Array<int>());
     }
 
@@ -180,6 +191,53 @@ namespace ngcomp
 
 
 
+
+
+  template <int D>
+  class DiffOpGradFacetSurface : public DiffOp<DiffOpGradFacetSurface<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static string Name() { return "grad"; }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      int facetnr = mip.IP().FacetNr();
+      if (facetnr >= 0)
+        {
+          HeapReset hr(lh);
+          
+          const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (bfel);
+          auto r = fel_facet.GetFacetDofs(facetnr);
+          
+          FlatMatrix<> dshaperef(r.Size(), DIM_ELEMENT, lh);
+          mat = 0.0;
+          /*
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), 
+                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+          */
+          fel_facet.Facet(facetnr).CalcDShape(mip.IP(), dshaperef);
+          mat.Cols(r) = Trans(mip.GetJacobianInverse()) * Trans(dshaperef);
+        }
+      else
+        {
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
+    }
+  };
+
+
+
+
+
+  
 
   FacetSurfaceFESpace ::  FacetSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : FESpace(ama, flags)
@@ -261,7 +319,8 @@ namespace ngcomp
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
       	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
       	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
-	
+
+      	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradFacetSurface<3>>>();
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
     else
@@ -269,8 +328,8 @@ namespace ngcomp
       throw Exception("FacetSurfaceFESpace only implemented for 2d and 3d");
     }
 
-    additional_evaluators.Set ("dual", evaluator[BND]);
-
+    additional_evaluators.Set ("dual", evaluator[VOL]);
+    //additional_evaluators.Set ("dual", evaluator[BND]);
   }
   
 
@@ -366,7 +425,7 @@ namespace ngcomp
 
   FlatArray<VorB> FacetSurfaceFESpace :: GetDualShapeNodes (VorB vb) const
   {
-    static VorB nodes[] = { BBND };
+    static VorB nodes[] = { BND };
     return FlatArray<VorB> (1, &nodes[0]);
   }
 
@@ -436,20 +495,20 @@ namespace ngcomp
         }
       case BBND:
 	{
-	  DGFiniteElement<1> * fe1d = 0;
-	  
 	  switch (ma->GetElType(ei))
 	    {
-	    case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+	    case ET_SEGM:
+              {
+                auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();
+                fe1d -> SetVertexNumbers (vnums);
+                fe1d -> SetOrder (order); 
+                fe1d -> ComputeNDof();
+                return *fe1d;
+              }
 	    default:
 	      throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
 			       ElementTopology::GetElementName(ma->GetElType(ei)));
 	    }
-	  
-	  fe1d -> SetVertexNumbers (vnums);
-	  fe1d -> SetOrder (order); 
-	  fe1d -> ComputeNDof();
-	  return *fe1d;
 	  break;
 	}
       case BBBND:

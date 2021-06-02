@@ -8,7 +8,7 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  UBUNTU_VERSION_LATEST: "19.10"
+  UBUNTU_VERSION_LATEST: "20.10"
   UBUNTU_VERSION_LTS: "20.04"
 
 ############################################
@@ -128,6 +128,10 @@ win_avx_cleanup:
   stage: build
   script:
     - source tests/gitlab-ci/ubuntu/build.sh
+  artifacts:
+    when: always
+    paths:
+      - logs/
 
 ubuntu_avx_build:
   <<: *ubuntu_avx

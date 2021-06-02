@@ -63,8 +63,14 @@ namespace ngfem
     // Typedefs should match with h1hofe, otherwise HCurlHighOrderFESpace::CreateGradient() fails
     // typedef LegendrePolynomial EdgeOrthoPol;
     typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
-    // typedef ChebyPolynomial EdgeOrthoPol; 
-    typedef ChebyPolynomial QuadOrthoPol;
+    // typedef ChebyPolynomial EdgeOrthoPol;
+    
+    // typedef ChebyPolynomial QuadOrthoPol;
+    typedef IntLegNoBubble QuadOrthoPol;
+
+    // typedef DubinerBasis TrigOrthoPolGrad;
+    typedef DubinerBasisOrthoBub TrigOrthoPolGrad;  // for bi-orthogonal dual shapes (Jan 2021)
+    
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;

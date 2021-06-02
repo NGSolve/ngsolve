@@ -21,6 +21,7 @@ namespace ngla
   void SparseMatrixTM<TM> ::
   PrefetchRow (int rownr) const
   {
+#ifdef NETGEN_ARCH_AMD64
 #ifdef __GNUC__
     size_t fi = firsti[rownr], fin = firsti[rownr+1];
     // int * pi = &colnr[fi], * pin = &colnr[fin];
@@ -38,6 +39,7 @@ namespace ngla
         vi += 64/sizeof(double);
       }
 #endif
+#endif // NETGEN_ARCH_AMD64
     ;
   }
 

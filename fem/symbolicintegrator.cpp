@@ -7,7 +7,9 @@
    Symbolic integrators
 */
 
+#include <variant>
 #include <fem.hpp>
+#include "integratorcf.hpp"
 
 namespace ngfem
 {
@@ -129,12 +131,17 @@ namespace ngfem
 
   shared_ptr<ProxyFunction> ProxyFunction :: GetAdditionalProxy (string name) const
   {
+    if (additional_proxies.Used(name))
+      if (auto sp = additional_proxies[name].lock())
+        return sp;
+    
     if (additional_diffops.Used(name))
       {
         auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
         if (is_other)
           adddiffop->is_other = true;
         adddiffop -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
+        additional_proxies.Set(name, adddiffop);
         return adddiffop;
       }
     return shared_ptr<ProxyFunction>();
@@ -563,7 +570,7 @@ namespace ngfem
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
 
     assert (ud);
-    assert (ud->fel);
+    // assert (ud->fel);
 
     size_t np = mir.Size();
     size_t dim = Dimension();
@@ -594,7 +601,7 @@ namespace ngfem
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
 
     assert (ud);
-    assert (ud->fel);
+    // assert (ud->fel);
 
     size_t np = mir.Size();
     size_t dim = Dimension();
@@ -774,7 +781,8 @@ namespace ngfem
   shared_ptr<CoefficientFunction>
   ProxyFunction :: Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == shape.get())
+    //if (var == shape.get())
+    if (dynamic_cast<const DiffShapeCF*>(var))                
       return evaluator->DiffShape (const_cast<ProxyFunction*>(this)->shared_from_this(), dir);
     else if (var == this)
       return dir;
@@ -824,9 +832,14 @@ namespace ngfem
     cf->TraverseTree
       ([&] (CoefficientFunction & nodecf)
        {
-         auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
-         if (proxy && !proxies.Contains(proxy))
-           proxies.Append (proxy);
+         if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+           {
+             if (!proxies.Contains(proxy))
+               proxies.Append (proxy);
+           }
+         else
+           if (nodecf.StoreUserData() && !gridfunction_cfs.Contains(&nodecf))
+             gridfunction_cfs.Append (&nodecf);
        });
 
     for (auto proxy : proxies)
@@ -909,7 +922,10 @@ namespace ngfem
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             
-            ProxyUserData ud;
+            ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
+            for (CoefficientFunction * cf : gridfunction_cfs)
+              ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
+            
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
             // mir.ComputeNormalsAndMeasure (eltype, k);
@@ -999,8 +1015,10 @@ namespace ngfem
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
         
         FlatMatrix<SCAL> values(ir.Size(), 1, lh);
-        ProxyUserData ud;
+        ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
+        for (CoefficientFunction * cf : gridfunction_cfs)
+          ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
         
         elvec = 0;
         for (auto proxy : proxies)
@@ -1091,6 +1109,8 @@ namespace ngfem
               cout << IM(3) << "integrand has an Interpolation Operator" << endl;
             }
         });
+
+    cache_cfs = FindCacheCF(*cf);
 
     for (auto proxy : trial_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
@@ -1374,6 +1394,7 @@ namespace ngfem
 
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          PrecomputeCacheCF(cache_cfs, mir, lh);
 
           // bool symmetric_so_far = true;
           int k1 = 0;
@@ -3538,9 +3559,16 @@ namespace ngfem
                     FlatMatrix<TSCAL> elmat,
                     LocalHeap & lh) const
   {
+
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
+
     elmat = 0.0;
 
-    int maxorder = fel1.Order();
+    //int maxorder = fel1.Order();
+    int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
 
     auto etvol = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (etvol, LocalFacetNr1);
@@ -3600,14 +3628,14 @@ namespace ngfem
                 {
                   size_t ii = i+j;
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                  proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                  proxy1->Evaluator()->CalcMatrix(fel1_trial, mir1[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel1_test, mir1[ii], bmat2, lh);
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
                 }
 
-              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1);
-              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1);
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1_trial);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1_test);
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
             }
         }
@@ -5233,4 +5261,77 @@ namespace ngfem
           }
       }
   }
+
+
+  shared_ptr<BilinearFormIntegrator> Integral :: MakeBilinearFormIntegrator()
+  {
+    // check for DG terms
+    bool has_other = false;
+    cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                      {
+                        if (dynamic_cast<ProxyFunction*> (&cf))
+                          if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                            has_other = true;
+                      });
+    if (has_other && (dx.element_vb != BND) && !dx.skeleton)
+      throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+
+    shared_ptr<BilinearFormIntegrator> bfi;
+    if (!has_other && !dx.skeleton)
+      bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, dx.vb, dx.element_vb);
+    else
+      bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, dx.vb, !dx.skeleton);
+    if (dx.definedon)
+      {
+        if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
+          bfi->SetDefinedOn(*definedon_bitarray);
+        /*
+          // can't do that withouyt mesh
+        if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+          {
+            Region reg(self.GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+            bfi->SetDefinedOn(reg.Mask());
+          }
+        */
+      }
+    bfi->SetDeformation(dx.deformation);               
+    bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+    if(dx.definedonelements)
+      bfi->SetDefinedOnElements(dx.definedonelements);
+    for (auto both : dx.userdefined_intrules)
+      bfi->SetIntegrationRule(both.first, *both.second);
+
+    return bfi;
+  }
+
+  shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator()
+  {
+    shared_ptr<LinearFormIntegrator> lfi;
+    if (!dx.skeleton)
+      lfi =  make_shared<SymbolicLinearFormIntegrator> (cf, dx.vb, dx.element_vb);
+    else
+      lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, dx.vb);
+    if (dx.definedon)
+      {
+        if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
+          lfi->SetDefinedOn(*definedon_bitarray);
+        /*
+        // can't do that withouyt mesh
+        if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+        {
+          Region reg(self->GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+          lfi->SetDefinedOn(reg.Mask());
+        }
+        */
+      }
+    lfi->SetDeformation(dx.deformation);
+    lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+    if(dx.definedonelements)
+      lfi->SetDefinedOnElements(dx.definedonelements);
+    for (auto both : dx.userdefined_intrules)
+      lfi->SetIntegrationRule(both.first, *both.second);
+    return lfi;
+  }
+
+
 }

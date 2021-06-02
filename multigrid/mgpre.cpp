@@ -118,7 +118,8 @@ namespace ngmg
 	      checksumcgpre = checksum;
 	    */
 
-	    shared_ptr<BitArray> freedofs = fespace.GetFreeDofs(); // change to const BitArray * 
+	    shared_ptr<BitArray> freedofs = fespace.GetFreeDofs();
+            
 	    if (!freedofs)
 	      coarsegridpre =
 		dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0)) .InverseMatrix();
@@ -147,32 +148,21 @@ namespace ngmg
 	  }
       }
     //  SetSymmetric (biform.GetMatrix(1).Symmetric());
-
-
-#ifdef OLD
-    if (prol_projection.Size() < ma.GetNLevels() && prolongation)
-      {
-	// BitArray * innerdof = prolongation->GetInnerDofs();
-	// BitArray * innerdof = biform.GetFESpace().CreateIntermediatePlanes (1);
-
-	if (innerdof && 0)
-	  {
-	    /*
-	    const SparseMatrix<Mat<3> > & m = 
-	      dynamic_cast<const SparseMatrix<Mat<3> > &> (biform.GetMatrix());
-	    BaseMatrix * inv =
-	      new SparseCholesky<Mat<3> > (m, innerdof);
-	    */
-	    const SparseMatrix<double> & m = 
-	      dynamic_cast<const SparseMatrix<double> &> (biform.GetMatrix());
-	    BaseMatrix * inv =
-	      new SparseCholesky<double> (m, innerdof);
-	    prol_projection.Append (inv);
-	  }
-      }
-#endif
-   }
-
+    if (harmonic_extension_prolongation)
+      if (he_prolongation.Size() < ma.GetNLevels() && prolongation)
+        {
+          he_prolongation.SetSize(ma.GetNLevels());
+          
+          int level = ma.GetNLevels()-1;
+          
+          shared_ptr<BitArray> innerdof;
+          if (level > 0) innerdof = prolongation->GetInnerDofs(level);
+          
+          if (innerdof)
+            he_prolongation[level] = biform.GetMatrixPtr()->InverseMatrix(innerdof);
+        }
+  }
+  
   void MultigridPreconditioner ::
   Mult (const BaseVector & x, BaseVector & y) const
   {
@@ -252,33 +242,42 @@ namespace ngmg
 	    //(*testout) << "u.Size() " << u.Size() << " d.Size() " << d.Size()
 	    //       << " w.Size() " << w.Size() << endl;
 
-	    // smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
-	    smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
+	    smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
+	    //smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
 	    
 	    auto dt = d.Range (0, fespace.GetNDofLevel(level-1));
 	    auto wt = w.Range (0, fespace.GetNDofLevel(level-1));
 
 
-	    // smoother->Residuum (level, u, f, d);
-
-	    /*
-	    prol_projection[level]->Mult (d, w);
-	    u.Range (0,w.Size()) += w;
 	    smoother->Residuum (level, u, f, d);
-	    */
+            // cout << "level = " << level << ", prolproj = " << endl << prol_projection << endl;
+            if (harmonic_extension_prolongation)
+              if (level < he_prolongation.Size() && he_prolongation[level])
+                {
+                  he_prolongation[level]->Mult (*d, *w);
+                  u += *w;
+                  smoother->Residuum (level, u, f, *d);
+                }
+            
 	    prolongation->RestrictInline (level, d);
 	    w = 0;
-	    for (int j = 1; j <= cycle; j++)
-	      MGM (level-1, wt, dt, incsm * incsmooth);
-	    
+      if (level == 1) 
+        MGM (level-1, wt, dt, incsm * incsmooth);
+      else{
+        for (int j = 1; j <= cycle; j++)
+          MGM (level-1, wt, dt, incsm * incsmooth);
+      }
+
 	    prolongation->ProlongateInline (level, w);
 	    u += w;
 
-	    /*
-	    smoother->Residuum (level, u, f, d);
-	    prol_projection[level]->Mult (d, w);
-	    u.Range (0,w.Size()) += w;
-	    */
+            if (harmonic_extension_prolongation)            
+              if (level < he_prolongation.Size() && he_prolongation[level])
+                {
+                  smoother->Residuum (level, u, f, *d);
+                  he_prolongation[level]->Mult (*d, *w);
+                  u += *w;
+                }
 
 	    smoother->PostSmooth (level, u, f, smoothingsteps * incsm);
 	  }

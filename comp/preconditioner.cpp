@@ -283,14 +283,13 @@ namespace ngcomp
       throw Exception ("smoother could not be allocated"); 
 
     auto prol = lo_fes->GetProlongation();
-
     mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
     mgp->SetCoarseSmoothingSteps (int(flags.GetNumFlag ("coarsesmoothingsteps", 1)));
     mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
-
+    mgp->SetHarmonicExtensionProlongation (flags.GetDefineFlag("he_prolongation"));
     MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
     const string & coarse = flags.GetStringFlag ("coarsetype", "direct");
     if (coarse == "smoothing")
@@ -389,6 +388,7 @@ namespace ngcomp
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
     mgp->SetCoarseSmoothingSteps (int(flags.GetNumFlag ("coarsesmoothingsteps", 1)));
     mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
+    mgp->SetHarmonicExtensionProlongation (flags.GetDefineFlag("he_prolongation"));    
     mgp->SetUpdateAlways(flags.GetDefineFlag("updatealways"));
 
     MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
@@ -526,9 +526,23 @@ namespace ngcomp
 
   }
 
+  void MGPreconditioner :: SetDirectSolverCluster(shared_ptr<Array<int>> cluster)
+  {
+    if(tlp)
+      {
+        if(auto blocksmoother = dynamic_cast<BlockSmoother*>(&tlp->GetSmoother()))
+          blocksmoother->SetDirectSolverCluster(cluster);
+      }
+    else
+      if(auto blocksmoother = dynamic_cast<BlockSmoother*>(&mgp->GetSmoother()))
+        blocksmoother->SetDirectSolverCluster(cluster);
+  }
 
-
-
+  void MGPreconditioner::SetCoarsePreconditioner(shared_ptr<Preconditioner> prec)
+  {
+      coarse_pre = prec;
+      mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
+  }
 
   
   // ****************************** DirectPreconditioner **************************
@@ -655,6 +669,7 @@ namespace ngcomp
 
     string ct;
     shared_ptr<Preconditioner> coarse_pre;
+    function<shared_ptr<Table<DofId>>(FESpace&)> blockcreator;
   public:
     ///
     LocalPreconditioner (const PDE & pde, const Flags & aflags,
@@ -692,6 +707,15 @@ namespace ngcomp
 // 	bbct = DIRECT_COARSE; break;
 //       }
 
+      if (blockcreator)
+        {
+          shared_ptr<Table<int>> blocks = blockcreator(*bfa->GetFESpace());
+          // cout << "created blocks: " << *blocks << endl;
+          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
+            .CreateBlockJacobiPrecond(blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
+          return;
+        }
+      
       if ( block && blocktype == -1 ) blocktype = 0;
       if ( blocktype >= 0 )
         {
@@ -804,6 +828,12 @@ namespace ngcomp
 
     // coarse-grid preconditioner only used in parallel!!
     ct = "NO_COARSE";
+
+    if(flags.AnyFlagDefined("blockcreator"))
+      {
+        blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
+        cout << "local pre, got blockcreator" << endl;
+      }
   }
 
 

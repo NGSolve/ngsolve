@@ -3,21 +3,23 @@
 namespace ngbla
 {
 
-  
+
+  /*
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
   void CalcHouseholderVector (SliceVector<> x, FlatVector<> v)
   {
-    v = x;
     double norm = L2Norm(x);
     v(0) += (v(0) < 0) ? -norm : norm;
     double v0 = v(0);
     if (v0 != 0)
       v *= 1/v0;
   }
+  */
 
 
+  
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
@@ -26,8 +28,19 @@ namespace ngbla
   double CalcHouseholderVectorInPlace (SliceVector<> x)
   {
     double signed_norm = L2Norm(x);
+
+    // have to treat this case,
+    // since norm can be zero for very-small nonzero x
+    if (signed_norm == 0)  
+      { 
+        x(0) = 1;
+        return 0;
+      }
+    
     if (x(0) > 0) signed_norm *= -1;
+    
     double v0 = x(0) - signed_norm;
+    
     if (v0 != 0)
       x.Range(1,x.Size()) *= 1/v0;
     x(0) = 1;
@@ -42,16 +55,21 @@ namespace ngbla
     if (factor != 0) factor = 2/factor;
   }
 
+  void HouseholderReflection :: Mult (FlatVector<double> v2) const
+  {
+    double ip = InnerProduct(v, v2);
+    v2 -= (factor*ip) * v;
+  }
   
   template <ORDERING ORD>
   void HouseholderReflection :: TMult (SliceMatrix<double,ORD> m2) const  
   {
-    const char * timername = (ORD == ColMajor)
-      ? "Householder, colmajor" : "Householder, rowmajor";    
-    static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
-    tcolmajor.AddFlops (2*v.Size()*m2.Width());
+    // const char * timername = (ORD == ColMajor)
+    // ? "Householder, colmajor" : "Householder, rowmajor";    
+    // static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
+    // tcolmajor.AddFlops (2*v.Size()*m2.Width());
     
-    constexpr size_t bs = 96;
+    constexpr size_t bs = 24;
     double mem[bs];
 
     for (size_t i = 0; i < m2.Width(); i += bs)
@@ -59,24 +77,68 @@ namespace ngbla
         size_t bsi = min(bs, m2.Width()-i);
         FlatVector<> hv(bsi, &mem[0]);
         auto colsm2 = m2.Cols(i, i+bsi);
-        
         hv = Trans(colsm2) * v;
         hv *= factor;
-        colsm2 -= v * Trans(hv);
+        // colsm2 -= v * Trans(hv);
+        colsm2 -= FlatMatrix<double, ORD> (v.Size(), 1, v.Data()) *
+          FlatMatrix<double,ORD> (1, hv.Size(), hv.Data());
       }
   }
 
   template void HouseholderReflection :: TMult (SliceMatrix<double,RowMajor> m2) const;
   template void HouseholderReflection :: TMult (SliceMatrix<double,ColMajor> m2) const;
 
+
+
+
+  HouseholderReflection1 :: HouseholderReflection1 (SliceVector<> av)
+    : v(av)
+  {
+    factor = 1+L2Norm2(v.Range(1, v.Size()));
+    factor = 2/factor;
+  }
+
+  
+  template <ORDERING ORD>
+  void HouseholderReflection1 :: TMult (SliceMatrix<double,ORD> m2) const  
+  {
+    // const char * timername = (ORD == ColMajor)
+    // ? "Householder, colmajor" : "Householder, rowmajor";    
+    // static Timer tcolmajor(timername); RegionTimer reg(tcolmajor);
+    // tcolmajor.AddFlops (2*v.Size()*m2.Width());
+    
+    constexpr size_t bs = 96;
+    double mem[bs];
+    size_t m = v.Size();
+    
+    for (size_t i = 0; i < m2.Width(); i += bs)
+      {
+        size_t bsi = min(bs, m2.Width()-i);
+        FlatVector<> hv(bsi, &mem[0]);
+        auto colsm2 = m2.Cols(i, i+bsi);
+
+        hv = colsm2.Row(0);
+        hv = Trans(colsm2).Cols(1,m) * v.Range(1,m);
+        hv *= factor;
+        // colsm2 -= v * Trans(hv);
+        colsm2.Row(0) -= hv;
+        colsm2.Rows(1,m) -= v.Range(1,m) * Trans(hv);
+      }
+  }
+
+  template void HouseholderReflection1 :: TMult (SliceMatrix<double,RowMajor> m2) const;
+  template void HouseholderReflection1 :: TMult (SliceMatrix<double,ColMajor> m2) const;
+
+
+
   
 
   // H = H_{m-1} ... H_1 H_0 = I - V^T T V
   // SliceMatrix<> mv;  // every row one reflection vector
   // Matrix<> T;        // strict lower triangular
+
   template <ORDERING OMV>
-  MultiHouseholderReflection<OMV> :: MultiHouseholderReflection (SliceMatrix<double,OMV> amv)
-    : mv(amv), T(amv.Height())
+  void BaseMultiHouseholderReflection<OMV> :: CalcT()
   {
     static Timer t("multiHouseholder, ctor"); RegionTimer reg(t);
     size_t m = mv.Height();
@@ -89,12 +151,12 @@ namespace ngbla
     // T = mv * Trans(mv);  // inner products (TODO: only strict lower trig is needed)
 
     auto [mv1,mv2] = mv.SplitCols(m);
-    Matrix<> U = mv1; 
-    U.Diag() = 1.0;
-    for (size_t i = 1; i < m; i++)
-      U.Row(i).Range(0,i) = 0;
-
-    T = U * Trans(U);
+    T = Trans(mv1);
+    T.Diag() = 1.0;
+    for (size_t i = 0; i < m; i++)
+      T.Row(i).Range(i+1, m) = 0;
+    TriangularMult<UpperRight, Normalized> (mv1, T);
+      
     T += mv2 * Trans(mv2);
 
     T.Diag() *= 0.5;
@@ -106,10 +168,11 @@ namespace ngbla
 
   
   template <ORDERING OMV> template <ORDERING ORD>
-  void MultiHouseholderReflection<OMV> :: TMult (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
+  void BaseMultiHouseholderReflection<OMV> :: TMult (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
-    const char * timername = (ORD == ColMajor)
-      ? "multiHouseholder, colmajor" : "multiHouseholder, rowmajor";
+    const char * timername = (OMV == ColMajor)
+      ? ((ORD == ColMajor) ? "multiHouseholder, H..colmajor, M..colmajor" : "multiHouseholder, H..colmajor, M..rowmajor") 
+      : ((ORD == ColMajor) ? "multiHouseholder, H..rowmajor, M..colmajor" : "multiHouseholder, H..rowmajor, M..rowmajor");
     static Timer t(timername); RegionTimer reg(t);
     t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
 
@@ -121,13 +184,13 @@ namespace ngbla
     */
 
     constexpr size_t bs = 96;
+    ArrayMem<double,48*96> mem(bs*mv.Height());
     for (size_t i = 0; i < m2.Width(); i += bs)
       {
         size_t bsi = min(bs, m2.Width()-i);
         auto colsm2 = m2.Cols(i, i+bsi);
         
-        // Matrix<> tmp = mv * colsm2;
-        Matrix<double,ORD> tmp(mv.Height(), bsi);
+        FlatMatrix<double,ORD> tmp(mv.Height(), bsi, &mem[0]);
         {
           // static Timer t(timername+string("1")); RegionTimer reg(t);
           GeneralizedTriangularMult<UpperRight,Normalized> (mv, colsm2, tmp);
@@ -136,18 +199,8 @@ namespace ngbla
           // static Timer t(timername+string("2")); RegionTimer reg(t);        
           TriangularMult<LowerLeft,NonNormalized> (T, tmp);
         }
-        // colsm2 -= Trans(mv)*tmp;
-        IntRange r1(0, mv.Height());
-        IntRange r2(mv.Height(), colsm2.Height());
-        {
-          // static Timer t(timername+string("3")); RegionTimer reg(t);        
-          colsm2.Rows(r2) -= Trans(mv.Cols(r2)) * tmp;
-        }
-        {
-          // static Timer t(timername+string("4")); RegionTimer reg(t);        
-          TriangularMult<LowerLeft,Normalized> (Trans(mv.Cols(r1)), tmp);
-        }
-        colsm2.Rows(r1) -= tmp;
+
+        GeneralizedTriangularSub<LowerLeft,Normalized> (Trans(mv), tmp, colsm2);
       }
   }
 
@@ -156,32 +209,26 @@ namespace ngbla
 
 
   template <ORDERING OMV> template <ORDERING ORD>
-  void MultiHouseholderReflection<OMV> :: TMultTrans (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
+  void BaseMultiHouseholderReflection<OMV> :: TMultTrans (SliceMatrix<double,ORD> m2) const  // Hm-1 * ... * H1 * H0 * m2
   {
     const char * timername = (ORD == ColMajor)
       ? "multiHouseholder trans, colmajor" : "multiHouseholder trans, rowmajor";
     static Timer t(timername); RegionTimer reg(t);
-    t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
+    // t.AddFlops (2*mv.Height()*m2.Height()*m2.Width());
 
     constexpr size_t bs = 96;
+    ArrayMem<double,48*96> mem(bs*mv.Height());    
     for (size_t i = 0; i < m2.Width(); i += bs)
       {
         size_t bsi = min(bs, m2.Width()-i);
         auto colsm2 = m2.Cols(i, i+bsi);
         
-        Matrix<double,ORD> tmp(mv.Height(), bsi);
+        FlatMatrix<double,ORD> tmp(mv.Height(), bsi, &mem[0]);        
         GeneralizedTriangularMult<UpperRight,Normalized> (mv, colsm2, tmp);
         
-        // TriangularMult<LowerLeft,NonNormalized> (T, tmp);
         TriangularMult<UpperRight,NonNormalized> (Trans(T), tmp);
 
-        IntRange r1(0, mv.Height());
-        IntRange r2(mv.Height(), colsm2.Height());
-
-        colsm2.Rows(r2) -= Trans(mv.Cols(r2)) * tmp;
-        
-        TriangularMult<LowerLeft,Normalized> (Trans(mv.Cols(r1)), tmp);
-        colsm2.Rows(r1) -= tmp;
+        GeneralizedTriangularSub<LowerLeft,Normalized> (Trans(mv), tmp, colsm2);
       }
   }
 
@@ -190,21 +237,22 @@ namespace ngbla
 
 
   
+  template class BaseMultiHouseholderReflection<RowMajor>;
+  template class BaseMultiHouseholderReflection<ColMajor>;
   template class MultiHouseholderReflection<RowMajor>;
   template class MultiHouseholderReflection<ColMajor>;
-  template void MultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
-  template void MultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,ColMajor> m2) const;
-  template void MultiHouseholderReflection<ColMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
-  template void MultiHouseholderReflection<ColMajor> :: TMult (SliceMatrix<double,ColMajor> m2) const;
-  template void MultiHouseholderReflection<RowMajor> :: TMultTrans (SliceMatrix<double,RowMajor> m2) const;
-  template void MultiHouseholderReflection<RowMajor> :: TMultTrans (SliceMatrix<double,ColMajor> m2) const;
-  template void MultiHouseholderReflection<ColMajor> :: TMultTrans (SliceMatrix<double,RowMajor> m2) const;
-  template void MultiHouseholderReflection<ColMajor> :: TMultTrans (SliceMatrix<double,ColMajor> m2) const;
+  template void BaseMultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
+  template void BaseMultiHouseholderReflection<RowMajor> :: TMult (SliceMatrix<double,ColMajor> m2) const;
+  template void BaseMultiHouseholderReflection<ColMajor> :: TMult (SliceMatrix<double,RowMajor> m2) const;
+  template void BaseMultiHouseholderReflection<ColMajor> :: TMult (SliceMatrix<double,ColMajor> m2) const;
+  template void BaseMultiHouseholderReflection<RowMajor> :: TMultTrans (SliceMatrix<double,RowMajor> m2) const;
+  template void BaseMultiHouseholderReflection<RowMajor> :: TMultTrans (SliceMatrix<double,ColMajor> m2) const;
+  template void BaseMultiHouseholderReflection<ColMajor> :: TMultTrans (SliceMatrix<double,RowMajor> m2) const;
+  template void BaseMultiHouseholderReflection<ColMajor> :: TMultTrans (SliceMatrix<double,ColMajor> m2) const;
 
 
-
-  
-  void QRFactorizationInPlace (SliceMatrix<> A)
+  template <ORDERING ORDER>
+  void T_QRFactorizationInPlace (SliceMatrix<double, ORDER> A)
   {
     static Timer t("QRFactorization inplace"); RegionTimer reg(t);
 
@@ -247,6 +295,15 @@ namespace ngbla
       }
   }
 
+  NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<double,RowMajor> A)
+  {
+    T_QRFactorizationInPlace (A);
+  }
+  
+  NGS_DLL_HEADER void QRFactorizationInPlace (SliceMatrix<double,ColMajor> A)
+  {
+    T_QRFactorizationInPlace (A);    
+  }
 
   
   /*
@@ -287,5 +344,19 @@ namespace ngbla
     if (m > n)
       A.Rows(n,m) = 0.0;
   }
+  
+  void InverseFromQR (SliceMatrix<> ainv)
+  {
+    size_t n = ainv.Height();
+    ArrayMem<double, 2500> mem(n*n);
+    FlatMatrix X(n,n,mem.Data());
+    X = Identity(n);
+    TriangularSolve<UpperRight,NonNormalized> (ainv, X);
+    // ApplyHouseholderReflectionsTrans (ainv.Cols(0,n-1), Trans(SliceMatrix(X)));
+    MultiHouseholderReflection H(Trans(ainv.Cols(0,n-1)));
+    H.MultTrans(Trans(SliceMatrix(X)));
+    ainv = Trans(X);
+  }
 
+  
 }

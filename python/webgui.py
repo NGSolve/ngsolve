@@ -4,66 +4,10 @@ from time import time
 import ngsolve as ngs
 import os
 
-# the build script fills the contents of the variables below
-render_js_code = ""
-widgets_version = ""
+from webgui_jupyter_widgets import BaseWebGuiScene, encodeData, WebGuiDocuWidget
+import webgui_jupyter_widgets.widget as wg
 
-try:
-    __IPYTHON__
-    _IN_IPYTHON = True
-except NameError:
-    _IN_IPYTHON = False
-
-try:
-    import google.colab
-    _IN_GOOGLE_COLAB = True
-except ImportError:
-    _IN_GOOGLE_COLAB = False
-
-#           <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"></script>
-#           <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.js"></script>
-#           <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
-# 
-html_template = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>NGSolve WebGUI</title>
-        <meta name='viewport' content='width=device-width, user-scalable=no'/>
-        <style>
-            body{
-                margin:0;
-                overflow:hidden;
-            }
-            canvas{
-                cursor:grab;
-                cursor:-webkit-grab;
-                cursor:-moz-grab;
-            }
-            canvas:active{
-                cursor:grabbing;
-                cursor:-webkit-grabbing;
-                cursor:-moz-grabbing;
-            }
-        </style>
-    </head>
-    <body>
-          <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"></script>
-          <script>
-            {render}
-
-            require(["ngsolve_jupyter_widgets"], ngs=>
-            {
-                let scene = new ngs.Scene();
-                scene.init(document.body, render_data);
-            });
-          </script>
-    </body>
-</html>
-"""
-
-
-class WebGLScene:
+class WebGLScene(BaseWebGuiScene):
     def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_):
         from IPython.display import display, Javascript
         import threading
@@ -85,9 +29,15 @@ class WebGLScene:
 
         self.deformation = deformation
 
+        if isinstance(mesh, ngs.comp.Region):
+            self.region = mesh
+            self.mesh = self.region.mesh
+        else:
+            self.region = None
+
     def GetData(self, set_minmax=True):
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation)
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation, region=self.region)
 
         if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
             # multidim gridfunction - generate data for each component
@@ -108,7 +58,7 @@ class WebGLScene:
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -165,33 +115,6 @@ class WebGLScene:
 
         return d
 
-    def GenerateHTML(self, filename=None):
-        import json
-        d = self.GetData()
-
-        data = json.dumps(d)
-
-        html = html_template.replace('{data}', data )
-        jscode = "var render_data = {}\n".format(data) + render_js_code
-        html = html.replace('{render}', jscode )
-
-        if filename is not None:
-            open(filename,'w').write( html )
-        return html
-
-    def Draw(self):
-        self.widget = NGSWebGuiWidget()
-        d = self.GetData()
-        self.widget.value = d
-        display(self.widget)
-
-    def Redraw(self):
-        d = self.GetData(set_minmax=False)
-        self.widget.value = d
-
-    def __repr__(self):
-        return ""
-
 
 bezier_trig_trafos = { }  # cache trafos for different orders
 
@@ -206,7 +129,7 @@ timer3list = ngs.Timer("timer3 - make list")
 timer4 = ngs.Timer("func")
 
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None):
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True):
     timer.Start()
 
     if isinstance(deformation, ngs.CoefficientFunction) and deformation.dim==2:
@@ -296,6 +219,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
+        if region and region.VB() == vb:
+            vb = region
         cf = func1 if draw_surf else func0
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
         pmat = cf(pts)
@@ -326,6 +251,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ipts = [(i/og,0) for i in range(og+1)]
         ir_seg = ngs.IntegrationRule(ipts, [0,]*len(ipts))
         vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
+        if region and region.VB() == vb:
+            vb = region
         pts = mesh.MapToAllElements(ir_seg, vb)
         pmat = func0(pts)
         pmat = pmat.reshape(-1, og+1, 4)
@@ -370,6 +297,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
         
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
+        if region and region.VB() == vb:
+            vb = region
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
@@ -435,13 +364,14 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             ir_prism = ngs.IntegrationRule( ipts, [0]*len(ipts) )
 
 
-            # ipts_cube = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
-            #              [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
-            #              [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
-            #              [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
-            #              [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
-            #              [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
-            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism}, ngs.VOL)
+            ipts_hex = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
+                         [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
+                         [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
+                         [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
+                         [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
+                         [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
+            ir_hex = ngs.IntegrationRule( ipts_hex, [0]*len(ipts_hex) )
+            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism, ngs.ET.HEX: ir_hex }, ngs.VOL)
             
             
         else:
@@ -499,8 +429,8 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         mesh = mesh_or_none or func.space.mesh
         
     scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval)
-    if _IN_IPYTHON:
-        if _IN_GOOGLE_COLAB:
+    if wg._IN_IPYTHON:
+        if wg._IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
             html = scene.GenerateHTML()
             display(HTML(html))
@@ -514,32 +444,61 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         return scene
 
 
-from ipywidgets import DOMWidget, register
-from traitlets import Unicode
+def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename=""):
+    if isinstance(mesh_or_func, ngs.Mesh):
+        mesh = mesh_or_func
+        func = None
 
-@register
-class NGSWebGuiWidget(DOMWidget):
-    from traitlets import Dict, Unicode
-    _view_name = Unicode('NGSolveView').tag(sync=True)
-    _view_module = Unicode('ngsolve_jupyter_widgets').tag(sync=True)
-    _view_module_version = Unicode(widgets_version).tag(sync=True)
-    value = Dict({"ngsolve_version":'0.0.0'}).tag(sync=True)
+    if isinstance(mesh_or_func, ngs.CoefficientFunction):
+        func = mesh_or_func
+        mesh = mesh_or_none
 
-tencode = ngs.Timer("encode")
-def encodeData( array ):
-    from base64 import b64encode
-    tencode.Start()
-    values = np.array(array.flatten(), dtype=np.float32)
-    res = b64encode(values).decode("ascii")
-    tencode.Stop()
-    return res
+    if isinstance(mesh_or_func, ngs.GridFunction):
+        func = mesh_or_func
+        mesh = mesh_or_none or func.space.mesh
+        
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval)
+    import json
 
-_jupyter_lab_extension_path = os.path.join(os.path.dirname(ngs.__file__), "labextension")
+    docu_path = os.environ['NETGEN_DOCUMENTATION_OUT_DIR']
+    src_path = os.environ['NETGEN_DOCUMENTATION_SRC_DIR']
+    cwd_path = os.path.abspath('.')
+    rel_path = os.path.relpath('.', src_path)
+    path = os.path.join(docu_path, rel_path)
 
-def howtoInstallJupyterLabextension():
-    import ngsolve, os
-    d = os.path.dirname(ngsolve.__file__)
-    labdir = os.path.join(d, "labextension")
-    print("""# To install jupyter lab extension:
-jupyter labextension install --clean {labdir}
-""".format(labdir=_jupyter_lab_extension_path))
+    if not os.path.exists(path):
+        os.makedirs(path)
+    counter_file = os.path.join(docu_path, '.counter')
+    if os.path.exists(counter_file):
+        file_counter = int(open(counter_file,'r').read())+1
+    else:
+        file_counter = 0
+
+    open(counter_file,'w').write(str(file_counter))
+
+    data_file = 'render_data_{}.json'.format(file_counter)
+    data_file_abs = os.path.join(path, data_file)
+    preview_file = 'preview_{}.png'.format(file_counter)
+    preview_file_abs = os.path.join(path, preview_file)
+
+
+    widget = WebGuiDocuWidget()
+    widget.value = {'render_data' : data_file, 'preview' : preview_file }
+    scene.widget = widget
+    data = scene.GetData()
+    json.dump(data, open(data_file_abs, "w"))
+    scene.MakeScreenshot(preview_file_abs, 1200, 600)
+    scene.Redraw = lambda : None
+    from IPython.display import display, HTML
+    display(widget)
+    return scene
+
+if 'NETGEN_DOCUMENTATION_SRC_DIR' in os.environ:
+    # we are buiding the documentation, some things are handled differently:
+    # 1) Draw() is generating a .png (using headless chromium via selenium) and a render_data.json
+    #    to show a preview image and load the render_data only when requested by user
+    # 2) return a NGSDocuWebGuiWidget instead of NGSWebGuiWidget implementing the preview/load on demand of webgui
+
+    _Draw = Draw
+    Draw = _DrawDocu
+

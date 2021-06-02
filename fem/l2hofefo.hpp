@@ -162,7 +162,7 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    using DGFiniteElement<DIM>::vnums;
+    using DGFiniteElement<ET>::vnums;
 
   public:
 

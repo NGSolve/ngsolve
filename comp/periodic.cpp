@@ -79,6 +79,18 @@ namespace ngcomp {
     {
       auto & fe = space->GetFE(ei,alloc);
       const auto & ngel = ma->GetElement(ei);
+
+      /*
+      SwitchET (ngel.GetType(), [&](auto et)
+                {
+                  if (auto hofe = dynamic_cast<VertexOrientedFE<et.ElementType()>*>(&fe))
+                    hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+                });
+      */
+
+      fe.SetVertexNumbers( ArrayMem<int,8> (vertex_map[ngel.Vertices()]) );
+
+      /*
       switch (ngel.GetType())
 	{
 	case ET_TRIG:
@@ -126,6 +138,7 @@ namespace ngcomp {
         default:
           throw Exception("ElementType not implemented for PeriodicFESpace::GetFE");
 	}
+      */
       return fe;
     }
 

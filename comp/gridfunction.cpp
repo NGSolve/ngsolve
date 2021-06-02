@@ -226,6 +226,95 @@ namespace ngcomp
   }
 
 
+  void GridFunction :: Interpolate (const CoefficientFunction & cf,
+                                    const Region * reg, int mdcomp, LocalHeap & clh)
+  {
+    static Timer t("GridFunction::Interpolate"); RegionTimer r(t);
+    shared_ptr<FESpace> fes = GetFESpace();
+    shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
+    int dim   = fes->GetDimension();
+
+    Array<int> cnti(fes->GetNDof());
+    cnti = 0;
+
+    auto tempvec = GetVector(mdcomp).CreateVector();
+    
+    if (reg)
+      {
+        auto regdofs = make_shared<BitArray> (fes->GetDofs(*reg));
+        Projector proj(regdofs, false);
+        tempvec = proj * GetVector(mdcomp);
+      }
+    else
+      tempvec = 0.0;
+   
+    auto vb = reg ? reg->VB() : VOL;
+    IterateElements 
+      (*fes, vb, clh, 
+       [&] (FESpace::Element el, LocalHeap & lh)
+       {
+         if (reg)
+           if (!reg->Mask().Test(el.GetIndex())) return;
+
+         const FiniteElement & fel = fes->GetFE (el, lh);
+         int ndof = fel.GetNDof();
+         // int dimcf = cf.Dimension();
+         const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
+         
+         FlatVector<> elvec(ndof, lh), elvec1(ndof, lh);
+
+         // GetElementVector (mdcomp, el.GetDofs(), elvec1);
+         // cout << "elvec, before: " << endl << elvec1 << endl;
+         
+         // fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof/dimcf, dimcf), lh);
+         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, 1), lh);
+         // cout << "elvec, minmizer: " << endl << elvec << endl;
+         
+         fes->TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
+
+         // GetElementVector (mdcomp, el.GetDofs(), elvec1);
+         tempvec.GetIndirect (el.GetDofs(), elvec1);
+         elvec1 += elvec;
+         // SetElementVector (mdcomp, el.GetDofs(), elvec1);
+         tempvec.SetIndirect (el.GetDofs(), elvec1);
+         
+         for (auto d : el.GetDofs())
+           if (IsRegularDof(d)) cnti[d]++;
+       });
+
+#ifdef PARALLEL
+    AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
+    // GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+    // GetVector(mdcomp).Cumulate(); 	 
+    (*tempvec).SetParallelStatus(DISTRIBUTED);
+    (*tempvec).Cumulate(); 	 
+#endif
+
+    ParallelForRange
+      (cnti.Size(), [&] (IntRange r)
+       {
+         VectorMem<10> fluxi(dim);
+         ArrayMem<int,1> dnums(1);
+         // for (int i = 0; i < cnti.Size(); i++)
+         for (auto i : r)
+           if (cnti[i])
+             {
+               dnums[0] = i;
+               // GetElementVector (mdcomp, dnums, fluxi);
+               tempvec.GetIndirect (dnums, fluxi);               
+               fluxi /= double (cnti[i]);
+               tempvec.SetIndirect (dnums, fluxi);                              
+               // SetElementVector (mdcomp, dnums, fluxi);
+             }
+       });
+
+    GetVector(mdcomp) = tempvec;
+  }
+  
+  
+
+  
+
   // void GridFunction :: Visualize(const string & given_name)
   void Visualize(shared_ptr<GridFunction> gf, const string & given_name)
   {
@@ -1247,16 +1336,6 @@ namespace ngcomp
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
     if (diffop[ei.VB()])
       diffop[ei.VB()] -> Apply(fel, ip, elu, result, lh2);
-    /*
-    if (diffop && ei.VB()==VOL)
-      diffop->Apply (fel, ip, elu, result, lh2);
-    else if (trace_diffop && ei.VB()==BND)
-      trace_diffop->Apply (fel, ip, elu, result, lh2);
-    else if (bfi)
-      bfi->CalcFlux (fel, ip, elu, result, true, lh2);
-    else if (fes->GetEvaluator(ei.VB()))
-      fes->GetEvaluator(ei.VB()) -> Apply (fel, ip, elu, result, lh2);
-    */
     else
       result = 0.0;
   }
@@ -1315,16 +1394,6 @@ namespace ngcomp
       diffop[vb]->Apply (fel, ip, elu, result, lh2);
     else
       result = 0.0;
-    /*
-    if (diffop && vb==VOL)
-      diffop->Apply (fel, ip, elu, result, lh2);
-    else if (trace_diffop && vb==BND)
-      trace_diffop->Apply (fel, ip, elu, result, lh2);
-    else if (bfi)
-      bfi->CalcFlux (fel, ip, elu, result, true, lh2);
-    else
-      fes->GetIntegrator(vb) -> CalcFlux (fel, ip, elu, result, false, lh2);
-    */
   }
 
 
@@ -1337,8 +1406,20 @@ namespace ngcomp
         values = 0.0;
         return;
       }
+
+    ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
+    if (ud)
+      {
+        if (ud->HasMemory(this) && ud->Computed(this))
+          {
+            hvalues.AddSize(ir.Size(), Dimension()) = ud->GetMemory(this);
+            return;
+          }
+      }
+
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3a");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     const ElementTransformation & trafo = ir.GetTransformation();
@@ -1373,20 +1454,18 @@ namespace ngcomp
 
     if (diffop[vb])
       diffop[vb]->Apply (fel, ir, elu, values, lh2);
-    /*
-    if (diffop && vb==VOL)
-      diffop->Apply (fel, ir, elu, values, lh2);
-    else if (trace_diffop && vb==BND)
-      trace_diffop->Apply (fel, ir, elu, values, lh2);
-    else if (bfi)
-      bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb))
-      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb))
-      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
-    */
     else
       throw Exception ("don't know how I shall evaluate, vb = "+ToString(vb));
+
+
+    if (ud)
+      {
+        if (ud->HasMemory(this))
+          {
+            ud->GetMemory(this) = values;
+            ud->SetComputed(this);
+          }
+      }    
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1400,7 +1479,7 @@ namespace ngcomp
       }
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3b");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
 
@@ -1474,7 +1553,7 @@ namespace ngcomp
     
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3c");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     auto values = bvalues.AddSize(Dimension(), ir.Size());
@@ -1542,7 +1621,7 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<Complex>> bvalues) const
   {
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3d");
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
 
@@ -1612,11 +1691,15 @@ namespace ngcomp
   shared_ptr<CoefficientFunction> GridFunctionCoefficientFunction ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
-    if (var == shape.get())
+    // if (var == shape.get())
+    if (auto diffshape = dynamic_cast<const DiffShapeCF*>(var))                
       {
+        const CoefficientFunction * me = this;
+        bool Eulerian = diffshape->Eulerian_gridfunctions.Contains(me);
+        cout << "diff GF is " << (Eulerian ? "Eulrian" : "Lagrange") << endl;
         for (int i = 0; i < 4; i++)
           if (diffop[i])
-            return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir);
+            return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir, Eulerian);
         throw Exception("don't have any diffop for shape-derivative");
       }
     
@@ -2197,19 +2280,17 @@ namespace ngcomp
   }
 
 
-#ifdef __AVX__
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> ::
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                     const tAVXd * xref, 
-                     const tAVXd * x, 
-                     const tAVXd * dxdxref, 
-                     tAVXd * values)
+                     const SIMD<double> * xref,
+                     const SIMD<double> * x,
+                     const SIMD<double> * dxdxref,
+                     SIMD<double> * values)
   {
     cout << "GetMultiSurf - gf not implemented" << endl;
     return false;
   }
-#endif
 
 
 
@@ -2840,13 +2921,12 @@ namespace ngcomp
   }
 
 
-#ifdef __AVX__  
   bool VisualizeCoefficientFunction ::    
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                     const tAVXd * xref, 
-                     const tAVXd * x, 
-                     const tAVXd * dxdxref, 
-                     tAVXd * values)
+                     const SIMD<double> * xref,
+                     const SIMD<double> * x,
+                     const SIMD<double> * dxdxref,
+                     SIMD<double> * values)
   {
     try
       {
@@ -2924,7 +3004,6 @@ namespace ngcomp
         return 0;
       }
   }
-#endif
   
   
   bool VisualizeCoefficientFunction ::  

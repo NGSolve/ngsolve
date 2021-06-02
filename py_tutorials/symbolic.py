@@ -12,19 +12,19 @@ V = H1(mesh, order=3)
 u = V.TrialFunction()
 v = V.TestFunction()
 
-gradu = u.Deriv()
-gradv = v.Deriv()
+gradu = Grad(u)
+gradv = Grad(v)
 dvdx = gradv[0]
 dvdy = gradv[1]
 dvdz = gradv[2]
 
 a = BilinearForm (V, symmetric=True)
-a += SymbolicBFI (u*v+gradu*gradv)
-a.Assemble(heapsize=10000000)
+a += (u*v+gradu*gradv)*dx
+a.Assemble()
 
 
 f = LinearForm (V)
-f += SymbolicLFI (x*v)
+f += x*v*dx
 f.Assemble()
 
 print (a.mat)

@@ -289,6 +289,16 @@ namespace ngfem
   {
     throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
   }
+  
+  void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareVector<double> values, BareSliceVector<> coefs) const
+  {
+    throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
+  }
+  
+  void BaseScalarFiniteElement :: AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
+  {
+    throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());        
+  }
 
   
   template<int D>
@@ -421,8 +431,202 @@ namespace ngfem
       AddGradTrans (ir, values.Rows(i*dim, (i+1)*dim), coefs.Col(i));
   }
 
+
+
+  
+  template<int D>
+  void ScalarFiniteElement<D> :: Interpolate (const ElementTransformation & trafo, 
+                                              const CoefficientFunction & func, SliceMatrix<> coefs,
+                                              LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    
+    FlatMatrix<> elflux(GetNDof(), coefs.Width(), lh);
+    elflux = 0.0;
+    
+    for (int el_vb = D; el_vb >= 0; el_vb--)
+      {
+        Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+        for (int locfnr : Range(f2el.GetNFacets()))
+          {
+            SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
+            auto & irvol = f2el(locfnr, irfacet, lh);
+            auto & mir = trafo(irvol, lh);
+
+            FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.IR().Size(), lh);
+            func.Evaluate (mir, mfluxi);
+
+            for (size_t j : Range(mir))
+              mfluxi.Col(j) *= mir[j].IP().Weight();
+
+            for (int i = 0; i < coefs.Width(); i++)
+              AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
+          }
+      }
+
+    for (int i = 0; i < coefs.Width(); i++)
+      if (!SolveDuality (elflux.Col(i), coefs.Col(i), lh))
+        throw Exception("scalar interpolate need solveduality");
+
+    /*
+      ... otherwise 
+                       {
+                       // Calc Element Matrix 
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                         bool symmetric_so_far = true;
+                         for (auto sbfi : single_bli)
+                           { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+                         
+                           // Invert Element Matrix and Solve for RHS 
+                         CalcInverse(elmat); // Not Symmetric !
+                         
+                         if (dim > 1) {
+                           for (int j = 0; j < dim; j++)
+                             { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+                         }
+                         else
+                           { elfluxi = elmat * elflux; }
+                       }
+  */
+  }
+				  
   
 
+  template <int D>
+  bool ScalarFiniteElement<D> :: SolveDuality (SliceVector<> rhs, SliceVector<> u,
+                                               LocalHeap & lh) const
+  {
+    if (!DualityMassDiagonal()) return false;
+
+    static Timer td("solve duality - diag");
+    static Timer ts("solve duality - solve");
+    
+    HeapReset hr(lh);
+    FlatVector<> diag(ndof, lh), res(ndof, lh);
+    FlatVector<> shape(ndof, lh), dualshape(ndof, lh);
+    FE_ElementTransformation<D,D> trafo(ElementType());
+
+    td.Start();
+    if (!GetDiagDualityMassInverse (diag))
+      {
+        // calc duality mass by integration
+        diag = 0.0;
+        for (int el_vb = 0; el_vb <= D; el_vb++)
+          {
+            Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
+            
+            for (int i = 0; i < f2el.GetNFacets(); i++)
+              {
+                IntegrationRule irfacet(f2el.FacetType(i), 2*order);
+                const IntegrationRule & irvol = f2el(i, irfacet, lh);
+                auto & mir = trafo(irvol, lh);
+                for (int j = 0; j < mir.Size(); j++)
+                  {
+                    CalcShape (mir[j].IP(), shape);
+                    CalcDualShape (mir[j], dualshape);
+                    shape *= mir[j].GetWeight();
+                    diag += pw_mult (shape, dualshape);
+                  }
+              }
+          }
+        for (auto & d : diag) d = 1.0/d;
+        // cout << "diag, by integration = " << diag << endl;
+      }
+    
+    td.Stop();
+
+    auto [nv,ne,nf,nc] = GetNDofVEFC();
+    
+    ts.Start();
+    u = 0.0;
+    bool first_time = true;
+    for (int el_vb = D; el_vb >= 0; el_vb--)
+      {
+        IntRange r;
+        switch (D-el_vb)
+          {
+          case 0: r = IntRange(0, nv); break;
+          case 1: r = IntRange(nv, nv+ne); break;
+          case 2: r = IntRange(nv+ne, nv+ne+nf); break;
+          case 3: r = IntRange(nv+ne+nf, nv+ne+nf+nc); break;
+          default:
+            ;
+          }
+        if (r.Size() == 0) continue;
+        
+        Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
+        res = rhs;
+        if (!first_time)
+          for (int nr = 0; nr < f2el.GetNFacets(); nr++)
+            {
+              IntegrationRule irfacet1(f2el.FacetType(nr), 2*order);
+              SIMD_IntegrationRule irfacet(irfacet1);
+              auto & volir = f2el(nr, irfacet, lh);
+              FlatVector<SIMD<double>> pointvals(volir.Size(), lh);
+              Evaluate (volir, u, pointvals);
+              for (int i = 0; i < volir.Size(); i++)
+                pointvals(i) *= -irfacet[i].Weight();
+              AddDualTrans (volir, pointvals, res);
+            }
+        first_time = false;
+        
+        u.Range(r) += pw_mult(diag.Range(r), res.Range(r));
+      }
+
+    
+#ifdef OLD    
+    u = pw_mult(diag, rhs);
+
+    for (int loop = 0; loop < D; loop++)
+      {
+        res = rhs;
+        for (int el_vb = D; el_vb >= 0; el_vb--)
+          {
+            Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
+            for (int nr = 0; nr < f2el.GetNFacets(); nr++)
+              {
+                /*
+                IntegrationRule irfacet(f2el.FacetType(nr), 2*order);          
+                auto & volir = f2el(nr, irfacet, lh);
+
+                auto & mir = trafo(volir, lh);
+                
+                FlatVector pointvals(volir.Size(), lh);
+                Evaluate (volir, u, pointvals);
+                
+                for (int i = 0; i < mir.Size(); i++)
+                  {
+                    auto & mip = mir[i];
+                    CalcDualShape (mip, dualshape);
+                    res -= pointvals(i) * mip.GetWeight() * dualshape;
+                  }
+                */
+
+                /*
+                IntegrationRule irfacet(f2el.FacetType(nr), 2*order);          
+                auto & volir = f2el(nr, irfacet, lh);
+                FlatVector<> pointvals(volir.Size(), lh);
+                Evaluate (volir, u, pointvals);
+                for (int i = 0; i < volir.Size(); i++)
+                  pointvals(i) *= -irfacet[i].Weight();
+                AddDualTrans (volir, pointvals, res);
+                */
+                IntegrationRule irfacet1(f2el.FacetType(nr), 2*order);
+                SIMD_IntegrationRule irfacet(irfacet1);
+                auto & volir = f2el(nr, irfacet, lh);
+                FlatVector<SIMD<double>> pointvals(volir.Size(), lh);
+                Evaluate (volir, u, pointvals);
+                for (int i = 0; i < volir.Size(); i++)
+                  pointvals(i) *= -irfacet[i].Weight();
+                AddDualTrans (volir, pointvals, res);
+              }
+          }
+        u += pw_mult(diag, res);
+      }
+#endif
+    ts.Stop();
+    return true;
+  }
 
 
 
@@ -503,8 +707,6 @@ namespace ngfem
 
 
 
-				  
-
 
 
   void BaseScalarFiniteElement :: GetDiagMassMatrix (FlatVector<> mass) const
@@ -517,8 +719,8 @@ namespace ngfem
 
 
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>
+  void DGFiniteElement<ET>:: 
   GetDiagMassMatrix (FlatVector<> mass) const
   {
 #ifndef __CUDA_ARCH__
@@ -535,8 +737,8 @@ namespace ngfem
   }
 
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   CalcTraceMatrix (int facet, FlatMatrix<> trace) const
   {
     ELEMENT_TYPE ftype = ElementTopology::GetFacetType (this->ElementType(), facet);
@@ -587,8 +789,8 @@ namespace ngfem
     delete facetfe2;
   }
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   CalcGradientMatrix (FlatMatrix<> gmat) const
   {
     IntegrationRule ir (this->ElementType(), 2*order);
@@ -617,8 +819,8 @@ namespace ngfem
   }
 
 
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>    
+  void DGFiniteElement<ET>:: 
   GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
   {
     Matrix<> gmat(D*grad.Height(), coefs.Size());
@@ -626,9 +828,9 @@ namespace ngfem
     FlatVector<> vgrad(gmat.Height(), &grad(0,0));
     vgrad = gmat * coefs;
   }
-  
-  template <int D>
-  void DGFiniteElement<D>:: 
+
+  template <ELEMENT_TYPE ET>    
+  void DGFiniteElement<ET>:: 
   GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
   {
     Matrix<> gmat(D*grad.Height(), coefs.Size());
@@ -636,9 +838,10 @@ namespace ngfem
     FlatVector<> vgrad(gmat.Height(), &grad(0,0));
     coefs = Trans (gmat) * vgrad;
   }
+
   
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
   {
     Matrix<> trace(fcoefs.Size(), coefs.Size());
@@ -646,8 +849,8 @@ namespace ngfem
     fcoefs = trace * coefs;
   }
   
-  template <int D>
-  void DGFiniteElement<D>:: 
+  template <ELEMENT_TYPE ET>  
+  void DGFiniteElement<ET>:: 
   GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
   {
     Matrix<> trace(fcoefs.Size(), coefs.Size());
@@ -662,12 +865,20 @@ namespace ngfem
   template class ScalarFiniteElement<2>;
   template class ScalarFiniteElement<3>;
 
-
+  template class DGFiniteElement<ET_POINT>;
+  template class DGFiniteElement<ET_SEGM>;
+  template class DGFiniteElement<ET_TRIG>;
+  template class DGFiniteElement<ET_QUAD>;
+  template class DGFiniteElement<ET_TET>;
+  template class DGFiniteElement<ET_PRISM>;
+  template class DGFiniteElement<ET_PYRAMID>;
+  template class DGFiniteElement<ET_HEX>;
+  /*
   template class DGFiniteElement<0>;
   template class DGFiniteElement<1>;
   template class DGFiniteElement<2>;
   template class DGFiniteElement<3>;
-  
+  */
 
 
   template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;

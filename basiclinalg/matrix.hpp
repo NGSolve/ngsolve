@@ -180,6 +180,14 @@ namespace ngbla
       return SliceVector<T,TIND> (h, w+1, &data[0]);
     }
 
+    const SliceVector<T> Diag (int offset) const
+    {
+      int dp = max(offset, 0);
+      int dm = min(offset, 0);
+      return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data+dp-dm*Dist());
+    }
+    
+
     using CMCPMatExpr<FlatMatrix>::Rows;
     using CMCPMatExpr<FlatMatrix>::Cols;
 
@@ -208,6 +216,17 @@ namespace ngbla
       return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( Height()/adist, w));
     }
 
+    INLINE auto SplitRows (size_t split) const
+    {
+      return tuple(Rows(0,split), Rows(split, Height()));
+    }
+
+    INLINE auto SplitCols (size_t split) const
+    {
+      return tuple(Cols(0,split), Cols(split, Width()));
+    }
+
+    
     /*
     INLINE operator SliceMatrix<T> () const
     {
@@ -386,6 +405,17 @@ namespace ngbla
       return SliceMatrix<T,ColMajor> (range.Size(), w, h, data+range.First());
     }
 
+    INLINE auto SplitRows (size_t split) const
+    {
+      return tuple(Rows(0,split), Rows(split, Height()));
+    }
+
+    INLINE auto SplitCols (size_t split) const
+    {
+      return tuple(Cols(0,split), Cols(split, Width()));
+    }
+
+    
     
     /*
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
@@ -1481,6 +1511,9 @@ namespace ngbla
 
     INLINE T* Data() const noexcept { return data; }
 
+    using CMCPMatExpr<SliceMatrix>::Rows;
+    using CMCPMatExpr<SliceMatrix>::Cols;
+
     INLINE const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
@@ -2249,6 +2282,28 @@ namespace ngbla
     Mat<H,W,T> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = -mat(i.value);
+      });
+    return res;
+  }
+
+
+  
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> operator+ (const Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
+  {
+    Mat<H,W,T> res;
+    Iterate<H*W> ([&] (auto i) {
+        res(i.value) = ma(i.value) + mb(i.value);
+      });
+    return res;
+  }
+  
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
+  {
+    Mat<H,W,T> res;
+    Iterate<H*W> ([&] (auto i) {
+        res(i.value) = ma(i.value) - mb(i.value);
       });
     return res;
   }

@@ -14,43 +14,17 @@
 #include <ngs_stdcpp_include.hpp>
 
 #ifdef WIN32
-   #ifdef NGINTERFACE_EXPORTS
-      #define DLL_HEADER   __declspec(dllexport)
-   #else
-      #define DLL_HEADER   __declspec(dllimport)
-   #endif
-
    #ifdef NGS_EXPORTS
       #define NGS_DLL_HEADER   __declspec(dllexport)
    #else
       #define NGS_DLL_HEADER   __declspec(dllimport)
    #endif
-
-
 #else
-   #if __GNUC__ >= 4
-      #define DLL_HEADER __attribute__ ((visibility ("default")))
-   #else
-      #define DLL_HEADER
-   #endif
-// #define NGS_DLL_HEADER 
-
-
-/*
-   #ifdef NGINTERFACE_EXPORTS
-      #define DLL_HEADER   __declspec(dllexport)
-   #else
-      #define DLL_HEADER   __declspec(dllimport)
-   #endif
-*/
-
    #if __GNUC__ >= 4
       #define NGS_DLL_HEADER __attribute__ ((visibility ("default")))
    #else
       #define NGS_DLL_HEADER
    #endif
-
-
 #endif
 
 /*
@@ -138,7 +112,6 @@ namespace ngstd
 #include "ngsstream.hpp"  
 #include "templates.hpp"
 
-#include "simd.hpp"
 #include "simd_complex.hpp"
 
 #include "blockalloc.hpp"

@@ -124,9 +124,9 @@ namespace ngcomp
 	     ElementId eid(vb, i);
 	     Ngs_Element el = ma->GetElement(eid);
 	     if ( (!space_a->DefinedOn(vb, el.GetIndex())) || (!space_b->DefinedOn(vb, el.GetIndex())) )
-	       { return; }
+	       { continue; }
 	     if ( reg && !reg->Mask().Test(el.GetIndex()) )
-	       { return; }
+	       { continue; }
 	     space_a->GetDofNrs(eid, dnums_a, ANY_DOF); // get rid of UNUSED DOFs
 	     maxdsa = max2(maxdsa, int(dnums_a.Size()));
 	     for (auto da : dnums_a)
@@ -377,17 +377,23 @@ namespace ngcomp
     /** actual class nrs **/
     Array<short> classnr(ma->GetNE(vb));
     ma->IterateElements
-      (vb, lh, [&] (auto el, LocalHeap & llh) {
-	classnr[el.Nr()] =
-	  SwitchET
-	  (el.GetType(),
-	   [&] (auto et) { return et_firsti[int(et)] + ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+      (vb, lh, [&] (auto el, LocalHeap & llh) 
+      {
+        if ( (space_a->DefinedOn(vb, el.GetIndex())) && (space_b->DefinedOn(vb, el.GetIndex())) )
+        {
+            classnr[el.Nr()] =
+            SwitchET
+            (el.GetType(),
+            [&] (auto et) { return et_firsti[int(et)] + ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+        }
+        else
+        {classnr[el.Nr()] = -1;}
       });
     
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        { creator.Add (classnr[i], i); }
+        { if (classnr[i] != -1){creator.Add (classnr[i], i);} } //{ creator.Add (classnr[i], i); }
     Table<size_t> table = creator.MoveTable();
 
     /** assemble element matrix for every equivalence class **/

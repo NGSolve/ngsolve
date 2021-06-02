@@ -7,6 +7,8 @@
 /* Date:   10. Feb. 2002                                             */
 /*********************************************************************/
 
+#include "hcurlhdiv_dshape.hpp"
+
 namespace ngfem
 {
 
@@ -133,8 +135,10 @@ public:
 
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdHDiv");    
     return -TraceCF(dir->Operator("Grad"))*proxy + dir->Operator("Grad") * proxy;
   }
 };
@@ -200,8 +204,10 @@ public:
   
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdHDivSurface");        
     return -TraceCF(dir->Operator("Gradboundary"))*proxy + dir->Operator("Gradboundary") * proxy;
   }
   
@@ -289,8 +295,10 @@ public:
 
   static shared_ptr<CoefficientFunction>
   DiffShape (shared_ptr<CoefficientFunction> proxy,
-             shared_ptr<CoefficientFunction> dir)
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
   {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpDivHDiv");        
     return -TraceCF(dir->Operator("Grad"))*proxy;
   }
   
@@ -453,6 +461,165 @@ public:
     }    */
   
 };
+
+template <int D>
+class DiffOpHDivDualSurface : public DiffOp<DiffOpHDivDualSurface<D> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D-1 };
+  enum { DIM_DMAT = D };
+  enum { DIFFORDER = 0 };
+
+  typedef DiffOpHDivDualSurface<D> DIFFOP_TRACE;
+
+  
+  static auto & Cast (const FiniteElement & fel) 
+  { return static_cast<const HDivFiniteElement<D-1>&> (fel); }
+  
+  
+  template <typename AFEL, typename MIP, typename MAT,
+            typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                              MAT & mat, LocalHeap & lh)
+  {
+    Cast(fel).CalcDualShape (mip, Trans(mat));
+  }
+  template <typename AFEL, typename MIP, typename MAT,
+            typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                              MAT & mat, LocalHeap & lh)
+  {
+    throw Exception(string("DiffOpHDivDualSurface not available for mat ")+typeid(mat).name());
+  }
+  
+  
+};
+
+
+
+
+  template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
+  class DiffOpGradientTraceHDiv;
+  
+  /// Gradient operator for HDiv
+  template <int D, typename FEL = HDivFiniteElement<D> >
+  class DiffOpGradientHDiv : public DiffOp<DiffOpGradientHDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    
+    static constexpr double eps() { return 1e-4; }
+
+    typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    // template <typename AFEL, typename SIP>
+    // static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+    // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
+    }
+    
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      // typedef typename TVX::TSCAL TSCAL;
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
+      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, hm, lh, eps());
+      y = Trans(hm)*x;
+    }
+
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			    const TVX & x, TVY & by,
+			    LocalHeap & lh) 
+    {
+      ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
+    }
+
+    using DiffOp<DiffOpGradientHDiv<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      ApplySIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+    }
+      
+
+    
+    using DiffOp<DiffOpGradientHDiv<D>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    {
+      AddTransSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+    }
+  };
+
+
+  /// Trace gradient operator for HDiv
+  template <int D, typename FEL>
+  class DiffOpGradientTraceHDiv : public DiffOp<DiffOpGradientTraceHDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    
+    static constexpr double eps() { return 1e-4; }
+
+    typedef void DIFFOP_TRACE;
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+  };  
+
+
 
 
 

@@ -58,11 +58,11 @@ namespace ngfem
               
             STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
             FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);
+            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]);
             for (size_t i = 0; i < iry.Size(); i++)
               LegendrePolynomial (order, fy*(2*iry[i](0)-1), simd_shapey.Col(i));
               
-            FlatVector<> vec_values(nipy, &values(0)[0]);
+            FlatVector<> vec_values(nipy, (double*)&values(0));
               
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
@@ -91,7 +91,7 @@ namespace ngfem
             NgProfiler::StopThreadTimer (tleg, TaskManager::GetThreadId());
 
 
-            FlatVector<> vec_values(nipx, &values(0)[0]);
+            FlatVector<> vec_values(nipx, (double*)&values(0));
               
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
@@ -122,17 +122,17 @@ namespace ngfem
 
             STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
             FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
-            SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+            SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_shapex[0]);
             for (size_t i = 0; i < irx.Size(); i++)
               LegendrePolynomial (order, fx*(2*irx[i](0)-1), simd_shapex.Col(i));
               
             STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
             FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);          
+            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]);          
             for (size_t i = 0; i < iry.Size(); i++)
               LegendrePolynomial (order, fy*(2*iry[i](0)-1), simd_shapey.Col(i));
               
-            FlatMatrix<> mat_values(nipx, nipy, &values(0)[0]);
+            FlatMatrix<> mat_values(nipx, nipy, (double*)&values(0));
               
             if (nipx <= nipy)
               {
@@ -214,11 +214,11 @@ namespace ngfem
               
             STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
             FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);
+            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]);
             for (size_t i = 0; i < iry.Size(); i++)
               LegendrePolynomial (order, fy*(2*iry[i](0)-1), simd_shapey.Col(i));
               
-            FlatVector<> vec_values(nipy, &values(0)[0]);
+            FlatVector<> vec_values(nipy, (double*)&values(0));
               
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
@@ -240,7 +240,7 @@ namespace ngfem
 
             STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
             FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
-            SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+            SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_shapex[0]);
             for (size_t i = 0; i < irx.Size(); i++)
               LegendrePolynomial (order, fx*(2*irx[i](0)-1), simd_shapex.Col(i));
             
@@ -248,7 +248,7 @@ namespace ngfem
             FlatVector<> shapey(order+1, mem_shapey);
             LegendrePolynomial (order, fy*(2*iry[0](0)[0]-1), shapey);
 
-            FlatVector<> vec_values(nipx, &values(0)[0]);
+            FlatVector<> vec_values(nipx, (double*)&values(0));
               
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
@@ -270,17 +270,17 @@ namespace ngfem
 
             STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
             FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
-            SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+            SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_shapex[0]);
             for (size_t i = 0; i < irx.Size(); i++)
               LegendrePolynomial (order, fx*(2*irx[i](0)-1), simd_shapex.Col(i));
               
             STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
             FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);          
+            SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]);    
             for (size_t i = 0; i < iry.Size(); i++)
               LegendrePolynomial (order, fy*(2*iry[i](0)-1), simd_shapey.Col(i));
               
-            FlatMatrix<> mat_values(nipx, nipy, &values(0)[0]);
+            FlatMatrix<> mat_values(nipx, nipy, (double*)&values(0));
               
             if (nipx <= nipy)
               {
@@ -336,7 +336,7 @@ namespace ngfem
   
   
   // template class L2HighOrderFETP<ET_QUAD>;
-  template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_trait<ET_QUAD>::DIM>>;
+  template class T_ScalarFiniteElement<L2HighOrderFETP<ET_QUAD>, ET_QUAD, DGFiniteElement<ET_QUAD>>;
 
 
   // ********************************** HEX ****************
@@ -372,19 +372,19 @@ namespace ngfem
 
         STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
         FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
-        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_shapex[0]);
         for (size_t i = 0; i < irx.Size(); i++)
           LegendrePolynomial (order, (2*irx[i](0)-1), simd_shapex.Col(i));
               
         STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
         FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);          
+        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]); 
         for (size_t i = 0; i < iry.Size(); i++)
           LegendrePolynomial (order, (2*iry[i](0)-1), simd_shapey.Col(i));
 
         STACK_ARRAY(SIMD<double>, mem_shapez, (order+1)*irz.Size());
         FlatMatrix<SIMD<double>> simd_shapez(order+1, irz.Size(), mem_shapez);
-        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_shapez[0][0]);          
+        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), (double*)&mem_shapez[0]);          
         for (size_t i = 0; i < irz.Size(); i++)
           LegendrePolynomial (order, (2*irz[i](0)-1), simd_shapez.Col(i));
 
@@ -424,7 +424,7 @@ namespace ngfem
 
         NgProfiler::StopThreadTimer (tmult, TaskManager::GetThreadId());
         
-        FlatVector<> vals(nip, &values(0)[0]);
+        FlatVector<> vals(nip, (double*)&values(0));
         FlatVector<> vectemp3(nip, &temp3(0,0));
         values(ir.Size()-1) = 0.0; // clear overhead
         vals = vectemp3;
@@ -472,19 +472,19 @@ namespace ngfem
         
         STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
         FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
-        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_shapex[0]);
         for (size_t i = 0; i < irx.Size(); i++)
           LegendrePolynomial (order, (2*irx[i](0)-1), simd_shapex.Col(i));
               
         STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
         FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);          
+        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]);  
         for (size_t i = 0; i < iry.Size(); i++)
           LegendrePolynomial (order, (2*iry[i](0)-1), simd_shapey.Col(i));
 
         STACK_ARRAY(SIMD<double>, mem_shapez, (order+1)*irz.Size());
         FlatMatrix<SIMD<double>> simd_shapez(order+1, irz.Size(), mem_shapez);
-        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_shapez[0][0]);          
+        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), (double*)&mem_shapez[0]);      
         for (size_t i = 0; i < irz.Size(); i++)
           LegendrePolynomial (order, (2*irz[i](0)-1), simd_shapez.Col(i));
 
@@ -517,7 +517,7 @@ namespace ngfem
         STACK_ARRAY(double, mem2, nipy*nipz*(order+1));
         FlatMatrix<> temp2(nipy, nipz*(order+1), mem2);
         // STACK_ARRAY(double, mem3, nipx*nipy*nipz);
-        FlatMatrix<> temp3(nipx, nipz*nipy, &values(0)[0]);
+        FlatMatrix<> temp3(nipx, nipz*nipy, (double*)&values(0));
         
         FlatMatrix<> temp2reshape(nipz*nipy, order+1, &temp2(0,0));
         temp2reshape = Trans(temp3)*tshapex;
@@ -563,10 +563,10 @@ namespace ngfem
         
         STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
         FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
-        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_shapex[0][0]);
+        SliceMatrix<double> shapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_shapex[0]);
         STACK_ARRAY(SIMD<double>, mem_dshapex, (order+1)*irx.Size());
         FlatMatrix<SIMD<double>> simd_dshapex(order+1, irx.Size(), mem_dshapex);
-        SliceMatrix<double> dshapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), &mem_dshapex[0][0]);
+        SliceMatrix<double> dshapex(order+1, nipx, SIMD<double>::Size()*irx.Size(), (double*)&mem_dshapex[0]);
         
         for (size_t i = 0; i < irx.Size(); i++)
           {
@@ -581,10 +581,10 @@ namespace ngfem
 
         STACK_ARRAY(SIMD<double>, mem_shapey, (order+1)*iry.Size());
         FlatMatrix<SIMD<double>> simd_shapey(order+1, iry.Size(), mem_shapey);
-        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_shapey[0][0]);
+        SliceMatrix<double> shapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_shapey[0]);
         STACK_ARRAY(SIMD<double>, mem_dshapey, (order+1)*iry.Size());
         FlatMatrix<SIMD<double>> simd_dshapey(order+1, iry.Size(), mem_dshapey);
-        SliceMatrix<double> dshapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), &mem_dshapey[0][0]);
+        SliceMatrix<double> dshapey(order+1, nipy, SIMD<double>::Size()*iry.Size(), (double*)&mem_dshapey[0]);
         
         for (size_t i = 0; i < iry.Size(); i++)
           {
@@ -599,10 +599,10 @@ namespace ngfem
 
         STACK_ARRAY(SIMD<double>, mem_shapez, (order+1)*irz.Size());
         FlatMatrix<SIMD<double>> simd_shapez(order+1, irz.Size(), mem_shapez);
-        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_shapez[0][0]);
+        SliceMatrix<double> shapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), (double*)&mem_shapez[0]);
         STACK_ARRAY(SIMD<double>, mem_dshapez, (order+1)*irz.Size());
         FlatMatrix<SIMD<double>> simd_dshapez(order+1, irz.Size(), mem_dshapez);
-        SliceMatrix<double> dshapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), &mem_dshapez[0][0]);
+        SliceMatrix<double> dshapez(order+1, nipz, SIMD<double>::Size()*irz.Size(), (double*)&mem_dshapez[0]);
         
         for (size_t i = 0; i < irz.Size(); i++)
           {
@@ -648,7 +648,7 @@ namespace ngfem
             STACK_ARRAY(double, mem2, nipy*nipz*(order+1));
             FlatMatrix<> temp2(nipy, nipz*(order+1), mem2);
             
-            FlatMatrix<> temp3(nipx, nipz*nipy, &values(j,0)[0]);
+            FlatMatrix<> temp3(nipx, nipz*nipy, (double*)&values(j,0));
             
             FlatMatrix<> temp2reshape(nipz*nipy, order+1, &temp2(0,0));
             temp2reshape = Trans(temp3)*tshapex;

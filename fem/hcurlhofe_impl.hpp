@@ -17,7 +17,7 @@ namespace ngfem
 
   // declaration of the shapes ...
 
-
+  
 
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES, typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> :: ComputeNDof()
@@ -140,7 +140,7 @@ namespace ngfem
     //Nedelec low order edge shape function 
     shape[0] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
 
-    int p = order_cell[0]; 
+    int p = order_edge[0]; //order_cell[0]; 
     //HO-Edge shapes (Gradient Fields)   
     if(p > 0 && usegrad_cell)
       { 
@@ -218,7 +218,8 @@ namespace ngfem
 	// gradients:	
 	if (usegrad_face[0] && pg >=0)
             
-	  DubinerBasis::EvalMult
+	  // DubinerBasis
+          TrigOrthoPolGrad::EvalMult
 	    (pg, lam[fav[0]], lam[fav[1]], 
 	     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
 	     SBLambda
@@ -439,7 +440,8 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i] && pg >= 2)
             
-	    DubinerBasis::EvalScaledMult
+	    // DubinerBasis
+            TrigOrthoPolGrad::EvalScaledMult
 	      (pg-2, lam[fav[0]], lam[fav[1]],
 	       1-lam[vop],
 	       lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
@@ -491,7 +493,7 @@ namespace ngfem
 	
     if (usegrad_cell && pg >= 3)
 
-      DubinerBasis3D::EvalMult
+      DubinerBasis3DOrthoBub::EvalMult
 	(pg-3, lam[0], lam[1], lam[2], lam[0]*lam[1]*lam[2]*lam[3], 
 	 SBLambda
 	 ([&](int nr, Tx val)
@@ -621,7 +623,7 @@ namespace ngfem
           // gradients 
           if (usegrad_face[i])
             {
-              DubinerBasis::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+              TrigOrthoPolGrad::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
                                        lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
                                        SBLambda ([&](int nr, Tx val)
                                                  {
@@ -1244,7 +1246,7 @@ namespace ngfem
 	  if(usegrad_face[i])
             {
               Tx bub = lam_face * bary[fav[0]]*bary[fav[1]]*bary[fav[2]];
-              DubinerBasis::
+              TrigOrthoPolGrad::
                 EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
                           SBLambda ([&](int nr, Tx val)
                                     {

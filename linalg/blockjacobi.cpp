@@ -361,6 +361,9 @@ namespace ngla
                       size_t(0));
 
     bigmem.SetSize(totmem);
+
+    cout << IM(5) << "avg entrysize:   " << blocktable->AsArray().Size()/blocktable->Size() << endl;
+    cout << IM(5) << "avg entrysize^2: " << totmem/blocktable->Size() << endl;    
     
     totmem = 0;
     for (auto i : Range (*blocktable))

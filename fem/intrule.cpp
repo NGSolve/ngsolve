@@ -509,6 +509,8 @@ namespace ngfem
             auto & mip = hmips[i];        
             Vec<3> tau = mip.GetJacobian() * tau_ref;
             mip.SetMeasure(L2Norm(tau));
+            tau /= L2Norm(tau);
+            mip.SetTV(tau);
           }
         return;
       }
@@ -3276,9 +3278,7 @@ namespace ngfem
   {
     nip = ir.GetNIP();
     this->size = (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size();
-    
-    this -> mem_to_delete = (SIMD<IntegrationPoint>*)
-      _mm_malloc(this->size*sizeof(SIMD<IntegrationPoint>), SIMD<double>::Size()*sizeof(double));
+    this -> mem_to_delete = new SIMD<IntegrationPoint>[this->size];
     this->data = this->mem_to_delete;
     
     dimension = ir.Dim();
@@ -4075,7 +4075,7 @@ namespace ngfem
 }
 
 
-namespace ngstd
+namespace ngcore
 {
 
   FlatVector<SIMD<double>>
@@ -4128,6 +4128,9 @@ namespace ngstd
   template class SIMD<ngfem::MappedIntegrationPoint<2,2>>;
   template class SIMD<ngfem::MappedIntegrationPoint<3,3>>;
 
+  template class SIMD<ngfem::MappedIntegrationPoint<1,2>>;
+  template class SIMD<ngfem::MappedIntegrationPoint<1,3>>;
+  template class SIMD<ngfem::MappedIntegrationPoint<2,3>>;
 
   
 }

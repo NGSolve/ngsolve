@@ -528,7 +528,7 @@ namespace ngfem
 	    {
               if (DIMS == 1)
                 {
-                  det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+                  det = sqrt ( ngstd::sqr (dxdxi(0,0)) + ngstd::sqr (dxdxi(1,0)));
                   
                   normalvec(0) = -dxdxi(1,0) / det;
                   normalvec(1) = dxdxi(0,0) / det;
@@ -696,7 +696,7 @@ namespace ngfem
     void SetDim (int dim) { dimension = dim; }
   };
 
-  DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);
 
   /*
     DG Integration rule:
@@ -716,7 +716,7 @@ namespace ngfem
     double BoundaryVolumeFactor () const { return boundary_volume_factor; }
   };
   
-  DLL_HEADER ostream & operator<< (ostream & ost, const DGIntegrationRule & ir);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const DGIntegrationRule & ir);
 
   template <int D>
   class IntegrationRuleTP : public IntegrationRule
@@ -994,6 +994,8 @@ namespace ngfem
 
     ELEMENT_TYPE FacetType (int fnr) const
     {
+      if (vb == VOL)
+        return eltype;
       if (vb == BND)
         return ElementTopology::GetFacetType(eltype, fnr);
       else
@@ -1022,6 +1024,12 @@ namespace ngfem
     
     void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
     {
+      if (vb == VOL)
+        {
+          ipvol = ipfac;
+          return;
+        }
+      
       switch (FacetType(fnr))
 	{
 	case ET_POINT:
@@ -1116,6 +1124,8 @@ namespace ngfem
 
     IntegrationRule & operator() (int fnr, const IntegrationRule & irfacet, LocalHeap & lh)
     {
+      if (vb == VOL) return const_cast<IntegrationRule&> (irfacet);
+      
       IntegrationRule & irvol = *new (lh) IntegrationRule (irfacet.GetNIP(), lh);
 
       // switch (ElementTopology::GetFacetType(eltype, fnr))
@@ -1596,14 +1606,14 @@ namespace ngfem
   using SpecificIntegrationPoint = MappedIntegrationPoint<DIMS,DIMR,SCAL>;
 }
 
-namespace ngstd
+namespace ngcore
 {
   using ngbla::Vec;
   using ngbla::Mat;
   using ngbla::FlatVector;
   
   template<>
-  class SIMD<ngfem::IntegrationPoint>
+  class alignas(sizeof(SIMD<double>)) SIMD<ngfem::IntegrationPoint>
   {
     SIMD<double> x[3], weight;
     int facetnr = -1;
@@ -1647,20 +1657,20 @@ namespace ngstd
     INLINE ngfem::VorB VB() const { return vb; } 
 
     template <int DIM> 
-    INLINE operator Vec<DIM, AutoDiff<DIM,SIMD<double>>> () const
+    INLINE operator Vec<DIM, ngstd::AutoDiff<DIM,SIMD<double>>> () const
     {
-      Vec<DIM, AutoDiff<DIM,SIMD<double>> > adp;
+      Vec<DIM, ngstd::AutoDiff<DIM,SIMD<double>> > adp;
       for (int i = 0; i < DIM; i++)
-        adp[i] = AutoDiff<DIM,SIMD<double>> (x[i], i);
+        adp[i] = ngstd::AutoDiff<DIM,SIMD<double>> (x[i], i);
       return adp;
     }
 
     template <int D>
     INLINE ngfem::TIP<D,SIMD<double>> TIp() const;
-    INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(facetnr, vb); }
-    INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0], facetnr, vb); }
-    INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1], facetnr, vb); }
-    INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2], facetnr, vb); } 
+    INLINE operator ngfem::TIP<0,ngcore::SIMD<double>> () const { return ngfem::TIP<0,ngcore::SIMD<double>>(facetnr, vb); }
+    INLINE operator ngfem::TIP<1,ngcore::SIMD<double>> () const { return ngfem::TIP<1,ngcore::SIMD<double>>(x[0], facetnr, vb); }
+    INLINE operator ngfem::TIP<2,ngcore::SIMD<double>> () const { return ngfem::TIP<2,ngcore::SIMD<double>>(x[0], x[1], facetnr, vb); }
+    INLINE operator ngfem::TIP<3,ngcore::SIMD<double>> () const { return ngfem::TIP<3,ngcore::SIMD<double>>(x[0], x[1], x[2], facetnr, vb); }
 
     /*
     template <int DIM> 
@@ -1687,7 +1697,7 @@ namespace ngstd
   template <int D> INLINE ngfem::TIP<D,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp() const
   {
     // return ngfem::TIP<D,ngstd::SIMD<double>> (*this);
-    ngfem::TIP<D,ngstd::SIMD<double>> tip = *this;
+    ngfem::TIP<D,ngcore::SIMD<double>> tip = *this;
     return tip;
   }
   
@@ -1813,7 +1823,7 @@ namespace ngstd
 	    {
               if (DIMS == 1)
                 {
-                  det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+                  det = sqrt ( ngstd::sqr (dxdxi(0,0)) + ngstd::sqr (dxdxi(1,0)));
                   
                   normalvec(0) = -dxdxi(1,0) / det;
                   normalvec(1) = dxdxi(0,0) / det;
@@ -1861,9 +1871,9 @@ namespace ngstd
     }
 
     
-    INLINE operator Vec<DIMS, AutoDiff<DIMR,SIMD<double>>> () const
+    INLINE operator Vec<DIMS, ngstd::AutoDiff<DIMR,SIMD<double>>> () const
     {
-      Vec<DIMS, AutoDiff<DIMR, SIMD<double>> > adp;
+      Vec<DIMS, ngstd::AutoDiff<DIMR, SIMD<double>> > adp;
 
       Mat<DIMS,DIMR,SIMD<double>> ijac = GetJacobianInverse();
       for (int i = 0; i < DIMS; i++)
@@ -1883,10 +1893,10 @@ namespace ngstd
    
     void Print (ostream & ost) const
     {
-      ost << "ip = " << this->ip << endl;
-      ost << "Point = " << this->point << endl;
-      ost << "Jacobian = " << dxdxi << endl;
-      ost << "normal = " << this->GetNV() << endl;
+      ost << "ip = " << this->ip << std::endl;
+      ost << "Point = " << this->point << std::endl;
+      ost << "Jacobian = " << dxdxi << std::endl;
+      ost << "normal = " << this->GetNV() << std::endl;
     }
   };
 }
@@ -2283,7 +2293,7 @@ namespace ngfem
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ()
     {
-      if (mem_to_delete) _mm_free(mem_to_delete);
+      delete [] mem_to_delete;
       mem_to_delete = nullptr;
     }
 

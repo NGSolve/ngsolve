@@ -10,6 +10,97 @@
 namespace ngfem
 {
 
+  //Assuming i,j,k \in [0,1,2]
+  template <typename T=double>
+  constexpr int LeviCivitaSymbol(int i, int j, int k)
+  {
+    if (i==j || i==k || j==k)
+      return T(0);
+    else if ( (i==0 && j==1) || (i==1 && j==2) || (i==2 && j==0) )
+      return T(1);
+    else
+      return -T(1);
+  }
+  
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Mat<3,3,T> B)
+  {
+    /*Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              for (int m=0; m<3; m++)
+                for (int n=0; n<3; n++)
+                  {
+                    result(i,j) += LeviCivitaSymbol<T>(i,k,l)*LeviCivitaSymbol<T>(j,m,n)*A(k,m)*B(l,n);
+                  }
+                  }
+
+
+    // A x B = 0.5*(cof(A+B) - cof(A-B))
+    //ikl  +123 -132 +231 -213 +312 -321 others=0
+    //jmn  +123 -132 +231 -213 +312 -321 others=0
+    //result(0,0) = 
+    return result;*/
+    // return 0.5 * ( Cof(Mat<3,3,T>(A+B)) - Cof(Mat<3,3,T>(A-B)) );
+    // return 0.5 * ( Cof(A+B) - Cof(A-B) );
+
+    Mat<3,3,T> prod;
+    prod.Col(0) = Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(2))) - Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(1)));
+    prod.Col(1) = Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(0))) - Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(2)));
+    prod.Col(2) = Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(1))) - Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(0)));
+    return prod;
+  }
+  
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Vec<3,T> v, Mat<3,3,T> A)
+  {
+    /*Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              {
+                result(i,j) += LeviCivitaSymbol<T>(i,k,l)*v(k)*A(l,j);
+              }
+        }
+        return result;*/
+
+    Mat<3,3,T> result;
+    for (int j = 0; j < 3; j++)
+      result.Col(j) = Cross(v, Vec<3,T>(A.Col(j)));
+    return result;
+  }
+
+  template <typename T>
+  Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Vec<3,T> v)
+  {
+    /*Mat<3,3,T> result;
+    for (int i=0; i<3; i++)
+      for (int j=0; j<3; j++)
+        {
+          result(i,j) = T(0);
+          for (int k=0; k<3; k++)
+            for (int l=0; l<3; l++)
+              {
+                result(i,j) += LeviCivitaSymbol<T>(j,k,l)*A(i,k)*v(l);
+              }
+        }
+        return result;*/
+
+    Mat<3,3,T> result;
+    for (int j = 0; j < 3; j++)
+      result.Row(j) = Cross(Vec<3,T>(A.Row(j)),v);
+    return result;
+  }
+  
+  
+
   template <int DIM>
   class HCurlCurlFiniteElement : public FiniteElement
   {
@@ -22,11 +113,34 @@ namespace ngfem
 			    SliceMatrix<> shape) const = 0;
     
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-      BareSliceMatrix<double> shape) const = 0;
+                                  BareSliceMatrix<double> shape) const = 0;
+
+    virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                      BareSliceVector<double> coefs,
+                                      BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                     BareSliceMatrix<double> shape) const = 0;
+
+    virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                         BareSliceVector<double> coefs,
+                                         BareSliceVector<double> inc) const = 0;
+
+    virtual void CalcMappedIncShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                                     BareSliceMatrix<SIMD<double>> shape) const = 0;
+
+    virtual void EvaluateIncShape (const SIMD_BaseMappedIntegrationRule & ir,
+                                   BareSliceVector<> coefs,
+                                   BareSliceMatrix<SIMD<double>> values) const = 0;
+
+    virtual void AddTransIncShape (const SIMD_BaseMappedIntegrationRule & ir,
+                                   BareSliceMatrix<SIMD<double>> values,
+                                   BareSliceVector<> coefs) const = 0;
+
+    
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
@@ -42,6 +156,8 @@ namespace ngfem
     virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const = 0;
     virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const = 0;
     virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const = 0;
+
+
 
 
 
@@ -62,6 +178,7 @@ namespace ngfem
     {
     case 1:
       mat(0) = vec(0);
+      break;
     case 2:
       mat(0) = vec(0);
       mat(3) = vec(1);
@@ -78,6 +195,7 @@ namespace ngfem
     }
   }
 
+  
   template <int D,typename T ,typename MAT>
   Vec<D*D-D,T> SymMatToVec(MAT & mat)
   {
@@ -102,13 +220,25 @@ namespace ngfem
   }
 
   template <typename T>
+  Mat<3,3,T> SymDyadProd(Vec<3,T> a, Vec<3,T> b)
+  {
+    return Matrix<T>( {{2*a(0)*b(0), a(0)*b(1)+a(1)*b(0), a(0)*b(2)+a(2)*b(0)}, {a(1)*b(0) + a(0)*b(1), 2*a(1)*b(1), a(1)*b(2) + a(2)*b(1)}, {a(2)*b(0) + a(0)*b(2), a(2)*b(1) + a(1)*b(2), 2*a(2)*b(2)}} );
+  }
+  template <typename T>
+  Mat<2,2,T> SymDyadProd(Vec<2,T> a, Vec<2,T> b)
+  {
+    return Matrix<T>( {{2*a(0)*b(0), a(0)*b(1)+a(1)*b(0)}, {a(1)*b(0) + a(0)*b(1), 2*a(1)*b(1)}} );
+  }
+
+
+  template <typename T>
   Vec<6, AutoDiff<3,T>> SymDyadProd(AutoDiff<3,T> a, AutoDiff<3,T> b)
   {
     return Vec<6, AutoDiff<3,T>>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),2*a.DValue(2)*b.DValue(2), a.DValue(1)*b.DValue(2)+a.DValue(2)*b.DValue(1), a.DValue(0)*b.DValue(2)+a.DValue(2)*b.DValue(0),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
   }
 
   template <typename T>
-  Vec<6, AutoDiff<3,T>> SymDyadProd(Vec<3,T> a, Vec<3,T> b)
+  Vec<6, AutoDiff<3,T>> SymDyadProdAD(Vec<3,T> a, Vec<3,T> b)
   {
     return Vec<6, AutoDiff<3,T>>(2*a(0)*b(0),2*a(1)*b(1),2*a(2)*b(2), a(1)*b(2)+a(2)*b(1), a(0)*b(2)+a(2)*b(0),a(1)*b(0)+a(0)*b(1));
   }
@@ -120,7 +250,7 @@ namespace ngfem
   }
 
   template <typename T>
-  Vec<3,AutoDiff<2,T>> SymDyadProd(Vec<2,T> a, Vec<2,T> b)
+  Vec<3,AutoDiff<2,T>> SymDyadProdAD(Vec<2,T> a, Vec<2,T> b)
   {
     return Vec<3,AutoDiff<2,T>>(2*a(0)*b(0),2*a(1)*b(1),a(1)*b(0)+a(0)*b(1));
   }
@@ -262,7 +392,304 @@ namespace ngfem
   
   template <int D, typename T>
   auto vEpsGradu (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_vEpsGradu<D,T>(au, av); }
+
+  
+  template <int D, typename T>
+  class ReggeAD
+  {
+    Mat<D,D,T> value;
+
+  public:
+    ReggeAD ()
+    {
+      value = T(0);
+    }
     
+    ReggeAD (AutoDiff<D,T> a, AutoDiff<D,T> b)
+    {
+      Vec<D,T> Da, Db;
+      for(int i=0; i<D; i++)
+        {
+          Da(i) = a.DValue(i);
+          Db(i) = b.DValue(i);
+        }      
+      value = SymDyadProd(Da,Db);
+    }
+
+    auto Value() const { return value; }
+
+    Mat<D,D,T> & Value() { return value; }
+  };
+
+  template <int D, typename T>
+  auto MakeReggeAD(AutoDiff<D,T> a, AutoDiff<D,T> b)
+  {
+    return ReggeAD<D,T>(a, b);
+  }
+
+
+
+  template <int D, typename T>
+  ReggeAD<D,T> operator* (AutoDiff<D,T> s, ReggeAD<D,T> A)
+  {
+    ReggeAD<D,T> result;
+    result.Value() = s.Value()*A.Value();
+    return result;
+  }
+
+  
+  template <int D, typename T>
+  ReggeAD<D,T> operator* (T s, ReggeAD<D,T> A)
+  {
+    ReggeAD<D,T> result = A;
+    result.Value() *= s;
+    return result;
+  }
+
+  template <int D, typename T>
+  ReggeAD<D,T> operator+ (ReggeAD<D,T> A, ReggeAD<D,T> B)
+  {
+    ReggeAD<D,T> result = A;
+    result.Value() += B.Value();
+    return result;
+  }
+
+  template <int D, typename T>
+  ReggeAD<D,T> operator- (ReggeAD<D,T> A, ReggeAD<D,T> B) 
+  {
+    ReggeAD<D,T> result = A;
+    result.Value() -= B.Value();
+    return result;
+  }
+  
+  template <int D, typename T> class ReggeADD;
+
+  template <typename T>
+  class ReggeADD<3,T>
+  {
+    Mat<3,3,T> value;
+    Mat<3,3,T> curl;
+    Mat<3,3,T> inc;
+
+  public:
+    ReggeADD ()
+    {
+      value = T(0);
+      curl = T(0);
+      inc = T(0);
+    }
+    
+    ReggeADD (AutoDiffDiff<3,T> a, AutoDiffDiff<3,T> b)
+    {
+      auto Da = Vec<3,T>(a.DValue(0),a.DValue(1),a.DValue(2));
+      auto Db = Vec<3,T>(b.DValue(0),b.DValue(1),b.DValue(2));
+      value = SymDyadProd(Da,Db);
+      // curl(s*v) = nabla s x v + s curl(v) in 3D
+      //                     | nabla a_1 x b + a_1 curl(b) |
+      // curl(a \otimes b) = | nabla a_2 x b + a_2 curl(b) |
+      //                     | nabla a_3 x b + a_3 curl(b) |
+
+      // curl( nabla s ) = 0
+      //                                      | nabla d_x a x nabla b |
+      // ->  curl( nabla a \otimes nabla b) = | nabla d_y a x nabla b |
+      //                                      | nabla d_z a x nabla b |
+
+      Vec<3,T> Ddai [3] = { Vec<3,T>(a.DDValue(0,0), a.DDValue(0,1), a.DDValue(0,2)), Vec<3,T>(a.DDValue(1,0), a.DDValue(1,1), a.DDValue(1,2)), Vec<3,T>(a.DDValue(2,0), a.DDValue(2,1), a.DDValue(2,2)) };
+      Vec<3,T> Ddbi [3] = { Vec<3,T>(b.DDValue(0,0), b.DDValue(0,1), b.DDValue(0,2)), Vec<3,T>(b.DDValue(1,0), b.DDValue(1,1), b.DDValue(1,2)), Vec<3,T>(b.DDValue(2,0), b.DDValue(2,1), b.DDValue(2,2)) };
+
+      for (int i = 0; i < 3; i++)
+        curl.Row(i) = Cross(Ddai[i], Db) + Cross(Ddbi[i], Da);
+
+
+      //                                   | nabla d_x a x nabla b |
+      //  curl( nabla a \otimes nabla b) = | nabla d_y a x nabla b |
+      //                                   | nabla d_z a x nabla b |
+
+
+      // curl T curl ( nabla a \otimes nabla b):
+      //11: d_yd_z(a) d_yd_z(b) - d^2_z(a) d^2_y(b)   - d_y^2(a) d^2_z(b)   + d_yd_z(a)d_yd_z(b)
+      //12: d_xd_y(a) d_z^2(b)  - d_xd_z(a) d_yd_z(b) - d_yd_z(a) d_xd_z(b) + d_z^2(a)d_xd_y(b)
+      //13: d^2_y(a) d_xd_z(b)  - d_yd_z(a) d_xd_y(b) - d_xd_y(a) d_yd_z(b) + d_xd_z(a)d^2_y(b)
+      //22: d_xd_z(a) d_xd_z(b) - d^2_x(a) d^2_z(b)   - d^2_z(a) d^2_x(b)   + d_xd_z(a)d_xd_z(b)
+      //23: d_yd_z(a) d^2_x(b)  - d_xd_y(a) d_xd_z(b) - d_xd_z(a) d_xd_y(b) + d^2_x(a)d_yd_z(b)
+      //33: d^2_x(a) d^2_y(b)   - d_xd_y(a) d_xd_y(b) - d_xd_y(a) d_xd_y(b) + d^2_y(a)d^2_x(b)
+
+      //  = - hesse(a) x hesse(b) = -eps_imn eps_jlk d_md_l(a) d_nd_k b ??
+
+      /*inc(0,0) = a.DDValue(1,2)*b.DDValue(1,2) - a.DDValue(2,2)*b.DDValue(1,1) - a.DDValue(1,1)*b.DDValue(2,2) + a.DDValue(1,2)*b.DDValue(1,2);
+      inc(0,1) = a.DDValue(0,1)*b.DDValue(2,2) - a.DDValue(0,2)*b.DDValue(1,2) - a.DDValue(1,2)*b.DDValue(0,2) + a.DDValue(2,2)*b.DDValue(0,1);
+      inc(0,2) = a.DDValue(1,1)*b.DDValue(0,2) - a.DDValue(1,2)*b.DDValue(0,1) - a.DDValue(0,1)*b.DDValue(1,2) + a.DDValue(0,2)*b.DDValue(1,1);
+      inc(1,1) = a.DDValue(0,2)*b.DDValue(0,2) - a.DDValue(0,0)*b.DDValue(2,2) - a.DDValue(2,2)*b.DDValue(0,0) + a.DDValue(0,2)*b.DDValue(0,2);
+      inc(1,2) = a.DDValue(1,2)*b.DDValue(0,0) - a.DDValue(0,1)*b.DDValue(0,2) - a.DDValue(0,2)*b.DDValue(0,1) + a.DDValue(0,0)*b.DDValue(1,2);
+      inc(2,2) = a.DDValue(0,0)*b.DDValue(1,1) - a.DDValue(0,1)*b.DDValue(0,1) - a.DDValue(0,1)*b.DDValue(0,1) + a.DDValue(1,1)*b.DDValue(0,0);
+      // curl T curl ( nabla b \otimes nabla a):
+      inc(0,0) += b.DDValue(1,2)*a.DDValue(1,2) - b.DDValue(2,2)*a.DDValue(1,1) - b.DDValue(1,1)*a.DDValue(2,2) + b.DDValue(1,2)*a.DDValue(1,2);
+      inc(0,1) += b.DDValue(0,1)*a.DDValue(2,2) - b.DDValue(0,2)*a.DDValue(1,2) - b.DDValue(1,2)*a.DDValue(0,2) + b.DDValue(2,2)*a.DDValue(0,1);
+      inc(0,2) += b.DDValue(1,1)*a.DDValue(0,2) - b.DDValue(1,2)*a.DDValue(0,1) - b.DDValue(0,1)*a.DDValue(1,2) + b.DDValue(0,2)*a.DDValue(1,1);
+      inc(1,1) += b.DDValue(0,2)*a.DDValue(0,2) - b.DDValue(0,0)*a.DDValue(2,2) - b.DDValue(2,2)*a.DDValue(0,0) + b.DDValue(0,2)*a.DDValue(0,2);
+      inc(1,2) += b.DDValue(1,2)*a.DDValue(0,0) - b.DDValue(0,1)*a.DDValue(0,2) - b.DDValue(0,2)*a.DDValue(0,1) + b.DDValue(0,0)*a.DDValue(1,2);
+      inc(2,2) += b.DDValue(0,0)*a.DDValue(1,1) - b.DDValue(0,1)*a.DDValue(0,1) - b.DDValue(0,1)*a.DDValue(0,1) + b.DDValue(1,1)*a.DDValue(0,0);
+      // symmetry
+      inc(1,0) = inc(0,1);
+      inc(2,0) = inc(0,2);
+      inc(2,1) = inc(1,2);*/
+
+      Mat<3,3,T> hesse1, hesse2;
+      a.StoreHessian(hesse1.Data());
+      b.StoreHessian(hesse2.Data());
+      inc = -2*TensorCrossProduct(hesse1,hesse2);
+    }
+
+    auto Value() const { return value; }
+    auto Curl() const { return curl; }
+    auto Inc() const { return inc; }
+
+    Mat<3,3,T> & Value() { return value; }
+    Mat<3,3,T> & Curl() { return curl; }
+    Mat<3,3,T> & Inc() { return inc; }
+  };
+
+
+  template <typename T>
+  class ReggeADD<2,T>
+  {
+    Mat<2,2,T> value;
+    Vec<2,T> curl;
+    T inc;
+
+  public:
+    ReggeADD ()
+    {
+      value = T(0);
+      curl = T(0);
+      inc = T(0);
+    }
+    
+    ReggeADD (AutoDiffDiff<2,T> a, AutoDiffDiff<2,T> b)
+    {
+      auto Da = Vec<2,T>(a.DValue(0),a.DValue(1));
+      auto Db = Vec<2,T>(b.DValue(0),b.DValue(1));
+      value = SymDyadProd(Da,Db);
+      // curl(s*v) = v* nabla s^perp + s curl(v) in 2D
+      //                     | b * nabla a_1^perp + a_1 curl(b) |
+      // curl(a \otimes b) = | b * nabla a_2^perp + a_2 curl(b) |
+
+      // curl( nabla s ) = 0
+      //                                      | Db * nabla d_x a^perp |
+      // ->  curl( nabla a \otimes nabla b) = | Db * nabla d_y a^perp |
+
+      Vec<2,T> Ddai_p [2] = { Vec<2,T>(-a.DDValue(0,1), a.DDValue(0,0)), Vec<2,T>(-a.DDValue(1,1), a.DDValue(1,0)) };
+      Vec<2,T> Ddbi_p [2] = { Vec<2,T>(-b.DDValue(0,1), b.DDValue(0,0)), Vec<2,T>(-b.DDValue(1,1), b.DDValue(1,0)) };
+
+      for (int i=0; i<2; i++)
+        curl(i) = InnerProduct(Db,Ddai_p[i]) + InnerProduct(Da,Ddbi_p[i]);
+
+      //                                  | Db * nabla d_x a^perp |
+      // curl( nabla a \otimes nabla b) = | Db * nabla d_y a^perp |
+
+
+      // curl T curl ( nabla a \otimes nabla b) = d_x(Db * nabla d_y a^perp) - d_y(Db * nabla d_x a^perp)
+      //       =  (d_x Db) * nabla(d_y a)^perp - (d_y Db) * nabla(d_x a)^perp
+
+      inc = InnerProduct(Vec<2,T>(b.DDValue(0,0), b.DDValue(0,1)),Ddai_p[1]) - InnerProduct(Vec<2,T>(b.DDValue(1,0), b.DDValue(1,1)),Ddai_p[0]) + InnerProduct(Vec<2,T>(a.DDValue(0,0), a.DDValue(0,1)),Ddbi_p[1]) - InnerProduct(Vec<2,T>(a.DDValue(1,0), a.DDValue(1,1)),Ddbi_p[0]);
+    }
+
+    auto Value() const { return value; }
+    auto Curl() const { return curl; }
+    auto Inc() const { return inc; }
+
+    Mat<2,2,T> & Value() { return value; }
+    Vec<2,T> & Curl() { return curl; }
+    T & Inc() { return inc; }
+  };
+  
+  template <int D, typename T>
+  auto MakeReggeAD(AutoDiffDiff<D,T> a, AutoDiffDiff<D,T> b)
+  {
+    return ReggeADD<D,T>(a, b);
+  }
+
+  template <typename T>
+  ReggeADD<3,T> operator* (AutoDiffDiff<3,T> s, ReggeADD<3,T> A)
+  {
+    ReggeADD<3,T> result;
+    result.Value() = s.Value()*A.Value();
+
+    // s scalar, v vector
+    // curl(s*v) = nabla s x v + s curl(v) in 3D
+    Vec<3,T> gradient;
+    s.StoreGradient(gradient.Data());
+
+    result.Curl() = s.Value()*A.Curl();
+    for (int i = 0; i < 3; i++)
+      result.Curl().Row(i) += Cross(gradient, Vec<3,T>(A.Value().Row(i)));
+    
+    // inc(s A) = s inc(A) + 2sym(grad(s) x curl A) + hesse(s) x A, x...Tensor-Cross-Product
+    Mat<3,3,T> hesse;
+    s.StoreHessian(hesse.Data());
+    
+    result.Inc() = s.Value()*A.Inc() + TensorCrossProduct(gradient,A.Curl()) + Trans(TensorCrossProduct(gradient,A.Curl())) +  TensorCrossProduct(hesse,A.Value());
+
+    return result;
+  }
+
+  
+  template <int D, typename T>
+  ReggeADD<D,T> operator* (T s, ReggeADD<D,T> A)
+  {
+    ReggeADD<D,T> result = A;
+    result.Value() *= s;
+    result.Curl()  *= s;
+    result.Inc()   *= s;
+    return result;
+  }
+
+  template <int D, typename T>
+  ReggeADD<D,T> operator+ (ReggeADD<D,T> A, ReggeADD<D,T> B)
+  {
+    ReggeADD<D,T> result = A;
+    result.Value() += B.Value();
+    result.Curl()  += B.Curl();
+    result.Inc()   += B.Inc();
+    return result;
+  }
+
+  template <int D, typename T>
+  ReggeADD<D,T> operator- (ReggeADD<D,T> A, ReggeADD<D,T> B) 
+  {
+    ReggeADD<D,T> result = A;
+    result.Value() -= B.Value();
+    result.Curl()  -= B.Curl();
+    result.Inc()   -= B.Inc();
+    return result;
+  }
+
+
+  template <typename T>
+  ReggeADD<2,T> operator* (AutoDiffDiff<2,T> s, ReggeADD<2,T> A)
+  {
+    ReggeADD<2,T> result;
+    result.Value() = s.Value()*A.Value();
+
+    // s scalar, v vector
+    // curl(s*v) = v* nabla s^perp + s curl(v) in 2D
+    result.Curl() = A.Value()*Vec<2,T>(-s.DValue(1),s.DValue(0)) + s.Value()*A.Curl();
+    
+    // inc(sA) = A:( dydy s & -dxdy s \\ -dxdy s & dxdx s) + 2*nabla s^\perp*curl(A) + s*inc(A)
+    Mat<2,2,T> hesse;
+    hesse(0,0) = s.DDValue(1,1);
+    hesse(1,0) = -s.DDValue(1,0);
+    hesse(0,1) = -s.DDValue(0,1);
+    hesse(1,1) = s.DDValue(0,0);
+
+    result.Inc() = s.Value()*A.Inc() + InnerProduct(hesse,A.Value()) + 2*InnerProduct(Vec<2,T>(-s.DValue(1),s.DValue(0)),A.Curl());  
+
+    return result;
+  }
+
+
+
+  
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
 
   
@@ -274,6 +701,7 @@ namespace ngfem
     static constexpr int DIM = ET_trait<ET>::DIM;
     enum { DIM_STRESS = (DIM*(DIM+1))/2 };
     enum { DIM_DMAT = 7*DIM-12 };
+    enum { DIM_DDMAT = 8*DIM-15 };
     
     using VertexOrientedFE<ET>::vnums;
     using HCurlCurlFiniteElement<ET_trait<ET>::DIM>::ndof;
@@ -319,9 +747,8 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                            BareSliceMatrix<double> shapes) const override
+                                  BareSliceMatrix<double> shapes) const override
     {
-
       /*
         Here I would need GetTIP for AutoDiffDiffRec
         Switch<4-DIM>
@@ -336,14 +763,175 @@ namespace ngfem
          });*/
 
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([shapes](int nr,auto val)
+      if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     {
+                       Cast() -> T_CalcShape2 (GetTIP(mip),SBLambda([shapes](int nr,auto val)
+                                                                    {
+                                                                      shapes.Row(nr).AddSize(DIM*DIM) = val.Value().AsVector();
+                                                                    }));
+                     }
+      else
+        {
+      Cast() -> T_CalcShape (GetTIP(mip),SBLambda([shapes](int nr,auto val)
                            {
                              VecToSymMat<DIM> (val.Shape(), shapes.Row(nr));
                            }));
-      
+        }
     }
 
+
+    
+    virtual void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip,
+                                      BareSliceVector<double> coefs,
+                                      BareSliceMatrix<double> shape) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      Vec<DIM*(DIM+1)/2> sum = 0.0;
+      Cast() -> T_CalcShape (GetTIP(mip),SBLambda([coefs, &sum](int nr,auto val)
+                           {
+                             sum += coefs(nr) * val.Shape();
+                           }));
+      VecToSymMat<DIM> (sum, shape);
+    }
+
+    virtual void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                  BareSliceMatrix<double> shapes) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+      if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shapes](int nr,auto val)
+                                                                       {
+                                                                         if constexpr (DIM==3)
+                                                                                        shapes.Row(nr).AddSize(DIM_DDMAT) = val.Inc().AsVector();
+                                                                         else
+                                                                           shapes.Row(nr).AddSize(DIM_DDMAT) = val.Inc();
+                                                                       }));
+      
+    }
+                            
+    virtual void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip,
+                                         BareSliceVector<double> coefs,
+                                         BareSliceVector<double> inc) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
+
+      Mat<DIM*(DIM-1)/2,DIM*(DIM-1)/2> sum = 0.0;
+      if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([coefs, &sum](int nr,auto val)
+                                                                       {
+                                                                         sum += coefs(nr) * Mat<DIM*(DIM-1)/2,DIM*(DIM-1)/2>(val.Inc());
+                                                                       }));
+      inc.Range(0,DIM_DDMAT) = sum.AsVector();
+    }
+
+    virtual void CalcMappedIncShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                                     BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     {
+                       Cast() -> T_CalcShape2 (GetTIPHesse(mir[i]),SBLambda([shapes,i](int j,auto val)
+                                                                         {
+                                                                           if constexpr (DIM==3)
+                                                                                          shapes.Rows(j*sqr(DIM), (j+1)*sqr(DIM)).Col(i).Range(0,DIM_DDMAT) = val.Inc().AsVector();
+                                                                           else
+                                                                             shapes.Rows(j,j+1).Col(i).Range(0,DIM_DDMAT) = val.Inc();
+                                                                         }));
+                     }
+        }
+    }
+
+    void EvaluateIncShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                           BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const override
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      for (size_t i = 0; i < bmir.Size(); i++)
+        {
+          double *pcoefs = &coefs(0);
+          const size_t dist = coefs.Dist();  
+          if constexpr (ET == ET_TET && DIM == 3)
+                     {
+                       Mat<DIM,DIM,SIMD<double>> summat(0);
+                       Cast() -> T_CalcShape2 (GetTIPHesse(mir[i]),
+                                               SBLambda ([&summat,&pcoefs,dist] (size_t j, auto val)
+                                                         {
+                                                           summat += (*pcoefs)*val.Inc();
+                                                           pcoefs += dist;
+                                                         }));
+                       for (size_t k = 0; k < sqr(DIM); k++)
+                         values(k,i) = summat(k);
+                     }
+          if constexpr (ET == ET_TRIG && DIM == 2)
+                     {
+                       SIMD<double> summat(0);
+                       Cast() -> T_CalcShape2 (GetTIPHesse(mir[i]),
+                                               SBLambda ([&summat,&pcoefs,dist] (size_t j, auto val)
+                                                         {
+                                                           summat += (*pcoefs)*val.Inc();
+                                                           pcoefs += dist;
+                                                         }));
+                       values(0,i) = summat;
+                     }
+        }
+          
+      /*if constexpr (ET == ET_TET || ET == ET_TRIG)
+          {
+            Switch<1>
+              (bmir.DimSpace()-DIM,[values,&bmir,coefs,this](auto CODIM)
+              {
+                constexpr auto DIMSPACE = DIM+CODIM.value;
+                auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+                for (size_t i = 0; i < bmir.Size(); i++)
+                  {
+                    double *pcoefs = &coefs(0);
+                    const size_t dist = coefs.Dist();            
+                  
+
+                    if constexpr (DIMSPACE==3)
+                       {
+                         Mat<DIMSPACE,DIMSPACE,SIMD<double>> summat(0);
+                         Cast() -> T_CalcShape2 (GetTIPHesse(mir[i]),
+                                                 SBLambda ([&summat,&pcoefs,dist] (size_t j, auto val)
+                                                           {
+                                                             summat += (*pcoefs)*val.Inc();
+                                                             pcoefs += dist;
+                                                           }));
+                         for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                           values(k,i) = summat(k);
+                       }
+                    if constexpr (DIMSPACE==2)
+                      {
+                        SIMD<double> summat(0);
+                        Cast() -> T_CalcShape2 (GetTIPHesse(mir[i]),
+                                                SBLambda ([&summat,&pcoefs,dist] (size_t j, auto val)
+                                                          {
+                                                            summat += (*pcoefs)*val.Inc();
+                                                            pcoefs += dist;
+                                                          }));
+                        values(0,i) = summat;
+                        }
+                   
+                  }
+              });
+              }*/
+    }
+
+    void AddTransIncShape (const SIMD_BaseMappedIntegrationRule & ir,
+                                   BareSliceMatrix<SIMD<double>> values,
+                                   BareSliceVector<> coefs) const override
+    {
+      // auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (ir);
+      if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     {
+                       cout << "nothing here" << endl;
+                     }
+    }
+
+
+    
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override
     {
       shape = 0.0;
@@ -423,20 +1011,34 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                      BareSliceMatrix<double> shape) const override
     {
       auto mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &>(bmip);
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
 
-      if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
-      {
-        Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
+
+
+      if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     Cast() -> T_CalcShape2 (GetTIPHesse(mip),SBLambda([shape](int nr,auto val)
+                                                                       {
+                                                                         if constexpr (DIM==3)
+                                                                                        shape.Row(nr).AddSize(DIM_DMAT) = val.Curl().AsVector();
+                                                                         else
+                                                                           shape.Row(nr).AddSize(DIM_DMAT) = val.Curl();
+                                                                       }));
+      else
         {
-          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
-        }));
-      }
-      else // curved element
-      {
-        throw Exception("CalcMappedCurlShape not implemented for curved elements!");
-      }
+          Vec<DIM, AutoDiff<DIM>> adp = mip;
+          TIP<DIM, AutoDiffDiff<DIM>> addp(adp);
+          
+          if (!mip.GetTransformation().IsCurvedElement()) // non-curved element
+            {
+              Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
+                                                    {
+                                                      shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+                                                    }));
+            }
+          else // curved element
+            {
+              throw Exception("CalcMappedCurlShape not implemented for curved elements!");
+            }
+        }
     }
 
     template <int DIMSPACE>
@@ -445,9 +1047,18 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     {
       for (size_t i = 0; i < mir.Size(); i++)
         {
+          
+          if constexpr (ET == ET_TET || ET == ET_TRIG)
+                     {
+          this->Cast() -> T_CalcShape2 (GetTIP(mir[i]),
+                                       SBLambda ([i,shapes] (size_t j, auto val) 
+                                                 {
+                                                   shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.Value().AsVector();
+                                                 }));
+                     }
+          else
+            {
           auto jacI = mir[i].GetJacobianInverse();
-          
-          
           Vec<DIM_STRESS,SIMD<double>> hv;
           Mat<DIM,DIM,SIMD<double>> mat;
           SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
@@ -461,7 +1072,6 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
               trans.Col(k) = physmat.AsVector();
             }
           
-          
           Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
           TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
           
@@ -469,7 +1079,8 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                        SBLambda ([i,shapes,trans] (size_t j, auto val) 
                                                  {
                                                    shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = trans * val.Shape();
-                                                 }));
+                                                   }));
+            }
         }
     }
 
@@ -491,36 +1102,51 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                   BareSliceVector<> coefs,
                                   BareSliceMatrix<SIMD<double>> values) const override
     {
-      for (size_t i = 0; i < bmir.Size(); i++)
-        {
-          double *pcoefs = &coefs(0);
-          const size_t dist = coefs.Dist();
-          
-          Vec<DIM_STRESS,SIMD<double>> sum(0.0);
-          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
-          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-          
-          Cast() -> T_CalcShape (addp,
-                                 SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
-                                           {
-                                             sum += (*pcoefs)*val.Shape();
-                                             pcoefs += dist;
-                                           }));
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[values,&bmir, coefs,this](auto CODIM)
+       {
+         constexpr auto DIMSPACE = DIM+CODIM.value;
+         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+         for (size_t i = 0; i < bmir.Size(); i++)
+           {
+             double *pcoefs = &coefs(0);
+             const size_t dist = coefs.Dist();
 
-          Mat<DIM,DIM,SIMD<double>> summat;
-          VecToSymMat<DIM> (sum, summat);
-          
-          Switch<4-DIM>
-            (bmir.DimSpace()-DIM,[values,&bmir,i,summat](auto CODIM)
-             {
-               constexpr auto DIMSPACE = DIM+CODIM.value;
-               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-               auto jacI = mir[i].GetJacobianInverse();
-               Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * summat * jacI;
-               for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                 values(k,i) = physmat(k);
-             });
-        }
+             if constexpr (ET == ET_TET || ET == ET_TRIG)
+                              {
+                                Mat<DIMSPACE,DIMSPACE,SIMD<double>> summat(0);
+                                Cast() -> T_CalcShape2 (GetTIP(mir[i]),
+                                      SBLambda ([&summat,&pcoefs,dist] (size_t j, auto val)
+                                                {
+                                                  summat += (*pcoefs)*val.Value();
+                                                  pcoefs += dist;
+                                                }));
+                                for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                  values(k,i) = summat(k);
+                              }
+             else
+               {
+                 Vec<DIM_STRESS,SIMD<double>> sum(0.0);
+                 Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+                 TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+                 
+                 Cast() -> T_CalcShape (addp,
+                                        SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
+                                                  {
+                                                    sum += (*pcoefs)*val.Shape();
+                                                    pcoefs += dist;
+                                                  }));
+                 
+                 Mat<DIM,DIM,SIMD<double>> summat;
+                 VecToSymMat<DIM> (sum, summat);
+                 
+                 auto jacI = mir[i].GetJacobianInverse();
+                 Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = Trans(jacI) * summat * jacI;
+                 for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                   values(k,i) = physmat(k);
+               }
+           }
+        });
     }
 
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & bmir,
@@ -673,13 +1299,13 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       for (int i = 0; i < 3; i++)
         {
           INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
-          AutoDiff<2,T> ls = ddlami[e[0]], le = ddlami[e[1]];
+          AutoDiff<2,T> ls = ddlami[e[1]], le = ddlami[e[0]];
 
           Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(ls,le);
 
           LegendrePolynomial::EvalScaled(order_facet[i][0], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
-                              shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
+                              shape[ii++] = T_REGGE_Shape<2,T>(-val*symdyadic);
                             }));
         }
 
@@ -699,6 +1325,48 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
 					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic1);
 					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic2);
 					 shape[ii++] = T_REGGE_Shape<2,T>(2*val*symdyadic3);
+				       }));
+	}
+      
+    };
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape2 (TIP<2,Tx> ip, TFA & shape) const
+    {
+      Tx x = ip.x, y = ip.y;
+      Tx lami[3] ={ x, y, 1-x-y };
+      int ii = 0;
+
+      for (int i = 0; i < 3; i++)
+        {
+          INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+          Tx ls = lami[e[1]], le = lami[e[0]];
+
+          auto symdyadic = MakeReggeAD(ls, le);
+
+          LegendrePolynomial::EvalScaled(order_facet[i][0], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+                            {
+                              shape[ii++] = -val*symdyadic;
+                            }));
+        }
+
+
+      if (order_inner[0] > 0)
+        {
+	  INT<4> f = ET_trait<ET_TRIG>::GetFaceSort(0, vnums); 
+	  Tx ls = lami[f[0]], le = lami[f[1]], lt = lami[f[2]];
+	  
+          auto symdyadic1 = lt*MakeReggeAD(ls, le);
+          auto symdyadic2 = ls*MakeReggeAD(lt, le);
+          auto symdyadic3 = le*MakeReggeAD(ls, lt);
+
+          
+	  DubinerBasis::Eval(order_inner[0]-1, ls,le,
+			      SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
+				       {
+					 shape[ii++] = 2*val*symdyadic1;
+					 shape[ii++] = 2*val*symdyadic2;
+                                         shape[ii++] = 2*val*symdyadic3;
 				       }));
 	}
       
@@ -820,10 +1488,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
 
 
           //IntLegNoBubble::
-          LegendrePolynomial::
-
-            EvalMult (order_edge[i], 
-                      xi, lam_e, SBLambda ([&](int i, auto val)
+            LegendrePolynomial::
+            EvalMult (order_facet[i][0], 
+                      xi, 0.25*lam_e, SBLambda ([&](int i, auto val)
                                            {
                                              shape[ii++] = T_REGGE_Shape<2,T>(val*symdyadic);
                                            }));
@@ -833,7 +1500,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
 
       int oi = order_inner[0];
 
-      Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(Vec<2,T>(2,0),Vec<2,T>(0,2)); //(0,0,  0,1) * P(y) * P(x)
+      Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProdAD(Vec<2,T>(0.5,0),Vec<2,T>(0,0.5)); //(0,0,  0,1) * P(y) * P(x)
       AutoDiff<2,T> eta = ly[2]-ly[1];
       AutoDiff<2,T> xi = lx[1]-lx[0];
       LegendrePolynomial (oi, eta, v);
@@ -846,14 +1513,14 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           }
 
       
-      auto symdyad = lx[1]*lx[0]*SymDyadProd(Vec<2,T>(0,1),Vec<2,T>(0,1));//x*(1-x)*(0,0,  0,1) * P(y) * P(x)
+      auto symdyad = lx[1]*lx[0]*SymDyadProdAD(Vec<2,T>(0,1),Vec<2,T>(0,1));//x*(1-x)*(0,0,  0,1) * P(y) * P(x)
       for (int i = 0; i < oi; i++)
         for (int j = 0; j <= oi; j++)
           {
             shape[ii++] = T_REGGE_Shape<2,T>(u[i]*v[j]*symdyad);
           }
 
-      symdyad = ly[2]*ly[1]*SymDyadProd(Vec<2,T>(1,0),Vec<2,T>(1,0)); //y*(1-y)*(1,0,  0,0) * P(x) * P(y)
+      symdyad = ly[2]*ly[1]*SymDyadProdAD(Vec<2,T>(1,0),Vec<2,T>(1,0)); //y*(1-y)*(1,0,  0,0) * P(x) * P(y)
       
       for (int j = 0; j < oi; j++)
         for (int i = 0; i <= oi; i++)
@@ -1125,13 +1792,13 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       for (int i = 0; i < 6; i++)
         {
           INT<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
-          AutoDiff<3,T> ls = lx[e[0]], le = lx[e[1]], lm = lz[e[0]];
+          AutoDiff<3,T> ls = lx[e[1]], le = lx[e[0]], lm = lz[e[0]];
 
           Vec<6, AutoDiff<3,T>> symdyadic = lm*SymDyadProd(ls,le);
 
           LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
-                              shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
+                              shape[ii++] = T_REGGE_Shape<3,T>(-val*symdyadic);
                             }));
         }
 
@@ -1196,7 +1863,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           LegendrePolynomial (of, xi, leg_u);
 
           auto W = uDv_minus_vDu(lx[ftrig],lx[fmax]);
-          Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(GetGradient(eta),W.Value());   //^= (0,1, 1,0) * P(x)*P(y)
+          Vec<6, AutoDiff<3,T>> symdyadic = 0.25*SymDyadProdAD(GetGradient(eta),W.Value());   //^= (0,1, 1,0) * P(x)*P(y)
           // // Old Version
           // for (int j = 0; j <= of; j++)
           //   shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*symdyadic);
@@ -1218,12 +1885,12 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
               shape[ii++] = T_REGGE_Shape<3,T>(leg_v[j]*leg_u[k]*symdyadic);
 
           
-          auto symdyad = lx[ftrig]*lx[fmax]*SymDyadProd(eta,eta);  //^= x*(1-x)*(0,0, 0,1) * P(x) * P(y)
+          auto symdyad = 0.25*lx[ftrig]*lx[fmax]*SymDyadProd(eta,eta);  //^= x*(1-x)*(0,0, 0,1) * P(x) * P(y)
           for (int i = 0; i < of; i++)
             for (int j = 0; j <= of; j++)
                 shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*symdyad);
 
-          symdyad = lz[fz]*lz[fmax]*SymDyadProd(lx[ftrig],lx[fmax]);    //^= y*(1-y)*(1,0, 0,0) * P(x)*P(y)
+          symdyad = 0.25*lz[fz]*lz[fmax]*SymDyadProd(lx[ftrig],lx[fmax]);    //^= y*(1-y)*(1,0, 0,0) * P(x)*P(y)
           for (int j = 0; j < of; j++)
             for (int i = 0; i <= of; i++)
                 shape[ii++] = T_REGGE_Shape<3,T>(leg_u[i]*leg_v[j]*symdyad);
@@ -1275,7 +1942,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                  SBLambda([&](int nr, auto val)
                                           {
                                             auto tmp = Du(val);
-                                            auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                            auto symdyadic = SymDyadProdAD(tmp.Value(),GetGradient(eta));
                                             for(int j=0; j <= p; j++)
                                               shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
                                           }));
@@ -1284,7 +1951,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                  SBLambda([&ii,shape,p,leg_w,eta,f,lx](int nr, auto val)
                                           {
                                             auto tmp = wuDv_minus_wvDu (lx[f[1]], lx[f[2]], val);
-                                            auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                            auto symdyadic = SymDyadProdAD(tmp.Value(),GetGradient(eta));
                                             for(int j=0; j <= p; j++)
                                               shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
                                           }));
@@ -1293,7 +1960,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                        SBLambda([&ii,shape,p,leg_w,eta,lx,f] (int j, auto val)
                                                 {
                                                   auto tmp = wuDv_minus_wvDu (lx[f[1]], lx[f[0]], val);
-                                                  auto symdyadic = SymDyadProd(tmp.Value(),GetGradient(eta));
+                                                  auto symdyadic = SymDyadProdAD(tmp.Value(),GetGradient(eta));
                                                   for(int j=0; j <= p; j++)
                                                     shape[ii++] = T_REGGE_Shape<3,T>(leg_w[j]*symdyadic);
                                                 }));
@@ -1356,13 +2023,13 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
       for (int i = 0; i < 6; i++)
         {
           INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
-          AutoDiff<3,T> ls = lam[e[0]], le = lam[e[1]];
+          AutoDiff<3,T> ls = lam[e[1]], le = lam[e[0]];
 
           Vec<6, AutoDiff<3,T>> symdyadic = SymDyadProd(ls,le);
 
           LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
-                              shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
+                              shape[ii++] = T_REGGE_Shape<3,T>(-val*symdyadic);
                             }));
         }
 
@@ -1407,8 +2074,78 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic4);
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic5);
                                                                                      shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic6);                                                                                                                                                   }));
-        }
+        }      
     };
+
+
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape2 (TIP<3,Tx> ip, TFA & shape) const
+    {
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      Tx lam[4] = {x, y, z, 1-x-y-z};
+      int ii = 0;
+
+      for (int i = 0; i < 6; i++)
+        {
+          INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+          Tx ls = lam[e[1]], le = lam[e[0]];
+
+          auto symdyadic = MakeReggeAD(ls, le);
+          LegendrePolynomial::EvalScaled(order_edge[i], ls-le,ls+le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
+                            {
+                              shape[ii++] = -val*symdyadic;
+                            }));
+        }
+
+      
+      for(int fa = 0; fa < 4; fa++)
+        {
+          if (order_facet[fa][0] > 0)
+            {
+              INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
+              Tx ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
+              
+              auto symdyadic1 = lt*MakeReggeAD(ls, le);
+              auto symdyadic2 = ls*MakeReggeAD(lt, le);
+              auto symdyadic3 = le*MakeReggeAD(ls, lt);
+              
+              DubinerBasis::Eval(order_facet[fa][0]-1, ls,le,
+                                 SBLambda([symdyadic1,symdyadic2,symdyadic3, &ii, shape] (size_t nr, auto val)
+                                          {
+                                            shape[ii++] = val*symdyadic1;
+                                            shape[ii++] = val*symdyadic2;
+                                            shape[ii++] = val*symdyadic3;
+                                          }));
+            }
+        }
+
+      if (order_inner[0] > 1)
+        {
+          Tx li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
+
+          auto symdyadic1 = li*lj*MakeReggeAD(lk, ll);
+          auto symdyadic2 = lj*lk*MakeReggeAD(ll, li);
+          auto symdyadic3 = lk*ll*MakeReggeAD(li, lj);
+          auto symdyadic4 = ll*li*MakeReggeAD(lj, lk);
+          auto symdyadic5 = li*lk*MakeReggeAD(lj, ll);
+          auto symdyadic6 = lj*ll*MakeReggeAD(li, lk);
+
+          
+          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&ii, shape, symdyadic1, symdyadic2, symdyadic3, symdyadic4, symdyadic5, symdyadic6](size_t j, auto val)
+                                                                                   {
+                                                                                     shape[ii++] = val*symdyadic1;
+                                                                                     shape[ii++] = val*symdyadic2;
+                                                                                     shape[ii++] = val*symdyadic3;
+                                                                                     shape[ii++] = val*symdyadic4;
+                                                                                     shape[ii++] = val*symdyadic5;
+                                                                                     shape[ii++] = val*symdyadic6;
+                                                                                   }));
+        }
+      
+    }
+
+    
 
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
@@ -1567,7 +2304,7 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           
           //IntLegNoBubble::
           LegendrePolynomial::
-            EvalMult (p, xi, lam_e, SBLambda ([&](int i, auto val)
+            EvalMult (p, xi, 0.25*lam_e, SBLambda ([&](int i, auto val)
                                               {
                                                 shape[ii++] = T_REGGE_Shape<3,T>(val*symdyadic);
                                               }));
@@ -1589,17 +2326,17 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           LegendrePolynomial (p, eta, leg_u);
           LegendrePolynomial (p, xi, leg_v);
           
-          Vec<6, AutoDiff<3,T>> symdyadic = lam_f*SymDyadProd(GetGradient(eta),GetGradient(xi));
+          Vec<6, AutoDiff<3,T>> symdyadic = 0.25*lam_f*SymDyadProdAD(GetGradient(eta),GetGradient(xi));
           for (int j = 0; j <= p; j++)
             for (int k = 0; k <= p; k++)
               shape[ii++] = T_REGGE_Shape<3,T>(leg_u[j]*leg_v[k]*symdyadic);
 
-          symdyadic = lam_f*(1-eta*eta)*SymDyadProd(GetGradient(xi),GetGradient(xi));
+          symdyadic = 0.25*lam_f*(1-eta*eta)*SymDyadProdAD(GetGradient(xi),GetGradient(xi));
           for (int j = 0; j < p; j++)
             for (int k = 0; k <= p; k++)
               shape[ii++] = T_REGGE_Shape<3,T>(leg_u[j]*leg_v[k]*symdyadic);
 
-          symdyadic = lam_f*(1-xi*xi)*SymDyadProd(GetGradient(eta),GetGradient(eta));
+          symdyadic = 0.25*lam_f*(1-xi*xi)*SymDyadProdAD(GetGradient(eta),GetGradient(eta));
           for (int k = 0; k < p; k++)
             for (int j = 0; j <= p; j++)
               shape[ii++] = T_REGGE_Shape<3,T>(leg_u[j]*leg_v[k]*symdyadic);
@@ -1617,9 +2354,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
           LegendrePolynomial (p, eta, leg_v);
           LegendrePolynomial (p, nv,  leg_w);
 
-          Vec<6, AutoDiff<3,T>> symdyadic1 = lz[0]*lz[1]*SymDyadProd(GetGradient(eta),GetGradient(xi));
-          Vec<6, AutoDiff<3,T>> symdyadic2 = lx[0]*lx[1]*SymDyadProd(GetGradient(nv),GetGradient(eta));
-          Vec<6, AutoDiff<3,T>> symdyadic3 = ly[0]*ly[1]*SymDyadProd(GetGradient(xi),GetGradient(nv));
+          Vec<6, AutoDiff<3,T>> symdyadic1 = lz[0]*lz[1]*SymDyadProdAD(GetGradient(eta),GetGradient(xi));
+          Vec<6, AutoDiff<3,T>> symdyadic2 = lx[0]*lx[1]*SymDyadProdAD(GetGradient(nv),GetGradient(eta));
+          Vec<6, AutoDiff<3,T>> symdyadic3 = ly[0]*ly[1]*SymDyadProdAD(GetGradient(xi),GetGradient(nv));
           for (int i = 0; i <= p; i++)
             for (int j = 0; j <= p; j++)
               for (int k = 0; k < p; k++)
@@ -1629,9 +2366,9 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
                   shape[ii++] = T_REGGE_Shape<3,T>(leg_w[i]*leg_u[j]*leg_v[k]*symdyadic3);
                 }
 
-          symdyadic1 = ly[0]*ly[1]*lz[0]*lz[1]*SymDyadProd(GetGradient(xi),GetGradient(xi));
-          symdyadic2 = lz[0]*lz[1]*lx[0]*lx[1]*SymDyadProd(GetGradient(eta),GetGradient(eta));
-          symdyadic3 = lx[0]*lx[1]*ly[0]*ly[1]*SymDyadProd(GetGradient(nv),GetGradient(nv));
+          symdyadic1 = ly[0]*ly[1]*lz[0]*lz[1]*SymDyadProdAD(GetGradient(xi),GetGradient(xi));
+          symdyadic2 = lz[0]*lz[1]*lx[0]*lx[1]*SymDyadProdAD(GetGradient(eta),GetGradient(eta));
+          symdyadic3 = lx[0]*lx[1]*ly[0]*ly[1]*SymDyadProdAD(GetGradient(nv),GetGradient(nv));
 
           for (int i = 0; i <= p; i++)
             for (int j = 0; j < p; j++)
@@ -1647,7 +2384,133 @@ virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSlice
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type ET_HEX");
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T; 
+
+      T x = ip(0), y = ip(1), z = ip(2);
+      // T lx[4] = { 1-x, x, x, 1-x };
+      // T ly[4] = { 1-y, 1-y, y, y };
+      // T lz[4] = { 1-z, 1-z, z, z };
+      // T lam[4] = { 1-x-y+x*y, x*(1-y), x*y, y*(1-x) };
+      T sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+                   (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
+
+      /*Vec<2,AutoDiff<2,T>> adip = ip;
+      auto tip = TIP<2,AutoDiffDiff<2,T>>(adip);
+      AutoDiffDiff<2,T> xxx = tip.x, yyy = tip.y;
+      AutoDiff<2,T> xx(xxx.Value(), &xxx.DValue(0));
+      AutoDiff<2,T> yy(yyy.Value(), &yyy.DValue(0));
+      AutoDiff<2,T> lami[4] = {(1-xx)*(1-yy),xx*(1-yy),xx*yy,(1-xx)*yy};  
+      AutoDiff<2,T> sigma[4] = {(1-xx)+(1-yy),xx+(1-yy),xx+yy,(1-xx)+yy}; */ 
+      
+      Vec<3,T> pnts[8] = {  { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 1 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+      
+      ArrayMem<T,20> v(order+2), u(order+2), w(order+2);
+
+      //Mat<2,2,T> tmp(0.0);
+
+      
+      if (mip.IP().VB() == BBND)
+        { // edge shapes
+          for (int i = 0; i < 12; i++)
+            {
+              int p = order_edge[i];
+              
+              if (i == facetnr)
+                {             
+                  INT<2> e = ET_trait<ET_HEX>::GetEdgeSort (i, vnums);
+                  
+                  T xi  = sigma[e[1]]-sigma[e[0]];
+                  Vec<3,T> tauref = pnts[e[0]] - pnts[e[1]];
+                  
+                  
+                  auto tv = mip.GetJacobian()*tauref;
+
+                  auto tt = DyadProd(tv,tv);
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                }));
+                 
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 12; i++)
+            ii += order_edge[i]+1;
+        }
+      if (mip.IP().VB() == BND)
+        {
+          for (int i = 0; i < 6; i++)
+            {
+              int p = order_facet[i][0];
+              
+              if (i == facetnr)
+                {
+                  INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+                  Vec<3,T> tauref1 = pnts[f[0]] - pnts[f[1]];
+                  Vec<3,T> tauref2 = pnts[f[0]] - pnts[f[3]];
+                  T xi  = sigma[f[0]] - sigma[f[1]]; 
+                  T eta = sigma[f[0]] - sigma[f[3]];
+                  //Vec<6, T> symdyadic = SymDyadProd(GetGradient(etaa),GetGradient(xia));
+                  auto tv1 = mip.GetJacobian()*tauref1;
+                  auto tv2 = mip.GetJacobian()*tauref2;
+                  auto symdyadic = SymDyadProd(tv1,tv2);
+                  
+                  LegendrePolynomial (p, eta, u);
+                  LegendrePolynomial (p, xi, v);
+                  for (int j = 0; j <= p; j++)
+                    for (int k = 0; k <= p; k++)
+                      shape[ii + j*(p+1) + k] = u[j]*v[k]*symdyadic;
+                      
+                  /*                  T eta = ly[2]-ly[1];
+          T xi = lx[1]-lx[0];
+          LegendrePolynomial (p, eta, v);
+          LegendrePolynomial (p, xi, u);
+          
+          for (int i = 0; i <= p; i++)
+            for (int j = 0; j <= p; j++)
+              {
+                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,1},{1,0}}))*Trans(mip.GetJacobian());
+              }
+          
+          
+          //auto symdyad = lx[1]*lx[0]*SymDyadProd(Vec<2,T>(0,1),Vec<2,T>(0,1));//x*(1-x)*(0,0,  0,1) * P(y) * P(x)
+          for (int i = 0; i < p; i++)
+            for (int j = 0; j <= p; j++)
+              {
+                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,0},{0,1}}))*Trans(mip.GetJacobian());
+              }
+          
+          //symdyad = ly[2]*ly[1]*SymDyadProd(Vec<2,T>(1,0),Vec<2,T>(1,0)); //y*(1-y)*(1,0,  0,0) * P(x) * P(y)
+          
+          for (int j = 0; j < p; j++)
+            for (int i = 0; i <= p; i++)
+              {
+                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{1,0},{0,0}}))*Trans(mip.GetJacobian());
+                }*/
+                }
+              ii += p*p + (p+2)*p*2 + 1;
+            }
+        }
+      else 
+        {
+          for (int i = 0; i < 6; i++)
+            ii += order_facet[i][0]*order_facet[i][0] + (order_facet[i][0]+2)*order_facet[i][0]*2 + 1;
+        }
+
+      if (mip.IP().VB() == VOL)
+        {
+          if (order_inner[0])
+            throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type ET_HEX for high-order");
+        }
     }
 
   };

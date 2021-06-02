@@ -27,8 +27,8 @@ uscat = GridFunction (fes)
 uscat.Set (uin, definedon=mesh.Boundaries("scatterer"))
 
 a = BilinearForm (fes, symmetric=True)
-a += SymbolicBFI (grad(u)*grad(v) )
-a += SymbolicBFI (-k*k*u*v)
+a += grad(u)*grad(v)*dx
+a += -k*k*u*v*dx
 
 f = LinearForm (fes)
 

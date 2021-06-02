@@ -100,6 +100,18 @@ namespace ngcomp
       // fel.CalcDualShape (mip, mat);
       throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
     }
+
+    using DiffOp<DiffOpDual<D>>::AddTransSIMDIR;
+    template <typename FEL, class MIR, class TVY>
+    static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
+                                BareSliceMatrix<SIMD<double>> x, TVY & y)
+    {
+      STACK_ARRAY(SIMD<double>, memx, mir.Size());
+      FlatVector<SIMD<double>> hx(mir.Size(), &memx[0]);
+      for (size_t i = 0; i < mir.Size(); i++)
+        hx(i) = x(0,i) / mir[i].GetMeasure();
+      static_cast<const ScalarFiniteElement<D>&>(fel).AddDualTrans (mir.IR(), hx, y);
+    }    
   };
 
 
@@ -434,18 +446,21 @@ into the wirebasket.
 
 	// for (FESpace::Element el : Elements (VOL))
 
-	for (auto vb : { VOL, BND })
-	  ParallelFor
-	    (ma->GetNE(vb), [&] (size_t nr)
-	     {
-	       ElementId ei(vb, nr);
-	       Ngs_Element el = (*ma)[ei];
+	// for (auto vb : { VOL, BND, BBND })
+        for (auto vb : Range(VOL, VorB(dim+1)))
+          ParallelFor
+            (ma->GetNE(vb), [&] (size_t nr)
+             {
+               ElementId ei(vb, nr);
+               Ngs_Element el = (*ma)[ei];
            
-	       if (!DefinedOn (el)) return; 
-           
-	       used_vertex[el.Vertices()] = true;
-	       if (dim >= 2) used_edge[el.Edges()] = true;
-	       if (dim == 3) used_face[el.Faces()] = true;
+	       // if (!DefinedOn (el)) return;
+               if (DefinedOnX (el).IsTrue())
+                 {
+                   used_vertex[el.Vertices()] = true;
+                   if (dim >= 2) used_edge[el.Edges()] = true;
+                   if (dim == 3) used_face[el.Faces()] = true;
+                 }
 	     });
     
 	/*
@@ -629,7 +644,8 @@ into the wirebasket.
     if (low_order_space)
       low_order_embedding =
         make_shared<Embedding> (GetNDof(),
-                                IntRange(low_order_space->GetNDof()));
+                                IntRange(low_order_space->GetNDof()),
+                                IsComplex());
     // timer3.Stop();
   }
 
@@ -854,6 +870,18 @@ into the wirebasket.
     mu += { "H1HighOrder::order_face", order_face.Size()*sizeof(INT<2,TORDER>), 1 };
     mu += { "H1HighOrder::order_edge", order_edge.Size()*sizeof(TORDER), 1 };
     return mu;
+  }
+
+  FlatArray<VorB> H1HighOrderFESpace :: GetDualShapeNodes (VorB vb) const
+  {
+    static VorB nodes[] = { VOL, BND, BBND, BBBND };
+
+    if (first_edge_dof[0] == GetNDof())
+      return FlatArray<VorB> (1, &nodes[ma->GetDimension() - int(vb)]);
+    if (first_face_dof[0] == GetNDof())
+      return FlatArray<VorB> (2, &nodes[ma->GetDimension()-1 - int(vb)]);
+
+    return FlatArray<VorB> (ma->GetDimension()-int(vb)+1, &nodes[0]); 
   }
 
   
@@ -2303,11 +2331,28 @@ into the wirebasket.
         {
           Flags tmpflags = flags;
           if (flags.StringFlagDefined(dirnames[i]))
-            tmpflags.SetFlag ("dirichlet", flags.GetStringFlag(dirnames[i]));
+            {
+              auto dir = flags.GetStringFlag(dirnames[i]);
+              if(flags.StringFlagDefined("dirichlet"))
+                dir += "|" + flags.GetStringFlag("dirichlet");
+              // cout << "dirichlet = " << dir << endl;
+              // cout << "dirichlet flag = " << flags.GetStringFlag("dirichlet") << endl;
+              tmpflags.SetFlag ("dirichlet", dir);
+            }
           if (flags.StringFlagDefined(dirnames[i]+"_bbnd"))
-            tmpflags.SetFlag ("dirichlet_bbnd", flags.GetStringFlag(dirnames[i]+"_bbnd"));
+            {
+              auto dir = flags.GetStringFlag(dirnames[i]+"_bbnd");
+              if(flags.StringFlagDefined("dirichlet_bbnd"))
+                dir += "|" + flags.GetStringFlag("dirichlet_bbnd");
+              tmpflags.SetFlag ("dirichlet_bbnd", dir);
+            }
           if (flags.StringFlagDefined(dirnames[i]+"_bbbnd"))
-            tmpflags.SetFlag ("dirichlet_bbbnd", flags.GetStringFlag(dirnames[i]+"_bbbnd"));
+            {
+              auto dir = flags.GetStringFlag(dirnames[i]+"_bbbnd");
+              if(flags.StringFlagDefined("dirichlet_bbbnd"))
+                dir += "|" + flags.GetStringFlag("dirichlet_bbbnd");
+              tmpflags.SetFlag ("dirichlet_bbbnd", dir);
+            }
           AddSpace (make_shared<H1HighOrderFESpace> (ama, tmpflags));
         }
 

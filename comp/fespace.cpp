@@ -94,15 +94,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  directsolverclustered[static_cast<int>(clusters[i])-1] = true; // 1-based!!
       }
     
+    dirichlet_constraints[BND].SetSize (ma->GetNBoundaries());
+    dirichlet_constraints[BND].Clear();
+
+    if(flags.AnyFlagDefined("dirichlet"))
+      {
+        dirichlet_constraints[BND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet")).Mask();
+      }
+
     if(flags.NumListFlagDefined("dirichlet"))
       {
-	dirichlet_boundaries.SetSize (ma->GetNBoundaries());
-	dirichlet_boundaries.Clear();
         for (double dbi : flags.GetNumListFlag("dirichlet"))
           {
 	    int bnd = int(dbi-1);
 	    if (bnd >= 0 && bnd < dirichlet_boundaries.Size())
-	      dirichlet_boundaries.SetBit (bnd);
+	      dirichlet_constraints[BND].SetBit (bnd);
 	    // else
             //   cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
           }
@@ -112,43 +118,49 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (flags.StringFlagDefined("dirichlet"))
       {
-        dirichlet_constraints[BND].SetSize (ma->GetNRegions(BND));
-        dirichlet_constraints[BND].Clear();
-        
         std::regex pattern(flags.GetStringFlag("dirichlet"));
         for (int i : Range(ma->GetNRegions(BND)))
           if (std::regex_match (ma->GetMaterial(BND, i), pattern))
             dirichlet_constraints[BND].SetBit(i);
       }
 
-    
+    dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
+    dirichlet_constraints[BBND].Clear();
+
+    if(flags.AnyFlagDefined("dirichlet_bbnd"))
+      {
+        dirichlet_constraints[BBND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")).Mask();
+      }
+
     if (flags.StringFlagDefined("dirichlet_bbnd"))
       {
-        dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
-        dirichlet_constraints[BBND].Clear();
-        
         std::regex pattern(flags.GetStringFlag("dirichlet_bbnd"));
         for (int i : Range(ma->GetNRegions(BBND)))
           if (std::regex_match (ma->GetMaterial(BBND, i), pattern))
             dirichlet_constraints[BBND].SetBit(i);
       }
 
+    dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
+    dirichlet_constraints[BBBND].Clear();
+
+    if(flags.AnyFlagDefined("dirichlet_bbbnd"))
+      {
+        dirichlet_constraints[BBBND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")).Mask();
+      }
+
     if (flags.StringFlagDefined("dirichlet_bbbnd"))
       {
-        dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
-        dirichlet_constraints[BBBND].Clear();
-        
         std::regex pattern(flags.GetStringFlag("dirichlet_bbbnd"));
         for (int i : Range(ma->GetNRegions(BBBND)))
           if (std::regex_match (ma->GetMaterial(BBBND, i), pattern))
             
             dirichlet_constraints[BBBND].SetBit(i);
       }
-
     
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
-        flags.StringListFlagDefined("definedon"))
+        flags.StringListFlagDefined("definedon") ||
+        flags.AnyFlagDefined("definedon"))
       {
 	definedon[VOL].SetSize (ma->GetNDomains());
 	definedon[VOL] = false;
@@ -189,6 +201,37 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	// fespace only defined on boundaries matching definedon-domains
 	definedon[BND].SetSize (ma->GetNBoundaries());
 	definedon[BND] = false;
+
+        if(flags.AnyFlagDefined("definedon"))
+          {
+            std::any anydefon = flags.GetAnyFlag("definedon");
+            if(anydefon.type() == typeid(std::map<VorB, Region>))
+              {
+                auto map = std::any_cast<std::map<VorB, Region>>(anydefon);
+                for(const auto& [vb, reg] : map)
+                  {
+                    if(vb == BBND || vb == BBBND)
+                      definedon[vb].SetSize(ma->GetNRegions(vb));
+                    for(auto i : Range(definedon[vb]))
+                      definedon[vb][i] = reg.Mask().Test(i);
+                  }
+                // if vol is not in map then definedon vol = empty
+                if(map.find(VOL) == map.end())
+                  definedon[VOL] = false;
+              }
+            else if(anydefon.type() == typeid(Region))
+              {
+                auto reg = std::any_cast<Region>(anydefon);
+                definedon[reg.VB()].SetSize(reg.Mask().Size());
+                for(auto i : Range(definedon[reg.VB()]))
+                  definedon[reg.VB()][i] = reg.Mask().Test(i);
+                for(auto vb = VOL; vb < reg.VB(); vb++)
+                  definedon[vb] = false;
+              }
+            else
+              throw Exception("definedon with wrong argument type!");
+          }
+
 	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
             ElementId sei(BND, sel);
@@ -1528,7 +1571,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     auto freedofs = GetFreeDofs(eliminate_internal);
 
-    FilteredTableCreator creator(GetFreeDofs().get());
+    FilteredTableCreator creator(freedofs.get());
 
     /*
     for ( ; !creator.Done(); creator++)
@@ -1539,58 +1582,131 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     */
 
-    Array<DofId> dofs;
-    for ( ; !creator.Done(); creator++)
+    if (flags.GetStringFlag("blocktype") == "edgepatch")
       {
-        // VEFI
+        
+        Array<DofId> dofs;
+        for ( ; !creator.Done(); creator++)
+          {
+            // EFI
 
-        for (size_t i : Range(ma->GetNV()))
-          {
-            GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-            for (auto d : dofs)
-              if (IsRegularDof(d))              
-                creator.Add (i, d);
-          }
-        for (size_t i : Range(ma->GetNEdges()))        
-          {
-            Ng_Node<1> edge = ma->GetNode<1> (i);
+            /*
+            for (size_t i : Range(ma->GetNV()))
+              {
+                GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))              
+                    creator.Add (i, d);
+              }
+            */
             
-            GetDofNrs (NodeId(NT_EDGE, i), dofs);
-            for (auto d : dofs)
-              if (IsRegularDof(d))
-                for (int k = 0; k < 2; k++)
-                  creator.Add (edge.vertices[k], d);
-          }
-
-        for (size_t i : Range(ma->GetNFaces()))        
-          {
-            Ng_Node<2> face = ma->GetNode<2> (i);
+            for (size_t i : Range(ma->GetNEdges()))        
+              {
+                // Ng_Node<1> edge = ma->GetNode<1> (i);
+                
+                GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    creator.Add (i, d);
+              }
             
-            GetDofNrs (NodeId(NT_FACE, i), dofs);
-            for (auto d : dofs)
-              if (IsRegularDof(d))
-                for (int k = 0; k < face.vertices.Size(); k++)
-                  creator.Add (face.vertices[k], d);
+            for (size_t i : Range(ma->GetNFaces()))        
+              {
+                // Ng_Node<2> face = ma->GetNode<2> (i);
+                
+                GetDofNrs (NodeId(NT_FACE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    for (auto e : ma->GetFaceEdges(i))
+                      creator.Add (e, d);
+              }
+            
+            if(ma->GetDimension() == 3)
+              for(size_t i : Range(ma->GetNE()))
+                {
+                  GetDofNrs(NodeId(NT_CELL, i), dofs);
+                  auto eledges = ma->GetElEdges(ElementId(VOL, i));
+                  for(auto d : dofs)
+                    if(IsRegularDof(d))
+                      for(auto v : eledges)
+                        creator.Add(v, d);
+                }
+        
           }
       }
-    /*
-                 
-                 for (int i = 0; i < nfa; i++)
-                 {
-                 Ng_Node<2> face = ma->GetNode<2> (i);
-                 for (int k = 0; k < face.vertices.Size(); k++)
-                 creator.Add (face.vertices[k], GetFaceDofs(i));
-                 }
-                 
-                 for (int i = 0; i < ni; i++)
-                 for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
-                 creator.Add (v, GetElementDofs(i));
-                 
-                 break; 
-               */
-               
+    
+    else
+      
+      { // default is vertexpatch
+        Array<DofId> dofs;
+        for ( ; !creator.Done(); creator++)
+          {
+            // VEFI
+
+            for (size_t i : Range(ma->GetNV()))
+              {
+                GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))              
+                    creator.Add (i, d);
+              }
+            for (size_t i : Range(ma->GetNEdges()))        
+              {
+                Ng_Node<1> edge = ma->GetNode<1> (i);
+                
+                GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    for (int k = 0; k < 2; k++)
+                      creator.Add (edge.vertices[k], d);
+              }
+            
+            for (size_t i : Range(ma->GetNFaces()))        
+              {
+                Ng_Node<2> face = ma->GetNode<2> (i);
+                
+                GetDofNrs (NodeId(NT_FACE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    for (int k = 0; k < face.vertices.Size(); k++)
+                      creator.Add (face.vertices[k], d);
+              }
+            
+            if(ma->GetDimension() == 3)
+              for(size_t i : Range(ma->GetNE()))
+                {
+                  GetDofNrs(NodeId(NT_CELL, i), dofs);
+                  auto elverts = ma->GetElVertices(ElementId(VOL, i));
+                  for(auto d : dofs)
+                    if(IsRegularDof(d))
+                      for(auto v : elverts)
+                        creator.Add(v, d);
+                }
+          }
+        /*
+          
+          for (int i = 0; i < nfa; i++)
+          {
+          Ng_Node<2> face = ma->GetNode<2> (i);
+          for (int k = 0; k < face.vertices.Size(); k++)
+          creator.Add (face.vertices[k], GetFaceDofs(i));
+          }
+          
+          for (int i = 0; i < ni; i++)
+          for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
+          creator.Add (v, GetElementDofs(i));
+          
+          break; 
+        */
+      }
+
+    
         
-    return make_shared<Table<int>> (creator.MoveTable());
+    // return make_shared<Table<int>> (creator.MoveTable());
+    Table<int> table = creator.MoveTable();
+    if (print)
+      *testout << "smoothing blocks = " << endl << table << endl;
+    return make_shared<Table<int>> (move(table));
   }
 
     
@@ -1824,17 +1940,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
   {
-    LocalHeap lh(10000000);
-    Array<short> classnr(ma->GetNE());
+    LocalHeap lh(100000000);
+    
+    Array<int> classnr(ma->GetNE());
+    
+    FlatArray<int> vertex_map;
+    if (const PeriodicFESpace * periodic = dynamic_cast<const PeriodicFESpace*> (this))
+      vertex_map.Assign (periodic->GetVertexMap());
+    
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
          classnr[el.Nr()] = 
-           SwitchET<ET_TRIG,ET_TET>
+           SwitchET<ET_TRIG,ET_QUAD,ET_TET,ET_HEX>
            (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+            [el, vertex_map] (auto et) {
+             if (vertex_map.Size())
+               return ET_trait<et.ElementType()>::GetClassNr(vertex_map[el.Vertices()]);
+             else
+               return ET_trait<et.ElementType()>::GetClassNr(el.Vertices());
+            });
        });
-    
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
@@ -1857,12 +1984,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         ElementId ei(VOL,elclass_inds[0]);
         auto & fel = GetFE (ei, lh);
         auto & fel_l2 = l2space->GetFE (ei, lh);
-        // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
-        FE_ElementTransformation<2,2> trafo2d(ET_TRIG);
-        FE_ElementTransformation<3,3> trafo3d(ET_TET);
-        ElementTransformation & trafo = (fel.Dim() == 2) ?
-          (ElementTransformation&)trafo2d :
-          (ElementTransformation&)trafo3d;
+
+        auto & trafo = GetFEElementTransformation(fel.ElementType());
         MixedFiniteElement fel_mixed(fel, fel_l2);
         auto evaluator = GetEvaluator(VOL);
         auto l2evaluator = l2space->GetEvaluator(VOL);
@@ -1883,6 +2006,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         Matrix<> mass_l2(fel_l2.GetNDof(), fel_l2.GetNDof());
         Matrix<> mass_mixed(fel_l2.GetNDof(), fel.GetNDof());
+
         bfi_mass_l2->CalcElementMatrix (fel_l2, trafo, mass_l2, lh);
         bfi_mass_mixed->CalcElementMatrix (fel_mixed, trafo, mass_mixed, lh);
 
@@ -2029,7 +2153,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       paralleldofs -> GetNDofGlobal() : GetNDof(); 
   }
 
-  BitArray FESpace :: GetDofs (Region reg) const
+  BitArray FESpace :: GetDofs (const Region & reg) const
   {
     BitArray ba(GetNDof());
     ba.Clear();
@@ -2238,6 +2362,31 @@ lot of new non-zero entries in the matrix!\n" << endl;
     FESpace::Update();
     if (low_order_space) low_order_space -> Update();
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+
+    if (first_update)
+      {
+	used_vertex.SetSize(ma->GetNV());
+	used_vertex = false;
+        used_edge.SetSize(ma->GetNEdges());
+        used_edge = false;
+
+	for (auto vb : { VOL, BND })
+	  ParallelFor
+	    (ma->GetNE(vb), [&] (size_t nr)
+	     {
+	       ElementId ei(vb, nr);
+	       Ngs_Element el = (*ma)[ei];
+
+	       if (!DefinedOn (el)) return;
+
+	       used_vertex[el.Vertices()] = true;
+               if (order > 1)
+                 used_edge[el.Edges()] = true;
+	     });
+      }
+
     // if (ma->GetNLevels() > ndlevel.Size())
       {
 	size_t ndof = ma->GetNV();
@@ -2267,6 +2416,25 @@ lot of new non-zero entries in the matrix!\n" << endl;
             for (DofId d : el.GetDofs())
               if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
       }
+
+    UpdateCouplingDofArray();
+  }
+
+  void NodalFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(GetNDof());
+    ParallelFor
+      (ma->GetNV(), [&] (size_t i)
+       {
+         ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
+       });
+
+    if(order > 1 && GetNDof() > ma->GetNV())
+      ParallelFor
+        (ma->GetNEdges(), [&] (size_t i)
+         {
+           ctofdof[ma->GetNV() + i] = used_edge[i] ? INTERFACE_DOF : UNUSED_DOF;
+         });
   }
 
   void NodalFESpace :: DoArchive (Archive & archive)
@@ -2939,7 +3107,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
       {
-	spaces[i] -> Update();
+        if(do_subspace_update)
+          spaces[i] -> Update();
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
@@ -3027,7 +3196,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: FinalizeUpdate()
   {
     for (int i = 0; i < spaces.Size(); i++)
-      spaces[i] -> FinalizeUpdate();
+      if(do_subspace_update)
+        spaces[i] -> FinalizeUpdate();
 
     FESpace::FinalizeUpdate();
 
@@ -3366,8 +3536,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         HeapReset hr(lh);
         size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-	spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+        if (tt & TRANSFORM_MAT_LEFT)
+          spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+        if (tt & TRANSFORM_MAT_RIGHT)
+          spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
@@ -3467,6 +3639,73 @@ lot of new non-zero entries in the matrix!\n" << endl;
   string CompoundFESpaceAllSame :: GetClassName () const
   {
     return "Vector"+ (*this)[0]->GetClassName();
+  }
+
+
+  MatrixFESpace ::
+  MatrixFESpace (shared_ptr<FESpace> space, int avdim, const Flags & flags,
+                 bool checkflags)
+    : CompoundFESpace (space->GetMeshAccess(), flags), vdim(avdim)
+  {
+    symmetric = flags.GetDefineFlag("symmetric");
+    deviatoric = flags.GetDefineFlag("deviatoric");
+
+    if (deviatoric && !symmetric) throw Exception ("non-symmetric and deviatoric not supported");
+    
+    int dim = symmetric ? vdim*(vdim+1)/2 : sqr(vdim);
+    if (deviatoric) dim--;
+    for (int i = 0; i < dim; i++)
+      AddSpace (space);
+    
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      {
+        if (auto eval = spaces[0] -> GetEvaluator(vb))
+          {
+            if (symmetric)
+              {
+                if (deviatoric)
+                  evaluator[vb] = make_shared<SymDevMatrixDifferentialOperator> (eval, vdim);
+                else
+                  evaluator[vb] = make_shared<SymMatrixDifferentialOperator> (eval, vdim);
+              }
+            else
+              evaluator[vb] = make_shared<MatrixDifferentialOperator> (eval, vdim);
+          }
+        // if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
+        // flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, dim);
+      }
+
+    /*
+    auto additional = spaces[0]->GetAdditionalEvaluators();
+    for (int i = 0; i < additional.Size(); i++)
+      additional_evaluators.Set (additional.GetName(i),
+                                 make_shared<VectorDifferentialOperator>(additional[i], dim));
+    */
+    /*
+    if (symmetric)
+      type = "Sym"+Matrix"+(*this)[0]->type;
+    else
+      type = "Matrix"+(*this)[0]->type;
+    */
+    type = string((symmetric) ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
+  }
+  
+  string MatrixFESpace :: GetClassName () const
+  {
+    // return ( symmetric ? "SymMatrix" : "Matrix" ) + (*this)[0]->GetClassName();
+    return string(symmetric ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->GetClassName();
+  }
+
+
+  FiniteElement & MatrixFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    if (!symmetric)
+      return CompoundFESpace :: GetFE(ei, alloc);
+    else
+      {
+        const FiniteElement & fe0 = spaces[0]->GetFE(ei, alloc);
+        return *new (alloc) SymMatrixFiniteElement(fe0, vdim, deviatoric);
+      }
   }
 
 

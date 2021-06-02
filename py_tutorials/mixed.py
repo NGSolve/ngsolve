@@ -9,18 +9,18 @@ order = 2
 fes1 = HDiv(mesh, order=order)
 fes2 = L2(mesh, order=order-1)
 
-fes = FESpace([fes1,fes2])
+fes = fes1*fes2
 
 sigma,u = fes.TrialFunction()
 tau,v = fes.TestFunction()
 
 a = BilinearForm(fes)
-a += SymbolicBFI(sigma*tau + div(sigma)*v + div(tau)*u - 1e-10*u*v)
+a += (sigma*tau + div(sigma)*v + div(tau)*u - 1e-10*u*v)*dx
 # (regularization needed for direct solver)
 a.Assemble()
 
 f = LinearForm(fes)
-f += SymbolicLFI(-v)
+f += -v*dx
 f.Assemble()
 
 u = GridFunction(fes)

@@ -1,11 +1,11 @@
 #ifdef NGS_PYTHON
-
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
 #include "python_comp.hpp"
 #include <comp.hpp>
 #include <multigrid.hpp> 
+#include <pybind11/functional.h>
 
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
@@ -14,9 +14,11 @@
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
+#include "irspace.hpp"
 #include "compressedfespace.hpp"
 #include "../fem/integratorcf.hpp"
 #include "contact.hpp"
+#include "globalinterfacespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -30,14 +32,6 @@ namespace ngcomp
                        shared_ptr<SumOfIntegrals> lf,
                        shared_ptr<GridFunction> gf,
                        LocalHeap & lh);
-  
-
-
-
-
-
-
-  
 }
 
 
@@ -112,7 +106,14 @@ public:
   void SetMsgLevel(int msg_level) 
   {
     // cout << "set printmessage_importance to " << msg_level << endl;
-    ngcore::Logger::SetGlobalLoggingLevel(ngcore::level::level_enum(ngcore::level::off-msg_level));
+    if(msg_level == 0)
+      Logger::SetGlobalLoggingLevel(level::off);
+    else if(msg_level > 0)
+      Logger::SetGlobalLoggingLevel(level::err);
+    else if(msg_level > 3)
+      Logger::SetGlobalLoggingLevel(level::info);
+    else if(msg_level > 6)
+      Logger::SetGlobalLoggingLevel(level::debug);
     printmessage_importance = msg_level; 
     netgen::printmessage_importance = msg_level; 
   }
@@ -142,6 +143,61 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   static size_t global_heapsize = 10000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
 
+  class LocalHeapProvider
+  {
+    Array<LocalHeap*> heaps;
+    std::mutex m;
+    
+    class BorrowedLocalHeap 
+    {
+      LocalHeap * lh;
+      LocalHeapProvider * provider;
+    public:
+      BorrowedLocalHeap (LocalHeap * alh, LocalHeapProvider * aprovider)
+        : lh(alh), provider(aprovider) { }
+    
+      ~BorrowedLocalHeap()
+      {
+        // cout << "returns lh to provider" << endl;
+        provider -> ReturnLH(lh);
+      }
+
+      LocalHeap & LH() { return *lh; }
+      operator LocalHeap& () { return *lh; }
+    };
+    
+  
+  public:
+    BorrowedLocalHeap GetLH()
+    {
+      std::lock_guard lock(m);
+      if (heaps.Size())
+        {
+          auto tmp = heaps.Last();
+          heaps.SetSize(heaps.Size()-1);
+          // cout << "reuse existing lh" << endl;        
+          return BorrowedLocalHeap (tmp, this);
+        }
+      
+      // cout << "create new lh" << endl;
+      return BorrowedLocalHeap(new LocalHeap(global_heapsize, "python-comp lh"), this);
+    }
+    
+    void ReturnLH (LocalHeap * lh)
+    {
+      std::lock_guard lock(m);
+      heaps.Append (lh);
+    }
+    void Clear()
+    {
+        for (auto lh : heaps)
+            delete lh;
+        heaps.SetSize(0);
+    }
+  };
+  static LocalHeapProvider lhp;
+
+  
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::enum_<COUPLING_TYPE> (m, "COUPLING_TYPE", docu_string(R"raw_string(
@@ -380,6 +436,7 @@ when building the system matrices.
             {
               global_heapsize = heapsize;
               glh = LocalHeap (heapsize, "python-comp lh", true);
+              lhp.Clear();
             }
         }, py::arg("size"), docu_string(R"raw_string(
 Set a new heapsize.
@@ -463,8 +520,15 @@ kwargs : kwargs
 		    py::list info;
 		    auto flags = CreateFlagsFromKwArgs(kwargs, fes_class, info);
                     Array<shared_ptr<FESpace>> spaces;
+                    bool dgjumps = flags.GetDefineFlag("dgjumps");
                     for (auto fes : lspaces )
-                      spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
+                    {
+                      auto fespace = py::extract<shared_ptr<FESpace>>(fes)(); 
+                      if (fespace->UsesDGCoupling())
+                        dgjumps = true;
+                      spaces.Append(fespace);
+                    }
+                    flags.SetFlag("dgjumps", dgjumps);
                     if (spaces.Size() == 0)
                       throw Exception("Compound space must have at least one space");
                     int dim = spaces[0]->GetDimension();
@@ -528,7 +592,13 @@ kwargs : kwargs
                                            makeCArray<double>(py::list(dirichlet)));
                             return;
                           }
-                        if (py::isinstance<py::str>(dirichlet))
+                        else if(py::isinstance<Region>(dirichlet))
+                          {
+                            Array<double> dir_indices;
+                            auto dir_region = py::cast<Region>(dirichlet);
+                            flags->SetFlag("dirichlet", dir_region);
+                          }
+                        else if (py::isinstance<py::str>(dirichlet))
                           {
                             std::regex pattern(dirichlet.cast<string>());
                             Array<double> dirlist;
@@ -539,7 +609,29 @@ kwargs : kwargs
                                 }
                             flags->SetFlag("dirichlet", dirlist);
                           }
+                        else
+                          throw py::type_error("dirichlet parameter has wrong type!");
                       }),
+                     py::arg("dirichlet_bbnd") = py::cpp_function
+                     ([](py::object dirichlet_bbnd, Flags* flags, py::list info)
+                     {
+                       if(py::isinstance<py::str>(dirichlet_bbnd))
+                         flags->SetFlag("dirichlet_bbnd", py::cast<std::string>(dirichlet_bbnd));
+                       else if(py::isinstance<Region>(dirichlet_bbnd))
+                         flags->SetFlag("dirichlet_bbnd", py::cast<Region>(dirichlet_bbnd));
+                       else
+                         throw py::type_error("dirichlet_bbnd has wrong type!");
+                     }),
+                     py::arg("dirichlet_bbbnd") = py::cpp_function
+                     ([](py::object dirichlet_bbbnd, Flags* flags, py::list info)
+                     {
+                       if(py::isinstance<py::str>(dirichlet_bbbnd))
+                         flags->SetFlag("dirichlet_bbbnd", py::cast<std::string>(dirichlet_bbbnd));
+                       else if(py::isinstance<Region>(dirichlet_bbbnd))
+                         flags->SetFlag("dirichlet_bbbnd", py::cast<Region>(dirichlet_bbbnd));
+                       else
+                         throw py::type_error("dirichlet_bbbnd has wrong type!");
+                     }),
                      py::arg("definedon") = py::cpp_function
                      ([] (py::object definedon, Flags* flags, py::list info)
                       {
@@ -557,24 +649,38 @@ kwargs : kwargs
                         if (py::isinstance<py::list> (definedon))
                           flags->SetFlag ("definedon", makeCArray<double> (definedon));
 
-                        py::extract<Region> definedon_reg(definedon);
-                        if (definedon_reg.check() && definedon_reg().IsVolume())
+                        try
                           {
-                            Array<double> defonlist;
-                            for (int i = 0; i < definedon_reg().Mask().Size(); i++)
-                              if (definedon_reg().Mask().Test(i))
-                                defonlist.Append(i+1);
-                            flags->SetFlag ("definedon", defonlist);
+                            auto reg = py::cast<Region>(definedon);
+                            flags->SetFlag("definedon", reg);
                           }
-                        if (definedon_reg.check() && definedon_reg().VB()==BND)
+                        catch(py::cast_error)
+                          {}
+                        try
                           {
-                            Array<double> defonlist;
-                            flags->SetFlag("definedon", defonlist); //empty
-                            for (auto i : Range(definedon_reg().Mask().Size()))
-                              if(definedon_reg().Mask().Test(i))
-                                defonlist.Append(i+1);
-                            flags->SetFlag("definedonbound", defonlist);
+                            auto map = py::cast<std::map<VorB, Region>>(definedon);
+                            flags->SetFlag("definedon", map);
                           }
+                        catch(py::cast_error)
+                          {}
+                        // py::extract<Region> definedon_reg(definedon);
+                        // if (definedon_reg.check() && definedon_reg().IsVolume())
+                        //   {
+                        //     Array<double> defonlist;
+                        //     for (int i = 0; i < definedon_reg().Mask().Size(); i++)
+                        //       if (definedon_reg().Mask().Test(i))
+                        //         defonlist.Append(i+1);
+                        //     flags->SetFlag ("definedon", defonlist);
+                        //   }
+                        // if (definedon_reg.check() && definedon_reg().VB()==BND)
+                        //   {
+                        //     Array<double> defonlist;
+                        //     flags->SetFlag("definedon", defonlist); //empty
+                        //     for (auto i : Range(definedon_reg().Mask().Size()))
+                        //       if(definedon_reg().Mask().Test(i))
+                        //         defonlist.Append(i+1);
+                        //     flags->SetFlag("definedonbound", defonlist);
+                        //   }
                       }),
                      py::arg("order_policy") = py::cpp_function
                      ([] (ORDER_POLICY op, Flags* flags, py::list info)
@@ -990,6 +1096,9 @@ rho : ngsolve.fem.CoefficientFunction
         Flags flags;
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
+        flags.SetFlag ("dgjumps", space1->UsesDGCoupling() || space2->UsesDGCoupling());
+        if(space1->LowOrderFESpacePtr() && space2->LowOrderFESpacePtr())
+          flags.SetFlag("low_order_space");
         auto productspace = make_shared<CompoundFESpace> (space1->GetMeshAccess(), flags);
 
         for (auto s : { space1, space2 })
@@ -1001,8 +1110,10 @@ rho : ngsolve.fem.CoefficientFunction
             else
               productspace->AddSpace (s);
           }
+        productspace->SetDoSubspaceUpdate(false);
         productspace->Update();
         productspace->FinalizeUpdate();
+        productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
 
@@ -1013,10 +1124,29 @@ rho : ngsolve.fem.CoefficientFunction
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
         auto productspace = make_shared<CompoundFESpaceAllSame> (space, p, flags);
+        productspace->SetDoSubspaceUpdate(false);
         productspace->Update();
         productspace->FinalizeUpdate();
+        productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
+
+    // not working because shared_ptr<Array<int>> cannot be pybind return type?
+    // TODO CL: Find out why...
+    // .def("CreateDirectSolverCluster", &FESpace::CreateDirectSolverClusters)
+    .def("CreateDirectSolverCluster", [](FESpace& self, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      auto cluster = self.CreateDirectSolverClusters(flags);
+      py::list pycluster(self.GetNDof());
+      if(cluster)
+        for(auto i : Range(self.GetNDof()))
+          pycluster[i] = (*cluster)[i];
+      else
+        for(auto i : Range(self.GetNDof()))
+          pycluster[i] = 0;
+      return pycluster;
+    })
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
@@ -1046,8 +1176,10 @@ rho : ngsolve.fem.CoefficientFunction
             flags.SetFlag ("complex");
 
           auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+          fes->SetDoSubspaceUpdate(false);
           fes->Update();
           fes->FinalizeUpdate();
+          fes->SetDoSubspaceUpdate(true);
           return fes;
         }))
     .def(py::pickle([] (py::object pyfes)
@@ -1121,14 +1253,26 @@ component : int
                              return Array<shared_ptr<FESpace>>(self->Spaces());
                            },
                   "Return a list of the components of a product space")
-
-    
+    .def("SetDoSubspaceUpdate", &CompoundFESpace::SetDoSubspaceUpdate)
     ;
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
     (m,"ProductSpaceAllSame")
     ;
 
+  py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
+    (m,"MatrixValued")
+    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool symmetric, bool deviatoric) {
+          Flags flags;
+          if (symmetric) flags.SetFlag("symmetric");
+          if (deviatoric) flags.SetFlag("deviatoric");
+          int sdim = optdim.value_or (space->GetSpatialDimension());
+          auto matspace = make_shared<MatrixFESpace> (space, sdim, flags);
+          matspace->Update();
+          matspace->FinalizeUpdate();
+          return matspace;
+        }),py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false, py::arg("deviatoric")=false)
+    ;
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
@@ -1154,6 +1298,13 @@ component : int
   ExportFESpace<TangentialSurfaceL2FESpace> (m, "TangentialSurfaceL2");
 
   ExportFESpace<NumberFESpace> (m, "NumberSpace");
+  ExportFESpace<IntegrationRuleSpace> (m, "IntegrationRuleSpace")
+    .def("GetIntegrationRules", &IntegrationRuleSpace::GetIntegrationRules)
+    ;
+  ExportFESpace<IntegrationRuleSpaceSurface> (m, "IntegrationRuleSpaceSurface")
+    .def("GetIntegrationRules", &IntegrationRuleSpaceSurface::GetIntegrationRules)
+    ;
+    
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
@@ -1376,6 +1527,30 @@ BND : boolean or None
     */
     ;
 
+
+
+  auto hiddenfes_class = py::class_<HiddenFESpace, shared_ptr<HiddenFESpace>, FESpace, NGS_Object>(m, "Hidden",
+	docu_string(R"delimiter(Hidden Finite Element Spaces.
+FESpace has elements, but no gobally enumerated dofs, i.e. all dofs are hidden.
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+)delimiter"), py::dynamic_attr());
+  hiddenfes_class
+    .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
+                    auto hiddenfes = make_shared<HiddenFESpace>(fes, flags);
+                    hiddenfes->Update();
+                    hiddenfes->FinalizeUpdate();
+                    return hiddenfes;
+                  }), py::arg("fespace"))
+    ;
+
+
+  
   py::class_<ReorderedFESpace, shared_ptr<ReorderedFESpace>, FESpace>(m, "Reorder",
 	docu_string(R"delimiter(Reordered Finite Element Spaces.
 ...
@@ -1505,7 +1680,25 @@ active_dofs : BitArray or None
               }
              }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
 
-
+   py::class_<GlobalInterfaceSpace, shared_ptr<GlobalInterfaceSpace>,
+              FESpace>
+     (m, "GlobalInterfaceSpace")
+     .def(py::init([](shared_ptr<MeshAccess> ma,
+                      shared_ptr<CoefficientFunction> mapping,
+                      optional<Region> definedon,
+                      bool periodic, bool periodicu, bool periodicv,
+                      int order)
+     {
+       auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
+                                             periodic, periodicu,
+                                             periodicv, order);
+       fes->Update();
+       fes->FinalizeUpdate();
+       return fes;
+     }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
+          "periodic"_a = false, "periodicu"_a = false,
+          "periodicv"_a = false, "order"_a = 3)
+     ;
 
 
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
@@ -1673,6 +1866,8 @@ parallel : bool
     .def("Load", [](GF& self, string filename, bool parallel)
          {
            ifstream in(filename, ios::binary);
+           if(in.fail())
+             throw Exception("File " + filename + " does not exist!");
            if (parallel)
              self.Load(in);
            else
@@ -1739,6 +1934,22 @@ use_simd : bool
   If set to false does not use SIMD (for debugging).
 
 )raw_string"))
+
+    .def("Interpolate", 
+         [](shared_ptr<GF> self, spCF cf,
+            py::object definedon, int mdcomp)
+         {
+           Region * reg = nullptr;
+           if (py::extract<Region&> (definedon).check())
+             reg = &py::extract<Region&>(definedon)();
+           
+           py::gil_scoped_release release;
+           self->Interpolate (*cf, reg, mdcomp, glh);
+         },
+         py::arg("coefficient"),
+         py::arg("definedon")=DummyArgument(),
+         py::arg("mdcomp")=0)
+    
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 
     .def_property_readonly("components",
@@ -1836,9 +2047,15 @@ VOL_or_BND : ngsolve.comp.VorB
     .def_property_readonly("derivname", 
                            [](shared_ptr<GF> self) -> string
                    {
+                     /*
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
                      return deriv->Name();
+                     */
+                     for (auto vb : { VOL, BND, BBND })
+                       if (auto deriv = self->GetFESpace()->GetFluxEvaluator(vb))
+                         return deriv->Name();
+                     return "";
                    }, "Name of canonical derivative of the space behind the GridFunction.")
 
     .def("__call__", 
@@ -2035,6 +2252,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def("__radd__", [](shared_ptr<SumOfIntegrals> igls, int i) {
         if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
         return igls; })
+    .def("SetDefinedOnElements", &SumOfIntegrals::SetDefinedOnElements)
     ;
 
   py::class_<Variation> (m, "Variation")
@@ -2169,6 +2387,7 @@ integrator : ngsolve.fem.BFI
          {
            for (auto icf : sum->icfs)
              {
+               /*
                auto & dx = icf->dx;
 
                // check for DG terms
@@ -2203,6 +2422,20 @@ integrator : ngsolve.fem.BFI
                  bfi->SetDefinedOnElements(dx.definedonelements);
                for (auto both : dx.userdefined_intrules)
                  bfi->SetIntegrationRule(both.first, *both.second);
+               */
+
+               
+               shared_ptr<BilinearFormIntegrator> bfi = icf->MakeBilinearFormIntegrator();
+               auto & dx = icf->dx;
+               if (dx.definedon)
+                 {
+                   if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
+                     {
+                       Region reg(self.GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
+                       bfi->SetDefinedOn(reg.Mask());
+                     }
+                 }
+               
                self += bfi;
              }
            return self;
@@ -2227,6 +2460,8 @@ integrator : ngsolve.fem.BFI
                  }
                bfi->SetDeformation(dx.deformation);               
                bfi->SetBonusIntegrationOrder(dx.bonus_intorder);
+               for (auto both : dx.userdefined_intrules)
+                 bfi->SetIntegrationRule(both.first, *both.second);
                self += bfi;
              }
            return self;
@@ -2242,7 +2477,8 @@ integrator : ngsolve.fem.BFI
     
     .def("Assemble", [](shared_ptr<BilinearForm> self, bool reallocate)
          {
-           self->ReAssemble(glh,reallocate);
+           // self->ReAssemble(glh,reallocate);
+           self->ReAssemble(lhp.GetLH(),reallocate);           
            return self;
          }, py::call_guard<py::gil_scoped_release>(),
          py::arg("reallocate")=false, docu_string(R"raw_string(
@@ -2500,40 +2736,36 @@ integrator : ngsolve.fem.LFI
 
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {
+
+
            for (auto icf : (*sum))
              {
+               shared_ptr<LinearFormIntegrator> lfi = icf->MakeLinearFormIntegrator();
                auto & dx = icf->dx;
-               shared_ptr<LinearFormIntegrator> lfi;
-               if (!dx.skeleton)
-                 lfi =  make_shared<SymbolicLinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
-               else
-                 lfi = make_shared<SymbolicFacetLinearFormIntegrator> (icf->cf, dx.vb);
                if (dx.definedon)
                  {
-                   if (auto definedon_bitarray = get_if<BitArray> (&*dx.definedon); definedon_bitarray)
-                     lfi->SetDefinedOn(*definedon_bitarray);
                    if (auto definedon_string = get_if<string> (&*dx.definedon); definedon_string)
                      {
                        Region reg(self->GetFESpace()->GetMeshAccess(), dx.vb, *definedon_string);
                        lfi->SetDefinedOn(reg.Mask());
                      }
                  }
-               lfi->SetDeformation(dx.deformation);
-               lfi->SetBonusIntegrationOrder(dx.bonus_intorder);
-               if(dx.definedonelements)
-                 lfi->SetDefinedOnElements(dx.definedonelements);
-               for (auto both : dx.userdefined_intrules)
-                 lfi->SetIntegrationRule(both.first, *both.second);
+               
                *self += lfi;
              }
            return self;
+
          })
 
     .def_property_readonly("integrators", [](shared_ptr<LF> self)
                            { return MakePyTuple (self->Integrators()); }, "returns tuple of integrators of the linear form")
 
     .def("Assemble", [](shared_ptr<LF> self)
-         { self->Assemble(glh); return self; },
+         {
+           // self->Assemble(glh);
+           self->Assemble(lhp.GetLH());
+           return self;
+         },
          py::call_guard<py::gil_scoped_release>(), "Assemble linear form")
     
     .def_property_readonly("components", [](shared_ptr<LF> self)
@@ -2561,6 +2793,12 @@ integrator : ngsolve.fem.LFI
   py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
     .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
     .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
+    .def ("CreateMatrix", &Prolongation::CreateProlongationMatrix, py::arg("finelevel"))
+    .def ("LevelDofs", &Prolongation::LevelDofs, py::arg("level"))
+    .def ("Operator", [](shared_ptr<Prolongation> prol, int level) -> shared_ptr<BaseMatrix>
+          {
+            return make_shared<ngmg::ProlongationOperator>(prol, level);
+          }, py::arg("finelevel"))
     ;
   
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
@@ -2570,6 +2808,66 @@ integrator : ngsolve.fem.LFI
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
            auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
+
+           if (kwargs.contains("blockcreator"))
+             {
+               auto bc = kwargs["blockcreator"];
+               py::print("createor: ", bc);
+                 // if it is a compiled C++ user-function we should stay within C++
+               // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
+               if (py::function pyf=bc; pyf.is_cpp_function())
+                 {
+                   cout << "it's a C++ function" << endl;
+                   auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(pyf.cpp_function());
+                   cout << "have func object, type(func) = " << typeid(func).name() << endl;
+                   cout << "type cppfunc = " << typeid(pyf.cpp_function()).name() << endl;
+                   typedef shared_ptr<Table<DofId>>(*callbackfunc)(const FESpace &);
+                   cout << "func-ptr = " << func.target<callbackfunc>() << endl;
+                   // cout << "function pointer " << (void*)(*func.target<callbackfunc>()) << endl;
+
+                   flags.SetFlag("blockcreator", func);
+                 }
+               else
+                 {
+                   cout << "could not extract C++ function" << endl;                   
+                   // cout << "create a wrapper" << endl;
+                   function<shared_ptr<Table<DofId>>(const FESpace&)> lam =
+                     [bc](const FESpace & fes) -> shared_ptr<Table<DofId>>
+                     {
+                       py::gil_scoped_acquire aq;
+                       py::object blocks = bc(py::cast(fes));
+
+                       if (py::isinstance<Table<DofId>>(blocks))
+                         return py::cast<shared_ptr<Table<DofId>>>(blocks);
+
+                       // not yet working:
+                       // print ("blocks:", blocks);
+                       // py::cast<shared_ptr<Table<DofId>>> (blocks);
+                       // cout << "cast did work" << endl;
+                       // return py::cast<shared_ptr<Table<DofId>>>(blocks);  
+
+                       size_t size = py::len(blocks);
+                       Array<int> cnt(size);
+                       size_t i = 0;
+                       for (auto block : blocks)
+                         cnt[i++] = py::len(block);
+                       
+                       i = 0;
+                       auto blocktable = make_shared<Table<DofId>>(cnt);
+                       for (auto block : blocks)
+                         {
+                           auto row = (*blocktable)[i++];
+                           size_t j = 0;
+                           for (auto val : block)
+                             row[j++] = val.cast<int>();
+                         }
+                       // cout << "blocktable = " << *blocktable << endl;
+                       return blocktable;
+                     };
+                   flags.SetFlag("blockcreator", lam);
+                 }
+             }
+           
            auto creator = GetPreconditionerClasses().GetPreconditioner(type);
            if (creator == nullptr)
              throw Exception(string("nothing known about preconditioner '") + type + "'");
@@ -2599,11 +2897,14 @@ integrator : ngsolve.fem.LFI
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");
   prec_multigrid
-    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, py::kwargs kwargs)
+    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, optional<shared_ptr<Preconditioner>> lo_precond, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, prec_multigrid);
-                    return make_shared<MGPreconditioner>(bfa,flags, name);
-                  }), py::arg("bf"), "name"_a = "multigrid")
+                    auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
+                    if(lo_precond.has_value())
+                      mgpre->SetCoarsePreconditioner(lo_precond.value());
+                    return mgpre;
+                  }), py::arg("bf"), "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
     .def_static("__flags_doc__", [prec_class] ()
                 {
                   auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
@@ -2621,6 +2922,15 @@ integrator : ngsolve.fem.LFI
                   mg_flags["updatealways"] = "bool = False\n";
                   return mg_flags;
                 })
+
+    // not working because shared_ptr<Array<int>> cannot be pybind arg type?
+    // TODO CL: Find out why...
+    // .def("SetDirectSolverCluster", &MGPreconditioner::SetDirectSolverCluster)
+    .def("SetDirectSolverCluster", [](MGPreconditioner& self, py::list pycluster)
+    {
+      auto cluster = make_shared<Array<int>>(makeCArray<int>(pycluster));
+      self.SetDirectSolverCluster(cluster);
+    })
     ;
 
 
@@ -3206,7 +3516,11 @@ element_wise: bool = False
          {
            bool iscomplex = false;
            for (auto & ci : igls)
-             iscomplex |= ci->cf->IsComplex();
+             {
+               iscomplex |= ci->cf->IsComplex();
+               if (ci->cf->Dimension() > 1)
+                 throw Exception("Integrate(cf*dx) needs scalar-valued CoefficientFunction");
+             }
 
            auto integrate = [&] (auto tscal) 
            {
@@ -3217,7 +3531,7 @@ element_wise: bool = False
              elvals = TSCAL(0.0);
              
              for (auto & ci : igls)
-               sum += ci->Integrate<TSCAL>(ma, elvals);
+               sum += ci->Integrate(ma, elvals);
              if (element_wise) return py::cast(elvals);
              return py::cast(sum);
            };

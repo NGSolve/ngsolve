@@ -337,6 +337,7 @@ nr : int
       auto range = self.GetElements();
       return py::make_iterator(range.begin(), range.end());
     }, py::keep_alive<0,1>())
+    .def_property_readonly("mesh", &Region::Mesh)
     .def("__hash__", &Region::Hash)
     .def("__eq__", &Region::operator==)
     .def(py::self + py::self)
@@ -434,7 +435,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def ("nnodes", &MeshAccess::GetNNodes, "number of nodes given type")
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "the Netgen mesh")
-
+    .def_property_readonly ("levels", &MeshAccess::GetNLevels, "multigrid levels")
     
     .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
           {
@@ -498,6 +499,10 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);}, "Unset the deformation")
 
+    .def_property("deformation", 
+                  &MeshAccess::GetDeformation,
+                  &MeshAccess::SetDeformation, "mesh deformation")
+
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
           {
@@ -547,7 +552,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
         "Return list of pml transformations"
     )
     .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
-        if (ma.GetPMLTrafos()[domnr])
+        if (ma.GetPMLTrafos()[domnr-1])
      	  return ma.GetPMLTrafos()[domnr-1];
         else
           throw Exception("No PML Trafo set"); 
@@ -704,16 +709,16 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
 
     // TODO: explain how to mark elements
     .def("Refine",
-         [](MeshAccess & ma, bool mark_surface_elements)
+         [](MeshAccess & ma, bool mark_surface_elements, bool onlyonce)
           {
             if (!mark_surface_elements)
               {
                 for (ElementId ei : ma.Elements(BND))
                   ma.SetRefinementFlag(ei, false);
               }
-            ma.Refine();
+            ma.Refine(onlyonce);
           },py::call_guard<py::gil_scoped_release>(),
-         py::arg("mark_surface_elements")=false,
+         py::arg("mark_surface_elements")=false, py::arg("onlyonce")=false,
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP",
@@ -743,12 +748,24 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          "Return parent element id on refined mesh")
 
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
-          {
+         {
             auto parents = ma.GetParentNodes (vnum);
             return py::make_tuple(parents[0], parents[1]);
           },
          py::arg("vnum"),
          "Return parent vertex numbers on refined mesh")
+    
+    .def("GetParentFaces", [](MeshAccess & ma, int fnum)
+         {
+           auto [info,nrs] = ma.GetParentFaces (fnum);
+           if (nrs[1] == -1)
+             return py::make_tuple(nrs[0]);
+           else
+             return py::make_tuple(nrs);
+         },
+         py::arg("fnum"),
+         "Return parent faces")
+    
     .def("GetHPElementLevel", &MeshAccess::GetHPElementLevel,
          py::arg("ei"),
          "THIS FUNCTION IS WIP!\n Return HP-refinement level of element")
@@ -774,23 +791,48 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
 	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
-    .def("MapToAllElements", [](MeshAccess* self, IntegrationRule& rule, VorB vb)
+    .def("MapToAllElements", [](MeshAccess* self, IntegrationRule& rule, std::variant<VorB, Region> vb_or_reg)
          -> py::array_t<MeshPoint>
                              {
                                Array<MeshPoint> points;
-                               points.SetAllocSize(self->GetNE() * rule.Size());
-                               for(auto el : self->Elements(vb))
-                                 for(const auto& p : rule)
-                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
+
+                               if (auto vb = get_if<VorB>(&vb_or_reg); vb)
+                               {
+                                 points.SetAllocSize(self->Elements(*vb).Size() * rule.Size());
+                                 for(auto el : self->Elements(*vb))
+                                   for(const auto& p : rule)
+                                     points.Append({p(0), p(1), p(2), self, *vb, int(el.Nr())});
+                               }
+
+                               if (auto reg = get_if<Region>(&vb_or_reg); reg)
+                               {
+                                 for(auto el : self->Elements(reg->VB()))
+                                   if (reg->Mask().Test(el.GetIndex()))
+                                     for(const auto& p : rule)
+                                       points.Append({p(0), p(1), p(2), self, reg->VB(), int(el.Nr())});
+                               }
+
                                return MoveToNumpyArray(points);
                              })
-    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, VorB vb)
+    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, std::variant<VorB, Region> vb_or_reg)
          -> py::array_t<MeshPoint>
                              {
                                Array<MeshPoint> points;
-                               for(auto el : self->Elements(vb))
-                                 for(const auto& p : rules[el.GetType()])
-                                   points.Append({p(0), p(1), p(2), self, vb, int(el.Nr())});
+
+                               if (auto vb = get_if<VorB>(&vb_or_reg); vb)
+                               {
+                                 for(auto el : self->Elements(*vb))
+                                   for(const auto& p : rules[el.GetType()])
+                                     points.Append({p(0), p(1), p(2), self, *vb, int(el.Nr())});
+                               }
+
+                               if (auto reg = get_if<Region>(&vb_or_reg); reg)
+                               {
+                                 for(auto el : self->Elements(reg->VB()))
+                                   if (reg->Mask().Test(el.GetIndex()))
+                                     for(const auto& p : rules[el.GetType()])
+                                       points.Append({p(0), p(1), p(2), self, reg->VB(), int(el.Nr())});
+                               }
                                return MoveToNumpyArray(points);
                              })
     ;

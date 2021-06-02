@@ -20,8 +20,8 @@ add_dependencies( ngstd generate_version_file )
 
 target_link_libraries(ngstd PUBLIC ngcore nglib)
 
-target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE netgen_python)
-target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
+target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>")
+target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngstd ${ngs_install_dir} )
 
 install( FILES
@@ -32,8 +32,7 @@ install( FILES
         statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp sockets.hpp cuda_ngstd.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
-        bspline.hpp simd.hpp
-        simd_complex.hpp sample_sort.hpp
+        bspline.hpp simd_complex.hpp sample_sort.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

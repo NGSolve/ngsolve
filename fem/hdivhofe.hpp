@@ -46,6 +46,8 @@ namespace ngfem
     using VertexOrientedFE<ET>::vnums;
     using VertexOrientedFE<ET>::GetVertexOrientedFace;
   public:
+    using VertexOrientedFE<ET>::SetVertexNumbers;    
+
     T_HDivHighOrderNormalFiniteElement ()
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
@@ -402,7 +404,9 @@ namespace ngfem
     virtual void CalcNormalShape (const IntegrationPoint & ip, 
                                   SliceVector<> nshape) const override;
 
-    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const override;
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override;
+
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override;
 
   };
 

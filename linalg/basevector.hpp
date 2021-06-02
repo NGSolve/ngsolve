@@ -86,7 +86,7 @@ namespace ngla
   /**
      Base vector for linalg
   */
-  class NGS_DLL_HEADER BaseVector
+  class NGS_DLL_HEADER BaseVector : public enable_shared_from_this_virtual<BaseVector>
   {
   protected:
     /// size of vector
@@ -207,7 +207,10 @@ namespace ngla
 
     size_t Size() const throw () { return size; }
     T_Range<size_t> Range() const { return T_Range<size_t> (0, size); }
+    // one entry has the size of that many doubles
     int EntrySize() const throw () { return entrysize; }
+    // one entry has the size of that many scalars (double or complex)
+    virtual int EntrySizeScal() const throw () = 0;
     virtual void * Memory () const = 0;
     virtual FlatVector<double> FVDouble () const = 0;
     virtual FlatVector<Complex> FVComplex () const = 0;
@@ -373,13 +376,15 @@ namespace ngla
   
   class NGS_DLL_HEADER AutoVector // : public BaseVector
   {
-    unique_ptr<BaseVector> vec;
+    shared_ptr<BaseVector> vec;
   public:
     AutoVector () { ; }
 
     AutoVector (AutoVector && av2) : vec(move(av2.vec)) { } 
     // { size = av2.Size(), entrysize = av2.EntrySize(); }
 
+    AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) { }
+    
     AutoVector (unique_ptr<BaseVector> hvec) : vec(move(hvec)) { } 
     // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
@@ -490,9 +495,10 @@ namespace ngla
       vec->SetScalar (s);
       return *this;
     }
-
-    operator unique_ptr<BaseVector> () && { return move(vec); }
-    operator shared_ptr<BaseVector> () && { return move(vec); }
+    
+    // operator unique_ptr<BaseVector> () && { return move(vec); }
+    // operator shared_ptr<BaseVector> () && { return move(vec); }
+    operator shared_ptr<BaseVector> () { return vec; }
     BaseVector & operator* () { return *vec; }
     const BaseVector & operator* () const { return *vec; }
     operator BaseVector & () { return *vec; }
@@ -589,15 +595,34 @@ namespace ngla
 
 
     void GetIndirect (FlatArray<int> ind, 
-			      FlatVector<double> v) const
+                      FlatVector<double> v) const
     {
       vec -> GetIndirect (ind, v);
     }
     void GetIndirect (FlatArray<int> ind, 
-			      FlatVector<Complex> v) const
+                      FlatVector<Complex> v) const
     {
       vec -> GetIndirect (ind, v);
     }
+
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v)
+    {
+      vec->SetIndirect (ind,v);
+    }
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v)
+    {
+      vec->SetIndirect (ind,v);      
+    }
+    
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false)
+    {
+      vec->AddIndirect (ind, v, use_atomic);
+    }
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false)
+    {
+      vec->AddIndirect (ind, v, use_atomic);
+    }
+    
 
     void Cumulate () const 
     { vec -> Cumulate(); }
@@ -656,21 +681,24 @@ namespace ngla
     virtual ~S_BaseVector() { ; }
 
     S_BaseVector & operator= (double s);
-    virtual BaseVector & SetScalar (double scal);
+    virtual BaseVector & SetScalar (double scal) override;
 
-    virtual bool IsComplex() const 
+    virtual bool IsComplex() const override
     { return typeid(SCAL) == typeid(Complex); }
-
+    
+    virtual int EntrySizeScal() const throw () override
+    { return EntrySize() * sizeof(double)/sizeof(SCAL); }
+    
     virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;
 
-    virtual double InnerProductD (const BaseVector & v2) const;
-    virtual Complex InnerProductC (const BaseVector & v2, bool conjugate = false) const;
+    virtual double InnerProductD (const BaseVector & v2) const override;
+    virtual Complex InnerProductC (const BaseVector & v2, bool conjugate = false) const override;
 
 
-    virtual FlatVector<double> FVDouble () const;
-    virtual FlatVector<Complex> FVComplex () const;
+    virtual FlatVector<double> FVDouble () const override;
+    virtual FlatVector<Complex> FVComplex () const override;
 
-    virtual FlatVector<SCAL> FVScal () const
+    virtual FlatVector<SCAL> FVScal () const 
     {
       return FlatVector<SCAL> (size * entrysize * sizeof(double)/sizeof(SCAL), 
                                Memory());
@@ -678,9 +706,9 @@ namespace ngla
 
 
     virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<double> v) const;
+                              FlatVector<double> v) const override;
     virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<Complex> v) const;
+                              FlatVector<Complex> v) const override;
 
   };
 
@@ -777,7 +805,7 @@ namespace ngla
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs);
 
     size_t NBlocks() const throw () { return vecs.Size(); }
-    
+    virtual int EntrySizeScal() const throw () override { return vecs[0]->EntrySizeScal(); }
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
     void * Memory () const override;

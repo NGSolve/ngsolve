@@ -12,6 +12,7 @@
 #include <multigrid.hpp>
 
 #include <../fem/hcurllofe.hpp>
+#include <../fem/thcurlfe_impl.hpp>
 
 
 using namespace ngmg; 
@@ -19,8 +20,6 @@ using namespace ngmg;
 
 namespace ngcomp
 {
-  using namespace ngcomp;
-
 
   // Nedelec FE Space
   NedelecFESpace :: NedelecFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
@@ -122,6 +121,28 @@ namespace ngcomp
              finelevelofedge[el.Edges()] = level-1;         
          });
 
+
+    
+
+    if (ma->HasParentEdges())
+      {
+        parentedges.SetSize(ned);
+        for (int i = 0; i < ned; i++)
+          {
+            auto [info,nrs] = ma->GetParentEdges(i);
+            // cout << "parent of " << i << " : info = " << info
+            // << " nrs = " << nrs[0] << "," << nrs[1] << "," << nrs[2] << endl;
+            if (nrs[0] > i || nrs[1] > i) cout << "parent is larger" << endl;
+            parentedges[i][0] = (nrs[0]==-1) ? -1 : 2*nrs[0]+(info&1);
+            parentedges[i][1] = (nrs[1]==-1) ? -1 : 2*nrs[1]+ ( (info&2) / 2);
+          }
+      }
+
+    // cout << "parentedges, ng: " << parentedges << endl;
+
+
+
+    
     // generate edge points, and temporary hash table
     ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
 
@@ -136,13 +157,17 @@ namespace ngcomp
 	edgepoints.Append (edge);
       }
 
-    
+
+    // if (!ma->HasParentEdges())
+      {
+		    static Timer t("build_hierarchy"); RegionTimer reg(t);
     // build edge hierarchy:
     parentedges.SetSize (ned);
     parentedges = INT<2> (-1,-1);
 
     for (size_t i = 0; i < ned; i++)
       {
+	// cout << "edge " << i << "/" << ned << endl;
 	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
 	ma->GetParentNodes (i2[0], pa1);
@@ -204,11 +229,14 @@ namespace ngcomp
 
 		if (node2edge.Used (paedge1) && node2edge.Used (paedge2))
 		  {
+		    // cout << "paedge1 = " << paedge1 << ", i2 = " << i2 << endl;		    
+		    // cout << "paedge2 = " << paedge2 << ", i2 = " << i2 << endl;		    
 		    paedgenr1 = node2edge.Get (paedge1);
 		    orient1 = (paedge1[0] == i2[0] || paedge1[1] == i2[1]) ? 1 : 0;
 		    paedgenr2 = node2edge.Get (paedge2);
 		    orient2 = (paedge2[0] == i2[0] || paedge2[1] == i2[1]) ? 1 : 0;
-		    
+		    // cout << "orient1 = " << orient1 << endl;
+		    // cout << "orient2 = " << orient2 << endl;		    		    
 		    parentedges[i][0] = 2 * paedgenr1 + orient1;	      
 		    parentedges[i][1] = 2 * paedgenr2 + orient2;	      
 		  }
@@ -293,8 +321,10 @@ namespace ngcomp
 		 << endl;
 	  }
       }
-    
-    
+      }
+
+    // cout << "parentedges = " << endl << parentedges << endl;
+
     prol->Update(*this);
     UpdateCouplingDofArray();
   }
@@ -717,6 +747,374 @@ namespace ngcomp
   }
 
 
+
+  
+  
+  class EdgeP1Prolongation : public Prolongation
+  {
+    shared_ptr<MeshAccess> ma;
+    const FESpace & space;
+  public:
+    EdgeP1Prolongation(const FESpace & aspace)
+      : ma(aspace.GetMeshAccess()), space(aspace)
+    {
+      ma->EnableTable("parentedges");
+    }
+    
+    virtual ~EdgeP1Prolongation() { }
+  
+    virtual void Update (const FESpace & fes) { ; }
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const
+    { return nullptr; }
+
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const
+    {
+      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
+      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      
+      auto fv = v.FV<double>();
+      fv.Range(2*nf, fv.Size()) = 0;
+      
+
+      for (size_t i = nc; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          int pa1 = nrs[0];
+          int pa2 = nrs[1];
+          int pa3 = nrs[2];
+          
+          if (pa2 == -1)
+            {
+              double fac0 = (info & 1) ? 0.5 : -0.5;
+              fv(2*i)   = fac0 * fv(2*pa1) - 0.125 * fv(2*pa1+1);
+              fv(2*i+1) = 0.25 * fv(2*pa1+1);
+            }
+          else if (info<8)//bisecting edge
+            {
+              double fac1 = (info&1) ? 0.5 : -0.5;
+              double fac2 = (info&2) ? 0.5 : -0.5;
+              double fac3 = (info&4) ? -0.125 : 0.125;
+              fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3+1);
+              fv(2*i+1) = 0.5 * (fv(2*pa1+1)+fv(2*pa2+1)) - 0.25*fv(2*pa3+1);
+            }
+          else // info>=8: red edge
+            {
+              double fac1 = (info&1) ? 0.25 : -0.25;
+              double fac2 = (info&2) ? 0.25 : -0.25;
+              double fac3 = (info&4) ? 0.25 : -0.25;
+              fv(2*i) = fac1 * fv(2*pa1) + fac2 * fv(2*pa2) + fac3 * fv(2*pa3)
+                + 0.125 * fv(2*pa1+1) - 0.125 * fv(2*pa2+1);
+              fv(2*i+1) = 0.25*fv(2*pa3+1);
+            }
+        }
+
+      // every edge from coarse level got split
+      for (size_t i = 0; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          if (nrs[0] != -1 && nrs[1] == -1)
+            {
+              fv(2*nrs[0]) = 0;
+              fv(2*nrs[0]+1) = 0;
+            }
+        }
+    }
+    
+    virtual void RestrictInline (int finelevel, BaseVector & v) const
+    {
+      size_t nc = space.GetNDofLevel (finelevel-1) / 2;
+      size_t nf = space.GetNDofLevel (finelevel) / 2;
+      
+      auto fv = v.FV<double>();
+      fv.Range(2*nf, fv.Size()) = 0;
+
+      // every edge from coarse level got split
+      for (size_t i = 0; i < nf; i++)
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+          if (nrs[0] != -1 && nrs[1] == -1)
+            {
+              fv(2*nrs[0]) = 0;
+              fv(2*nrs[0]+1) = 0;
+            }
+        }
+
+      
+      for (size_t i = nf; i-- > nc; )
+        {
+          auto [info, nrs] = ma->GetParentEdges(i);
+	  int pa1 = nrs[0];
+	  int pa2 = nrs[1];
+	  int pa3 = nrs[2];
+
+          if (pa2 == -1)
+            {
+              double fac0 = (info & 1) ? 0.5 : -0.5;
+              fv(2*pa1) += fac0 * fv(2*i);
+              fv(2*pa1+1) += -0.125 * fv(2*i) + 0.25 * fv(2*i+1);
+            }
+          else if (info<8)//bisecting edge
+            {
+              double fac1 = (info&1) ? 0.5 : -0.5;
+              double fac2 = (info&2) ? 0.5 : -0.5;
+              double fac3 = (info&4) ? -0.125 : 0.125;
+              fv(2*pa1)   += fac1 * fv(2*i);
+              fv(2*pa1+1) += 0.5 * fv(2*i+1);
+              fv(2*pa2)   += fac2 * fv(2*i);
+              fv(2*pa2+1) += 0.5 * fv(2*i+1);
+              fv(2*pa3+1) += fac3 * fv(2*i) - 0.25 * fv(2*i+1);
+            }
+          else // info>=8: red edge
+            {
+              double fac1 = (info&1) ? 0.25 : -0.25;
+              double fac2 = (info&2) ? 0.25 : -0.25;
+              double fac3 = (info&4) ? 0.25 : -0.25;
+              fv(2*pa1)   += fac1 * fv(2*i);
+              fv(2*pa1+1) += 0.125 * fv(2*i);
+              fv(2*pa2)   += fac2 * fv(2*i);
+              fv(2*pa2+1) -= 0.125 * fv(2*i);
+              fv(2*pa3) += fac3 * fv(2*i);
+              fv(2*pa3+1) += 0.25*fv(2*i+1);
+            }
+        }
+      
+    }
+  };
+
+}
+
+namespace ngfem {
+  class NedelecP1Trig : public T_HCurlFiniteElementFO<NedelecP1Trig,ET_TRIG,6,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
+    {
+      // Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
+      Tx lami[3] = { x, y, 1-x-y };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      for (int i = 0; i < 3; i++)
+        {
+          shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+3] = Du (-0.5*lami[edges[i][0]]*lami[edges[i][1]]);
+        }
+    }
+  };
+
+  class NedelecP1Tet : public T_HCurlFiniteElementFO<NedelecP1Tet,ET_TET,12,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
+    {
+      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      for (int i = 0; i < 6; i++)
+        {
+          shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+6] = Du (-0.5*lami[edges[i][0]]*lami[edges[i][1]]);
+        }
+    }
+  };
+  
+  // template class T_HCurlHighOrderFiniteElement<ET_TRIG,NedelecP1Trig>;
+  // template class T_HCurlHighOrderFiniteElement<ET_TET,NedelecP1Tet>;
+}
+
+namespace ngcomp {
+  
+  class NGS_DLL_HEADER NedelecP1FESpace : public FESpace
+  {
+    BitArray active_edges;
+  public:
+    NedelecP1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false)
+      : FESpace(ama, flags)
+      {
+        name="NedelecP1FESpace";
+        
+        if (ma->GetDimension() == 2)
+          {
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();        
+
+            additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<2>>> ());
+          }
+        else if(ma->GetDimension() == 3) 
+          {
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
+            flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+            evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();
+
+            additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());            
+          }
+        prol = make_shared<EdgeP1Prolongation> (*this);
+      }
+    
+    virtual ~NedelecP1FESpace () { }
+    virtual const char * GetType()  { return "NedelecP1"; }
+
+    /*
+    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags)
+    {
+      return make_shared<NedelecFESpace2> (ma, flags, true);
+    }
+    */
+    void Update() override
+    {
+      size_t ned = ma->GetNEdges();
+      SetNDof (2*ned);
+      active_edges = BitArray(ned);
+      active_edges.Clear();
+      for (auto el : ma->Elements(VOL))
+        for (auto ed : el.Edges())
+          active_edges.SetBit(ed);
+      
+      ctofdof.SetSize(GetNDof());
+      ctofdof = WIREBASKET_DOF;
+      for (size_t i = 0; i < ned; i++)
+        if (!active_edges.Test(i))
+          ctofdof[2*i] = ctofdof[2*i+1] = UNUSED_DOF;
+      // cout << "active edges = " << endl << active_edges << endl;
+    }
+    
+    // virtual void DoArchive (Archive & archive) override;
+    // virtual void UpdateCouplingDofArray() override;
+    
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override
+    {
+      switch (ma->GetElType(ei))
+        {
+        case ET_TET:     return * new (lh) NedelecP1Tet;
+        case ET_TRIG:    return * new (lh) NedelecP1Trig;
+        default:
+          throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+        }
+    }
+    
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override
+    {
+      auto edges = ma->GetElEdges (ei);
+      dnums.SetSize(2*edges.Size());
+      for (int i : Range(edges))
+        {
+          dnums[i] = 2*edges[i];
+          dnums[i+edges.Size()] = 2*edges[i]+1;
+        }
+    }
+
+    // virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+
+    template <class T>
+      NGS_DLL_HEADER void T_TransformMat (ElementId ei, 
+                                          SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
+    {
+      Ngs_Element ngel = ma->GetElement(ei);
+      ELEMENT_TYPE eltype = ngel.GetType();
+      
+      int ned = ElementTopology::GetNEdges (eltype);
+      const EDGE * edges = ElementTopology::GetEdges (eltype);
+      ArrayMem<int,12> eorient(ned);
+      for (int i = 0; i < ned; i++)
+        eorient[i] = 
+          ngel.vertices[edges[i][0]] < ngel.vertices[edges[i][1]]  
+                                       ? 1 : -1;
+      
+      if (tt & TRANSFORM_MAT_LEFT)
+        for (int i = 0; i < ned; i++)
+          for (int k = 0; k < dimension; k++)
+            mat.Row(k+i*dimension) *= eorient[i];
+      
+      if (tt & TRANSFORM_MAT_RIGHT)
+        for (int j = 0; j < ned; j++)
+          for (int l = 0; l < dimension; l++)
+            mat.Col(l+j*dimension) *= eorient[j];
+    }
+    
+    template <class T>
+      NGS_DLL_HEADER void T_TransformVec (ElementId ei, 
+                                          SliceVector<T> vec, TRANSFORM_TYPE tt) const
+    {
+      Ngs_Element ngel = ma->GetElement(ei);
+      ELEMENT_TYPE eltype = ngel.GetType();
+      
+      int ned = ElementTopology::GetNEdges (eltype);
+      const EDGE * edges = ElementTopology::GetEdges (eltype);
+      ArrayMem<int,12> eorient(ned);
+      for (int i = 0; i < ned; i++)
+        eorient[i] = 
+          ngel.vertices[edges[i][0]] < ngel.vertices[edges[i][1]]  
+        ? 1 : -1;
+      
+      
+      if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL) || (tt & TRANSFORM_SOL_INVERSE))
+        {
+          for (int k = 0; k < dimension; k++)
+            for (int i = 0; i < ned; i++)
+              vec(k+i*dimension) *= eorient[i];
+        }
+    }
+    
+    
+    virtual void VTransformMR (ElementId ei, 
+                               SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformMat (ei, mat, tt);
+    }
+    
+    virtual void VTransformMC (ElementId ei, 
+                               SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformMat (ei, mat, tt);
+    }
+    
+    virtual void VTransformVR (ElementId ei, 
+                               SliceVector<double> vec, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformVec (ei, vec, tt);
+    }
+    
+    virtual void VTransformVC (ElementId ei, 
+                               SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
+    {
+      T_TransformVec (ei, vec, tt);
+    }
+    
+    virtual string GetClassName () const override
+    {
+      return "NedelecP1FESpace";
+    }
+    
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override
+    { dnums.SetSize0(); }
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
+    {
+      if (active_edges.Test(ednr))
+        {
+          dnums.SetSize(2);
+          dnums[0] = 2*ednr;
+          dnums[1] = 2*ednr+1;
+        }
+      else
+        dnums.SetSize0();
+    }
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
+    { dnums.SetSize0(); }    
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
+    { dnums.SetSize0(); }    
+  };
+
+  static RegisterFESpace<NedelecP1FESpace> initnedelec ("HCurlP1");
+
+
+
+
+  
 
   NedelecFESpace2 :: NedelecFESpace2 (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)

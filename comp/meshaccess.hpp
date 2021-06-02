@@ -661,10 +661,15 @@ namespace ngcomp
       */
     }
 
-    void Refine ();
+    void Refine (bool onlyonce);
     void Curve (int order);
     int GetCurveOrder ();
 
+    void EnableTable (string name, bool set = true)
+    {
+      mesh.EnableTable(name, set);
+    }
+    
     void HPRefinement (int levels, double factor = 0.125)
     {
       mesh.HPRefinement(levels, factor);
@@ -994,7 +999,10 @@ namespace ngcomp
         throw Exception ("GetParentElement only supported for VOL and BND");
     }
 
-    
+    bool HasParentEdges () const { return mesh.HasParentEdges(); }
+    auto GetParentEdges (int enr) const { return mesh.GetParentEdges(enr); }
+    auto GetParentFaces (int fnr) const { return mesh.GetParentFaces(fnr); }
+
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
     { return mesh.GetClusterRepVertex (pi+1)-1; }

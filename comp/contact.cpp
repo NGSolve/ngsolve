@@ -30,6 +30,7 @@ namespace ngcomp
     Mat<DIM> a;
     Vec<DIM> b;
     Vec<DIM> x0;
+    double d0;
 
     template<int DIMR>
     T2( MappedIntegrationPoint<DIM, DIMR> & mip, Vec<DIMR> pmaster ) : x0(mip.IP().Point())
@@ -47,17 +48,21 @@ namespace ngcomp
       a = 2*Trans(jac)*jac;
       for (int d : Range(DIMR))
         a += dist[d] * hesse[d];
+      d0 = L2Norm2(dist);
     }
 
-    Vec<DIM> CalcMinimumOnSegment( Vec<DIM> x1, Vec<DIM> x2 )
+    bool CalcMinimumOnSegment( Vec<DIM> x1, Vec<DIM> x2, Vec<DIM> & res )
     {
       auto v = x2-x1;
       Vec<DIM> va = a*v;
-      double lam = InnerProduct(v,b) - InnerProduct(va,x2+x0);
+      double lam = - InnerProduct(v,b) - InnerProduct(va,x1-x0);
       lam /= InnerProduct(va,v);
-      lam = min(lam,1.0);
-      lam = max(lam,0.0);
-      return lam*x1 + (1-lam)*x2;
+
+      if(lam<0 || lam>1.0)
+          return false;
+
+      res = lam*x2 + (1-lam)*x1;
+      return true;
     }
 
     Vec<DIM> CalcMinimum( )
@@ -68,7 +73,7 @@ namespace ngcomp
     double operator() (Vec<DIM> x)
     {
       x -= x0;
-      return InnerProduct(x, a*x) + InnerProduct(b,x);
+      return d0 + 0.5*InnerProduct(x, a*x) + InnerProduct(b,x);
     }
   };
 
@@ -114,12 +119,19 @@ namespace ngcomp
       if constexpr (DIMS==2)
       {
         // TODO: Handle quad elements
+        auto getDist = [&] ( auto l )
+        {
+          Vec<DIMR> p;
+          trafo.CalcPoint( {l}, p );
+          return L2Norm2( p-pmaster );
+        };
 
         // check corner points
         ArrayMem<Vec<DIMS>, 5> points{ {0,0}, {0,1}, {1,0} };
         for (Vec<DIMS> lam : points)
         {
-          auto d = t2(lam);
+          // auto d = t2(lam);
+          auto d = getDist(lam);
           if(is_front && d < min_dist)
           {
             min_dist = d;
@@ -127,38 +139,38 @@ namespace ngcomp
           }
         }
 
-        ArrayMem<Vec<DIMS>, 5> lam;
-        ArrayMem<double, 5> dist;
+        auto checkLam = [&]( auto lam )
+        {
+            if(!is_front)
+                return;
+            auto dist = getDist(lam);
+
+            if(dist < min_dist)
+            {
+                min_dist = dist;
+                min_lam = lam;
+            }
+        };
 
         auto l = t2.CalcMinimum();
+
         if(l[0]>0 && l[1]>0 && l[0]<1 && l[1]<1 && l[0]+l[1]<1)
-        {
-          lam.Append(l);
-          dist.Append(t2(lam.Last()));
-        }
+            checkLam(l);
 
-        lam.Append(t2.CalcMinimumOnSegment( {0,0}, {1,0} ));
-        dist.Append(t2(lam.Last()));
+        if(t2.CalcMinimumOnSegment( {0,0}, {1,0}, l ))
+            checkLam(l);
 
-        lam.Append(t2.CalcMinimumOnSegment( {1,0}, {0,1} ));
-        dist.Append(t2(lam.Last()));
+        if(t2.CalcMinimumOnSegment( {1,0}, {0,1}, l ))
+            checkLam(l);
 
-        lam.Append(t2.CalcMinimumOnSegment( {0,1}, {0,0} ));
-        dist.Append(t2(lam.Last()));
+        if(t2.CalcMinimumOnSegment( {0,1}, {0,0}, l ))
+            checkLam(l);
 
-        for(auto i : Range(lam.Size()))
-        {
-          if(is_front && dist[i]<min_dist && InnerProduct(n , mip.GetNV())<0)
-          {
-            min_dist = dist[i];
-            min_lam = lam[i];
-          }
-        }
       }
     }
 
-    if(min_dist > h)
-      return min_dist;
+    if(min_dist > h*h)
+      return sqrt(min_dist);
 
     ip = min_lam;
     trafo.CalcPoint( ip, p );
@@ -191,8 +203,14 @@ namespace ngcomp
 
     netgen::Point<DIM> ngp1;
     for (int j = 0; j < DIM; j++) ngp1(j) = p1(j);
-    netgen::Box<DIM> box(ngp1, ngp1);
-    box.Increase(h);
+
+    auto hcurrent = h/(1024.*1024.);
+    int found = 2;
+    while(found>0 && hcurrent<=h)
+    {
+
+     netgen::Box<DIM> box(ngp1, ngp1);
+     box.Increase(hcurrent);
 
     Vec<DIM> p2_min;
     searchtree->GetFirstIntersecting
@@ -219,6 +237,11 @@ namespace ngcomp
          }
          return false;
        });
+    if(mindist < hcurrent)
+      found--;
+
+    hcurrent *= 2;
+    }
 
     if(intersect)
     {
@@ -284,15 +307,16 @@ namespace ngcomp
         MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
         MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
+        netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
         for (auto & mip : mir2_def)
           {
             netgen::Point<DIM> p;
             for (int j = 0; j < DIM; j++)
               p(j) = mip.GetPoint()(j);
-            bbox.Add(p);
+            elbox.Add(p);
           }
 
-        searchtree->Insert(bbox, el2.Nr());
+        searchtree->Insert(elbox, el2.Nr());
       }
   }
 
@@ -323,10 +347,15 @@ namespace ngcomp
     netgen::Point<DIM> ngp1;
     for (int j = 0; j < DIM; j++)
       ngp1(j) = p1(j);
-    netgen::Box<DIM> box(ngp1, ngp1);
-    box.Increase(h);
 
     auto & mip = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip);
+
+    auto hcurrent = h/(1024.*1024.);
+    int found = 2;
+    while(found>0 && hcurrent<=h)
+    {
+     netgen::Box<DIM> box(ngp1, ngp1);
+     box.Increase(hcurrent);
 
     searchtree->GetFirstIntersecting
       (box.PMin(), box.PMax(),
@@ -355,6 +384,12 @@ namespace ngcomp
          }
          return false;
        });
+
+    if(mindist < hcurrent)
+      found--;
+
+    hcurrent *= 2;
+    }
   }
 
   template<int DIM>

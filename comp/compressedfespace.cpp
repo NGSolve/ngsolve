@@ -19,7 +19,12 @@ namespace ngcomp
 
   void CompressedFESpace::Update()
   { 
-    //space->Update(lh); // removed as it may override changed doftypes
+    // space->Update(); // removed as it may override changed doftypes
+    // we need it to update the space after refinement.
+    // space should set dofs only in first update on level
+
+    // for dirichlet_vertex/edge/face. should we get the freedofs from base space instead?
+    FESpace::Update();
 
     const int ndofall = space->GetNDof();
     all2comp.SetSize(ndofall);
@@ -64,6 +69,11 @@ namespace ngcomp
   FiniteElement & CompressedFESpace::GetFE (ElementId ei, Allocator & lh) const
   {
     return space->GetFE(ei,lh);
+  }
+
+  FlatArray<VorB> CompressedFESpace::GetDualShapeNodes (VorB vb) const
+  {
+    return space->GetDualShapeNodes(vb);
   }
 
   void CompressedFESpace::GetDofNrs (ElementId ei, Array<DofId> & dnums) const

@@ -625,9 +625,9 @@ direction : int
       return NormalVectorCF(dim);
     }
 
-    shared_ptr<CF> GetTangentialVectorCF (int dim)
+    shared_ptr<CF> GetTangentialVectorCF (int dim, bool consistent)
     {
-      return TangentialVectorCF(dim);
+      return TangentialVectorCF(dim, consistent);
     }
 
     shared_ptr<CF> GetJacobianMatrixCF (int dims, int dimr)
@@ -639,6 +639,22 @@ direction : int
     {
       return WeingartenCF(dim);
     }
+
+    shared_ptr<CF> GetVertexTangentialVectorsCF (int dim)
+    {
+      return VertexTangentialVectorsCF(dim);
+    }
+
+    shared_ptr<CF> GetEdgeFaceTangentialVectorsCF (int dim)
+    {
+      return EdgeFaceTangentialVectorsCF(dim);
+    }
+    
+    shared_ptr<CF> GetEdgeCurvatureCF (int dim)
+    {
+      return EdgeCurvatureCF(dim);
+    }
+
   };
 
   
@@ -669,7 +685,7 @@ direction : int
     .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
          "depending on contents: normal-vector to geometry or element\n"
          "space-dimension must be provided")
-    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
+    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"), py::arg("consistent")=false,
          "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
     .def("JacobianMatrix", [] (SpecialCoefficientFunctions& self, int dim)
@@ -690,6 +706,15 @@ direction : int
          "space-dimensions dimr >= dims must be provided")
     .def("Weingarten", &SpecialCoefficientFunctions::GetWeingartenCF, py::arg("dim"),
          "Weingarten tensor \n"
+         "space-dimension must be provided")
+    .def("VertexTangentialVectors", &SpecialCoefficientFunctions::GetVertexTangentialVectorsCF, py::arg("dim"),
+         "VertexTangentialVectors \n"
+         "space-dimension must be provided")
+    .def("EdgeFaceTangentialVectors", &SpecialCoefficientFunctions::GetEdgeFaceTangentialVectorsCF, py::arg("dim"),
+         "EdgeFaceTangentialVectors \n"
+         "space-dimension must be provided")
+    .def("EdgeCurvature", &SpecialCoefficientFunctions::GetEdgeCurvatureCF, py::arg("dim"),
+         "EdgeCurvature \n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;
@@ -738,6 +763,11 @@ val : can be one of the following:
           if(dims.has_value())
             {
               auto cdims = makeCArray<int> (*dims);
+              int dimension = 1;
+              for (int d : cdims) dimension *= d;
+              if (coef->Dimension() != dimension)
+                throw Exception("dims does not fit to dimension of CoefficientFunction");
+
               coef->SetDimensions(cdims);
             }
           return coef;
@@ -831,6 +861,25 @@ val : can be one of the following:
                                          },
          py::arg("comp"),         
          "returns component comp of vectorial CF")
+    .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 1)
+             throw py::index_error();
+           
+           size_t start, step, n;
+           InitSlice( inds, dims[0], start, step, n );
+           int first = start;
+           Array<int> num = { int(n) };
+           Array<int> dist = { int(step) };
+           /*
+             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           */
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+         }, py::arg("components"))
+
+    /*
     .def("__getitem__",  [](shared_ptr<CF> self, py::tuple comps)
                                          {
                                            if (py::len(comps) != 2)
@@ -847,6 +896,116 @@ val : can be one of the following:
                                            int comp = c1 * dims[1] + c2;
                                            return MakeComponentCoefficientFunction (self, comp);
                                          }, py::arg("components"))
+    */
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 2)
+             throw py::index_error();
+           
+           auto [c1,c2] = comps;
+           if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           
+           int comp = c1 * dims[1] + c2;
+           return MakeComponentCoefficientFunction (self, comp);
+         }, py::arg("components"))
+    
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,int> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 2)
+             throw py::index_error();
+           
+           auto [inds,c2] = comps;
+           size_t start, step, n;
+           InitSlice( inds, dims[0], start, step, n );
+           int first = start*dims[1]+c2;
+           Array<int> num = { int(n) };
+           Array<int> dist = { int(step)*dims[1] };
+           /*
+             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           */
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+         }, py::arg("components"))
+    
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,py::slice> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 2)
+             throw py::index_error();
+           
+           auto [c1,inds] = comps;
+           size_t start, step, n;
+           InitSlice( inds, dims[1], start, step, n );
+           // cout << "get row " << c1 << ", start=" << start << ", step = " << step << ", n = " << n << endl;
+           int first = start+c1*dims[1];
+           Array<int> num = { int(n) };
+           Array<int> dist = { int(step) };
+           /*
+             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           */
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+         }, py::arg("components"))
+    
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 2)
+             throw py::index_error();
+           
+           auto [inds1,inds2] = comps;
+           size_t start1, step1, n1;
+           InitSlice( inds1, dims[0], start1, step1, n1 );
+           size_t start2, step2, n2;
+           InitSlice( inds2, dims[1], start2, step2, n2 );
+
+           int first = start1*dims[1]+start2;
+           Array<int> num = { int(n1), int(n2) };
+           Array<int> dist = { int(step1)*dims[1], int(step2) };
+           /*
+             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           */
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+         }, py::arg("components"))
+    
+
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 3)
+             throw py::index_error();
+           
+           auto [c1,c2,c3] = comps;
+           if (c1 < 0 || c2 < 0 || c3 < 0 ||
+               c1 >= dims[0] || c2 >= dims[1] || c3 >= dims[2])
+             throw py::index_error();
+           
+           int comp = (c1 * dims[1] + c2) * dims[2] + c3;
+           return MakeComponentCoefficientFunction (self, comp);
+         }, py::arg("components"))
+
+    
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int,int> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 4)
+             throw py::index_error();
+           
+           auto [c1,c2,c3,c4] = comps;
+           if (c1 < 0 || c2 < 0 || c3 < 0 || c4 < 0 ||
+               c1 >= dims[0] || c2 >= dims[1] || c3 >= dims[2] || c4 >= dims[3])
+             throw py::index_error();
+           
+           int comp = ((c1 * dims[1] + c2) * dims[2] + c3) * dims[3] + c4;
+           return MakeComponentCoefficientFunction (self, comp);
+         }, py::arg("components"))
+
+    
+    
 
     // coefficient expressions
     .def ("__add__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; }, py::arg("cf") )
@@ -964,12 +1123,17 @@ cf : ngsolve.CoefficientFunction
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=nullptr)
 
-    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir)
+    .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir, std::vector<shared_ptr<CoefficientFunction>> Eulerian)
           {
-            return coef->Diff (shape.get(), dir);
+            DiffShapeCF shape;
+            for (auto gf : Eulerian)
+              shape.Eulerian_gridfunctions.Append(gf.get());
+            return coef->Diff (&shape, dir);
+            
+            // return coef->Diff (shape.get(), dir);
           },
           "Compute shape derivative in direction", 
-          py::arg("direction")=1.0)
+          py::arg("direction")=1.0,  py::arg("Eulerian")=std::vector<shared_ptr<CoefficientFunction>> ())
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -989,9 +1153,10 @@ cf : ngsolve.CoefficientFunction
                return val * coef;
            }, py::arg("value"))
 
-    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol dx)
+    .def("__mul__", [](shared_ptr<CoefficientFunction> cf, DifferentialSymbol & dx)
          {
-           return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
+           // return make_shared<SumOfIntegrals>(make_shared<Integral> (cf, dx));
+           return make_shared<SumOfIntegrals> (dx.MakeIntegral (cf));  // overloaded in ngsxfem
          })
     
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
@@ -1079,7 +1244,153 @@ wait : bool
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
-  m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");  
+  m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");
+
+  m.def("MinimizationCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
+                       optional<double> rtol, optional<int> maxiter){
+
+          // First check for a GridFunction. This case is important for GFs on
+          // (abstract) compound spaces.
+          py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
+          if (egf.check()) {
+            const auto gf = egf();
+            if (gf->GetFESpace()->GetEvaluator())
+              return CreateMinimizationCF(expr, gf, tol, rtol, maxiter);
+            else {
+              // Probably a GF on a generic compound space
+              Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
+              for (int comp : Range(stps))
+                stps[comp] = gf->GetComponent(comp);
+              return CreateMinimizationCF(expr, stps, tol, rtol, maxiter);
+            }
+          }
+
+          // If the given value is a list or a tuple... This must be handled
+          // explicitly to prevent implicit conversion to a CoefficientFunction,
+          // which is problematic when a list of GridFunctions is given.
+          if (py::isinstance<py::list>(startingpoint) || py::isinstance<py::tuple>(startingpoint))
+          {
+            Array<shared_ptr<CoefficientFunction>> stps{};
+            for (auto val : startingpoint)
+            {
+              py::extract<shared_ptr<CoefficientFunction>> vcf(val);
+              if (vcf.check())
+                stps.Append(vcf());
+              else
+                throw std::invalid_argument(
+                    string("Cannot make CoefficientFunction from ")
+                    + string(py::str(val)) + " of type "
+                    + string(py::str(val.get_type())));
+            }
+            return CreateMinimizationCF(expr, stps, tol, rtol, maxiter);
+          }
+
+          // Attemp std. conversion to a CoefficientFunction
+          py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
+          if (ecf.check())
+            return CreateMinimizationCF(expr, ecf(), tol, rtol, maxiter);
+
+          throw std::invalid_argument(
+              string("Failed to convert startingpoint ")
+              + string(py::str(startingpoint))
+              + " to a CoefficientFunction");
+        },
+        py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
+        py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+Creates a CoefficientFunction that returns the solution to a minimization problem.
+Convergence failure is indicated by returning NaN(s).
+
+Parameters:
+
+expression : CoefficientFunction
+  the objective function to be minimized
+
+startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
+  the initial guess for the iterative solution of the nonlinear problem
+
+tol: double
+  absolute tolerance
+
+rtol: double
+  relative tolerance
+
+maxiter: int
+  maximum iterations
+
+)raw_string"));
+
+  m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
+                       optional<double> rtol, optional<int> maxiter){
+
+          // First check for a GridFunction. This case is important for GFs on
+          // generic compound spaces.
+          py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
+          if (egf.check()) {
+            const auto gf = egf();
+            if (gf->GetFESpace()->GetEvaluator())
+              return CreateNewtonCF(expr, gf, tol, rtol, maxiter);
+            else {
+              // Probably a GF on a generic compound space
+              Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
+              for (int comp : Range(stps))
+                stps[comp] = gf->GetComponent(comp);
+              return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+            }
+          }
+
+          // If the given value is a list or a tuple... This must be handled
+          // explicitly to prevent implicit conversion to a CoefficientFunction,
+          // which is problematic when a list of GridFunctions is given.
+          if (py::isinstance<py::list>(startingpoint) || py::isinstance<py::tuple>(startingpoint))
+          {
+            Array<shared_ptr<CoefficientFunction>> stps{};
+            for (auto val : startingpoint)
+            {
+              py::extract<shared_ptr<CoefficientFunction>> vcf(val);
+              if (vcf.check())
+                stps.Append(vcf());
+              else
+                throw std::invalid_argument(
+                    string("Cannot make CoefficientFunction from ")
+                    + string(py::str(val)) + " of type "
+                    + string(py::str(val.get_type())));
+            }
+            return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+          }
+
+          // Attemp std. conversion to a CoefficientFunction
+          py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
+          if (ecf.check())
+            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter);
+
+          throw std::invalid_argument(
+              string("Failed to convert startingpoint ")
+              + string(py::str(startingpoint))
+              + " to a CoefficientFunction");
+      },
+      py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
+      py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+Creates a CoefficientFunction that returns the solution to a nonlinear problem.
+Convergence failure is indicated by returning NaN(s).
+
+Parameters:
+
+expression : CoefficientFunction
+  the residual of the nonlinear equation
+
+startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
+  the initial guess for the iterative solution of the nonlinear problem
+
+tol: double
+  absolute tolerance
+
+rtol: double
+  relative tolerance
+
+maxiter: int
+  maximum iterations
+
+)raw_string"));
 
   py::implicitly_convertible<double, CoefficientFunction>();
   py::implicitly_convertible<Complex, CoefficientFunction>();
@@ -1132,7 +1443,7 @@ wait : bool
                                      
                                      FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
                                      SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
-                                                          &simdvals(0,0)[0]);
+                                                          (double*)&simdvals(0,0));
                                      fm = Trans(simdfm);
                                    }
                                }
@@ -1238,6 +1549,13 @@ value : complex
           "return parameter value")
     ;
 
+  py::class_<PlaceholderCoefficientFunction,
+             shared_ptr<PlaceholderCoefficientFunction>,
+             CoefficientFunction>
+    (m, "PlaceholderCF")
+    .def(py::init<shared_ptr<CF>>())
+    .def("Set", &PlaceholderCoefficientFunction::Set)
+    ;
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
 BSpline of arbitrary order
@@ -2051,8 +2369,92 @@ complex : bool
   input complex
 
 )raw_string"))
-    ;
+    .def("CalcLinearizedElementMatrix",
+         [] (shared_ptr<BFI> self,
+             const FiniteElement & fe, FlatVector<double> vec, 
+             const ElementTransformation &trafo,
+             size_t heapsize)
+                         {
+                           while (true)
+                             {
+                               LocalHeap lh(heapsize);
+                               try
+                                 {
+                                  const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                                  const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
+                                  const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
+                                  
+                                  Matrix<> mat(fe_test.GetNDof() * self->GetDimension(),
+                                              fe_trial.GetNDof() * self->GetDimension());
+                                  self->CalcLinearizedElementMatrix (fe, trafo, vec, mat, lh);
+                                  return py::cast(mat);
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             }
+                         },
+         py::arg("fel"),py::arg("vec"),py::arg("trafo"),py::arg("heapsize")=10000, docu_string(R"raw_string( 
+Calculate (linearized) element matrix of a specific element.
 
+Parameters:
+
+fel : ngsolve.fem.FiniteElement
+  input finite element
+
+vec : Vector
+  linearization argument
+
+trafo : ngsolve.fem.ElementTransformation
+  input element transformation
+
+heapsize : int
+  input heapsize
+)raw_string"))
+    .def("ApplyElementMatrix",
+         [] (shared_ptr<BFI> self,
+             const FiniteElement & fe, FlatVector<double> vec, 
+             const ElementTransformation &trafo,
+             size_t heapsize)
+                         {
+                           while (true)
+                             {
+                               LocalHeap lh(heapsize);
+                               try
+                                 {
+                                  const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                                  // const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
+                                  const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
+                                  Vector<> vecy(fe_test.GetNDof() * self->GetDimension());
+                                  self->ApplyElementMatrix (fe, trafo, vec, vecy, 0, lh);
+                                  return py::cast(vecy);
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             }
+                         },
+         py::arg("fel"),py::arg("vec"),py::arg("trafo"),py::arg("heapsize")=10000, docu_string(R"raw_string( 
+Apply element matrix of a specific element.
+
+Parameters:
+
+fel : ngsolve.fem.FiniteElement
+  input finite element
+
+vec : Vector
+  evaluation argument
+
+trafo : ngsolve.fem.ElementTransformation
+  input element transformation
+
+heapsize : int
+  input heapsize
+
+)raw_string"))
+    ;
 
   m.def("CompoundBFI", 
           []( shared_ptr<BFI> bfi, int comp )
@@ -2339,6 +2741,68 @@ x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
 If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
 
 )delimiter");
+
+      const string header = R"CODE(
+#include <comp.hpp>
+#include <python_ngstd.hpp>
+
+using namespace ngcomp;
+
+extern "C" {
+
+  NGCORE_API_EXPORT void init(py::object & res)
+  {
+    static py::module::module_def def;
+    py::module m = py::module::create_extension_module("", "", &def);
+
+    // BEGIN USER DEFINED CODE
+
+)CODE";
+      const string footer = R"CODE(
+    // END USER DEFINED CODE
+    res = m;
+  }
+}
+)CODE";
+      const string docu = R"raw_string(
+Utility function to compile c++ code with python bindings at run-time.
+
+Parameters:
+
+code: c++ code snippet ( add_header=True ) or a complete .cpp file ( add_header=False )
+
+init_function_name (default = "init"): Function, which is called after the compiled code is loaded. The prototype must match:
+extern "C" void init_function_name(py::object & res);
+
+add_header (default = True): wrap the code snippet with the template
+)raw_string" + header + footer;
+
+  m.def("CompilePythonModule",
+       [header, footer](string code, string init_function_name, bool add_header)
+       {
+           py::object result;
+           typedef void (*init_function_type)(py::object & res);
+
+           if(add_header)
+             code = header + code + footer;
+
+           std::vector<string> libraries;
+#ifdef WIN32
+           libraries.push_back("%PYTHON_LIBRARY%");
+#endif
+           auto library = CompileCode( {code}, {""} );
+           auto func = library->GetFunction<init_function_type>(init_function_name);
+           func(result);
+           library.release(); // TODO: bind lifetime of "library" to python object "result"
+           return result;
+       },
+       py::arg("code"),
+       py::arg("init_function_name")="init",
+       py::arg("add_header")=true,
+       docu.c_str()
+    );
+
+
 
 }
 

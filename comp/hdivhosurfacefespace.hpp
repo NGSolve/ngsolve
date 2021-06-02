@@ -33,6 +33,8 @@ namespace ngcomp
     bool ho_div_free;       
     bool highest_order_dc;
 
+    bool RT = false; 
+
     Array<INT<2>> dc_pairs;
     
   public:
@@ -45,6 +47,12 @@ namespace ngcomp
     virtual string GetClassName () const override
     {
       return "HDivHighOrderSurfaceFESpace";
+    }
+
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
+    {
+      static VorB nodes[] = { VOL, BND };
+      return FlatArray<VorB> (2, &nodes[0]); 
     }
     
     void Average (BaseVector & vec) const;

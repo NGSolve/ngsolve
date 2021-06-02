@@ -30,6 +30,7 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void Project (BaseVector & x) const;
+    virtual void SetValues (BaseVector & x, double val) const;
 
     AutoVector CreateRowVector() const override
     { throw Exception("CreateRowVector not implemented for Projector!"); }
@@ -42,24 +43,26 @@ namespace ngla
   template <typename TM=double>
   class DiagonalMatrix : public BaseMatrix
   {
-    VVector<TM> diag;
+    shared_ptr<VVector<TM>> diag;
   public:
     // typedef typename mat_traits<TM>::TV_ROW TV_ROW;
     // typedef typename mat_traits<TM>::TV_COL TV_COL;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     
     DiagonalMatrix(size_t h)
-      : diag(h) { }
+      : diag(make_shared<VVector<TM>>(h)) { }
     DiagonalMatrix(const VVector<TM> & diag_)
+      : diag(make_shared<VVector<TM>>(diag_)) { } 
+    DiagonalMatrix(shared_ptr<VVector<TM>> diag_)
       : diag(diag_) { } 
-
+    
     bool IsComplex() const override { return false; } 
-    TM & operator() (size_t i) { return diag(i); }
-    const TM & operator() (size_t i) const { return diag(i); }
-    int VHeight() const override { return diag.Size(); }
-    int VWidth() const override { return diag.Size(); }
+    TM & operator() (size_t i) { return (*diag)(i); }
+    const TM & operator() (size_t i) const { return (*diag)(i); }
+    int VHeight() const override { return diag->Size(); }
+    int VWidth() const override { return diag->Size(); }
 
-    BaseVector & AsVector() override { return diag; }
+    BaseVector & AsVector() override { return *diag; }
     ostream & Print (ostream & ost) const override;
     
     AutoVector CreateRowVector () const override;
@@ -257,10 +260,8 @@ namespace ngla
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
-    AutoVector CreateRowVector() const override
-    { return realmatrix->CreateRowVector(); }
-    AutoVector CreateColVector() const override
-    { throw Exception("CreateColVector not implemented for Real2ComplexMatrix!"); }
+    AutoVector CreateRowVector() const override;
+    AutoVector CreateColVector() const override;
   };
 
 
@@ -334,6 +335,64 @@ namespace ngla
 
     virtual int VHeight() const override { throw Exception("VHeight does not make sense for BlockMatrix");}
     virtual int VWidth() const override { throw Exception("VWidth does not make sense for BlockMatrix");}
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+
+  
+  class BaseMatrixFromVector : public BaseMatrix
+  {
+    shared_ptr<BaseVector> vec;
+
+  public:
+    BaseMatrixFromVector (shared_ptr<BaseVector> avec);
+
+    bool IsComplex() const override { return vec->IsComplex(); }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return vec->Size(); }
+    virtual int VWidth() const override { return 1; }
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+
+  class BaseMatrixFromMultiVector : public BaseMatrix
+  {
+    shared_ptr<MultiVector> vec;
+
+  public:
+    BaseMatrixFromMultiVector (shared_ptr<MultiVector> avec);
+
+    bool IsComplex() const override { return vec->IsComplex(); }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return vec->RefVec()->Size(); }
+    virtual int VWidth() const override { return vec->Size(); }
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
+
+
+  class BaseMatrixFromMatrix : public BaseMatrix
+  {
+    Matrix<> mat;
+
+  public:
+    BaseMatrixFromMatrix (Matrix<> amat);
+
+    bool IsComplex() const override { return false; }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual int VHeight() const override { return mat.Height(); }
+    virtual int VWidth() const override { return mat.Width(); }
 
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;

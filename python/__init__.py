@@ -19,14 +19,14 @@ from .ngstd import Timers, Timer, IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
 from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
     CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
-    Projector, IdentityMatrix, Embedding, PermutationMatrix, \
+    Projector, DiagonalMatrix, IdentityMatrix, Embedding, PermutationMatrix, \
     ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
 from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
     exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Id, Trace, Inv, Det, Cof, Cross, \
     specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
-    IntegrationRule, IfPos, VoxelCoefficient, CacheCF
+    IntegrationRule, IfPos, VoxelCoefficient, CacheCF, PlaceholderCF
 from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     BilinearForm, LinearForm, GridFunction, Preconditioner, \
     MultiGridPreconditioner, ElementId, FESpace, ProductSpace, H1, HCurl, \
@@ -35,7 +35,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NormalFacetFESpace, NormalFacetSurface, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
     NodalFESpace, VectorNodalFESpace, \
-    NumberSpace, Periodic, Discontinuous, Compress, \
+    NumberSpace, Periodic, Discontinuous, Hidden, MatrixValued, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \

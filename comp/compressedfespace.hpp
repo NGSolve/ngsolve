@@ -41,6 +41,8 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     
+    FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 

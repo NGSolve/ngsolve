@@ -15,25 +15,10 @@
 #include <core/python_ngcore.hpp> // for shallow archive
 #endif // NGS_PYTHON
 
-namespace ngstd
-{
-
-  INLINE Complex IfPos (Complex a, Complex b, Complex c)
-  {
-    return Complex (IfPos (a.real(), b.real(), c.real()),
-                    IfPos (a.real(), b.imag(), c.imag()));
-  }
-  
-  INLINE SIMD<Complex> IfPos (SIMD<Complex> a, SIMD<Complex> b, SIMD<Complex> c)
-  {
-    return SIMD<Complex> (IfPos (a.real(), b.real(), c.real()),
-                          IfPos (a.real(), b.imag(), c.imag()));
-  }
-}
-
 
 namespace ngfem
 {
+  using ngstd::IfPos;
   
   CoefficientFunction :: ~CoefficientFunction ()
   { ; }
@@ -172,7 +157,7 @@ namespace ngfem
   {
     static bool firsttime = true;
     if (firsttime)
-      {
+    {
         cerr << "Eval1 not implemented for class " << typeid(*this).name() << endl;
         firsttime = false;
       }
@@ -235,7 +220,7 @@ namespace ngfem
     values = AutoDiffDiff<1,bool> (true);
   }
 
-  shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
+  // shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
 
 
 
@@ -282,6 +267,7 @@ namespace ngfem
     values.AddSize(ir.Size(), 1) = val;
   }
 
+  /*
   template <typename MIR, typename T, ORDERING ORD>
   void ConstantCoefficientFunction ::
   T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -291,6 +277,7 @@ namespace ngfem
     for (size_t i = 0; i < np; i++)
       values(0,i) = val;
   }
+  */
   
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -432,6 +419,23 @@ namespace ngfem
 
   template class ParameterCoefficientFunction<double>;
   template class ParameterCoefficientFunction<Complex>;
+
+  void PlaceholderCoefficientFunction::DoArchive(Archive& ar)
+  {
+    ar.Shallow(cf);
+  }
+
+  void PlaceholderCoefficientFunction::Set(shared_ptr<CoefficientFunction> _cf)
+  {
+    if(Dimensions().Size() != _cf->Dimensions().Size())
+      throw Exception("Dimensions of function in PlaceholderCF must not change!");
+    for(auto i : Range(Dimensions()))
+      if(Dimensions()[i] != _cf->Dimensions()[i])
+        throw Exception("Dimensions of function in PlaceholderCF must not change!");
+    cf = _cf;
+    is_complex = cf->IsComplex();
+  }
+
 
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
@@ -1089,10 +1093,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    FlatArray<int> hdims = Dimensions();        
-    for (int i : Range(hdims[0]))
-      for (int j : Range(hdims[1]))
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(string("0.0"));
+    });
   }
 
   using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
@@ -1659,7 +1662,7 @@ public:
   {
     auto in0 = input[0];
     auto in1 = input[1];
-    size_t dim = Dimension();
+    size_t dim = dim1;
     size_t np = ir.Size();
 
     for (size_t i = 0; i < np; i++)
@@ -2652,13 +2655,15 @@ public:
   {
     auto dims_c1 = c1 -> Dimensions();
     auto dims_c2 = c2 -> Dimensions();
-    if (dims_c1.Size() != 2 || dims_c2.Size() != 1)
+    if (dims_c1.Size() < 2 || dims_c2.Size() != 1)
       throw Exception("Not a mat-vec multiplication");
-    if (dims_c1[1] != dims_c2[0])
+    if (dims_c1.Last() != dims_c2[0])
       throw Exception(string ("Matrix dimensions don't fit: mat is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) + ", vec is " + ToLiteral(dims_c2[0]));
-    SetDimensions (ngstd::INT<1>(dims_c1[0]));
-    inner_dim = dims_c1[1];
+    // SetDimensions (ngstd::INT<1>(dims_c1[0]));
+    // SetDimensions (dims_c1.Range(0, dims_c1.Size()-1)); // ngstd::INT<1>(dims_c1[0]));
+    SetDimensions (dims_c1.Range(0, END-1));
+    inner_dim = dims_c1.Last(); // [1];
   }
 
   void DoArchive(Archive& ar) override
@@ -2723,14 +2728,14 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    FlatArray<int> hdims = Dimensions();
-    Vector<AutoDiffDiff<1,bool>> va(hdims[0]*inner_dim), vb(inner_dim);
+    // FlatArray<int> hdims = Dimensions();
+    Vector<AutoDiffDiff<1,bool>> va(Dimension()*inner_dim), vb(inner_dim);
     c1->NonZeroPattern (ud, va);
     c2->NonZeroPattern (ud, vb);
     
     values = false;
     
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < Dimension(); i++)
       for (size_t j = 0; j < inner_dim; j++)
         values(i) += va(i*inner_dim+j) * vb(j);
   }
@@ -2742,10 +2747,10 @@ public:
     auto va = input[0];
     auto vb = input[1];
     
-    FlatArray<int> hdims = Dimensions();    
+    // FlatArray<int> hdims = Dimensions();    
     values = false;
     
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < Dimension(); i++)
       for (size_t j = 0; j < inner_dim; j++)
         values(i) += va(i*inner_dim+j) * vb(j);
   }
@@ -2755,6 +2760,7 @@ public:
     throw Exception ("MultMatVecCF:: scalar evaluate for matrix called");
   }
 
+  /*
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const override
   {
@@ -2785,20 +2791,21 @@ public:
     result = a * vb;
     //cout << "MultMatMat: complex not implemented" << endl;
   }  
-
+  */
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    FlatArray<int> hdims = Dimensions();    
-    STACK_ARRAY(T, hmem1, ir.Size()*hdims[0]*inner_dim);
+    // FlatArray<int> hdims = Dimensions();
+    int dim = Dimension();
+    STACK_ARRAY(T, hmem1, ir.Size()*dim*inner_dim);
     STACK_ARRAY(T, hmem2, ir.Size()*inner_dim);
-    FlatMatrix<T,ORD> temp1(hdims[0]*inner_dim, ir.Size(), &hmem1[0]);
+    FlatMatrix<T,ORD> temp1(dim*inner_dim, ir.Size(), &hmem1[0]);
     FlatMatrix<T,ORD> temp2(inner_dim, ir.Size(), &hmem2[0]);
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
     values.AddSize(Dimension(),ir.Size()) = T(0.0);
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < dim; i++)
       for (size_t j = 0; j < inner_dim; j++)
         for (size_t k = 0; k < ir.Size(); k++)
           values(i,k) += temp1(i*inner_dim+j, k) * temp2(j,k);
@@ -2812,10 +2819,11 @@ public:
     auto va = input[0];
     auto vb = input[1];
     
-    FlatArray<int> hdims = Dimensions();    
+    // FlatArray<int> hdims = Dimensions();
+    int dim = Dimension();
     values.AddSize(Dimension(),ir.Size()) = T(0.0);
     
-    for (size_t i = 0; i < hdims[0]; i++)
+    for (size_t i = 0; i < dim; i++)
       for (size_t j = 0; j < inner_dim; j++)
         for (size_t k = 0; k < ir.Size(); k++)
           values(i,k) += va(i*inner_dim+j, k) * vb(j,k);
@@ -2918,7 +2926,7 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override
   {
-    Vec<3> va, vb;
+    Vec<3,Complex> va, vb;
     c1->Evaluate (ip, va);
     c2->Evaluate (ip, vb);
     result = Cross(va, vb);
@@ -3687,7 +3695,7 @@ public:
         //Cofactor Matrix linear in 2d (in 1d Cofactor Matrix = 0)
         return CofactorCF(c1->Diff(var,dir));
       }
-    else //3d
+    else if (this->Dimensions()[0] == 3) //3d
       {
         //formula follows from Cayley–Hamilton
         //Cof(A) = 0.5*(tr(A)**2 - tr(A**2))I - tr(A)A^T +(AA)^T
@@ -3695,6 +3703,8 @@ public:
         //return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->Diff(var,dir);
         return  0.5*(2*TraceCF(c1)*TraceCF(c1->Diff(var,dir)) - TraceCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir)))*IdentityCF(3)- TraceCF(c1->Diff(var,dir))*TransposeCF(c1) - TraceCF(c1)*TransposeCF(c1->Diff(var,dir)) + TransposeCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir));
       }
+    else
+      throw Exception("CofactorCF diff only implemented for dim <=3");
   }  
 };
 
@@ -4234,6 +4244,8 @@ cl_BinaryOpCF<GenericMult>::Operator(const string & name) const
 shared_ptr<CoefficientFunction> CWMult (shared_ptr<CoefficientFunction> cf1,
                                         shared_ptr<CoefficientFunction> cf2)
 {
+  if (cf1->GetDescription() == "ZeroCF" || cf2->GetDescription() == "ZeroCF")
+    return ZeroCF( cf1->Dimensions() );
   return BinaryOpCF (cf1, cf2, gen_mult, "*");
 }
 
@@ -4256,9 +4268,11 @@ cl_BinaryOpCF<GenericDiv>::Diff(const CoefficientFunction * var,
 {
   if (var == this) return dir;
   // return (c1->Diff(var,dir)*c2 - c1*c2->Diff(var,dir)) / (c2*c2);
-  return (BinaryOpCF (c1->Diff(var,dir), c2, gen_mult, "*") -
-          BinaryOpCF (c1, c2->Diff(var,dir), gen_mult, "*")) /
-          BinaryOpCF (c2, c2, gen_mult, "*");
+  /*return (BinaryOpCF (c1->Diff(var,dir), c2, gen_mult, "*") -
+    BinaryOpCF (c1, c2->Diff(var,dir), gen_mult, "*")) /
+    BinaryOpCF (c2, c2, gen_mult, "*");
+    BinaryOpCF (c2, c2, gen_mult, "*");*/
+  return (CWMult (c1->Diff(var,dir), c2) - CWMult (c1, c2->Diff(var,dir))) / CWMult (c2, c2);
 }
 
 
@@ -4280,7 +4294,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       }
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       return make_shared<MultMatMatCoefficientFunction> (c1, c2);
-    if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
+    if (c1->Dimensions().Size() >= 2 && c2->Dimensions().Size() == 1)
       return make_shared<MultMatVecCoefficientFunction> (c1, c2);
     if (c1->Dimension() > 1 && c2->Dimension() > 1)
       {
@@ -4504,6 +4518,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       case 1: return make_shared<CofactorCoefficientFunction<1>> (coef);
       case 2: return make_shared<CofactorCoefficientFunction<2>> (coef);
       case 3: return make_shared<CofactorCoefficientFunction<3>> (coef);
+      case 4: return make_shared<CofactorCoefficientFunction<4>> (coef);
       default:
         throw Exception("Cofactor of matrix of size "+ToString(dims[0]) + " not available");
       }
@@ -4698,6 +4713,198 @@ MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
     return ZeroCF( Array<int>({}) );
   return make_shared<ComponentCoefficientFunction> (c1, comp);
 }
+
+
+// ********************** SubTensorCoefficientFunction **********************
+
+  
+class SubTensorCoefficientFunction : public T_CoefficientFunction<SubTensorCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  int dim1;
+  int first;
+  Array<int> num, dist;
+  typedef T_CoefficientFunction<SubTensorCoefficientFunction> BASE;
+public:
+  SubTensorCoefficientFunction() = default;
+  SubTensorCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                int afirst, Array<int> anum, Array<int> adist)
+    : BASE(1, ac1->IsComplex()), c1(ac1), first(afirst), num(anum), dist(adist)
+  {
+    SetDimensions(anum);
+    dim1 = c1->Dimension();    
+    elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & dim1 & first & num & dist;
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    auto dims1 = c1->Dimensions();
+
+    if(num.Size()==1)
+      {
+        for (int i = 0; i < num[0]; i++)
+         {
+            int i1,k1;
+            auto comp = first+i*dist[0];
+            GetIndex(dims1, comp, i1, k1);
+            code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+          }
+      }
+
+    if(num.Size()==2)
+      {
+        for (int i = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+             {
+                int i1,j1;
+                auto comp = first+i*dist[0]+j*dist[1];
+                GetIndex(dims1, comp, i1, j1);
+                code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
+              }
+      }
+  }
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
+
+  
+  using BASE::Evaluate;
+
+  /*
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         BareSliceMatrix<Complex> result) const override
+  {
+    // int dim1 = c1->Dimension();
+    STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
+    FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
+    c1->Evaluate (ir, temp);
+    result.Col(0).Range(0,ir.Size()) = temp.Col(comp);
+  }  
+  */
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    STACK_ARRAY(T, hmem, ir.Size()*dim1);
+    FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
+    
+    c1->Evaluate (ir, temp);
+    size_t nv = ir.Size();
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          for (size_t k = 0; k < nv; k++)
+            values(i,k) = temp(first+i*dist[0], k);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            for (size_t k = 0; k < nv; k++)
+              values(ii,k) = temp(first+i*dist[0]+j*dist[1], k);
+        break;
+        
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    auto in0 = input[0];
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values.Row(i).Range(ir.Size()) = in0.Row(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
+        break;
+        
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+  
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return MakeSubTensorCoefficientFunction (c1->Diff(var, dir), first, Array<int> (num), Array<int> (dist));
+  }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values(i) = v1(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values(ii) = v1(first+i*dist[0]+j*dist[1]);
+        break;
+
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    c1->NonZeroPattern (ud, values);
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values(i) = values(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values(ii) = values(first+i*dist[0]+j*dist[1]);
+        break;
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+
+  }
+};
+
+shared_ptr<CoefficientFunction>
+MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first, Array<int> num, Array<int> dist)
+{
+  return make_shared<SubTensorCoefficientFunction> (c1, first, move(num), move(dist));
+}
+
+
+
 
 
 
@@ -5084,6 +5291,10 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
   return make_shared<OtherCoefficientFunction> (me);
 }
 
+bool IsOtherCoefficientFunction (CoefficientFunction & coef)
+{
+  return (dynamic_cast<OtherCoefficientFunction*> (&coef) != nullptr);
+}
 
 
 
@@ -5162,7 +5373,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       
       for (size_t i = 0; i < np; i++)
         for (size_t j = 0; j < dim; j++)
-          values(j,i) = ngstd::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
+          values(j,i) = IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
     template <typename MIR, typename T, ORDERING ORD>
@@ -5179,7 +5390,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       
       for (size_t i = 0; i < np; i++)
         for (size_t j = 0; j < dim; j++)
-          values(j,i) = ngstd::IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
+          values(j,i) = IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
     /*
@@ -5517,6 +5728,8 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
                                          shared_ptr<CoefficientFunction> cf_then,
                                          shared_ptr<CoefficientFunction> cf_else)
   {
+    if(cf_if->Dimension() != 1)
+      throw Exception("Dimension of first component in IfPos must be 1!");
     return make_shared<IfPosCoefficientFunction> (cf_if, cf_then, cf_else);
   }
 
@@ -5869,7 +6082,7 @@ public:
         throw Exception ("cannot apply operator "+name+" for coordinate");
       
       Array<shared_ptr<CoefficientFunction>> funcs(spacedim);
-      funcs = make_shared<ConstantCoefficientFunction> (0);
+      funcs = ZeroCF(Array<int>());
       funcs[dir] = make_shared<ConstantCoefficientFunction> (1);
       return MakeVectorialCoefficientFunction (move(funcs));
     }
@@ -5879,7 +6092,8 @@ public:
     shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dirdiff) const override
     {
-      if (var == shape.get())
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))
         return MakeComponentCoefficientFunction (dirdiff, dir);
       // return BASE::Diff (var, dirdiff);
       
@@ -6301,7 +6515,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
       cf -> TraverseTree (func);
-      func(*cf);
+      // func(*cf);
+      func(*this);      
     }
 
     // virtual bool IsComplex() const { return cf->IsComplex(); }
@@ -6921,7 +7136,14 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
-      return cf->GenerateCode(code, inputs, index);
+      TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
+	  code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).S() );
+	});
+    }
+
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    {
+      return Array<shared_ptr<CoefficientFunction>>({ cf });
     }
   };
 
@@ -7111,7 +7333,8 @@ class RealCF : public CoefficientFunctionNoDerivative
 
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    auto cf = make_shared<CompiledCoefficientFunction> (c);
+    auto compiledcf = dynamic_pointer_cast<CompiledCoefficientFunction>(c);
+    auto cf = compiledcf ? compiledcf : make_shared<CompiledCoefficientFunction> (c);
     if(realcompile)
       cf->RealCompile(maxderiv, wait);
     return cf;
@@ -7342,7 +7565,7 @@ Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
 }
 
 
-void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
                         LocalHeap & lh)
 {
   // static Timer t("Precompute CacheCF");
@@ -7377,7 +7600,7 @@ void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegr
 
 
 
-void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
                         LocalHeap & lh)
 {
   auto & trafo = mir.GetTransformation();
@@ -7461,6 +7684,7 @@ static RegisterClassForArchive<ConstantCoefficientFunction, CoefficientFunction>
 static RegisterClassForArchive<ConstantCoefficientFunctionC, CoefficientFunction> regccfc;
 static RegisterClassForArchive<ParameterCoefficientFunction<double>, CoefficientFunction> regpard;
 static RegisterClassForArchive<ParameterCoefficientFunction<Complex>, CoefficientFunction> regparc;
+static RegisterClassForArchive<PlaceholderCoefficientFunction, CoefficientFunction> regplacholdercf;
 static RegisterClassForArchive<DomainConstantCoefficientFunction, CoefficientFunction> regdccf;
 static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
 static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;

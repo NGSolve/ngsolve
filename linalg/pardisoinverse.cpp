@@ -187,7 +187,7 @@ namespace ngla
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
-    integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
+    integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error = 0;
     integer * params = const_cast <integer*> (&hparams[0]);
 
     for (int i = 0; i < 64; i++)
@@ -269,7 +269,7 @@ namespace ngla
 
     if ( error != 0 )
       {
-	cout << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
+	cout << IM(1) << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
 	
 	string errmsg;
 	switch (error)
@@ -551,7 +551,10 @@ namespace ngla
   void PardisoInverse<TM,TV_ROW,TV_COL> ::
   MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    const_cast<integer&>(hparams[11]) = 1; // Solve transposed matrix
+    const_cast<integer&>(hparams[11]) = 2; // Solve transposed matrix
+
+    // See https://software.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-c/top/sparse-solver-routines/onemkl-pardiso-parallel-direct-sparse-solver-interface/pardiso-iparm-parameter.html
+    
     Mult(x,y);
     const_cast<integer&>(hparams[11]) = 0;
   }
@@ -581,7 +584,7 @@ namespace ngla
     Matrix<> ty(2, compressed_height);
 
       
-    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error = 0;
     integer nrhs = 2;
 
     integer * params = const_cast <integer*> (&hparams[0]);

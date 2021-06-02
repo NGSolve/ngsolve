@@ -43,6 +43,9 @@ namespace ngfem
     /// Number of degrees-of-freedom
     INLINE int GetNDof () const { return ndof; }
 
+    HD virtual tuple<int,int,int,int> GetNDofVEFC () const { return { 1, 1, 1, 1 }; }
+
+
     /// maximal polynomial order
     INLINE int Order () const { return order; }
 
@@ -59,6 +62,8 @@ namespace ngfem
     /// the name of the element family
     virtual string ClassName() const;
 
+    virtual void SetVertexNumbers (FlatArray<int> vnums);
+    
     virtual IntegrationRule GetIR (int order) const;
 
     /// precomputes shape for integrationrule
@@ -67,6 +72,13 @@ namespace ngfem
     ///
     virtual void Print (ostream & ost) const;
 
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const;
+      
+    virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
+    virtual bool SolveDuality (SliceVector<Complex> rhs, SliceVector<Complex> u, LocalHeap & lh) const { return false; }
+    
     virtual list<tuple<string,double>> Timing () const { return list<tuple<string,double>>(); }
   };
 
@@ -88,7 +100,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (FlatArray<const FiniteElement*> afea);
 
-    HD virtual ELEMENT_TYPE ElementType() const { return fea[0]->ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return fea[0]->ElementType(); }
     /// number of components
     int GetNComponents() const { return fea.Size(); }
 
@@ -105,9 +117,19 @@ namespace ngfem
     }
 
     /// the name of the element family
-    virtual string ClassName() const { return "CompoundFiniteElement"; }
+    virtual string ClassName() const override { return "CompoundFiniteElement"; }
+    
+    virtual void SetVertexNumbers (FlatArray<int> vnums) override
+    {
+      for (auto pfel : fea)
+        const_cast<FiniteElement*>(pfel) -> SetVertexNumbers(vnums);
+    }
+    
+    virtual void Print (ostream & ost) const override;
 
-    virtual void Print (ostream & ost) const;
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override; 
   };
 
   // a pair of 2 elements
@@ -126,6 +148,37 @@ namespace ngfem
   };
 
 
+  class NGS_DLL_HEADER SymMatrixFiniteElement : public FiniteElement
+  {
+  protected:
+    int vdim;
+    bool deviatoric;
+    int dim;
+    const FiniteElement & scalfe;
+  public:
+    /// initialize with pointers to components, copy pointers
+    SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim, bool adeviatoric);
+
+    virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
+    /// number of components
+    int GetNComponents() const { return dim; }
+
+    /// select i-th component
+    // const FiniteElement & operator[] (int i) const { return *fea[i]; }
+    const FiniteElement & ScalFE() const { return scalfe; }
+
+    /// the name of the element family
+    virtual string ClassName() const override { return "SymMatrixFiniteElement"; }
+
+    virtual void Print (ostream & ost) const override;
+
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override; 
+  };
+
+
+  
   /**
      a placeholder finite element
    */

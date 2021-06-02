@@ -465,7 +465,6 @@ namespace ngcomp
         u.GetVector(mdcomp) = 0.0;
         
         ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
-        
         IterateElements 
           (*fes, vb, clh, 
            [&] (FESpace::Element ei, LocalHeap & lh)
@@ -496,51 +495,47 @@ namespace ngcomp
                  try
                    {
 		     /** Calc RHS **/
-
 		     elflux = SCAL(0.0);
-
-		     auto do_ir = [&](auto & mir) {
-		       FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, mir.IR().Size(), lh);
-		       coef->Evaluate (mir, mfluxi);
-		       for (size_t j : Range(mir))
-			 { mfluxi.Col(j) *= mir[j].GetWeight(); }
-		       dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
-		     };
-
-		     for (auto el_vb : fes->GetDualShapeNodes(vb)) {
-		       if ( el_vb == VOL ) {
-			 SIMD_IntegrationRule ir(fel.ElementType(), 2 * fel.Order());
-			 auto & mir = eltrans(ir, lh);
-			 do_ir(mir);
-		       }
-		       else {
+                     auto [nv,ne,nf,nc] = fel.GetNDofVEFC();
+                     int nvefc[] = {nv,ne,nf,nc};
+		     for (auto el_vb : fes->GetDualShapeNodes(vb))
+		       {
+                         if (!nvefc[ma->GetDimension()-el_vb-vb])
+                           continue;
 			 Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
-			 for (int locfnr : Range(f2el.GetNFacets())) {
-			   SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
-			   auto & irvol = f2el(locfnr, irfacet, lh);
-			   auto & mir = eltrans(irvol, lh);
-			   mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
-			   do_ir(mir);
-			 }
+			 for (int locfnr : Range(f2el.GetNFacets()))
+			   {
+			     SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+			     auto & irvol = f2el(locfnr, irfacet, lh);
+			     auto & mir = eltrans(irvol, lh);
+
+			     FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, mir.IR().Size(), lh);
+			     coef->Evaluate (mir, mfluxi);
+			     for (size_t j : Range(mir))
+			       mfluxi.Col(j) *= mir[j].GetWeight(); 
+			     dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+			   }
 		       }
-		     }
+
+                     if (!fel.SolveDuality (elflux, elfluxi, lh))
+                       {
+                         /** Calc Element Matrix **/
+                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                         bool symmetric_so_far = true;
+                         for (auto sbfi : single_bli)
+                           { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+                         
+                         /** Invert Element Matrix and Solve for RHS **/
+                         CalcInverse(elmat); // Not Symmetric !
+                         
+                         if (dim > 1) {
+                           for (int j = 0; j < dim; j++)
+                             { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+                         }
+                         else
+                           { elfluxi = elmat * elflux; }
+                       }
                      
-		     /** Calc Element Matrix **/
-		     FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
-                     bool symmetric_so_far = true;
-		     for (auto sbfi : single_bli)
-		       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
-
-		     /** Invert Element Matrix and Solve for RHS **/
-		     CalcInverse(elmat); // Not Symmetric !
-
-		     if (dim > 1) {
-		       for (int j = 0; j < dim; j++)
-			 { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
-		     }
-		     else
-		       { elfluxi = elmat * elflux; }
-
 		     /** Write into large vector **/
 		     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
                      u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
@@ -564,7 +559,7 @@ namespace ngcomp
                } // ( use_simd )
              
 	     /** Calc RHS **/
-	   
+             /*
 	     auto do_ir = [&](auto & mir) {
 	       FlatMatrix<SCAL> mfluxi(mir.IR().GetNIP(), dimflux, lh);
 	       coef->Evaluate (mir, mfluxi);
@@ -575,43 +570,55 @@ namespace ngcomp
 	       dual_evaluator -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
 	       elflux += elfluxadd;
 	     };
-	     
+	     */
 	     elflux = SCAL(0.0);
 
-	     for (auto el_vb : fes->GetDualShapeNodes(vb)) {
-	       if ( el_vb == VOL ) {
-		 IntegrationRule ir(fel.ElementType(), 2 * fel.Order());
-		 auto & mir = eltrans(ir, lh);
-		 do_ir(mir);
-	       }
-	       else {
+             auto [nv,ne,nf,nc] = fel.GetNDofVEFC();
+             int nvefc[] = {nv,ne,nf,nc};
+	     for (auto el_vb : fes->GetDualShapeNodes(vb))
+               {
+                 if (!nvefc[ma->GetDimension()-el_vb-vb])
+                   continue;
+
 		 Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
-		 for (int locfnr : Range(f2el.GetNFacets())) {
-		   IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
-		   auto & irvol = f2el(locfnr, irfacet, lh);
-		   auto & mir = eltrans(irvol, lh);
-		   mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
-		   do_ir(mir);
-		 }
-	       }
-	     }
-             
-	     /** Calc Element Matrix **/
-	     FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
-             bool symmetric_so_far = true;             
-	     for (auto sbfi : single_bli)
-	       { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+		 for (int locfnr : Range(f2el.GetNFacets()))
+                   {
+                     HeapReset hr(lh);
+                     IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+                     auto & irvol = f2el(locfnr, irfacet, lh);
+                     auto & mir = eltrans(irvol, lh);
+                     // mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
+                     // do_ir(mir);
+                     
+                     FlatMatrix<SCAL> mfluxi(mir.IR().GetNIP(), dimflux, lh);
+                     coef->Evaluate (mir, mfluxi);
+                     for (int j : Range(mir))
+                       mfluxi.Row(j) *= mir[j].GetWeight();
+                     FlatVector<SCAL> elfluxadd(fel.GetNDof() * dim, lh); elfluxadd = 0;
+                     
+                     dual_evaluator -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
+                     elflux += elfluxadd;
+                   }
+               }
 
-
-	     /** Invert Element Matrix and Solve for RHS **/
-	     CalcInverse(elmat); // Not Symmetric !
-
-	     if (dim > 1) {
-	       for (int j = 0; j < dim; j++)
-		 { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
-	     }
-	     else
-	       { elfluxi = elmat * elflux; }
+             if (!fel.SolveDuality (elflux, elfluxi, lh))
+               {
+                 /** Calc Element Matrix **/
+                 FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                 bool symmetric_so_far = true;
+                 for (auto sbfi : single_bli)
+                   { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
+                 
+                 /** Invert Element Matrix and Solve for RHS **/
+                 CalcInverse(elmat); // Not Symmetric !
+                 
+                 if (dim > 1) {
+                   for (int j = 0; j < dim; j++)
+                     { elfluxi.Slice (j,dim) = elmat * elflux.Slice (j,dim); }
+                 }
+                 else
+                   { elfluxi = elmat * elflux; }
+               }
              
 	     /** Write into large vector **/
              fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
@@ -1490,7 +1497,7 @@ namespace ngfem
   using namespace ngcomp;
   
   template <typename TSCAL>
-  TSCAL Integral :: Integrate (const ngcomp::MeshAccess & ma,
+  TSCAL Integral :: T_Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<TSCAL> element_wise)
   {
     LocalHeap glh(10000000, "integrate-lh");
@@ -1516,6 +1523,7 @@ namespace ngfem
         ma.IterateElements
           (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
            {
+             if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
              // if(!mask.Test(el.GetIndex())) return;
              auto & trafo1 = ma.GetTrafo (el, lh);
              auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
@@ -1570,12 +1578,23 @@ namespace ngfem
     
     if (dx.element_vb == BND)
       {
-        bool has_other = true;
+        bool has_other = false;
+        cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                          {
+                            if (IsOtherCoefficientFunction (cf)) has_other = true;
+                            /*
+                              // not allowed here
+                            if (dynamic_cast<ProxyFunction*> (&cf))
+                              if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                has_other = true;
+                            */
+                          });
         
         if (!has_other)
           ma.IterateElements
             (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
              {
+               if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
                // if(!mask.Test(el.GetIndex())) return;
                auto & trafo1 = ma.GetTrafo (el, lh);
                auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
@@ -1643,6 +1662,7 @@ namespace ngfem
             ma.IterateElements
             (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
              {
+               if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
                auto & htrafo1 = ma.GetTrafo (el, lh);
                auto & trafo1 = htrafo1.AddDeformation(this->dx.deformation.get(), lh);
                auto eltype = trafo1.GetElementType();
@@ -1710,24 +1730,31 @@ namespace ngfem
                        cf -> Evaluate (mir1, values);
                        for (int i = 0; i < values.Height(); i++)
                          hsum += mir1[i].GetWeight() * values(i,0);
-                       if (element_wise.Size())
-                         element_wise(el.Nr()) += hsum;
                      }
                  }
+               if (element_wise.Size())
+                 element_wise(el.Nr()) += hsum;
                AtomicAdd(sum, hsum);
              });
-          
-        
+
+          }
         return sum;
-      }
       }
     throw Exception ("only vol and bnd integrals are supported");
   }
   
+  double Integral::Integrate (const ngcomp::MeshAccess & ma,
+                              FlatVector<double> element_wise)
+  { return T_Integrate(ma, element_wise);}
 
-  template double Integral :: Integrate<double> (const ngcomp::MeshAccess & ma,
-                                                 FlatVector<double> element_wise);
-  template Complex Integral :: Integrate<Complex> (const ngcomp::MeshAccess & ma,
-                                                   FlatVector<Complex> element_wise);                                                   
+  Complex Integral::Integrate (const ngcomp::MeshAccess & ma,
+                               FlatVector<Complex> element_wise)
+  { return T_Integrate(ma, element_wise);}
+
+
+  template double Integral :: T_Integrate<double> (const ngcomp::MeshAccess & ma,
+                                                   FlatVector<double> element_wise);
+  template Complex Integral :: T_Integrate<Complex> (const ngcomp::MeshAccess & ma,
+                                                     FlatVector<Complex> element_wise);
 }
 

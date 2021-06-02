@@ -320,10 +320,7 @@ namespace ngfem
 
   };
 
-
-
-
-
+  extern NGS_DLL_HEADER const ElementTransformation & GetFEElementTransformation (ELEMENT_TYPE et);
 
 }
 

@@ -245,9 +245,7 @@ namespace ngfem
 
   };
 
-
-  extern shared_ptr<CoefficientFunction> shape;  // for shape derivative
-
+  
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
   {
     cf.PrintReport (ost);
@@ -484,6 +482,12 @@ namespace ngfem
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                           FlatArray<BareSliceMatrix<double,ColMajor>> input,
+                           BareSliceMatrix<double,ColMajor> values) const override
+    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
+    
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
@@ -565,7 +569,14 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
 
     template <typename MIR, typename T, ORDERING ORD>
-      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
+      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      size_t np = ir.Size();    
+      __assume (np > 0);
+      for (size_t i = 0; i < np; i++)
+        values(0,i) = val;
+    }
+      
     template <typename MIR, typename T, ORDERING ORD>
       void T_Evaluate (const MIR & ir,
                        FlatArray<BareSliceMatrix<T,ORD>> input,                       
@@ -702,6 +713,92 @@ namespace ngfem
     void GenerateCode (Code &code, FlatArray<int> inputs, int index) const override;
   };
 
+  class NGS_DLL_HEADER PlaceholderCoefficientFunction : public CoefficientFunction
+  {
+    shared_ptr<CoefficientFunction> cf;
+  public:
+    PlaceholderCoefficientFunction() = default;
+    PlaceholderCoefficientFunction(shared_ptr<CoefficientFunction> _cf)
+      : CoefficientFunction(_cf->Dimension(), _cf->IsComplex()), cf(_cf)
+      { SetDimensions(cf->Dimensions()); }
+
+    void DoArchive(Archive& ar) override;
+
+    void Set(shared_ptr<CoefficientFunction> _cf);
+
+    double Evaluate(const BaseMappedIntegrationPoint& ip) const override
+    { return cf->Evaluate(ip); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<double> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<SIMD<double>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<SIMD<Complex>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<Complex> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  FlatArray<BareSliceMatrix<SIMD<double>>> input,
+                  BareSliceMatrix<SIMD<double>> values) const override
+    { cf->Evaluate (ir, values); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiff<1,double>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
+                  BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate (ir, values); }
+    void Evaluate(const BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiffDiff<1,double>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate(ir, values); }
+    void Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+                  FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
+                  BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
+    { cf->Evaluate(ir, input, values); }
+
+    Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override
+    { return cf->EvaluateComplex(ip); }
+
+    double EvaluateConst () const override
+    { return cf->EvaluateConst(); }
+
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<> result) const override
+    { cf->Evaluate(ip, result); }
+    void Evaluate(const BaseMappedIntegrationPoint & ip,
+                  FlatVector<Complex> result) const override
+    { cf->Evaluate(ip, result); }
+    void EvaluateDeriv(const BaseMappedIntegrationRule & ir,
+                       FlatMatrix<Complex> result,
+                       FlatMatrix<Complex> deriv) const override
+    { cf->EvaluateDeriv(ir, result, deriv); }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+    { cf->NonZeroPattern(ud, nonzero); }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                         FlatVector<AutoDiffDiff<1,bool>> values) const override
+    { cf->NonZeroPattern(ud, input, values); }
+
+    void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree(func);
+      func(*this);
+    }
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { cf }; }
+  };
   
 
   /// The coefficient is constant in every sub-domain
@@ -1588,6 +1685,22 @@ public:
   }
 };
 
+
+  
+  // extern shared_ptr<CoefficientFunction> shape;  // for shape derivative
+  // information howto treat GridFunctions (and maybe other stuff) for shape-derivatives
+  class DiffShapeCF : public ConstantCoefficientFunction
+  {
+  public:
+    DiffShapeCF() : ConstantCoefficientFunction(1) { }
+    Array<const CoefficientFunction*> Eulerian_gridfunctions;
+  };
+
+
+
+
+
+
   template <typename OP>
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                                   shared_ptr<CoefficientFunction> c2, 
@@ -1607,12 +1720,17 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                    int first, Array<int> num, Array<int> dist);
+
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
 
   // for DG jump terms 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me);
-
+  NGS_DLL_HEADER bool IsOtherCoefficientFunction (CoefficientFunction & coef);
 
   
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
@@ -1702,7 +1820,33 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf);
-  
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
+                       shared_ptr<CoefficientFunction> startingpoint,
+                       std::optional<double> atol, std::optional<double> rtol,
+                       std::optional<int> maxiter);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
+                       const Array<shared_ptr<CoefficientFunction>> &startingpoints,
+                       std::optional<double> tol, std::optional<double> rtol,
+                       std::optional<int> maxiter);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  CreateNewtonCF (shared_ptr<CoefficientFunction> expression,
+                  shared_ptr<CoefficientFunction> startingpoint,
+                  std::optional<double> atol,
+                  std::optional<double> rtol,
+                  std::optional<int> maxiter);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  CreateNewtonCF (shared_ptr<CoefficientFunction> expression,
+                  const Array<shared_ptr<CoefficientFunction>> &startingpoints,
+                  std::optional<double> tol,
+                  std::optional<double> rtol,
+                  std::optional<int> maxiter);
+
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
 
@@ -1718,21 +1862,27 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func);
   NGS_DLL_HEADER
-  void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+  void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
                           LocalHeap & lh);
   NGS_DLL_HEADER
-  void PrecomputeCacheCF (Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+  void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
                           LocalHeap & lh);
 
   
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormalVectorCF (int dim);
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim);
+  shared_ptr<CoefficientFunction> TangentialVectorCF (int dim, bool consistent);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> JacobianMatrixCF (int dims, int dimr);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> WeingartenCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> VertexTangentialVectorsCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> EdgeFaceTangentialVectorsCF (int dim);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> EdgeCurvatureCF (int dim);
 
   template <typename OP /* , typename OPC */>
 shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,

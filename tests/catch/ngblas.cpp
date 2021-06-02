@@ -251,30 +251,81 @@ void TestSIMD()
         }
     }
 
-    // IfPos etc. not implemented for SIMD<4> on non-AVX builds
-    if constexpr(N <= SIMD<double>::Size()) {
-        SECTION ("IfPos") {
-            dst[0] = 1;
-            for (auto i : Range(1,N)) {
-                dst[i] = -dst[i-1];
-            }
-            SIMD<double,N> srcsimd(src);
-            SIMD<double,N> simd = IfPos(dst, srcsimd,-srcsimd);
-            for (auto i : Range(N)) {
-                CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
-            }
+    SECTION ("IfPos") {
+        dst[0] = 1;
+        for (auto i : Range(1,N)) {
+            dst[i] = -dst[i-1];
         }
+        SIMD<double,N> srcsimd(src);
+        SIMD<double,N> simd = IfPos(SIMD<double,N>(dst), srcsimd,-srcsimd);
+        for (auto i : Range(N)) {
+            CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
+        }
+    }
 
-        SECTION ("IfZero") {
-            for (auto i : Range(N)) {
-                dst[i] = i%2;
-            }
-            SIMD<double,N> srcsimd(src);
-            SIMD<double,N> simd = IfZero(dst, srcsimd,-srcsimd);
-            for (auto i : Range(N)) {
-                CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
-            }
+    SECTION ("IfZero") {
+        for (auto i : Range(N)) {
+            dst[i] = i%2;
         }
+        SIMD<double,N> srcsimd(src);
+        SIMD<double,N> simd = IfZero(SIMD<double,N>(dst), srcsimd,-srcsimd);
+        for (auto i : Range(N)) {
+            CHECK(simd[i] == ( i%2 ? -srcsimd[i] : srcsimd[i] ));
+        }
+    }
+
+    double a[N], b[N], c[N], d[N];
+    double sum_a=0.0, sum_b=0.0, sum_c=0.0, sum_d=0.0;
+    for (auto i : Range(N))
+      {
+        a[i] = i;
+        b[i] = i+1;
+        c[i] = 10+i;
+        d[i] = 100+i+1;
+        sum_a += a[i];
+        sum_b += b[i];
+        sum_c += c[i];
+        sum_d += d[i];
+      }
+    SIMD<double,N> sa{a}, sb{b}, sc{c}, sd{d};
+
+    SECTION ("+") {
+        SIMD<double,N> simd = SIMD<double,N>(a) + SIMD<double,N>(b);
+        for (auto i : Range(N))
+            CHECK(simd[i] == a[i]+b[i]);
+    }
+    SECTION ("-") {
+        SIMD<double,N> simd = SIMD<double,N>(a) - SIMD<double,N>(b);
+        for (auto i : Range(N))
+            CHECK(simd[i] == a[i]-b[i]);
+    }
+    SECTION ("*") {
+        SIMD<double,N> simd = SIMD<double,N>(a) * SIMD<double,N>(b);
+        for (auto i : Range(N))
+            CHECK(simd[i] == a[i]*b[i]);
+    }
+    SECTION ("/") {
+        SIMD<double,N> simd = SIMD<double,N>(a) / SIMD<double,N>(b);
+        for (auto i : Range(N))
+            CHECK(simd[i] == a[i]/b[i]);
+    }
+
+    SECTION ("HSum1") {
+        CHECK(HSum(sa) == Approx(sum_a));
+    }
+
+    SECTION ("HSum2") {
+        auto sum2 = HSum(sa, sb);
+        CHECK(sum2[0] == Approx(sum_a));
+        CHECK(sum2[1] == Approx(sum_b));
+    }
+
+    SECTION ("HSum4") {
+        auto sum4 = HSum(sa, sb, sc, sd);
+        CHECK(sum4[0] == Approx(sum_a));
+        CHECK(sum4[1] == Approx(sum_b));
+        CHECK(sum4[2] == Approx(sum_c));
+        CHECK(sum4[3] == Approx(sum_d));
     }
 
 }
@@ -283,6 +334,7 @@ TEST_CASE ("SIMD<double>", "[simd]") { TestSIMD<>(); }
 TEST_CASE ("SIMD<double,1>", "[simd]") { TestSIMD<1>(); }
 TEST_CASE ("SIMD<double,2>", "[simd]") { TestSIMD<2>(); }
 TEST_CASE ("SIMD<double,4>", "[simd]") { TestSIMD<4>(); }
+TEST_CASE ("SIMD<double,8>", "[simd]") { TestSIMD<8>(); }
 
 TEST_CASE ("SIMD<Complex>", "[simd]") {
     constexpr size_t N = SIMD<Complex>::Size();

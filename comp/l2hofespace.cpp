@@ -24,7 +24,7 @@ namespace ngcomp
 
     virtual void Apply (const FiniteElement & fel,
                         const SIMD_BaseMappedIntegrationRule & mir,
-                        BareSliceVector<double> x, 
+                        BareSliceVector<double> x,
                         BareSliceMatrix<SIMD<double>> flux) const
     {
       if (comp == -1)
@@ -40,12 +40,12 @@ namespace ngcomp
               BareSliceVector<double> x) const
     {
     if (comp == -1)
-      static_cast<const BaseScalarFiniteElement&> (fel).      
+      static_cast<const BaseScalarFiniteElement&> (fel).
         AddTrans(mir.IR(), flux, SliceMatrix<double> (fel.GetNDof(), dim, dim, &x(0)));
     else
       diffop->AddTrans(fel, mir, flux.RowSlice(comp,dim), x.Slice(comp,dim));
     }
-    
+
   };
 
 
@@ -61,15 +61,15 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
     static INT<0> GetDimensions() { return INT<0>(); };
-    
+
     static bool SupportsVB (VorB checkvb) { return true; }
-    
+
     static string Name() { return "IdDual"; }
     // static constexpr bool SUPPORT_PML = true;
-    
-    static const BaseScalarFiniteElement & Cast (const FiniteElement & fel) 
+
+    static const BaseScalarFiniteElement & Cast (const FiniteElement & fel)
     { return static_cast<const BaseScalarFiniteElement&> (fel); }
-    
+
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
@@ -79,30 +79,30 @@ namespace ngcomp
     }
 #ifdef UNUSED
     template <typename MAT>
-    static void GenerateMatrixIR (const FiniteElement & fel, 
+    static void GenerateMatrixIR (const FiniteElement & fel,
                                   const BaseMappedIntegrationRule & mir,
                                   MAT & mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mir.IR(), Trans(mat));
       for (int i = 0; i < mir.Size(); i++)
-        mat.Row(i) /= mir[i].GetMeasure();      
+        mat.Row(i) /= mir[i].GetMeasure();
     }
 #endif
-    
+
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      Cast(fel).CalcShape (mir.IR(), mat);      
+      Cast(fel).CalcShape (mir.IR(), mat);
       for (int i = 0; i < mir.Size(); i++)
-        mat.Col(i).Range(0,fel.GetNDof()) /= mir[i].GetMeasure();      
+        mat.Col(i).Range(0,fel.GetNDof()) /= mir[i].GetMeasure();
     }
-    
+
 #ifdef  UNSUED
     template <typename MIP, class TVX, class TVY>
     static void Apply (const FiniteElement & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
-		       LocalHeap & lh) 
+		       LocalHeap & lh)
     {
       HeapReset hr(lh);
       y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
@@ -111,7 +111,7 @@ namespace ngcomp
 
     static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
 		       BareSliceVector<double> x, FlatVector<double> y,
-		       LocalHeap & lh) 
+		       LocalHeap & lh)
     {
       y(0) = Cast(fel).Evaluate(mip.IP(), x);
       y(0) /= mip.GetMeasure();
@@ -131,21 +131,21 @@ namespace ngcomp
 
 
     // using ApplySIMDIR;
-    using DiffOp<DiffOpIdDual>::ApplySIMDIR;    
+    using DiffOp<DiffOpIdDual>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
       for (int i = 0; i < mir.Size(); i++)
         y(0,i) /= mir[i].GetMeasure();
-      
+
     }
 
 
     template <typename MIP, class TVX, class TVY>
     static void ApplyTrans (const FiniteElement & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
-			    LocalHeap & lh) 
+			    LocalHeap & lh)
     {
       HeapReset hr(lh);
       y.Range(0,fel.GetNDof()) = (x(0)/mip.GetMeasure()) * Cast(fel).GetShape (mip.IP(), lh);
@@ -154,7 +154,7 @@ namespace ngcomp
     /*
     // using DiffOp<DiffOpId<D, FEL> >::ApplyTransIR;
     template <class MIR>
-    static void ApplyTransIR (const FiniteElement & fel, 
+    static void ApplyTransIR (const FiniteElement & fel,
 			      const MIR & mir,
 			      FlatMatrix<double> x, BareSliceVector<double> y,
 			      LocalHeap & lh)
@@ -163,15 +163,15 @@ namespace ngcomp
     }
 
     template <class MIR>
-    static void ApplyTransIR (const FiniteElement & fel, 
+    static void ApplyTransIR (const FiniteElement & fel,
 			      const MIR & mir,
 			      FlatMatrix<Complex> x, BareSliceVector<Complex> y,
 			      LocalHeap & lh)
     {
-      DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
+      DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);
     }
 
-    using DiffOp<DiffOpId<D, FEL> >::AddTransSIMDIR;        
+    using DiffOp<DiffOpId<D, FEL> >::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -185,7 +185,7 @@ namespace ngcomp
     }
 */
 
-    
+
     /*
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
@@ -202,17 +202,17 @@ namespace ngcomp
 
 
 
-  
 
-  
-  
-  L2HighOrderFESpace ::  
+
+
+
+  L2HighOrderFESpace ::
   L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name="L2HighOrderFESpace(l2ho)";
     type = "l2ho";
-   
+
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("l2ho");
@@ -221,25 +221,25 @@ namespace ngcomp
 
     if (parseflags) CheckFlags(flags);
 
-    var_order = 0; 
-    
+    var_order = 0;
+
     if (flags.NumFlagDefined("order"))
       order =  int (flags.GetNumFlag("order",0));
-    else 
+    else
       {
 	if(flags.NumFlagDefined("relorder"))
 	  {
-	    order=0; 
-	    var_order = 1; 
+	    order=0;
+	    var_order = 1;
 	    rel_order = int (flags.GetNumFlag("relorder",0));
 	  }
-	else 
-	  order = 0; 
+	else
+	  order = 0;
       }
-    
+
     if(flags.GetDefineFlag("variableorder") )
       {
-	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
+	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order ");
       }
 
     /*
@@ -258,6 +258,7 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
           break;
         }
       case 2:
@@ -265,6 +266,7 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
           break;
         }
       case 3:
@@ -272,21 +274,22 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
           break;
         }
       }
-    if (dimension > 1) 
+    if (dimension > 1)
       {
         evaluator[VOL] = make_shared<BlockDifferentialOperatorId> (evaluator[VOL], dimension);
         // evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
 	// evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
         /*
-	boundary_flux_evaluator = 
+	boundary_flux_evaluator =
 	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
         */
       }
-
 
 
 
@@ -320,7 +323,7 @@ namespace ngcomp
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ());
         break;
       case 2:
-        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); 
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
         break;
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
@@ -329,7 +332,7 @@ namespace ngcomp
         ;
       }
 
-    needs_transform_vec = false;    
+    needs_transform_vec = false;
   }
 
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
@@ -337,7 +340,7 @@ namespace ngcomp
 
   DocInfo L2HighOrderFESpace :: GetDocu ()
   {
-    DocInfo docu = FESpace::GetDocu(); 
+    DocInfo docu = FESpace::GetDocu();
     docu.short_docu = "An L2-conforming finite element space.";
     docu.long_docu =
       R"raw_string(The L2 finite element space consists of element-wise polynomials,
@@ -357,7 +360,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 All dofs can be hidden. Then the basis functions don't show up in the
 global system.
 )raw_string";
-    
+
     docu.Arg("all_dofs_together") = "bool = True\n"
       "  Change ordering of dofs. If this flag ist set,\n"
       "  all dofs of an element are ordered successively.\n"
@@ -372,8 +375,8 @@ global system.
     return docu;
   }
 
-  
-  shared_ptr<FESpace> L2HighOrderFESpace :: 
+
+  shared_ptr<FESpace> L2HighOrderFESpace ::
   Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 0));
@@ -381,9 +384,9 @@ global system.
       return make_shared<ElementFESpace> (ma, flags);
     else
       return make_shared<L2HighOrderFESpace> (ma, flags, true);
-  }  
+  }
 
-  
+
   void L2HighOrderFESpace :: Update()
   {
     FESpace::Update();
@@ -396,15 +399,15 @@ global system.
 
     if (first_update)
       {
-	order_inner.SetSize(nel); 
-	
+	order_inner.SetSize(nel);
+
 	order_inner = INT<3>(order);
-	
-	if(var_order) 
-	  for(int i = 0; i < nel; i++) 
+
+	if(var_order)
+	  for(int i = 0; i < nel; i++)
 	    order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
-    
-	for(int i = 0; i < nel; i++) 
+
+	for(int i = 0; i < nel; i++)
 	  {
 	    ElementId ei(VOL,i);
 	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
@@ -412,7 +415,7 @@ global system.
 	    if (!DefinedOn (ei))
 	      order_inner[i] = 0;
 	  }
-	if(print) 
+	if(print)
 	  *testout << " order_inner (l2ho) " << order_inner << endl;
       }
 
@@ -424,8 +427,8 @@ global system.
     if(low_order_space) prol->Update(*this);
 
     UpdateCouplingDofArray();
-  } 
-  
+  }
+
   void L2HighOrderFESpace :: UpdateCouplingDofArray()
   {
     auto ct_local = hide_all_dofs ? HIDDEN_DOF : LOCAL_DOF;
@@ -436,12 +439,12 @@ global system.
         bool definedon = DefinedOn(ElementId(VOL,i));
         auto r = GetElementDofs(i);
         ctofdof[r] = definedon ? ct_local : UNUSED_DOF;
-        
+
         if (!all_dofs_together)
 	  ctofdof[i] = definedon ? ct_lowest_order : UNUSED_DOF;
         else
           if (r.Size() != 0)
-            ctofdof[r.First()] = definedon ? ct_lowest_order : UNUSED_DOF;            
+            ctofdof[r.First()] = definedon ? ct_lowest_order : UNUSED_DOF;
       }
   }
 
@@ -452,7 +455,7 @@ global system.
     for (int i = 0; i < nel; i++)
       {
 	first_element_dof[i] = ndof;
-	INT<3> pi = order_inner[i]; 
+	INT<3> pi = order_inner[i];
 	switch (ma->GetElType(ElementId(VOL,i)))
 	  {
 	  case ET_SEGM:
@@ -471,7 +474,7 @@ global system.
 	    ndof += (pi[0]+1)*(pi[0]+2)*(pi[2]+1)/2;
 	    break;
 	  case ET_PYRAMID:
-	    ndof += 5 + 8*(pi[0]-1) + 2*(pi[0]-1)*(pi[0]-2) + (pi[0]-1)*(pi[0]-1) 
+	    ndof += 5 + 8*(pi[0]-1) + 2*(pi[0]-1)*(pi[0]-2) + (pi[0]-1)*(pi[0]-1)
 	      + (pi[0]-1)*(pi[0]-2)*(2*pi[0]-3)/6;
 	    break;
 	  case ET_HEX:
@@ -481,12 +484,12 @@ global system.
             break;
 	  }
 	if (!all_dofs_together)
-	  ndof--; // subtract constant 
+	  ndof--; // subtract constant
       }
     first_element_dof[nel] = ndof;
-    
-    if(print) 
-      *testout << " first_element dof (l2hofe) " << first_element_dof << endl;  
+
+    if(print)
+      *testout << " first_element dof (l2hofe) " << first_element_dof << endl;
 
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
@@ -496,7 +499,7 @@ global system.
   }
 
 
-  
+
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
@@ -506,7 +509,7 @@ global system.
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
-        
+
         if (!DefinedOn (ngel))
           {
             /*
@@ -527,7 +530,7 @@ global system.
                             { return *new(alloc) ScalarDummyFE<et.ElementType()>(); });
           }
 
-	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER) 
+	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER)
           return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
         if (tensorproduct)
@@ -539,7 +542,7 @@ global system.
             if (eltype == ET_HEX)
               return * new (alloc) L2HighOrderFETP<ET_HEX> (order, ngel.Vertices(), alloc);
           }
-        if (eltype == ET_TET && order_policy == CONSTANT_ORDER) 
+        if (eltype == ET_TET && order_policy == CONSTANT_ORDER)
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
 
         /*
@@ -562,12 +565,12 @@ global system.
 
           case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, alloc);
           case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, alloc);
-            
+
           case ET_TET:     return T_GetFE<ET_TET> (elnr, alloc);
           case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, alloc);
           case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, alloc);
           case ET_HEX:     return T_GetFE<ET_HEX> (elnr, alloc);
-            
+
           default:
             throw Exception ("illegal element in L2HoFeSpace::GetFE");
           }
@@ -588,15 +591,15 @@ global system.
         /*
         switch (eltype)
           {
-          case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
+          case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
           case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
           case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>;
           case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>;
-            
+
           default:
             stringstream str;
-            str << "FESpace " << GetClassName() 
-                << ", undefined surface eltype " << ma->GetElType(ei) 
+            str << "FESpace " << GetClassName()
+                << ", undefined surface eltype " << ma->GetElType(ei)
                 << ", order = " << order << endl;
             throw Exception (str.str());
           }
@@ -607,10 +610,10 @@ global system.
   // const FiniteElement & L2HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   // {
   //   try
-  //     { 
+  //     {
   //       Ngs_Element ngel = ma->GetElement(elnr);
   //       ELEMENT_TYPE eltype = ngel.GetType();
-        
+
   //       if (!DefinedOn (ngel.GetIndex()))
   //         {
   //           switch (eltype)
@@ -626,7 +629,7 @@ global system.
   //             }
   //         }
 
-  //       if (ngel.GetType() == ET_TRIG) 
+  //       if (ngel.GetType() == ET_TRIG)
   //         {
   //           int ia[3];
   //           FlatArray<int> vnums(3, &ia[0]);
@@ -634,7 +637,7 @@ global system.
   //           return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
   //         }
 
-  //       if (eltype == ET_TET)         
+  //       if (eltype == ET_TET)
   //         return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), lh);
 
   //       switch (eltype)
@@ -643,25 +646,25 @@ global system.
 
   //         case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
   //         case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
-            
+
   //         case ET_TET:     return T_GetFE<ET_TET> (elnr, lh);
   //         case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, lh);
   //         case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, lh);
   //         case ET_HEX:     return T_GetFE<ET_HEX> (elnr, lh);
-            
+
   //         default:
   //           throw Exception ("illegal element in L2HoFeSpace::GetFE");
   //         }
-  //     } 
+  //     }
   //   catch (Exception & e)
   //     {
   //       e.Append ("in L2HoFESpace::GetElement");
   //       e.Append ("\n");
-  //       throw; 
+  //       throw;
   //     }
   // }
 
-  
+
   template <ELEMENT_TYPE ET>
   FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, Allocator & lh) const
   {
@@ -680,31 +683,34 @@ global system.
 
   const FiniteElement & L2HighOrderFESpace :: GetFacetFE (int fnr, LocalHeap & lh) const
   {
-    DGFiniteElement<2> * fe2d = NULL;
+    // DGFiniteElement<2> * fe2d = NULL;
 
     ArrayMem<int,4> vnums;
     ma->GetFacetPNums (fnr, vnums);
 
     switch (vnums.Size())
       {
-      case 1: return *new (lh) L2HighOrderFE<ET_POINT> (0); 
+      case 1: return *new (lh) L2HighOrderFE<ET_POINT> (0);
       case 2: return *CreateL2HighOrderFE<ET_SEGM> (order, vnums, lh);
-      case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-      case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+      case 3: return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
+      case 4: return *CreateL2HighOrderFE<ET_QUAD> (order, vnums, lh);
+        // case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+        // case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
       default:
 	{
 	  stringstream str;
-	  str << "L2HighOrderFESpace " << GetClassName() 
+	  str << "L2HighOrderFESpace " << GetClassName()
 	      << ", undefined facet-eltype" << endl;
 	  throw Exception (str.str());
 	}
       }
-    
-    fe2d-> SetVertexNumbers (vnums); 
+    /*
+    fe2d-> SetVertexNumbers (vnums);
     fe2d-> SetOrder(order);
-    fe2d-> ComputeNDof(); 
+    fe2d-> ComputeNDof();
     return *fe2d;
-  } 
+    */
+  }
 
 
 
@@ -712,20 +718,20 @@ global system.
 
 
 
- 
+
   // const FiniteElement & L2HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   // {
   //   switch (ma->GetSElType(elnr))
   //     {
-  //     case ET_POINT: return *new (lh) DummyFE<ET_POINT>; 
+  //     case ET_POINT: return *new (lh) DummyFE<ET_POINT>;
   //     case ET_SEGM:  return *new (lh) DummyFE<ET_SEGM>; break;
   //     case ET_TRIG:  return *new (lh) DummyFE<ET_TRIG>; break;
   //     case ET_QUAD:  return *new (lh) DummyFE<ET_QUAD>; break;
 
   //     default:
   //       stringstream str;
-  //       str << "FESpace " << GetClassName() 
-  //           << ", undefined surface eltype " << ma->GetSElType(elnr) 
+  //       str << "FESpace " << GetClassName()
+  //           << ", undefined surface eltype " << ma->GetSElType(elnr)
   //           << ", order = " << order << endl;
   //       throw Exception (str.str());
   //     }
@@ -748,7 +754,7 @@ global system.
 
     if (!ei.IsVolume()) return;
     if (!DefinedOn (ei)) return;
-    
+
     if (!all_dofs_together)
       dranges.Append (IntRange (ei.Nr(), ei.Nr()+1));
     dranges.Append (GetElementDofs(ei.Nr()));
@@ -769,7 +775,7 @@ global system.
     dnums.Range(base, size) = eldofs;
     /*
     if (!all_dofs_together)
-      dnums.Append (elnr); // lowest_order 
+      dnums.Append (elnr); // lowest_order
     dnums += GetElementDofs(elnr);
     */
   }
@@ -780,7 +786,7 @@ global system.
       throw Exception("In L2HighOrderFESpace::SetOrder. Order policy is constant or node-type!");
     else if (order_policy == OLDSTYLE_ORDER)
       order_policy = VARIABLE_ORDER;
-      
+
     if (order < 0)
       order = 0;
 
@@ -799,7 +805,7 @@ global system.
     else
       throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType of codimension 0!");
   }
-  
+
   int L2HighOrderFESpace :: GetOrder (NodeId ni) const
   {
     if (CoDimension(ni.GetType(), ma->GetDimension()) == 0)
@@ -814,10 +820,10 @@ global system.
         else if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
       }
-    
+
     return 0;
   }
-  
+
 
   FlatArray<VorB> L2HighOrderFESpace :: GetDualShapeNodes (VorB vb) const
   {
@@ -828,7 +834,7 @@ global system.
       { return FlatArray<VorB> (0, nullptr); }
   }
 
-  shared_ptr<Table<int>> L2HighOrderFESpace :: 
+  shared_ptr<Table<int>> L2HighOrderFESpace ::
   CreateSmoothingBlocks (const Flags & precflags) const
   {
     int i, j, first;
@@ -836,9 +842,9 @@ global system.
     cnt = 0;
     for (i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
-	
+
     Table<int> table(cnt);
-    
+
     for (i = 0; i < nel; i++)
       {
 	first = first_element_dof[i];
@@ -849,23 +855,23 @@ global system.
   }
 
   void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  { 
+  {
     dnums.SetSize0();
   }
-  
+
   void  L2HighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
-  { 
-    dnums.SetSize0(); 
+  {
+    dnums.SetSize0();
   }
-  
+
   void  L2HighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
-  { 
-    dnums.SetSize0(); 
+  {
+    dnums.SetSize0();
   }
-  
+
   void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
-  { 
-    GetDofNrs (elnr, dnums); 
+  {
+    GetDofNrs (elnr, dnums);
   }
 
 
@@ -883,9 +889,9 @@ global system.
       {
         return make_shared<ApplyMassL2Const>
           (dynamic_pointer_cast<FESpace>(const_cast<L2HighOrderFESpace*>(this)->shared_from_this()),
-           rho, defon, lh);    
+           rho, defon, lh);
       }
-    
+
     return FESpace::GetMassOperator(rho, defon, lh);
   }
 
@@ -899,8 +905,8 @@ global system.
   }
   */
 
-  
-  
+
+
   void L2HighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                      LocalHeap & lh) const
   {
@@ -912,7 +918,7 @@ global system.
                      {
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
                        const ElementTransformation & trafo = el.GetTrafo();
-                       
+
                        Array<int> dnums(fel.GetNDof(), lh);
                        GetDofNrs (el.Nr(), dnums);
 
@@ -924,7 +930,7 @@ global system.
                            vec.SetIndirect (dnums, elx);
                            return;
                          }
-                       
+
                        vec.GetIndirect(dnums, elx);
 		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
 
@@ -951,7 +957,7 @@ global system.
                            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
                            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
                            if (rho) rho->Evaluate (mir, rhovals);
-                           
+
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
                            for (int comp = 0; comp < dimension; comp++)
@@ -963,7 +969,7 @@ global system.
                                else
                                  for (size_t i = 0; i < ir.Size(); i++)
                                    pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-                               
+
                                melx.Col(comp) = 0.0;
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
@@ -973,15 +979,15 @@ global system.
                        vec.SetIndirect(dnums, elx);
                      });
   }
-  
+
 
   void L2HighOrderFESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                      LocalHeap & lh) const
   {
     static Timer t("ApplyM"); RegionTimer reg(t);
     static Timer tall("ApplyM - all");
-    static Timer tel("ApplyM - el");    
-    static Timer ttrafo("ApplyM - trafo");    
+    static Timer tel("ApplyM - el");
+    static Timer ttrafo("ApplyM - trafo");
     static Timer tdofs("ApplyM - getdofs");
     static Timer tgetx("ApplyM - getx");
     static Timer tsety("ApplyM - sety");
@@ -993,22 +999,22 @@ global system.
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
 
     auto fv = vec.FV<double>();
-    
+
     IterateElements (*this, VOL, lh,
                      [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto tid = TaskManager::GetThreadId();
-                       NgProfiler::StartThreadTimer(tall, tid);                       
+                       NgProfiler::StartThreadTimer(tall, tid);
                        NgProfiler::StartThreadTimer(tel, tid);
-                       
+
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
                        NgProfiler::StopThreadTimer(tel, tid);
-                       NgProfiler::AddThreadFlops(tel, tid, 1);                       
-                       NgProfiler::StartThreadTimer(ttrafo, tid);                       
+                       NgProfiler::AddThreadFlops(tel, tid, 1);
+                       NgProfiler::StartThreadTimer(ttrafo, tid);
                        const ElementTransformation & trafo = el.GetTrafo();
                        NgProfiler::StopThreadTimer(ttrafo, tid);
                        NgProfiler::StartThreadTimer(tdofs, tid);
-                       
+
                        Array<int> dnums(fel.GetNDof(), lh);
                        auto dofrange = GetElementDofs(el.Nr());
                        FlatVector<double> elx(fel.GetNDof()*dimension, lh);
@@ -1022,12 +1028,12 @@ global system.
                            else
                              {
                                elx = 0.0;
-                               GetDofNrs (el, dnums);                               
+                               GetDofNrs (el, dnums);
                                vec.SetIndirect(dnums, elx);
                              }
                            return;
                          }
-                       
+
                        if (!lindofs)
                          {
                            GetDofNrs (el, dnums);
@@ -1035,15 +1041,15 @@ global system.
                          }
                        else
                          elx = fv.Range(dofrange);
-                       
+
                        NgProfiler::StopThreadTimer(tdofs, tid);
                        NgProfiler::StartThreadTimer(tgetx, tid);
-                       
+
 		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
-                       
+
                        NgProfiler::StopThreadTimer(tgetx, tid);
-                       
-                       NgProfiler::StartThreadTimer(tsetup, tid);                       
+
+                       NgProfiler::StartThreadTimer(tsetup, tid);
                        FlatVector<double> diag_mass(fel.GetNDof(), lh);
                        fel.GetDiagMassMatrix (diag_mass);
 
@@ -1051,16 +1057,16 @@ global system.
                        if (rho && !rho->ElementwiseConstant()) curved = true;
                        NgProfiler::StopThreadTimer(tsetup, tid);
 
-                       NgProfiler::StartThreadTimer(tcalc, tid);                       
+                       NgProfiler::StartThreadTimer(tcalc, tid);
                        if (!curved)
                          {
-                           NgProfiler::StartThreadTimer(tcalc1, tid);                                                  
+                           NgProfiler::StartThreadTimer(tcalc1, tid);
                            IntegrationRule ir(fel.ElementType(), 0);
                            BaseMappedIntegrationRule & mir = trafo(ir, lh);
                            double jac = mir[0].GetMeasure();
                            if (rho) jac *= rho->Evaluate(mir[0]);
-                           
-                           
+
+
                            NgProfiler::StopThreadTimer(tcalc1, tid);
                            NgProfiler::StartThreadTimer(tcalc2, tid);
 
@@ -1070,7 +1076,7 @@ global system.
                            else
                              for (size_t i = 0; i < melx.Height(); i++)
                                melx.Row(i) *= jac*diag_mass(i);
-                           NgProfiler::StopThreadTimer(tcalc2, tid);                           
+                           NgProfiler::StopThreadTimer(tcalc2, tid);
                          }
                        else
                          {
@@ -1081,7 +1087,7 @@ global system.
                            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
                            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
                            if (rho) rho->Evaluate (mir, rhovals);
-                           
+
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
                            for (int comp = 0; comp < dimension; comp++)
@@ -1093,7 +1099,7 @@ global system.
                                else
                                  for (size_t i = 0; i < ir.Size(); i++)
                                    pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-                               
+
                                melx.Col(comp) = 0.0;
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
@@ -1101,24 +1107,24 @@ global system.
                              melx.Row(i) /= diag_mass(i);
                          }
                        NgProfiler::StopThreadTimer(tcalc, tid);
-                       
+
                        NgProfiler::StartThreadTimer(tsety, tid);
-                       
+
                        if (!lindofs)
                          vec.SetIndirect(dnums, elx);
                        else
                          fv.Range(dofrange) = elx;
-                       
+
                        NgProfiler::StopThreadTimer(tsety, tid);
-                       NgProfiler::StopThreadTimer(tall, tid);                                              
+                       NgProfiler::StopThreadTimer(tall, tid);
                      });
   }
 
 
   Matrix<> GetTraceMatrix (const FiniteElement & fel)
   {
-    auto * dgfel2 = dynamic_cast<const DGFiniteElement<2>*> (&fel);
-    if (dgfel2)
+    // auto * dgfel2 = dynamic_cast<const DGFiniteElement<2>*> (&fel);
+    if (auto dgfel2 = dynamic_cast<const DGFiniteElement<ET_TRIG>*> (&fel))
       {
         int order = fel.Order();
         Matrix<> trace(3*(order+1), fel.GetNDof());
@@ -1126,8 +1132,8 @@ global system.
           dgfel2->CalcTraceMatrix(j, trace.Rows(j*(order+1), (j+1)*(order+1)));
         return trace;
       }
-    auto * dgfel3 = dynamic_cast<const DGFiniteElement<3>*> (&fel);
-    if (dgfel3)
+    // auto * dgfel3 = dynamic_cast<const DGFiniteElement<3>*> (&fel);
+    if (auto dgfel3 = dynamic_cast<const DGFiniteElement<ET_TET>*> (&fel))
       {
         int order = fel.Order();
         int nd2d = (order+1)*(order+2)/2;
@@ -1148,12 +1154,12 @@ global system.
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
+         classnr[el.Nr()] =
            SwitchET<ET_TRIG,ET_TET>
            (el.GetType(),
             [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
        });
-    
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
@@ -1161,17 +1167,17 @@ global system.
     Table<size_t> table = creator.MoveTable();
 
     shared_ptr<BaseMatrix> sum;
-  
+
     // size_t ne = ma->GetNE();
-  
+
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
-        
+
         ElementId ei(VOL,elclass_inds[0]);
         auto & felx = GetFE (ei, lh);
         //auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
-        
+
         Matrix<> trace_op_x = GetTraceMatrix (felx);
 
 
@@ -1200,10 +1206,10 @@ global system.
     return sum;
   }
 
-  
+
   void L2HighOrderFESpace ::
   GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
-            LocalHeap & lh) const 
+            LocalHeap & lh) const
   {
     static Timer t("GetTrace"); RegionTimer reg(t);
 
@@ -1212,12 +1218,12 @@ global system.
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
+         classnr[el.Nr()] =
            SwitchET<ET_TRIG,ET_TET>
            (el.GetType(),
             [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
        });
-    
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
@@ -1226,17 +1232,17 @@ global system.
 
 
     // size_t ne = ma->GetNE();
-  
+
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
-        
+
         ElementId ei(VOL,elclass_inds[0]);
         auto & felx = GetFE (ei, lh);
         // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
-        
+
         Matrix<> trace_op_x = GetTraceMatrix (felx);
-        
+
         Matrix<> temp_x(elclass_inds.Size(), trace_op_x.Width());
         Matrix<> temp_trace(elclass_inds.Size(), trace_op_x.Height());
 
@@ -1245,7 +1251,7 @@ global system.
            [&] (IntRange myrange)
            {
              Array<DofId> dofs;
-             
+
              // int tid = TaskManager::GetThreadId();
              {
                for (auto i : myrange)
@@ -1254,13 +1260,13 @@ global system.
                    in.GetIndirect(dofs, temp_x.Row(i));
                  }
              }
-             
+
              {
-               temp_trace.Rows(myrange) = 0;      
+               temp_trace.Rows(myrange) = 0;
                // RegionTracer t(tid, tmulttracex, 0, temp_x.Width());
                AddABt(temp_x.Rows(myrange), trace_op_x, temp_trace.Rows(myrange));
              }
-             
+
              {
                for (auto i : myrange)
                  {
@@ -1271,7 +1277,7 @@ global system.
            });
       }
   }
-  
+
   void L2HighOrderFESpace ::
   GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
                  LocalHeap & lh) const
@@ -1283,12 +1289,12 @@ global system.
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
+         classnr[el.Nr()] =
            SwitchET<ET_TRIG,ET_TET>
            (el.GetType(),
             [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
        });
-    
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
@@ -1297,17 +1303,17 @@ global system.
 
 
     // size_t ne = ma->GetNE();
-  
+
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
-        
+
         ElementId ei(VOL,elclass_inds[0]);
         auto & felx = GetFE (ei, lh);
         // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
-        
+
         Matrix<> trace_op_x = GetTraceMatrix (felx);
-        
+
         Matrix<> temp_x(elclass_inds.Size(), trace_op_x.Width());
         Matrix<> temp_trace(elclass_inds.Size(), trace_op_x.Height());
 
@@ -1316,7 +1322,7 @@ global system.
            [&] (IntRange myrange)
            {
              Array<DofId> dofs;
-             
+
              // int tid = TaskManager::GetThreadId();
              {
                for (auto i : myrange)
@@ -1325,13 +1331,13 @@ global system.
                    in.GetIndirect(dofs, temp_trace.Row(i));
                  }
              }
-             
+
              {
-               // temp_trace.Rows(myrange) = 0;      
+               // temp_trace.Rows(myrange) = 0;
                // AddABt(temp_x.Rows(myrange), trace_op_x, temp_trace.Rows(myrange));
                temp_x.Rows(myrange) = temp_trace.Rows(myrange) * trace_op_x;
              }
-             
+
              {
                for (auto i : myrange)
                  {
@@ -1359,7 +1365,7 @@ global system.
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = Trans (mip.GetJacobianInverse ()) * 
+      mat = Trans (mip.GetJacobianInverse ()) *
 	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
     }
 
@@ -1367,17 +1373,17 @@ global system.
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
+      static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);
     }
 
-    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::ApplySIMDIR;    
+    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&>(fel).EvaluateGrad (mir, x, y);
     }
 
-    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::AddTransSIMDIR;        
+    using DiffOp<DiffOpSurfaceGradient<D, FEL> >::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -1388,19 +1394,19 @@ global system.
   };
 
 
-  L2SurfaceHighOrderFESpace ::  
+  L2SurfaceHighOrderFESpace ::
   L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     type = "l2surf";
     name="L2SurfaceHighOrderFESpace(l2surf)";
-    // defined flags 
+    // defined flags
     DefineDefineFlag("l2surf");
 
     if(parseflags) CheckFlags(flags);
-    
+
     if(flags.NumFlagDefined("relorder"))
-      throw Exception("Variable order not implemented for L2SurfaceHighOrderFESpace"); 
+      throw Exception("Variable order not implemented for L2SurfaceHighOrderFESpace");
 
     lowest_order_wb = flags.GetDefineFlagX ("lowest_order_wb").IsTrue();
 
@@ -1414,37 +1420,39 @@ global system.
       {
         if (ma->GetDimension() == 2)
           {
-            integrator[BND] = 
+            integrator[BND] =
               make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
           }
         else
           {
-            integrator[BND] = 
+            integrator[BND] =
               make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>(); // to avoid exception "grad does not exist"
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
           }
       }
     else
       {
         if (ma->GetDimension() == 2)
           {
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension            
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<1,2>>>();
           }
         if (ma->GetDimension() == 3)
           {
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension                        
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<2,3>>>();
           }
       }
-    
+
     if (dimension > 1)
     {
       integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
@@ -1453,7 +1461,7 @@ global system.
         if (evaluator[vb])
           evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
         if (flux_evaluator[vb])
-          flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
+          flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);
       }
     }
 
@@ -1469,14 +1477,14 @@ global system.
   {
     static VorB nodes[] = { VOL };
     if (vb == BND)
-      return FlatArray<VorB> (1, &nodes[0]); 
+      return FlatArray<VorB> (1, &nodes[0]);
     else
-      return FlatArray<VorB> (0, nullptr); 
+      return FlatArray<VorB> (0, nullptr);
   }
 
   DocInfo L2SurfaceHighOrderFESpace :: GetDocu ()
   {
-    DocInfo docu = FESpace::GetDocu(); 
+    DocInfo docu = FESpace::GetDocu();
     docu.short_docu = "An L2-conforming finite element space.";
     docu.long_docu =
       R"raw_string(The L2 finite element space on surfaces consists of element-wise polynomials,
@@ -1502,27 +1510,27 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   }
 
   /*
-  shared_ptr<FESpace> L2SurfaceHighOrderFESpace :: 
+  shared_ptr<FESpace> L2SurfaceHighOrderFESpace ::
   Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     return make_shared<L2SurfaceHighOrderFESpace> (ma, flags, true);
   }
   */
-  
+
   void L2SurfaceHighOrderFESpace :: Update()
   {
     size_t nel = ma->GetNE(BND);
 
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
-    
-    
+
+
     if (first_update)
       {
 	order_inner.SetSize(nel);
 	order_inner = INT<3>(order);
 
-	for (size_t i = 0; i < nel; i++) 
+	for (size_t i = 0; i < nel; i++)
 	  {
 	    ElementId ei(BND,i);
 	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
@@ -1530,11 +1538,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 	    if (!DefinedOn (ei))
 	      order_inner[i] = 0;
 	  }
-    
-	if(print) 
+
+	if(print)
 	  *testout << " order_inner (l2surf) " << order_inner << endl;
       }
-    
+
     size_t ndof = 0;
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
@@ -1558,9 +1566,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       }
     first_element_dof[nel] = ndof;
     SetNDof(ndof);
-    if(print) 
+    if(print)
       *testout << " first_element dof (l2surf) " << first_element_dof << endl;
-    
+
     UpdateCouplingDofArray();
   }
 
@@ -1568,13 +1576,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   {
     ctofdof.SetSize(ndof);
     ctofdof = UNUSED_DOF;
-    
+
     for (auto i : Range(ma->GetNSE()))
       if (DefinedOn({BND,i}))
         {
           auto r = GetElementDofs(i);
           ctofdof[r] =  (discontinuous || lowest_order_wb) ? LOCAL_DOF : WIREBASKET_DOF;
-          
+
           if (lowest_order_wb && r.Size() != 0)
             ctofdof[r.First()] = WIREBASKET_DOF;
         }
@@ -1587,7 +1595,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       throw Exception("In L2SurfaceHighOrderFESpace::SetOrder. Order policy is constant or node-type!");
     else if (order_policy == OLDSTYLE_ORDER)
       order_policy = VARIABLE_ORDER;
-      
+
     if (order < 0)
       order = 0;
 
@@ -1606,7 +1614,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     else
       throw Exception ("L2SurfaceHighOrderFESpace::SetOrder requires NodeType of codimension 1!");
   }
-  
+
   int L2SurfaceHighOrderFESpace ::GetOrder (NodeId ni) const
   {
     if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
@@ -1621,10 +1629,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         else if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
       }
-        
+
     return 0;
   }
-  
+
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
@@ -1632,8 +1640,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       {
         if (ma->GetDimension() == 2)
           {
-            DGFiniteElement<1> * fe1d = 0;
-	
+            DGFiniteElement<ET_SEGM> * fe1d = 0;
+
             Ngs_Element ngel = ma->GetElement<1,BND> (ei.Nr());
 
             switch (ngel.GetType())
@@ -1645,30 +1653,33 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
             fe1d -> SetVertexNumbers (ngel.vertices);
             fe1d -> SetOrder (order_inner[ei.Nr()]);
-            fe1d -> ComputeNDof(); 
+            fe1d -> ComputeNDof();
             return *fe1d;
           }
         else
           {
-            DGFiniteElement<2> * fe2d = 0;
-	
-            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());
-	
-            switch (ngel.GetType())
-              {
-              case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-              case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-              default:
-                ;
-              }
-	
-            fe2d -> SetVertexNumbers (ngel.vertices);
-            fe2d -> SetOrder (order_inner[ei.Nr()]);
-            fe2d -> ComputeNDof(); 
-            return *fe2d;
+            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());            
+            // SwitchET generates an "internal compiler error" on MSVC 2019 14.28.29910
+            if(ngel.GetType()==ET_TRIG)
+            {
+              auto fe2d = new (lh) L2HighOrderFE<ET_TRIG> ();
+              fe2d -> SetVertexNumbers (ngel.vertices);
+              fe2d -> SetOrder (order_inner[ei.Nr()]);
+              fe2d -> ComputeNDof();
+              return *fe2d;
+            }
+            else if(ngel.GetType()==ET_QUAD)
+            {
+              auto fe2d = new (lh) L2HighOrderFE<ET_QUAD> ();
+              fe2d -> SetVertexNumbers (ngel.vertices);
+              fe2d -> SetOrder (order_inner[ei.Nr()]);
+              fe2d -> ComputeNDof();
+              return *fe2d;
+            }
+            throw Exception("Unknown eltype for L2SurfaceHighOrderFESpace " + ToString(ngel.GetType()));
           }
       }
-    
+
     else
 
       return * SwitchET (ma->GetElement(ei).GetType(),
@@ -1676,7 +1687,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                          {
                            return new (lh) ScalarDummyFE<et.ElementType()>();
                          });
-    
+
   }
 
   /*
@@ -1685,8 +1696,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     return ndof;
   }
   */
-  
-  void L2SurfaceHighOrderFESpace :: 
+
+  void L2SurfaceHighOrderFESpace ::
   GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
@@ -1704,14 +1715,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     shared_ptr<Table<DofId>> dofs;
     Matrix<> elbmat;
     Vector<double> eldiag;
-    
+
   public:
     ///
     ApplyL2Mass (shared_ptr<FESpace> afes,
                  shared_ptr<CoefficientFunction> arho,
                  bool ainverse,
                  shared_ptr<Region> adefinedon,
-                 Matrix<double> aelbmat, Vector<double> aeldiag, Vector<double> arho_jac, 
+                 Matrix<double> aelbmat, Vector<double> aeldiag, Vector<double> arho_jac,
                  shared_ptr<Table<DofId>> adofs,
                  LocalHeap & alh)
       : ApplyMass (afes, arho, ainverse, adefinedon, alh),
@@ -1739,7 +1750,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       for (size_t i = 0; i < rho_jac.Size(); i++)
         inv_rhojac(i) = 1.0/rho_jac(i);
       return make_shared<ApplyL2Mass> (fes, rho, !inverse, definedon,
-                                       scaled_elbmat, eldiag, inv_rhojac, dofs, 
+                                       scaled_elbmat, eldiag, inv_rhojac, dofs,
                                        lh);
     }
 
@@ -1748,7 +1759,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       prod = 0.0;
       MultAdd (1, v, prod);
     }
-    
+
     void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override
     {
       auto fx = v.FV<double>();
@@ -1759,12 +1770,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
            constexpr size_t BS = 128;
            Matrix<> hx(BS, elbmat.Width());
            Matrix<> tmp(BS, elbmat.Height());
-           
+
            for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
              {
                size_t li = min2(bi+BS, r.Next());
                size_t num = li-bi;
-               
+
                for (size_t i = 0; i < num; i++)
                  hx.Row(i) = fx( (*dofs)[bi+i]);
 
@@ -1773,26 +1784,26 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                size_t base = r.First()*tmp.Width();
                for (size_t i : Range(num*tmp.Width()))
                  tmp(i) *= rho_jac(base+i);
-               
+
                hx.Rows(0, num) = tmp.Rows(0,num) * elbmat;
                for (size_t i = 0; i < num; i++)
                  fy( (*dofs)[bi+i]) += val * hx.Row(i);
              }
          });
     }
-  
-    
+
+
   };
 
-  
+
   shared_ptr<BaseMatrix> L2SurfaceHighOrderFESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
                    shared_ptr<Region> defon,
-                   LocalHeap & lh) const 
+                   LocalHeap & lh) const
   {
     // return FESpace::GetMassOperator(rho, defon, lh);
 
-    
+
     auto dofs = make_shared<Table<DofId>> (CreateDofTable(BND));
     Matrix<> bmat;
     Vector<double> rho_jac;
@@ -1805,13 +1816,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       {
         auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
         const ElementTransformation & trafo = el.GetTrafo();
-        
+
         IntegrationRule ir1(fel.ElementType(), 2*fel.Order());
         Array<int> verts { el.Vertices() };
         Facet2SurfaceElementTrafo f2s(fel.ElementType(), verts);
         auto & ir = f2s(ir1, lh);
         auto & mir = trafo(ir, lh);
-        
+
         FlatMatrix<> rhovals(ir.Size(), 1, lh);
         if (rho)
           rho->Evaluate (mir, rhovals);
@@ -1823,7 +1834,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         else
           for (size_t i = 0; i < ir.Size(); i++)
             rhovals.Row(i) /= mir[i].GetMeasure();
-          
+
 
         Matrix<> shapes(fel.GetNDof(), ir.Size());
         bmat.SetSize(ir.Size(), fel.GetNDof());
@@ -1832,7 +1843,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           {
             firsttime = false;
             bmat = Trans(shapes);
-            
+
             eldiag.SetSize(fel.GetNDof());
             fel.GetDiagMassMatrix (eldiag);
 
@@ -1849,7 +1860,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           }
         rho_jac.Range ( rhovals.Height() * IntRange(el.Nr(), el.Nr()+1) ) = rhovals.Col(0);
       }
-    
+
     // cout << "doftable = " << doftable << endl;
     // cout << "eldiag = " << eldiag << endl;
 
@@ -1858,10 +1869,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     return make_shared<ApplyL2Mass> (dynamic_pointer_cast<FESpace>(const_cast< L2SurfaceHighOrderFESpace*>(this)->shared_from_this()),
                                      rho, false, defon,
                                      bmat, eldiag, rho_jac, dofs,
-                                     lh);    
+                                     lh);
   }
-  
-  
+
+
   void L2SurfaceHighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                   LocalHeap & lh) const
   {
@@ -1874,7 +1885,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
 
                        const ElementTransformation & trafo = el.GetTrafo();
-                       
+
                        Array<int> dnums(fel.GetNDof(), lh);
                        GetDofNrs (ElementId(BND,el.Nr()), dnums);
 
@@ -1885,7 +1896,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                            vec.SetIndirect (dnums, elx);
                            return;
                          }
-                       
+
                        vec.GetIndirect(dnums, elx);
                        auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
 
@@ -1912,7 +1923,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
                            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
                            if (rho) rho->Evaluate (mir, rhovals);
-                           
+
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
                            for (int comp = 0; comp < dimension; comp++)
@@ -1924,7 +1935,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                else
                                  for (size_t i = 0; i < ir.Size(); i++)
                                    pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-                               
+
                                melx.Col(comp) = 0.0;
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
@@ -1943,14 +1954,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
 
     // auto fv = vec.FV<double>();
-    
+
     IterateElements (*this, BND, lh,
                      [&rho, &vec, /* fv, */ def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        // auto tid = TaskManager::GetThreadId();
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
                        const ElementTransformation & trafo = el.GetTrafo();
-                       
+
                        Array<int> dnums(fel.GetNDof(), lh);
                        // auto dofrange = GetElementDofs(el.Nr());
                        FlatVector<double> elx(fel.GetNDof()*dimension, lh);
@@ -1964,12 +1975,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                            else
                              {*/
                                elx = 0.0;
-                               GetDofNrs (el, dnums);                               
+                               GetDofNrs (el, dnums);
                                vec.SetIndirect(dnums, elx);
                              //}
                            return;
                          }
-                       
+
                        /*if (!lindofs)
                          {*/
                            GetDofNrs (el, dnums);
@@ -1978,9 +1989,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                        else
                          elx = fv.Range(dofrange);
                        */
-                       
+
 		                   auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
-                       
+
                        bool curved = trafo.IsCurvedElement();
                        if (rho && !rho->ElementwiseConstant()) curved = true;
                        if (!curved)
@@ -1991,8 +2002,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                            BaseMappedIntegrationRule & mir = trafo(ir, lh);
                            double jac = mir[0].GetMeasure();
                            if (rho) jac *= rho->Evaluate(mir[0]);
-                           
-                           
+
+
 
                            if (dimension == 1)
                              for (size_t i = 0; i < elx.Size(); i++)
@@ -2008,7 +2019,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
                            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
                            if (rho) rho->Evaluate (mir, rhovals);
-                           
+
                            for (int comp = 0; comp < dimension; comp++)
                              {
                                fel.Evaluate (ir, melx.Col(comp), pntvals);
@@ -2018,22 +2029,22 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                else
                                  for (size_t i = 0; i < ir.Size(); i++)
                                    pntvals(i) *= ir[i].Weight() * mir[i].GetMeasure();
-                               
+
                                melx.Col(comp) = 0.0;
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
                          }
-                       
+
                        //if (!lindofs)
                          vec.SetIndirect(dnums, elx);
                        //else
                         // fv.Range(dofrange) = elx;
-                       
+
                      });
   }
-  shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
+  shared_ptr<Table<int>> L2SurfaceHighOrderFESpace ::
   // CreateSmoothingBlocks ( int type) const
-  CreateSmoothingBlocks (const Flags & precflags) const    
+  CreateSmoothingBlocks (const Flags & precflags) const
   {
     int i, j, first;
     size_t nel = ma->GetNE(BND);
@@ -2041,9 +2052,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     cnt = 0;
     for (i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
-	
+
     Table<int> table(cnt);
-    
+
     for (i = 0; i < nel; i++)
       {
 	first = first_element_dof[i];
@@ -2056,13 +2067,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
   void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { dnums.SetSize0(); return; }
-  
+
   void  L2SurfaceHighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { dnums.SetSize0(); return; }
-  
+
   void  L2SurfaceHighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { GetDofNrs ( fanr, dnums ); return; }
-  
+
   void  L2SurfaceHighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
   { GetDofNrs ( elnr, dnums ); return; }
 
@@ -2090,11 +2101,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         {
           Vec<DIM_ELEMENT> hv = mat.Col(i);
           mat.Col(i) = trafo * hv;
-        } 
+        }
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, 
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
@@ -2104,7 +2115,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       size_t ndofi = feli.GetNDof();
       auto scalmat = mat.Rows( (DIM_SPC*DIM_ELEMENT-1)*ndofi, DIM_SPC*DIM_ELEMENT*ndofi);
       feli.CalcShape (mir.IR(), scalmat);
-      
+
       for (auto i_ip : Range(mir))
         {
           auto & mip = mir[i_ip];
@@ -2119,28 +2130,28 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               col.Range(base, base+DIM_SPACE) = scalcol(i) * trafo.Col(k);
         }
     }
-    
 
-    using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB>>::ApplySIMDIR;        
+
+    using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       // cout << "apply simdir" << endl;
       // static Timer t("DiffOpIdVectorL2Piola::ApplySIMDIR");
       // RegionTracer rt(TaskManager::GetThreadId(), t);
-      
+
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-      
+
       STACK_ARRAY(double, memx, DIM_ELEMENT*ndofi);
       FlatMatrixFixWidth<DIM_ELEMENT, double> matx(ndofi, &memx[0]);
       for (size_t k = 0; k < DIM_ELEMENT; k++)
         matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
 
       {
-        // RegionTracer rt(TaskManager::GetThreadId(), t);                      
+        // RegionTracer rt(TaskManager::GetThreadId(), t);
         feli.Evaluate(mir.IR(), matx, y);
       }
       for (size_t i = 0; i < mir.Size(); i++)
@@ -2150,22 +2161,22 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           val *= 1/mir[i].GetJacobiDet();
           y.Col(i).Range(0,DIM_SPACE) = jac * val;
         }
-    }    
-    
-    
-    using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB>>::AddTransSIMDIR;        
+    }
+
+
+    using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB>>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       //static Timer t("DiffpIdVectorL2Piola::AddTransSIMD");
       // static Timer tc("DiffpIdVectorL2Piola::AddTransSIMD calc");
-      // RegionTracer rt(TaskManager::GetThreadId(), t);            
+      // RegionTracer rt(TaskManager::GetThreadId(), t);
 
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-      
+
       STACK_ARRAY(SIMD<double>, mempt, mir.Size()*DIM_SPACE);
       FlatMatrix<SIMD<double>> hy(DIM_SPACE, mir.Size(), &mempt[0]);
 
@@ -2176,7 +2187,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           val *= 1/mir[i].GetJacobiDet();
           hy.Col(i).Range(0,DIM_SPACE) = Trans(jac) * val;
         }
-      
+
       STACK_ARRAY(double, memx, DIM_ELEMENT*ndofi);
       FlatMatrixFixWidth<DIM_ELEMENT, double> matx(ndofi, &memx[0]);
 
@@ -2187,12 +2198,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
       for (size_t k = 0; k < DIM_ELEMENT; k++)
         x.Range(k*ndofi, (k+1)*ndofi) = matx.Col(k);
-    }    
+    }
 
-    
-/*   
 
-  using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
+/*
+
+  using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -2204,7 +2215,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         }
     }
 
-    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -2214,7 +2225,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
           feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
         }
-    }    
+    }
     */
   };
 
@@ -2232,14 +2243,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     enum { DIFFORDER = 1 };
 
     static string Name() { return "div"; }
-    
+
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
-      
+
       int ndofi = feli.GetNDof();
       FlatMatrix<> grad (ndofi, DIM_SPC, lh);
       feli.CalcDShape(mip.IP(), grad);
@@ -2251,7 +2262,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, 
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
@@ -2267,7 +2278,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         {
           auto col = mat.Col(i_ip);
           auto & mip = mir[i_ip];
-          
+
           for (size_t i = 0; i < ndofi; i++)
             for (size_t k = 0; k < DIM_SPC; k++)
               tmp(i, k) = col(i*DIM_SPC+k);
@@ -2280,10 +2291,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         }
     }
 
-    
+
 
     /*
-    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;        
+    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -2306,10 +2317,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               Vec<3,SIMD<double>> hv = Cross(gi, tek);
               y.Col(i).AddSize(3) += hv;
             }
-        }             
-    }    
-      
-    using DiffOp<DiffOpCurlVectorL2Covariant>::AddTransSIMDIR;        
+        }
+    }
+
+    using DiffOp<DiffOpCurlVectorL2Covariant>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -2330,13 +2341,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               Vec<3,SIMD<double>> hv = Cross(cy, tek);
               grad.Col(i) = -hv;
             }
-          
+
           feli.AddGradTrans (mir, grad, x.Range(k*ndofi, (k+1)*ndofi));
-        }             
-    }    
+        }
+    }
     */
   };
-  
+
 
 
   template <int DIM_SPC>
@@ -2352,14 +2363,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static string Name() { return "grad"; }
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); };
-    
+
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
-      
+
       int ndofi = feli.GetNDof();
       FlatMatrix<> grad (ndofi, DIM_SPC, lh);
       feli.CalcMappedDShape(mip, grad);
@@ -2374,7 +2385,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       FlatVector<> val (ndofi, lh);
       feli.CalcShape(mip.IP(), val);
 
-      // 1/J ( H - (F^{-T}:H) F ) 
+      // 1/J ( H - (F^{-T}:H) F )
       if (!mip.GetTransformation().IsCurvedElement())
         return;
 
@@ -2387,13 +2398,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC>> invjac_hesse;
       for (int i = 0; i < DIM_SPC; i++)
         invjac_hesse(i) = Trans(inv) * hesse(i);
-      
+
       Vec<DIM_SPC> inv_hesse = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         for (int j = 0; j < DIM_SPC; j++)
           inv_hesse(i) += invjac_hesse(j)(j,i);
       inv_hesse = Trans(inv) * inv_hesse;
-      
+
       for (int i = 0; i < DIM_SPC; i++)
         for (int j = 0; j < DIM_SPC; j++)
           for (int k = 0; k < DIM_SPC; k++)
@@ -2403,7 +2414,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     /*
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, 
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
@@ -2419,7 +2430,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         {
           auto col = mat.Col(i_ip);
           auto & mip = mir[i_ip];
-          
+
           for (size_t i = 0; i < ndofi; i++)
             for (size_t k = 0; k < DIM_SPC; k++)
               tmp(i, k) = col(i*DIM_SPC+k);
@@ -2433,35 +2444,41 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     }
     */
     
-
-    /*
-    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;        
+    using DiffOp<DiffOpGradVectorL2Piola>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-      y.AddSize(3,mir.Size()) = SIMD<double>(0.0);
 
-      STACK_ARRAY(SIMD<double>, mem, 3*mir.Size());
-      FlatMatrix<SIMD<double>> grad(3, mir.Size(), &mem[0]);
-      for (size_t k = 0; k < 3; k++)
-        {
-          feli.EvaluateGrad (mir, x.Range(k*ndofi, (k+1)*ndofi), grad);
-          for (size_t i = 0; i < mir.Size(); i++)
-            {
-              auto trafo = Trans(mir[i].GetJacobianInverse());
-              Vec<3,SIMD<double>> gi = grad.Col(i);
-              Vec<3,SIMD<double>> tek = trafo.Col(k);
-              Vec<3,SIMD<double>> hv = Cross(gi, tek);
-              y.Col(i).AddSize(3) += hv;
-            }
-        }             
-    }    
-    */
-    using DiffOp<DiffOpGradVectorL2Piola>::AddTransSIMDIR;        
+      STACK_ARRAY(SIMD<double>, mem, DIM_SPC*DIM_SPC*mir.Size());
+      FlatMatrix<SIMD<double>> grad(DIM_SPC*DIM_SPC, mir.Size(), &mem[0]);
+      grad = SIMD<double>(0.0);
+
+      for (size_t k = 0; k < DIM_SPC; k++)
+        feli.EvaluateGrad (mir, x.Range(k*ndofi, (k+1)*ndofi), grad.Rows(k*DIM_SPC, (k+1)*DIM_SPC));
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        for (int j = 0; j < (DIM_SPC*DIM_SPC); j++)
+          y(j, i) = SIMD<double>(0.0);
+
+      for (size_t i = 0; i < mir.Size(); i++) {
+          auto trans = 1/(mir[i].GetJacobiDet())*mir[i].GetJacobian();
+          for (int j = 0; j < DIM_SPC; j++)
+            for (int k = 0; k < DIM_SPC; k++)
+              for (int l = 0; l < DIM_SPC; l++)
+                y(j*DIM_SPC+k, i) += trans(j,l)*grad(l*DIM_SPC+k, i);
+      }
+
+      if (!mir.GetTransformation().IsCurvedElement())
+        return;
+
+      // For curved elements part is still missing
+    }
+
+    using DiffOp<DiffOpGradVectorL2Piola>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -2477,12 +2494,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       for (size_t i = 0; i < mir.Size(); i++)
         {
           auto trans = 1/(mir[i].GetJacobiDet())*mir[i].GetJacobian();
-          for (int j = 0; j < DIM_SPC; j++)    
+          for (int j = 0; j < DIM_SPC; j++)
             for (int k = 0; k < DIM_SPC; k++)
               for (int l = 0; l < DIM_SPC; l++)
                 grad(j*DIM_SPC+k, i) += trans(l,j)*y(k*DIM_SPC+l, i);
         }
-          
+
       for (size_t k = 0; k < DIM_SPC; k++)
         feli.AddGradTrans (mir, grad.Rows(k*DIM_SPC, (k+1)*DIM_SPC), x.Range(k*ndofi, (k+1)*ndofi));
 
@@ -2500,17 +2517,17 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           auto invJ = 1/mir[ip].GetJacobiDet();
           Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC,SIMD<double>>> hesse;
           mir[ip].CalcHesse(hesse);
-          
+
           Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC,SIMD<double>>> invjac_hesse;
           for (int i = 0; i < DIM_SPC; i++)
             invjac_hesse(i) = Trans(inv) * hesse(i);
-          
+
           Vec<DIM_SPC,SIMD<double>> inv_hesse = SIMD<double>(0.0);
           for (int i = 0; i < DIM_SPC; i++)
             for (int j = 0; j < DIM_SPC; j++)
               inv_hesse(i) += invjac_hesse(j)(j,i);
           inv_hesse = Trans(inv) * inv_hesse;
-          
+
           for (int i = 0; i < DIM_SPC; i++)
             for (int j = 0; j < DIM_SPC; j++)
               for (int k = 0; k < DIM_SPC; k++)
@@ -2521,13 +2538,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
       for (size_t k = 0; k < DIM_SPC; k++)
         feli.AddTrans (mir.IR(), val.Row(k), x.Range(k*ndofi, (k+1)*ndofi));
-    }    
+    }
   };
 
 
 
 
-  
+
   template <int DIM_SPC, VorB VB = VOL>
   class DiffOpIdVectorL2Covariant : public DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC> >
   {
@@ -2552,17 +2569,17 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         {
           Vec<DIM_SPACE> hv = mat.Col(i);
           mat.Col(i) = Trans(trafo) * hv;
-        } 
+        }
     }
-    
+
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir, 
+                                      const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-      
+
       STACK_ARRAY(SIMD<double>, mem, ndofi*mir.Size());
       FlatMatrix<SIMD<double>> shapes(ndofi, mir.Size(), &mem[0]);
       feli.CalcShape (mir.IR(), shapes);
@@ -2572,7 +2589,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           auto col = mat.Col(i_ip);
           auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_ELEMENT,DIM_SPC>>&>(mir[i_ip]);
           auto trafo = mip.GetJacobianInverse();
-          
+
           for (int k = 0; k < DIM_SPACE; k++)
             {
               size_t offset = DIM_SPACE*k*ndofi;
@@ -2583,7 +2600,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     }
 
 
-    using DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC>>::ApplySIMDIR;        
+    using DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -2591,12 +2608,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-      
+
       STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
       FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
       for (size_t k = 0; k < DIM_SPACE; k++)
         matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
-      
+
       feli.Evaluate(mir.IR(), matx, y);
 
       for (size_t i = 0; i < mir.Size(); i++)
@@ -2605,10 +2622,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
           y.Col(i).Range(0,DIM_SPACE) = Trans(jacinv) * val;
         }
-    }    
-    
+    }
 
-    using DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC>>::AddTransSIMDIR;        
+
+    using DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC>>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -2616,7 +2633,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
-      
+
       STACK_ARRAY(SIMD<double>, mempt, mir.Size()*DIM_SPACE);
       FlatMatrix<SIMD<double>> hy(DIM_SPACE, mir.Size(), &mempt[0]);
 
@@ -2626,7 +2643,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
           hy.Col(i) = jacinv * val;
         }
-      
+
       STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
       FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
 
@@ -2637,7 +2654,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
       for (size_t k = 0; k < DIM_SPACE; k++)
         x.Range(k*ndofi, (k+1)*ndofi) = matx.Col(k);
-    }    
+    }
   };
 
 
@@ -2651,7 +2668,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     enum { DIFFORDER = 1 };
 
     static string Name() { return "curl"; }
-    
+
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -2659,7 +2676,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
       mat = 0;
-      
+
       int ndofi = feli.GetNDof();
       FlatMatrix<> grad (ndofi, 3, lh);
       feli.CalcDShape(mip.IP(), grad);
@@ -2675,7 +2692,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           }
     }
 
-    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;        
+    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -2698,10 +2715,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               Vec<3,SIMD<double>> hv = Cross(gi, tek);
               y.Col(i).Range(0,3) += hv;
             }
-        }             
-    }    
-      
-    using DiffOp<DiffOpCurlVectorL2Covariant>::AddTransSIMDIR;        
+        }
+    }
+
+    using DiffOp<DiffOpCurlVectorL2Covariant>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
@@ -2722,12 +2739,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               Vec<3,SIMD<double>> hv = Cross(cy, tek);
               grad.Col(i) = -hv;
             }
-          
+
           feli.AddGradTrans (mir, grad, x.Range(k*ndofi, (k+1)*ndofi));
-        }             
-    }    
+        }
+    }
   };
-  
+
   /*class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
   {
   public:
@@ -2747,7 +2764,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       for (int i = 0; i < 2; i++)
         feli.CalcMappedDShape(mip.IP(), Trans(mat.Row(i).Range(fel.GetRange(i))));
       //~ int nd = fel.GetNDof();
-    
+
       //~ mat = 0;
       for (int i = 0; i < nd; i++)
       {
@@ -2760,7 +2777,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
   DocInfo VectorL2FESpace :: GetDocu ()
   {
-    DocInfo docu = FESpace::GetDocu(); 
+    DocInfo docu = FESpace::GetDocu();
     docu.short_docu = "A vector-valued L2-conforming finite element space.";
     docu.long_docu =
       R"raw_string(The Vector-L2 finite element space is a product-space of L2 spaces,
@@ -2780,11 +2797,11 @@ One can evaluate the vector-valued function, and one can take the gradient.
       "  dofs within one scalar component are together.";
     docu.Arg("hide_all_dofs") = "bool = False\n"
       "  all dofs are condensed without a global dofnr";
-    
+
     return docu;
   }
 
-  VectorL2FESpace::VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+  VectorL2FESpace::VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags,
                      bool checkflags)
       : CompoundFESpace(ama, flags)
     {
@@ -2878,7 +2895,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
     bool curved = false;
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
-    
+
     /*
     cout << "VectorL2, GetMassOp" << endl
          << "rho = " << *rho << endl
@@ -2893,21 +2910,21 @@ One can evaluate the vector-valued function, and one can take the gradient.
           case 1:
             return make_shared<ApplyMassVectorL2Const<1>>
               (dynamic_pointer_cast<FESpace>(const_cast<VectorL2FESpace*>(this)->shared_from_this()),
-               rho, defon, lh);    
+               rho, defon, lh);
           case 2:
             return make_shared<ApplyMassVectorL2Const<2>>
               (dynamic_pointer_cast<FESpace>(const_cast<VectorL2FESpace*>(this)->shared_from_this()),
-               rho, defon, lh);    
+               rho, defon, lh);
           case 3:
             return make_shared<ApplyMassVectorL2Const<3>>
               (dynamic_pointer_cast<FESpace>(const_cast<VectorL2FESpace*>(this)->shared_from_this()),
-               rho, defon, lh);    
+               rho, defon, lh);
           }
       }
     return FESpace::GetMassOperator(rho, defon, lh);
   }
 
-  
+
   /*
   shared_ptr<BaseMatrix> VectorL2FESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
@@ -2917,8 +2934,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
     return FESpace::GetMassOperator(rho, defon, lh);
   }
   */
-  
-  
+
+
   void VectorL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                   LocalHeap & lh) const
   {
@@ -2933,7 +2950,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
           }
         return;
       }
-    
+
     for (size_t i = 0; i < spaces.Size(); i++)
       {
         auto veci = vec.Range (GetRange(i));
@@ -2942,8 +2959,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
   }
 
 
-  
-  
+
+
   void VectorL2FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
                                   Region * defon,
                                   LocalHeap & lh) const
@@ -3014,10 +3031,10 @@ One can evaluate the vector-valued function, and one can take the gradient.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el.Nr(), dnums);
-         
+
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
 
          if (def && !def->Mask()[ma->GetElIndex(el)])
@@ -3029,14 +3046,14 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          // curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
@@ -3049,17 +3066,17 @@ One can evaluate the vector-valued function, and one can take the gradient.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              Mat<DIM> trans(0.0);
              if (piola)
                trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
              else if (covariant)
-               trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());               
+               trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());
              else
                trans = mir[0].GetMeasure() * rhoi;
 
              Mat<DIM> invtrans = Inv(trans);
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM> hv = melx.Col(i);
@@ -3081,14 +3098,14 @@ One can evaluate the vector-valued function, and one can take the gradient.
                  if (rho->Dimension() == DIM*DIM)
                    rho->Evaluate (mir, rhovals);
                }
-                 
+
              for (int i = 0; i < melx.Width(); i++)
                melx.Col(i) /= diag_mass(i);
              for (int comp = 0; comp < DIM; comp++)
                feli.Evaluate (ir, melx.Row(comp), pntvals.Row(comp));
 
              Mat<DIM,DIM,SIMD<double>> rhoi(0.0);
-             
+
              for (int i = 0; i < ir.Size(); i++)
                {
                  if (!rho)
@@ -3105,7 +3122,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
                    trans = Trans(mir[i].GetJacobianInverse());
                  rhoi = Trans(trans)*rhoi*trans;
                  rhoi *= mir[i].GetMeasure();
-                 
+
                  rhoi = Inv(rhoi);
                  rhoi *= mir[i].IP().Weight();
 
@@ -3125,7 +3142,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
        });
     }
 
-    
+
 #ifdef OLD
   template <int DIM>
   void VectorL2FESpace ::
@@ -3133,7 +3150,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
                LocalHeap & lh) const
   {
     static Timer t("SolveM - Piola"); RegionTimer reg(t);
-        
+
     IterateElements
       (*this, VOL, lh,
        [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
@@ -3141,32 +3158,32 @@ One can evaluate the vector-valued function, and one can take the gradient.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el.Nr(), dnums);
-         
+
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
              BaseMappedIntegrationRule & mir = trafo(ir, lh);
              Mat<DIM> trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * mir[0].GetJacobian();
              Mat<DIM> invtrans = Inv(trans);
-             
+
              // double jac = mir[0].GetMeasure();
              // if (rho) jac *= rho->Evaluate(mir[0]);
              // diag_mass *= jac;
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM> hv = melx.Col(i);
@@ -3182,7 +3199,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
            if (rho) rho->Evaluate (mir, rhovals);
-                 
+
            for (int i = 0; i < melx.Height(); i++)
            melx.Row(i) /= diag_mass(i);
            for (int comp = 0; comp < dimension; comp++)
@@ -3194,7 +3211,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            else
            for (size_t i = 0; i < ir.Size(); i++)
            pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-           
+
            melx.Col(comp) = 0.0;
            fel.AddTrans (ir, pntvals, melx.Col(comp));
            }
@@ -3220,26 +3237,26 @@ One can evaluate the vector-valued function, and one can take the gradient.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el.Nr(), dnums);
-         
+
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
-             
+
              Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
@@ -3247,15 +3264,15 @@ One can evaluate the vector-valued function, and one can take the gradient.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              // Mat<DIM> trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * mir[0].GetJacobian();
              Mat<DIM> trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());
              Mat<DIM> invtrans = Inv(trans);
-             
+
              // double jac = mir[0].GetMeasure();
              // if (rho) jac *= rho->Evaluate(mir[0]);
              // diag_mass *= jac;
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM> hv = melx.Col(i);
@@ -3271,7 +3288,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
            if (rho) rho->Evaluate (mir, rhovals);
-                 
+
            for (int i = 0; i < melx.Height(); i++)
            melx.Row(i) /= diag_mass(i);
            for (int comp = 0; comp < dimension; comp++)
@@ -3283,7 +3300,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            else
            for (size_t i = 0; i < ir.Size(); i++)
            pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-           
+
            melx.Col(comp) = 0.0;
            fel.AddTrans (ir, pntvals, melx.Col(comp));
            }
@@ -3295,7 +3312,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
        });
   }
 #endif
-  
+
   template <int DIM>
   void VectorL2FESpace ::
   ApplyM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * def,
@@ -3309,27 +3326,27 @@ One can evaluate the vector-valued function, and one can take the gradient.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el.Nr(), dnums);
 
-         
+
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
-             
+
              Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
@@ -3337,9 +3354,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              Mat<DIM> trans = mir[0].GetMeasure() * rhoi;
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM> hv = melx.Col(i);
@@ -3355,7 +3372,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
            if (rho) rho->Evaluate (mir, rhovals);
-                 
+
            for (int i = 0; i < melx.Height(); i++)
            melx.Row(i) /= diag_mass(i);
            for (int comp = 0; comp < dimension; comp++)
@@ -3367,7 +3384,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            else
            for (size_t i = 0; i < ir.Size(); i++)
            pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-           
+
            melx.Col(comp) = 0.0;
            fel.AddTrans (ir, pntvals, melx.Col(comp));
            }
@@ -3379,10 +3396,10 @@ One can evaluate the vector-valued function, and one can take the gradient.
            elx = 0.0;
          vec.SetIndirect(dnums, elx);
        });
-    
+
   }
 
-  
+
 
   template <int DIM>
   void VectorL2FESpace ::
@@ -3397,27 +3414,27 @@ One can evaluate the vector-valued function, and one can take the gradient.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el.Nr(), dnums);
 
-         
+
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
-             
+
              Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
@@ -3425,9 +3442,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              Mat<DIM> trans = 1/mir[0].GetMeasure() * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM> hv = melx.Col(i);
@@ -3443,7 +3460,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
            if (rho) rho->Evaluate (mir, rhovals);
-                 
+
            for (int i = 0; i < melx.Height(); i++)
            melx.Row(i) /= diag_mass(i);
            for (int comp = 0; comp < dimension; comp++)
@@ -3455,7 +3472,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            else
            for (size_t i = 0; i < ir.Size(); i++)
            pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-           
+
            melx.Col(comp) = 0.0;
            fel.AddTrans (ir, pntvals, melx.Col(comp));
            }
@@ -3467,7 +3484,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            elx = 0.0;
          vec.SetIndirect(dnums, elx);
        });
-    
+
   }
 
 
@@ -3484,26 +3501,26 @@ One can evaluate the vector-valued function, and one can take the gradient.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el.Nr(), dnums);
-         
+
          FlatVector<double> elx(feli.GetNDof()*DIM, lh);
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
-             
+
              Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
@@ -3511,9 +3528,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              Mat<DIM> trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM> hv = melx.Col(i);
@@ -3529,7 +3546,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
            if (rho) rho->Evaluate (mir, rhovals);
-                 
+
            for (int i = 0; i < melx.Height(); i++)
            melx.Row(i) /= diag_mass(i);
            for (int comp = 0; comp < dimension; comp++)
@@ -3541,7 +3558,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
            else
            for (size_t i = 0; i < ir.Size(); i++)
            pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-           
+
            melx.Col(comp) = 0.0;
            fel.AddTrans (ir, pntvals, melx.Col(comp));
            }
@@ -3560,7 +3577,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
   DocInfo TangentialSurfaceL2FESpace :: GetDocu ()
   {
-    DocInfo docu = FESpace::GetDocu(); 
+    DocInfo docu = FESpace::GetDocu();
     docu.short_docu = "An tangential, L2-conforming finite element space.";
     docu.long_docu =
       R"raw_string( (tbd)
@@ -3588,7 +3605,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
 
   TangentialSurfaceL2FESpace ::
-  TangentialSurfaceL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+  TangentialSurfaceL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags,
                               bool checkflags)
     : CompoundFESpace(ama, flags)
   {
@@ -3601,18 +3618,18 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     piola = flags.GetDefineFlag ("piola");
     piola = true;  // for the moment ...
-    
+
     if (piola)
       {
         switch (ma->GetDimension())
           {
           case 2:
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2,BND>>>();   // dummy 
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2,BND>>>();   // dummy
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2,BND>>>();
             break;
           case 3:
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3,BND>>>();   // dummy 
-            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3,BND>>>();            
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3,BND>>>();   // dummy
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3,BND>>>();
             break;
           }
       }
@@ -3640,11 +3657,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   shared_ptr<BaseMatrix> TangentialSurfaceL2FESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
                    shared_ptr<Region> defon,
-                   LocalHeap & lh) const 
+                   LocalHeap & lh) const
   {
     if (ma->GetDimension() != 2)
       return FESpace::GetMassOperator(rho, defon, lh);
-    
+
     auto dofs = make_shared<Table<DofId>> (CreateDofTable(BND));
     Matrix<> bmat;
     Vector<double> rho_jac;
@@ -3660,21 +3677,21 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         auto & fel = static_cast<const BaseScalarFiniteElement&>(cfel[0]);
         // auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
         const ElementTransformation & trafo = el.GetTrafo();
-        
+
         IntegrationRule ir1(fel.ElementType(), 2*fel.Order());
         Array<int> verts { el.Vertices() };
         Facet2SurfaceElementTrafo f2s(fel.ElementType(), verts);
         auto & ir = f2s(ir1, lh);
         // auto & mir = trafo(ir, lh);
         MappedIntegrationRule<DIM-1,DIM> mir(ir, trafo, lh);
-        
-        
+
+
         FlatMatrix<> rhovals(ir.Size(), 1, lh);
         if (rho)
           rho->Evaluate (mir, rhovals);
         else
           rhovals = 1;
-        
+
         for (size_t i = 0; i < ir.Size(); i++)
           {
             Mat<DIM,DIM-1> trans;
@@ -3689,9 +3706,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           {
             firsttime = false;
             bmat = Trans(shapes);
-            
+
             eldiag.SetSize(fel.GetNDof());
-            fel.GetDiagMassMatrix (eldiag); 
+            fel.GetDiagMassMatrix (eldiag);
 
             weights.SetSize(ir.Size());
             for (int i = 0; i < ir.Size(); i++)
@@ -3706,7 +3723,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           }
         rho_jac.Range ( rhovals.Height() * IntRange(el.Nr(), el.Nr()+1) ) = rhovals.Col(0);
       }
-    
+
     // cout << "doftable = " << doftable << endl;
     // cout << "eldiag = " << eldiag << endl;
 
@@ -3715,11 +3732,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     return make_shared<ApplyL2Mass> (dynamic_pointer_cast<FESpace>(const_cast< TangentialSurfaceL2FESpace*>(this)->shared_from_this()),
                                      rho, false, defon,
                                      bmat, eldiag, rho_jac, dofs,
-                                     lh);    
+                                     lh);
   }
-  
 
-  
+
+
   void TangentialSurfaceL2FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                              LocalHeap & lh) const
   {
@@ -3755,7 +3772,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   }
 
 
-  
+
   template <int DIM>
   void TangentialSurfaceL2FESpace ::
   SolveM_Dim (CoefficientFunction * rho, BaseVector & vec, Region * def,
@@ -3770,10 +3787,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el, dnums);
-         
+
          FlatVector<double> elx(feli.GetNDof()*(DIM-1), lh);
 
          if (def && !def->Mask()[ma->GetElIndex(el)])
@@ -3785,14 +3802,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM-1, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
          // curved = false;  // curved not implemented
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
@@ -3805,19 +3822,19 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              Mat<DIM-1> trans(0.0);
              if (piola)
                trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
              /*
              else if (covariant)
-               trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());               
+               trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());
              else
                trans = mir[0].GetMeasure() * rhoi;
              */
 
              Mat<DIM-1> invtrans = Inv(trans);
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM-1> hv = melx.Col(i);
@@ -3831,7 +3848,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
              SIMD_MappedIntegrationRule<DIM-1,DIM> mir(ir, trafo, lh);
              FlatMatrix<SIMD<double>> pntvals(DIM-1, ir.Size(), lh);
              FlatMatrix<SIMD<double>> rhovals1(1, ir.Size(), lh);
-             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh); 
+             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh);
              if (rho)
                {
                  if (rho->Dimension() == 1)
@@ -3846,7 +3863,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                feli.Evaluate (ir, melx.Row(comp), pntvals.Row(comp));
 
              Mat<DIM,DIM,SIMD<double>> rhoi(0.0);
-             
+
              for (int i = 0; i < ir.Size(); i++)
                {
                  if (!rho)
@@ -3862,7 +3879,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
                  Mat<DIM-1,DIM-1,SIMD<double>> rhoitrans = Trans(trans)*rhoi*trans;
                  rhoitrans *= mir[i].GetMeasure();
-                 
+
                  rhoitrans = Inv(rhoitrans);
                  rhoitrans *= mir[i].IP().Weight();
 
@@ -3877,7 +3894,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
              for (int i = 0; i < melx.Width(); i++)
                melx.Col(i) /= diag_mass(i);
            }
-         
+
 
          vec.SetIndirect(dnums, elx);
        });
@@ -3897,26 +3914,26 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
          auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
-         
+
          Array<int> dnums(fel.GetNDof(), lh);
          GetDofNrs (el, dnums);
 
-         
+
          FlatVector<double> elx(feli.GetNDof()*(DIM-1), lh);
          vec.GetIndirect(dnums, elx);
          auto melx = elx.AsMatrix(DIM-1, feli.GetNDof());
-         
+
          FlatVector<double> diag_mass(feli.GetNDof(), lh);
          feli.GetDiagMassMatrix (diag_mass);
-         
+
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
-         
+
          if (!curved)
            {
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM-1,DIM> mir(ir, trafo, lh);
-             
+
              Mat<DIM,DIM> rhoi(0.0);
              if (!rho)
                rhoi = Identity(DIM);
@@ -3924,13 +3941,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-             
+
              Mat<DIM-1> trans = mir[0].GetMeasure() * rhoi;
 
              if (piola)
                trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
 
-             
+
              for (int i = 0; i < melx.Width(); i++)
                {
                  Vec<DIM-1> hv = melx.Col(i);
@@ -3944,7 +3961,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
              SIMD_MappedIntegrationRule<DIM-1,DIM> mir(ir, trafo, lh);
              FlatMatrix<SIMD<double>> pntvals(DIM-1, ir.Size(), lh);
              FlatMatrix<SIMD<double>> rhovals1(1, ir.Size(), lh);
-             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh); 
+             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh);
              if (rho)
                {
                  if (rho->Dimension() == 1)
@@ -3952,12 +3969,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                  if (rho->Dimension() == DIM*DIM)
                    rho->Evaluate (mir, rhovals);
                }
-             
+
              for (int comp = 0; comp < DIM-1; comp++)
                feli.Evaluate (ir, melx.Row(comp), pntvals.Row(comp));
 
              Mat<DIM,DIM,SIMD<double>> rhoi(0.0);
-             
+
              for (int i = 0; i < ir.Size(); i++)
                {
                  if (!rho)
@@ -3973,7 +3990,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
                  Mat<DIM-1,DIM-1,SIMD<double>> rhoitrans = Trans(trans)*rhoi*trans;
                  rhoitrans *= mir[i].GetMeasure();
-                 
+
                  rhoitrans *= mir[i].IP().Weight();
 
                  Vec<DIM-1,SIMD<double>> rhopval = rhoitrans * pntvals.Col(i);
@@ -3989,32 +4006,32 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
            elx = 0.0;
          vec.SetIndirect(dnums, elx);
        });
-    
+
   }
 
 
-  
+
   static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
   static RegisterFESpace<L2SurfaceHighOrderFESpace> initsurfl2 ("l2surf");
-  
+
 
 
   // register FESpaces
   namespace l2hofespace_cpp
   {
     class Init
-    { 
-    public: 
+    {
+    public:
       Init ();
     };
-    
+
     Init::Init()
     {
       GetFESpaceClasses().AddFESpace ("l2", L2HighOrderFESpace::Create, L2HighOrderFESpace::GetDocu);
       GetFESpaceClasses().AddFESpace ("l2ho", L2HighOrderFESpace::CreateHO, L2HighOrderFESpace::GetDocu);
       // GetFESpaceClasses().AddFESpace ("l2surf", L2SurfaceHighOrderFESpace::Create, L2SurfaceHighOrderFESpace::GetDocu);
     }
-    
+
     Init init;
   }
 }

@@ -156,7 +156,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
 
@@ -214,7 +215,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
   
@@ -229,6 +231,10 @@ namespace ngfem
     enum { DIM_ELEMENT = D-2 };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
+
+    static string Name() { return "gradbboundary"; }
+    static constexpr bool SUPPORT_PML = true;
+
 
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -447,7 +453,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
 
@@ -514,6 +521,9 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+
+    static string Name() { return "IdBoundary"; }
+    static constexpr bool SUPPORT_PML = true;
     static INT<0> GetDimensions() { return INT<0>(); };
     
     static const FEL & Cast (const FiniteElement & fel) 
@@ -1731,6 +1741,9 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC-VB };
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
+
+    static string Name() { return "Id"; }
+    static constexpr bool SUPPORT_PML = true;
     static bool SupportsVB (VorB checkvb) { return true; }
 
     template <typename FEL, typename MIP, typename MAT>
@@ -1785,7 +1798,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
     
   };
 
@@ -1804,9 +1818,10 @@ namespace ngfem
 
     typedef DiffOpGradBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
 
+    static string Name() { return "grad"; }
+    static constexpr bool SUPPORT_PML = true;
     static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     
-    static string Name() { return "grad"; }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -1881,7 +1896,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
 
@@ -1896,7 +1912,7 @@ namespace ngfem
     enum { DIFFORDER = 1 };
 
     static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
-    
+    static constexpr bool SUPPORT_PML = true;
     static string Name() { return "gradbnd"; }
 
     typedef void DIFFOP_TRACE;
@@ -1966,7 +1982,8 @@ namespace ngfem
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir);
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
   
@@ -1983,7 +2000,7 @@ namespace ngfem
     enum { DIFFORDER = 1 };
 
     typedef DiffOpDivBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
-
+    static constexpr bool SUPPORT_PML = true;
     static string Name() { return "div"; }
     
     template <typename FEL, typename MIP, typename MAT>
@@ -2030,6 +2047,7 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
+    static constexpr bool SUPPORT_PML = true;
     static string Name() { return "divbnd"; }
     
     template <typename FEL, typename MIP, typename MAT>
