@@ -1205,7 +1205,8 @@ namespace ngcomp
           if constexpr (D==2)
             {
               // maybe wrong sign, see curvature diffop!
-              y = Q(0)*Cof(ginv).AsVector();
+              y = Cof(ginv).AsVector();
+              y *= Q(0);
             }
           else
             {
