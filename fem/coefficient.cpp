@@ -1662,7 +1662,7 @@ public:
   {
     auto in0 = input[0];
     auto in1 = input[1];
-    size_t dim = Dimension();
+    size_t dim = dim1;
     size_t np = ir.Size();
 
     for (size_t i = 0; i < np; i++)

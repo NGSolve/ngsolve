@@ -8,8 +8,11 @@ def test_code_generation_volume_terms(unit_mesh_3d):
     fes = L2(unit_mesh_3d, order=5)
     gfu = GridFunction(fes)
 
+    cfvec = CF((1,)*10)
+    cf10 = InnerProduct(cfvec, cfvec)
+
     # piecewise polynomials - also test interpolation on L2 space and the resulting GridFunction
-    functions = [x,y,x*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2, Id(3)[:,2][2] ][-1:]
+    functions = [x,y,x*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2, Id(3)[:,2][2], cf10][-1:]
 
     for cf in functions:
         gfu.Set(cf)
