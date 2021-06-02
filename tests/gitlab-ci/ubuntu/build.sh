@@ -3,6 +3,8 @@ docker build -t ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} -f docker_file .
 
 rm -f ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}.id
 
+mkdir logs
+
 docker run \
       --cidfile ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}.id \
       -e MKLROOT=/opt/intel/mkl \
@@ -17,6 +19,7 @@ docker run \
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64 \
       -e RUN_SLOW_TESTS="$RUN_SLOW_TESTS" \
       -v /opt/intel:/opt/intel \
+      -v `pwd`/logs:/logs \
       -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
       bash /root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh
 
