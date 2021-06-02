@@ -554,6 +554,28 @@ namespace ngcomp
              << "</AppendedData>" << endl;
   }
   template <int D>
+  void VTKOutput<D>::PvdFile(string fname, int index)
+  {
+    ostringstream filenamefinal;
+    stringstream contents;
+
+    filenamefinal << fname << ".pvd";
+
+    contents
+        << "<?xml version=\"1.0\"?>" << endl;
+    contents << "<VTKFile type =\"Collection\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
+    contents << "<Collection>" << endl;
+    contents << "<DataSet timestep=\"0\" file=\"" << fname << ".vtu\"/>" << endl;
+    for (int k = 1; k <= index; k++)
+      contents << "<DataSet timestep=\"1\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
+    contents << "</Collection>" << endl;
+    contents << "</VTKFile>";
+
+    ofstream fileout;
+    fileout.open(filenamefinal.str(), ofstream::trunc);
+    fileout << contents.str();
+  }
+  template <int D>
   void VTKOutput<D>::Do(LocalHeap &lh, VorB vb, const BitArray *drawelems)
   {
     ostringstream filenamefinal;
@@ -569,8 +591,12 @@ namespace ngcomp
     fileout = make_shared<ofstream>(filenamefinal.str());
     cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
+    {
       cout << IM(4) << " ( " << output_cnt << " )";
+      PvdFile(filename, output_cnt);
+    }
     cout << IM(4) << ":" << flush;
+
     output_cnt++;
 
     ResetArrays();
@@ -701,6 +727,7 @@ namespace ngcomp
     *fileout << "</VTKFile>" << endl;
 
     cout << IM(4) << " Done." << endl;
+    cout << "Output Counter: " << output_cnt << endl;
   }
 
   NumProcVTKOutput::NumProcVTKOutput(shared_ptr<PDE> apde, const Flags &flags)
